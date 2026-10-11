@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { planQueryKey } from "@/lib/plan-query-keys";
@@ -16,6 +16,8 @@ import { summarizeConfigRefreshChange } from "@/lib/config-refresh-summary";
 import { useUserRole } from "@/hooks/use-user-role";
 import { AssistedAutopilot, autopilotErrorMessage, isAutopilotClean, type AutopilotProgress } from "@shared/assistedAutopilot";
 import { assistedAutopilotApi, hasAutopilotDraftAlerts } from "@/lib/assisted-autopilot";
+import type { AssistedStageTiming } from "@shared/assistedStageTiming";
+import { StageHistoryTiming } from "./stage-history-timing";
 
 type ScopeKind="TASK_IDS"|"SPACE";
 const key=(planId:number)=>["assisted-planning",planId];
@@ -30,7 +32,7 @@ const operatorError=(error:any)=>{
 export const isMissingAssistedSession=(error:any)=>error?.status===404||error?.code==="SESSION_NOT_FOUND";
 export const isAssistedConflict=(error:any)=>error?.status===409;
 
-export function AssistedPlanningWorkspace({planId,plan,timelineProps,spaces=[]}:{planId:number;plan:any;timelineProps:Record<string,unknown>;spaces?:any[]}) {
+export function AssistedPlanningWorkspace({planId,plan,timelineProps,spaces=[],viewControls}:{planId:number;plan:any;timelineProps:Record<string,unknown>;spaces?:any[];viewControls?:ReactNode}) {
   const client=useQueryClient(); const bootstrapped=useRef(false);
   const {role}=useUserRole();const authorized=useRef(false);authorized.current=role==="admin"||role==="production";
   const autopilot=useRef<AssistedAutopilot|null>(null);
@@ -41,6 +43,9 @@ export function AssistedPlanningWorkspace({planId,plan,timelineProps,spaces=[]}:
   const [runId,setRunId]=useState<number|null>(null); const [preview,setPreview]=useState<any>(null); const [busy,setBusy]=useState<string|null>(null); const [message,setMessage]=useState<string|null>(null);
   const [configPreview,setConfigPreview]=useState<any>(null);const [configSelection,setConfigSelection]=useState<string[]>([]);
   const stateQ=useQuery({queryKey:key(planId),queryFn:()=>apiRequest<any>("GET",`/api/plans/${planId}/assisted`),retry:false});
+  // Refetch only when the operator opens Historial, never on Autopilot polling.
+  const historyTimingsQ=useQuery({queryKey:["assisted-history-timings",planId],queryFn:()=>apiRequest<AssistedStageTiming[]>("GET",`/api/plans/${planId}/assisted/history/timings`),enabled:false,retry:false});
+  const historyTimings=new Map((historyTimingsQ.data??[]).map(timing=>[timing.stageId,timing]));
   const bootstrap=()=>{if(bootstrapped.current)return;bootstrapped.current=true;setBusy("bootstrap");setMessage(null);apiRequest("POST",`/api/plans/${planId}/assisted/session`,{}).then(()=>stateQ.refetch()).catch(e=>{bootstrapped.current=false;setMessage(operatorError(e));}).finally(()=>setBusy(null));};
   useEffect(()=>{if(stateQ.isError&&isMissingAssistedSession(stateQ.error))bootstrap();},[planId,stateQ.isError]);
   const pollQ=useQuery({queryKey:["assisted-proposal",planId,runId],queryFn:()=>apiRequest<any>("GET",`/api/plans/${planId}/assisted/proposals/${runId}`),enabled:runId!=null,refetchInterval:q=>{const s=(q.state.data as any)?.status;return s==="running"||s==="queued"?1000:false;}});
@@ -157,7 +162,8 @@ export function AssistedPlanningWorkspace({planId,plan,timelineProps,spaces=[]}:
     {validationReport?<Card className={`p-3 text-sm ${Number(state.validation.hardCount)>0?"border-red-600":Number(state.validation.requiredCount)>0?"border-amber-500":""}`} data-testid="stage-validation-report"><b>{state.validation.hardCount} conflicto(s) crítico(s) · {state.validation.requiredCount} desviación(es) operativa(s) · {state.validation.preferredCount} recomendación(es)</b><div className="space-y-1 mt-2">{(validationReport.violations??[]).map((violation:any)=><div key={violation.violationKey} className={violation.severity==="HARD"?"text-red-700":violation.severity==="REQUIRED"?"text-amber-700":"text-muted-foreground"}><b>{violation.severity==="HARD"?"Conflicto crítico":violation.severity==="REQUIRED"?"Desviación que requiere confirmación":"Recomendación"}</b> · {violationExplanation(violation)} <span>{taskContext(violation.affectedTaskIds??[])}</span>{violation.inheritedAcceptedExceptionId?<Badge variant={violation.severity==="HARD"?"destructive":"secondary"} className="ml-2">Aceptada previamente</Badge>:null}</div>)}</div></Card>:null}
     {localWarnings.length?<Card className="p-3 text-sm border-amber-500" data-testid="local-draft-warnings"><b>Avisos locales (sin corrección automática)</b><div>{localWarnings.map((warning,index)=><p key={index}>{warningExplanation(warning)} {taskContext([...warning.taskIds])}</p>)}</div></Card>:null}
     {preview?<Card className="p-3 text-sm"><b>{preview.outcome==="PROPOSAL"?"Vista previa de propuesta":preview.outcome==="NO_PROPOSAL"?"No se encontró una propuesta válida":"No se puede generar la propuesta con la información actual"}</b><p>{preview.proposal?.length??0} tarea(s) propuestas · {preview.scopeTaskIds?.length??0} tarea(s) en el alcance.</p>{preview.outcome!=="PROPOSAL"?<p>Revisa la selección, la disponibilidad y los conflictos indicados antes de intentarlo de nuevo.</p>:null}</Card>:null}{message?<p className="text-sm text-destructive">{message}</p>:null}
-    <details><summary>Historial</summary><div className="flex flex-wrap gap-2 pt-2">{(state.history??[]).map((stage:any)=><span key={stage.id} className="rounded border p-2 text-xs">Etapa {stage.ordinal} · {stage.acceptedAt?new Date(stage.acceptedAt).toLocaleString():""} · {stage.scopeTaskIdsJson?.length??0} tarea(s){Number(stage.validationSummaryJson?.requiredCount)>0?` · ${stage.validationSummaryJson.requiredCount} desviación(es) aceptada(s)`:""}{Number(stage.validationSummaryJson?.hardCount)>0?` · ${stage.validationSummaryJson.hardCount} conflicto(s) crítico(s) aceptado(s)`:""}{stage.archivedAt?" · archivada":""}<Button className="ml-2" size="sm" variant="ghost" disabled={!!busy||stage.archivedAt||stage.id===active?.id} onClick={()=>mutate("rollback",()=>apiRequest("POST",`/api/plans/${planId}/assisted/rollback`,{targetStageId:Number(stage.id)}),true)}>Restaurar</Button></span>)}<Button size="sm" variant="outline" disabled={!!busy} onClick={()=>mutate("redo",()=>apiRequest("POST",`/api/plans/${planId}/assisted/redo`,{}),true)}>Rehacer</Button></div></details></Card>
+    <details onToggle={event=>{if(event.currentTarget.open)void historyTimingsQ.refetch();}}><summary>Historial</summary><p className="pt-2 text-xs text-muted-foreground">Generación: inicio a fin del run. Solicitud a aceptación: desde el registro de la solicitud; incluye aplicación, validación y aceptación y puede incluir espera humana.</p>{historyTimingsQ.isFetching?<p className="text-xs">Cargando tiempos…</p>:null}{historyTimingsQ.isError?<p className="text-xs text-destructive">No se pudieron consultar los tiempos. Vuelve a abrir Historial para reintentar.</p>:null}<div className="flex flex-wrap gap-2 pt-2">{(state.history??[]).map((stage:any)=><div key={stage.id} className="rounded border p-2 text-xs">Etapa {stage.ordinal} · Aceptación: {stage.acceptedAt?Number.isFinite(Date.parse(stage.acceptedAt))?new Date(stage.acceptedAt).toLocaleString():"No disponible":"No disponible"} · {stage.scopeTaskIdsJson?.length??0} tarea(s){Number(stage.validationSummaryJson?.requiredCount)>0?` · ${stage.validationSummaryJson.requiredCount} desviación(es) aceptada(s)`:""}{Number(stage.validationSummaryJson?.hardCount)>0?` · ${stage.validationSummaryJson.hardCount} conflicto(s) crítico(s) aceptado(s)`:""}{stage.archivedAt?" · archivada":""}<StageHistoryTiming timing={historyTimingsQ.isError?undefined:historyTimings.get(Number(stage.id))}/><Button className="ml-2" size="sm" variant="ghost" disabled={!!busy||stage.archivedAt||stage.id===active?.id} onClick={()=>mutate("rollback",()=>apiRequest("POST",`/api/plans/${planId}/assisted/rollback`,{targetStageId:Number(stage.id)}),true)}>Restaurar</Button></div>)}<Button size="sm" variant="outline" disabled={!!busy} onClick={()=>mutate("redo",()=>apiRequest("POST",`/api/plans/${planId}/assisted/redo`,{}),true)}>Rehacer</Button></div></details></Card>
+    {viewControls}
     <FullscreenPlanningPanel title="Planning asistido" viewKey={`assisted-${planId}`} supportsZoom toolbarRight={toolbar}><PlanningTimeline {...timelineProps as any} plan={assistedPlan} mode="assisted-draft" taskVisualStates={visual} onApplyManualEdits={applyTimelineEdits}/></FullscreenPlanningPanel>
   </div>;
 }

@@ -95,6 +95,12 @@ export class AssistedPlanningService {
       acceptedExceptions: (acceptedExceptions ?? []).filter(item=>item.status==="ACTIVE"), history: stages };
   }
 
+  async historyTimings(planId: number) {
+    const timings = await this.storage.getAssistedPlanningHistoryTimings(planId);
+    if (!timings) throw new AssistedPlanningError("SESSION_NOT_FOUND", 404);
+    return timings;
+  }
+
   async patchDraft(planId: number, expectedDraftFingerprint: string, expectedBaseStageId: number, changes: DraftChange[]) {
     const session = await this.storage.getActiveAssistedPlanningSession(planId);
     if (!session) throw new AssistedPlanningError("SESSION_NOT_FOUND", 404);

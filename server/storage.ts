@@ -22,6 +22,7 @@ import type { EffectivePlanConfigRevisionV1 } from "./effectivePlanConfigRevisio
 import type { EffectivePlanConfigReplaySnapshotV1 } from "./assistedPlanningConfigRevision";
 import type { AssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
 import { mapAssistedPersistenceRow, toAssistedPersistenceRow } from "./assistedPlanningPersistenceMapping";
+import { stageTiming, type AssistedStageTiming } from "../shared/assistedStageTiming";
 import {
   OptimizerHeuristicKey,
   coerceOptimizationMode,
@@ -167,6 +168,7 @@ export interface IStorage {
   createAssistedPlanningStage(input: CreateAssistedPlanningStageInput): Promise<AssistedPlanningStage>;
   getAssistedPlanningStage(id: number): Promise<AssistedPlanningStage | null>;
   listAssistedPlanningStages(sessionId: number): Promise<AssistedPlanningStage[]>;
+  getAssistedPlanningHistoryTimings(planId: number): Promise<AssistedStageTiming[] | null>;
   archiveAssistedPlanningStage(id: number, archivedAt: string): Promise<AssistedPlanningStage>;
   createPlanningStageValidation(input: CreatePlanningStageValidationInput): Promise<PlanningStageValidation>;
   getPlanningStageValidation(id: number): Promise<PlanningStageValidation | null>;
@@ -395,6 +397,21 @@ export class SupabaseStorage implements IStorage {
   async archiveAssistedPlanningStage(id: number, archivedAt: string): Promise<AssistedPlanningStage> {
     const { data, error } = await supabaseAdmin.from("assisted_planning_stages").update({ archived_at: archivedAt }).eq("id", id).is("archived_at", null).select("*").single();
     if (error) throw error; return mapAssistedPersistenceRow(data);
+  }
+  async getAssistedPlanningHistoryTimings(planId: number): Promise<AssistedStageTiming[] | null> {
+    const session = await supabaseAdmin.from("assisted_planning_sessions").select("id").eq("plan_id", planId).eq("status", "ACTIVE").maybeSingle();
+    if (session.error) throw session.error;
+    if (!session.data) return null;
+    const stages = await supabaseAdmin.from("assisted_planning_stages").select("id,ordinal,accepted_at,proposal_run_id").eq("plan_id", planId).eq("session_id", session.data.id).order("ordinal", { ascending: true });
+    if (stages.error) throw stages.error;
+    const ids = [...new Set((stages.data ?? []).filter(stage => stage.ordinal > 0 && stage.proposal_run_id != null).map(stage => stage.proposal_run_id))];
+    const runs = ids.length ? await supabaseAdmin.from("planning_runs").select("id,created_at,started_at,finished_at").eq("plan_id", planId).eq("assisted_session_id", session.data.id).in("id", ids) : { data: [], error: null };
+    if (runs.error) throw runs.error;
+    const byId = new Map((runs.data ?? []).map(run => [Number(run.id), run]));
+    return (stages.data ?? []).map(stage => {
+      const run = byId.get(Number(stage.proposal_run_id));
+      return stageTiming({ id: stage.id, ordinal: stage.ordinal, acceptedAt: stage.accepted_at }, run ? { createdAt: run.created_at, startedAt: run.started_at, finishedAt: run.finished_at } : undefined);
+    });
   }
   async createPlanningStageValidation(input: CreatePlanningStageValidationInput): Promise<PlanningStageValidation> {
     const { data, error } = await supabaseAdmin.from("planning_stage_validations").insert(toAssistedPersistenceRow(input)).select("*").single();

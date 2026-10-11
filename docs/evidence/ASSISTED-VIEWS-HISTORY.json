@@ -1,0 +1,146 @@
+{
+  "status": "PASS",
+  "stageOrdinal": 10,
+  "stageId": 11,
+  "fingerprint": "557d0efe105e7a2257f4f7754150e8aff814581ec943e5f623dbbc3640f147b9",
+  "views": [
+    {
+      "view": "contestants default",
+      "tasks": 266
+    },
+    {
+      "view": "contestants sorted by IN",
+      "tasks": 266
+    },
+    {
+      "view": "contestants sorted by CROMA",
+      "tasks": 266
+    },
+    {
+      "view": "contestants sorted by ENSAYO_ESTUDIO_7",
+      "tasks": 266
+    },
+    {
+      "view": "spaces timeline",
+      "tasks": 266
+    },
+    {
+      "view": "spaces list",
+      "tasks": 266
+    },
+    {
+      "view": "spaces timeline again",
+      "tasks": 266
+    },
+    {
+      "view": "resources all selections",
+      "totalPlanTasks": 266,
+      "renderedTasks": 72,
+      "filteredTasks": 194
+    },
+    {
+      "view": "contestants restored",
+      "tasks": 266
+    }
+  ],
+  "sorts": [
+    {
+      "template": "IN",
+      "realPointerClick": true,
+      "tasksRetained": 266,
+      "returnedToName": true,
+      "noPendingEdits": true
+    },
+    {
+      "template": "CROMA",
+      "realPointerClick": true,
+      "tasksRetained": 266,
+      "returnedToName": true,
+      "noPendingEdits": true
+    },
+    {
+      "template": "ENSAYO_ESTUDIO_7",
+      "realPointerClick": true,
+      "tasksRetained": 266,
+      "returnedToName": true,
+      "noPendingEdits": true
+    }
+  ],
+  "roles": [
+    {
+      "role": "anon",
+      "status": 401
+    },
+    {
+      "role": "norole",
+      "status": 403
+    },
+    {
+      "role": "viewer",
+      "status": 200
+    },
+    {
+      "role": "aux",
+      "status": 200
+    },
+    {
+      "role": "production",
+      "status": 200
+    },
+    {
+      "role": "admin",
+      "status": 200
+    }
+  ],
+  "remoteWrites": 0,
+  "legacyResourceParity": true,
+  "history": {
+    "lazy": true,
+    "exactRunIntervals": true,
+    "stageZeroUnavailable": true,
+    "roleBoundary": true,
+    "noEvidencePayload": true
+  },
+  "noMutations": true,
+  "base": "bace4aa4098e499ce3caa61d940ae2ccbbe86195",
+  "command": "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm run demo:a2:smoke -- work/a2-views-history-verified --full",
+  "runtime": "Native disposable PostgreSQL 17 / GoTrue / PostgREST / Auth / product HTTP / Chromium; no solved seed or request interception",
+  "runtimeHashes": {
+    "server/storage.ts": "906e56f6f2e043034eeb4eedcf10b7f02fb9345598f6b0737b03ddcd087dd526",
+    "server/assistedPlanningSnapshot.ts": "7edde4c64b70c661eb95b3a7e11710f07986434ad81f3acbc6412f369953bba3",
+    "server/assistedProposalService.ts": "8aba4953066c6f780149549b828603e001d8f66a97775f8571fd44cf63bc5122",
+    "server/assistedPlanningService.ts": "be1831577a38ce4f837a7ca21736e0a4151cecc3703bda68ae4bc2461e3e6a78",
+    "server/routes.ts": "35b0e13104d747b880aa25fca56c8f186ea58b621175e7253d718a06636b5f6a",
+    "engine/planner-next/jointCompletionWitness.ts": "eff19c666412542cc47a364687f46300982e8690b0a341a69d02c183616068a8",
+    "engine/planner-next/exactItinerantPlan.ts": "aa66ba868d91445424e866387ad8500843db0510e02b315e0e32e5720bc932a2",
+    "client/src/components/layout.tsx": "3be0f0b4501eecb52fe54547d3455d67867be651ead74df852a3562561669697",
+    "client/src/components/planning/assisted-planning-workspace.tsx": "d242f937c35c11d41152db229a22166c4387c03bc54894850f840ad8a15b2926",
+    "script/demo/a2ImportRows.ts": "e3db633b8c84d00fd0dca949a2d59eea63f264fefbbb99817ad9acb73c5e71ba",
+    "script/demo/prepareA2Import.ts": "b055d5e5a3f9ad40c768ce2c863ab7c565fee4aa2822830d7d9af7659e576a2a",
+    "script/demo/prepareA2Schema.ts": "30eebaa8035888f84d1d023703ef88c605a4d264fc23e91e6ddab4c9226898b5",
+    "script/demo/smokeA2Integration.ts": "5e69f9da7ac4907c150a77d137c6878c41d4a2f6e0b7a2da454e8bb91ca1f5e4",
+    "script/demo/smokeA2Journey.ts": "0601103de3acf74db16a49d99da2d8cd1b9013fc8a2c9174941600bae118d172",
+    "client/src/lib/assisted-planning-view.ts": "a0b688796d43afc3504f14012944780c80b4945606dd98815ce06500af82bb4d",
+    "client/src/lib/assisted-draft-warnings.ts": "23bb5fe47f1ce54b46dd9d2cf529fa12da83aca8b50baa8acf8cd9eb2e2d178f",
+    "script/demo/smokeA2ViewsHistoryJourney.ts": "14af79e9af0138552a028e5f5212de4028f62c8c195b5dc744a4007a000c5f36",
+    "shared/assistedStageTiming.ts": "f37982b96bc5fb32d168a9f6f6e7ba1219e7d5a1f5aa51321e43ff6d14e3610c",
+    "client/src/lib/contestant-lane-sort.ts": "8cee83173053fce313e8608b451c9d3e37d75174476321ea1434da70628f25c1",
+    "client/src/components/planning/stage-history-timing.tsx": "b12463f40bf067948e12ae919e5cd807d1fbd61bec671a338318e0b6b67b83a5",
+    "client/src/components/planning-timeline.tsx": "d40130b66083a3ad600e2504bdc86c2f7cd7ae2c020b9b6455401864fa27a6d7",
+    "client/src/pages/plan-details.tsx": "0f7afeec7ee91c2d9fe3e149d5e64b6a4d3d207786448f9968fe1bb4b06e1f59"
+  },
+  "limitations": [
+    "The disposable catalog is configured temporarily with UI ordering, then restored; Legacy visibility configuration remains authoritative.",
+    "Resources retains Legacy filtering: 72 tasks have selected resource assignments in this A2 fixture, while all 266 return in the contestant/space views.",
+    "Connected Supabase and published production runtime were not modified or tested."
+  ],
+  "checks": {
+    "relevantTests": 108,
+    "a2ImportTests": 26,
+    "typescript": "PASS",
+    "build": "PASS",
+    "integrationTypescript": "PASS",
+    "migrationSequence": "PASS",
+    "diffHygiene": "PASS"
+  }
+}

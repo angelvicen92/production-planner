@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { timeToMinutes } from "@/lib/time";
+import { sortContestantLanes } from "@/lib/contestant-lane-sort";
 import { cn } from "@/lib/utils";
 import { useProductionClock } from "@/hooks/use-production-clock";
 import { usePlanningDensity } from "@/components/planning/fullscreen-planning-panel";
@@ -326,14 +327,15 @@ function TaskStatusMenuTrigger({
   const triggerButton = (
     <button
       type="button"
+      data-planning-task-id={task.id}
       className={cn(className, "group text-left")}
       style={style}
       onClick={handleCardClick}
       onPointerDown={(event) => {
-        onPointerDown?.(event);
+        if (!taskSortArmed) onPointerDown?.(event);
       }}
       onPointerUp={(event) => {
-        if (manualMode) {
+        if (manualMode && !taskSortArmed) {
           suppressNextClickRef.current = true;
           event.preventDefault();
         }
@@ -1371,31 +1373,29 @@ function TaskStatusMenuTrigger({
         return a[1].name.localeCompare(b[1].name);
       });
 
-    if (contestantSort.mode !== "task") return entries;
-    const targetTemplateId = Number(contestantSort.templateId);
-    return entries
-      .map((entry) => {
-        const earliestStart = entry[1].tasks
-          .filter((task) => Number(task.templateId) === targetTemplateId && Boolean(task.startPlanned))
-          .map((task) => timeToMinutes(String(task.startPlanned)))
-          .sort((a, b) => a - b)[0];
-        return {
-          entry,
-          earliestStart: Number.isFinite(earliestStart) ? Number(earliestStart) : null,
-        };
-      })
-      .sort((a, b) => {
-        if (a.entry[0] === "none") return 1;
-        if (b.entry[0] === "none") return -1;
-        if (a.earliestStart !== null && b.earliestStart !== null) {
-          return a.earliestStart - b.earliestStart || a.entry[1].name.localeCompare(b.entry[1].name);
-        }
-        if (a.earliestStart !== null) return -1;
-        if (b.earliestStart !== null) return 1;
-        return a.entry[1].name.localeCompare(b.entry[1].name);
-      })
-      .map((row) => row.entry);
+    return sortContestantLanes(entries, contestantSort.mode === "task" ? Number(contestantSort.templateId) : undefined);
   }, [filteredDailyTasksByStage, contestants, viewMode, filteredZones, filteredSpaces, contestantSort]);
+
+  const taskSortControls = viewMode === "contestants" ? (
+    <div className="flex items-center gap-2 rounded-md border px-3 py-1.5 bg-muted/20">
+      <Button
+        size="sm"
+        variant={taskSortArmed ? "default" : "outline"}
+        onClick={() => setTaskSortArmed((prev) => !prev)}
+      >
+        {taskSortArmed ? "Click en una tarea…" : "Orden por tarea"}
+      </Button>
+      {taskSortArmed ? (
+        <span className="text-xs text-muted-foreground">Click en una tarea…</span>
+      ) : null}
+      <span className="text-xs">
+        Orden actual: {contestantSort.mode === "name" ? "Nombre" : `Tarea → ${contestantSort.templateName}`}
+      </span>
+      {contestantSort.mode === "task" ? (
+        <Button size="sm" variant="ghost" onClick={() => { setContestantSort({ mode: "name" }); setTaskSortArmed(false); }}>Ordenar por nombre</Button>
+      ) : null}
+    </div>
+  ) : null;
 
   if (!workStart || !workEnd) {
     return (
@@ -2780,26 +2780,7 @@ function TaskStatusMenuTrigger({
                   />
                   <span className="text-sm">Modo manual</span>
                 </div>
-                {viewMode === "contestants" ? (
-                  <div className="flex items-center gap-2 rounded-md border px-3 py-1.5 bg-muted/20">
-                    <Button
-                      size="sm"
-                      variant={taskSortArmed ? "default" : "outline"}
-                      onClick={() => setTaskSortArmed((prev) => !prev)}
-                    >
-                      {taskSortArmed ? "Click en una tarea…" : "Orden por tarea"}
-                    </Button>
-                    {taskSortArmed ? (
-                      <span className="text-xs text-muted-foreground">Click en una tarea…</span>
-                    ) : null}
-                    <span className="text-xs">
-                      Orden actual: {contestantSort.mode === "name" ? "Nombre" : `Tarea → ${contestantSort.templateName}`}
-                    </span>
-                    {contestantSort.mode === "task" ? (
-                      <Button size="sm" variant="ghost" onClick={() => { setContestantSort({ mode: "name" }); setTaskSortArmed(false); }}>Ordenar por nombre</Button>
-                    ) : null}
-                  </div>
-                ) : null}
+                {taskSortControls}
                 {manualMode ? (
                   <div className="flex items-center gap-2 rounded-md border px-3 py-1.5 bg-muted/40">
                     <span className="text-xs">{isApplying ? `Aplicando cambios (${Object.keys(pendingManualEdits).length + pendingManualBlocksCount})…` : `Modo manual: ${Object.keys(pendingManualEdits).length} movimientos · ${pendingManualBlocksCount} bloqueos`}</span>
@@ -2834,7 +2815,8 @@ function TaskStatusMenuTrigger({
                     ) : null}
                   </div>
                 ) : null}
-              </div> : <div className="mb-3 flex items-center gap-2 rounded-md border px-3 py-2 bg-muted/30">
+              </div> : <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 bg-muted/30">
+                {taskSortControls}
                 <Badge variant="outline">Editar borrador</Badge>
                 <span className="text-xs">{Object.keys(pendingManualEdits).length} movimientos pendientes</span>
                 <Button size="sm" disabled={isApplying || Object.keys(pendingManualEdits).length === 0} onClick={async () => {
@@ -3096,6 +3078,7 @@ function TaskStatusMenuTrigger({
               {lanes.map(([id, lane]) => (
                 <div
                   key={id}
+                  data-planning-lane={id}
                   className={cn("flex border-b group hover:bg-muted/5 transition-colors", viewMode === "contestants" ? "min-h-0" : "")}
                 >
                   <div className={cn("w-48 border-r bg-muted/10 planning-density-row", viewMode === "contestants" ? "p-1.5" : "p-3")}>
@@ -3279,7 +3262,7 @@ function TaskStatusMenuTrigger({
                             canOpenMenuFromCard={manualDrag === null}
                             onEditManualBlock={(task) => setManualBlockEditor({ task, title: task.manualTitle ?? task.template?.name ?? "Bloqueo", color: task.manualColor ?? "#38BDF8", durationMinutes: Math.max(5, timeToMinutes(task.endPlanned ?? "00:30") - timeToMinutes(task.startPlanned ?? "00:00") || 30) })}
                             onPointerDown={(event) => {
-                              if (!manualMode || !canSelectManualTask(task) || isApplying) return;
+                              if (taskSortArmed || !manualMode || !canSelectManualTask(task) || isApplying) return;
                               event.preventDefault();
                               if (manualMode && import.meta.env.DEV) {
                                 // eslint-disable-next-line no-console
@@ -3302,6 +3285,7 @@ function TaskStatusMenuTrigger({
                               event.currentTarget.setPointerCapture(event.pointerId);
                             }}
                             onClick={(event) => {
+                              if (viewMode === "contestants" && taskSortArmed) { handleTaskCardClick(event, task); return; }
                               if (manualDrag) {
                                 event.preventDefault();
                                 event.stopPropagation();

@@ -2694,6 +2694,205 @@ ${reasonMessage}` : message,
     );
   };
 
+  // The same visual controls serve Legacy and Assisted; only local view state changes.
+  const planningViewSelector = (
+    <div className="flex items-center gap-2">
+      <Button
+        type="button"
+        variant={
+          timelineView === "contestants" ? "default" : "outline"
+        }
+        size="sm"
+        onClick={() => setTimelineView("contestants")}
+      >
+        Por concursante
+      </Button>
+      <Button
+        type="button"
+        variant={
+          timelineView === "spaces" ? "default" : "outline"
+        }
+        size="sm"
+        onClick={() => setTimelineView("spaces")}
+      >
+        Por plató y espacio
+      </Button>
+      <Button
+        type="button"
+        variant={
+          timelineView === "resources" ? "default" : "outline"
+        }
+        size="sm"
+        onClick={() => setTimelineView("resources")}
+      >
+        Recursos
+      </Button>
+      {timelineView === "spaces" && (
+        <div className="flex items-center gap-2 ml-3">
+          <Button
+            type="button"
+            variant={
+              spaceVerticalMode === "timeline"
+                ? "default"
+                : "outline"
+            }
+            size="sm"
+            onClick={() => setSpaceVerticalMode("timeline")}
+          >
+            Timeline
+          </Button>
+          <Button
+            type="button"
+            variant={
+              spaceVerticalMode === "list" ? "default" : "outline"
+            }
+            size="sm"
+            onClick={() => setSpaceVerticalMode("list")}
+          >
+            Lista
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+  const planningViewFilters = (<>
+    {timelineView === "spaces" && (
+      <Card className="p-3">
+        {zonesLoading ? (
+          <p className="text-sm text-muted-foreground">Cargando platós...</p>
+        ) : !Array.isArray(zones) || zones.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No hay platós</p>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {(zones as any[]).map((zone: any) => {
+                const zoneId = Number(zone?.id);
+                if (!Number.isFinite(zoneId)) return null;
+                const checked = stageFilterIds.includes(zoneId);
+                return (
+                  <Button
+                    key={zoneId}
+                    type="button"
+                    size="sm"
+                    variant={checked ? "default" : "outline"}
+                    onClick={() => toggleStageFilter(zoneId)}
+                  >
+                    {zone?.name ?? `Plató #${zoneId}`}
+                  </Button>
+                );
+              })}
+            </div>
+            <div>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => setStageFilterIds([])}
+                disabled={stageFilterIds.length === 0}
+              >
+                Limpiar filtro
+              </Button>
+            </div>
+          </div>
+        )}
+      </Card>
+    )}
+
+    {timelineView === "resources" && (
+      <Card className="p-3 space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Popover open={resourceSelectorOpen} onOpenChange={setResourceSelectorOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                role="combobox"
+                aria-expanded={resourceSelectorOpen}
+                className="w-full justify-between md:w-[360px]"
+              >
+                {selectedResourceOptions.length > 0
+                  ? `${selectedResourceOptions.length} seleccionado(s)`
+                  : "Selecciona recursos"}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[360px] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Buscar recurso/persona/equipo..." />
+                <CommandList>
+                  <CommandEmpty>Sin resultados.</CommandEmpty>
+                  <CommandGroup>
+                    {resourceFilterOptions.map((resource) => {
+                      const id = String(resource.id);
+                      const checked = resourceFilterIds.includes(id);
+                      const kindLabel =
+                        resource.kind === "production"
+                          ? "Producción"
+                          : resource.kind === "editorial"
+                            ? "Redacción"
+                            : resource.kind === "itinerant_team"
+                              ? "Itinerante"
+                              : "Recurso";
+
+                      return (
+                        <CommandItem
+                          key={id}
+                          value={`${resource.label} ${kindLabel}`}
+                          onSelect={() => toggleResourceFilter(id)}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              checked ? "opacity-100" : "opacity-0",
+                            )}
+                          />
+                          <span className="truncate">{resource.label}</span>
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => setResourceFilterIds([])}
+            disabled={resourceFilterIds.length === 0}
+          >
+            Limpiar
+          </Button>
+        </div>
+
+        {selectedResourceOptions.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {selectedResourceOptions.map((option) => (
+              <Badge key={String(option.id)} variant="secondary" className="gap-2">
+                <span>{option.label}</span>
+                <button
+                  type="button"
+                  className="text-xs opacity-80 hover:opacity-100"
+                  onClick={() => toggleResourceFilter(String(option.id))}
+                >
+                  ×
+                </button>
+              </Badge>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">Selecciona recursos</p>
+        )}
+
+        {resourceFilterOptions.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No hay recursos para filtrar.</p>
+        ) : null}
+      </Card>
+    )}
+  </>);
+
   return (
     <Layout>
       <div className="w-full">
@@ -4279,6 +4478,7 @@ ${reasonMessage}` : message,
                 planId={id}
                 plan={plan as any}
                 spaces={spaces as any[]}
+                viewControls={<><div className="flex flex-wrap items-center gap-2">{planningViewSelector}</div>{planningViewFilters}</>}
                 timelineProps={{ contestants, viewMode: timelineView, spaceVerticalMode, stageFilterIds,
                   resourceFilterIds, resourceSelectables: resourceFilterOptions, zones, spaces,
                   zoneResourceAssignments: zoneAssignmentsForTooltip, planResourceItemNameById,
@@ -4326,64 +4526,7 @@ ${reasonMessage}` : message,
                 <div className="flex items-center gap-3">
                   <h2 className="text-xl font-semibold">Visual Timeline</h2>
 
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant={
-                        timelineView === "contestants" ? "default" : "outline"
-                      }
-                      size="sm"
-                      onClick={() => setTimelineView("contestants")}
-                    >
-                      Por concursante
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={
-                        timelineView === "spaces" ? "default" : "outline"
-                      }
-                      size="sm"
-                      onClick={() => setTimelineView("spaces")}
-                    >
-                      Por plató y espacio
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={
-                        timelineView === "resources" ? "default" : "outline"
-                      }
-                      size="sm"
-                      onClick={() => setTimelineView("resources")}
-                    >
-                      Recursos
-                    </Button>
-                    {timelineView === "spaces" && (
-                      <div className="flex items-center gap-2 ml-3">
-                        <Button
-                          type="button"
-                          variant={
-                            spaceVerticalMode === "timeline"
-                              ? "default"
-                              : "outline"
-                          }
-                          size="sm"
-                          onClick={() => setSpaceVerticalMode("timeline")}
-                        >
-                          Timeline
-                        </Button>
-                        <Button
-                          type="button"
-                          variant={
-                            spaceVerticalMode === "list" ? "default" : "outline"
-                          }
-                          size="sm"
-                          onClick={() => setSpaceVerticalMode("list")}
-                        >
-                          Lista
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+                  {planningViewSelector}
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -4533,141 +4676,7 @@ ${reasonMessage}` : message,
                 </DialogContent>
               </Dialog>
 
-              {timelineView === "spaces" && (
-                <Card className="p-3">
-                  {zonesLoading ? (
-                    <p className="text-sm text-muted-foreground">Cargando platós...</p>
-                  ) : !Array.isArray(zones) || zones.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No hay platós</p>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="flex flex-wrap gap-2">
-                        {(zones as any[]).map((zone: any) => {
-                          const zoneId = Number(zone?.id);
-                          if (!Number.isFinite(zoneId)) return null;
-                          const checked = stageFilterIds.includes(zoneId);
-                          return (
-                            <Button
-                              key={zoneId}
-                              type="button"
-                              size="sm"
-                              variant={checked ? "default" : "outline"}
-                              onClick={() => toggleStageFilter(zoneId)}
-                            >
-                              {zone?.name ?? `Plató #${zoneId}`}
-                            </Button>
-                          );
-                        })}
-                      </div>
-                      <div>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setStageFilterIds([])}
-                          disabled={stageFilterIds.length === 0}
-                        >
-                          Limpiar filtro
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </Card>
-              )}
-
-              {timelineView === "resources" && (
-                <Card className="p-3 space-y-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Popover open={resourceSelectorOpen} onOpenChange={setResourceSelectorOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={resourceSelectorOpen}
-                          className="w-full justify-between md:w-[360px]"
-                        >
-                          {selectedResourceOptions.length > 0
-                            ? `${selectedResourceOptions.length} seleccionado(s)`
-                            : "Selecciona recursos"}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[360px] p-0" align="start">
-                        <Command>
-                          <CommandInput placeholder="Buscar recurso/persona/equipo..." />
-                          <CommandList>
-                            <CommandEmpty>Sin resultados.</CommandEmpty>
-                            <CommandGroup>
-                              {resourceFilterOptions.map((resource) => {
-                                const id = String(resource.id);
-                                const checked = resourceFilterIds.includes(id);
-                                const kindLabel =
-                                  resource.kind === "production"
-                                    ? "Producción"
-                                    : resource.kind === "editorial"
-                                      ? "Redacción"
-                                      : resource.kind === "itinerant_team"
-                                        ? "Itinerante"
-                                        : "Recurso";
-
-                                return (
-                                  <CommandItem
-                                    key={id}
-                                    value={`${resource.label} ${kindLabel}`}
-                                    onSelect={() => toggleResourceFilter(id)}
-                                  >
-                                    <Check
-                                      className={cn(
-                                        "mr-2 h-4 w-4",
-                                        checked ? "opacity-100" : "opacity-0",
-                                      )}
-                                    />
-                                    <span className="truncate">{resource.label}</span>
-                                  </CommandItem>
-                                );
-                              })}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setResourceFilterIds([])}
-                      disabled={resourceFilterIds.length === 0}
-                    >
-                      Limpiar
-                    </Button>
-                  </div>
-
-                  {selectedResourceOptions.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {selectedResourceOptions.map((option) => (
-                        <Badge key={String(option.id)} variant="secondary" className="gap-2">
-                          <span>{option.label}</span>
-                          <button
-                            type="button"
-                            className="text-xs opacity-80 hover:opacity-100"
-                            onClick={() => toggleResourceFilter(String(option.id))}
-                          >
-                            ×
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">Selecciona recursos</p>
-                  )}
-
-                  {resourceFilterOptions.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No hay recursos para filtrar.</p>
-                  ) : null}
-                </Card>
-              )}
+              {planningViewFilters}
 
               <FullscreenPlanningPanel
                 title="Planning"
