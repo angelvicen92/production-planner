@@ -14,9 +14,9 @@ import {buildAssistedPlanningView} from '../../client/src/lib/assisted-planning-
 import {collectAssistedDraftWarnings} from '../../client/src/lib/assisted-draft-warnings';
 
 type User={id:string;email:string;password:string;token:string};
-type Options={appUrl:string;url:string;anon:string;users:Record<string,User>;db:pg.Client;planId:number;directory:string;full:boolean;pass:(s:string)=>void;buildInput:()=>Promise<EngineInput>};
+type Options={appUrl:string;url:string;anon:string;users:Record<string,User>;db:pg.Client;planId:number;directory:string;full:boolean;pass:(s:string)=>void;buildInput:()=>Promise<EngineInput>;diagnostics:Record<string,unknown>};
 
-export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput}:Options){
+export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics}:Options){
  const path=`/api/plans/${planId}/assisted`;
  const api=async(suffix:string,method='GET',body?:unknown,role='production')=>{
   const response=await fetch(`${appUrl}${suffix}`,{method,headers:{'Content-Type':'application/json',...(role==='anon'?{}:{Authorization:`Bearer ${users[role].token}`})},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(180_000)});
@@ -83,7 +83,10 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
    await page.getByRole('button',{name:'Generar propuesta',exact:true}).click();const request=await requested;assert.equal(request.status(),202);const {runId}=await request.json();
    // Wait for the real product polling to expose the persisted proposal. No
    // forced focus, reload, API seeding or altered solver budgets rescue this UI.
-   await page.getByRole('button',{name:'Aplicar al borrador',exact:true}).waitFor({timeout:180_000});
+   await Promise.race([
+    page.getByRole('button',{name:'Aplicar al borrador',exact:true}).waitFor({timeout:180_000}),
+    page.getByText('No se pudo generar una propuesta con la selección actual. Revisa disponibilidad y conflictos.',{exact:true}).waitFor({timeout:180_000}).then(()=>{throw Error('Product UI reported a failed proposal run; inspect failedRuns SQL diagnostic');}),
+   ]);
    const run=await api(path+`/proposals/${runId}`);assert.equal(run.status,200);assert.equal(run.data.status,'success');const result=run.data.assisted_result_json??run.data.assistedResultJson;assert.equal(result.outcome,'PROPOSAL');
    const generationMs=Math.round(performance.now()-start);
    const adapter=adaptEngineInputToPlannerNextProblem(await buildInput());assert.equal(adapter.status,'SUPPORTED');if(adapter.status!=='SUPPORTED')throw Error('Invalid persisted input');
@@ -162,6 +165,12 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
   assert.deepEqual(await daily(),material);const restored=await state();assert.equal(Number(restored.activeStage.id),Number(final.activeStage.id));assert.equal(restored.draftFingerprint,final.draftFingerprint);
   pass('admin atomic rollback to S0 and redo to final accepted Stage');
   return {roleMatrix,s0:'PASS',stages,completed:stages.at(-1)!.completed,pageErrors,secondBrowserSession:'PASS',rollbackRedo:'PASS',searchPoliciesUnchanged:true};
- }catch(error){if(page)await page.screenshot({path:`${directory}/failure-real-ui.png`,fullPage:false}).catch(()=>{});throw error;}
+ }catch(error){
+  // Preserve the actual SQL run outcome before the disposable database is
+  // removed. No auth tokens, credentials or full private app logs are included.
+  diagnostics.failedRuns=(await db.query("SELECT id,status,message,started_at,updated_at,finished_at,assisted_result_json->>'outcome' AS outcome FROM public.planning_runs WHERE plan_id=$1 ORDER BY id",[planId])).rows;
+  if(page){diagnostics.workspaceText=await page.getByTestId('assisted-workspace').innerText().catch(()=>null);await page.screenshot({path:`${directory}/failure-real-ui.png`,fullPage:false}).catch(()=>{});}
+  throw error;
+ }
  finally{await browser.close();}
 }

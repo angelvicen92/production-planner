@@ -262,7 +262,9 @@
     "localNativeEvidence": "A2-ASSISTED-INTEGRATION-EVIDENCE.json",
     "localNativeStatus": "PASS",
     "localNativeStages": 10,
-    "localNativeObligations": 266
+    "localNativeObligations": 266,
+    "localNativeNodeVersion": "v20.20.2",
+    "nativeTransportCorrection": "Two event-loop turns before finish RPC; structured failure diagnostics; ten-stage uninstrumented Node 20 proof in integration Evidence"
   },
   "pendingRemote": [
     "Inspect original exported catalog and restored backup artifacts",

@@ -42,7 +42,7 @@ if(process.argv.includes('--app')){
  const owned:string[]=[];let network=false,gateway:http.Server|undefined,app:ChildProcess|undefined,db:pg.Client|undefined;
  const runtimeFiles=['server/storage.ts','server/assistedPlanningSnapshot.ts','server/assistedProposalService.ts','server/assistedPlanningService.ts','server/routes.ts','engine/planner-next/jointCompletionWitness.ts','engine/planner-next/exactItinerantPlan.ts','client/src/components/layout.tsx','client/src/components/planning/assisted-planning-workspace.tsx','script/demo/a2ImportRows.ts','script/demo/prepareA2Import.ts','script/demo/prepareA2Schema.ts','script/demo/smokeA2Integration.ts','script/demo/smokeA2Journey.ts','client/src/lib/assisted-planning-view.ts','client/src/lib/assisted-draft-warnings.ts'];
  const hashes=()=>Object.fromEntries(runtimeFiles.map(file=>[file,createHash('sha256').update(readFileSync(file)).digest('hex')]));
- const report:any={mode:'REAL_DISPOSABLE_PRODUCT_INTEGRATION',remoteWrites:0,images,requestedStages:full?10:2,startedAt:new Date().toISOString(),runtimeHashes:hashes(),checks:[],pending:['Connected Supabase catalog/backup adoption and original-row preservation','Published Replit runtime and user browser','Supabase Realtime/WebSocket transport']};
+ const report:any={mode:'REAL_DISPOSABLE_PRODUCT_INTEGRATION',nodeVersion:process.version,v8Version:process.versions.v8,remoteWrites:0,images,requestedStages:full?10:2,startedAt:new Date().toISOString(),runtimeHashes:hashes(),checks:[],pending:['Connected Supabase catalog/backup adoption and original-row preservation','Published Replit runtime and user browser','Supabase Realtime/WebSocket transport']};
  const pass=(name:string)=>{report.checks.push(name);console.log(`PASS ${name}`);};
  const cleanup=async()=>{
   if(app&&app.exitCode===null){app.kill('SIGTERM');await Promise.race([new Promise(r=>app!.once('exit',r)),delay(3000)]);if(app.exitCode===null)app.kill('SIGKILL');}
@@ -80,14 +80,18 @@ if(process.argv.includes('--app')){
   }
   pass('entire native application migration ledger');
   const restPort=start('rest',images.rest,3000,{PGRST_DB_URI:`postgres://authenticator:${password}@db:5432/postgres`,PGRST_DB_SCHEMAS:'public',PGRST_DB_ANON_ROLE:'anon',PGRST_JWT_SECRET:secret,PGRST_SERVER_PORT:'3000'});
+  const transport:any[]=[];report.transport=transport;
   gateway=http.createServer((req,res)=>{
    res.setHeader('Access-Control-Allow-Origin',appUrl);res.setHeader('Access-Control-Allow-Headers',req.headers['access-control-request-headers']??'authorization,apikey,content-type');res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,PATCH,DELETE,OPTIONS');
    if(req.method==='OPTIONS'){res.writeHead(204);res.end();return;}
    const path=req.url??'/',isAuth=path.startsWith('/auth/v1/'),isRest=path.startsWith('/rest/v1/');
    if(!isAuth&&!isRest){res.writeHead(404);res.end();return;}
+   const trace=path.startsWith('/rest/v1/rpc/')?{path,method:req.method,contentLength:req.headers['content-length']??null,receivedBytes:0,requestEnded:false,upstreamFinished:false,responseStatus:null as number|null,error:null as string|null}:null;
+   if(trace){transport.push(trace);req.on('data',chunk=>trace.receivedBytes+=chunk.length);req.once('end',()=>trace.requestEnded=true);}
    const port=isAuth?authPort:restPort,prefix=isAuth?'/auth/v1':'/rest/v1';
-   const upstream=http.request({hostname:'127.0.0.1',port,path:path.slice(prefix.length),method:req.method,headers:{...req.headers,host:`127.0.0.1:${port}`}},response=>{for(const [k,v] of Object.entries(response.headers))if(v!==undefined)res.setHeader(k,v);res.writeHead(response.statusCode??502);response.pipe(res);});
-   upstream.on('error',()=>{res.writeHead(502);res.end();});req.pipe(upstream);
+   const upstream=http.request({hostname:'127.0.0.1',port,path:path.slice(prefix.length),method:req.method,headers:{...req.headers,host:`127.0.0.1:${port}`}},response=>{if(trace)trace.responseStatus=response.statusCode??502;for(const [k,v] of Object.entries(response.headers))if(v!==undefined)res.setHeader(k,v);res.writeHead(response.statusCode??502);response.pipe(res);});
+   upstream.once('finish',()=>{if(trace)trace.upstreamFinished=true;});
+   upstream.on('error',error=>{if(trace)trace.error=error.message;res.writeHead(502);res.end();});req.pipe(upstream);
   });
   await new Promise<void>(r=>gateway!.listen(gatewayPort,'127.0.0.1',r));
   await eventually(async()=>assert.equal((await fetch(`${url}/rest/v1/`,{headers:{apikey:anon}})).status,200));
@@ -126,7 +130,7 @@ if(process.argv.includes('--app')){
   assert.equal(actual.status,'SUPPORTED');assert.equal(expected.status,'SUPPORTED');if(actual.status==='SUPPORTED'&&expected.status==='SUPPORTED')assert.deepEqual(actual.problem,expected.problem);
   assert.equal((await db.query('SELECT count(*) AS n FROM public.plan_breaks WHERE plan_id=$1',[dataset.input.planId])).rows[0].n,'0');
   pass('real storage/input adapter canon after GET day; no legacy breaks');
-  report.journey=await runA2BrowserJourney({appUrl,url,anon,users,db,planId:dataset.input.planId,directory,full,pass,buildInput:()=>buildEngineInput(dataset.input.planId,storage)});
+  report.diagnostics={};report.journey=await runA2BrowserJourney({appUrl,url,anon,users,db,planId:dataset.input.planId,directory,full,pass,diagnostics:report.diagnostics,buildInput:()=>buildEngineInput(dataset.input.planId,storage)});
   assert.deepEqual(hashes(),report.runtimeHashes,'runtime sources changed during integration rehearsal');
   report.status='PASS';report.finishedAt=new Date().toISOString();
  }catch(error){report.status='FAIL';report.error=(error instanceof Error?error.stack??error.message:String(error)).replaceAll(password,'[local secret]').replaceAll(secret,'[local secret]');process.exitCode=1;console.error(report.error);}

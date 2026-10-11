@@ -17,7 +17,7 @@ Sin `--full`, comprueba S0, S1 y S2. El comando crea tres contenedores y una red
 
 Se ejecutan todas las migraciones de aplicación hasta 089, sin editar históricos, y las migraciones propias de GoTrue. Los únicos primitives de plataforma construidos por el harness son roles PostgreSQL, `auth.uid()`, extensiones y grants de plataforma. El gateway solo enruta HTTP a GoTrue/PostgREST. No hay RPC simulado, interceptación de requests, horarios semilla ni servicio de planificación alternativo. El bundle de adopción para una base con drift tiene sus pruebas separadas: instalar el ledger fresco no acredita aplicar ese bundle al catálogo remoto existente.
 
-El candidato local completó S0–S10: S1 tardó 84,638 s y la suma de generación de las diez etapas fue 105,819 s. La repetición anterior, antes del ajuste de nombres, dio 108,713 s / 127,693 s y el mismo fingerprint final. Son medidas locales, no un gate de latencia de Replit. PostgreSQL real utilizado: 17.11; imágenes exactas y hashes del código/ledger constan en Evidence.
+El candidato actual, sin instrumentación, completó S0–S10 en v20.20.2: S1 tardó 101.756 s y la suma de generación fue 123.244 s. El ensayo anterior en Node 24 dio 84,638 s / 105,819 s. La repetición anterior, antes del ajuste de nombres, dio 108,713 s / 127,693 s y el mismo fingerprint final. Son medidas locales, no un gate de latencia de Replit. PostgreSQL real utilizado: 17.11; imágenes exactas y hashes del código/ledger constan en Evidence.
 
 El job `a2-assisted-integration` repite el recorrido de diez etapas en CI y publica únicamente el informe y las capturas. Capturas reales: [S1](integration/S1-real-ui.png), [S10](integration/S10-real-ui.png).
 
@@ -52,6 +52,10 @@ El optimizador A2 no tiene un baseline heredado inventado: restaurar defaults re
 La firma de los nuevos witnesses JOINT_COMPLETION cambia para poder persistirse como JSON. El revalidador conserva las firmas legacy que aún coinciden con su contenido original y siempre ejecuta las comprobaciones semánticas; un witness viejo cuya firma ya quedó inválida al persistirse sigue siendo `STALE` y debe recertificarse. No se reescriben runs ni Stages existentes. El ensayo no certifica por separado el replay de cada familia auxiliar de witnesses al margen del recorrido JOINT_COMPLETION completo.
 
 La comparación de preparaciones también tenía un falso rechazo en memoria: en S5, las 17 preparaciones de ronda protegidas tenían 0 coincidencias por bytes y 17 por contenido. Al reutilizar correctamente el witness completo, cambian 85 horarios que todavía no se habían aceptado; las huellas de S1–S5 y todas las colocaciones protegidas permanecen iguales. El fingerprint final pasa de `561738ed…` a `a797ee88…`. Dos recorridos actuales de servicios dan ese mismo resultado, 266/266 y 20 auditorías PASS; las 266 filas del primer recorrido nativo coinciden literalmente con él. La comprobación exige equivalencia con la referencia actual y determinismo; la referencia histórica se conserva íntegra en Evidence.
+
+### Transporte de propuestas en Node 20
+
+El primer job nativo de CI sobre `f9be233` falló después de S0, aunque el gate productivo pasó. El control negativo local confirmó `write EPIPE` antes de que llegara `assisted_finish_proposal`: la búsqueda síncrona impedía procesar el cierre de una conexión HTTP ociosa. Dos vueltas de `setImmediate` antes del RPC permiten procesar esos cierres; el run conserva ahora message/code/details si falla. No hay retries, ampliación del límite de 180 s ni cambios de búsqueda. Tres pruebas de sockets reales reproducen el fallo y pasan con el cambio; el recorrido nativo final pasa sin instrumentación. Los fallos precedentes se conservan en Evidence. El smoke registra metadatos del transporte y el diagnóstico SQL de runs fallidos, y se detiene cuando la UI declara error.
 
 ## Smoke remoto breve, pendiente de ejecución
 

@@ -14,7 +14,13 @@ import type {
 process.env.SUPABASE_URL ??= "http://localhost";
 process.env.SUPABASE_SERVICE_ROLE_KEY ??= "test-service-role-key";
 process.env.SUPABASE_ANON_KEY ??= "test-anon-key";
-const { AssistedProposalError, AssistedProposalService, analyticalFutureEligibleTaskIds, evaluateAcceptedViolationDelta, projectPlannerViolations } = await import("./assistedProposalService");
+const { AssistedProposalError, AssistedProposalService, assistedProposalFailureMessage, analyticalFutureEligibleTaskIds, evaluateAcceptedViolationDelta, projectPlannerViolations } = await import("./assistedProposalService");
+
+test("persisted RPC failure retains the diagnostic instead of object coercion",()=>{
+  assert.equal(assistedProposalFailureMessage({message:'TypeError: fetch failed',code:'',details:'cause: EPIPE'}),'TypeError: fetch failed · cause: EPIPE');
+  assert.equal(assistedProposalFailureMessage({message:'constraint rejected',code:'23514',details:'baseline shape'}),'constraint rejected · 23514 · baseline shape');
+  assert.equal(assistedProposalFailureMessage(new Error('cancelled')),'cancelled');
+});
 
 const planId = 701;
 const request = { selector: { kind: "TASK_IDS" as const, taskIds: [101] }, includePrerequisites: false,

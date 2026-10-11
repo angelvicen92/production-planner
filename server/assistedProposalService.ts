@@ -52,6 +52,15 @@ const mapDbError = (error: any): never => {
   throw error;
 };
 
+export function assistedProposalFailureMessage(failure:unknown):string {
+  if(failure instanceof Error)return failure.message;
+  if(failure&&typeof failure==='object'){
+    const {message,code,details}=failure as Record<string,unknown>;
+    if(typeof message==='string')return [message,...[code,details].filter((value):value is string=>typeof value==='string'&&value.length>0)].join(' · ');
+  }
+  return String(failure);
+}
+
 type DbResult<T = any> = Promise<{ data?: T | null; error: any }>;
 export interface AssistedProposalRunAccess {
   create(values: Record<string, unknown>): DbResult<{ id: number }>;
@@ -147,7 +156,7 @@ export class AssistedProposalService {
     catch(error) { if(error instanceof ScopeResolutionError) throw new AssistedProposalError(error.code,422); throw error; }
     const {data,error}=await this.runs.create({plan_id:planId,status:"running",engine:"planner-next",execution_kind:"ASSISTED_SCOPE",assisted_session_id:session.id,base_stage_id:base.id,config_revision_id:session.currentConfigRevisionId,scope_json:{selector:request.selector,metadata:resolution.scope.metadata},scope_task_ids_json:resolution.productTaskIds,include_prerequisites:request.includePrerequisites,source_draft_fingerprint:session.draftFingerprint});
     if(error) throw error; const runId=Number(data!.id);
-    this.defer(()=>void this.run(planId,runId).catch(async failure=>{await this.runs.fail(planId,runId,failure instanceof Error?failure.message:String(failure));}));
+    this.defer(()=>void this.run(planId,runId).catch(async failure=>{await this.runs.fail(planId,runId,assistedProposalFailureMessage(failure));}));
     return {runId};
   }
 
@@ -303,7 +312,14 @@ export class AssistedProposalService {
     return this.finish(planId,run,result);
   }
 
-  private async finish(planId:number,run:any,result:AssistedProposalRunResultV1){const {error}=await this.runs.finish(planId,Number(run.id),result);if(error)throw error;return result;}
+  private async finish(planId:number,run:any,result:AssistedProposalRunResultV1){
+    // A synchronous search can outlive idle HTTP connections. Drain pending
+    // socket-close callbacks before reusing the Node 20 fetch pool for this RPC.
+    // Two turns include the close-callback phase after the first check phase.
+    await new Promise<void>(resolve=>setImmediate(resolve));
+    await new Promise<void>(resolve=>setImmediate(resolve));
+    const {error}=await this.runs.finish(planId,Number(run.id),result);if(error)throw error;return result;
+  }
   async get(planId:number,runId:number){const {data,error}=await this.runs.find(planId,runId);if(error)throw error;if(!data)throw new AssistedProposalError("RUN_NOT_FOUND",404);return data;}
   async apply(planId:number,runId:number,expectedDraftFingerprint:string,expectedBaseStageId:number){const {error}=await this.runs.apply({p_plan_id:planId,p_run_id:runId,p_expected_fingerprint:expectedDraftFingerprint,p_expected_base:expectedBaseStageId});if(error)mapDbError(error);return this.get(planId,runId);}
 }
