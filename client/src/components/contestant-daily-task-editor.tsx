@@ -16,6 +16,8 @@ export type DraftTask = {
   startPlanned: string;
   endPlanned: string;
   durationOverride: string;
+  participantMarginBeforeMinutes: string;
+  participantMarginAfterMinutes: string;
   comment1Text: string;
   comment1Color: string;
   comment2Text: string;
@@ -284,6 +286,10 @@ export const ContestantDailyTaskEditor = React.memo(function ContestantDailyTask
         {locked ? <div className="text-xs text-muted-foreground pt-2">Locked</div> : (
           <Input type="number" value={draft.durationOverride} className="mt-2" onChange={(e) => handleDurationChange(e.target.value)} />
         )}
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div><Label>Margen antes (vacío = heredado)</Label><Input type="number" min={0} value={draft.participantMarginBeforeMinutes} disabled={locked} onChange={(e)=>onChangeDraft((prev)=>({...prev,participantMarginBeforeMinutes:e.target.value}))}/></div>
+        <div><Label>Margen después (vacío = heredado)</Label><Input type="number" min={0} value={draft.participantMarginAfterMinutes} disabled={locked} onChange={(e)=>onChangeDraft((prev)=>({...prev,participantMarginAfterMinutes:e.target.value}))}/></div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="space-y-2">

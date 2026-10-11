@@ -69,6 +69,17 @@ test("synthetic fixture is accepted by both canonical preflights", () => {
   assert.equal(result.problem.tasks.filter((task) => task.kind === "main" || task.kind === "vocal").every((task) => task.coachId === "plan-resource:501"), true);
 });
 
+test("participant transition dual representation is lossless and conflict-safe",()=>{
+  for(const value of [5,0]){const input=createSupportedEngineInputAdapterFixture();input.defaultParticipantTransitionMinutes=value;input.plannerNext!.participantTransitionMinutes=value;
+    const result=supported(input);assert.equal(result.problem.participantTransitionMinutes,value);assert.equal(preflightEngineInputForPlannerNext(input).diagnostics.transitionConfigurationComplete,true);}
+  const conflict=createSupportedEngineInputAdapterFixture();conflict.defaultParticipantTransitionMinutes=5;conflict.plannerNext!.participantTransitionMinutes=7;
+  assert.ok(preflightEngineInputForPlannerNext(conflict).reasonCodes.includes("CONFLICTING_PARTICIPANT_TRANSITION_CONFIGURATION"));
+  const nested=createSupportedEngineInputAdapterFixture();nested.plannerNext!.participantTransitionMinutes=5;delete nested.defaultParticipantTransitionMinutes;assert.equal(supported(nested).problem.participantTransitionMinutes,5);
+  const topOnly=createSupportedEngineInputAdapterFixture();topOnly.defaultParticipantTransitionMinutes=5;delete (topOnly as any).plannerNext;
+  const preflight=preflightEngineInputForPlannerNext(topOnly);assert.equal(preflight.diagnostics.transitionConfigurationComplete,true);
+  assert.ok(preflight.reasonCodes.includes("MISSING_TRANSITION_CONFIGURATION"));
+});
+
 test("technical-chain contract is preflighted and projected losslessly",()=>{
  const input=createSupportedEngineInputAdapterFixture(),before=clone(input);input.tasks.push({...input.tasks.find(task=>task.id===105)!,id:106,dependsOnTaskIds:[105]});
  input.technicalChains=[{id:"camera-chain",orderedTaskIds:[105,106],phases:[[105],[106]],adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:[503]}];

@@ -18,6 +18,10 @@ export function firstParticipantObligation(main: ScheduledTask, structural: Sche
   const contract=index.get(main.id); const first=contract?.beforeTaskIds[0];
   return first ? structural.find(t=>t.id===first)?.start ?? main.start : main.start;
 }
+export function firstParticipantObligationTask(main: Task, problem: PlannerNextProblem): Task {
+  const first=anchoredAccompanimentIndex(problem).get(main.id)?.beforeTaskIds[0];
+  return first ? problem.tasks.find(task=>task.id===first) ?? main : main;
+}
 
 /** Builds and validates the complete operation. Internal phases are deliberately
  * omitted from each other's canonical placement check: INCLUDED applies only to

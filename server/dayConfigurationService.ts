@@ -18,6 +18,7 @@ const mapPlan = (p: PlanRow) => ({
   revisionId: p.current_config_revision_id == null ? null : Number(p.current_config_revision_id),
   workday: { effective: { start: p.work_start, end: p.work_end }, baseline: { start: p.work_baseline_start, end: p.work_baseline_end }, source: p.work_config_source, override: { by: p.work_override_by, at: p.work_override_at } },
   meal: { effective: { start: p.meal_start, end: p.meal_end, mode: p.meal_mode }, baseline: { start: p.meal_baseline_start, end: p.meal_baseline_end, mode: p.meal_baseline_mode }, source: p.meal_config_source, override: { by: p.meal_override_by, at: p.meal_override_at } },
+  participantTransition:{effective:Number(p.participant_transition_minutes),baseline:Number(p.participant_transition_baseline_minutes),source:p.participant_transition_config_source,override:{by:p.participant_transition_override_by,at:p.participant_transition_override_at}},
 });
 
 const provenance = (authority: string) => ({ authority, authorityContractVersion: 1 });
@@ -56,14 +57,15 @@ export async function initializeDayConfigurationRevision(planId: number, actorId
 export async function previewDayConfigurationRefresh(planId: number) {
   const [{ data: p, error: pe }, { data: g, error: ge }] = await Promise.all([
     supabaseAdmin.from("plans").select("*").eq("id", planId).single(),
-    supabaseAdmin.from("program_settings").select("default_work_start,default_work_end,meal_start,meal_end,meal_mode").eq("id", 1).single(),
+    supabaseAdmin.from("program_settings").select("default_work_start,default_work_end,meal_start,meal_end,meal_mode,default_participant_transition_minutes").eq("id", 1).single(),
   ]);
   if (pe || !p) throw Object.assign(new Error("PLAN_NOT_FOUND"), { status: 404, cause: pe });
   if (ge || !g) throw ge;
   const current = mapPlan(p);
-  return { ...current, generalCandidate: { workday: { start: g.default_work_start, end: g.default_work_end }, meal: { start: g.meal_start, end: g.meal_end, mode: g.meal_mode } }, effects: {
+  return { ...current, generalCandidate: { workday: { start: g.default_work_start, end: g.default_work_end }, meal: { start: g.meal_start, end: g.meal_end, mode: g.meal_mode },participantTransitionMinutes:Number(g.default_participant_transition_minutes) }, effects: {
     WORKDAY_WINDOW: p.work_config_source === "LEGACY_BACKFILL" ? "REQUIRES_EXPLICIT_ADOPTION" : p.work_config_source === "DAY_OVERRIDE" ? "UPDATE_BASELINE_KEEP_EFFECTIVE" : "UPDATE_BASELINE_AND_EFFECTIVE",
     GLOBAL_MEAL_BREAK: p.meal_config_source === "LEGACY_BACKFILL" ? "REQUIRES_EXPLICIT_ADOPTION" : p.meal_config_source === "DAY_OVERRIDE" ? "UPDATE_BASELINE_KEEP_EFFECTIVE" : "UPDATE_BASELINE_AND_EFFECTIVE",
+    PARTICIPANT_TRANSITION:p.participant_transition_config_source==="LEGACY_BACKFILL"?"REQUIRES_EXPLICIT_ADOPTION":p.participant_transition_config_source==="DAY_OVERRIDE"?"UPDATE_BASELINE_KEEP_EFFECTIVE":"UPDATE_BASELINE_AND_EFFECTIVE",
     OPTIMIZATION: "VALIDATED_BY_OPTIMIZER_PREVIEW",
   } };
 }
@@ -72,10 +74,12 @@ function candidateInput(input: EngineInput, plan: PlanRow, general: PlanRow, ope
   let start = String(plan.work_start), end = String(plan.work_end);
   let mealStart = String(plan.meal_start), mealEnd = String(plan.meal_end);
   let mealMode = String(plan.meal_mode) as EngineInput["mealMode"];
+  let participantTransitionMinutes=Number(plan.participant_transition_minutes);
   if (operation === "EDIT") {
     const edit = payload as DayConfigEdit;
     if (edit.workday) ({ start, end } = edit.workday);
     if (edit.meal) ({ start: mealStart, end: mealEnd, mode: mealMode } = edit.meal);
+    if(edit.participantTransitionMinutes!==undefined)participantTransitionMinutes=edit.participantTransitionMinutes;
   } else if (operation === "RESTORE") {
     const capability = (payload as DayConfigRestore).capability;
     if (capability === "WORKDAY_WINDOW") {
@@ -83,12 +87,15 @@ function candidateInput(input: EngineInput, plan: PlanRow, general: PlanRow, ope
     } else if (capability === "GLOBAL_MEAL_BREAK") {
       mealStart = String(plan.meal_baseline_start); mealEnd = String(plan.meal_baseline_end);
       mealMode = String(plan.meal_baseline_mode) as EngineInput["mealMode"];
+    } else if(capability==="PARTICIPANT_TRANSITION"){
+      participantTransitionMinutes=Number(plan.participant_transition_baseline_minutes);
     }
   } else {
     const refresh = payload as DayConfigRefresh;
     const selected = new Set(refresh.capabilities);
     const adoptWork = plan.work_config_source !== "LEGACY_BACKFILL" || refresh.legacyTreatment === "ADOPT_GENERAL_AS_INHERITED";
     const adoptMeal = plan.meal_config_source !== "LEGACY_BACKFILL" || refresh.legacyTreatment === "ADOPT_GENERAL_AS_INHERITED";
+    const adoptParticipant=plan.participant_transition_config_source!=="LEGACY_BACKFILL"||refresh.legacyTreatment==="ADOPT_GENERAL_AS_INHERITED";
     if (selected.has("WORKDAY_WINDOW") && adoptWork && plan.work_config_source !== "DAY_OVERRIDE") {
       start = String(general.default_work_start); end = String(general.default_work_end);
     }
@@ -96,14 +103,15 @@ function candidateInput(input: EngineInput, plan: PlanRow, general: PlanRow, ope
       mealStart = String(general.meal_start); mealEnd = String(general.meal_end);
       mealMode = String(general.meal_mode) as EngineInput["mealMode"];
     }
+    if(selected.has("PARTICIPANT_TRANSITION")&&adoptParticipant&&plan.participant_transition_config_source!=="DAY_OVERRIDE")participantTransitionMinutes=Number(general.default_participant_transition_minutes);
   }
-  return { ...input, workDay: { start, end }, meal: { start: mealStart, end: mealEnd }, mealWindow: { start: mealStart, end: mealEnd }, mealMode };
+  return { ...input, workDay: { start, end }, meal: { start: mealStart, end: mealEnd }, mealWindow: { start: mealStart, end: mealEnd }, mealMode,defaultParticipantTransitionMinutes:participantTransitionMinutes };
 }
 
 export async function applyDayConfigurationOperation(planId: number, actorId: string, operation: Operation, payload: OperationPayload, repository: IStorage = storage) {
   const [{ data: plan, error: planError }, { data: general, error: generalError }, { data: optimizerState, error: optimizerStateError }] = await Promise.all([
     supabaseAdmin.from("plans").select("*").eq("id", planId).single(),
-    supabaseAdmin.from("program_settings").select("default_work_start,default_work_end,meal_start,meal_end,meal_mode").eq("id", 1).single(),
+    supabaseAdmin.from("program_settings").select("default_work_start,default_work_end,meal_start,meal_end,meal_mode,default_participant_transition_minutes").eq("id", 1).single(),
     supabaseAdmin.from("plan_optimizer_snapshots").select("baseline_snapshot").eq("plan_id", planId).single(),
   ]);
   if (planError || !plan) throw Object.assign(new Error("PLAN_NOT_FOUND"), { status: 404, cause: planError });

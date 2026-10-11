@@ -21,13 +21,18 @@ test("A2 source configuration materializes all effective source decisions", () =
   });
   assert.deepEqual(config.unresolvedCreationInputs, []);
   assert.deepEqual(config.participantAvailability.C01, { start: "09:00", end: "15:30" });
-  assert.equal(config.participantAvailability.C19.end, "18:40");
+  assert.equal(config.participantAvailability.C19.end, "19:00");
+  for (let index=2;index<=19;index++) assert.equal(config.participantAvailability[`C${String(index).padStart(2,"0")}`].end,"19:00");
+  const template=createCanonicalFullA2Template();
+  assert.equal(template.spaces.find(space=>space.id==="styling")?.capacityKnown,1);
+  assert.equal(template.taskTypes.ESTILISMO_SALIDA.participantMarginAfterMinutes,0);
+  assert.equal(template.taskTypes.OUT.participantMarginBeforeMinutes,0);
   assert.equal(config.transportPolicy.arrival.minGapMinutes, 30);
   assert.deepEqual(config.transportPolicy.arrival, { targetGroupSize: 3, maximumGroupSize: 3, minGapMinutes: 30, groupingWeight: 3 });
   assert.deepEqual(config.transportPolicy.departure, { targetGroupSize: 1, maximumGroupSize: 6, minGapMinutes: 20, groupingWeight: 3 });
   assert.equal(config.meals.operational.realityDurationMinutes, 75);
   assert.equal(config.meals.operational.coachDurationMinutes, 45);
-  assert.deepEqual(createCanonicalFullA2Template().requiredCreationInputs, config.unresolvedCreationInputs);
+  assert.deepEqual(template.requiredCreationInputs, config.unresolvedCreationInputs);
 });
 
 test("A2 resolved source configuration contains no human schedule ordering or task timing", () => {

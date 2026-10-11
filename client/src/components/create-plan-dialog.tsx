@@ -39,6 +39,7 @@ export function CreatePlanDialog() {
     createPlan.mutate({...ordinary,configuration:{
       workday:overrideWork?{intent:"OVERRIDE",value:{start:workStart,end:workEnd}}:{intent:"INHERIT"},
       meal:overrideMeal?{intent:"OVERRIDE",value:{start:mealStart,end:mealEnd,mode:mealMode === "global_hard_break" ? "global_hard_break" : "flexible_meal_window"}}:{intent:"INHERIT"},
+      participantTransition:{intent:"INHERIT"},
     }}, { onSuccess: () => { setOpen(false); setOverrideWork(false); setOverrideMeal(false); form.reset(emptyForm); } });
   }
 

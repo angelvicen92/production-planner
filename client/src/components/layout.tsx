@@ -105,7 +105,7 @@ export function Layout({ children }: LayoutProps) {
   ];
 
   const shouldOverlayDesktop = isSidebarCollapsed && !isSidebarPinned && isSidebarHovered;
-  const desktopMainPaddingClass = isSidebarPinned && !isSidebarCollapsed ? "lg:pl-64" : "lg:pl-16";
+  const desktopMainPaddingClass = !isSidebarCollapsed ? "lg:pl-64" : "lg:pl-16";
 
   return (
     <div className="min-h-screen bg-background">

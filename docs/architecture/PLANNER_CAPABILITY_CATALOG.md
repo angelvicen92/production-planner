@@ -13,6 +13,16 @@
 
 ### Cómo leer el catálogo
 
+**Entrega A2 del PR #1105 (pendiente de merge).** El árbol publicable contiene
+continuación certificada por las autoridades canónicas, persistencia por jornada
+y recomendación de alcance para el recorrido A2 de diez etapas. Ver
+[estado y límites](../demo/DELIVERY-STATUS.md). El canon no se reduce y las
+protecciones aceptadas permanecen inmutables. La carga y el ensayo Supabase/UI
+son gates remotos pendientes; los resultados locales no los sustituyen.
+Los nuevos diagnósticos experimentales ASST-010/CP-SAT quedan fuera de esta entrega.
+El ensayo histórico ASST-010 permanece bloqueado y conserva sus assertions en
+el dispatch diagnóstico; no integra el gate de la demo SPACE de diez etapas.
+
 La traza empleada es **fuente/requisito → autoridad productiva → `EngineInput` → preflight/adapter → Planner Next/ORC → validación → test/benchmark/Evidence → assisted → limitación**. Las dimensiones son independientes: una implementación puede estar activa y a la vez tener integración assisted parcial. `OFFICIAL` se reserva para contratos vinculados explícitamente por documentación de cobertura o por las Fuentes oficiales del proyecto; `DERIVED` identifica conducta deducida del código. `UNVERIFIED` no equivale a roto.
 
 ## Summary matrix

@@ -1,3 +1,4 @@
+import { participantGapMinutes } from "./participantTransition";
 import type { PlannerNextProblem, Task } from "./contracts";
 import { PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES } from "./integration/plannerNextCapabilities";
 
@@ -75,13 +76,14 @@ export function effectiveCoachTransitionMinutes(
 export function latestFeederEndBeforeMain(
   problem: PlannerNextProblem,
   feeder: Task,
+  nextParticipantTask: Task,
   mainSpaceId: string,
   mainStart: number,
   firstParticipantObligation: number,
 ): number {
   const participantDeadline =
     firstParticipantObligation
-    - problem.participantTransitionMinutes;
+    - participantGapMinutes(problem, feeder, nextParticipantTask);
 
   const coachDeadline = feeder.coachId === undefined
     ? Number.POSITIVE_INFINITY

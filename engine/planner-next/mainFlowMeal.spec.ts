@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { buildTimeline, candidateCuts, fallbackCandidateCuts, mainFlowMealAligned, mainFlowMealPolicy,
-  preferredCandidateCuts } from "./mainFlowMeal";
+  materializeMainFlowOperationalMeals, preferredCandidateCuts } from "./mainFlowMeal";
 import { mainFlowMealScenario } from "./scenarios/mainFlowMealScenario";
 import { planMainFlowAndFeeders } from "./planMainFlowAndFeeders";
 import { preflight, validatePlan } from "./validate";
@@ -48,6 +48,26 @@ describe("NEXT-017 main flow meal",()=>{
     const arbitraryGap=validatePlan({...p,operationalMealPolicies:undefined},scheduled);
     assert.equal(arbitraryGap.hardValid,false);
     assert.ok(arbitraryGap.blockViolationCount>0);
+  });
+
+  it("revalidates a structural Main geometry with its selected operational meal instead of the preferred meal",()=>{
+    const availability=[{start:720,end:1020}];
+    const p:PlannerNextProblem={day:{start:720,end:1020},spaces:[{id:"main",availability}],resources:[],
+      participants:[{id:"a",availability},{id:"b",availability}],coaches:[],tasks:[
+        {id:"first",kind:"main",participantId:"a",duration:60,spaceId:"main",dependencies:[],blockKey:"a"},
+        {id:"second",kind:"main",participantId:"b",duration:60,spaceId:"main",dependencies:[],blockKey:"b"}],
+      mainFlow:{spaceId:"main",preferredEnd:780,continuity:"REQUIRED",maxBlocksByKey:1,minTasksPerBlock:1},
+      participantTransitionMinutes:5,resourceTransitionMinutes:0,budget:{bestK:1,maxBacktracks:0,maxPatterns:2,maxBranchExpansions:10},
+      operationalMealPolicies:[{id:"main-pause",window:{start:780,end:990},duration:75,resourceIds:[],spaceIds:["main"]}]};
+    const scheduled=[{...p.tasks[0]!,start:775,end:835},{...p.tasks[1]!,start:910,end:970}] as ScheduledTask[];
+    const selected=materializeMainFlowOperationalMeals(p,835),preferred=materializeMainFlowOperationalMeals(p,780);
+    assert.deepEqual(selected,[{id:"main-pause",resourceIds:[],spaceIds:["main"],duration:75,start:835,end:910}]);
+    const accepted=validatePlan(p,scheduled,[],[],[],[],[],[],selected);
+    assert.equal(accepted.hardValid,true);assert.ok(!accepted.reasonCodes.includes("OPERATIONAL_MEAL_VIOLATION"));
+    assert.ok(!accepted.reasonCodes.includes("BLOCK_VIOLATION"));
+    const rejected=validatePlan(p,scheduled,[],[],[],[],[],[],preferred);
+    assert.equal(rejected.hardValid,false);assert.ok(rejected.reasonCodes.includes("OPERATIONAL_MEAL_VIOLATION"));
+    assert.ok(rejected.reasonCodes.includes("BLOCK_VIOLATION"));
   });
 
   it("preserves historical space policy, canonicalizes an equivalent pair, and rejects a contradiction",()=>{

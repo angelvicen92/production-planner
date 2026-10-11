@@ -16,10 +16,9 @@ import { fingerprint } from "../engine/planner-next/fingerprint";
 import { createViolationKey, type StageViolation } from "../shared/assistedStageValidation";
 import type { ValidationViolationDetail } from "../engine/planner-next/contracts";
 import { affectedTasksUnchanged, resolveActiveStageLineage } from "./assistedAcceptedBaseline";
-import { mainFlowMealPolicy } from "../engine/planner-next/mainFlowMeal";
 import { materializeItinerantUnitAssignment } from "../engine/planner-next/itinerantUnitAssignment";
 import { roundPreparationId } from "../engine/planner-next/roundSynchronization";
-import type { FutureStructuralWitnessV1 } from "../engine/planner-next/anonymousPipelineWitness";
+import { structuralWitnessIdentity, type FutureStructuralWitness } from "../engine/planner-next/anonymousPipelineWitness";
 
 export function projectPlannerViolations(details:readonly ValidationViolationDetail[],identityMap:readonly {namespace:string;sourceId:string;canonicalId:string}[]):StageViolation[]{
   const map=(namespace:string,ids:readonly string[])=>ids.map(id=>{const acceptedNamespaces=namespace==="resource"?["resource","plan-resource","resource-item"]:[namespace];const matches=identityMap.filter(item=>acceptedNamespaces.includes(item.namespace)&&item.canonicalId===id);const sourceId=Number(matches[0]?.sourceId);
@@ -51,6 +50,15 @@ const mapDbError = (error: any): never => {
   if (code) throw new AssistedProposalError(code, code === "RUN_NOT_FOUND" ? 404 : code === "RUN_HAS_NO_PROPOSAL" ? 422 : 409);
   throw error;
 };
+
+export function assistedProposalFailureMessage(failure:unknown):string {
+  if(failure instanceof Error)return failure.message;
+  if(failure&&typeof failure==='object'){
+    const {message,code,details}=failure as Record<string,unknown>;
+    if(typeof message==='string')return [message,...[code,details].filter((value):value is string=>typeof value==='string'&&value.length>0)].join(' · ');
+  }
+  return String(failure);
+}
 
 type DbResult<T = any> = Promise<{ data?: T | null; error: any }>;
 export interface AssistedProposalRunAccess {
@@ -147,7 +155,7 @@ export class AssistedProposalService {
     catch(error) { if(error instanceof ScopeResolutionError) throw new AssistedProposalError(error.code,422); throw error; }
     const {data,error}=await this.runs.create({plan_id:planId,status:"running",engine:"planner-next",execution_kind:"ASSISTED_SCOPE",assisted_session_id:session.id,base_stage_id:base.id,config_revision_id:session.currentConfigRevisionId,scope_json:{selector:request.selector,metadata:resolution.scope.metadata},scope_task_ids_json:resolution.productTaskIds,include_prerequisites:request.includePrerequisites,source_draft_fingerprint:session.draftFingerprint});
     if(error) throw error; const runId=Number(data!.id);
-    this.defer(()=>void this.run(planId,runId).catch(async failure=>{await this.runs.fail(planId,runId,failure instanceof Error?failure.message:String(failure));}));
+    this.defer(()=>void this.run(planId,runId).catch(async failure=>{await this.runs.fail(planId,runId,assistedProposalFailureMessage(failure));}));
     return {runId};
   }
 
@@ -217,7 +225,7 @@ export class AssistedProposalService {
     const acceptedBaseline=(await Promise.all(lineage.map(async origin=>(await this.storage.listPlanningAcceptedExceptions(origin.id)).filter(exception=>exception.status==="ACTIVE"&&affectedTasksUnchanged(origin.snapshotJson,baseSnapshot,exception.affectedTaskIdsJson))))).flat();
     const canonicalIds=(namespace:string,ids:readonly number[])=>ids.map(id=>{const match=adapter.identityMap.find(item=>item.namespace===namespace&&Number(item.sourceId)===id);if(!match)throw new Error(`UNPROJECTABLE_VALIDATION_IDENTITY:${namespace}:${id}`);return match.canonicalId;});
     const baselineViolations=acceptedBaseline.map(item=>({ruleCode:item.ruleCode,severity:item.severity as "HARD"|"REQUIRED",affectedTaskIds:canonicalIds("task",item.affectedTaskIdsJson),affectedResourceIds:canonicalIds("resource",item.affectedResourceIdsJson??[]),affectedSpaceIds:canonicalIds("space",item.affectedSpaceIdsJson??[]),dimensions:(item.detailsJson as any)?.dimensions??{}}));
-    let priorFutureStructuralWitness:FutureStructuralWitnessV1|undefined;
+    const lineageWitnessSets:FutureStructuralWitness[][]=[];
     for(const witnessStage of lineage){
       const proposalRunId=(witnessStage as typeof witnessStage&{proposalRunId?:number|null}).proposalRunId;
       if(proposalRunId===null||proposalRunId===undefined)continue;
@@ -225,14 +233,21 @@ export class AssistedProposalService {
       if(priorError)throw priorError;
       const witnesses=(priorRun?.assisted_result_json?.evidence?.futureStructuralWitnesses
         ??priorRun?.assistedResultJson?.evidence?.futureStructuralWitnesses
-        ??priorRun?.result_json?.evidence?.futureStructuralWitnesses) as FutureStructuralWitnessV1[]|undefined;
-      priorFutureStructuralWitness=witnesses?.find(item=>item?.kind==="FIXED_SUPPORTING_PIPELINE"&&item.version===1);
-      if(priorFutureStructuralWitness)break;
+        ??priorRun?.result_json?.evidence?.futureStructuralWitnesses) as FutureStructuralWitness[]|undefined;
+      lineageWitnessSets.push([...(witnesses??[])]);
     }
+    const selectedPipeline=lineageWitnessSets.flatMap((witnesses,stageIndex)=>witnesses.filter((item):item is Extract<FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>=>item.kind==="FIXED_SUPPORTING_PIPELINE").map(witness=>({witness,stageIndex})))
+      .sort((a,b)=>a.stageIndex-b.stageIndex||b.witness.version-a.witness.version)[0]?.witness;
+    const priorFutureStructuralWitnesses:FutureStructuralWitness[]=[];if(selectedPipeline)priorFutureStructuralWitnesses.push(selectedPipeline);
+    const seenWitnessIdentities=new Set(selectedPipeline?[structuralWitnessIdentity(selectedPipeline)]:[]);
+    for(const witnesses of lineageWitnessSets)for(const witness of witnesses){if(!witness?.kind||witness.kind==="FIXED_SUPPORTING_PIPELINE")continue;
+      if(witness.kind==="ITINERANT_AGENDA"&&witness.supportingFingerprint!==(selectedPipeline?.fingerprint??null))continue;
+      const identity=structuralWitnessIdentity(witness);if(seenWitnessIdentities.has(identity))continue;
+      seenWitnessIdentities.add(identity);priorFutureStructuralWitnesses.push(witness);}
     const futureEligible=analyticalFutureEligibleTaskIds(input,adapter.identityMap);
     const assistedProblem=buildAssistedProblem(adapter.problem,resolution.scope,protectedPlacements,futureEligible,
       protectedOperationalMeals,protectedSetupPreparations,protectedParticipantMeals,protectedRoundPreparations,
-      priorFutureStructuralWitness);
+      priorFutureStructuralWitnesses);
     const execution=this.runner(assistedProblem,{violations:baselineViolations});
     const proposal=execution.proposal?.map(item=>{const taskId=productByCanonical.get(item.id)!;const selectedUnit=item.itinerantUnitId===undefined?undefined:sourceUnitByCanonical.get(item.itinerantUnitId);if(item.itinerantUnitId!==undefined&&!selectedUnit)throw new Error(`UNPROJECTABLE_ITINERANT_UNIT:${item.itinerantUnitId}`);let assignedResourceIds:readonly number[]|undefined;if(item.itinerantUnitId!==undefined){const sourceTask=taskInputById.get(taskId)!;const direct=projectDirectResourcesToCanonical(adapter.identityMap,sourceTask.assignedResourceIds??[]);const domain=item.allowedItinerantUnitIds?.length?item.allowedItinerantUnitIds:item.itinerantUnitId?[item.itinerantUnitId]:[];const domainResources=new Set((adapter.problem.itinerantUnits??[]).filter(unit=>domain.includes(unit.id)).flatMap(unit=>unit.resourceIds??[]));const selectedResources=(adapter.problem.itinerantUnits??[]).find(unit=>unit.id===item.itinerantUnitId)?.resourceIds;if(!selectedResources)throw new Error(`UNPROJECTABLE_ITINERANT_UNIT:${item.itinerantUnitId}`);assignedResourceIds=projectDirectResourcesToProduct(adapter.identityMap,[...direct.filter(id=>!domainResources.has(id)),...selectedResources]);}return {taskId,startPlanned:minuteToEngineTime(item.start),endPlanned:minuteToEngineTime(item.end),spaceId:spaceByCanonical.get(item.spaceId)!,zoneId:taskInputById.get(taskId)?.zoneId??null,...(selectedUnit===undefined?{}:{itinerantTeamId:selectedUnit,assignedResourceIds})};})??null;
     const proposalById=new Map((proposal??[]).map(item=>[item.taskId,item]));
@@ -246,13 +261,23 @@ export class AssistedProposalService {
       mealProposalById.set(taskId,{startPlanned:minuteToEngineTime(meal.start),endPlanned:minuteToEngineTime(meal.end),spaceId:null});
     }
     const acceptedMeals=[...(baseSnapshot.operationalMeals??[])];
-    const acceptsMain=execution.proposal?.some(task=>task.kind==="main")??false;
-    if(acceptsMain){
-      const authority=mainFlowMealPolicy(adapter.problem);
-      const operationalIds=new Set(authority?.sourceIds.filter(id=>operationalPolicyById.has(id))??[]);
-      const selected=execution.evidence.selectedMealWitnesses?.operational?.scheduled
-        .find(meal=>operationalIds.has(meal.id));
-      if(selected&&!acceptedMeals.some(meal=>meal.policyId===selected.id))acceptedMeals.push({policyId:selected.id,startPlanned:minuteToEngineTime(selected.start),endPlanned:minuteToEngineTime(selected.end)});
+    const acceptedTasks=new Map([...protectedPlacements,...(execution.proposal??[])].map(task=>[task.id,task]));
+    for(const selected of execution.evidence.selectedMealWitnesses?.operational?.scheduled??[]){
+      if(acceptedMeals.some(meal=>meal.policyId===selected.id))continue;
+      const policy=operationalPolicyById.get(selected.id);
+      if(!policy)throw new Error(`UNPROJECTABLE_OPERATIONAL_MEAL:${selected.id}`);
+      // Only accepted/proposed consumers close a unit. Future assignments stay
+      // virtual; every explicitly admissible composition still counts until
+      // the task has an accepted materialized resource assignment.
+      const consumers=adapter.problem.tasks.filter(source=>{
+        const task=acceptedTasks.get(source.id)??source;
+        const domain=task.allowedItinerantUnitIds?.length?task.allowedItinerantUnitIds:task.itinerantUnitId?[task.itinerantUnitId]:[];
+        const resources=[...(task.requiredResourceIds??[]),...(task.coachId===undefined?[]:[task.coachId]),
+          ...(acceptedTasks.has(task.id)?[]:(adapter.problem.itinerantUnits??[]).filter(unit=>domain.includes(unit.id)).flatMap(unit=>unit.resourceIds??[]))];
+        return policy.spaceIds.includes(task.spaceId)||resources.some(id=>policy.resourceIds.includes(id));
+      });
+      if(consumers.length&&consumers.every(task=>acceptedTasks.has(task.id)))
+        acceptedMeals.push({policyId:selected.id,startPlanned:minuteToEngineTime(selected.start),endPlanned:minuteToEngineTime(selected.end)});
     }
     const sourceFamilyByCanonical=new Map(adapter.identityMap.filter(i=>i.namespace==="setup-family").map(i=>[i.canonicalId,i.sourceId]));
     const acceptedPreparations=(execution.evidence.selectedSetupPreparations??[]).map(item=>{
@@ -296,7 +321,14 @@ export class AssistedProposalService {
     return this.finish(planId,run,result);
   }
 
-  private async finish(planId:number,run:any,result:AssistedProposalRunResultV1){const {error}=await this.runs.finish(planId,Number(run.id),result);if(error)throw error;return result;}
+  private async finish(planId:number,run:any,result:AssistedProposalRunResultV1){
+    // A synchronous search can outlive idle HTTP connections. Drain pending
+    // socket-close callbacks before reusing the Node 20 fetch pool for this RPC.
+    // Two turns include the close-callback phase after the first check phase.
+    await new Promise<void>(resolve=>setImmediate(resolve));
+    await new Promise<void>(resolve=>setImmediate(resolve));
+    const {error}=await this.runs.finish(planId,Number(run.id),result);if(error)throw error;return result;
+  }
   async get(planId:number,runId:number){const {data,error}=await this.runs.find(planId,runId);if(error)throw error;if(!data)throw new AssistedProposalError("RUN_NOT_FOUND",404);return data;}
   async apply(planId:number,runId:number,expectedDraftFingerprint:string,expectedBaseStageId:number){const {error}=await this.runs.apply({p_plan_id:planId,p_run_id:runId,p_expected_fingerprint:expectedDraftFingerprint,p_expected_base:expectedBaseStageId});if(error)mapDbError(error);return this.get(planId,runId);}
 }

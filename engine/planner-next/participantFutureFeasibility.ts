@@ -1,6 +1,7 @@
 import type { ParticipantMealObligation, PlannerNextProblem, ScheduledParticipantMeal, ScheduledTask, Task } from "./contracts";
 import { exactTaskStartDomain, type ExactTaskStartDomain } from "./placement";
 import { analyticParticipantMealDomain, participantMealCandidates, type AnalyticParticipantMealStartDomain } from "./participantMeals";
+import { participantGapMinutes } from "./participantTransition";
 
 export type ParticipantFutureReservationStatus = "PASS" | "PRUNE" | "ABSTAIN";
 export interface ParticipantFutureCollectiveDiagnostic {
@@ -110,8 +111,8 @@ function collectiveWitness(problem:PlannerNextProblem,_participantId:string,task
   const localDependencies=[...tasks.map(task=>[task.id,task.dependencies] as const),...meals.map(meal=>[meal.sourceTaskId,meal.dependencies??[]] as const)];
   const localTasks=new Map(tasks.map(task=>[task.id,task]));
   const precedenceLag=(dependencyId:string,dependentId:string)=>duration.get(dependencyId)!+
-    (localTasks.has(dependencyId)&&localTasks.has(dependentId)&&localTasks.get(dependencyId)!.spaceId!==localTasks.get(dependentId)!.spaceId
-      ?problem.participantTransitionMinutes:0);
+    (localTasks.has(dependencyId)&&localTasks.has(dependentId)
+      ?participantGapMinutes(problem,localTasks.get(dependencyId)!,localTasks.get(dependentId)!):0);
   let boundsChanged=true,boundsRounds=0;
   while(boundsChanged&&boundsRounds++<=localDependencies.length){boundsChanged=false;for(const [dependentId,dependencyIds] of localDependencies)for(const dependencyId of dependencyIds){
     if(!earliest.has(dependencyId))continue;

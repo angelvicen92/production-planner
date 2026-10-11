@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { PlannerNextProblem,ScheduledParticipantMeal,ScheduledTask,Task } from "../../engine/planner-next/contracts";
-import { classifyCollectiveClosureCapacity } from "./runA2Stage209ClosureWitnessProbe";
+import type { PlannerNextProblem,ScheduledParticipantMeal,ScheduledTask,Task } from "../contracts";
+import { classifyCollectiveClosureCapacity } from "./collectiveClosureCapacityProbe";
 
 const task=(id:string,participantId:string,dependencies:string[],starts:number[],spaceId="shared"):Task=>({id,kind:"auxiliary",participantId,spaceId,duration:10,dependencies,
   availability:starts.map(start=>({start,end:start+10}))});

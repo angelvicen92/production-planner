@@ -159,7 +159,6 @@ test("planner-next remains isolated from legacy and production", () => {
   // entry points. Keep their existing boundary explicit; new Planner Next probes
   // belong under engine/planner-next/benchmarks instead.
   const historicalDiagnosticBoundary = new Set([
-    "server/benchmarks/runA2ArrivalFeasibilityProbe.ts",
     "server/benchmarks/runA2Assist7Evidence.ts",
     "server/benchmarks/runA2Assist8Evidence.ts",
     "server/benchmarks/runA2SharedCapacityStructuralProbe.ts",

@@ -6,6 +6,7 @@ import { supabaseAdmin } from "./supabase";
 import { api, defaultSpatialAvailabilityResponseSchema, planSpaceAvailabilityResponseSchema, planZoneAvailabilityResponseSchema, spatialAvailabilityInitializationResponseSchema } from "@shared/routes";
 import { z } from "zod";
 import { requireAuth } from "./middleware/requireAuth";
+import { createApiAuthorization } from './apiAuthorization';
 import { buildEngineInput } from "../engine/buildInput";
 import { generatePlanV3 } from "../engine/v3";
 import { runORCActivePlanner } from "../engine/orc/active/orcActivePlanner";
@@ -131,81 +132,7 @@ function mapDeleteError(err: any, fallback: string) {
 }
 
   // Authentication + coarse-grained authorization for all API endpoints
-  app.use("/api", async (req, res, next) => {
-    if (req.path === "/health") return next();
-
-    if (
-      req.path.startsWith("/debug/engine-input") ||
-      req.path.startsWith("/debug/generate") ||
-      req.path.startsWith("/debug/daily-task")
-    ) {
-      return next();
-    }
-
-    return requireAuth(req, res, async () => {
-      const method = req.method.toUpperCase();
-      const path = req.path;
-
-      const adminOnlyPrefixes = [
-        "/settings",
-        "/program-settings",
-        "/optimizer-settings",
-        "/task-templates",
-        "/zones",
-        "/spaces",
-        "/resource-types",
-        "/resource-items",
-        "/resource-pools",
-        "/staff-people",
-        "/staff-defaults",
-        "/itinerant-teams",
-      ];
-
-      const writePlansPrefixes = ["/plans", "/locks"];
-
-      const isAdminOnly = adminOnlyPrefixes.some((prefix) =>
-        path === prefix || path.startsWith(`${prefix}/`),
-      );
-
-      const isAdminOnlyWrite = isAdminOnly && method !== "GET";
-      const isAdminOnlyRead = isAdminOnly && method === "GET";
-
-      const isPlansWrite =
-        method !== "GET" &&
-        writePlansPrefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
-
-      if (!isAdminOnly && !isPlansWrite) {
-        return next();
-      }
-
-      const userId = (req as any)?.user?.id as string | undefined;
-      if (!userId) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-
-      try {
-        const role = await getUserRole(userId);
-        (req as any).userRole = role;
-
-        if (isAdminOnlyRead && !role) {
-          return withPermissionDenied(res);
-        }
-
-        if (isAdminOnlyWrite && role !== "admin") {
-          return withPermissionDenied(res);
-        }
-
-        if (isPlansWrite && role !== "admin" && role !== "production") {
-          return withPermissionDenied(res);
-        }
-
-        return next();
-      } catch (error) {
-        console.error("[AUTHZ] coarse permission check failed", error);
-        return res.status(500).json({ message: "Failed to validate permissions" });
-      }
-    });
-  });
+  app.use('/api',createApiAuthorization({authenticate:requireAuth,lookupRole:getUserRole}));
 
   app.post("/api/bootstrap-role", async (req, res) => {
     try {
@@ -3135,6 +3062,7 @@ function mapDeleteError(err: any, fallback: string) {
           camerasAvailable: p.cameras_available ?? p.camerasAvailable ?? 0,
           planningWarnings: Array.isArray(p.planning_warnings ?? p.planningWarnings) ? (p.planning_warnings ?? p.planningWarnings) : [],
           planningStats: (p.planning_stats ?? p.planningStats ?? {}),
+          plannerNextConfiguration: p.planner_next_configuration ?? p.plannerNextConfiguration ?? null,
 
           dailyTasks: (full.tasks || []).map((t: any) => ({
             id: t.id,
@@ -3317,6 +3245,7 @@ function mapDeleteError(err: any, fallback: string) {
   const assistedExpected = z.object({ expectedDraftFingerprint: z.string().regex(/^[0-9a-f]{64}$/), expectedBaseStageId: z.number().int().positive() }).strict();
   const assistedChanges = z.object({ taskId: z.number().int().positive(), startPlanned: z.string().nullable().optional(), endPlanned: z.string().nullable().optional() }).strict();
   app.get("/api/plans/:id/assisted", async (req, res) => assistedAction(res, () => assistedPlanning.state(assistedPlanId(req.params.id))));
+  app.get("/api/plans/:id/assisted/next-scope", async (req, res) => assistedAction(res, () => assistedPlanning.recommendNextScope(assistedPlanId(req.params.id))));
   app.get("/api/plans/:id/assisted/history", async (req, res) => assistedAction(res, async () => (await assistedPlanning.state(assistedPlanId(req.params.id))).history));
   app.post("/api/plans/:id/assisted/session", async (req, res) => assistedAction(res, () => assistedPlanning.start(assistedPlanId(req.params.id), (req as any).user.id)));
   app.patch("/api/plans/:id/assisted/draft", async (req, res) => assistedAction(res, () => { const body = assistedExpected.extend({ changes: z.array(assistedChanges).min(1) }).parse(req.body); return assistedPlanning.patchDraft(assistedPlanId(req.params.id), body.expectedDraftFingerprint, body.expectedBaseStageId, body.changes); }));
@@ -3768,6 +3697,8 @@ function mapDeleteError(err: any, fallback: string) {
       if (input.contestantId !== undefined) patchDb.contestant_id = input.contestantId;
       if (input.durationOverride !== undefined) patchDb.duration_override = input.durationOverride;
       if (input.durationMinutes !== undefined) patchDb.duration_override = input.durationMinutes;
+      if (input.participantMarginBeforeMinutes !== undefined) patchDb.participant_margin_before_minutes = input.participantMarginBeforeMinutes;
+      if (input.participantMarginAfterMinutes !== undefined) patchDb.participant_margin_after_minutes = input.participantMarginAfterMinutes;
       if (input.duration_minutes !== undefined) patchDb.duration_override = input.duration_minutes;
       if (input.camerasOverride !== undefined) patchDb.cameras_override = input.camerasOverride;
 

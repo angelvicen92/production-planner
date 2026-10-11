@@ -1694,6 +1694,8 @@ export const api = {
           durationOverride: z.number().int().positive().nullable().optional(),
           durationMinutes: z.number().int().positive().nullable().optional(),
           duration_minutes: z.number().int().positive().nullable().optional(),
+          participantMarginBeforeMinutes: z.number().int().min(0).nullable().optional(),
+          participantMarginAfterMinutes: z.number().int().min(0).nullable().optional(),
           camerasOverride: z.number().int().min(0).max(2).nullable().optional(),
 
           zoneId: z.number().int().positive().nullable().optional(),

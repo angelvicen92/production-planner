@@ -29,6 +29,31 @@ test("joint infeasibility publishes no structural or meal partials under either 
 test("direct preflight enforces protected state and canonical grid",()=>{const protectedMissing=problem([{...meal("1","p1"),status:"done"}],1);assert.ok(validatePlan(protectedMissing,[]).reasonCodes.includes("PARTICIPANT_MEAL_VIOLATION"));assert.ok(preflight(protectedMissing).includes("PROTECTED_PARTICIPANT_MEAL_WITHOUT_FIXED_INTERVAL"));const offGrid=problem([{...meal("1","p1"),duration:31,window:{start:781,end:900}}],1);assert.ok(preflight(offGrid).includes("INVALID_PARTICIPANT_MEAL_OBLIGATION"));});
 const meal=(id:string,participantId:string,window={start:780,end:960},duration=45):ParticipantMealObligation=>({id:`meal:${id}`,sourceTaskId:`task:${id}`,participantId,duration,window,status:"pending"});
 
+test("a provisional terminal abstention preserves later meal combinations", () => {
+  const source = problem([meal("1", "p1", { start: 780, end: 790 }, 5)], 1), visited: number[] = [];
+  const result = assessParticipantMealFutureFeasibility(source, [], { remaining: 10 }, "MATERIALIZE", meals => {
+    visited.push(meals[0]!.start); return meals[0]!.start === 780 ? "ABSTAIN" : "ACCEPT";
+  });
+  assert.deepEqual(visited, [780, 785]); assert.equal(result.complete, true); assert.equal(result.scheduled[0]?.start, 785);
+  assert.equal(result.rejectedCandidateCount, 0, "uncertainty is not a negative certificate");
+  assert.equal(result.terminalAbstentionCount, 1);
+});
+
+test("partial abstention explores complete combinations; exhaustive unknowns and later budget retain their distinct reasons", () => {
+  const source = problem([meal("1", "p1", { start: 780, end: 790 }, 5), meal("2", "p2", { start: 790, end: 800 }, 5)], 1);
+  let completeChecks = 0;
+  const repaired = assessParticipantMealFutureFeasibility(source, [], { remaining: 20 }, "MATERIALIZE", (_, complete) => {
+    if (complete) completeChecks++; return complete ? "ACCEPT" : "ABSTAIN";
+  });
+  assert.equal(repaired.complete, true); assert.equal(completeChecks, 1);
+  const unknown = assessParticipantMealFutureFeasibility(source, [], { remaining: 20 }, "MATERIALIZE", () => "ABSTAIN");
+  assert.equal(unknown.complete, false); assert.equal(unknown.terminalAbstentionCount, 4);
+  assert.deepEqual(unknown.reasonCodes, ["PARTICIPANT_MEAL_TERMINAL_ABSTAIN"]);
+  assert.equal(unknown.rejectedCandidateCount, 0); assert.deepEqual(unknown.blockingMealTaskIds, []);
+  const exhausted = assessParticipantMealFutureFeasibility(source, [], { remaining: 2 }, "MATERIALIZE", () => "ABSTAIN");
+  assert.deepEqual(exhausted.reasonCodes, ["PARTICIPANT_MEAL_BRANCH_BUDGET_EXHAUSTED"]);
+});
+
 test("joint witness schedules every meal once, respects capacity, and is deterministic",()=>{
   const source=problem([meal("1","p1"),meal("2","p2"),meal("3","p3")],2);const before=structuredClone(source);
   const first=scheduleParticipantMeals(source,[],500),second=scheduleParticipantMeals(source,[],500);

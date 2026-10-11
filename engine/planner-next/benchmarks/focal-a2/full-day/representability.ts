@@ -51,7 +51,7 @@ function runParticipantAvailabilityProbe(expansion: ExpandedCanonicalFullA2Templ
   const expected = { start: 540, end: 930 };
   const sourceConfigurationPresent = expansion.participants.every((id) => {
     const window = expansion.effectiveConfiguration.participantAvailability[id];
-    return window?.start === "09:00" && window.end === (id === "C01" ? "15:30" : "18:40");
+    return window?.start === "09:00" && window.end === (id === "C01" ? "15:30" : "19:00");
   });
   const engineInputContractPresent = Object.hasOwn(input, "contestantAvailabilityById") && Object.hasOwn(input.contestantAvailabilityById!, 201);
   const engineInputPreflightSupported = baseline.preflight.status === "SUPPORTED";

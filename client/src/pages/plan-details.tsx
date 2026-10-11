@@ -1640,6 +1640,8 @@ export default function PlanDetailsPage() {
     durationOverride: String(
       task.durationOverride ?? task.duration_override ?? task.template?.defaultDuration ?? "",
     ),
+    participantMarginBeforeMinutes: String(task.participantMarginBeforeMinutes ?? task.participant_margin_before_minutes ?? ""),
+    participantMarginAfterMinutes: String(task.participantMarginAfterMinutes ?? task.participant_margin_after_minutes ?? ""),
     comment1Text: String(task.comment1Text ?? task.comment_1 ?? task.comment1_text ?? ""),
     comment1Color: String(task.comment1Color ?? task.comment_color_1 ?? task.comment1_color ?? ""),
     comment2Text: String(task.comment2Text ?? task.comment_2 ?? task.comment2_text ?? ""),
@@ -1703,6 +1705,8 @@ export default function PlanDetailsPage() {
         draft.startPlanned !== original.startPlanned
         || draft.endPlanned !== original.endPlanned
         || draft.durationOverride !== original.durationOverride
+        || draft.participantMarginBeforeMinutes !== original.participantMarginBeforeMinutes
+        || draft.participantMarginAfterMinutes !== original.participantMarginAfterMinutes
         || draft.comment1Text !== original.comment1Text
         || draft.comment1Color !== original.comment1Color
         || draft.comment2Text !== original.comment2Text
@@ -1746,6 +1750,8 @@ export default function PlanDetailsPage() {
               plannedStart: draft.startPlanned.trim() || null,
               plannedEnd: draft.endPlanned.trim() || null,
               durationMinutes: draft.durationOverride.trim() === "" ? null : Number(draft.durationOverride),
+              participantMarginBeforeMinutes: draft.participantMarginBeforeMinutes.trim() === "" ? null : Number(draft.participantMarginBeforeMinutes),
+              participantMarginAfterMinutes: draft.participantMarginAfterMinutes.trim() === "" ? null : Number(draft.participantMarginAfterMinutes),
               comment1Text: draft.comment1Text.trim() || null,
               comment1Color: normalizeHexColor(draft.comment1Color),
               comment2Text: draft.comment2Text.trim() || null,

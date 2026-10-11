@@ -1,6 +1,6 @@
 import type { PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { canPlaceTask } from "./placement";
-import { anchoredAccompanimentIndex, firstParticipantObligation } from "./anchoredAccompaniment";
+import { anchoredAccompanimentIndex, firstParticipantObligation, firstParticipantObligationTask } from "./anchoredAccompaniment";
 import { latestFeederEndBeforeMain } from "./coachRouteTransitions";
 
 export interface FeederClosureCandidate { feeders: ScheduledTask[]; cost: number; signature: string; selectedFeederOrder:string[] }
@@ -30,6 +30,7 @@ export function closeFeeders(problem:PlannerNextProblem,mains:ScheduledTask[],me
     const deadline = latestFeederEndBeforeMain(
       problem,
       feeder,
+      firstParticipantObligationTask(main,problem),
       main.spaceId,
       main.start,
       firstParticipantObligation(main, mains, anchoredAccompanimentIndex(problem)),

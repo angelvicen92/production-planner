@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import type { ParticipantTask, PlannerNextProblem } from "./contracts";
 import { authorizedPipelineArchitectures, buildAnonymousPipelineWitness, fixedSupportingPipelineGeometryFrontier, materializeNominalPipelineWitness, materializePipelineBundleMatching,
   mainFlowTimelineArchitectureFrontier, materializePreparedPipelineBundleMatching, preparePipelineBundleGraph,
-  revalidateFutureStructuralWitness, revalidateFutureStructuralWitnessDetailed } from "./anonymousPipelineWitness";
+  futureStructuralWitnessV2FromAcceptedPipeline, revalidateFutureStructuralWitness, revalidateFutureStructuralWitnessDetailed } from "./anonymousPipelineWitness";
 import { validatePlan } from "./validate";
 import { buildTimeline } from "./mainFlowMeal";
 
@@ -471,6 +471,14 @@ describe("anonymous structural pipeline witness",()=>{
     assert.equal(corruptDiagnostic.rejectCause,"CERTIFICATE_FINGERPRINT_MISMATCH");
     assert.deepEqual(Object.keys(corruptDiagnostic.rejectDetails!).sort(),["actual","expected"]);
 
+    const certifiedArrival=ephemeral.find(item=>item.id.startsWith("in"))!;
+    const arrivalTask=p.tasks.find(task=>task.id===certifiedArrival.id)!;
+    const movedArrival={...arrivalTask,start:certifiedArrival.start+5,end:certifiedArrival.end+5};
+    const protectedArrivalDiagnostic=revalidateFutureStructuralWitnessDetailed(p,architecture,[...fixed,movedArrival],certificate);
+    assert.equal(protectedArrivalDiagnostic.rejectCause,"ARRIVAL_CERTIFIED_PLACEMENT_MISMATCH");
+    assert.deepEqual(protectedArrivalDiagnostic.rejectDetails?.actual,
+      {start:movedArrival.start,end:movedArrival.end,spaceId:movedArrival.spaceId});
+
     const certifiedStyle=ephemeral.find(item=>item.id.startsWith("style"))!;
     const styleTask=p.tasks.find(task=>task.id===certifiedStyle.id)!;
     const blocker={...styleTask,id:"protected-style-blocker",participantId:undefined,dependencies:[],
@@ -486,6 +494,40 @@ describe("anonymous structural pipeline witness",()=>{
     assert.notEqual(arrivalDiagnostic.rejectDetails?.status,"FEASIBLE");
     assert.ok(arrivalDiagnostic.rejectDetails?.evidence);
     assert.equal(revalidateFutureStructuralWitness(p,architecture,fixed,certificate),null,"changed Arrival authority enters fallback");
+  });
+
+  it("revalidates literal V2 Arrival with only Main protected and rejects stale feeder and packet authorities",()=>{
+    const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
+    const selected=materializePipelineBundleMatching(p,architecture);assert.ok(selected);
+    const certificate=futureStructuralWitnessV2FromAcceptedPipeline(p,architecture,selected.witness.fingerprint,selected.scheduledTasks);
+    const fixedMains=selected.scheduledTasks.filter(task=>task.kind==="main");
+    const result=revalidateFutureStructuralWitnessDetailed(p,architecture,fixedMains,certificate);
+    assert.equal(result.rejectCause,null);assert.ok(result.materialization);assert.equal(certificate.certifiedFeederPlacements.length,2);
+    assert.equal(result.materialization.evidence.matchingTraversals,0);assert.equal(result.materialization.evidence.arrivalEvaluations,0);
+    for(const certified of certificate.ephemeralSupportingPlacements){
+      const actual=result.materialization.scheduledTasks.find(task=>task.id===certified.id);
+      assert.deepEqual(actual&&{id:actual.id,start:actual.start,end:actual.end,spaceId:actual.spaceId},certified);
+    }
+    const certifiedArrival=certificate.ephemeralSupportingPlacements.find(item=>item.id.startsWith("in"))!;
+    const arrivalTask=p.tasks.find(task=>task.id===certifiedArrival.id)!;
+    const exactProtected={...arrivalTask,start:certifiedArrival.start,end:certifiedArrival.end};
+    const protectedResult=revalidateFutureStructuralWitnessDetailed(p,architecture,[...fixedMains,exactProtected],certificate);
+    assert.ok(protectedResult.materialization);assert.equal(protectedResult.rejectCause,null);
+    assert.deepEqual(protectedResult.materialization.scheduledTasks.find(task=>task.id===exactProtected.id),exactProtected);
+    assert.equal(protectedResult.materialization.evidence.matchingTraversals,0);
+    assert.equal(protectedResult.materialization.evidence.arrivalEvaluations,0);
+    const movedProtected={...exactProtected,start:exactProtected.start+5,end:exactProtected.end+5};
+    const protectedMismatch=revalidateFutureStructuralWitnessDetailed(p,architecture,[...fixedMains,movedProtected],certificate);
+    assert.equal(protectedMismatch.rejectCause,"ARRIVAL_CERTIFIED_PLACEMENT_MISMATCH");
+    assert.deepEqual(protectedMismatch.rejectDetails?.actual,
+      {start:movedProtected.start,end:movedProtected.end,spaceId:movedProtected.spaceId});
+    const feeder=certificate.certifiedFeederPlacements[0]!;
+    const staleFeeder={...p,tasks:p.tasks.map(task=>task.id===feeder.id?{...task,availability:[{start:feeder.end,end:300}]}:task)};
+    assert.equal(revalidateFutureStructuralWitnessDetailed(staleFeeder,architecture,fixedMains,certificate).rejectCause,"FEEDER_PLACEMENT_REJECTED");
+    const stalePolicy=structuredClone(p);stalePolicy.transportPolicy!.arrival.maximumGroupSize=0;
+    const policyResult=revalidateFutureStructuralWitnessDetailed(stalePolicy,architecture,fixedMains,certificate);
+    assert.equal(policyResult.rejectCause,"ARRIVAL_CERTIFIED_SCHEDULE_REJECTED");
+    assert.equal(policyResult.rejectDetails?.cause,"ARRIVAL_GROUP_SIZE_INVALID");
   });
 
   it("reports no matching on fixed Styling geometry without moving protected work",()=>{
@@ -516,6 +558,19 @@ describe("anonymous structural pipeline witness",()=>{
     const rescued=preparePipelineBundleGraph(p,architecture,[...fixed,...blockers],alternative);assert.ok(rescued?.fixedSupporting);
     const result=materializePreparedPipelineBundleMatching(p,rescued!);assert.ok(result);
     for(const placement of fixed)assert.deepEqual(result.scheduledTasks.find(task=>task.id===placement.id),placement);
+  });
+
+  it("keeps the fixed supporting frontier identical when observation is enabled",()=>{
+    const p=problem(["A","A"]);const architecture={pattern:["A","A"],slots:[180,195]};
+    const original=structuredClone(p);
+    const baseline=[...fixedSupportingPipelineGeometryFrontier(p,architecture)];
+    const observations:unknown[]=[];
+    const observed=[...fixedSupportingPipelineGeometryFrontier(p,architecture,value=>observations.push(value))];
+    assert.deepEqual(observed,baseline,"observation preserves geometry content, order, fingerprints, and result");
+    assert.deepEqual(p,original,"observation does not mutate its input");
+    assert.equal(observations.length,1);
+    assert.deepEqual((observations[0] as {candidateStarts:number[]}).candidateStarts,
+      [...(observations[0] as {candidateStarts:number[]}).candidateStarts].sort((a,b)=>a-b));
   });
 
   it("exhausts every authorized Styling geometry when protected context blocks the Styling space",()=>{

@@ -16,7 +16,7 @@ export const A2_BENCHMARK_SOURCE_CONFIGURATION = Object.freeze({
   }),
   participantAvailability: Object.freeze(Object.fromEntries(Array.from({ length: 19 }, (_, index) => {
     const id = `C${String(index + 1).padStart(2, "0")}`;
-    return [id, Object.freeze({ start: "09:00" as const, end: index === 0 ? "15:30" as const : "18:40" as const })];
+    return [id, Object.freeze({ start: "09:00" as const, end: index === 0 ? "15:30" as const : "19:00" as const })];
   }))),
   transportPolicy: Object.freeze({
     arrival: Object.freeze({ targetGroupSize: 3 as const, maximumGroupSize: 3 as const, minGapMinutes: 30 as const, groupingWeight: 3 as const }),

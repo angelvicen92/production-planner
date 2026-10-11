@@ -112,8 +112,8 @@ export const TASK_TYPES: Readonly<Record<TaskType, CanonicalTaskTypeDefinition>>
   ALFOMBRA_ROJA_EVA: { label: "Alfombra Roja con EVA", duration: 15, spaceId: "alfombra-roja", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: ["eva"], blocksParticipant: true },
   ALFOMBRA_ROJA_CONJUNTA: { label: "Alfombra Roja conjunta", duration: 10, spaceId: "alfombra-roja", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true },
   TOTALES_POST_CONJUNTO: { label: "Totales Post conjunto", duration: 5, spaceId: "totales-post", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true },
-  ESTILISMO_SALIDA: { label: "Estilismo salida", duration: 5, spaceId: "styling", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true },
-  OUT: { label: "OUT", duration: 5, spaceId: "transport-out", operationalKind: "transport_departure", exclusiveSpaceUse: "not_applicable", knownResourceIds: [], blocksParticipant: true },
+  ESTILISMO_SALIDA: { label: "Estilismo salida", duration: 5, spaceId: "styling", operationalKind: "auxiliary", exclusiveSpaceUse: true, knownResourceIds: [], blocksParticipant: true, participantMarginAfterMinutes: 0 },
+  OUT: { label: "OUT", duration: 5, spaceId: "transport-out", operationalKind: "transport_departure", exclusiveSpaceUse: "not_applicable", knownResourceIds: [], blocksParticipant: true, participantMarginBeforeMinutes: 0 },
 });
 
 export const CANONICAL_SPACES: readonly CanonicalSpace[] = Object.freeze([
@@ -143,6 +143,7 @@ export const CANONICAL_SPACES: readonly CanonicalSpace[] = Object.freeze([
 ]);
 
 export const CANONICAL_RESOURCES: readonly CanonicalResource[] = Object.freeze([
+  { id: "cam-1", label: "CAM 1", kind: "camera", availability: "inherits_day_unless_overridden" },
   { id: "cam-2", label: "CAM 2", kind: "camera", availability: "inherits_day_unless_overridden" },
   { id: "cam-3", label: "CAM 3", kind: "camera", availability: "inherits_day_unless_overridden" },
   { id: "cam-4", label: "CAM 4", kind: "camera", availability: "inherits_day_unless_overridden" },

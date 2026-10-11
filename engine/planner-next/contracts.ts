@@ -91,6 +91,9 @@ interface BaseTask {
   itinerantUnitId?: string;
   /** Solver-owned assignment domain. A singleton remains a specific unit. */
   allowedItinerantUnitIds?: string[];
+  /** Explicit participant boundary overrides; zero must not be treated as absent. */
+  participantMarginBeforeMinutes?: Minute;
+  participantMarginAfterMinutes?: Minute;
 }
 export interface ParticipantTask extends BaseTask {
   kind: "main" | "vocal" | "auxiliary";
@@ -155,12 +158,29 @@ export interface PlannerNextProblem {
   tasks: Task[];
   /** Read-only Assisted context. These tasks are never ordinary search variables. */
   analyticalFutureParticipantTasks?: Task[];
+  /** Source closure contracts retained read-only across Assisted scope projection. */
+  analyticalFutureParticipantClosure?: {
+    tasks: Task[];
+    meals: ParticipantMealObligation[];
+    departure: TransportGroupingPolicy;
+  };
+  /** Canonical authorities for an ephemeral joint continuation, outside visible scope. */
+  analyticalFutureCollectiveContinuation?: PlannerNextProblem;
   /** Read-only pending-work view used only to rank anonymous pipeline entry matching. */
   analyticalRemainingParticipantTasks?: Task[];
   /** Executable supporting vertices that also close a future analytical chain. */
   analyticalFutureParticipantSupportingTaskIds?: string[];
   /** Read-only Assisted structures. Their members are probes, never search variables. */
   analyticalFutureTechnicalChains?: Array<{ policy: TechnicalChainPolicy; tasks: Task[] }>;
+  /** Complete pending round units retained outside the executable Assisted projection. */
+  analyticalFutureRoundSynchronizations?: Array<{ policy: RoundSynchronizationPolicy; tasks: Task[] }>;
+  /** Complete pending interchangeable-unit agendas retained as read-only structural obligations. */
+  analyticalFutureItinerantAgendas?: Array<{
+    identity: string;
+    unitIds: string[];
+    tasks: Task[];
+    prerequisiteTasks: Task[];
+  }>;
   mainFlow: {
     spaceId: string;
     preferredEnd: Minute;

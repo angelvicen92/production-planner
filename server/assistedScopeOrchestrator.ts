@@ -309,6 +309,11 @@ export function recommendNextAssistedScope(
     // before opening consumes the previously certified supporting geometry.
     if(a.unitKind==="PARTICIPANT_OPENING"&&b.unitKind==="OPERATIONAL_MEAL")return 1;
     if(b.unitKind==="PARTICIPANT_OPENING"&&a.unitKind==="OPERATIONAL_MEAL")return -1;
+    // A synchronized multi-lane round is one indivisible structural unit. A
+    // flexible itinerant agenda can be recomposed afterwards, but selecting it
+    // first would discard the already-certified round frontier between stages.
+    if(a.unitKind==="ROUND_SYNCHRONIZATION"&&b.unitKind==="ITINERANT_AGENDA")return -1;
+    if(b.unitKind==="ROUND_SYNCHRONIZATION"&&a.unitKind==="ITINERANT_AGENDA")return 1;
     const structuralFrontier=recomposesAgenda(a,b)?-1:recomposesAgenda(b,a)?1:0;
     const mainAuthority=b.priority.structuralClass===3?1:a.priority.structuralClass===3?-1:0;
     const mainSupport=(a.priority.structuralClass>=2||b.priority.structuralClass>=2)

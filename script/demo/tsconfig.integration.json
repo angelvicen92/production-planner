@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": { "incremental": false },
+  "include": ["smokeA2Integration.ts", "smokeA2Journey.ts", "a2Preflight.ts"]
+}

@@ -27,7 +27,7 @@ function gateFixture() {
   const template = normalizeTaskTemplateCatalogEntry({ id: 4, name: "Daily task", defaultDuration: 37, defaultCameras: 1, zoneId: 2, spaceId: 10 }, "inherited");
   const optimizer = normalizePlanOptimizerSnapshotV1({});
   const storage = {
-    getPlanEngineInputDetails: async (planId: number) => ({ plan: { id: planId, work_start: "09:00", work_end: "18:00", meal_start: "13:00", meal_end: "14:00", meal_mode: "flexible_meal_window" }, tasks: [{ id: 40, template_id: 4, status: "pending" }], locks: [], availability: [], breaks: [] }),
+    getPlanEngineInputDetails: async (planId: number) => ({ plan: { id: planId, work_start: "09:00", work_end: "18:00", meal_start: "13:00", meal_end: "14:00", meal_mode: "flexible_meal_window",participant_transition_minutes:planId===1?0:7 }, tasks: [{ id: 40, template_id: 4, status: "pending" }], locks: [], availability: [], breaks: [] }),
     getPlanTaskTemplateSnapshots: async () => [template],
     getPlanOptimizerSnapshot: async () => optimizer,
     getPlanZoneSettings: async (planId: number) => daily.get(planId)!.zones,
@@ -55,6 +55,7 @@ test("daily spatial and bundle snapshots causally isolate EngineInput and its ef
   const f = gateFixture();
   const before = await buildEngineInput(1, f.storage);
   const beforeRevision = f.revision(1, before);
+  assert.equal(before.defaultParticipantTransitionMinutes,0);
 
   Object.assign(f.globals.zone, { name: "Changed zone", grouping_level: 9, max_template_changes: 1 });
   Object.assign(f.globals.space, { name: "Changed space", priority_level: 9, grouping_min_chain: 8 });
@@ -77,6 +78,7 @@ test("daily spatial and bundle snapshots causally isolate EngineInput and its ef
 
   f.daily.set(2, f.capture(2));
   const newlyInherited = await buildEngineInput(2, f.storage);
+  assert.equal(newlyInherited.defaultParticipantTransitionMinutes,7);
   assert.equal(newlyInherited.planZoneSettings[0]?.name, "Changed zone");
   assert.equal(newlyInherited.planSpaceSettings[0]?.name, "Changed space");
   assert.equal(newlyInherited.resourceBundles?.[0]?.name, "Changed bundle");

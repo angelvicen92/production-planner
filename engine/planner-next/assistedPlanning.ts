@@ -7,11 +7,12 @@ import type {
   ScheduledSetupPreparation,
   ScheduledParticipantMeal,
   ScheduledRoundPreparation,
+  Task,
 } from "./contracts";
 import { executePlannerNext } from "./executePlannerNext";
 import { fingerprint } from "./fingerprint";
 import { validatePlan } from "./validate";
-import type { ExactCoreCausalDiagnostic } from "./exactMainAndFeederCore";
+import { ExactSearchTimeLimitReached, type ExactCoreCausalDiagnostic } from "./exactMainAndFeederCore";
 import type { ExactItinerantPlanEvidence } from "./exactItinerantPlan";
 import { participantMealWitnessFingerprint } from "./participantMeals";
 import { operationalMealWitnessFingerprint } from "./operationalMeals";
@@ -20,6 +21,7 @@ import { mainFlowMealPolicy } from "./mainFlowMeal";
 import { setupPreparationId } from "./setupPreparation";
 import { roundPreparationId } from "./roundSynchronization";
 import { materializeItinerantUnitAssignment } from "./itinerantUnitAssignment";
+import { futureCollectiveClosureEvidenceKeys, type FutureCollectiveClosureEvidence } from "./futureCollectiveParticipantClosure";
 
 export type AssistedPlanningReasonCode =
   | "ASSISTED_SCOPE_COMPLETE"
@@ -29,6 +31,8 @@ export type AssistedPlanningReasonCode =
 
 export interface AssistedProblem {
   readonly problem: PlannerNextProblem;
+  /** Ephemeral core producer for pending Main/Vocal outside the authorized projection. */
+  readonly collectiveCoreProjection?: Pick<AssistedProblem, "problem" | "analyticalParticipantMeals">;
   readonly originalValidationProblem: PlannerNextProblem;
   /** Pending obligations outside the executable projection, for read-only future-feasibility probes. */
   readonly analyticalParticipantMeals: readonly ParticipantMealObligation[];
@@ -42,7 +46,9 @@ export interface AssistedProblem {
   readonly automaticTaskIds: readonly string[];
   readonly supportingTaskIds: readonly string[];
   readonly supportingReasonByTaskId: Readonly<Record<string, readonly string[]>>;
-  readonly priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitnessV1;
+  readonly priorFutureStructuralWitnesses?:readonly import("./anonymousPipelineWitness").FutureStructuralWitness[];
+  /** @deprecated compatibility alias for pipeline-only callers. */
+  readonly priorFutureStructuralWitness?:Extract<import("./anonymousPipelineWitness").FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>;
 }
 
 export interface AssistedPlanningEvidence {
@@ -71,10 +77,35 @@ export interface AssistedPlanningEvidence {
   readonly priorFutureStructuralWitnessRejectDetails?:Readonly<Record<string,unknown>>|null;
   readonly priorFutureStructuralWitnessReused?:boolean;
   readonly priorFutureStructuralWitnessFallbackEntered?:boolean;
+  readonly futureItinerantWitnessSearchInvocations?:number;
+  readonly futureWitnessSet?:import("./futureStructuralWitnessSet").FutureWitnessSetEvidence;
+  readonly futureWitnessSetCandidateTraces?:import("./exactItinerantPlan").ExactItinerantPlanEvidence["futureWitnessSetCandidateTraces"];
+  readonly futureItinerantWitnessCandidates?:number;
+  readonly futureItinerantWitnessBranchesConsumed?:number;
+  readonly futureItinerantWitnessesFound?:number;
+  readonly futureItinerantWitnessFingerprint?:string|null;
+  readonly futureItinerantWitnessSupportingFingerprint?:string|null;
+  readonly futureItinerantWitnessRejectsByAuthority?:Readonly<Record<string,number>>;
+  readonly futureItinerantWitnessFirstReject?:Readonly<Record<string,unknown>>|null;
+  readonly futureItinerantPriorRevalidation?:"PASS"|"REJECT"|"STALE"|"BUDGET_EXHAUSTED"|null;
+  readonly futureItinerantPriorRejectCause?:string|null;
+  readonly futureItinerantPriorPreviousFrontier?:number|null;
+  readonly futureItinerantPriorCurrentFrontier?:number|null;
+  readonly futureItinerantPriorRevalidationMs?:number;readonly futureItinerantPrerequisiteSearchMs?:number;
+  readonly futureItinerantStructuralSearchMs?:number;readonly futureItinerantParticipantFutureMs?:number;
+  readonly futureItinerantTechnicalFutureMs?:number;readonly futureItinerantParticipantMealsMs?:number;
+  readonly futureItinerantOperationalMealsMs?:number;
+  readonly priorItinerantWitnessFound?:boolean;
+  readonly priorItinerantWitnessRevalidation?:"PASS"|"REJECT"|"STALE"|"BUDGET_EXHAUSTED"|null;
+  readonly priorItinerantWitnessRejectCause?:string|null;
+  readonly priorItinerantWitnessReused?:boolean;
+  readonly priorItinerantWitnessFallbackEntered?:boolean;
   readonly ephemeralSupportingPlacements?:ExactItinerantPlanEvidence["ephemeralSupportingPlacements"];
   readonly acceptedSupportingPlacements?:ExactItinerantPlanEvidence["acceptedSupportingPlacements"];
   readonly futureStructuralWitnesses?:ExactItinerantPlanEvidence["futureStructuralWitnesses"];
   readonly branchesBeforeCurrentContinuation?:number|null;
+  readonly selectedPipelineWitnessDiagnostic?:ExactItinerantPlanEvidence["selectedPipelineWitnessDiagnostic"];
+  readonly selectedPipelineWitnessAuthority?:ExactItinerantPlanEvidence["selectedPipelineWitnessAuthority"];
   /** Solver-selected analytical witnesses. They are Evidence only, never proposal placements. */
   readonly selectedMealWitnesses: {
     readonly participant: { readonly scheduled: readonly import("./contracts").ScheduledParticipantMeal[];
@@ -152,7 +183,8 @@ export interface AssistedPlanningEvidence {
     "fixedSupportingEdges"|"fixedSupportingZeroDomainTaskIds"|"fixedSupportingPerfectMatchingFound"|
     "fixedSupportingRematchedIdentityCount"|"fixedSupportingArrivalResult"|"fixedSupportingArrivalPacketCount"|
     "fixedSupportingSameGeometryRescued"|"fixedSupportingGeometriesAttempted"|"fixedSupportingGeometryFailure"|
-    "fixedSupportingGlobalFailure"|"protectedMainSlotChecks"|"protectedMainSlotMismatches"|
+    "fixedSupportingGlobalFailure"|"fixedSupportingWitnessDiagnostic"|"fixedSupportingWitnessAuthority"|
+    "protectedMainSlotChecks"|"protectedMainSlotMismatches"|
     "priorFutureStructuralWitnessFound"|"priorFutureStructuralWitnessFingerprint"|"priorFutureStructuralWitnessRevalidation"|
     "priorFutureStructuralWitnessRejectCause"|"priorFutureStructuralWitnessRejectDetails"|
     "priorFutureStructuralWitnessReused"|"priorFutureStructuralWitnessFallbackEntered"|"futureStructuralWitnesses"|
@@ -196,7 +228,10 @@ export interface AssistedPlanningEvidence {
     | "itinerantAgendaStaticStarts" | "itinerantAgendaDynamicStarts" | "itinerantAgendaBranchesBeforeSelection"
     | "itinerantAgendaBranches" | "itinerantAgendaCandidates" | "itinerantAgendaAssignmentsAndOrders"
     | "itinerantAgendaEventBoundaryStarts" | "itinerantAgendaFirstCompleteBranch"
-    | "setupBlockSearchInvocations" | "setupBlockStartsExplored" | "setupBlockCompleteCandidateCount" | "preferredResourceUnit">;
+    | "setupBlockSearchInvocations" | "setupBlockStartsExplored" | "setupBlockCompleteCandidateCount" | "preferredResourceUnit"
+    | "futureRoundWitnessSearchInvocations" | "futureRoundWitnessStructuralCandidates"
+    | "futureRoundWitnessCompleteMatchings" | "futureRoundWitnessParticipantFutureChecks"
+    | "futureRoundWitnessPrerequisiteChecks" | "futureRoundWitnessBranchesConsumed" | keyof FutureCollectiveClosureEvidence>;
   readonly reasonCodes: readonly string[];
   readonly violations?: readonly import("./contracts").ValidationViolationDetail[];
   readonly unstructuredReasonCodes?: readonly string[];
@@ -250,7 +285,7 @@ export function buildAssistedProblem(
   protectedSetupPreparations: readonly ScheduledSetupPreparation[] = [],
   protectedParticipantMeals: readonly ScheduledParticipantMeal[] = [],
   protectedRoundPreparations: readonly ScheduledRoundPreparation[] = [],
-  priorFutureStructuralWitness?:import("./anonymousPipelineWitness").FutureStructuralWitnessV1,
+  priorFutureStructuralWitnesses:readonly import("./anonymousPipelineWitness").FutureStructuralWitness[] = [],
 ): AssistedProblem {
   const problem = structuredClone(source);
   const originalOperationalPolicies=structuredClone(problem.operationalMealPolicies??[]);
@@ -387,6 +422,32 @@ export function buildAssistedProblem(
   }
 
   const fixedById = new Map(protectedPlacements.map((placement) => [placement.id, placement]));
+  if (problem.transportPolicy?.departure.taskIds.length) {
+    const continuation=structuredClone(problem);
+    continuation.tasks=continuation.tasks.map(task=>{
+      const fixed=fixedById.get(task.id);if(!fixed)return task;
+      const {start,end,...assigned}=fixed;return {...assigned,availability:[{start,end}]};
+    });
+    continuation.participantMeals=continuation.participantMeals?.map(meal=>{
+      const fixed=protectedMealBySourceId.get(meal.sourceTaskId);
+      return fixed?{...meal,fixedInterval:{start:fixed.start,end:fixed.end}}:meal;
+    });
+    continuation.operationalMealPolicies=continuation.operationalMealPolicies?.map(policy=>{
+      const fixed=protectedOperationalMeals.find(meal=>meal.id===policy.id);
+      return fixed?{...policy,window:{start:fixed.start,end:fixed.end}}:policy;
+    });
+    if(problem.tasks.every(task=>included.has(task.id)||fixedById.has(task.id)||analyticalFutureEligibleTaskIds.has(task.id))
+      &&(problem.participantMeals??[]).every(meal=>includedMeals.has(meal.sourceTaskId)
+        ||protectedMealBySourceId.has(meal.sourceTaskId)||analyticalFutureEligibleTaskIds.has(meal.sourceTaskId)))
+      problem.analyticalFutureCollectiveContinuation=continuation;
+    problem.analyticalFutureParticipantClosure = {
+      tasks: structuredClone(problem.tasks),
+      meals: structuredClone((problem.participantMeals ?? []).map(meal => ({ ...meal,
+        ...(protectedMealBySourceId.has(meal.sourceTaskId) ? { fixedInterval: {
+          start: protectedMealBySourceId.get(meal.sourceTaskId)!.start, end: protectedMealBySourceId.get(meal.sourceTaskId)!.end } } : {}) }))),
+      departure: structuredClone(problem.transportPolicy.departure),
+    };
+  }
   // Capture the full-problem authorities before projecting executable tasks.
   // The search never iterates this collection: participant-causal probes alone
   // consult it after a provisional placement.
@@ -429,6 +490,29 @@ export function buildAssistedProblem(
       }
       return {policy:structuredClone(policy),tasks:[...memberIds].sort().map(id=>structuredClone(tasksById.get(id)!))};
     });
+  problem.analyticalFutureRoundSynchronizations=(problem.roundSynchronizations??[])
+    .filter(policy=>{const ids=policy.lanes.flatMap(lane=>lane.taskIds);
+      return ids.length>0&&ids.every(id=>analyticalFutureEligibleTaskIds.has(id)&&!included.has(id));})
+    .sort((a,b)=>a.id.localeCompare(b.id)).map(policy=>{const ids=new Set(policy.lanes.flatMap(lane=>lane.taskIds));
+      const pending=[...ids];while(pending.length){const id=pending.pop()!;for(const dependencyId of tasksById.get(id)?.dependencies??[])
+        if(tasksById.has(dependencyId)&&analyticalFutureEligibleTaskIds.has(dependencyId)&&!included.has(dependencyId)&&!ids.has(dependencyId)){
+          ids.add(dependencyId);pending.push(dependencyId);
+        }}
+      return {policy:structuredClone(policy),tasks:[...ids].sort().map(id=>structuredClone(tasksById.get(id)!))};});
+  const futureAgendaGroups=new Map<string,Task[]>();
+  for(const task of problem.tasks){
+    if(!analyticalFutureEligibleTaskIds.has(task.id)||included.has(task.id)||(task.allowedItinerantUnitIds?.length??0)<2)continue;
+    const unitIds=[...task.allowedItinerantUnitIds!].sort();const identity=unitIds.join("+");
+    futureAgendaGroups.set(identity,[...(futureAgendaGroups.get(identity)??[]),task]);
+  }
+  problem.analyticalFutureItinerantAgendas=[...futureAgendaGroups.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([identity,members])=>{
+    const memberIds=new Set(members.map(task=>task.id)),prerequisiteIds=new Set<string>(),pending=members.flatMap(task=>task.dependencies);
+    while(pending.length){const id=pending.pop()!;if(memberIds.has(id)||prerequisiteIds.has(id))continue;
+      const task=tasksById.get(id);if(!task||included.has(id))continue;
+      if(!analyticalFutureEligibleTaskIds.has(id))continue;prerequisiteIds.add(id);pending.push(...task.dependencies);}
+    return {identity,unitIds:identity.split("+"),tasks:members.slice().sort((a,b)=>a.id.localeCompare(b.id)).map(task=>structuredClone(task)),
+      prerequisiteTasks:[...prerequisiteIds].sort().map(id=>structuredClone(tasksById.get(id)!))};
+  });
   problem.tasks = problem.tasks.filter(({ id }) => included.has(id));
   problem.anchoredAccompaniments = problem.anchoredAccompaniments?.filter((anchor) =>
     [anchor.anchorTaskId, ...anchor.beforeTaskIds, ...anchor.afterTaskIds].every((id) => included.has(id)));
@@ -492,8 +576,25 @@ export function buildAssistedProblem(
     return fixed?{...policy,window:{start:fixed.start,end:fixed.end}}:policy;
   });
 
+  // Build missing structural units through the same scope-closure and exact core
+  // authorities. This projection is only a producer input: it grants neither
+  // visibility nor protection. Main dependencies produce their Vocal feeders as
+  // supporting work, preserving the existing pending-load classification. All
+  // core IDs are included after closure, so recursion stops after one projection
+  // without a second search or a ledger reset.
+  const futureCore=problem.analyticalFutureCollectiveContinuation?.tasks
+    .filter(task=>(task.kind==="main"||task.kind==="vocal")&&!included.has(task.id))??[];
+  const futureCoreRoots=futureCore.filter(task=>task.kind==="main"
+    ||!source.tasks.some(main=>main.kind==="main"&&main.dependencies.includes(task.id))).map(task=>task.id);
+  const collectiveCore=futureCore.length?buildAssistedProblem(source,
+    createPlanningScope(scope.selector,scope.metadata,[...scopeIds,...futureCoreRoots]),protectedPlacements,
+    analyticalFutureEligibleTaskIds,protectedOperationalMeals,protectedSetupPreparations,
+    protectedParticipantMeals,protectedRoundPreparations,priorFutureStructuralWitnesses):undefined;
+
   return {
     problem,
+    ...(collectiveCore?{collectiveCoreProjection:{problem:collectiveCore.problem,
+      analyticalParticipantMeals:collectiveCore.analyticalParticipantMeals}}:{}),
     originalValidationProblem,
     analyticalParticipantMeals: structuredClone(analyticalParticipantMeals),
     scope,
@@ -507,15 +608,24 @@ export function buildAssistedProblem(
     supportingTaskIds: canonicalIds([...supporting]),
     supportingReasonByTaskId: Object.freeze(Object.fromEntries(canonicalIds([...supporting]).map((id) =>
       [id, Object.freeze([...(supportingReasons.get(id) ?? [])].sort())]))),
-    priorFutureStructuralWitness:priorFutureStructuralWitness?structuredClone(priorFutureStructuralWitness):undefined,
+    priorFutureStructuralWitnesses:structuredClone(priorFutureStructuralWitnesses),
+    priorFutureStructuralWitness:structuredClone(priorFutureStructuralWitnesses.find((item):item is Extract<import("./anonymousPipelineWitness").FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>=>item.kind==="FIXED_SUPPORTING_PIPELINE")),
   };
 }
 
-export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?:AssistedAcceptedBaseline): AssistedPlanningResult {
+export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?:AssistedAcceptedBaseline,
+  runtime?:{now?:()=>number}): AssistedPlanningResult {
+  const now=runtime?.now??(()=>performance.now()),started=now();
+  const checkpoint=()=>{if(now()-started>=300_000)throw new ExactSearchTimeLimitReached();};
   // Future participant meals remain invisible obligations, but they must constrain
   // every constructive/future-feasibility check performed for an Assisted scope.
-  const searchProblem:PlannerNextProblem={...input.problem,participantMeals:[
-    ...(input.problem.participantMeals??[]),...input.analyticalParticipantMeals,
+  const producer=input.collectiveCoreProjection??input;
+  const searchProblem:PlannerNextProblem={...producer.problem,
+    // Assisted requests share one interactive ledger. Preserve smaller caller
+    // budgets and leave the canonical source/configuration read-only.
+    budget:{...producer.problem.budget,maxBranchExpansions:Math.min(100_000,producer.problem.budget.maxBranchExpansions)},
+    participantMeals:[
+    ...(producer.problem.participantMeals??[]),...producer.analyticalParticipantMeals,
   ]};
   const acceptedKeys=new Set((acceptedBaseline?.violations??[]).map(violationIdentity));
   const protectedIds=new Set(input.protectedPlacements.map(({id})=>id));
@@ -525,11 +635,18 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
       &&item.affectedTaskIds.length>0&&item.affectedTaskIds.every(id=>protectedIds.has(id)));
     return exactAcceptedFixedBaseline&&(summary.unstructuredReasonCodes?.length??0)===0;
   };
-  const execution = executePlannerNext(searchProblem, { causalDiagnostic: true, acceptsValidation,
+  const execution = executePlannerNext(searchProblem, { causalDiagnostic: true, acceptsValidation,checkpoint,
     fixedPlacements:input.protectedPlacements, fixedPlacementsAsContext:true,
     fixedSetupPreparations:input.protectedSetupPreparations, fixedRoundPreparations:input.protectedRoundPreparations,
-    priorFutureStructuralWitness:input.priorFutureStructuralWitness });
-  const result = execution.result;
+    priorFutureStructuralWitnesses:input.priorFutureStructuralWitnesses??(input.priorFutureStructuralWitness?[input.priorFutureStructuralWitness]:[]) });
+  const executableIds=new Set(input.problem.tasks.map(task=>task.id));
+  const result = execution.result&&input.collectiveCoreProjection?{...execution.result,
+    scheduledTasks:execution.result.scheduledTasks.filter(task=>executableIds.has(task.id)),
+    scheduledSetupPreparations:execution.result.scheduledSetupPreparations.filter(prep=>input.problem.tasks
+      .some(task=>task.spaceId===prep.spaceId&&task.setupFamilyId===prep.setupFamilyId)),
+    ...("scheduledRoundPreparations" in execution.result?{scheduledRoundPreparations:execution.result.scheduledRoundPreparations
+      .filter(prep=>input.problem.roundSynchronizations?.some(policy=>policy.id===prep.synchronizationId))}:{}),
+  }:execution.result;
   const protectedById = new Map(input.protectedPlacements.map((placement) => [placement.id, placement]));
   const searchScheduled = result?.complete ? result.scheduledTasks : [];
   const projectedParticipantMealSources=new Set((input.originalValidationProblem.participantMeals??[]).map(meal=>meal.sourceTaskId));
@@ -572,7 +689,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     : !searchHardValid ? "ASSISTED_HARD_VALIDATION_FAILED" : "ASSISTED_SCOPE_COMPLETE");
   const evidenceRecord = result && "evidence" in result ? result.evidence as unknown as Record<string, unknown> : {};
   const metricsRecord = result && "metrics" in result ? result.metrics as unknown as Record<string, unknown> : {};
-  const standaloneKeys = ["standaloneBranchesByDepth","standaloneSelectionsByTaskId","standaloneCandidateStartsByTaskId",
+  const standaloneKeys = ["bundleContinuationDeferrals","bundleContinuationResumptions","bundlePendingContinuations",
+    "standaloneBranchesByDepth","standaloneSelectionsByTaskId","standaloneCandidateStartsByTaskId",
     "standaloneMaximumDepth","standaloneCompleteLeafCount","terminalTransportMaterializationAttempts",
     "macroCandidateCausalTraces","macroCandidateCausalReconciliation",
     "roundSynchronizationSharedOperationalMealPolicyIds","roundSynchronizationBreakVariantsConsidered",
@@ -593,7 +711,10 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "itinerantAgendaStaticStarts","itinerantAgendaDynamicStarts","itinerantAgendaBranchesBeforeSelection",
     "itinerantAgendaBranches","itinerantAgendaCandidates","itinerantAgendaAssignmentsAndOrders",
     "itinerantAgendaEventBoundaryStarts","itinerantAgendaFirstCompleteBranch",
-    "setupBlockSearchInvocations","setupBlockStartsExplored","setupBlockCompleteCandidateCount","preferredResourceUnit"] as const;
+    "setupBlockSearchInvocations","setupBlockStartsExplored","setupBlockCompleteCandidateCount","preferredResourceUnit",
+    "futureRoundWitnessSearchInvocations","futureRoundWitnessStructuralCandidates","futureRoundWitnessCompleteMatchings",
+    "futureRoundWitnessParticipantFutureChecks","futureRoundWitnessPrerequisiteChecks","futureRoundWitnessBranchesConsumed",
+    ...futureCollectiveClosureEvidenceKeys] as const;
   const standaloneDiagnostic=Object.fromEntries(standaloneKeys.map(key=>[key,evidenceRecord[key]])) as AssistedPlanningEvidence["standaloneDiagnostic"];
   const work = Object.fromEntries(["branchesExplored", "coreBranches", "standaloneBranches", "backtracks", "patternsGenerated", "branchBudgetConsumed",
     "coreMaximumDepth", "patternCandidatesExplored", "timelineCandidatesExplored", "mainCandidatesEvaluated",
@@ -609,11 +730,14 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "standaloneForwardStartChecks", "standaloneForwardWitnessCacheHits", "standaloneForwardWitnessCacheMisses",
     "coreLeafTransportPrunes", "transportContiguousStates", "membershipFallbackEntered",
     "participantMealFutureFeasibilityChecks","participantMealFutureInfeasibleBranches","participantMealAffectedObligationsChecked",
-    "participantMealZeroDomainPrunes","participantMealAnalyticCollectivePrunes","participantMealExactMaterializations"]
+    "participantMealZeroDomainPrunes","participantMealAnalyticCollectivePrunes","participantMealExactMaterializations",
+    "futureRoundWitnessSearchInvocations","futureRoundWitnessStructuralCandidates","futureRoundWitnessCompleteMatchings",
+    "futureRoundWitnessParticipantFutureChecks","futureRoundWitnessPrerequisiteChecks","futureRoundWitnessBranchesConsumed"]
     .flatMap((key) => {
       const value = evidenceRecord[key] ?? metricsRecord[key];
       return typeof value === "number" ? [[key, value] as const] : [];
     }));
+  work.branchBudgetLimit=searchProblem.budget.maxBranchExpansions;
   const selectedMealWitnesses=result?.complete?{
     participant:{scheduled:structuredClone(result.scheduledParticipantMeals),fingerprint:participantMealWitnessFingerprint(result.scheduledParticipantMeals),
       finalSelectionOrder:[...(evidenceRecord.participantMealFinalSelectionOrder as string[]|undefined)??[]]},
@@ -629,7 +753,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "fixedSupportingEdges","fixedSupportingZeroDomainTaskIds","fixedSupportingPerfectMatchingFound",
     "fixedSupportingRematchedIdentityCount","fixedSupportingArrivalResult","fixedSupportingArrivalPacketCount",
     "fixedSupportingSameGeometryRescued","fixedSupportingGeometriesAttempted","fixedSupportingGeometryFailure",
-    "fixedSupportingGlobalFailure","priorFutureStructuralWitnessFound","priorFutureStructuralWitnessFingerprint",
+    "fixedSupportingGlobalFailure","fixedSupportingWitnessDiagnostic","fixedSupportingWitnessAuthority",
+    "priorFutureStructuralWitnessFound","priorFutureStructuralWitnessFingerprint",
     "priorFutureStructuralWitnessRevalidation","priorFutureStructuralWitnessRejectCause","priorFutureStructuralWitnessRejectDetails",
     "priorFutureStructuralWitnessReused","priorFutureStructuralWitnessFallbackEntered",
     "futureStructuralWitnesses","ephemeralSupportingPlacements","acceptedSupportingPlacements","branchesBeforeCurrentContinuation",
@@ -678,10 +803,38 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     priorFutureStructuralWitnessRejectDetails:structuredClone((evidenceRecord.priorFutureStructuralWitnessRejectDetails as Readonly<Record<string,unknown>>|null|undefined)??null),
     priorFutureStructuralWitnessReused:Boolean(evidenceRecord.priorFutureStructuralWitnessReused),
     priorFutureStructuralWitnessFallbackEntered:Boolean(evidenceRecord.priorFutureStructuralWitnessFallbackEntered),
+    futureItinerantWitnessSearchInvocations:Number(evidenceRecord.futureItinerantWitnessSearchInvocations??0),
+    futureWitnessSet:structuredClone(evidenceRecord.futureWitnessSet as import("./futureStructuralWitnessSet").FutureWitnessSetEvidence|undefined),
+    futureWitnessSetCandidateTraces:structuredClone(evidenceRecord.futureWitnessSetCandidateTraces as import("./exactItinerantPlan").ExactItinerantPlanEvidence["futureWitnessSetCandidateTraces"]|undefined),
+    futureItinerantWitnessCandidates:Number(evidenceRecord.futureItinerantWitnessCandidates??0),
+    futureItinerantWitnessBranchesConsumed:Number(evidenceRecord.futureItinerantWitnessBranchesConsumed??0),
+    futureItinerantWitnessesFound:Number(evidenceRecord.futureItinerantWitnessesFound??0),
+    futureItinerantWitnessFingerprint:(evidenceRecord.futureItinerantWitnessFingerprint as string|null|undefined)??null,
+    futureItinerantWitnessSupportingFingerprint:(evidenceRecord.futureItinerantWitnessSupportingFingerprint as string|null|undefined)??null,
+    futureItinerantWitnessRejectsByAuthority:(evidenceRecord.futureItinerantWitnessRejectsByAuthority as Readonly<Record<string,number>>|undefined)??{},
+    futureItinerantWitnessFirstReject:(evidenceRecord.futureItinerantWitnessFirstReject as Readonly<Record<string,unknown>>|null|undefined)??null,
+    futureItinerantPriorRevalidation:(evidenceRecord.futureItinerantPriorRevalidation as "PASS"|"REJECT"|"STALE"|"BUDGET_EXHAUSTED"|null|undefined)??null,
+    futureItinerantPriorRejectCause:(evidenceRecord.futureItinerantPriorRejectCause as string|null|undefined)??null,
+    futureItinerantPriorPreviousFrontier:(evidenceRecord.futureItinerantPriorPreviousFrontier as number|null|undefined)??null,
+    futureItinerantPriorCurrentFrontier:(evidenceRecord.futureItinerantPriorCurrentFrontier as number|null|undefined)??null,
+    futureItinerantPriorRevalidationMs:Number(evidenceRecord.futureItinerantPriorRevalidationMs??0),
+    futureItinerantPrerequisiteSearchMs:Number(evidenceRecord.futureItinerantPrerequisiteSearchMs??0),
+    futureItinerantStructuralSearchMs:Number(evidenceRecord.futureItinerantStructuralSearchMs??0),
+    futureItinerantParticipantFutureMs:Number(evidenceRecord.futureItinerantParticipantFutureMs??0),
+    futureItinerantTechnicalFutureMs:Number(evidenceRecord.futureItinerantTechnicalFutureMs??0),
+    futureItinerantParticipantMealsMs:Number(evidenceRecord.futureItinerantParticipantMealsMs??0),
+    futureItinerantOperationalMealsMs:Number(evidenceRecord.futureItinerantOperationalMealsMs??0),
+    priorItinerantWitnessFound:Boolean(evidenceRecord.priorItinerantWitnessFound),
+    priorItinerantWitnessRevalidation:(evidenceRecord.priorItinerantWitnessRevalidation as "PASS"|"REJECT"|"STALE"|"BUDGET_EXHAUSTED"|null|undefined)??null,
+    priorItinerantWitnessRejectCause:(evidenceRecord.priorItinerantWitnessRejectCause as string|null|undefined)??null,
+    priorItinerantWitnessReused:Boolean(evidenceRecord.priorItinerantWitnessReused),
+    priorItinerantWitnessFallbackEntered:Boolean(evidenceRecord.priorItinerantWitnessFallbackEntered),
     ephemeralSupportingPlacements:structuredClone((evidenceRecord.ephemeralSupportingPlacements as ExactItinerantPlanEvidence["ephemeralSupportingPlacements"]|undefined)??[]),
     acceptedSupportingPlacements:structuredClone((evidenceRecord.acceptedSupportingPlacements as ScheduledTask[]|undefined)??[]),
     futureStructuralWitnesses:structuredClone((evidenceRecord.futureStructuralWitnesses as ExactItinerantPlanEvidence["futureStructuralWitnesses"]|undefined)??[]),
     branchesBeforeCurrentContinuation:(evidenceRecord.branchesBeforeCurrentContinuation as number|null|undefined)??null,
+    selectedPipelineWitnessDiagnostic:structuredClone((evidenceRecord.selectedPipelineWitnessDiagnostic as ExactItinerantPlanEvidence["selectedPipelineWitnessDiagnostic"]|undefined)??null),
+    selectedPipelineWitnessAuthority:structuredClone((evidenceRecord.selectedPipelineWitnessAuthority as ExactItinerantPlanEvidence["selectedPipelineWitnessAuthority"]|undefined)??null),
     selectedMealWitnesses,
     fixedMainBundle,
     selectedSetupPreparations:structuredClone(result?.scheduledSetupPreparations??[]),

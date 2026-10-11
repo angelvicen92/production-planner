@@ -22,18 +22,23 @@ export const createDayConfigurationIntentSchema = z.object({
     z.object({ intent: z.literal("INHERIT") }).strict(),
     z.object({ intent: z.literal("OVERRIDE"), value: mealConfigurationSchema }).strict(),
   ]),
+  participantTransition: z.discriminatedUnion("intent", [
+    z.object({ intent: z.literal("INHERIT") }).strict(),
+    z.object({ intent: z.literal("OVERRIDE"), value: z.number().int().min(0) }).strict(),
+  ]).default({ intent: "INHERIT" }),
 }).strict();
 
 export const dayConfigEditSchema = z.object({
   workday: timeWindowSchema.optional(),
   meal: mealConfigurationSchema.optional(),
   optimizer: z.record(z.string(), z.unknown()).optional(),
-}).strict().refine(value => value.workday !== undefined || value.meal !== undefined || value.optimizer !== undefined, "At least one capability is required");
+  participantTransitionMinutes: z.number().int().min(0).optional(),
+}).strict().refine(value => value.workday !== undefined || value.meal !== undefined || value.optimizer !== undefined || value.participantTransitionMinutes !== undefined, "At least one capability is required");
 
-export const dayConfigCapabilitySchema = z.enum(["WORKDAY_WINDOW", "GLOBAL_MEAL_BREAK", "OPTIMIZATION"]);
+export const dayConfigCapabilitySchema = z.enum(["WORKDAY_WINDOW", "GLOBAL_MEAL_BREAK", "PARTICIPANT_TRANSITION", "OPTIMIZATION"]);
 export const dayConfigRestoreSchema = z.object({ capability: dayConfigCapabilitySchema }).strict();
 export const dayConfigRefreshSchema = z.object({
-  capabilities: z.array(dayConfigCapabilitySchema).min(1).max(3).transform(values => [...new Set(values)]),
+  capabilities: z.array(dayConfigCapabilitySchema).min(1).max(4).transform(values => [...new Set(values)]),
   legacyTreatment: z.enum(["KEEP_LEGACY", "ADOPT_GENERAL_AS_INHERITED"]).default("KEEP_LEGACY"),
 }).strict();
 

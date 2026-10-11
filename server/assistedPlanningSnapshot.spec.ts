@@ -65,6 +65,23 @@ test("execution changes are excluded and source input remains mutable/unmodified
 
 test("empty and omitted PlanningBlocks preserve the legacy blockless identity",()=>{const omitted=buildAssistedPlanningSnapshotV1(base);const empty=buildAssistedPlanningSnapshotV1(base,[]);assert.deepEqual(empty,omitted);assert.equal(Object.prototype.hasOwnProperty.call(empty,"planningBlocks"),false);assert.equal(fingerprintAssistedPlanningSnapshotV1(empty),fingerprintAssistedPlanningSnapshotV1(omitted));});
 
+test("persisted JSON object-key ordering preserves meals, preparations, blocks and the established fingerprint",()=>{
+  const snapshot=buildAssistedPlanningSnapshotV1(
+    [{id:1,startPlanned:"09:00",endPlanned:"09:10"},{id:2,startPlanned:"09:10",endPlanned:"09:20"}],
+    [{blockId:"block:a",memberTaskIds:[1,2],scopeProvenance:{z:1,a:2},spaceId:4,activityTemplateId:8,order:0}],
+    [{policyId:"meal:a",startPlanned:"13:00",endPlanned:"13:30"}],
+    [{id:"setup:a",spaceId:4,setupFamilyId:"family:a",entryIndex:1,duration:5,start:0,end:5}],
+    [{id:"round:a",synchronizationId:"sync:a",spaceId:4,roundIndex:2,duration:5,start:10,end:15}],
+  );
+  const reorder=(value:any):any=>Array.isArray(value)?value.map(reorder):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).reverse().map(([k,v])=>[k,reorder(v)])):value;
+  const persisted=reorder(snapshot);
+  assert.equal(fingerprintAssistedPlanningSnapshotV1(persisted),fingerprintAssistedPlanningSnapshotV1(snapshot));
+  assert.equal(fingerprintAssistedPlanningSnapshotV1(snapshot),'6f0b62f66491ad9be4e0710e4e02784f22a790f472a2543639f44216d6cf558a');
+  assert.deepEqual(buildAssistedPlanningSnapshotV1(persisted.tasks.map((t:any)=>({id:t.taskId,...t})),persisted.planningBlocks,persisted.operationalMeals,persisted.setupPreparations,persisted.roundPreparations),snapshot);
+  const changed={...persisted,operationalMeals:persisted.operationalMeals.map((m:any)=>({...m,endPlanned:'13:35'}))};
+  assert.notEqual(fingerprintAssistedPlanningSnapshotV1(changed),fingerprintAssistedPlanningSnapshotV1(snapshot));
+});
+
 test("operational meals are canonical, deterministic, and legacy identity remains unchanged",()=>{
   const legacy=buildAssistedPlanningSnapshotV1(base);
   assert.equal(fingerprintAssistedPlanningSnapshotV1(legacy),"69008e0fca5764a24ecd176eea4a8770d69a0391b64ed834a8f36564e85065cb");

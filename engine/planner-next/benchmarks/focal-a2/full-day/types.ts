@@ -59,6 +59,8 @@ export interface CanonicalTaskTypeDefinition {
   readonly knownResourceIds: readonly string[];
   readonly blocksParticipant: boolean;
   readonly countsForMainFlow?: boolean;
+  readonly participantMarginBeforeMinutes?: number;
+  readonly participantMarginAfterMinutes?: number;
 }
 
 export interface CanonicalTask {
@@ -81,6 +83,8 @@ export interface CanonicalTask {
   readonly transport?: { readonly direction: "arrival" | "departure" };
   readonly isAnchoredSegment?: boolean;
   readonly editorialTags: readonly string[];
+  readonly participantMarginBeforeMinutes?: number;
+  readonly participantMarginAfterMinutes?: number;
 }
 
 export interface CanonicalParticipantAssignment {

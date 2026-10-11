@@ -1,15 +1,7 @@
-import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { resolve } from "node:path";
-import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledTask, Task } from "../../engine/planner-next/contracts";
-import { canPlaceTask, exactTaskStartDomain } from "../../engine/planner-next/placement";
-import { participantMealCandidates, participantMealWitnessFingerprint } from "../../engine/planner-next/participantMeals";
-import { materializeTerminalTransportDetailed, type DetailedTransportMaterialization } from "../../engine/planner-next/transportGrouping";
-import { engineTimeToMinute } from "../../engine/planner-next/integration/engineTime";
-import { buildCanonicalA2AssistedStage1Fixture } from "../../engine/planner-next/benchmarks/canonicalA2AssistedStage1Fixture";
-import { buildAssistedPlanningSnapshotV1 } from "../assistedPlanningSnapshot";
-import { runA2Assist8Evidence } from "./runA2Assist8Evidence";
+import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledTask, Task } from "../contracts";
+import { canPlaceTask, exactTaskStartDomain } from "../placement";
+import { participantMealCandidates } from "../participantMeals";
+import { materializeTerminalTransportDetailed, type DetailedTransportMaterialization } from "../transportGrouping";
 
 export type CollectiveClosureCapacityStatus=
   |"COLLECTIVE_CLOSURE_CAPACITY_PASS"
@@ -124,36 +116,3 @@ export function classifyCollectiveClosureCapacity(problem:PlannerNextProblem,pro
 
 // Compatibility name retained for the focused diagnostic tests and callers.
 export const solveStageClosure=classifyCollectiveClosureCapacity;
-
-async function run(){
-  const prior=JSON.parse(readFileSync("docs/evidence/A2-ASSIST-8-assisted-completion.json","utf8"));
-  const prefix=prior.iterations?.find((item:any)=>item.ordinal===6);assert.equal(prefix?.acceptedSnapshotBefore?.length,75);
-  const fixture=buildCanonicalA2AssistedStage1Fixture(6_000,711),acceptedPrefix=new Map(prefix.acceptedSnapshotBefore.map((row:any)=>[row.taskId,row]));
-  const initialSnapshot=buildAssistedPlanningSnapshotV1(fixture.input.tasks.map(task=>({id:task.id,startPlanned:null,endPlanned:null,
-    zoneId:task.zoneId??null,spaceId:task.spaceId??null,...(acceptedPrefix.get(task.id)??{})})),undefined,prefix.baseSnapshotOperationalMeals,
-    prefix.baseSnapshotSetupPreparations,prefix.baseSnapshotRoundPreparations);
-  const staged=await runA2Assist8Evidence({branchBudget:6_000,initialSnapshot,stopAfterIterationCount:4,reportIterationDurations:true});
-  assert.deepEqual(staged.iterations.map((item:any)=>item.completedObligationCount),[111,169,207,209]);
-  const problem=fixture.adapter.problem as PlannerNextProblem,identityMap=fixture.adapter.identityMap as any[];
-  const canonical=(namespace:string,id:number|string)=>identityMap.find(item=>item.namespace===namespace&&String(item.sourceId)===String(id))?.canonicalId;
-  const classify=(count:number,rows:any[],mealWitness:any)=>{
-    const protectedTasks:ScheduledTask[]=rows.flatMap(row=>{if(!row.startPlanned||!row.endPlanned)return[];const id=canonical("task",row.taskId),task=problem.tasks.find(item=>item.id===id);if(!task)return[];
-      const required=(row.assignedResourceIds??[]).map((value:number)=>canonical("plan-resource",value)).filter(Boolean);
-      return [{...task,...(required.length?{requiredResourceIds:required}:{}),start:engineTimeToMinute(row.startPlanned),end:engineTimeToMinute(row.endPlanned)}];});
-    const pendingSources=new Set((problem.participantMeals??[]).filter(meal=>!protectedTasks.some(task=>task.id===meal.sourceTaskId)).map(meal=>meal.sourceTaskId));
-    const witness=[...(mealWitness?.participant?.scheduled??[])].filter((meal:ScheduledParticipantMeal)=>pendingSources.has(meal.sourceTaskId));
-    let accepted:ScheduledParticipantMeal[]=[];for(const meal of witness){const obligation=problem.participantMeals?.find(item=>item.sourceTaskId===meal.sourceTaskId);
-      if(!obligation||!participantMealCandidates(problem,obligation,protectedTasks,accepted).some(item=>item.start===meal.start&&item.end===meal.end))return {snapshot:count,status:"INCONCLUSIVE",cause:`SODEXO_WITNESS_REJECTED:${meal.sourceTaskId}`};accepted=[...accepted,meal];}
-    if(witness.length!==pendingSources.size)return {snapshot:count,status:"INCONCLUSIVE",cause:"SODEXO_WITNESS_UNAVAILABLE"};
-    const result=classifyCollectiveClosureCapacity(problem,protectedTasks,witness);
-    return {snapshot:count,mealWitnessFingerprint:participantMealWitnessFingerprint(witness),status:result.status,...result.evidence};
-  };
-  // The first replayed transition supplies a concrete Sodexo witness.  Reuse it
-  // for 75 only if the exact candidate authority accepts every meal there.
-  const records=[classify(75,prefix.acceptedSnapshotBefore,staged.iterations[0]?.acceptedMealWitnesses),
-    ...staged.iterations.map((item:any)=>classify(item.completedObligationCount,item.acceptedSnapshotAfter,item.acceptedMealWitnesses))];
-  const firstLoss=records.findIndex((record:any)=>record.status==="COLLECTIVE_CLOSURE_CAPACITY_INFEASIBLE");
-  console.log(JSON.stringify({records,firstTransitionLosingWitness:firstLoss<0?null:`${records[firstLoss-1]?.snapshot??"BASE"}→${records[firstLoss]!.snapshot}`},null,2));
-}
-
-if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1]))await run();
