@@ -12,6 +12,7 @@ import {materializeScheduledItinerantUnitMeals} from '../../engine/planner-next/
 import {PreparedFutureCollectiveParticipantClosure} from '../../engine/planner-next/futureCollectiveParticipantClosure';
 import {buildAssistedPlanningView} from '../../client/src/lib/assisted-planning-view';
 import {collectAssistedDraftWarnings} from '../../client/src/lib/assisted-draft-warnings';
+import {auditComplete,auditOperationalMealConsolidation} from './probeA2StageOrder';
 
 type User={id:string;email:string;password:string;token:string};
 type Options={appUrl:string;url:string;anon:string;users:Record<string,User>;db:pg.Client;planId:number;directory:string;full:boolean;pass:(s:string)=>void;buildInput:()=>Promise<EngineInput>;diagnostics:Record<string,unknown>};
@@ -135,14 +136,25 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
    await page.getByText('Historial',{exact:true}).click();await page.getByText(new RegExp(`Etapa ${ordinal} ·`)).waitFor();
    if(ordinal===1||ordinal===10){await page.getByTestId('assisted-workspace').scrollIntoViewIfNeeded();await page.screenshot({path:`${directory}/S${ordinal}-real-ui.png`,fullPage:false});}
    const completed=after.draft.tasks.filter((t:any)=>t.startPlanned&&t.endPlanned).length;
-   stages.push({ordinal,runId:Number(runId),scope:scope.selector,scopeCount:scope.taskIds.length,completed,generationMs,fingerprint:after.activeStage.snapshotFingerprint,hardCount:validated.validation.hardCount,requiredCount:validated.validation.requiredCount,independentCanonicalWitness:'PASS',witnessFingerprint:witness.fingerprint,closure:'CERTIFIED',auditCharges:charges,persistence:'PASS',reload:'PASS',protectedPlacements:'PASS',immutableStageTrigger:'PASS',staleHttpAndRpcAtomic:'PASS',draftResourceDisplay:'PASS',legalOccupancyWarnings:'PASS'});
+   const operationalMealConsolidation=auditOperationalMealConsolidation(stageBefore.snapshot_json,witness);
+   stages.push({ordinal,runId:Number(runId),scope:scope.selector,scopeCount:scope.taskIds.length,completed,generationMs,fingerprint:after.activeStage.snapshotFingerprint,hardCount:validated.validation.hardCount,requiredCount:validated.validation.requiredCount,independentCanonicalWitness:'PASS',witnessFingerprint:witness.fingerprint,closure:'CERTIFIED',auditCharges:charges,persistence:'PASS',reload:'PASS',protectedPlacements:'PASS',immutableStageTrigger:'PASS',staleHttpAndRpcAtomic:'PASS',draftResourceDisplay:'PASS',legalOccupancyWarnings:'PASS',operationalMealConsolidation});
    pass(`S${ordinal} UI → run → apply → validate → accept → SQL persistence → reload (${completed}/266)`);
    // S2 is always exercised to prove continuity and automatic protection.
   }
+  let persistedCanonical;
   if(full){
    const final=await state();assert.equal(final.draft.tasks.filter((t:any)=>t.startPlanned&&t.endPlanned).length,266);
-   const baseline=JSON.parse(readFileSync('docs/demo/A2-EXISTING-DELIVERY-EVIDENCE.json','utf8')).local.fullA2.reports[0].fingerprint;
+   const baseline=JSON.parse(readFileSync('docs/demo/A2-STAGE-ORDER-EVIDENCE.json','utf8')).baselineFingerprint;
    assert.equal(final.activeStage.snapshotFingerprint,baseline,'preserve the previously certified canonical baseline');
+   const persisted=(await db.query('SELECT snapshot_json FROM public.assisted_planning_stages WHERE id=$1',[final.activeStage.id])).rows[0].snapshot_json;
+   assert.deepEqual(persisted,final.draft,'SQL snapshot is the accepted and reloaded plan');
+   const run=(await db.query('SELECT assisted_result_json FROM public.planning_runs WHERE id=$1',[final.activeStage.proposalRunId])).rows[0].assisted_result_json;
+   const witness=run.evidence.futureStructuralWitnesses.find((w:any)=>w.kind==='JOINT_COMPLETION');assert.ok(witness);
+   const adapter=adaptEngineInputToPlannerNextProblem(await buildInput());assert.equal(adapter.status,'SUPPORTED');if(adapter.status!=='SUPPORTED')throw Error('Invalid final input');
+   persistedCanonical=auditComplete(adapter,persisted,witness);diagnostics.persistedCanonical=persistedCanonical;
+   assert.equal(persistedCanonical.status,'PASS',JSON.stringify(persistedCanonical.validation));
+   assert.equal(persistedCanonical.operationalMeals,persistedCanonical.expectedOperationalMeals);assert.deepEqual(persistedCanonical.missingOperationalMealIds,[]);
+   pass('complete SQL snapshot: canonical hard-valid 266/266, all eight operational meals and preparations valid');
    const next=await api(path+'/next-scope');assert.equal(next.status,200);assert.equal(next.data.selector,null);pass('ten-stage canonical coverage 266/266 and certified baseline fingerprint; no remaining scope');
   }
   assert.deepEqual(pageErrors,[]);assert.notDeepEqual(await daily(),beforeS1);
@@ -164,7 +176,7 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
   }
   assert.deepEqual(await daily(),material);const restored=await state();assert.equal(Number(restored.activeStage.id),Number(final.activeStage.id));assert.equal(restored.draftFingerprint,final.draftFingerprint);
   pass('admin atomic rollback to S0 and redo to final accepted Stage');
-  return {roleMatrix,s0:'PASS',stages,completed:stages.at(-1)!.completed,pageErrors,secondBrowserSession:'PASS',rollbackRedo:'PASS',searchPoliciesUnchanged:true};
+  return {roleMatrix,s0:'PASS',stages,completed:stages.at(-1)!.completed,pageErrors,secondBrowserSession:'PASS',rollbackRedo:'PASS',searchPoliciesUnchanged:true,persistedCanonical};
  }catch(error){
   // Preserve the actual SQL run outcome before the disposable database is
   // removed. No auth tokens, credentials or full private app logs are included.

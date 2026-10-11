@@ -4,6 +4,7 @@ import type { AssistedPlanningResult, AssistedProblem } from "../engine/planner-
 import {executeAssistedPlanning} from "../engine/planner-next/assistedPlanning";
 import { createSpec10021RoundSynchronizationEngineInputFixture, createSupportedEngineInputAdapterFixture } from "../engine/planner-next/integration/engineInputAdapter.fixture";
 import { materializeItinerantUnitAssignment } from "../engine/planner-next/itinerantUnitAssignment";
+import { engineTimeToMinute } from "../engine/planner-next/integration/engineInputAdapter";
 import type { IStorage } from "./storage";
 import { buildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
 import type {
@@ -398,6 +399,54 @@ test("material participant meals update their source row and restore as fixed me
   assert.deepEqual(restored?.problem.participantMeals?.find(meal=>meal.sourceTaskId==="task:106")?.fixedInterval,{start:840,end:885});
 });
 
+test("operational meals consolidate only after all space/resource/coach consumers, preserving accepted intervals on replay",async()=>{
+  const mealInput=structuredClone(input);mealInput.locks=[];
+  mealInput.mealMode="flexible_meal_window";mealInput.mealWindow={start:"13:00",end:"16:30"};
+  mealInput.operationalMealPolicies=[
+    {id:"main-room",window:{start:"13:00",end:"16:30"},durationMinutes:75,planResourceItemIds:[],spaceIds:[301]},
+    {id:"coach",window:{start:"13:00",end:"16:30"},durationMinutes:45,planResourceItemIds:[501],spaceIds:[]},
+    {id:"technical-resource",window:{start:"13:00",end:"16:30"},durationMinutes:75,planResourceItemIds:[503],spaceIds:[]},
+  ];
+  const initial=buildAssistedPlanningSnapshotV1(mealInput.tasks.map(task=>({id:task.id,startPlanned:null,endPlanned:null,
+    zoneId:task.zoneId??null,spaceId:task.spaceId??null})),baseSnapshot.planningBlocks);
+  const exercise=async()=>{
+    let snapshot=initial;const traces=[];
+    for(const ids of [[101],[103],[102],[104],[105]]){
+      const before=structuredClone(snapshot),fingerprint=fingerprintAssistedPlanningSnapshotV1(snapshot);
+      const acceptedStage={...stage,snapshotJson:snapshot,snapshotFingerprint:fingerprint};
+      let captured:AssistedProblem|undefined;
+      const runner=(problem:AssistedProblem):AssistedPlanningResult=>{
+        captured=problem;
+        const policies=problem.originalValidationProblem.operationalMealPolicies??[];
+        const selected=policies.map(policy=>({id:policy.id,resourceIds:[...policy.resourceIds],spaceIds:[...policy.spaceIds],
+          duration:policy.duration,start:840,end:840+policy.duration}));
+        // A later witness must never replace an already accepted interval.
+        if(snapshot.operationalMeals?.length){selected.find(meal=>meal.id==="break:main-room")!.start=900;selected.find(meal=>meal.id==="break:main-room")!.end=975;}
+        return {proposal:ids.map(id=>({...problem.problem.tasks.find(task=>task.id===`task:${id}`)!,start:600,end:630})),
+          evidence:{...evidence(true),selectedMealWitnesses:{participant:null,operational:{scheduled:selected,fingerprint:"selected"},resource:[],itinerantUnit:[]}}};
+      };
+      const service=new AssistedProposalService(storage({getActiveAssistedPlanningSession:async()=>({...session,draftFingerprint:fingerprint}),
+        getPlanOptimizerSnapshot:async()=>({}),getPlanTaskTemplateSnapshots:async()=>[],getPlanConfigRevision:async()=>({planId,fingerprint:"B"}),
+        getAssistedPlanningStage:async()=>acceptedStage,listAssistedPlanningStages:async()=>[acceptedStage]},[]),queueMicrotask,
+        access({find:async()=>({data:{...runRecord(),scope_task_ids_json:ids},error:null})}),runner,
+        {...dependencies(),buildInput:async()=>structuredClone(mealInput)});
+      const result=await service.run(planId,9);assert.equal(result.outcome,"PROPOSAL",JSON.stringify(result.reasonCodes));assert.ok(result.proposedDraftSnapshot);
+      snapshot=result.proposedDraftSnapshot;
+      assert.deepEqual(captured!.protectedOperationalMeals.map(meal=>({id:meal.id,start:meal.start,end:meal.end})),
+        (before.operationalMeals??[]).map(meal=>({id:meal.policyId,start:engineTimeToMinute(meal.startPlanned),end:engineTimeToMinute(meal.endPlanned)})));
+      for(const meal of before.operationalMeals??[])assert.deepEqual(snapshot.operationalMeals!.find(item=>item.policyId===meal.policyId),meal);
+      for(const task of before.tasks.filter(task=>task.startPlanned))assert.deepEqual(snapshot.tasks.find(item=>item.taskId===task.taskId),task);
+      assert.deepEqual(snapshot.planningBlocks,before.planningBlocks);
+      for(const task of before.tasks.filter(task=>!ids.includes(task.taskId)))assert.deepEqual(snapshot.tasks.find(item=>item.taskId===task.taskId),task,"future rows remain virtual and prior rows unchanged");
+      assert.equal(result.proposedDraftFingerprint,fingerprintAssistedPlanningSnapshotV1(snapshot));
+      traces.push({meals:snapshot.operationalMeals,fingerprint:result.proposedDraftFingerprint});
+    }
+    assert.deepEqual(traces.map(trace=>trace.meals?.map(meal=>meal.policyId)??[]),[[],["break:main-room"],["break:main-room"],["break:coach","break:main-room"],["break:coach","break:main-room","break:technical-resource"]]);
+    return traces;
+  };
+  assert.deepEqual(await exercise(),await exercise(),"same acceptance order reproduces meals and fingerprints");
+});
+
 test("run grandfathers an unchanged ACTIVE exception from an earlier config revision into the runner baseline", async () => {
   const writes: string[] = []; let baseline: unknown;
   const acceptedException = {
@@ -530,6 +579,12 @@ test("accepted itinerant direct assignment survives into the next stage without 
     {itinerantTeamId:7,windows:[source.workDay],planResourceItemIds:[510]},
     {itinerantTeamId:8,windows:[source.workDay],planResourceItemIds:[511]},
   ];
+  source.mealMode="flexible_meal_window";source.mealWindow={start:"13:00",end:"16:30"};
+  source.operationalMealPolicies=[{id:"unit-b",window:source.mealWindow,durationMinutes:45,planResourceItemIds:[511],spaceIds:[]}];
+  const mealEvidence=(problem:AssistedProblem):AssistedPlanningResult["evidence"]=>{
+    const policy=problem.originalValidationProblem.operationalMealPolicies![0]!;
+    return {...evidence(true),selectedMealWitnesses:{participant:null,operational:{scheduled:[{id:policy.id,resourceIds:policy.resourceIds,spaceIds:policy.spaceIds,duration:45,start:840,end:885}],fingerprint:"unit-meal"},resource:[],itinerantUnit:[]}};
+  };
   const pooled={...source.tasks.find(task=>task.id===105)!,assignedResourceIds:[510,512],itinerantTeamRequirement:"any",allowedItinerantTeamIds:[7,8]};
   source.tasks=source.tasks.map(task=>task.id===105?pooled:task).concat({...pooled,id:106,templateId:906,assignedResourceIds:[510]});
   const initial=buildAssistedPlanningSnapshotV1(source.tasks.map(task=>({id:task.id,startPlanned:null,endPlanned:null,spaceId:task.spaceId??null,zoneId:task.zoneId??null,assignedResourceIds:task.assignedResourceIds??[]})));
@@ -541,7 +596,7 @@ test("accepted itinerant direct assignment survives into the next stage without 
     const task=problem.problem.tasks.find(item=>item.id==="task:105")!;
     const selected=materializeItinerantUnitAssignment(problem.problem,task,"itinerant-team:8")!;
     assert.deepEqual([...(selected.requiredResourceIds??[])].sort(),["plan-resource:503","plan-resource:511","plan-resource:512","plan-resource:513"].sort());
-    return {proposal:[{...selected,start:600,end:630}],evidence:evidence(true)};
+    return {proposal:[{...selected,start:600,end:630}],evidence:mealEvidence(problem)};
   };
   const first=new AssistedProposalService(reads(),queueMicrotask,access({find:async()=>({data:{...runRecord(),assisted_session_id:70,base_stage_id:40,scope_task_ids_json:[105],scope_json:{selector:{kind:"TASK_IDS",taskIds:[105]}}},error:null}),finish:async(_p,_r,result)=>{finished=result;return {error:null};}}),firstRunner,{buildInput:async()=>structuredClone(source),buildConfigRevision:dependencies().buildConfigRevision});
   const result=await first.run(planId,9);
@@ -549,6 +604,7 @@ test("accepted itinerant direct assignment survives into the next stage without 
   const acceptedRow=accepted.tasks.find(task=>task.taskId===105)!;
   assert.deepEqual(acceptedRow.assignedResourceIds,[511,512]);
   assert.equal(accepted.tasks.find(task=>task.taskId===106)!.itinerantTeamId,undefined,"unplaced task remains pooled");
+  assert.equal(accepted.operationalMeals?.length??0,0,"future pooled task may consume unit B; its meal is still virtual");
   assert.notEqual(fingerprintAssistedPlanningSnapshotV1(accepted),fingerprintAssistedPlanningSnapshotV1(initial));
   let dailyAssigned=[...acceptedRow.assignedResourceIds!];
   assert.deepEqual(dailyAssigned,[511,512],"accept persists direct resources only");
@@ -556,8 +612,14 @@ test("accepted itinerant direct assignment survives into the next stage without 
   currentSession={...currentSession,activeStageId:41,draftBaseStageId:41,draftSnapshotJson:accepted,draftFingerprint:currentStage.snapshotFingerprint};
   const nextInput=structuredClone(source);nextInput.tasks.find(task=>task.id===105)!.assignedResourceIds=dailyAssigned;
   let protectedNext:any[]=[];
-  const second=new AssistedProposalService(reads(),queueMicrotask,access({find:async()=>({data:{...runRecord(),assisted_session_id:70,base_stage_id:41,scope_task_ids_json:[106],scope_json:{selector:{kind:"TASK_IDS",taskIds:[106]}}},error:null}),finish:async()=>({error:null})}),problem=>{protectedNext=[...problem.protectedPlacements];return {proposal:null,evidence:evidence(false)};},{buildInput:async()=>nextInput,buildConfigRevision:dependencies().buildConfigRevision});
-  await second.run(planId,10);
+  const second=new AssistedProposalService(reads(),queueMicrotask,access({find:async()=>({data:{...runRecord(),assisted_session_id:70,base_stage_id:41,scope_task_ids_json:[106],scope_json:{selector:{kind:"TASK_IDS",taskIds:[106]}}},error:null}),finish:async()=>({error:null})}),problem=>{
+    protectedNext=[...problem.protectedPlacements];
+    const selected=materializeItinerantUnitAssignment(problem.problem,problem.problem.tasks.find(task=>task.id==="task:106")!,"itinerant-team:7")!;
+    return {proposal:[{...selected,start:660,end:690}],evidence:mealEvidence(problem)};
+  },{buildInput:async()=>nextInput,buildConfigRevision:dependencies().buildConfigRevision});
+  const completed=await second.run(planId,10);
+  assert.deepEqual(completed.proposedDraftSnapshot!.operationalMeals,[{policyId:"break:unit-b",startPlanned:"14:00",endPlanned:"14:45"}],"unit B closes only after the pending composition is accepted");
+  assert.deepEqual(completed.proposedDraftSnapshot!.tasks.find(task=>task.taskId===105),acceptedRow);
   const replay=protectedNext.find(task=>task.id==="task:105")!;
   assert.equal(replay.itinerantUnitId,"itinerant-team:8");
   assert.deepEqual(replay.requiredResourceIds.sort(),["plan-resource:503","plan-resource:511","plan-resource:512","plan-resource:513"].sort());

@@ -16,7 +16,6 @@ import { fingerprint } from "../engine/planner-next/fingerprint";
 import { createViolationKey, type StageViolation } from "../shared/assistedStageValidation";
 import type { ValidationViolationDetail } from "../engine/planner-next/contracts";
 import { affectedTasksUnchanged, resolveActiveStageLineage } from "./assistedAcceptedBaseline";
-import { mainFlowMealPolicy } from "../engine/planner-next/mainFlowMeal";
 import { materializeItinerantUnitAssignment } from "../engine/planner-next/itinerantUnitAssignment";
 import { roundPreparationId } from "../engine/planner-next/roundSynchronization";
 import { structuralWitnessIdentity, type FutureStructuralWitness } from "../engine/planner-next/anonymousPipelineWitness";
@@ -262,13 +261,23 @@ export class AssistedProposalService {
       mealProposalById.set(taskId,{startPlanned:minuteToEngineTime(meal.start),endPlanned:minuteToEngineTime(meal.end),spaceId:null});
     }
     const acceptedMeals=[...(baseSnapshot.operationalMeals??[])];
-    const acceptsMain=execution.proposal?.some(task=>task.kind==="main")??false;
-    if(acceptsMain){
-      const authority=mainFlowMealPolicy(adapter.problem);
-      const operationalIds=new Set(authority?.sourceIds.filter(id=>operationalPolicyById.has(id))??[]);
-      const selected=execution.evidence.selectedMealWitnesses?.operational?.scheduled
-        .find(meal=>operationalIds.has(meal.id));
-      if(selected&&!acceptedMeals.some(meal=>meal.policyId===selected.id))acceptedMeals.push({policyId:selected.id,startPlanned:minuteToEngineTime(selected.start),endPlanned:minuteToEngineTime(selected.end)});
+    const acceptedTasks=new Map([...protectedPlacements,...(execution.proposal??[])].map(task=>[task.id,task]));
+    for(const selected of execution.evidence.selectedMealWitnesses?.operational?.scheduled??[]){
+      if(acceptedMeals.some(meal=>meal.policyId===selected.id))continue;
+      const policy=operationalPolicyById.get(selected.id);
+      if(!policy)throw new Error(`UNPROJECTABLE_OPERATIONAL_MEAL:${selected.id}`);
+      // Only accepted/proposed consumers close a unit. Future assignments stay
+      // virtual; every explicitly admissible composition still counts until
+      // the task has an accepted materialized resource assignment.
+      const consumers=adapter.problem.tasks.filter(source=>{
+        const task=acceptedTasks.get(source.id)??source;
+        const domain=task.allowedItinerantUnitIds?.length?task.allowedItinerantUnitIds:task.itinerantUnitId?[task.itinerantUnitId]:[];
+        const resources=[...(task.requiredResourceIds??[]),...(task.coachId===undefined?[]:[task.coachId]),
+          ...(acceptedTasks.has(task.id)?[]:(adapter.problem.itinerantUnits??[]).filter(unit=>domain.includes(unit.id)).flatMap(unit=>unit.resourceIds??[]))];
+        return policy.spaceIds.includes(task.spaceId)||resources.some(id=>policy.resourceIds.includes(id));
+      });
+      if(consumers.length&&consumers.every(task=>acceptedTasks.has(task.id)))
+        acceptedMeals.push({policyId:selected.id,startPlanned:minuteToEngineTime(selected.start),endPlanned:minuteToEngineTime(selected.end)});
     }
     const sourceFamilyByCanonical=new Map(adapter.identityMap.filter(i=>i.namespace==="setup-family").map(i=>[i.canonicalId,i.sourceId]));
     const acceptedPreparations=(execution.evidence.selectedSetupPreparations??[]).map(item=>{

@@ -68,7 +68,19 @@ function auditWitness(a:EngineInputAdapterSupportedResult,w:FutureJointCompletio
  return {fingerprint:w.fingerprint,revalidation:'PASS',canonical:'PASS',closure:'CERTIFIED',charges,closureFingerprint:closure.witnessFingerprint};
 }
 
-function auditComplete(a:EngineInputAdapterSupportedResult,snapshot:AssistedPlanningSnapshotV1,witness:FutureJointCompletionWitnessV1){
+export function auditOperationalMealConsolidation(snapshot:AssistedPlanningSnapshotV1,witness:FutureJointCompletionWitnessV1){
+ const accepted=new Set(placed(snapshot).map(task=>`task:${task.taskId}`));
+ return witness.operationalMeals.map(meal=>{
+  const consumers=witness.tasks.filter(task=>meal.spaceIds.includes(task.spaceId)||(task.requiredResourceIds??[]).some(id=>meal.resourceIds.includes(id))||task.coachId!==undefined&&meal.resourceIds.includes(task.coachId));
+  const closed=consumers.length>0&&consumers.every(task=>accepted.has(task.id));
+  const stored=snapshot.operationalMeals?.find(item=>item.policyId===meal.id);
+  assert.equal(Boolean(stored),closed,'consolidate complete consumers only; future meals stay virtual');
+  if(stored)assert.deepEqual({start:engineTimeToMinute(stored.startPlanned),end:engineTimeToMinute(stored.endPlanned)},{start:meal.start,end:meal.end},'persist the selected actual interval');
+  return {policyId:meal.id,consumerCount:consumers.length,acceptedConsumers:consumers.filter(task=>accepted.has(task.id)).length,closed,persisted:Boolean(stored)};
+ });
+}
+
+export function auditComplete(a:EngineInputAdapterSupportedResult,snapshot:AssistedPlanningSnapshotV1,witness:FutureJointCompletionWitnessV1){
  const tasks=actualTasks(a,snapshot);
  const meals=(a.problem.participantMeals??[]).map(meal=>{
   const row=snapshot.tasks.find(t=>canonical(a,'task',t.taskId)===meal.sourceTaskId)!;assert.ok(row?.startPlanned&&row.endPlanned);
@@ -124,9 +136,19 @@ function relationAudit(a:EngineInputAdapterSupportedResult,left:AssistedScopeRec
 export async function probeA2StageOrder(options:Options,journey:Journey,initialInput:EngineInput){
  const {appUrl,users,db,planId,directory,buildInput,pass,diagnostics}=options;
  const path=`/api/plans/${planId}/assisted`;
+ diagnostics.stageOrderHttp={connection:'close',retries:0,timeoutMs:180_000};
  const api=async(suffix:string,method='GET',body?:unknown)=>{
-  const r=await fetch(`${appUrl}${path}${suffix}`,{method,headers:{'Content-Type':'application/json',Authorization:`Bearer ${users.production.token}`},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(180_000)});
-  return {status:r.status,data:await r.json() as any};
+  try{
+   // Independent CLI requests exercise the actual HTTP contract without an
+   // idle fetch pool surviving the synchronous S1 calculation. No retries.
+   const r=await fetch(`${appUrl}${path}${suffix}`,{method,headers:{'Content-Type':'application/json',Connection:'close',Authorization:`Bearer ${users.production.token}`},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(180_000)});
+   return {status:r.status,data:await r.json() as any};
+  }catch(error){
+   const failure=error as Error&{cause?:{name?:string;code?:string;message?:string}};
+   diagnostics.stageOrderHttpFailure={method,suffix,message:failure.message,cause:failure.cause?{name:failure.cause.name,code:failure.cause.code,message:failure.cause.message}:null,
+    runs:(await db.query('SELECT id,status,message,base_stage_id FROM public.planning_runs WHERE plan_id=$1 ORDER BY id',[planId])).rows};
+   throw error;
+  }
  };
  const state=async()=>{const r=await api('');assert.equal(r.status,200);return r.data;};
  const guard=(s:any)=>({expectedDraftFingerprint:s.draftFingerprint,expectedBaseStageId:Number(s.draftBaseStageId)});
@@ -169,7 +191,7 @@ export async function probeA2StageOrder(options:Options,journey:Journey,initialI
   const recommendation=recommendNextAssistedScope(initialInput,parent.snapshot_json)!;assert.ok(recommendation);
   assert.deepEqual(recommendation.selector,s.scope,'baseline UI used the unchanged recommender');
   assert.deepEqual(sorted(recommendation.memberTaskIds),sorted(run.scope_task_ids_json));
-  return {ordinal:index+1,runId:s.runId,parentStageId:Number(parent.id),stageId:Number(originalStages.find(p=>Number(p.proposal_run_id)===s.runId)!.id),recommendation,scope:run.scope_json,includePrerequisites:run.include_prerequisites,evidence:run.assisted_result_json.evidence,completed:s.completed};
+  return {ordinal:index+1,runId:s.runId,parentStageId:Number(parent.id),stageId:Number(originalStages.find(p=>Number(p.proposal_run_id)===s.runId)!.id),recommendation,scope:run.scope_json,includePrerequisites:run.include_prerequisites,evidence:run.assisted_result_json.evidence,reasonCodes:run.assisted_result_json.reasonCodes,completed:s.completed};
  });
  const candidates=units.slice(0,-1).map((left,i)=>({index:i,left,right:units[i+1]!,audit:relationAudit(initialAdapter,left.recommendation,units[i+1]!.recommendation)}));
  const targetKinds=[['ITINERANT_AGENDA','OPERATIONAL_MEAL'],['OPERATIONAL_MEAL','OPERATIONAL_MEAL']];
@@ -183,11 +205,13 @@ export async function probeA2StageOrder(options:Options,journey:Journey,initialI
  const baselineWitness=originalRuns.at(-1)!.assisted_result_json.evidence.futureStructuralWitnesses.find((w:any)=>w.kind==='JOINT_COMPLETION');assert.ok(baselineWitness);
  report.baselineArchive=baselineArchive;report.baselineCanonical=auditComplete(adapter(await buildInput()),originalFinal.draft,baselineWitness);save();
  try{
-  for(const candidate of selected){
+  const scenarios=[...selected.map(candidate=>({...candidate,baselineReplay:false})),{...selected[0]!,index:0,left:units[0]!,right:units[0]!,baselineReplay:true}];
+  for(const candidate of scenarios){
    const {index,left,right}=candidate,base=originalStages.find(s=>Number(s.id)===left.parentStageId)!;
-   const order=[...units.slice(index)];[order[0],order[1]]=[order[1]!,order[0]!];
-   const experiment:any={baselineOrdinals:[left.ordinal,right.ordinal],unitIds:[left.recommendation.selectedUnitId,right.recommendation.selectedUnitId],checkpoint:{stageId:Number(base.id),ordinal:Number(base.ordinal),fingerprint:base.snapshot_fingerprint,completed:count(base.snapshot_json)},classification:null,repeats:[]};report.experiments.push(experiment);
-   for(let repeat=1;repeat<=2;repeat++){
+   const order=[...units.slice(index)];if(!candidate.baselineReplay)[order[0],order[1]]=[order[1]!,order[0]!];
+   const experiment:any={baselineOrdinals:[left.ordinal,right.ordinal],unitIds:[left.recommendation.selectedUnitId,right.recommendation.selectedUnitId],checkpoint:{stageId:Number(base.id),ordinal:Number(base.ordinal),fingerprint:base.snapshot_fingerprint,completed:count(base.snapshot_json)},classification:null,repeats:[]};
+   if(candidate.baselineReplay)report.baselineReplay=experiment;else report.experiments.push(experiment);
+   for(let repeat=1;repeat<=(candidate.baselineReplay?1:2);repeat++){
     const liveBase=(await stages()).find(s=>Number(s.id)===Number(base.id))!;assert.equal(liveBase.archived_at,null,'original common checkpoint is still reachable');
     await post('/rollback',{targetStageId:Number(base.id)});const common=await state();
     assert.equal(Number(common.activeStage.id),Number(base.id));assert.deepEqual(common.draft,base.snapshot_json);assert.equal(common.draftFingerprint,base.snapshot_fingerprint);await preserveDaily(common.draft);await immutableHistory();
@@ -197,13 +221,13 @@ export async function probeA2StageOrder(options:Options,journey:Journey,initialI
     const trace:any={repeat,checkpointArchive:await archive(`pair-${left.ordinal}-${right.ordinal}-repeat-${repeat}-checkpoint`),commonConfigRevisionId:common.currentConfigRevisionId,commonContextFingerprint:hash({input:checkpointInput,snapshot:common.draft,lineage,revisions}),lineage:lineage.map(s=>({stageId:Number(s.stage.id),runId:s.run==null?null:Number(s.run.id),snapshotFingerprint:s.stage.snapshot_fingerprint,runFingerprint:s.run==null?null:hash(s.run),witnesses:s.run?.assisted_result_json?.evidence?.futureStructuralWitnesses?.map((w:any)=>({kind:w.kind,fingerprint:w.fingerprint}))})),protectedCounts:{tasks:count(common.draft),completeCatalog:common.draft.tasks.length,setupPreparations:common.draft.setupPreparations?.length??0,roundPreparations:common.draft.roundPreparations?.length??0,operationalMeals:common.draft.operationalMeals?.length??0,planningBlocks:common.draft.planningBlocks?.length??0},steps:[]};experiment.repeats.push(trace);save();
     if(repeat===2)assert.equal(trace.commonContextFingerprint,experiment.repeats[0].commonContextFingerprint,'complete original lineage, runs, witnesses, configuration, daily input and protections reproduced');
     for(const unit of order){
-     const before=await state(),selector={kind:'TASK_IDS',taskIds:[...unit.recommendation.memberTaskIds]},start=performance.now();
+     const before=await state(),selector=candidate.baselineReplay?unit.scope.selector:{kind:'TASK_IDS',taskIds:[...unit.recommendation.memberTaskIds]},start=performance.now();
      const created=await api('/proposals','POST',{selector,includePrerequisites:unit.includePrerequisites,...guard(before)});assert.equal(created.status,202,JSON.stringify(created.data));
      const runId=Number(created.data.runId);let run:any;const deadline=Date.now()+180_000;
      do{const r=await api(`/proposals/${runId}`);assert.equal(r.status,200);run=r.data;if(run.status!=='running')break;await new Promise(r=>setTimeout(r,250));}while(Date.now()<deadline);
      const result=run.assisted_result_json??run.assistedResultJson;
      const step:any={baselineUnitOrdinal:unit.ordinal,unitId:unit.recommendation.selectedUnitId,selector,runId,baseStageId:Number(before.activeStage.id),baseFingerprint:before.draftFingerprint,configRevisionId:run.config_revision_id,status:run.status,outcome:result?.outcome,generationMs:Math.round(performance.now()-start),completedBefore:count(before.draft),reasonCodes:result?.reasonCodes,evidence:result?.evidence};trace.steps.push(step);save();
-     assert.deepEqual(sorted(run.scope_task_ids_json),sorted(selector.taskIds),'explicit product scope exactly selected');assert.equal(Number(run.config_revision_id),Number(common.currentConfigRevisionId));
+     assert.deepEqual(sorted(run.scope_task_ids_json),sorted(unit.recommendation.memberTaskIds),'product scope exactly selected');assert.equal(Number(run.config_revision_id),Number(common.currentConfigRevisionId));
      if(run.status!=='success'||result?.outcome!=='PROPOSAL'){
       const unchanged=await state();assert.equal(unchanged.draftFingerprint,before.draftFingerprint);await preserveDaily(before.draft);await immutableHistory();
       trace.blocker={firstScope:unit.recommendation.selectedUnitId,completed:count(before.draft),pending:266-count(before.draft),runId,status:run.status,message:run.message,outcome:result?.outcome,reasonCodes:result?.reasonCodes,evidence:result?.evidence,archive:await archive(`pair-${left.ordinal}-${right.ordinal}-repeat-${repeat}-blocked`)};
@@ -217,21 +241,22 @@ export async function probeA2StageOrder(options:Options,journey:Journey,initialI
      await post('/accept-stage',{...guard(validated),confirmation:'NONE'});const after=await state();
      assert.equal(Number(after.activeStage.proposalRunId),runId);assert.equal(Number(after.activeStage.parentStageId),Number(before.activeStage.id));assert.deepEqual(after.draft,applied.draft);assert.equal(after.activeStage.snapshotFingerprint,fingerprintAssistedPlanningSnapshotV1(after.draft));
      await preserveDaily(after.draft);await immutableHistory();assert.deepEqual(await state(),after,'fresh HTTP reload restores persisted authority');
-     Object.assign(step,{acceptedOrdinal:after.activeStage.ordinal,acceptedStageId:Number(after.activeStage.id),completedAfter:count(after.draft),remaining:266-count(after.draft),fingerprint:after.activeStage.snapshotFingerprint,hard:0,required:0,acceptedContentPreserved:true,dailyPersistence:true,reload:true});save();
+     Object.assign(step,{acceptedOrdinal:after.activeStage.ordinal,acceptedStageId:Number(after.activeStage.id),completedAfter:count(after.draft),remaining:266-count(after.draft),fingerprint:after.activeStage.snapshotFingerprint,hard:0,required:0,acceptedContentPreserved:true,dailyPersistence:true,reload:true,operationalMealConsolidation:auditOperationalMealConsolidation(after.draft,w)});save();
      pass(`order ${left.ordinal}/${right.ordinal} repeat ${repeat}: explicit ${unit.recommendation.selectedUnitKind} → accepted S${after.activeStage.ordinal} (${step.completedAfter}/266)`);
     }
     const final=await state(),finalWitness=trace.steps.at(-1).evidence.futureStructuralWitnesses.find((w:any)=>w.kind==='JOINT_COMPLETION');assert.ok(finalWitness);
     trace.finalFingerprint=final.activeStage.snapshotFingerprint;trace.canonical=auditComplete(adapter(await buildInput()),final.draft,finalWitness);trace.finalArchive=await archive(`pair-${left.ordinal}-${right.ordinal}-repeat-${repeat}-final`);trace.pendingRecommendation=(await api('/next-scope')).data;assert.equal(trace.pendingRecommendation.selector,null);
     trace.determinismMaterial={fingerprint:trace.finalFingerprint,placementsFingerprint:trace.canonical.placementsFingerprint,steps:trace.steps.map((s:any)=>({unitId:s.unitId,completed:s.completedAfter,fingerprint:s.fingerprint,work:s.evidence.work,witness:s.witnessAudit.fingerprint,reasonCodes:s.reasonCodes}))};save();
    }
-   assert.deepEqual(experiment.repeats[0].determinismMaterial,experiment.repeats[1].determinismMaterial,'repeat the same order: same geometry, work, witness and validation');
-   assert.deepEqual(experiment.repeats[0].canonical.validation,experiment.repeats[1].canonical.validation,'same complete canonical validation on both repeats');
+   const reference=candidate.baselineReplay?{determinismMaterial:{fingerprint:report.sourceBaselineFingerprint,placementsFingerprint:report.baselineCanonical.placementsFingerprint,steps:units.map((u,i)=>({unitId:u.recommendation.selectedUnitId,completed:u.completed,fingerprint:journey.stages[i]!.fingerprint,work:u.evidence.work,witness:u.evidence.futureStructuralWitnesses.find((w:any)=>w.kind==='JOINT_COMPLETION').fingerprint,reasonCodes:u.reasonCodes}))},canonical:report.baselineCanonical}:experiment.repeats[1];
+   assert.deepEqual(experiment.repeats[0].determinismMaterial,reference.determinismMaterial,'repeat the same order: same geometry, work, witness and validation');
+   assert.deepEqual(experiment.repeats[0].canonical.validation,reference.canonical.validation,'same complete canonical validation on both repeats');
    experiment.deterministic=true;experiment.orderStatus='PASS';experiment.fullCanonicalStatus=experiment.repeats.every((r:any)=>r.canonical.status==='PASS')?'PASS':'FAIL';experiment.classification=experiment.repeats[0].finalFingerprint===report.sourceBaselineFingerprint?'VALID_ALTERNATIVE_ACCEPTANCE_ORDER_SAME_GEOMETRY':'VALID_ALTERNATIVE_ORDER_DIFFERENT_GEOMETRY';save();
   }
   report.orderStatus='PASS';
   // Collect all focal runs first, but retain the complete-plan assertion as a
   // failing gate. A witness/counterfactual is never a substitute for persistence.
-  const completeGates=[report.baselineCanonical,...report.experiments.flatMap((e:any)=>e.repeats.map((r:any)=>r.canonical))];
+  const completeGates=[report.baselineCanonical,...report.experiments.flatMap((e:any)=>e.repeats.map((r:any)=>r.canonical)),report.baselineReplay.repeats[0].canonical];
   report.fullCanonicalStatus=completeGates.every((g:any)=>g.status==='PASS')?'PASS':'FAIL';
   if(report.fullCanonicalStatus!=='PASS'){
    report.status='FAIL_CANONICAL_PERSISTENCE';save();assert.fail('Complete persisted canonical plan failed in baseline or variation; inspect missing occupations and read-only counterfactual. No complete integration certificate.');
