@@ -16,6 +16,7 @@ test('real HTTP middleware blocks anonymous/debug and task writes while preservi
   for(const role of [undefined,'norole','viewer','aux','production','admin']){
    const authorized=role!=null&&role!=='norole',writer=role==='admin'||role==='production';
    assert.equal((await request('/plans/27001','GET',role)).status,role==null?401:authorized?200:403);
+   assert.equal((await request('/plans/27001/assisted/history/timings','GET',role)).status,role==null?401:authorized?200:403);
    assert.equal((await request('/daily-tasks/10001/planned-time','PATCH',role)).status,role==null?401:writer?200:403);
    assert.equal((await request('/plans/27001/assisted/proposals','POST',role)).status,role==null?401:writer?200:403);
    assert.equal((await request('/spaces','POST',role)).status,role==null?401:role==='admin'?200:403);

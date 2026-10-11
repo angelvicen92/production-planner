@@ -13,6 +13,7 @@ import {PreparedFutureCollectiveParticipantClosure} from '../../engine/planner-n
 import {buildAssistedPlanningView} from '../../client/src/lib/assisted-planning-view';
 import {collectAssistedDraftWarnings} from '../../client/src/lib/assisted-draft-warnings';
 import {auditComplete,auditOperationalMealConsolidation} from './probeA2StageOrder';
+import {runA2ViewsHistoryJourney} from './smokeA2ViewsHistoryJourney';
 
 type User={id:string;email:string;password:string;token:string};
 type Options={appUrl:string;url:string;anon:string;users:Record<string,User>;db:pg.Client;planId:number;directory:string;full:boolean;pass:(s:string)=>void;buildInput:()=>Promise<EngineInput>;diagnostics:Record<string,unknown>};
@@ -176,6 +177,7 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
   }
   assert.deepEqual(await daily(),material);const restored=await state();assert.equal(Number(restored.activeStage.id),Number(final.activeStage.id));assert.equal(restored.draftFingerprint,final.draftFingerprint);
   pass('admin atomic rollback to S0 and redo to final accepted Stage');
+  if(full)diagnostics.viewsHistory=await runA2ViewsHistoryJourney({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics},page);
   return {roleMatrix,s0:'PASS',stages,completed:stages.at(-1)!.completed,pageErrors,secondBrowserSession:'PASS',rollbackRedo:'PASS',searchPoliciesUnchanged:true,persistedCanonical};
  }catch(error){
   // Preserve the actual SQL run outcome before the disposable database is
