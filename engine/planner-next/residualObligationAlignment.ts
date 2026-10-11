@@ -1,6 +1,7 @@
 import type { PlannerNextProblem, ScheduledTask, Task, Window } from "./contracts";
 import type { ExactItinerantPlanSearchOptions } from "./exactItinerantPlan";
 import type { ExactMainChoiceDescriptor } from "./exactMainAndFeederCore";
+import { firstParticipantObligationTask } from "./anchoredAccompaniment";
 import { latestFeederEndBeforeMain } from "./coachRouteTransitions";
 
 export interface ResidualObligationAlignmentKey {
@@ -124,6 +125,7 @@ export function evaluateResidualObligationCandidate(problem: Readonly<PlannerNex
   const idealFeederEnd = latestFeederEndBeforeMain(
     problem,
     candidate.feeder,
+    firstParticipantObligationTask(candidate.mainTask,problem),
     candidate.mainTask.spaceId,
     candidate.slot,
     candidate.firstObligation,

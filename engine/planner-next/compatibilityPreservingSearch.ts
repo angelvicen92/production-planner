@@ -27,10 +27,11 @@ import { hasExplicitMainFlowMeal } from "./spaceMeals";
 import { closeFeeders } from "./feederClosure";
 import { assessParticipantMealFutureFeasibility, participantMealWitnessFingerprint, type ParticipantMealWitness } from "./participantMeals";
 import { buildRequiredCompositeBlocks, requiredCompositePositions, taskFitsRequiredCompositePosition } from "./requiredCompositeBlock";
-import { anchoredAccompanimentIndex, firstParticipantObligation, materializeAnchoredOperation } from "./anchoredAccompaniment";
+import { anchoredAccompanimentIndex, firstParticipantObligation, firstParticipantObligationTask, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { anchoredTaskIds } from "./anchoredAccompaniment";
 import { generateMainFlowPatterns } from "./mainFlowPatterns";
 import { latestFeederEndBeforeMain } from "./coachRouteTransitions";
+import { participantGapMinutes } from "./participantTransition";
 
 interface MainAlternative {
   tasks: ScheduledTask[];
@@ -106,6 +107,7 @@ export function diagnoseGreedyFeederClosure(problem: PlannerNextProblem, mains: 
     const deadline = latestFeederEndBeforeMain(
       problem,
       feeder,
+      firstParticipantObligationTask(main,problem),
       main.spaceId,
       main.start,
       firstParticipantObligation(main, placed, anchoredAccompanimentIndex(problem)),
@@ -321,7 +323,7 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
           const participant = problem.participants.find(({ id }) => id === task.participantId);
           if (!feeder || !participant) continue;
           const deadline = operation.start - Math.max(
-            problem.participantTransitionMinutes,
+            participantGapMinutes(problem,feeder,operation.tasks[0]!),
             problem.resourceTransitionMinutes,
           );
           if (!participant.availability.some((window) => window.start + feeder.duration <= deadline)) continue;

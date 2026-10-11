@@ -1,0 +1,274 @@
+{
+  "version": 1,
+  "target": {
+    "name": "planificador_audiovisual",
+    "ref": "dyqusivzgxebkxkwohwn",
+    "date": "2026-10-30",
+    "planId": 27001,
+    "userConfirmedTestProject": true,
+    "specificWritesAuthorized": false
+  },
+  "remote": {
+    "mode": "REMOTE_REST_GET_ONLY",
+    "observedAt": "2026-10-10T18:51:24.651Z",
+    "counts": {
+      "zones": 7,
+      "spaces": 23,
+      "resource_types": 6,
+      "resource_items": 13,
+      "task_templates": 23,
+      "plans": 4,
+      "plan_task_template_snapshots": 92,
+      "plan_zone_settings": 28,
+      "plan_space_settings": 92,
+      "plan_resource_items": 51,
+      "contestants": 47,
+      "daily_tasks": 333,
+      "plan_space_resource_assignments": 8,
+      "plan_resource_bundle_snapshots": 0,
+      "plan_optimizer_snapshots": 4,
+      "plan_optimizer_snapshot_heuristics": 36,
+      "program_settings": 1,
+      "optimizer_settings": 1,
+      "planning_runs": 278,
+      "assisted_planning_sessions": 0,
+      "assisted_planning_stages": 0
+    },
+    "collisions": [],
+    "missingColumns": [
+      {
+        "table": "plans",
+        "column": "participant_transition_minutes"
+      },
+      {
+        "table": "plans",
+        "column": "participant_transition_baseline_minutes"
+      },
+      {
+        "table": "plans",
+        "column": "participant_transition_config_source"
+      },
+      {
+        "table": "plans",
+        "column": "participant_transition_override_by"
+      },
+      {
+        "table": "plans",
+        "column": "participant_transition_override_at"
+      },
+      {
+        "table": "plans",
+        "column": "planner_next_configuration"
+      },
+      {
+        "table": "plan_task_template_snapshots",
+        "column": "participant_margin_before_minutes"
+      },
+      {
+        "table": "plan_task_template_snapshots",
+        "column": "participant_margin_after_minutes"
+      },
+      {
+        "table": "plan_zone_settings",
+        "column": "name"
+      },
+      {
+        "table": "plan_zone_settings",
+        "column": "config_source"
+      },
+      {
+        "table": "plan_space_settings",
+        "column": "name"
+      },
+      {
+        "table": "plan_space_settings",
+        "column": "config_source"
+      },
+      {
+        "table": "daily_tasks",
+        "column": "participant_margin_before_minutes"
+      },
+      {
+        "table": "daily_tasks",
+        "column": "participant_margin_after_minutes"
+      },
+      {
+        "table": "plan_resource_bundle_snapshots",
+        "column": "id"
+      },
+      {
+        "table": "plan_resource_bundle_snapshots",
+        "column": "plan_id"
+      },
+      {
+        "table": "plan_resource_bundle_snapshots",
+        "column": "source"
+      },
+      {
+        "table": "plan_resource_bundle_snapshots",
+        "column": "bundles"
+      },
+      {
+        "table": "plan_resource_bundle_snapshots",
+        "column": "components"
+      },
+      {
+        "table": "plan_resource_bundle_snapshots",
+        "column": "space_affinities"
+      }
+    ],
+    "unreadableTables": [
+      {
+        "table": "plan_resource_bundle_snapshots",
+        "status": 404
+      }
+    ],
+    "anonChecks": [
+      {
+        "table": "spaces",
+        "status": 200,
+        "returnedRows": 1
+      },
+      {
+        "table": "daily_tasks",
+        "status": 200,
+        "returnedRows": 1
+      },
+      {
+        "table": "plan_resource_items",
+        "status": 200,
+        "returnedRows": 1
+      }
+    ],
+    "anonExposedRpcPaths": [],
+    "sqlCatalog": "PENDING_SQL_ACCESS",
+    "backup": "NOT_ESTABLISHED",
+    "writes": 0,
+    "operatorUpdate": {
+      "backupRestore": "CONFIRMED_BY_USER_NOT_INSPECTED_HERE",
+      "database": "Supabase PostgreSQL 17.6.1.063",
+      "preservedCounts": {
+        "plans": 4,
+        "contestants": 47,
+        "tasks": 333,
+        "runs": 278
+      },
+      "catalogExport": "CONFIRMED_BY_USER_NOT_INSPECTED_HERE"
+    }
+  },
+  "local": {
+    "focusedTests": 26,
+    "strictTypecheck": "PASS",
+    "SQL": "PostgreSQL WASM, application test schema with observed drift",
+    "schemaRollback": "PASS",
+    "v1SnapshotPreserved": "PASS",
+    "fourExistingDaysPreserved": "PASS",
+    "globalDefaultsUnchanged": "PASS",
+    "sequenceRollback": "PASS",
+    "advancedSequenceNotLowered": "PASS",
+    "actualBootstrapRPC": "PASS",
+    "canonicalProblemEqual": "PASS",
+    "securityMatrix15Tables": "PASS",
+    "HTTPRoleBoundary": "PASS",
+    "fullA2": {
+      "mode": "REAL_INPUT_BUILDER_REBUILT_AFTER_EACH_ACCEPTANCE_IN_MEMORY_RPC",
+      "writes": 0,
+      "reports": [
+        {
+          "run": 1,
+          "status": "PASS",
+          "coverage": 266,
+          "stages": 10,
+          "s1Ms": 67469,
+          "totalMs": 69839,
+          "fingerprint": "a797ee88647d14e18aaa698d53306c8005cf70588ce74b7d7333b5ba88ce216e"
+        },
+        {
+          "run": 2,
+          "status": "PASS",
+          "coverage": 266,
+          "stages": 10,
+          "s1Ms": 70968,
+          "totalMs": 73065,
+          "fingerprint": "a797ee88647d14e18aaa698d53306c8005cf70588ce74b7d7333b5ba88ce216e"
+        }
+      ],
+      "signatureProtocol": "KEY_ORDER_INVARIANT_JOINT_COMPLETION"
+    },
+    "independentStageAudits": 20,
+    "historicalS1FailureMs": 143495,
+    "preflightPolicyCommandsAndFreshTimestamps": "PASS",
+    "importRequiresSeparateDataApproval": "PASS",
+    "releaseRegressionTests": 55,
+    "canonicalTemplateDeterministic": "PASS",
+    "previousFullA2": {
+      "mode": "REAL_INPUT_BUILDER_REBUILT_AFTER_EACH_ACCEPTANCE_IN_MEMORY_RPC",
+      "writes": 0,
+      "reports": [
+        {
+          "run": 1,
+          "status": "PASS",
+          "coverage": 266,
+          "stages": 10,
+          "s1Ms": 77614,
+          "totalMs": 95437,
+          "fingerprint": "561738ed95e376d28df16ca7a16f2aef9ba0f08135f3dcd5b80a616d4a5bde54"
+        },
+        {
+          "run": 2,
+          "status": "PASS",
+          "coverage": 266,
+          "stages": 10,
+          "s1Ms": 72687,
+          "totalMs": 90053,
+          "fingerprint": "561738ed95e376d28df16ca7a16f2aef9ba0f08135f3dcd5b80a616d4a5bde54"
+        }
+      ]
+    },
+    "baselineChange": {
+      "previousFingerprint": "561738ed95e376d28df16ca7a16f2aef9ba0f08135f3dcd5b80a616d4a5bde54",
+      "currentFingerprint": "a797ee88647d14e18aaa698d53306c8005cf70588ce74b7d7333b5ba88ce216e",
+      "cause": "Previously rejected 17 equivalent protected round preparations due to object-key order; valid complete witness now replays instead of reconstructing unaccepted future geometry at S5.",
+      "oldRawPreparationEquality": 0,
+      "contentPreparationEquality": 17,
+      "changedPreviouslyUnacceptedTaskPlacements": 85,
+      "acceptedPlacementsPreserved": true,
+      "searchPoliciesChanged": false
+    }
+  },
+  "integration": {
+    "pr": 1105,
+    "branch": "codex/optiplan-a2-import-demo",
+    "base": "main",
+    "requiresPR1104Merge": false,
+    "experimentalCPWiring": false,
+    "experimentalASSTScriptsIncluded": false,
+    "ASST010AlternativeS2": "BLOCKED_UNCHANGED",
+    "remoteUIFlow": "NOT_EXECUTED",
+    "replitChanged": false,
+    "merged": false,
+    "historicalDiagnosticExclusions": [
+      "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts",
+      "server/benchmarks/runA2Assist7Evidence.spec.ts"
+    ],
+    "initialEngineCI": {
+      "run": 38078686557,
+      "result": "FAIL",
+      "passed": 2843,
+      "failed": 5,
+      "skipped": 1,
+      "failureSummary": "Four stale integration checks corrected; historical ASST-010 single-task path stays blocked and explicitly outside the SPACE demo release gate."
+    },
+    "localNativeEvidence": "A2-ASSISTED-INTEGRATION-EVIDENCE.json",
+    "localNativeStatus": "PASS",
+    "localNativeStages": 10,
+    "localNativeObligations": 266
+  },
+  "pendingRemote": [
+    "Inspect original exported catalog and restored backup artifacts",
+    "Specific schema/security/data approval",
+    "Replit update by user",
+    "Published Auth/UI/role flow and latency",
+    "Original-row comparison after approved operations"
+  ]
+}

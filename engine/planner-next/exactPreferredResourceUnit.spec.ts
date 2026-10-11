@@ -164,8 +164,34 @@ test("natural structural boundaries are continued before exact grid fallback",()
   const {problem,resourceTasks,setupTasks}=fixture();const starts:number[]=[];
   const result=exploreExactPreferredResourceUnit({problem,resourceId:"preferred",resourceTasks,setupTasks,placed:[],preparations:[],meals:[],
     ledger:createExactSearchLedger(1000),continuation:candidate=>{starts.push(Math.min(...candidate.tasks.filter(task=>task.id!=="setup").map(task=>task.start)));
-      return{outcome:starts.length===2?"FOUND":"DEAD_END"};},authorities:{participantFutureProbe:()=>futureProbe("PASS")}});
+      return{outcome:starts.length===3?"FOUND":"DEAD_END"};},authorities:{participantFutureProbe:()=>futureProbe("PASS")}});
   assert.equal(result.outcome,"FOUND");
-  assert.deepEqual(starts,[0,20]);
+  assert.deepEqual(starts,[0,0,20]);
   assert.equal(result.evidence.geometryCount,2);
+});
+
+test("joint rejection preserves the second matching without inventing an edge nogood",()=>{
+  const run=(collective:boolean,reverse=false)=>{
+    const {problem,resourceTasks,setupTasks}=fixture(reverse);
+    resourceTasks.forEach(task=>task.availability=[{start:0,end:20}]);
+    const saved=structuredClone(problem),ledger=createExactSearchLedger(1000),attempts:Record<string,number>[]=[];
+    const result=exploreExactPreferredResourceUnit({problem,resourceId:"preferred",resourceTasks,setupTasks,placed:[],preparations:[],
+      meals:[],ledger,continuation:candidate=>{
+        const placement=Object.fromEntries(candidate.tasks.filter(task=>task.id!=="setup").map(task=>[task.id,task.start]));
+        attempts.push(placement);return placement.a===0?{outcome:"FOUND"}:{outcome:"DEAD_END",participantFutureExactPrune:collective};
+      },authorities:{participantFutureProbe:()=>futureProbe("PASS")}});
+    assert.equal(result.outcome,"FOUND");assert.deepEqual(attempts,[{a:10,b:0},{a:0,b:10}]);
+    assert.equal(result.evidence.geometryCount,1);assert.equal(result.evidence.causalForbiddenEdges,0);
+    assert.equal(result.evidence.matchingSuccesses,2);assert.ok(ledger.branchesExplored>=result.evidence.matchingTraversals);
+    assert.deepEqual(problem,saved);return ledger.branchesExplored;
+  };
+  assert.equal(run(false),run(false,true));run(true);
+});
+
+test("joint alternatives stop at the shared ledger limit",()=>{
+  const {problem,resourceTasks,setupTasks}=fixture(),ledger=createExactSearchLedger(2);
+  const result=exploreExactPreferredResourceUnit({problem,resourceId:"preferred",resourceTasks,setupTasks,placed:[],preparations:[],
+    meals:[],ledger,continuation:()=>({outcome:"DEAD_END"}),authorities:{participantFutureProbe:()=>futureProbe("PASS")}});
+  assert.equal(result.outcome,"BUDGET_EXHAUSTED");assert.equal(ledger.branchesExplored,2);
+  assert.equal(result.evidence.causalForbiddenEdges,0);
 });

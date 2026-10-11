@@ -5,6 +5,7 @@ import {
   createExactSearchLedger,
   forcedMainSingletonTaskId,
   incrementallyRepairMatchingWitness,
+  partitionRejectedJointMatching,
   residualMatchingOperationsMayInteract,
   runExactMainAndFeederSearch,
 } from "./exactMainAndFeederCore";
@@ -14,6 +15,17 @@ const scheduled = (overrides: Partial<ScheduledTask> = {}): ScheduledTask => ({
   id: "edge", kind: "auxiliary", participantId: "participant-edge", coachId: "coach-edge",
   duration: 5, start: 20, end: 25, spaceId: "space-edge", dependencies: [],
   requiredResourceIds: ["resource-edge"], ...overrides,
+});
+
+test("disjoint matching partitions exclude only a certified conjunction",()=>{
+  const permutations=(values:number[]):number[][]=>values.length?values.flatMap(value=>permutations(values.filter(other=>other!==value)).map(rest=>[value,...rest])):[[]];
+  const ids=["a","b","c","d"],all=permutations([0,1,2,3]).map(values=>new Map(ids.map((id,index)=>[id,values[index]!])));
+  const children=partitionRejectedJointMatching({fixed:new Map(),forbidden:new Set()},new Map([["a",0],["b",1]]));
+  for(const matching of all){const memberships=children.filter(partition=>[...partition.fixed].every(([id,position])=>matching.get(id)===position)
+    &&[...matching].every(([id,position])=>!partition.forbidden.has(`${id}@${position}`))).length;
+    assert.equal(memberships,matching.get("a")===0&&matching.get("b")===1?0:1);
+  }
+  assert.ok(children.some(partition=>!partition.forbidden.has("a@0")),"a single implicated edge is still available");
 });
 
 test("matching witness distinguishes a newly forbidden matched edge authority", () => {

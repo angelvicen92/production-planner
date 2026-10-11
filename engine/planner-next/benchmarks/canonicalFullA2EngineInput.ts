@@ -59,6 +59,8 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
       ...(task.jointGroupId ? { jointGroupId: task.jointGroupId } : {}),
       ...(task.setupFamilyId ? { setupFamilyId: task.setupFamilyId } : {}),
       ...(task.itinerantUnitId ? { itinerantTeamId: itinerantUnitId.get(task.itinerantUnitId)! } : {}),
+      ...(task.participantMarginBeforeMinutes == null ? {} : { participantMarginBeforeMinutes: task.participantMarginBeforeMinutes }),
+      ...(task.participantMarginAfterMinutes == null ? {} : { participantMarginAfterMinutes: task.participantMarginAfterMinutes }),
     };
   });
   // Standalone Reality A/B operations belong to one two-lane pool.  The
@@ -102,10 +104,12 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
   input.vocalCoachPlanResourceItemIdByContestantId = Object.fromEntries(expansion.participants.map((id) => [participantId.get(id)!, resourceId.get(EXPECTED_COACH_BY_PARTICIPANT[id])!]));
   input.coachResourceIds = [resourceId.get("coach-lucia")!, resourceId.get("coach-jose-maria")!];
   input.zoneResourceAssignments = {};
-  // Daily effective-resource authority: CAM 2 serves the complete P15 unit,
-  // independently of the nominal task template used in either member space.
-  input.spaceResourceAssignments = Object.fromEntries(["p15-croma", "p15-estrellas-sillon"]
-    .map(space => [spaceId.get(space)!, [resourceId.get("cam-2")!]]));
+  // Fuente 06 §7.5: CAM1 is shared by Recursos/Pasillo; Giratuto stays independent.
+  // Effective space assignments apply to every template, like CAM2 in P15.
+  input.spaceResourceAssignments = Object.fromEntries([
+    ["p14-recursos", "cam-1"], ["p14-pasillo", "cam-1"],
+    ["p15-croma", "cam-2"], ["p15-estrellas-sillon", "cam-2"],
+  ].map(([space, resource]) => [spaceId.get(space)!, [resourceId.get(resource)!]]));
   input.resourcePresenceConcentrationPolicies = { [resourceId.get("cam-2")!]: "PREFERRED" };
   input.zoneResourceTypeRequirements = {};
   input.spaceResourceTypeRequirements = {};

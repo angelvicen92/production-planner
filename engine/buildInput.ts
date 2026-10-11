@@ -2,6 +2,7 @@ import type { IStorage } from "../server/storage";
 import type { EngineInput, PlanResourceItemInput, PlanSpaceAvailabilityInput, PlanZoneAvailabilityInput, ResourceRequirementsInput } from "./types";
 import { adaptPlanOptimizerSnapshotToLegacyEngineV1 } from "./planOptimizerSnapshotLegacyAdapter";
 import { immutableMapView } from "@shared/immutableMapView";
+import { applyPlanPlannerNextConfiguration } from '../server/planPlannerNextConfiguration';
 import {
   TaskTemplateSnapshotError,
   deriveTaskTemplateSnapshotCatalogFingerprint,
@@ -611,9 +612,9 @@ export async function buildEngineInput(
     return hh * 60 + mm;
   };
 
-  return {
+  const input: EngineInput = {
     planId: p.id,
-    taskTemplateSnapshotContractVersion: 1,
+    taskTemplateSnapshotContractVersion: 2,
     taskTemplateSnapshotCount: taskTemplateSnapshots.length,
     taskTemplateSnapshotSources,
     taskTemplateSnapshotFingerprint,
@@ -624,6 +625,10 @@ export async function buildEngineInput(
       start: p.work_start ?? p.workStart,
       end: p.work_end ?? p.workEnd,
     },
+    defaultParticipantTransitionMinutes: (()=>{
+      const value=p.participant_transition_minutes??p.participantTransitionMinutes;
+      return value===undefined||value===null?undefined:Number(value);
+    })(),
 
     mealMode: (() => {
       const value = String(p.meal_mode ?? p.mealMode ?? "").trim().toLowerCase();
@@ -893,6 +898,8 @@ export async function buildEngineInput(
           itinerantTeamId: tpl.itinerantTeamId,
           allowedItinerantTeamIds: [...tpl.allowedItinerantTeamIds],
           itinerantTeamRequirement: tpl.itinerantTeamRequirement,
+          participantMarginBeforeMinutes: t.participant_margin_before_minutes ?? t.participantMarginBeforeMinutes ?? tpl.participantMarginBeforeMinutes,
+          participantMarginAfterMinutes: t.participant_margin_after_minutes ?? t.participantMarginAfterMinutes ?? tpl.participantMarginAfterMinutes,
 
           // ✅ Dependencias (ya resueltas a taskIds)
           hasDependency: isManualBlock ? false : hasDependency,
@@ -979,4 +986,5 @@ export async function buildEngineInput(
       lockedResourceId: l.locked_resource_id ?? l.lockedResourceId ?? null,
     })),
   };
+  return applyPlanPlannerNextConfiguration(input,p.planner_next_configuration??p.plannerNextConfiguration);
 }

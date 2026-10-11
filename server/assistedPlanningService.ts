@@ -10,6 +10,7 @@ import { applyPlanningBlockOperation, type PlanningBlockOperation } from "./assi
 import { assertPlanningBlockTemporalOrder } from "../shared/assistedPlanningTaskOrdering";
 import type { StageValidationReport } from "../shared/assistedStageValidation";
 import { affectedTasksUnchanged, resolveActiveStageLineage } from "./assistedAcceptedBaseline";
+import {recommendNextAssistedScope} from './assistedScopeOrchestrator';
 
 export type AssistedPlanningErrorCode = "SESSION_NOT_FOUND" | "STALE_DRAFT" | "STALE_BASE_STAGE" | "STALE_CONFIG_REVISION" | "STALE_VALIDATION" | "VALIDATION_REQUIRED" | "VALIDATION_NOT_ACCEPTABLE" | "HARD_CONFIRMATION_REQUIRED" | "REQUIRED_CONFIRMATION_REQUIRED" | "RUN_RESULT_INVALID" | "UNSUPPORTED_ENGINE_INPUT" | "TASK_SET_MISMATCH" | "IMMUTABLE_TASK" | "UNSUPPORTED_MANUAL_FIELD" | "INVALID_MANUAL_DURATION" | "INVALID_MANUAL_RESET" | "INVALID_BLOCK_OPERATION" | "PLANNING_BLOCK_ORDER_CONFLICT" | "CORRUPT_EDIT_LEDGER" | "ASSISTED_DELTA_VALIDATION_UNSUPPORTED" | "INVALID_STAGE_TARGET" | "NO_REDO_AVAILABLE" | "NO_UNDO_AVAILABLE" | "CONCURRENT_ACCEPT";
 export class AssistedPlanningError extends Error {
@@ -49,6 +50,16 @@ export class AssistedPlanningService {
 
   private buildInput(planId: number) {
     return (this.dependencies.buildInput ?? buildEngineInput)(planId, this.storage);
+  }
+
+  /** Read-only recommendation. The operator sees the selection before generating. */
+  async recommendNextScope(planId:number) {
+    const [input,session]=await Promise.all([this.buildInput(planId),this.storage.getActiveAssistedPlanningSession(planId)]);
+    if(!session)throw new AssistedPlanningError('SESSION_NOT_FOUND',404);
+    const eligible=input.tasks.filter(t=>t.id>0&&(t.status==='pending'||t.status==='interrupted')).map(t=>t.id);
+    const recommendation=recommendNextAssistedScope(input,session.draftSnapshotJson as unknown as AssistedPlanningSnapshotV1,eligible);
+    return {selector:recommendation?.selector??null,taskIds:recommendation?.memberTaskIds??[],
+      expectedDraftFingerprint:session.draftFingerprint,expectedBaseStageId:session.draftBaseStageId};
   }
 
   async start(planId: number, userId: string) {

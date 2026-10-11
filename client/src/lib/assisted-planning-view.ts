@@ -44,7 +44,8 @@ export function buildAssistedPlanningView<T extends Record<string, any>>(liveTas
     if (!row) return { ...task, startPlanned: null, endPlanned: null, zoneId: null, spaceId: null, locationLabel: null, durationOverride: null, camerasOverride: null };
     return { ...task, startPlanned: row.startPlanned, endPlanned: row.endPlanned, zoneId: row.zoneId,
       spaceId: row.spaceId, locationLabel: row.locationLabel, durationOverride: row.durationOverride,
-      durationOverrideMin: row.durationOverride, camerasOverride: row.camerasOverride };
+      durationOverrideMin: row.durationOverride, camerasOverride: row.camerasOverride,
+      ...(row.assignedResourceIds===undefined?{}:{assignedResources:[...row.assignedResourceIds],assignedResourceIds:[...row.assignedResourceIds]}) };
   });
 }
 
