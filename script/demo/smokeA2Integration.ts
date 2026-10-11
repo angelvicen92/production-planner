@@ -30,6 +30,8 @@ if(process.argv.includes('--app')){
  await import('../../server/index');
 }else{
  const full=process.argv.includes('--full');
+ const stageOrder=process.argv.includes('--stage-order');
+ assert.ok(!stageOrder||full,'--stage-order requires the complete real baseline (--full)');
  const directory=resolve(process.argv.slice(2).find(a=>!a.startsWith('--'))??'work/a2-integration-smoke');
  mkdirSync(directory,{recursive:true,mode:0o700});
  const id=`optiplan-a2-${randomBytes(6).toString('hex')}`;
@@ -42,6 +44,7 @@ if(process.argv.includes('--app')){
  const owned:string[]=[];let network=false,gateway:http.Server|undefined,app:ChildProcess|undefined,db:pg.Client|undefined;
  const runtimeFiles=['server/storage.ts','server/assistedPlanningSnapshot.ts','server/assistedProposalService.ts','server/assistedPlanningService.ts','server/routes.ts','engine/planner-next/jointCompletionWitness.ts','engine/planner-next/exactItinerantPlan.ts','client/src/components/layout.tsx','client/src/components/planning/assisted-planning-workspace.tsx','script/demo/a2ImportRows.ts','script/demo/prepareA2Import.ts','script/demo/prepareA2Schema.ts','script/demo/smokeA2Integration.ts','script/demo/smokeA2Journey.ts','client/src/lib/assisted-planning-view.ts','client/src/lib/assisted-draft-warnings.ts'];
  const hashes=()=>Object.fromEntries(runtimeFiles.map(file=>[file,createHash('sha256').update(readFileSync(file)).digest('hex')]));
+ if(stageOrder)runtimeFiles.push('script/demo/probeA2StageOrder.ts','server/assistedScopeOrchestrator.ts');
  const report:any={mode:'REAL_DISPOSABLE_PRODUCT_INTEGRATION',nodeVersion:process.version,v8Version:process.versions.v8,remoteWrites:0,images,requestedStages:full?10:2,startedAt:new Date().toISOString(),runtimeHashes:hashes(),checks:[],pending:['Connected Supabase catalog/backup adoption and original-row preservation','Published Replit runtime and user browser','Supabase Realtime/WebSocket transport']};
  const pass=(name:string)=>{report.checks.push(name);console.log(`PASS ${name}`);};
  const cleanup=async()=>{
@@ -126,11 +129,14 @@ if(process.argv.includes('--app')){
   await eventually(async()=>{assert.equal(app!.exitCode,null,'product server exited');const r=await fetch(`${appUrl}/api/plans/${dataset.input.planId}`,{headers:{Authorization:`Bearer ${users.production.token}`}});assert.equal(r.status,200);});
   Object.assign(process.env,{SUPABASE_URL:url,SUPABASE_ANON_KEY:anon,SUPABASE_SERVICE_ROLE_KEY:service});
   const {storage}=await import('../../server/storage');const {buildEngineInput}=await import('../../engine/buildInput');const {adaptEngineInputToPlannerNextProblem}=await import('../../engine/planner-next/integration/engineInputAdapter');
-  const actual=adaptEngineInputToPlannerNextProblem(await buildEngineInput(dataset.input.planId,storage)),expected=adaptEngineInputToPlannerNextProblem(dataset.input);
+  const initialInput=await buildEngineInput(dataset.input.planId,storage);
+  const actual=adaptEngineInputToPlannerNextProblem(initialInput),expected=adaptEngineInputToPlannerNextProblem(dataset.input);
   assert.equal(actual.status,'SUPPORTED');assert.equal(expected.status,'SUPPORTED');if(actual.status==='SUPPORTED'&&expected.status==='SUPPORTED')assert.deepEqual(actual.problem,expected.problem);
   assert.equal((await db.query('SELECT count(*) AS n FROM public.plan_breaks WHERE plan_id=$1',[dataset.input.planId])).rows[0].n,'0');
   pass('real storage/input adapter canon after GET day; no legacy breaks');
-  report.diagnostics={};report.journey=await runA2BrowserJourney({appUrl,url,anon,users,db,planId:dataset.input.planId,directory,full,pass,diagnostics:report.diagnostics,buildInput:()=>buildEngineInput(dataset.input.planId,storage)});
+  report.diagnostics={};const options={appUrl,url,anon,users,db,planId:dataset.input.planId,directory,full,pass,diagnostics:report.diagnostics,buildInput:()=>buildEngineInput(dataset.input.planId,storage)};
+  report.journey=await runA2BrowserJourney(options);
+  if(stageOrder){const {probeA2StageOrder}=await import('./probeA2StageOrder');report.stageOrder=await probeA2StageOrder(options,report.journey,initialInput);}
   assert.deepEqual(hashes(),report.runtimeHashes,'runtime sources changed during integration rehearsal');
   report.status='PASS';report.finishedAt=new Date().toISOString();
  }catch(error){report.status='FAIL';report.error=(error instanceof Error?error.stack??error.message:String(error)).replaceAll(password,'[local secret]').replaceAll(secret,'[local secret]');process.exitCode=1;console.error(report.error);}
