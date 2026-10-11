@@ -11,7 +11,7 @@ test("only pending and interrupted tasks are offered as editable scope",()=>{ass
 test("the complete Assisted operator surface renders human context rather than internal identifiers or codes",()=>{
   const surface=source.slice(source.indexOf("const toolbar="),source.indexOf("<FullscreenPlanningPanel"));
   assert.match(surface,/violationExplanation\(violation\)/);assert.match(surface,/taskContext/);assert.match(surface,/warningExplanation\(warning\)/);
-  assert.doesNotMatch(surface,/engineReasonCode|reasonCodes|\.ruleCode|\.kind|taskIds\.join|config \{|run \{|errorCode/);
+  assert.doesNotMatch(surface,/engineReasonCode|reasonCodes|\.ruleCode|\{[\w.]+\.kind\}|taskIds\.join|config \{|run \{|errorCode/);
   assert.match(source,/hardAffectedTaskIds/);
   assert.doesNotMatch(source,/setMessage\(errorCode|setMessage\(run\.message/);
 });

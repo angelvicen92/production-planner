@@ -13,6 +13,8 @@ on:
       - "client/src/components/planning/assisted-planning-workspace.tsx"
       - "client/src/lib/assisted-draft-warnings*"
       - "client/src/lib/assisted-planning-view*"
+      - "client/src/lib/assisted-autopilot*"
+      - "shared/assistedAutopilot*"
       - "docs/source/**"
       - "docs/evidence/**"
       - "docs/coverage/**"
@@ -43,9 +45,9 @@ jobs:
       - run: npx --no-install playwright install --with-deps chromium
       - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
       - run: npm run test:demo:a2-import
-      - run: npx --no-install tsx --test client/src/lib/assisted-draft-warnings.test.ts client/src/lib/assisted-planning-view.test.ts
+      - run: npx --no-install tsx --test shared/assistedAutopilot.test.ts client/src/components/planning/assisted-planning-workspace.test.ts client/src/lib/assisted-draft-warnings.test.ts client/src/lib/assisted-planning-view.test.ts
       - name: Native SQL, Auth, HTTP and UI; canonical baseline and two deterministic orders
-        run: npm run demo:a2:smoke -- work/a2-integration --full --stage-order
+        run: npm run demo:a2:smoke -- work/a2-integration --full --stage-order --autopilot
       - name: Integration evidence (no private app logs or credentials)
         if: always()
         uses: actions/upload-artifact@v4
@@ -54,6 +56,7 @@ jobs:
           path: |
             work/a2-integration/integration.json
             work/a2-integration/stage-order.json
+            work/a2-integration/autopilot.json
             work/a2-integration/*-real-ui.png
 
   planner-engine-ci:

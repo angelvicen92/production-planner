@@ -49,7 +49,7 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
  }
  assert.deepEqual(await databaseMaterial(),beforeReads);
  pass('HTTP role matrix, 15 real REST/RLS boundaries and client RPC denial; rejected writes leave DB unchanged');
- const browser=await chromium.launch({headless:true,args:['--no-sandbox']});let page:Page|undefined;
+ const browser=await chromium.launch({headless:true,args:['--no-sandbox'],executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH});let page:Page|undefined;
  const stages:any[]=[];const pageErrors:string[]=[];
  try{
   page=await browser.newPage({viewport:{width:1440,height:1000}});page.setDefaultTimeout(30_000);
