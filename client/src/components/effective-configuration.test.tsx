@@ -25,3 +25,19 @@ test("day configuration loads through authenticated apiRequest rather than raw f
   assert.match(source,/apiRequest<EffectiveConfigurationView>\("GET",`\/api\/plans\/\$\{planId\}\/effective-configuration`\)/);
   assert.doesNotMatch(source,/fetch\(`\/api\/plans\/\$\{planId\}\/effective-configuration`/);
 });
+
+
+test("missing day/optimizer baselines do not crash the effective configuration tab",()=>{
+  const available={...value,availability:"AVAILABLE",implementationStatus:"PRODUCTIVE",validationStatus:"VALID",source:"DAY_OVERRIDE",blockers:[]};
+  const cases=[
+    {capabilityId:"OPTIMIZATION",value:{editingMode:"ADVANCED"},baseline:undefined,defaultGeneral:undefined},
+    {capabilityId:"OPTIMIZATION",value:{editingMode:"BASIC"},baseline:null,defaultGeneral:null},
+    {capabilityId:"WORKDAY_WINDOW",value:{start:"09:00",end:"21:00"},baseline:undefined,defaultGeneral:null},
+    {capabilityId:"GLOBAL_MEAL_BREAK",value:{mode:"flexible_meal_window",window:{start:"13:00",end:"16:30"}},baseline:undefined,defaultGeneral:undefined},
+  ];
+  for(const input of cases){
+    const html=renderToStaticMarkup(<EffectiveValueField value={{...available,...input}}/>);
+    assert.match(html,/Capacidad/);
+    assert.doesNotMatch(html,/undefined|Heredado del día|Configuración habitual actual/);
+  }
+});
