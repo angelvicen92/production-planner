@@ -1,0 +1,2048 @@
+{
+  "version": 1,
+  "unit": "Assisted sequential automatic completion",
+  "status": "PASS",
+  "localBranch": "work",
+  "localSourceBase": "3f6f2379d5b7515917d78a9e269dd7c6fbbb504b",
+  "remoteTargetBranch": "codex/optiplan-assisted-autopilot",
+  "verifiedDeliveryBase": "8b030df7389cd8e860f6c8b31184739dff989994",
+  "baseDifference": "Only script/demo/sql/a2-colors-from-legacy.sql from PR #1108; preserved by publication on the remote base, never edited locally",
+  "sourcesAuthority": "Fuentes 00–07 cited by the user; the source documents themselves were not attached in this session. Existing canon, contracts, AGENTS and the capability catalog were inspected; no new planning rules were introduced.",
+  "files": {
+    ".github/workflows/planner-engine-ci.yml": "908c93eee0e2f46dec98ea80441f622ae7d2252633d68e87098c549fb4592e8e",
+    "client/src/components/planning/assisted-planning-workspace.tsx": "49b0d0107bb2bb65eba8c64f3a228487c51deb02afd4887e9d288e69c2a512a8",
+    "client/src/components/planning/assisted-planning-workspace.test.ts": "3e0f26874861fb18f77815fecceed503b427b44d3b39b59d11db7b07f101229e",
+    "client/src/lib/assisted-autopilot.ts": "72fdd86a695af1e9f9b4f1adc2354a77f3e60b562be4de2f1b0c159a51c5661b",
+    "shared/assistedAutopilot.ts": "b7200f639a4b7e2d2ed479741fe0c81ffcfc3f2f75731a4618f282b6082177bf",
+    "shared/assistedAutopilot.test.ts": "fc14512969ca93a1bd3eefc12e720fbed333f44e2d9b18ec4a716a3f2fb24769",
+    "script/demo/smokeA2Integration.ts": "bb7fbdbb7f4bc1debb53d5847032164a6acc40f5c6e4ecd9be25c3860694f474",
+    "script/demo/smokeA2Journey.ts": "2eeb88acf1abf3209fc8a79ffa0b43ef4e2043078ed046f764e0f3979ffb0356",
+    "script/demo/smokeA2AutopilotJourney.ts": "6c4767ad7402e4d7f384090b04f763ecf42d31cd51495e967fa5d3577a9f42f2"
+  },
+  "validation": {
+    "tests": {
+      "autopilot-focal.log": {
+        "tests": 105,
+        "pass": 105,
+        "fail": 0,
+        "sha256": "00e7d329e8bd59c4198dfeb2731930cd31f39b7030aa75d1a0fc15273d3e7304"
+      },
+      "autopilot-import-tests.log": {
+        "tests": 26,
+        "pass": 26,
+        "fail": 0,
+        "sha256": "fa4f590ed310bcbeb0fa198d779b5ef9f4ef463d073cdbba4d8f4adb25d8a744"
+      },
+      "autopilot-ci-product.log": {
+        "tests": 2852,
+        "pass": 2852,
+        "fail": 0,
+        "sha256": "ecc6936973685c16526bc6f6d7fd425c4dcb5a02d3a6d377864964922d276014"
+      }
+    },
+    "typescript": "PASS",
+    "integrationTypescript": "PASS",
+    "productionBuild": "PASS",
+    "migrationSequence": "PASS",
+    "ciProductSuite": "Exact PR-mode discovery/exclusions from Planner Engine CI; 2852 tests passed",
+    "canonicalBenchmark": {
+      "repeatOutputIdentical": true,
+      "generatedJsonAndMarkdownIdentical": true,
+      "generatedArtifactsUnchangedFromBase": true
+    }
+  },
+  "realNativeIntegration": {
+    "nodeVersion": "v24.19.0",
+    "postgresVersion": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+    "images": {
+      "db": "postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24",
+      "auth": "supabase/gotrue:v2.177.0@sha256:6a916b47af0386b7e0152ca84f3d45d050bf056e449a75a5460b48742fd67822",
+      "rest": "postgrest/postgrest:v12.2.12@sha256:5f4ce744539bbba786b4e24dbbd95bdb2a956dcf568c5374995a0ff4a68f5bd2"
+    },
+    "startedAt": "2026-10-11T13:29:29.165Z",
+    "finishedAt": "2026-10-11T13:33:21.575Z",
+    "remoteDatabaseWrites": 0,
+    "reportSha256": "ff32f0ee3e392ff2a5b7ed8187c205f1542411d68221e741a261bee3558084c9",
+    "autopilotReportSha256": "1fb781c26b9d671b98c81d33fa002b2e2e7b932d6509070878949023432d2859",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities",
+      "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved",
+      "real storage/input adapter canon after GET day; no legacy breaks",
+      "HTTP role matrix, 15 real REST/RLS boundaries and client RPC denial; rejected writes leave DB unchanged",
+      "actual browser password login and role bootstrap",
+      "S0 creation from UI, all 19 contestant names, idempotence with admin, native persistence and reload",
+      "all client identities denied direct Stage/Draft writes; validation UPDATE privileges unchanged",
+      "S1 UI → run → apply → validate → accept → SQL persistence → reload (19/266)",
+      "S2 UI → run → apply → validate → accept → SQL persistence → reload (38/266)",
+      "S3 UI → run → apply → validate → accept → SQL persistence → reload (46/266)",
+      "S4 UI → run → apply → validate → accept → SQL persistence → reload (65/266)",
+      "S5 UI → run → apply → validate → accept → SQL persistence → reload (75/266)",
+      "S6 UI → run → apply → validate → accept → SQL persistence → reload (111/266)",
+      "S7 UI → run → apply → validate → accept → SQL persistence → reload (169/266)",
+      "S8 UI → run → apply → validate → accept → SQL persistence → reload (207/266)",
+      "S9 UI → run → apply → validate → accept → SQL persistence → reload (209/266)",
+      "S10 UI → run → apply → validate → accept → SQL persistence → reload (266/266)",
+      "complete SQL snapshot: canonical hard-valid 266/266, all eight operational meals and preparations valid",
+      "ten-stage canonical coverage 266/266 and certified baseline fingerprint; no remaining scope",
+      "independent viewer browser session reopens the same persisted Stage and Draft",
+      "admin atomic rollback to S0 and redo to final accepted Stage",
+      "Autopilot delegation dismissed: no run or mutation",
+      "Autopilot from S5: safe stop after one Stage, double click yields one delegation, reload retains checkpoint",
+      "Autopilot S5 stop/reload/resume: canonical 266/266, clean authenticated accepts, literal protections and reload",
+      "Autopilot same S5 checkpoint repeated: canonical 266/266, clean authenticated accepts, literal protections and reload",
+      "Autopilot S0 uninterrupted: canonical 266/266, clean authenticated accepts, literal protections and reload"
+    ],
+    "baseline": [
+      {
+        "scope": {
+          "kind": "SPACE",
+          "spaceId": 3004
+        },
+        "completed": 19,
+        "fingerprint": "db766da3d945ec2a565c51b5af1911e26ac8dc1815e6b50eb35834631223a328",
+        "hard": 0,
+        "required": 0
+      },
+      {
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            10009,
+            10024,
+            10037,
+            10050,
+            10063,
+            10080,
+            10095,
+            10108,
+            10123,
+            10138,
+            10153,
+            10168,
+            10183,
+            10197,
+            10210,
+            10224,
+            10236,
+            10249,
+            10262
+          ]
+        },
+        "completed": 38,
+        "fingerprint": "51d0a7222a2ea06af25728ab2774fa7b7d95be4f17bb3754c4f31e176ddd9d7f",
+        "hard": 0,
+        "required": 0
+      },
+      {
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            10041,
+            10069,
+            10081,
+            10129,
+            10154,
+            10169,
+            10173,
+            10215
+          ]
+        },
+        "completed": 46,
+        "fingerprint": "47ff54448f062f8fac596e5f7fdfc454982dea85bc372bd0e05f8189f1f58540",
+        "hard": 0,
+        "required": 0
+      },
+      {
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            10014,
+            10028,
+            10040,
+            10053,
+            10068,
+            10084,
+            10099,
+            10113,
+            10128,
+            10143,
+            10158,
+            10172,
+            10187,
+            10200,
+            10214,
+            10227,
+            10240,
+            10253,
+            10266
+          ]
+        },
+        "completed": 65,
+        "fingerprint": "5d6499223899894c70a44f9be3f48bbee2f7286cb0e381acd0598e90444397f6",
+        "hard": 0,
+        "required": 0
+      },
+      {
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            10010,
+            10011,
+            10064,
+            10065,
+            10109,
+            10110,
+            10124,
+            10139,
+            10237,
+            10263
+          ]
+        },
+        "completed": 75,
+        "fingerprint": "fe763ac7175bf7d140aa07c05d611fb6757c7b9ec6c1f4c74012d0e62c7dc8b6",
+        "hard": 0,
+        "required": 0
+      },
+      {
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            10001,
+            10016,
+            10020,
+            10026,
+            10030,
+            10042,
+            10055,
+            10059,
+            10066,
+            10071,
+            10075,
+            10087,
+            10091,
+            10097,
+            10101,
+            10115,
+            10119,
+            10126,
+            10130,
+            10134,
+            10141,
+            10146,
+            10156,
+            10160,
+            10174,
+            10178,
+            10185,
+            10189,
+            10202,
+            10212,
+            10217,
+            10228,
+            10232,
+            10242,
+            10251,
+            10255
+          ]
+        },
+        "completed": 111,
+        "fingerprint": "921685404ff6ff906d1f5871d98feae59eb9614e68b3d3443d72693863046aa1",
+        "hard": 0,
+        "required": 0
+      },
+      {
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            10005,
+            10008,
+            10012,
+            10015,
+            10023,
+            10025,
+            10029,
+            10036,
+            10038,
+            10046,
+            10049,
+            10051,
+            10054,
+            10062,
+            10070,
+            10076,
+            10079,
+            10082,
+            10086,
+            10094,
+            10096,
+            10100,
+            10107,
+            10111,
+            10114,
+            10122,
+            10125,
+            10137,
+            10140,
+            10145,
+            10152,
+            10155,
+            10159,
+            10164,
+            10167,
+            10170,
+            10179,
+            10182,
+            10184,
+            10188,
+            10193,
+            10196,
+            10198,
+            10201,
+            10206,
+            10209,
+            10211,
+            10216,
+            10223,
+            10225,
+            10235,
+            10238,
+            10241,
+            10248,
+            10250,
+            10254,
+            10261,
+            10264
+          ]
+        },
+        "completed": 169,
+        "fingerprint": "ee66323e8dddabb9b69147c2748c20c08c0cc5701b02ad9eeb0b95b6b30f393d",
+        "hard": 0,
+        "required": 0
+      },
+      {
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            10003,
+            10006,
+            10018,
+            10021,
+            10032,
+            10034,
+            10044,
+            10047,
+            10057,
+            10060,
+            10073,
+            10077,
+            10089,
+            10092,
+            10103,
+            10105,
+            10117,
+            10120,
+            10132,
+            10135,
+            10148,
+            10150,
+            10162,
+            10165,
+            10176,
+            10180,
+            10191,
+            10194,
+            10204,
+            10207,
+            10219,
+            10221,
+            10230,
+            10233,
+            10244,
+            10246,
+            10257,
+            10259
+          ]
+        },
+        "completed": 207,
+        "fingerprint": "692857fc7fcc7526bafccc261676a9d46e526ba9ddd004fa852f1dbba533dba5",
+        "hard": 0,
+        "required": 0
+      },
+      {
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            10085,
+            10144
+          ]
+        },
+        "completed": 209,
+        "fingerprint": "279ad45eb571172806b2418240fc5f192395dbceef79a16a40513172d07f6ab0",
+        "hard": 0,
+        "required": 0
+      },
+      {
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            10004,
+            10007,
+            10013,
+            10019,
+            10022,
+            10027,
+            10033,
+            10035,
+            10039,
+            10045,
+            10048,
+            10052,
+            10058,
+            10061,
+            10067,
+            10074,
+            10078,
+            10083,
+            10090,
+            10093,
+            10098,
+            10104,
+            10106,
+            10112,
+            10118,
+            10121,
+            10127,
+            10133,
+            10136,
+            10142,
+            10149,
+            10151,
+            10157,
+            10163,
+            10166,
+            10171,
+            10177,
+            10181,
+            10186,
+            10192,
+            10195,
+            10199,
+            10205,
+            10208,
+            10213,
+            10220,
+            10222,
+            10226,
+            10231,
+            10234,
+            10239,
+            10245,
+            10247,
+            10252,
+            10258,
+            10260,
+            10265
+          ]
+        },
+        "completed": 266,
+        "fingerprint": "557d0efe105e7a2257f4f7754150e8aff814581ec943e5f623dbbc3640f147b9",
+        "hard": 0,
+        "required": 0
+      }
+    ],
+    "scenarios": [
+      {
+        "label": "S5 stop/reload/resume",
+        "checkpointOrdinal": 5,
+        "checkpointId": 6,
+        "finalOrdinal": 15,
+        "completed": 266,
+        "accepted": 5,
+        "fingerprint": "557d0efe105e7a2257f4f7754150e8aff814581ec943e5f623dbbc3640f147b9",
+        "canonical": {
+          "status": "PASS",
+          "obligations": 266,
+          "productiveTasks": 247,
+          "participantMeals": 19,
+          "setupPreparations": 1,
+          "roundPreparations": 17,
+          "operationalMeals": 8,
+          "expectedOperationalMeals": 8,
+          "missingOperationalMealIds": [],
+          "validation": {
+            "hardValid": true,
+            "dependencyViolationCount": 0,
+            "overlapViolationCount": 0,
+            "transitionViolationCount": 0,
+            "availabilityViolationCount": 0,
+            "taskAvailabilityViolationCount": 0,
+            "blockViolationCount": 0,
+            "resourceAvailabilityViolationCount": 0,
+            "resourceOverlapViolationCount": 0,
+            "resourceTransitionViolationCount": 0,
+            "secondaryContinuityViolationCount": 0,
+            "setupViolationCount": 0,
+            "setupPreparationViolationCount": 0,
+            "roundSynchronizationViolationCount": 0,
+            "roundPreparationViolationCount": 0,
+            "jointGroupViolationCount": 0,
+            "transportGroupingViolationCount": 0,
+            "technicalOperationViolationCount": 0,
+            "technicalChainViolationCount": 0,
+            "spaceMealViolationCount": 0,
+            "mainFlowMealViolationCount": 0,
+            "anchoredAccompanimentViolationCount": 0,
+            "participantMealViolationCount": 0,
+            "resourceMealViolationCount": 0,
+            "operationalMealViolationCount": 0,
+            "itinerantUnitMealViolationCount": 0,
+            "reasonCodes": [],
+            "unstructuredReasonCodes": [],
+            "violations": []
+          },
+          "closure": "CERTIFIED",
+          "closureFingerprint": "d439e6d98d092457694486fe8d3317d124e876875e094fc4585ece65faf7b03c",
+          "charges": 1,
+          "placementsFingerprint": "f37fd96cfef52805b87ed49a01dcb6e216ed744da0b3683f8db5c9e692ef9944",
+          "counterfactual": {
+            "mode": "READ_ONLY_NOT_PERSISTED",
+            "addedMealIds": [],
+            "hardValid": true,
+            "violations": [],
+            "allOtherPlacementsUnchanged": true
+          }
+        },
+        "noNewExceptions": true,
+        "protectedHistory": true,
+        "persistedAndReloaded": true,
+        "runIds": [
+          11,
+          12,
+          13,
+          14,
+          15
+        ]
+      },
+      {
+        "label": "same S5 checkpoint repeated",
+        "checkpointOrdinal": 5,
+        "checkpointId": 6,
+        "finalOrdinal": 20,
+        "completed": 266,
+        "accepted": 5,
+        "fingerprint": "557d0efe105e7a2257f4f7754150e8aff814581ec943e5f623dbbc3640f147b9",
+        "canonical": {
+          "status": "PASS",
+          "obligations": 266,
+          "productiveTasks": 247,
+          "participantMeals": 19,
+          "setupPreparations": 1,
+          "roundPreparations": 17,
+          "operationalMeals": 8,
+          "expectedOperationalMeals": 8,
+          "missingOperationalMealIds": [],
+          "validation": {
+            "hardValid": true,
+            "dependencyViolationCount": 0,
+            "overlapViolationCount": 0,
+            "transitionViolationCount": 0,
+            "availabilityViolationCount": 0,
+            "taskAvailabilityViolationCount": 0,
+            "blockViolationCount": 0,
+            "resourceAvailabilityViolationCount": 0,
+            "resourceOverlapViolationCount": 0,
+            "resourceTransitionViolationCount": 0,
+            "secondaryContinuityViolationCount": 0,
+            "setupViolationCount": 0,
+            "setupPreparationViolationCount": 0,
+            "roundSynchronizationViolationCount": 0,
+            "roundPreparationViolationCount": 0,
+            "jointGroupViolationCount": 0,
+            "transportGroupingViolationCount": 0,
+            "technicalOperationViolationCount": 0,
+            "technicalChainViolationCount": 0,
+            "spaceMealViolationCount": 0,
+            "mainFlowMealViolationCount": 0,
+            "anchoredAccompanimentViolationCount": 0,
+            "participantMealViolationCount": 0,
+            "resourceMealViolationCount": 0,
+            "operationalMealViolationCount": 0,
+            "itinerantUnitMealViolationCount": 0,
+            "reasonCodes": [],
+            "unstructuredReasonCodes": [],
+            "violations": []
+          },
+          "closure": "CERTIFIED",
+          "closureFingerprint": "d439e6d98d092457694486fe8d3317d124e876875e094fc4585ece65faf7b03c",
+          "charges": 1,
+          "placementsFingerprint": "f37fd96cfef52805b87ed49a01dcb6e216ed744da0b3683f8db5c9e692ef9944",
+          "counterfactual": {
+            "mode": "READ_ONLY_NOT_PERSISTED",
+            "addedMealIds": [],
+            "hardValid": true,
+            "violations": [],
+            "allOtherPlacementsUnchanged": true
+          }
+        },
+        "noNewExceptions": true,
+        "protectedHistory": true,
+        "persistedAndReloaded": true,
+        "runIds": [
+          16,
+          17,
+          18,
+          19,
+          20
+        ]
+      },
+      {
+        "label": "S0 uninterrupted",
+        "checkpointOrdinal": 0,
+        "checkpointId": 1,
+        "finalOrdinal": 30,
+        "completed": 266,
+        "accepted": 10,
+        "fingerprint": "557d0efe105e7a2257f4f7754150e8aff814581ec943e5f623dbbc3640f147b9",
+        "canonical": {
+          "status": "PASS",
+          "obligations": 266,
+          "productiveTasks": 247,
+          "participantMeals": 19,
+          "setupPreparations": 1,
+          "roundPreparations": 17,
+          "operationalMeals": 8,
+          "expectedOperationalMeals": 8,
+          "missingOperationalMealIds": [],
+          "validation": {
+            "hardValid": true,
+            "dependencyViolationCount": 0,
+            "overlapViolationCount": 0,
+            "transitionViolationCount": 0,
+            "availabilityViolationCount": 0,
+            "taskAvailabilityViolationCount": 0,
+            "blockViolationCount": 0,
+            "resourceAvailabilityViolationCount": 0,
+            "resourceOverlapViolationCount": 0,
+            "resourceTransitionViolationCount": 0,
+            "secondaryContinuityViolationCount": 0,
+            "setupViolationCount": 0,
+            "setupPreparationViolationCount": 0,
+            "roundSynchronizationViolationCount": 0,
+            "roundPreparationViolationCount": 0,
+            "jointGroupViolationCount": 0,
+            "transportGroupingViolationCount": 0,
+            "technicalOperationViolationCount": 0,
+            "technicalChainViolationCount": 0,
+            "spaceMealViolationCount": 0,
+            "mainFlowMealViolationCount": 0,
+            "anchoredAccompanimentViolationCount": 0,
+            "participantMealViolationCount": 0,
+            "resourceMealViolationCount": 0,
+            "operationalMealViolationCount": 0,
+            "itinerantUnitMealViolationCount": 0,
+            "reasonCodes": [],
+            "unstructuredReasonCodes": [],
+            "violations": []
+          },
+          "closure": "CERTIFIED",
+          "closureFingerprint": "d439e6d98d092457694486fe8d3317d124e876875e094fc4585ece65faf7b03c",
+          "charges": 1,
+          "placementsFingerprint": "f37fd96cfef52805b87ed49a01dcb6e216ed744da0b3683f8db5c9e692ef9944",
+          "counterfactual": {
+            "mode": "READ_ONLY_NOT_PERSISTED",
+            "addedMealIds": [],
+            "hardValid": true,
+            "violations": [],
+            "allOtherPlacementsUnchanged": true
+          }
+        },
+        "noNewExceptions": true,
+        "protectedHistory": true,
+        "persistedAndReloaded": true,
+        "runIds": [
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30
+        ]
+      }
+    ],
+    "delegatedConfirmations": 4,
+    "requests": [
+      {
+        "suffix": "/proposals",
+        "body": {
+          "expectedDraftFingerprint": "fe763ac7175bf7d140aa07c05d611fb6757c7b9ec6c1f4c74012d0e62c7dc8b6",
+          "expectedBaseStageId": 6,
+          "selector": {
+            "kind": "TASK_IDS",
+            "taskIds": [
+              10001,
+              10016,
+              10020,
+              10026,
+              10030,
+              10042,
+              10055,
+              10059,
+              10066,
+              10071,
+              10075,
+              10087,
+              10091,
+              10097,
+              10101,
+              10115,
+              10119,
+              10126,
+              10130,
+              10134,
+              10141,
+              10146,
+              10156,
+              10160,
+              10174,
+              10178,
+              10185,
+              10189,
+              10202,
+              10212,
+              10217,
+              10228,
+              10232,
+              10242,
+              10251,
+              10255
+            ]
+          },
+          "includePrerequisites": false
+        }
+      },
+      {
+        "suffix": "/proposals/11/apply",
+        "body": {
+          "expectedDraftFingerprint": "fe763ac7175bf7d140aa07c05d611fb6757c7b9ec6c1f4c74012d0e62c7dc8b6",
+          "expectedBaseStageId": 6
+        }
+      },
+      {
+        "suffix": "/validate",
+        "body": {
+          "expectedDraftFingerprint": "921685404ff6ff906d1f5871d98feae59eb9614e68b3d3443d72693863046aa1",
+          "expectedBaseStageId": 6
+        }
+      },
+      {
+        "suffix": "/accept-stage",
+        "body": {
+          "expectedDraftFingerprint": "921685404ff6ff906d1f5871d98feae59eb9614e68b3d3443d72693863046aa1",
+          "expectedBaseStageId": 6,
+          "confirmation": "NONE"
+        }
+      },
+      {
+        "suffix": "/proposals",
+        "body": {
+          "expectedDraftFingerprint": "921685404ff6ff906d1f5871d98feae59eb9614e68b3d3443d72693863046aa1",
+          "expectedBaseStageId": 12,
+          "selector": {
+            "kind": "TASK_IDS",
+            "taskIds": [
+              10005,
+              10008,
+              10012,
+              10015,
+              10023,
+              10025,
+              10029,
+              10036,
+              10038,
+              10046,
+              10049,
+              10051,
+              10054,
+              10062,
+              10070,
+              10076,
+              10079,
+              10082,
+              10086,
+              10094,
+              10096,
+              10100,
+              10107,
+              10111,
+              10114,
+              10122,
+              10125,
+              10137,
+              10140,
+              10145,
+              10152,
+              10155,
+              10159,
+              10164,
+              10167,
+              10170,
+              10179,
+              10182,
+              10184,
+              10188,
+              10193,
+              10196,
+              10198,
+              10201,
+              10206,
+              10209,
+              10211,
+              10216,
+              10223,
+              10225,
+              10235,
+              10238,
+              10241,
+              10248,
+              10250,
+              10254,
+              10261,
+              10264
+            ]
+          },
+          "includePrerequisites": false
+        }
+      },
+      {
+        "suffix": "/proposals/12/apply",
+        "body": {
+          "expectedDraftFingerprint": "921685404ff6ff906d1f5871d98feae59eb9614e68b3d3443d72693863046aa1",
+          "expectedBaseStageId": 12
+        }
+      },
+      {
+        "suffix": "/validate",
+        "body": {
+          "expectedDraftFingerprint": "ee66323e8dddabb9b69147c2748c20c08c0cc5701b02ad9eeb0b95b6b30f393d",
+          "expectedBaseStageId": 12
+        }
+      },
+      {
+        "suffix": "/accept-stage",
+        "body": {
+          "expectedDraftFingerprint": "ee66323e8dddabb9b69147c2748c20c08c0cc5701b02ad9eeb0b95b6b30f393d",
+          "expectedBaseStageId": 12,
+          "confirmation": "NONE"
+        }
+      },
+      {
+        "suffix": "/proposals",
+        "body": {
+          "expectedDraftFingerprint": "ee66323e8dddabb9b69147c2748c20c08c0cc5701b02ad9eeb0b95b6b30f393d",
+          "expectedBaseStageId": 13,
+          "selector": {
+            "kind": "TASK_IDS",
+            "taskIds": [
+              10003,
+              10006,
+              10018,
+              10021,
+              10032,
+              10034,
+              10044,
+              10047,
+              10057,
+              10060,
+              10073,
+              10077,
+              10089,
+              10092,
+              10103,
+              10105,
+              10117,
+              10120,
+              10132,
+              10135,
+              10148,
+              10150,
+              10162,
+              10165,
+              10176,
+              10180,
+              10191,
+              10194,
+              10204,
+              10207,
+              10219,
+              10221,
+              10230,
+              10233,
+              10244,
+              10246,
+              10257,
+              10259
+            ]
+          },
+          "includePrerequisites": false
+        }
+      },
+      {
+        "suffix": "/proposals/13/apply",
+        "body": {
+          "expectedDraftFingerprint": "ee66323e8dddabb9b69147c2748c20c08c0cc5701b02ad9eeb0b95b6b30f393d",
+          "expectedBaseStageId": 13
+        }
+      },
+      {
+        "suffix": "/validate",
+        "body": {
+          "expectedDraftFingerprint": "692857fc7fcc7526bafccc261676a9d46e526ba9ddd004fa852f1dbba533dba5",
+          "expectedBaseStageId": 13
+        }
+      },
+      {
+        "suffix": "/accept-stage",
+        "body": {
+          "expectedDraftFingerprint": "692857fc7fcc7526bafccc261676a9d46e526ba9ddd004fa852f1dbba533dba5",
+          "expectedBaseStageId": 13,
+          "confirmation": "NONE"
+        }
+      },
+      {
+        "suffix": "/proposals",
+        "body": {
+          "expectedDraftFingerprint": "692857fc7fcc7526bafccc261676a9d46e526ba9ddd004fa852f1dbba533dba5",
+          "expectedBaseStageId": 14,
+          "selector": {
+            "kind": "TASK_IDS",
+            "taskIds": [
+              10085,
+              10144
+            ]
+          },
+          "includePrerequisites": false
+        }
+      },
+      {
+        "suffix": "/proposals/14/apply",
+        "body": {
+          "expectedDraftFingerprint": "692857fc7fcc7526bafccc261676a9d46e526ba9ddd004fa852f1dbba533dba5",
+          "expectedBaseStageId": 14
+        }
+      },
+      {
+        "suffix": "/validate",
+        "body": {
+          "expectedDraftFingerprint": "279ad45eb571172806b2418240fc5f192395dbceef79a16a40513172d07f6ab0",
+          "expectedBaseStageId": 14
+        }
+      },
+      {
+        "suffix": "/accept-stage",
+        "body": {
+          "expectedDraftFingerprint": "279ad45eb571172806b2418240fc5f192395dbceef79a16a40513172d07f6ab0",
+          "expectedBaseStageId": 14,
+          "confirmation": "NONE"
+        }
+      },
+      {
+        "suffix": "/proposals",
+        "body": {
+          "expectedDraftFingerprint": "279ad45eb571172806b2418240fc5f192395dbceef79a16a40513172d07f6ab0",
+          "expectedBaseStageId": 15,
+          "selector": {
+            "kind": "TASK_IDS",
+            "taskIds": [
+              10004,
+              10007,
+              10013,
+              10019,
+              10022,
+              10027,
+              10033,
+              10035,
+              10039,
+              10045,
+              10048,
+              10052,
+              10058,
+              10061,
+              10067,
+              10074,
+              10078,
+              10083,
+              10090,
+              10093,
+              10098,
+              10104,
+              10106,
+              10112,
+              10118,
+              10121,
+              10127,
+              10133,
+              10136,
+              10142,
+              10149,
+              10151,
+              10157,
+              10163,
+              10166,
+              10171,
+              10177,
+              10181,
+              10186,
+              10192,
+              10195,
+              10199,
+              10205,
+              10208,
+              10213,
+              10220,
+              10222,
+              10226,
+              10231,
+              10234,
+              10239,
+              10245,
+              10247,
+              10252,
+              10258,
+              10260,
+              10265
+            ]
+          },
+          "includePrerequisites": false
+        }
+      },
+      {
+        "suffix": "/proposals/15/apply",
+        "body": {
+          "expectedDraftFingerprint": "279ad45eb571172806b2418240fc5f192395dbceef79a16a40513172d07f6ab0",
+          "expectedBaseStageId": 15
+        }
+      },
+      {
+        "suffix": "/validate",
+        "body": {
+          "expectedDraftFingerprint": "557d0efe105e7a2257f4f7754150e8aff814581ec943e5f623dbbc3640f147b9",
+          "expectedBaseStageId": 15
+        }
+      },
+      {
+        "suffix": "/accept-stage",
+        "body": {
+          "expectedDraftFingerprint": "557d0efe105e7a2257f4f7754150e8aff814581ec943e5f623dbbc3640f147b9",
+          "expectedBaseStageId": 15,
+          "confirmation": "NONE"
+        }
+      },
+      {
+        "suffix": "/proposals",
+        "body": {
+          "expectedDraftFingerprint": "fe763ac7175bf7d140aa07c05d611fb6757c7b9ec6c1f4c74012d0e62c7dc8b6",
+          "expectedBaseStageId": 6,
+          "selector": {
+            "kind": "TASK_IDS",
+            "taskIds": [
+              10001,
+              10016,
+              10020,
+              10026,
+              10030,
+              10042,
+              10055,
+              10059,
+              10066,
+              10071,
+              10075,
+              10087,
+              10091,
+              10097,
+              10101,
+              10115,
+              10119,
+              10126,
+              10130,
+              10134,
+              10141,
+              10146,
+              10156,
+              10160,
+              10174,
+              10178,
+              10185,
+              10189,
+              10202,
+              10212,
+              10217,
+              10228,
+              10232,
+              10242,
+              10251,
+              10255
+            ]
+          },
+          "includePrerequisites": false
+        }
+      },
+      {
+        "suffix": "/proposals/16/apply",
+        "body": {
+          "expectedDraftFingerprint": "fe763ac7175bf7d140aa07c05d611fb6757c7b9ec6c1f4c74012d0e62c7dc8b6",
+          "expectedBaseStageId": 6
+        }
+      },
+      {
+        "suffix": "/validate",
+        "body": {
+          "expectedDraftFingerprint": "921685404ff6ff906d1f5871d98feae59eb9614e68b3d3443d72693863046aa1",
+          "expectedBaseStageId": 6
+        }
+      },
+      {
+        "suffix": "/accept-stage",
+        "body": {
+          "expectedDraftFingerprint": "921685404ff6ff906d1f5871d98feae59eb9614e68b3d3443d72693863046aa1",
+          "expectedBaseStageId": 6,
+          "confirmation": "NONE"
+        }
+      },
+      {
+        "suffix": "/proposals",
+        "body": {
+          "expectedDraftFingerprint": "921685404ff6ff906d1f5871d98feae59eb9614e68b3d3443d72693863046aa1",
+          "expectedBaseStageId": 17,
+          "selector": {
+            "kind": "TASK_IDS",
+            "taskIds": [
+              10005,
+              10008,
+              10012,
+              10015,
+              10023,
+              10025,
+              10029,
+              10036,
+              10038,
+              10046,
+              10049,
+              10051,
+              10054,
+              10062,
+              10070,
+              10076,
+              10079,
+              10082,
+              10086,
+              10094,
+              10096,
+              10100,
+              10107,
+              10111,
+              10114,
+              10122,
+              10125,
+              10137,
+              10140,
+              10145,
+              10152,
+              10155,
+              10159,
+              10164,
+              10167,
+              10170,
+              10179,
+              10182,
+              10184,
+              10188,
+              10193,
+              10196,
+              10198,
+              10201,
+              10206,
+              10209,
+              10211,
+              10216,
+              10223,
+              10225,
+              10235,
+              10238,
+              10241,
+              10248,
+              10250,
+              10254,
+              10261,
+              10264
+            ]
+          },
+          "includePrerequisites": false
+        }
+      },
+      {
+        "suffix": "/proposals/17/apply",
+        "body": {
+          "expectedDraftFingerprint": "921685404ff6ff906d1f5871d98feae59eb9614e68b3d3443d72693863046aa1",
+          "expectedBaseStageId": 17
+        }
+      },
+      {
+        "suffix": "/validate",
+        "body": {
+          "expectedDraftFingerprint": "ee66323e8dddabb9b69147c2748c20c08c0cc5701b02ad9eeb0b95b6b30f393d",
+          "expectedBaseStageId": 17
+        }
+      },
+      {
+        "suffix": "/accept-stage",
+        "body": {
+          "expectedDraftFingerprint": "ee66323e8dddabb9b69147c2748c20c08c0cc5701b02ad9eeb0b95b6b30f393d",
+          "expectedBaseStageId": 17,
+          "confirmation": "NONE"
+        }
+      },
+      {
+        "suffix": "/proposals",
+        "body": {
+          "expectedDraftFingerprint": "ee66323e8dddabb9b69147c2748c20c08c0cc5701b02ad9eeb0b95b6b30f393d",
+          "expectedBaseStageId": 18,
+          "selector": {
+            "kind": "TASK_IDS",
+            "taskIds": [
+              10003,
+              10006,
+              10018,
+              10021,
+              10032,
+              10034,
+              10044,
+              10047,
+              10057,
+              10060,
+              10073,
+              10077,
+              10089,
+              10092,
+              10103,
+              10105,
+              10117,
+              10120,
+              10132,
+              10135,
+              10148,
+              10150,
+              10162,
+              10165,
+              10176,
+              10180,
+              10191,
+              10194,
+              10204,
+              10207,
+              10219,
+              10221,
+              10230,
+              10233,
+              10244,
+              10246,
+              10257,
+              10259
+            ]
+          },
+          "includePrerequisites": false
+        }
+      },
+      {
+        "suffix": "/proposals/18/apply",
+        "body": {
+          "expectedDraftFingerprint": "ee66323e8dddabb9b69147c2748c20c08c0cc5701b02ad9eeb0b95b6b30f393d",
+          "expectedBaseStageId": 18
+        }
+      },
+      {
+        "suffix": "/validate",
+        "body": {
+          "expectedDraftFingerprint": "692857fc7fcc7526bafccc261676a9d46e526ba9ddd004fa852f1dbba533dba5",
+          "expectedBaseStageId": 18
+        }
+      },
+      {
+        "suffix": "/accept-stage",
+        "body": {
+          "expectedDraftFingerprint": "692857fc7fcc7526bafccc261676a9d46e526ba9ddd004fa852f1dbba533dba5",
+          "expectedBaseStageId": 18,
+          "confirmation": "NONE"
+        }
+      },
+      {
+        "suffix": "/proposals",
+        "body": {
+          "expectedDraftFingerprint": "692857fc7fcc7526bafccc261676a9d46e526ba9ddd004fa852f1dbba533dba5",
+          "expectedBaseStageId": 19,
+          "selector": {
+            "kind": "TASK_IDS",
+            "taskIds": [
+              10085,
+              10144
+            ]
+          },
+          "includePrerequisites": false
+        }
+      },
+      {
+        "suffix": "/proposals/19/apply",
+        "body": {
+          "expectedDraftFingerprint": "692857fc7fcc7526bafccc261676a9d46e526ba9ddd004fa852f1dbba533dba5",
+          "expectedBaseStageId": 19
+        }
+      },
+      {
+        "suffix": "/validate",
+        "body": {
+          "expectedDraftFingerprint": "279ad45eb571172806b2418240fc5f192395dbceef79a16a40513172d07f6ab0",
+          "expectedBaseStageId": 19
+        }
+      },
+      {
+        "suffix": "/accept-stage",
+        "body": {
+          "expectedDraftFingerprint": "279ad45eb571172806b2418240fc5f192395dbceef79a16a40513172d07f6ab0",
+          "expectedBaseStageId": 19,
+          "confirmation": "NONE"
+        }
+      },
+      {
+        "suffix": "/proposals",
+        "body": {
+          "expectedDraftFingerprint": "279ad45eb571172806b2418240fc5f192395dbceef79a16a40513172d07f6ab0",
+          "expectedBaseStageId": 20,
+          "selector": {
+            "kind": "TASK_IDS",
+            "taskIds": [
+              10004,
+              10007,
+              10013,
+              10019,
+              10022,
+              10027,
+              10033,
+              10035,
+              10039,
+              10045,
+              10048,
+              10052,
+              10058,
+              10061,
+              10067,
+              10074,
+              10078,
+              10083,
+              10090,
+              10093,
+              10098,
+              10104,
+              10106,
+              10112,
+              10118,
+              10121,
+              10127,
+              10133,
+              10136,
+              10142,
+              10149,
+              10151,
+              10157,
+              10163,
+              10166,
+              10171,
+              10177,
+              10181,
+              10186,
+              10192,
+              10195,
+              10199,
+              10205,
+              10208,
+              10213,
+              10220,
+              10222,
+              10226,
+              10231,
+              10234,
+              10239,
+              10245,
+              10247,
+              10252,
+              10258,
+              10260,
+              10265
+            ]
+          },
+          "includePrerequisites": false
+        }
+      },
+      {
+        "suffix": "/proposals/20/apply",
+        "body": {
+          "expectedDraftFingerprint": "279ad45eb571172806b2418240fc5f192395dbceef79a16a40513172d07f6ab0",
+          "expectedBaseStageId": 20
+        }
+      },
+      {
+        "suffix": "/validate",
+        "body": {
+          "expectedDraftFingerprint": "557d0efe105e7a2257f4f7754150e8aff814581ec943e5f623dbbc3640f147b9",
+          "expectedBaseStageId": 20
+        }
+      },
+      {
+        "suffix": "/accept-stage",
+        "body": {
+          "expectedDraftFingerprint": "557d0efe105e7a2257f4f7754150e8aff814581ec943e5f623dbbc3640f147b9",
+          "expectedBaseStageId": 20,
+          "confirmation": "NONE"
+        }
+      },
+      {
+        "suffix": "/proposals",
+        "body": {
+          "expectedDraftFingerprint": "b1efd8ee41c80ef1f43d78efeb94c5ce2d2ed5388cb3d788d317926a0b42f881",
+          "expectedBaseStageId": 1,
+          "selector": {
+            "kind": "SPACE",
+            "spaceId": 3004
+          },
+          "includePrerequisites": false
+        }
+      },
+      {
+        "suffix": "/proposals/21/apply",
+        "body": {
+          "expectedDraftFingerprint": "b1efd8ee41c80ef1f43d78efeb94c5ce2d2ed5388cb3d788d317926a0b42f881",
+          "expectedBaseStageId": 1
+        }
+      },
+      {
+        "suffix": "/validate",
+        "body": {
+          "expectedDraftFingerprint": "db766da3d945ec2a565c51b5af1911e26ac8dc1815e6b50eb35834631223a328",
+          "expectedBaseStageId": 1
+        }
+      },
+      {
+        "suffix": "/accept-stage",
+        "body": {
+          "expectedDraftFingerprint": "db766da3d945ec2a565c51b5af1911e26ac8dc1815e6b50eb35834631223a328",
+          "expectedBaseStageId": 1,
+          "confirmation": "NONE"
+        }
+      },
+      {
+        "suffix": "/proposals",
+        "body": {
+          "expectedDraftFingerprint": "db766da3d945ec2a565c51b5af1911e26ac8dc1815e6b50eb35834631223a328",
+          "expectedBaseStageId": 22,
+          "selector": {
+            "kind": "TASK_IDS",
+            "taskIds": [
+              10009,
+              10024,
+              10037,
+              10050,
+              10063,
+              10080,
+              10095,
+              10108,
+              10123,
+              10138,
+              10153,
+              10168,
+              10183,
+              10197,
+              10210,
+              10224,
+              10236,
+              10249,
+              10262
+            ]
+          },
+          "includePrerequisites": false
+        }
+      },
+      {
+        "suffix": "/proposals/22/apply",
+        "body": {
+          "expectedDraftFingerprint": "db766da3d945ec2a565c51b5af1911e26ac8dc1815e6b50eb35834631223a328",
+          "expectedBaseStageId": 22
+        }
+      },
+      {
+        "suffix": "/validate",
+        "body": {
+          "expectedDraftFingerprint": "51d0a7222a2ea06af25728ab2774fa7b7d95be4f17bb3754c4f31e176ddd9d7f",
+          "expectedBaseStageId": 22
+        }
+      },
+      {
+        "suffix": "/accept-stage",
+        "body": {
+          "expectedDraftFingerprint": "51d0a7222a2ea06af25728ab2774fa7b7d95be4f17bb3754c4f31e176ddd9d7f",
+          "expectedBaseStageId": 22,
+          "confirmation": "NONE"
+        }
+      },
+      {
+        "suffix": "/proposals",
+        "body": {
+          "expectedDraftFingerprint": "51d0a7222a2ea06af25728ab2774fa7b7d95be4f17bb3754c4f31e176ddd9d7f",
+          "expectedBaseStageId": 23,
+          "selector": {
+            "kind": "TASK_IDS",
+            "taskIds": [
+              10041,
+              10069,
+              10081,
+              10129,
+              10154,
+              10169,
+              10173,
+              10215
+            ]
+          },
+          "includePrerequisites": false
+        }
+      },
+      {
+        "suffix": "/proposals/23/apply",
+        "body": {
+          "expectedDraftFingerprint": "51d0a7222a2ea06af25728ab2774fa7b7d95be4f17bb3754c4f31e176ddd9d7f",
+          "expectedBaseStageId": 23
+        }
+      },
+      {
+        "suffix": "/validate",
+        "body": {
+          "expectedDraftFingerprint": "47ff54448f062f8fac596e5f7fdfc454982dea85bc372bd0e05f8189f1f58540",
+          "expectedBaseStageId": 23
+        }
+      },
+      {
+        "suffix": "/accept-stage",
+        "body": {
+          "expectedDraftFingerprint": "47ff54448f062f8fac596e5f7fdfc454982dea85bc372bd0e05f8189f1f58540",
+          "expectedBaseStageId": 23,
+          "confirmation": "NONE"
+        }
+      },
+      {
+        "suffix": "/proposals",
+        "body": {
+          "expectedDraftFingerprint": "47ff54448f062f8fac596e5f7fdfc454982dea85bc372bd0e05f8189f1f58540",
+          "expectedBaseStageId": 24,
+          "selector": {
+            "kind": "TASK_IDS",
+            "taskIds": [
+              10014,
+              10028,
+              10040,
+              10053,
+              10068,
+              10084,
+              10099,
+              10113,
+              10128,
+              10143,
+              10158,
+              10172,
+              10187,
+              10200,
+              10214,
+              10227,
+              10240,
+              10253,
+              10266
+            ]
+          },
+          "includePrerequisites": false
+        }
+      },
+      {
+        "suffix": "/proposals/24/apply",
+        "body": {
+          "expectedDraftFingerprint": "47ff54448f062f8fac596e5f7fdfc454982dea85bc372bd0e05f8189f1f58540",
+          "expectedBaseStageId": 24
+        }
+      },
+      {
+        "suffix": "/validate",
+        "body": {
+          "expectedDraftFingerprint": "5d6499223899894c70a44f9be3f48bbee2f7286cb0e381acd0598e90444397f6",
+          "expectedBaseStageId": 24
+        }
+      },
+      {
+        "suffix": "/accept-stage",
+        "body": {
+          "expectedDraftFingerprint": "5d6499223899894c70a44f9be3f48bbee2f7286cb0e381acd0598e90444397f6",
+          "expectedBaseStageId": 24,
+          "confirmation": "NONE"
+        }
+      },
+      {
+        "suffix": "/proposals",
+        "body": {
+          "expectedDraftFingerprint": "5d6499223899894c70a44f9be3f48bbee2f7286cb0e381acd0598e90444397f6",
+          "expectedBaseStageId": 25,
+          "selector": {
+            "kind": "TASK_IDS",
+            "taskIds": [
+              10010,
+              10011,
+              10064,
+              10065,
+              10109,
+              10110,
+              10124,
+              10139,
+              10237,
+              10263
+            ]
+          },
+          "includePrerequisites": false
+        }
+      },
+      {
+        "suffix": "/proposals/25/apply",
+        "body": {
+          "expectedDraftFingerprint": "5d6499223899894c70a44f9be3f48bbee2f7286cb0e381acd0598e90444397f6",
+          "expectedBaseStageId": 25
+        }
+      },
+      {
+        "suffix": "/validate",
+        "body": {
+          "expectedDraftFingerprint": "fe763ac7175bf7d140aa07c05d611fb6757c7b9ec6c1f4c74012d0e62c7dc8b6",
+          "expectedBaseStageId": 25
+        }
+      },
+      {
+        "suffix": "/accept-stage",
+        "body": {
+          "expectedDraftFingerprint": "fe763ac7175bf7d140aa07c05d611fb6757c7b9ec6c1f4c74012d0e62c7dc8b6",
+          "expectedBaseStageId": 25,
+          "confirmation": "NONE"
+        }
+      },
+      {
+        "suffix": "/proposals",
+        "body": {
+          "expectedDraftFingerprint": "fe763ac7175bf7d140aa07c05d611fb6757c7b9ec6c1f4c74012d0e62c7dc8b6",
+          "expectedBaseStageId": 26,
+          "selector": {
+            "kind": "TASK_IDS",
+            "taskIds": [
+              10001,
+              10016,
+              10020,
+              10026,
+              10030,
+              10042,
+              10055,
+              10059,
+              10066,
+              10071,
+              10075,
+              10087,
+              10091,
+              10097,
+              10101,
+              10115,
+              10119,
+              10126,
+              10130,
+              10134,
+              10141,
+              10146,
+              10156,
+              10160,
+              10174,
+              10178,
+              10185,
+              10189,
+              10202,
+              10212,
+              10217,
+              10228,
+              10232,
+              10242,
+              10251,
+              10255
+            ]
+          },
+          "includePrerequisites": false
+        }
+      },
+      {
+        "suffix": "/proposals/26/apply",
+        "body": {
+          "expectedDraftFingerprint": "fe763ac7175bf7d140aa07c05d611fb6757c7b9ec6c1f4c74012d0e62c7dc8b6",
+          "expectedBaseStageId": 26
+        }
+      },
+      {
+        "suffix": "/validate",
+        "body": {
+          "expectedDraftFingerprint": "921685404ff6ff906d1f5871d98feae59eb9614e68b3d3443d72693863046aa1",
+          "expectedBaseStageId": 26
+        }
+      },
+      {
+        "suffix": "/accept-stage",
+        "body": {
+          "expectedDraftFingerprint": "921685404ff6ff906d1f5871d98feae59eb9614e68b3d3443d72693863046aa1",
+          "expectedBaseStageId": 26,
+          "confirmation": "NONE"
+        }
+      },
+      {
+        "suffix": "/proposals",
+        "body": {
+          "expectedDraftFingerprint": "921685404ff6ff906d1f5871d98feae59eb9614e68b3d3443d72693863046aa1",
+          "expectedBaseStageId": 27,
+          "selector": {
+            "kind": "TASK_IDS",
+            "taskIds": [
+              10005,
+              10008,
+              10012,
+              10015,
+              10023,
+              10025,
+              10029,
+              10036,
+              10038,
+              10046,
+              10049,
+              10051,
+              10054,
+              10062,
+              10070,
+              10076,
+              10079,
+              10082,
+              10086,
+              10094,
+              10096,
+              10100,
+              10107,
+              10111,
+              10114,
+              10122,
+              10125,
+              10137,
+              10140,
+              10145,
+              10152,
+              10155,
+              10159,
+              10164,
+              10167,
+              10170,
+              10179,
+              10182,
+              10184,
+              10188,
+              10193,
+              10196,
+              10198,
+              10201,
+              10206,
+              10209,
+              10211,
+              10216,
+              10223,
+              10225,
+              10235,
+              10238,
+              10241,
+              10248,
+              10250,
+              10254,
+              10261,
+              10264
+            ]
+          },
+          "includePrerequisites": false
+        }
+      },
+      {
+        "suffix": "/proposals/27/apply",
+        "body": {
+          "expectedDraftFingerprint": "921685404ff6ff906d1f5871d98feae59eb9614e68b3d3443d72693863046aa1",
+          "expectedBaseStageId": 27
+        }
+      },
+      {
+        "suffix": "/validate",
+        "body": {
+          "expectedDraftFingerprint": "ee66323e8dddabb9b69147c2748c20c08c0cc5701b02ad9eeb0b95b6b30f393d",
+          "expectedBaseStageId": 27
+        }
+      },
+      {
+        "suffix": "/accept-stage",
+        "body": {
+          "expectedDraftFingerprint": "ee66323e8dddabb9b69147c2748c20c08c0cc5701b02ad9eeb0b95b6b30f393d",
+          "expectedBaseStageId": 27,
+          "confirmation": "NONE"
+        }
+      },
+      {
+        "suffix": "/proposals",
+        "body": {
+          "expectedDraftFingerprint": "ee66323e8dddabb9b69147c2748c20c08c0cc5701b02ad9eeb0b95b6b30f393d",
+          "expectedBaseStageId": 28,
+          "selector": {
+            "kind": "TASK_IDS",
+            "taskIds": [
+              10003,
+              10006,
+              10018,
+              10021,
+              10032,
+              10034,
+              10044,
+              10047,
+              10057,
+              10060,
+              10073,
+              10077,
+              10089,
+              10092,
+              10103,
+              10105,
+              10117,
+              10120,
+              10132,
+              10135,
+              10148,
+              10150,
+              10162,
+              10165,
+              10176,
+              10180,
+              10191,
+              10194,
+              10204,
+              10207,
+              10219,
+              10221,
+              10230,
+              10233,
+              10244,
+              10246,
+              10257,
+              10259
+            ]
+          },
+          "includePrerequisites": false
+        }
+      },
+      {
+        "suffix": "/proposals/28/apply",
+        "body": {
+          "expectedDraftFingerprint": "ee66323e8dddabb9b69147c2748c20c08c0cc5701b02ad9eeb0b95b6b30f393d",
+          "expectedBaseStageId": 28
+        }
+      },
+      {
+        "suffix": "/validate",
+        "body": {
+          "expectedDraftFingerprint": "692857fc7fcc7526bafccc261676a9d46e526ba9ddd004fa852f1dbba533dba5",
+          "expectedBaseStageId": 28
+        }
+      },
+      {
+        "suffix": "/accept-stage",
+        "body": {
+          "expectedDraftFingerprint": "692857fc7fcc7526bafccc261676a9d46e526ba9ddd004fa852f1dbba533dba5",
+          "expectedBaseStageId": 28,
+          "confirmation": "NONE"
+        }
+      },
+      {
+        "suffix": "/proposals",
+        "body": {
+          "expectedDraftFingerprint": "692857fc7fcc7526bafccc261676a9d46e526ba9ddd004fa852f1dbba533dba5",
+          "expectedBaseStageId": 29,
+          "selector": {
+            "kind": "TASK_IDS",
+            "taskIds": [
+              10085,
+              10144
+            ]
+          },
+          "includePrerequisites": false
+        }
+      },
+      {
+        "suffix": "/proposals/29/apply",
+        "body": {
+          "expectedDraftFingerprint": "692857fc7fcc7526bafccc261676a9d46e526ba9ddd004fa852f1dbba533dba5",
+          "expectedBaseStageId": 29
+        }
+      },
+      {
+        "suffix": "/validate",
+        "body": {
+          "expectedDraftFingerprint": "279ad45eb571172806b2418240fc5f192395dbceef79a16a40513172d07f6ab0",
+          "expectedBaseStageId": 29
+        }
+      },
+      {
+        "suffix": "/accept-stage",
+        "body": {
+          "expectedDraftFingerprint": "279ad45eb571172806b2418240fc5f192395dbceef79a16a40513172d07f6ab0",
+          "expectedBaseStageId": 29,
+          "confirmation": "NONE"
+        }
+      },
+      {
+        "suffix": "/proposals",
+        "body": {
+          "expectedDraftFingerprint": "279ad45eb571172806b2418240fc5f192395dbceef79a16a40513172d07f6ab0",
+          "expectedBaseStageId": 30,
+          "selector": {
+            "kind": "TASK_IDS",
+            "taskIds": [
+              10004,
+              10007,
+              10013,
+              10019,
+              10022,
+              10027,
+              10033,
+              10035,
+              10039,
+              10045,
+              10048,
+              10052,
+              10058,
+              10061,
+              10067,
+              10074,
+              10078,
+              10083,
+              10090,
+              10093,
+              10098,
+              10104,
+              10106,
+              10112,
+              10118,
+              10121,
+              10127,
+              10133,
+              10136,
+              10142,
+              10149,
+              10151,
+              10157,
+              10163,
+              10166,
+              10171,
+              10177,
+              10181,
+              10186,
+              10192,
+              10195,
+              10199,
+              10205,
+              10208,
+              10213,
+              10220,
+              10222,
+              10226,
+              10231,
+              10234,
+              10239,
+              10245,
+              10247,
+              10252,
+              10258,
+              10260,
+              10265
+            ]
+          },
+          "includePrerequisites": false
+        }
+      },
+      {
+        "suffix": "/proposals/30/apply",
+        "body": {
+          "expectedDraftFingerprint": "279ad45eb571172806b2418240fc5f192395dbceef79a16a40513172d07f6ab0",
+          "expectedBaseStageId": 30
+        }
+      },
+      {
+        "suffix": "/validate",
+        "body": {
+          "expectedDraftFingerprint": "557d0efe105e7a2257f4f7754150e8aff814581ec943e5f623dbbc3640f147b9",
+          "expectedBaseStageId": 30
+        }
+      },
+      {
+        "suffix": "/accept-stage",
+        "body": {
+          "expectedDraftFingerprint": "557d0efe105e7a2257f4f7754150e8aff814581ec943e5f623dbbc3640f147b9",
+          "expectedBaseStageId": 30,
+          "confirmation": "NONE"
+        }
+      }
+    ],
+    "sameBaselineGeometry": true,
+    "baselineFingerprint": "557d0efe105e7a2257f4f7754150e8aff814581ec943e5f623dbbc3640f147b9"
+  },
+  "existingStageOrderGate": {
+    "status": "PASS",
+    "sha256": "4ca43fb4cbdb7776fe36067f72062ff75da5c52f6ff72e2367da5c3b5bcc5246",
+    "orders": [
+      {
+        "baselineOrdinals": [
+          6,
+          7
+        ],
+        "deterministic": true,
+        "canonical": "PASS"
+      },
+      {
+        "baselineOrdinals": [
+          5,
+          6
+        ],
+        "deterministic": true,
+        "canonical": "PASS"
+      }
+    ],
+    "note": "Executed with unchanged engine and native authorities before the client polling correction. Remote CI runs both order and autopilot gates on the published head."
+  },
+  "polling": {
+    "httpTimeoutsChanged": false,
+    "engineBudgetsOrTimeoutsChanged": false,
+    "staleAuthority": "shared/planning-run-state.ts::isPlanningRunStale",
+    "readTimeoutRecovery": "Only an AbortError during read-only run polling is observed again; authoritative HTTP errors, failed runs and stale observations stop. Mutations are never retried."
+  },
+  "limitations": [
+    "The tab must stay open during execution",
+    "Reload between accepted stages resumes from the persisted checkpoint; an unaccepted dirty Draft is preserved for operator review",
+    "Connected Supabase catalog/backup adoption and original-row preservation",
+    "Published Replit runtime and user browser",
+    "Supabase Realtime/WebSocket transport"
+  ],
+  "mergePerformed": false
+}
