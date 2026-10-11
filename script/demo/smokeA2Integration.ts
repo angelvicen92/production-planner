@@ -13,6 +13,7 @@ import {buildA2ImportSQL} from './prepareA2Import';
 import {buildA2SchemaSQL} from './prepareA2Schema';
 import {inspectA2Catalog} from './a2Preflight';
 import {runA2BrowserJourney} from './smokeA2Journey';
+import {seedA2ScopeCatalog} from './smokeA2ScopeSelectionJourney';
 
 const images={db:'postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24',auth:'supabase/gotrue:v2.177.0@sha256:6a916b47af0386b7e0152ca84f3d45d050bf056e449a75a5460b48742fd67822',rest:'postgrest/postgrest:v12.2.12@sha256:5f4ce744539bbba786b4e24dbbd95bdb2a956dcf568c5374995a0ff4a68f5bd2'};
 const delay=(ms:number)=>new Promise(r=>setTimeout(r,ms));
@@ -121,6 +122,7 @@ if(process.argv.includes('--app')){
   // in an existing database; its independent restoration tests remain required.
   await db.query(readFileSync('script/demo/sql/security.sql','utf8'));
   const {dataset,sql}=buildA2ImportSQL('2026-10-30');await db.query(sql);assert.equal(await defaults(),beforeDefaults);
+  if(process.argv.includes('--scope-selection'))await seedA2ScopeCatalog(db,dataset);
   const results:any=await db.query(readFileSync('script/demo/sql/catalog-audit.sql','utf8'));
   const catalog=results.find((r:any)=>r.rows?.[0]?.audit)?.rows[0].audit;
   assert.ok(catalog);assert.deepEqual(inspectA2Catalog(catalog,'2026-10-30').issues,[]);
