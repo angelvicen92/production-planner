@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createSupportedEngineInputAdapterFixture } from "../engine/planner-next/integration/engineInputAdapter.fixture";
-import { adaptEngineInputToPlannerNextProblem } from "../engine/planner-next/integration/engineInputAdapter";
-import { buildAssistedProblem } from "../engine/planner-next/assistedPlanning";
-import type { ScheduledTask } from "../engine/planner-next/contracts";
-import { pendingScopeTasks, locationScopeTaskIds, taskIdsScopeSelector } from "../client/src/lib/assisted-scope-selection";
-import { resolveAssistedScope } from "./assistedScopeResolver";
-import { validatePlan } from "../engine/planner-next/validate";
+import { createSupportedEngineInputAdapterFixture } from "./integration/engineInputAdapter.fixture";
+import { adaptEngineInputToPlannerNextProblem } from "./integration/engineInputAdapter";
+import { buildAssistedProblem } from "./assistedPlanning";
+import type { ScheduledTask } from "./contracts";
+import { pendingScopeTasks, locationScopeTaskIds, taskIdsScopeSelector } from "../../client/src/lib/assisted-scope-selection";
+import { resolveAssistedScope } from "../../server/assistedScopeResolver";
+import { validatePlan } from "./validate";
 
 test("multi-space TASK_IDS preserves independent capacity and simultaneous work, with no zone precedence", () => {
   const input = createSupportedEngineInputAdapterFixture();

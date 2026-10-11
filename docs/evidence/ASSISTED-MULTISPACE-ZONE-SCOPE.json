@@ -173,11 +173,56 @@
     "integrationTypescript": "PASS",
     "build": "PASS",
     "migrationSequence": "PASS",
-    "diffCheck": "PASS"
+    "diffCheck": "PASS",
+    "scopeAndIsolationAfterTestRelocation": {
+      "pass": 16,
+      "fail": 0,
+      "test": "engine/planner-next/assistedLocationScope.spec.ts",
+      "isolationGate": "UNCHANGED"
+    },
+    "initialHostedCI": {
+      "head": "282641172608cf926b4cf90bb00cb557d6f4eff2",
+      "baseline": "PASS",
+      "a2Integration": "PASS",
+      "productSuite": "One isolation failure caused by test location; corrected by moving test into engine/planner-next",
+      "engineWorkflowRun": 38163114768
+    }
   },
   "limits": {
     "catalog": "Explicit structured relation seeded only in disposable fixture; no real catalog migration",
-    "externalNumberedSources": "Not available in checkout/library; locations requested",
+    "externalNumberedSources": "Verified supplied official versions 01 v5.2, 03 v3.6, 04 v2.5, 05 v2.6, 06 v2.7, 07 v2.2",
     "hostedCI": "See PR checks"
+  },
+  "officialSources": {
+    "archive": "optiplan-fuentes-oficiales-2026-10-11.zip",
+    "archiveSha256": "9a2a853392f4d1ddd6a02058aa37c552562c34790f4a3ee38266f4ebaa9e86db",
+    "manifestFilesVerified": 10,
+    "review": "Targeted authority review for the requested UI scope delta; no new domain or engine requirements",
+    "documents": [
+      {
+        "file": "01_PRODUCTO_DOMINIO_OPERACION_v5.2.md",
+        "sha256": "15d88794fd9e0a25aea3ea5112c5c68897402e42c214212f102f53ddfa29e378"
+      },
+      {
+        "file": "03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.6.md",
+        "sha256": "e74d89cfdac1d5e16e0b27185f63b8177b0efe859837d9a95906726d58e1f3c1"
+      },
+      {
+        "file": "04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.5.md",
+        "sha256": "ab1e7f850e3441b86d99a53dc94ffbb8ca7f2da67bd725b444e5da0be3060497"
+      },
+      {
+        "file": "05_VALIDACION_CALIDAD_BENCHMARK_v2.6.md",
+        "sha256": "dfd8a3b44c27bb5be4c2e91c061879700b6c1440f0bb8392944411dd425c6f37"
+      },
+      {
+        "file": "06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.7.md",
+        "sha256": "bde588301fbf9d3767142cb669c91c9d66d7fad19aca5d2bd441231bdee6e973"
+      },
+      {
+        "file": "07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.2.md",
+        "sha256": "b875a95552ea41c25ce531a5add85bbdf6a219c82657128a21c6bb5231f63b3d"
+      }
+    ]
   }
 }

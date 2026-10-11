@@ -62,6 +62,13 @@ contrato TASK_IDS, capacidad y simultaneidad por espacio, prerequisites, workflo
 snapshots, importación descartable y Autopilot. Pasaron `npm run check`, TypeScript
 de integración, `npm run build`, checker de migraciones y `git diff --check`.
 
+La CI inicial confirmó Baseline CI y la integración A2 completa (incluido el nuevo
+ensayo de selección). La suite productiva detectó que el nuevo test de capacidad,
+ubicado en `server/`, infringía el aislamiento de Planner Next. Se trasladó a
+`engine/planner-next/assistedLocationScope.spec.ts` conservando sus assertions y
+sin alterar el gate. Pasaron los 16 tests de selección, capacidad y aislamiento
+ejecutados después del traslado. Los checks del PR verifican el head actualizado.
+
 Reproducción del navegador:
 
 ```sh
@@ -78,7 +85,19 @@ GitHub los 22 blobs modificados, su tree fue idéntico a la base autorizada:
 con el proxy; no se reintentó. La entrega remota usa el conector GitHub.
 
 Se leyó `AGENTS.md`, el catálogo de capacidades y las autoridades locales A2
-aplicables. Los documentos externos numerados Fuentes 01, 03, 04, 05, 06 y 07 no
-estaban en el checkout/biblioteca y se solicitaron sus rutas. No se afirma haber
-verificado sus versiones externas. La CI alojada y esa comprobación documental
-quedan visibles en el PR para revisión; no se hace merge.
+aplicables. El usuario aportó `optiplan-fuentes-oficiales-2026-10-11.zip`; se
+verificaron las diez entradas de su `SHA256SUMS` y se revisaron de forma dirigida
+las Fuentes solicitadas. Sus versiones y hashes figuran en el JSON de Evidence.
+
+| Fuente | Versión | Autoridad comprobada para este delta |
+| --- | --- | --- |
+| 01 | 5.2 | PlanningScope explícito, Stage completo inmutable, AutomaticProtection |
+| 03 | 3.6 | Scope multi-espacio; prerequisites internos no amplían selección visible |
+| 04 | 2.5 | Relaciones por IDs; compartir zona no impone coordinación ni capacidad común |
+| 05 | 2.6 | Propuesta/aceptación, fingerprint y protección del baseline |
+| 06 | 2.7 | A2 de 266 obligaciones; Plató 15 multi-espacio sin precedencia inferida |
+| 07 | 2.2 | Trabajo pendiente/interrumpido y separación Stage/Draft/protección/configuración |
+
+La comprobación no requirió cambios de motor ni de recursos. El adjunto se usa
+como referencia documental; sus scripts de subida y apéndice propuesto de AGENTS
+no se ejecutan ni se incorporan a este PR. No se hace merge.
