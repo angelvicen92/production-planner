@@ -4090,6 +4090,16 @@ function normalizeHexColor(value: unknown): string | null {
         return res.json({ ok: true, deletedV4ResultsCount: (deletedV4Results ?? []).length });
       }
 
+      // Legacy partial/total reset must never desynchronize the active
+      // Assisted Stage from the accepted material in daily_tasks. Use the
+      // guarded Stage 0 restart flow for days with an active Assisted session.
+      if (await storage.getActiveAssistedPlanningSession(planId)) {
+        return res.status(409).json({
+          code: "ASSISTED_SESSION_RESET_REQUIRED",
+          message: "Esta jornada tiene una sesión Asistida activa. Utiliza «Reiniciar Asistida» para volver a la Etapa 0 conservando el historial.",
+        });
+      }
+
       const { data: taskRows, error: tasksErr } = await supabaseAdmin
         .from("daily_tasks")
         .select("id, status, is_manual_block, start_real, end_real")

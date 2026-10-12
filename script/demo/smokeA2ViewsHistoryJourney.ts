@@ -22,6 +22,19 @@ export async function runA2ViewsHistoryJourney(options: Options, page: Page) {
     return result;
   };
   const before = await material();
+  // Regression: Legacy Reset used to clear daily_tasks behind an accepted
+  // Assisted S10, leaving the Stage and operating day inconsistent.
+  for (const mode of ["partial", "total"] as const) {
+    const denied = await fetch(`${appUrl}/api/plans/${planId}/reset`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${users.production.token}` },
+      body: JSON.stringify({ mode }),
+    });
+    assert.equal(denied.status, 409, `Legacy ${mode} reset must not alter an active Assisted session`);
+    assert.equal((await denied.json()).code, "ASSISTED_SESSION_RESET_REQUIRED");
+  }
+  assert.deepEqual(await material(), before, "denied Legacy resets must preserve tasks, Stages, runs and revisions");
+  pass("Legacy partial/total reset is blocked on active Assisted session, without any SQL writes");
   const initial = (await api(path)).data, live = (await api(`/api/plans/${planId}`)).data;
   assert.equal(initial.draft.tasks.length, 266);
   assert.equal(initial.draft.tasks.filter((task: any) => task.startPlanned && task.endPlanned).length, 266);
