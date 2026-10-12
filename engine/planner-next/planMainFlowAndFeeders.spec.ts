@@ -152,6 +152,7 @@ test("planner-next remains isolated from legacy and production", () => {
   const productionBoundaryAllowlist = new Set([
     "server/benchmarks/runA2Assist5Evidence.ts",
     "server/assistedProposalService.spec.ts",
+    "server/assistedManualSnapshotFidelity.spec.ts",
     "server/assistedProposalService.ts",
     "server/assistedScopeResolver.ts",
   ]);

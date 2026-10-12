@@ -130,3 +130,13 @@ test("round preparations are canonical, fingerprinted, replayable, and legacy-co
   assert.throws(()=>buildAssistedPlanningSnapshotV1(base,undefined,undefined,undefined,[preparations[0],preparations[0]]),/duplicate round preparation/);
   assert.throws(()=>buildAssistedPlanningSnapshotV1(base,undefined,undefined,undefined,[{...preparations[0],end:106}]),/invalid.*round preparation/);
 });
+
+test('manual rebuild preserves structural presence/order and leaves the fingerprint contract unchanged',async()=>{
+  const {rebuildAssistedPlanningSnapshotV1}=await import('./assistedPlanningSnapshot');
+  const snapshot=buildAssistedPlanningSnapshotV1([{id:1,startPlanned:'09:00',endPlanned:'09:05'}]);
+  const explicitEmpty={...snapshot,operationalMeals:[],setupPreparations:[],roundPreparations:[],planningBlocks:[]};
+  const rebuilt=rebuildAssistedPlanningSnapshotV1(explicitEmpty);
+  assert.deepEqual(rebuilt,explicitEmpty);
+  assert.equal(fingerprintAssistedPlanningSnapshotV1(rebuilt),fingerprintAssistedPlanningSnapshotV1(snapshot));
+  assert.notEqual(rebuilt,explicitEmpty);assert.notEqual(rebuilt.roundPreparations,explicitEmpty.roundPreparations);
+});

@@ -1,0 +1,2980 @@
+{
+  "provenance": "Canonical A2 S10 generated through runA2Assist8Evidence at main 138900801c27fad3bd53e75ce83e86f884fda53c; not a remote Supabase export",
+  "fingerprint": "22d728894bd73c9cddc7acb5dbd1f518d60f36f910ec2895b3035f07be95d679",
+  "snapshot": {
+    "contractVersion": 1,
+    "tasks": [
+      {
+        "taskId": 10001,
+        "startPlanned": "14:10",
+        "endPlanned": "14:20",
+        "zoneId": 6008,
+        "spaceId": 3008,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10002,
+        "startPlanned": "12:10",
+        "endPlanned": "12:25",
+        "zoneId": 6004,
+        "spaceId": 3004,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null,
+        "itinerantTeamId": 5001,
+        "assignedResourceIds": [
+          4003,
+          4006,
+          4008
+        ]
+      },
+      {
+        "taskId": 10003,
+        "startPlanned": "10:35",
+        "endPlanned": "10:45",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10004,
+        "startPlanned": "15:20",
+        "endPlanned": "15:25",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10005,
+        "startPlanned": "11:10",
+        "endPlanned": "11:15",
+        "zoneId": 6005,
+        "spaceId": 3005,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10006,
+        "startPlanned": "10:00",
+        "endPlanned": "10:05",
+        "zoneId": 6022,
+        "spaceId": 3022,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10007,
+        "startPlanned": "15:25",
+        "endPlanned": "15:30",
+        "zoneId": 6023,
+        "spaceId": 3023,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10008,
+        "startPlanned": "10:50",
+        "endPlanned": "10:55",
+        "zoneId": 6006,
+        "spaceId": 3006,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10009,
+        "startPlanned": "11:25",
+        "endPlanned": "11:40",
+        "zoneId": 6003,
+        "spaceId": 3003,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10010,
+        "startPlanned": "11:55",
+        "endPlanned": "12:10",
+        "zoneId": 6017,
+        "spaceId": 3017,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null,
+        "itinerantTeamId": 5001,
+        "assignedResourceIds": [
+          4003,
+          4008
+        ]
+      },
+      {
+        "taskId": 10011,
+        "startPlanned": "12:25",
+        "endPlanned": "12:40",
+        "zoneId": 6017,
+        "spaceId": 3017,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null,
+        "itinerantTeamId": 5001,
+        "assignedResourceIds": [
+          4003,
+          4008
+        ]
+      },
+      {
+        "taskId": 10012,
+        "startPlanned": "11:00",
+        "endPlanned": "11:05",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10013,
+        "startPlanned": "13:15",
+        "endPlanned": "13:55",
+        "zoneId": null,
+        "spaceId": null,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10014,
+        "startPlanned": "12:45",
+        "endPlanned": "13:15",
+        "zoneId": 6019,
+        "spaceId": 3019,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10015,
+        "startPlanned": "14:50",
+        "endPlanned": "15:00",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10016,
+        "startPlanned": "11:40",
+        "endPlanned": "11:50",
+        "zoneId": 6008,
+        "spaceId": 3008,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10017,
+        "startPlanned": "13:55",
+        "endPlanned": "14:10",
+        "zoneId": 6004,
+        "spaceId": 3004,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10018,
+        "startPlanned": "10:45",
+        "endPlanned": "10:55",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10019,
+        "startPlanned": "18:00",
+        "endPlanned": "18:05",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10020,
+        "startPlanned": "16:40",
+        "endPlanned": "16:45",
+        "zoneId": 6009,
+        "spaceId": 3009,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10021,
+        "startPlanned": "09:00",
+        "endPlanned": "09:05",
+        "zoneId": 6022,
+        "spaceId": 3022,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10022,
+        "startPlanned": "18:30",
+        "endPlanned": "18:35",
+        "zoneId": 6023,
+        "spaceId": 3023,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10023,
+        "startPlanned": "11:15",
+        "endPlanned": "11:20",
+        "zoneId": 6006,
+        "spaceId": 3006,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10024,
+        "startPlanned": "09:40",
+        "endPlanned": "09:55",
+        "zoneId": 6003,
+        "spaceId": 3003,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10025,
+        "startPlanned": "15:05",
+        "endPlanned": "15:10",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10026,
+        "startPlanned": "17:25",
+        "endPlanned": "17:30",
+        "zoneId": 6009,
+        "spaceId": 3009,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10027,
+        "startPlanned": "14:10",
+        "endPlanned": "14:50",
+        "zoneId": null,
+        "spaceId": null,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10028,
+        "startPlanned": "12:45",
+        "endPlanned": "13:15",
+        "zoneId": 6020,
+        "spaceId": 3020,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10029,
+        "startPlanned": "16:35",
+        "endPlanned": "16:50",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10030,
+        "startPlanned": "14:30",
+        "endPlanned": "14:40",
+        "zoneId": 6008,
+        "spaceId": 3008,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10031,
+        "startPlanned": "13:40",
+        "endPlanned": "13:55",
+        "zoneId": 6004,
+        "spaceId": 3004,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10032,
+        "startPlanned": "11:25",
+        "endPlanned": "11:35",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10033,
+        "startPlanned": "17:40",
+        "endPlanned": "17:45",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10034,
+        "startPlanned": "09:00",
+        "endPlanned": "09:05",
+        "zoneId": 6022,
+        "spaceId": 3022,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10035,
+        "startPlanned": "18:10",
+        "endPlanned": "18:15",
+        "zoneId": 6023,
+        "spaceId": 3023,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10036,
+        "startPlanned": "16:55",
+        "endPlanned": "17:00",
+        "zoneId": 6006,
+        "spaceId": 3006,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10037,
+        "startPlanned": "09:55",
+        "endPlanned": "10:10",
+        "zoneId": 6003,
+        "spaceId": 3003,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10038,
+        "startPlanned": "17:05",
+        "endPlanned": "17:10",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10039,
+        "startPlanned": "15:50",
+        "endPlanned": "16:30",
+        "zoneId": null,
+        "spaceId": null,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10040,
+        "startPlanned": "12:10",
+        "endPlanned": "12:40",
+        "zoneId": 6019,
+        "spaceId": 3019,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10041,
+        "startPlanned": "17:40",
+        "endPlanned": "17:55",
+        "zoneId": 6001,
+        "spaceId": 3001,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null,
+        "itinerantTeamId": 5003,
+        "assignedResourceIds": [
+          4003,
+          4004,
+          4007,
+          4008
+        ]
+      },
+      {
+        "taskId": 10042,
+        "startPlanned": "12:40",
+        "endPlanned": "12:50",
+        "zoneId": 6008,
+        "spaceId": 3008,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10043,
+        "startPlanned": "13:25",
+        "endPlanned": "13:40",
+        "zoneId": 6004,
+        "spaceId": 3004,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10044,
+        "startPlanned": "10:55",
+        "endPlanned": "11:05",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10045,
+        "startPlanned": "18:25",
+        "endPlanned": "18:30",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10046,
+        "startPlanned": "11:15",
+        "endPlanned": "11:20",
+        "zoneId": 6005,
+        "spaceId": 3005,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10047,
+        "startPlanned": "09:30",
+        "endPlanned": "09:35",
+        "zoneId": 6022,
+        "spaceId": 3022,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10048,
+        "startPlanned": "18:55",
+        "endPlanned": "19:00",
+        "zoneId": 6023,
+        "spaceId": 3023,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10049,
+        "startPlanned": "15:10",
+        "endPlanned": "15:15",
+        "zoneId": 6006,
+        "spaceId": 3006,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10050,
+        "startPlanned": "10:10",
+        "endPlanned": "10:25",
+        "zoneId": 6003,
+        "spaceId": 3003,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10051,
+        "startPlanned": "16:30",
+        "endPlanned": "16:35",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10052,
+        "startPlanned": "15:50",
+        "endPlanned": "16:30",
+        "zoneId": null,
+        "spaceId": null,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10053,
+        "startPlanned": "11:35",
+        "endPlanned": "12:05",
+        "zoneId": 6020,
+        "spaceId": 3020,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10054,
+        "startPlanned": "10:25",
+        "endPlanned": "10:35",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10055,
+        "startPlanned": "13:10",
+        "endPlanned": "13:20",
+        "zoneId": 6008,
+        "spaceId": 3008,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10056,
+        "startPlanned": "14:10",
+        "endPlanned": "14:25",
+        "zoneId": 6004,
+        "spaceId": 3004,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null,
+        "itinerantTeamId": 5002,
+        "assignedResourceIds": [
+          4004,
+          4005,
+          4009
+        ]
+      },
+      {
+        "taskId": 10057,
+        "startPlanned": "10:05",
+        "endPlanned": "10:15",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10058,
+        "startPlanned": "17:55",
+        "endPlanned": "18:00",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10059,
+        "startPlanned": "16:35",
+        "endPlanned": "16:40",
+        "zoneId": 6009,
+        "spaceId": 3009,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10060,
+        "startPlanned": "09:30",
+        "endPlanned": "09:35",
+        "zoneId": 6022,
+        "spaceId": 3022,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10061,
+        "startPlanned": "18:30",
+        "endPlanned": "18:35",
+        "zoneId": 6023,
+        "spaceId": 3023,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10062,
+        "startPlanned": "15:00",
+        "endPlanned": "15:05",
+        "zoneId": 6006,
+        "spaceId": 3006,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10063,
+        "startPlanned": "13:25",
+        "endPlanned": "13:40",
+        "zoneId": 6002,
+        "spaceId": 3002,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10064,
+        "startPlanned": "13:55",
+        "endPlanned": "14:10",
+        "zoneId": 6017,
+        "spaceId": 3017,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null,
+        "itinerantTeamId": 5002,
+        "assignedResourceIds": [
+          4004,
+          4009
+        ]
+      },
+      {
+        "taskId": 10065,
+        "startPlanned": "14:25",
+        "endPlanned": "14:40",
+        "zoneId": 6017,
+        "spaceId": 3017,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null,
+        "itinerantTeamId": 5002,
+        "assignedResourceIds": [
+          4004,
+          4009
+        ]
+      },
+      {
+        "taskId": 10066,
+        "startPlanned": "17:20",
+        "endPlanned": "17:25",
+        "zoneId": 6009,
+        "spaceId": 3009,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10067,
+        "startPlanned": "15:50",
+        "endPlanned": "16:30",
+        "zoneId": null,
+        "spaceId": null,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10068,
+        "startPlanned": "11:00",
+        "endPlanned": "11:30",
+        "zoneId": 6019,
+        "spaceId": 3019,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10069,
+        "startPlanned": "18:20",
+        "endPlanned": "18:30",
+        "zoneId": 6001,
+        "spaceId": 3001,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10070,
+        "startPlanned": "11:30",
+        "endPlanned": "11:40",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10071,
+        "startPlanned": "12:20",
+        "endPlanned": "12:30",
+        "zoneId": 6008,
+        "spaceId": 3008,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10072,
+        "startPlanned": "17:55",
+        "endPlanned": "18:10",
+        "zoneId": 6004,
+        "spaceId": 3004,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10073,
+        "startPlanned": "11:15",
+        "endPlanned": "11:25",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10074,
+        "startPlanned": "18:50",
+        "endPlanned": "18:55",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10075,
+        "startPlanned": "16:30",
+        "endPlanned": "16:35",
+        "zoneId": 6009,
+        "spaceId": 3009,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10076,
+        "startPlanned": "12:05",
+        "endPlanned": "12:10",
+        "zoneId": 6005,
+        "spaceId": 3005,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10077,
+        "startPlanned": "10:30",
+        "endPlanned": "10:35",
+        "zoneId": 6022,
+        "spaceId": 3022,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10078,
+        "startPlanned": "18:55",
+        "endPlanned": "19:00",
+        "zoneId": 6023,
+        "spaceId": 3023,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10079,
+        "startPlanned": "11:45",
+        "endPlanned": "11:50",
+        "zoneId": 6006,
+        "spaceId": 3006,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10080,
+        "startPlanned": "10:55",
+        "endPlanned": "11:10",
+        "zoneId": 6002,
+        "spaceId": 3002,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10081,
+        "startPlanned": "16:40",
+        "endPlanned": "17:10",
+        "zoneId": 6014,
+        "spaceId": 3014,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null,
+        "itinerantTeamId": 5003,
+        "assignedResourceIds": [
+          4003,
+          4004,
+          4007,
+          4008
+        ]
+      },
+      {
+        "taskId": 10082,
+        "startPlanned": "11:55",
+        "endPlanned": "12:00",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10083,
+        "startPlanned": "13:00",
+        "endPlanned": "13:40",
+        "zoneId": null,
+        "spaceId": null,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10084,
+        "startPlanned": "15:45",
+        "endPlanned": "16:15",
+        "zoneId": 6020,
+        "spaceId": 3020,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10085,
+        "startPlanned": "18:35",
+        "endPlanned": "18:40",
+        "zoneId": 6021,
+        "spaceId": 3021,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10086,
+        "startPlanned": "12:50",
+        "endPlanned": "13:00",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10087,
+        "startPlanned": "14:00",
+        "endPlanned": "14:10",
+        "zoneId": 6008,
+        "spaceId": 3008,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10088,
+        "startPlanned": "17:25",
+        "endPlanned": "17:40",
+        "zoneId": 6004,
+        "spaceId": 3004,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10089,
+        "startPlanned": "12:35",
+        "endPlanned": "12:45",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10090,
+        "startPlanned": "18:20",
+        "endPlanned": "18:25",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10091,
+        "startPlanned": "16:25",
+        "endPlanned": "16:30",
+        "zoneId": 6009,
+        "spaceId": 3009,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10092,
+        "startPlanned": "11:00",
+        "endPlanned": "11:05",
+        "zoneId": 6022,
+        "spaceId": 3022,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10093,
+        "startPlanned": "18:30",
+        "endPlanned": "18:35",
+        "zoneId": 6023,
+        "spaceId": 3023,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10094,
+        "startPlanned": "13:10",
+        "endPlanned": "13:15",
+        "zoneId": 6006,
+        "spaceId": 3006,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10095,
+        "startPlanned": "11:25",
+        "endPlanned": "11:40",
+        "zoneId": 6002,
+        "spaceId": 3002,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10096,
+        "startPlanned": "13:20",
+        "endPlanned": "13:25",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10097,
+        "startPlanned": "17:10",
+        "endPlanned": "17:15",
+        "zoneId": 6009,
+        "spaceId": 3009,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10098,
+        "startPlanned": "15:10",
+        "endPlanned": "15:50",
+        "zoneId": null,
+        "spaceId": null,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10099,
+        "startPlanned": "14:35",
+        "endPlanned": "15:05",
+        "zoneId": 6019,
+        "spaceId": 3019,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10100,
+        "startPlanned": "10:10",
+        "endPlanned": "10:25",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10101,
+        "startPlanned": "13:40",
+        "endPlanned": "13:50",
+        "zoneId": 6008,
+        "spaceId": 3008,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10102,
+        "startPlanned": "15:40",
+        "endPlanned": "15:55",
+        "zoneId": 6004,
+        "spaceId": 3004,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null,
+        "itinerantTeamId": 5001,
+        "assignedResourceIds": [
+          4003,
+          4005,
+          4008
+        ]
+      },
+      {
+        "taskId": 10103,
+        "startPlanned": "09:55",
+        "endPlanned": "10:05",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10104,
+        "startPlanned": "17:30",
+        "endPlanned": "17:35",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10105,
+        "startPlanned": "09:00",
+        "endPlanned": "09:05",
+        "zoneId": 6022,
+        "spaceId": 3022,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10106,
+        "startPlanned": "17:50",
+        "endPlanned": "17:55",
+        "zoneId": 6023,
+        "spaceId": 3023,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10107,
+        "startPlanned": "10:35",
+        "endPlanned": "10:40",
+        "zoneId": 6006,
+        "spaceId": 3006,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10108,
+        "startPlanned": "13:10",
+        "endPlanned": "13:25",
+        "zoneId": 6002,
+        "spaceId": 3002,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10109,
+        "startPlanned": "15:25",
+        "endPlanned": "15:40",
+        "zoneId": 6017,
+        "spaceId": 3017,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null,
+        "itinerantTeamId": 5001,
+        "assignedResourceIds": [
+          4003,
+          4008
+        ]
+      },
+      {
+        "taskId": 10110,
+        "startPlanned": "15:55",
+        "endPlanned": "16:10",
+        "zoneId": 6017,
+        "spaceId": 3017,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null,
+        "itinerantTeamId": 5001,
+        "assignedResourceIds": [
+          4003,
+          4008
+        ]
+      },
+      {
+        "taskId": 10111,
+        "startPlanned": "10:55",
+        "endPlanned": "11:00",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10112,
+        "startPlanned": "14:10",
+        "endPlanned": "14:50",
+        "zoneId": null,
+        "spaceId": null,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10113,
+        "startPlanned": "12:10",
+        "endPlanned": "12:40",
+        "zoneId": 6020,
+        "spaceId": 3020,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10114,
+        "startPlanned": "11:05",
+        "endPlanned": "11:15",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10115,
+        "startPlanned": "12:30",
+        "endPlanned": "12:40",
+        "zoneId": 6008,
+        "spaceId": 3008,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10116,
+        "startPlanned": "17:10",
+        "endPlanned": "17:25",
+        "zoneId": 6004,
+        "spaceId": 3004,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10117,
+        "startPlanned": "10:15",
+        "endPlanned": "10:25",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10118,
+        "startPlanned": "18:15",
+        "endPlanned": "18:20",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10119,
+        "startPlanned": "16:20",
+        "endPlanned": "16:25",
+        "zoneId": 6009,
+        "spaceId": 3009,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10120,
+        "startPlanned": "09:30",
+        "endPlanned": "09:35",
+        "zoneId": 6022,
+        "spaceId": 3022,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10121,
+        "startPlanned": "18:30",
+        "endPlanned": "18:35",
+        "zoneId": 6023,
+        "spaceId": 3023,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10122,
+        "startPlanned": "11:20",
+        "endPlanned": "11:25",
+        "zoneId": 6006,
+        "spaceId": 3006,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10123,
+        "startPlanned": "11:40",
+        "endPlanned": "11:55",
+        "zoneId": 6002,
+        "spaceId": 3002,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10124,
+        "startPlanned": "10:30",
+        "endPlanned": "11:00",
+        "zoneId": 6015,
+        "spaceId": 3015,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null,
+        "itinerantTeamId": 5001,
+        "assignedResourceIds": [
+          4003,
+          4008
+        ]
+      },
+      {
+        "taskId": 10125,
+        "startPlanned": "12:20",
+        "endPlanned": "12:25",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10126,
+        "startPlanned": "17:35",
+        "endPlanned": "17:40",
+        "zoneId": 6009,
+        "spaceId": 3009,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10127,
+        "startPlanned": "14:10",
+        "endPlanned": "14:50",
+        "zoneId": null,
+        "spaceId": null,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10128,
+        "startPlanned": "15:45",
+        "endPlanned": "16:15",
+        "zoneId": 6019,
+        "spaceId": 3019,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10129,
+        "startPlanned": "18:20",
+        "endPlanned": "18:30",
+        "zoneId": 6001,
+        "spaceId": 3001,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10130,
+        "startPlanned": "14:20",
+        "endPlanned": "14:30",
+        "zoneId": 6008,
+        "spaceId": 3008,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10131,
+        "startPlanned": "16:40",
+        "endPlanned": "16:55",
+        "zoneId": 6004,
+        "spaceId": 3004,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10132,
+        "startPlanned": "12:55",
+        "endPlanned": "13:05",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10133,
+        "startPlanned": "18:45",
+        "endPlanned": "18:50",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10134,
+        "startPlanned": "16:15",
+        "endPlanned": "16:20",
+        "zoneId": 6009,
+        "spaceId": 3009,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10135,
+        "startPlanned": "12:00",
+        "endPlanned": "12:05",
+        "zoneId": 6022,
+        "spaceId": 3022,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10136,
+        "startPlanned": "18:55",
+        "endPlanned": "19:00",
+        "zoneId": 6023,
+        "spaceId": 3023,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10137,
+        "startPlanned": "13:45",
+        "endPlanned": "13:50",
+        "zoneId": 6006,
+        "spaceId": 3006,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10138,
+        "startPlanned": "12:10",
+        "endPlanned": "12:25",
+        "zoneId": 6002,
+        "spaceId": 3002,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10139,
+        "startPlanned": "13:10",
+        "endPlanned": "13:40",
+        "zoneId": 6016,
+        "spaceId": 3016,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null,
+        "itinerantTeamId": 5001,
+        "assignedResourceIds": [
+          4003,
+          4008
+        ]
+      },
+      {
+        "taskId": 10140,
+        "startPlanned": "13:55",
+        "endPlanned": "14:00",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10141,
+        "startPlanned": "17:15",
+        "endPlanned": "17:20",
+        "zoneId": 6009,
+        "spaceId": 3009,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10142,
+        "startPlanned": "14:30",
+        "endPlanned": "15:10",
+        "zoneId": null,
+        "spaceId": null,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10143,
+        "startPlanned": "15:10",
+        "endPlanned": "15:40",
+        "zoneId": 6020,
+        "spaceId": 3020,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10144,
+        "startPlanned": "18:35",
+        "endPlanned": "18:40",
+        "zoneId": 6021,
+        "spaceId": 3021,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10145,
+        "startPlanned": "13:00",
+        "endPlanned": "13:10",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10146,
+        "startPlanned": "14:40",
+        "endPlanned": "14:50",
+        "zoneId": 6008,
+        "spaceId": 3008,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10147,
+        "startPlanned": "16:55",
+        "endPlanned": "17:10",
+        "zoneId": 6004,
+        "spaceId": 3004,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10148,
+        "startPlanned": "12:45",
+        "endPlanned": "12:55",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10149,
+        "startPlanned": "18:05",
+        "endPlanned": "18:10",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10150,
+        "startPlanned": "11:30",
+        "endPlanned": "11:35",
+        "zoneId": 6022,
+        "spaceId": 3022,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10151,
+        "startPlanned": "18:30",
+        "endPlanned": "18:35",
+        "zoneId": 6023,
+        "spaceId": 3023,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10152,
+        "startPlanned": "13:15",
+        "endPlanned": "13:20",
+        "zoneId": 6006,
+        "spaceId": 3006,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10153,
+        "startPlanned": "11:55",
+        "endPlanned": "12:10",
+        "zoneId": 6002,
+        "spaceId": 3002,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10154,
+        "startPlanned": "16:10",
+        "endPlanned": "16:40",
+        "zoneId": 6011,
+        "spaceId": 3011,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null,
+        "itinerantTeamId": 5003,
+        "assignedResourceIds": [
+          4003,
+          4004,
+          4007,
+          4008
+        ]
+      },
+      {
+        "taskId": 10155,
+        "startPlanned": "13:25",
+        "endPlanned": "13:30",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10156,
+        "startPlanned": "17:30",
+        "endPlanned": "17:35",
+        "zoneId": 6009,
+        "spaceId": 3009,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10157,
+        "startPlanned": "13:30",
+        "endPlanned": "14:10",
+        "zoneId": null,
+        "spaceId": null,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10158,
+        "startPlanned": "15:10",
+        "endPlanned": "15:40",
+        "zoneId": 6019,
+        "spaceId": 3019,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10159,
+        "startPlanned": "12:05",
+        "endPlanned": "12:15",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10160,
+        "startPlanned": "11:50",
+        "endPlanned": "12:00",
+        "zoneId": 6008,
+        "spaceId": 3008,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10161,
+        "startPlanned": "13:10",
+        "endPlanned": "13:25",
+        "zoneId": 6004,
+        "spaceId": 3004,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10162,
+        "startPlanned": "11:35",
+        "endPlanned": "11:45",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10163,
+        "startPlanned": "18:10",
+        "endPlanned": "18:15",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10164,
+        "startPlanned": "12:45",
+        "endPlanned": "12:50",
+        "zoneId": 6005,
+        "spaceId": 3005,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10165,
+        "startPlanned": "10:00",
+        "endPlanned": "10:05",
+        "zoneId": 6022,
+        "spaceId": 3022,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10166,
+        "startPlanned": "18:30",
+        "endPlanned": "18:35",
+        "zoneId": 6023,
+        "spaceId": 3023,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10167,
+        "startPlanned": "12:25",
+        "endPlanned": "12:30",
+        "zoneId": 6006,
+        "spaceId": 3006,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10168,
+        "startPlanned": "10:25",
+        "endPlanned": "10:40",
+        "zoneId": 6003,
+        "spaceId": 3003,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10169,
+        "startPlanned": "17:10",
+        "endPlanned": "17:40",
+        "zoneId": 6012,
+        "spaceId": 3012,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null,
+        "itinerantTeamId": 5003,
+        "assignedResourceIds": [
+          4003,
+          4004,
+          4007,
+          4008
+        ]
+      },
+      {
+        "taskId": 10170,
+        "startPlanned": "12:35",
+        "endPlanned": "12:40",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10171,
+        "startPlanned": "15:10",
+        "endPlanned": "15:50",
+        "zoneId": null,
+        "spaceId": null,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10172,
+        "startPlanned": "16:20",
+        "endPlanned": "16:50",
+        "zoneId": 6019,
+        "spaceId": 3019,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10173,
+        "startPlanned": "17:55",
+        "endPlanned": "18:10",
+        "zoneId": 6001,
+        "spaceId": 3001,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null,
+        "itinerantTeamId": 5003,
+        "assignedResourceIds": [
+          4003,
+          4004,
+          4007,
+          4008
+        ]
+      },
+      {
+        "taskId": 10174,
+        "startPlanned": "12:10",
+        "endPlanned": "12:20",
+        "zoneId": 6008,
+        "spaceId": 3008,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10175,
+        "startPlanned": "12:55",
+        "endPlanned": "13:10",
+        "zoneId": 6004,
+        "spaceId": 3004,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10176,
+        "startPlanned": "11:05",
+        "endPlanned": "11:15",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10177,
+        "startPlanned": "18:35",
+        "endPlanned": "18:40",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10178,
+        "startPlanned": "16:10",
+        "endPlanned": "16:15",
+        "zoneId": 6009,
+        "spaceId": 3009,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10179,
+        "startPlanned": "12:40",
+        "endPlanned": "12:45",
+        "zoneId": 6005,
+        "spaceId": 3005,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10180,
+        "startPlanned": "10:30",
+        "endPlanned": "10:35",
+        "zoneId": 6022,
+        "spaceId": 3022,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10181,
+        "startPlanned": "18:55",
+        "endPlanned": "19:00",
+        "zoneId": 6023,
+        "spaceId": 3023,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10182,
+        "startPlanned": "11:25",
+        "endPlanned": "11:30",
+        "zoneId": 6006,
+        "spaceId": 3006,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10183,
+        "startPlanned": "10:40",
+        "endPlanned": "10:55",
+        "zoneId": 6003,
+        "spaceId": 3003,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10184,
+        "startPlanned": "12:30",
+        "endPlanned": "12:35",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10185,
+        "startPlanned": "17:05",
+        "endPlanned": "17:10",
+        "zoneId": 6009,
+        "spaceId": 3009,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10186,
+        "startPlanned": "15:10",
+        "endPlanned": "15:50",
+        "zoneId": null,
+        "spaceId": null,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10187,
+        "startPlanned": "11:35",
+        "endPlanned": "12:05",
+        "zoneId": 6019,
+        "spaceId": 3019,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10188,
+        "startPlanned": "14:40",
+        "endPlanned": "14:50",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10189,
+        "startPlanned": "13:00",
+        "endPlanned": "13:10",
+        "zoneId": 6008,
+        "spaceId": 3008,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10190,
+        "startPlanned": "12:40",
+        "endPlanned": "12:55",
+        "zoneId": 6004,
+        "spaceId": 3004,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10191,
+        "startPlanned": "12:15",
+        "endPlanned": "12:25",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10192,
+        "startPlanned": "17:50",
+        "endPlanned": "17:55",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10193,
+        "startPlanned": "12:30",
+        "endPlanned": "12:35",
+        "zoneId": 6005,
+        "spaceId": 3005,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10194,
+        "startPlanned": "10:30",
+        "endPlanned": "10:35",
+        "zoneId": 6022,
+        "spaceId": 3022,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10195,
+        "startPlanned": "18:10",
+        "endPlanned": "18:15",
+        "zoneId": 6023,
+        "spaceId": 3023,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10196,
+        "startPlanned": "14:20",
+        "endPlanned": "14:25",
+        "zoneId": 6006,
+        "spaceId": 3006,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10197,
+        "startPlanned": "10:55",
+        "endPlanned": "11:10",
+        "zoneId": 6003,
+        "spaceId": 3003,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10198,
+        "startPlanned": "14:30",
+        "endPlanned": "14:35",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10199,
+        "startPlanned": "13:10",
+        "endPlanned": "13:50",
+        "zoneId": null,
+        "spaceId": null,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10200,
+        "startPlanned": "16:55",
+        "endPlanned": "17:25",
+        "zoneId": 6020,
+        "spaceId": 3020,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10201,
+        "startPlanned": "14:10",
+        "endPlanned": "14:20",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10202,
+        "startPlanned": "12:50",
+        "endPlanned": "13:00",
+        "zoneId": 6008,
+        "spaceId": 3008,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10203,
+        "startPlanned": "12:25",
+        "endPlanned": "12:40",
+        "zoneId": 6004,
+        "spaceId": 3004,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10204,
+        "startPlanned": "12:05",
+        "endPlanned": "12:15",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10205,
+        "startPlanned": "18:30",
+        "endPlanned": "18:35",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10206,
+        "startPlanned": "13:40",
+        "endPlanned": "13:45",
+        "zoneId": 6005,
+        "spaceId": 3005,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10207,
+        "startPlanned": "11:00",
+        "endPlanned": "11:05",
+        "zoneId": 6022,
+        "spaceId": 3022,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10208,
+        "startPlanned": "18:55",
+        "endPlanned": "19:00",
+        "zoneId": 6023,
+        "spaceId": 3023,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10209,
+        "startPlanned": "14:25",
+        "endPlanned": "14:30",
+        "zoneId": 6006,
+        "spaceId": 3006,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10210,
+        "startPlanned": "11:10",
+        "endPlanned": "11:25",
+        "zoneId": 6003,
+        "spaceId": 3003,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10211,
+        "startPlanned": "14:35",
+        "endPlanned": "14:40",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10212,
+        "startPlanned": "17:00",
+        "endPlanned": "17:05",
+        "zoneId": 6009,
+        "spaceId": 3009,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10213,
+        "startPlanned": "13:00",
+        "endPlanned": "13:40",
+        "zoneId": null,
+        "spaceId": null,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10214,
+        "startPlanned": "17:30",
+        "endPlanned": "18:00",
+        "zoneId": 6019,
+        "spaceId": 3019,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10215,
+        "startPlanned": "18:10",
+        "endPlanned": "18:20",
+        "zoneId": 6001,
+        "spaceId": 3001,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10216,
+        "startPlanned": "12:40",
+        "endPlanned": "12:50",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10217,
+        "startPlanned": "13:50",
+        "endPlanned": "14:00",
+        "zoneId": 6008,
+        "spaceId": 3008,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10218,
+        "startPlanned": "17:40",
+        "endPlanned": "17:55",
+        "zoneId": 6004,
+        "spaceId": 3004,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10219,
+        "startPlanned": "12:25",
+        "endPlanned": "12:35",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10220,
+        "startPlanned": "18:40",
+        "endPlanned": "18:45",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10221,
+        "startPlanned": "11:00",
+        "endPlanned": "11:05",
+        "zoneId": 6022,
+        "spaceId": 3022,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10222,
+        "startPlanned": "18:55",
+        "endPlanned": "19:00",
+        "zoneId": 6023,
+        "spaceId": 3023,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10223,
+        "startPlanned": "13:30",
+        "endPlanned": "13:35",
+        "zoneId": 6006,
+        "spaceId": 3006,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10224,
+        "startPlanned": "11:10",
+        "endPlanned": "11:25",
+        "zoneId": 6002,
+        "spaceId": 3002,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10225,
+        "startPlanned": "13:40",
+        "endPlanned": "13:45",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10226,
+        "startPlanned": "15:10",
+        "endPlanned": "15:50",
+        "zoneId": null,
+        "spaceId": null,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10227,
+        "startPlanned": "16:20",
+        "endPlanned": "16:50",
+        "zoneId": 6020,
+        "spaceId": 3020,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10228,
+        "startPlanned": "13:30",
+        "endPlanned": "13:40",
+        "zoneId": 6008,
+        "spaceId": 3008,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10229,
+        "startPlanned": "16:25",
+        "endPlanned": "16:40",
+        "zoneId": 6004,
+        "spaceId": 3004,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10230,
+        "startPlanned": "11:45",
+        "endPlanned": "11:55",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10231,
+        "startPlanned": "17:45",
+        "endPlanned": "17:50",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10232,
+        "startPlanned": "16:05",
+        "endPlanned": "16:10",
+        "zoneId": 6009,
+        "spaceId": 3009,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10233,
+        "startPlanned": "11:30",
+        "endPlanned": "11:35",
+        "zoneId": 6022,
+        "spaceId": 3022,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10234,
+        "startPlanned": "18:10",
+        "endPlanned": "18:15",
+        "zoneId": 6023,
+        "spaceId": 3023,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10235,
+        "startPlanned": "12:00",
+        "endPlanned": "12:05",
+        "zoneId": 6006,
+        "spaceId": 3006,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10236,
+        "startPlanned": "12:25",
+        "endPlanned": "12:40",
+        "zoneId": 6002,
+        "spaceId": 3002,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10237,
+        "startPlanned": "12:55",
+        "endPlanned": "13:25",
+        "zoneId": 6014,
+        "spaceId": 3014,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null,
+        "itinerantTeamId": 5002,
+        "assignedResourceIds": [
+          4004,
+          4009
+        ]
+      },
+      {
+        "taskId": 10238,
+        "startPlanned": "12:15",
+        "endPlanned": "12:20",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10239,
+        "startPlanned": "14:10",
+        "endPlanned": "14:50",
+        "zoneId": null,
+        "spaceId": null,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10240,
+        "startPlanned": "16:55",
+        "endPlanned": "17:25",
+        "zoneId": 6019,
+        "spaceId": 3019,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10241,
+        "startPlanned": "10:40",
+        "endPlanned": "10:50",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10242,
+        "startPlanned": "12:00",
+        "endPlanned": "12:10",
+        "zoneId": 6008,
+        "spaceId": 3008,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10243,
+        "startPlanned": "16:10",
+        "endPlanned": "16:25",
+        "zoneId": 6004,
+        "spaceId": 3004,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10244,
+        "startPlanned": "10:25",
+        "endPlanned": "10:35",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10245,
+        "startPlanned": "17:35",
+        "endPlanned": "17:40",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10246,
+        "startPlanned": "10:00",
+        "endPlanned": "10:05",
+        "zoneId": 6022,
+        "spaceId": 3022,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10247,
+        "startPlanned": "18:10",
+        "endPlanned": "18:15",
+        "zoneId": 6023,
+        "spaceId": 3023,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10248,
+        "startPlanned": "11:40",
+        "endPlanned": "11:45",
+        "zoneId": 6006,
+        "spaceId": 3006,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10249,
+        "startPlanned": "12:40",
+        "endPlanned": "12:55",
+        "zoneId": 6002,
+        "spaceId": 3002,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10250,
+        "startPlanned": "11:50",
+        "endPlanned": "11:55",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10251,
+        "startPlanned": "16:55",
+        "endPlanned": "17:00",
+        "zoneId": 6009,
+        "spaceId": 3009,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10252,
+        "startPlanned": "13:00",
+        "endPlanned": "13:40",
+        "zoneId": null,
+        "spaceId": null,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10253,
+        "startPlanned": "11:00",
+        "endPlanned": "11:30",
+        "zoneId": 6020,
+        "spaceId": 3020,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10254,
+        "startPlanned": "14:00",
+        "endPlanned": "14:10",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10255,
+        "startPlanned": "13:20",
+        "endPlanned": "13:30",
+        "zoneId": 6008,
+        "spaceId": 3008,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10256,
+        "startPlanned": "15:55",
+        "endPlanned": "16:10",
+        "zoneId": 6004,
+        "spaceId": 3004,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10257,
+        "startPlanned": "11:55",
+        "endPlanned": "12:05",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10258,
+        "startPlanned": "17:25",
+        "endPlanned": "17:30",
+        "zoneId": 6018,
+        "spaceId": 3018,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10259,
+        "startPlanned": "11:30",
+        "endPlanned": "11:35",
+        "zoneId": 6022,
+        "spaceId": 3022,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10260,
+        "startPlanned": "17:30",
+        "endPlanned": "17:35",
+        "zoneId": 6023,
+        "spaceId": 3023,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10261,
+        "startPlanned": "13:35",
+        "endPlanned": "13:40",
+        "zoneId": 6006,
+        "spaceId": 3006,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10262,
+        "startPlanned": "12:55",
+        "endPlanned": "13:10",
+        "zoneId": 6002,
+        "spaceId": 3002,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10263,
+        "startPlanned": "12:10",
+        "endPlanned": "12:40",
+        "zoneId": 6013,
+        "spaceId": 3013,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null,
+        "itinerantTeamId": 5002,
+        "assignedResourceIds": [
+          4004,
+          4009
+        ]
+      },
+      {
+        "taskId": 10264,
+        "startPlanned": "13:50",
+        "endPlanned": "13:55",
+        "zoneId": 6007,
+        "spaceId": 3007,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10265,
+        "startPlanned": "15:10",
+        "endPlanned": "15:50",
+        "zoneId": null,
+        "spaceId": null,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      },
+      {
+        "taskId": 10266,
+        "startPlanned": "14:35",
+        "endPlanned": "15:05",
+        "zoneId": 6020,
+        "spaceId": 3020,
+        "locationLabel": null,
+        "durationOverride": null,
+        "camerasOverride": null
+      }
+    ],
+    "operationalMeals": [
+      {
+        "policyId": "break:coach-jose-maria",
+        "startPlanned": "14:25",
+        "endPlanned": "15:10"
+      },
+      {
+        "policyId": "break:coach-lucia",
+        "startPlanned": "14:10",
+        "endPlanned": "14:55"
+      },
+      {
+        "policyId": "break:main-flow",
+        "startPlanned": "14:25",
+        "endPlanned": "15:40"
+      },
+      {
+        "policyId": "break:p14-operations",
+        "startPlanned": "15:15",
+        "endPlanned": "16:30"
+      },
+      {
+        "policyId": "break:p15-operations",
+        "startPlanned": "14:50",
+        "endPlanned": "16:05"
+      },
+      {
+        "policyId": "break:reality-a",
+        "startPlanned": "13:40",
+        "endPlanned": "14:55"
+      },
+      {
+        "policyId": "break:reality-b",
+        "startPlanned": "14:40",
+        "endPlanned": "15:55"
+      },
+      {
+        "policyId": "break:totales-operations",
+        "startPlanned": "13:15",
+        "endPlanned": "14:30"
+      }
+    ],
+    "setupPreparations": [
+      {
+        "id": "setup-preparation:space:3009:setup-family:3009:sillon:1",
+        "spaceId": 3009,
+        "setupFamilyId": "3009:sillon",
+        "entryIndex": 1,
+        "duration": 10,
+        "start": 1005,
+        "end": 1015
+      }
+    ],
+    "roundPreparations": [
+      {
+        "id": "round-preparation:a2-totales-rounds:3019:2",
+        "synchronizationId": "a2-totales-rounds",
+        "spaceId": 3019,
+        "roundIndex": 2,
+        "duration": 5,
+        "start": 690,
+        "end": 695
+      },
+      {
+        "id": "round-preparation:a2-totales-rounds:3020:2",
+        "synchronizationId": "a2-totales-rounds",
+        "spaceId": 3020,
+        "roundIndex": 2,
+        "duration": 5,
+        "start": 690,
+        "end": 695
+      },
+      {
+        "id": "round-preparation:a2-totales-rounds:3019:3",
+        "synchronizationId": "a2-totales-rounds",
+        "spaceId": 3019,
+        "roundIndex": 3,
+        "duration": 5,
+        "start": 725,
+        "end": 730
+      },
+      {
+        "id": "round-preparation:a2-totales-rounds:3020:3",
+        "synchronizationId": "a2-totales-rounds",
+        "spaceId": 3020,
+        "roundIndex": 3,
+        "duration": 5,
+        "start": 725,
+        "end": 730
+      },
+      {
+        "id": "round-preparation:a2-totales-rounds:3019:4",
+        "synchronizationId": "a2-totales-rounds",
+        "spaceId": 3019,
+        "roundIndex": 4,
+        "duration": 5,
+        "start": 760,
+        "end": 765
+      },
+      {
+        "id": "round-preparation:a2-totales-rounds:3020:4",
+        "synchronizationId": "a2-totales-rounds",
+        "spaceId": 3020,
+        "roundIndex": 4,
+        "duration": 5,
+        "start": 760,
+        "end": 765
+      },
+      {
+        "id": "round-preparation:a2-totales-rounds:3019:5",
+        "synchronizationId": "a2-totales-rounds",
+        "spaceId": 3019,
+        "roundIndex": 5,
+        "duration": 5,
+        "start": 870,
+        "end": 875
+      },
+      {
+        "id": "round-preparation:a2-totales-rounds:3020:5",
+        "synchronizationId": "a2-totales-rounds",
+        "spaceId": 3020,
+        "roundIndex": 5,
+        "duration": 5,
+        "start": 870,
+        "end": 875
+      },
+      {
+        "id": "round-preparation:a2-totales-rounds:3019:6",
+        "synchronizationId": "a2-totales-rounds",
+        "spaceId": 3019,
+        "roundIndex": 6,
+        "duration": 5,
+        "start": 905,
+        "end": 910
+      },
+      {
+        "id": "round-preparation:a2-totales-rounds:3020:6",
+        "synchronizationId": "a2-totales-rounds",
+        "spaceId": 3020,
+        "roundIndex": 6,
+        "duration": 5,
+        "start": 905,
+        "end": 910
+      },
+      {
+        "id": "round-preparation:a2-totales-rounds:3019:7",
+        "synchronizationId": "a2-totales-rounds",
+        "spaceId": 3019,
+        "roundIndex": 7,
+        "duration": 5,
+        "start": 940,
+        "end": 945
+      },
+      {
+        "id": "round-preparation:a2-totales-rounds:3020:7",
+        "synchronizationId": "a2-totales-rounds",
+        "spaceId": 3020,
+        "roundIndex": 7,
+        "duration": 5,
+        "start": 940,
+        "end": 945
+      },
+      {
+        "id": "round-preparation:a2-totales-rounds:3019:8",
+        "synchronizationId": "a2-totales-rounds",
+        "spaceId": 3019,
+        "roundIndex": 8,
+        "duration": 5,
+        "start": 975,
+        "end": 980
+      },
+      {
+        "id": "round-preparation:a2-totales-rounds:3020:8",
+        "synchronizationId": "a2-totales-rounds",
+        "spaceId": 3020,
+        "roundIndex": 8,
+        "duration": 5,
+        "start": 975,
+        "end": 980
+      },
+      {
+        "id": "round-preparation:a2-totales-rounds:3019:9",
+        "synchronizationId": "a2-totales-rounds",
+        "spaceId": 3019,
+        "roundIndex": 9,
+        "duration": 5,
+        "start": 1010,
+        "end": 1015
+      },
+      {
+        "id": "round-preparation:a2-totales-rounds:3020:9",
+        "synchronizationId": "a2-totales-rounds",
+        "spaceId": 3020,
+        "roundIndex": 9,
+        "duration": 5,
+        "start": 1010,
+        "end": 1015
+      },
+      {
+        "id": "round-preparation:a2-totales-rounds:3019:10",
+        "synchronizationId": "a2-totales-rounds",
+        "spaceId": 3019,
+        "roundIndex": 10,
+        "duration": 5,
+        "start": 1045,
+        "end": 1050
+      }
+    ]
+  }
+}

@@ -126,6 +126,16 @@ export function buildAssistedPlanningSnapshotV1(
 }
 
 export function fingerprintAssistedPlanningSnapshotV1(snapshot: AssistedPlanningSnapshotV1): string {
-  const canonical = buildAssistedPlanningSnapshotV1(snapshot.tasks.map((task) => ({ id: task.taskId, ...task })), snapshot.planningBlocks, snapshot.operationalMeals, snapshot.setupPreparations, snapshot.roundPreparations);
+  const canonical = buildAssistedPlanningSnapshotV1(snapshot.tasks.map(task => ({ id: task.taskId, ...task })),
+    snapshot.planningBlocks, snapshot.operationalMeals, snapshot.setupPreparations, snapshot.roundPreparations);
   return createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
+}
+
+/** Rebuild the complete contract after an edit; keep auxiliary decisions intact. */
+export function rebuildAssistedPlanningSnapshotV1(snapshot: AssistedPlanningSnapshotV1): AssistedPlanningSnapshotV1 {
+  const canonical = buildAssistedPlanningSnapshotV1(snapshot.tasks.map(task => ({ id: task.taskId, ...task })),
+    snapshot.planningBlocks, snapshot.operationalMeals, snapshot.setupPreparations, snapshot.roundPreparations);
+  // Canonicalization validates the whole current contract; an edit must also
+  // preserve the original presence/order of every unmodified structural field.
+  return freeze({ ...structuredClone(snapshot), tasks: canonical.tasks });
 }

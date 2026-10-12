@@ -1,0 +1,12 @@
+{
+  "provenance": "READ_ONLY_COMPARISON_OF_DISPOSABLE_NATIVE_S10_WITH_CANONICAL_IN_MEMORY_FIXTURE",
+  "inMemoryBaselineFingerprint": "22d728894bd73c9cddc7acb5dbd1f518d60f36f910ec2895b3035f07be95d679",
+  "nativeCertifiedBaselineFingerprint": "557d0efe105e7a2257f4f7754150e8aff814581ec943e5f623dbbc3640f147b9",
+  "changedTaskFields": {
+    "assignedResourceIds": 248,
+    "durationOverride": 266
+  },
+  "allPlacementsAndOtherTaskFieldsEqual": true,
+  "allAuxiliariesEqual": true,
+  "explanation": "Native import persists explicit duration overrides and direct resource assignments; the in-memory benchmark initializes those fields as null/omitted. Each baseline retains its own previously certified fingerprint. No placements or auxiliary identities differ."
+}
