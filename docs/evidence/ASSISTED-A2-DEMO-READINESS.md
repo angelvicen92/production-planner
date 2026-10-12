@@ -155,3 +155,9 @@ then covered by 76 passing focal tests, renewed check/build and the native scope
 rehearsal. JSON retains that rehearsal's exact hashes rather than claiming it ran
 on later bytes. CI reruns the complete native/Autopilot/order gate on the final PR
 head, alongside the product suite and deterministic canonical benchmark.
+
+The broad suite caught the parity test's direct engine import under `client/`,
+which the existing isolation guard also scans for tests. The read-only comparison
+was moved to `engine/planner-next/integration/planningViewResourceProjection.spec.ts`.
+The guard stays unchanged; its focused follow-up and parity cases pass (13 tests).
+This correction changes test placement only, with no production/solver delta.

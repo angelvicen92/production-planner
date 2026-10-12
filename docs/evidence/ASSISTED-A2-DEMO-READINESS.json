@@ -2445,6 +2445,18 @@
       "requiredOnFinalPRHead": true,
       "source": ".github/workflows/planner-engine-ci.yml and baseline-ci.yml",
       "result": "Consult PR checks; dynamic CI status is not fabricated in offline Evidence"
+    },
+    "isolationFollowup": {
+      "status": "PASS",
+      "tests": 13,
+      "initialFailure": "The read-only engine parity test was placed under client/, which the existing isolation guard also scans.",
+      "correction": "Moved parity test to engine/planner-next/integration/planningViewResourceProjection.spec.ts; guard and production/solver code unchanged."
+    },
+    "productSuite": {
+      "specFiles": 373,
+      "status": "All other cases PASS; sole isolation failure corrected and follow-up PASS",
+      "exclusions": "Two historical diagnostics excluded by the existing CI workflow, unchanged",
+      "finalHeadCI": "Reruns the complete selection including the new parity spec"
     }
   },
   "limits": [
