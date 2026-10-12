@@ -17,6 +17,7 @@ import { createViolationKey, type StageViolation } from "../shared/assistedStage
 import type { ValidationViolationDetail } from "../engine/planner-next/contracts";
 import { affectedTasksUnchanged, resolveActiveStageLineage } from "./assistedAcceptedBaseline";
 import { materializeItinerantUnitAssignment } from "../engine/planner-next/itinerantUnitAssignment";
+import { materializeScheduledItinerantUnitMeals } from "../engine/planner-next/itinerantUnitMeals";
 import { roundPreparationId } from "../engine/planner-next/roundSynchronization";
 import { structuralWitnessIdentity, type FutureStructuralWitness } from "../engine/planner-next/anonymousPipelineWitness";
 
@@ -108,30 +109,93 @@ function materializeSnapshotTask(problem:PlannerNextProblem,source:ScheduledTask
   return selected;
 }
 
-export function validateManualAssistedDelta(input:EngineInput,draft:AssistedPlanningSnapshotV1,touched:readonly number[]){
-  const adapter=adaptEngineInputToPlannerNextProblem(input);if(adapter.status!=="SUPPORTED")return null;
-  const canonicalByProduct=new Map(adapter.identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId]));
-  if(touched.some(id=>!canonicalByProduct.has(id)))return null;
-  const taskById=new Map(adapter.problem.tasks.map(task=>[task.id,task]));
-  const unitByProduct=new Map(adapter.identityMap.filter(i=>i.namespace==="itinerant-team").map(i=>[Number(i.sourceId),i.canonicalId]));
-  const protectedPlacements:ScheduledTask[]=draft.tasks.flatMap(row=>{if(!row.startPlanned||!row.endPlanned)return[];const canonical=canonicalByProduct.get(row.taskId),source=canonical?taskById.get(canonical):undefined;const task=source?materializeSnapshotTask(adapter.problem,source,row,adapter.identityMap,unitByProduct):undefined;const start=engineTimeToMinute(row.startPlanned),end=engineTimeToMinute(row.endPlanned);if(source&&!task)throw new Error(`INVALID_SNAPSHOT_ITINERANT_UNIT:${row.taskId}`);return task?[{...task,duration:end-start,start,end}]:[];});
-  const scope=createPlanningScope({kind:"TASK_IDS",value:touched.join(",")},{validationMode:"MANUAL_DELTA_CLEAN_V1"},touched.map(id=>canonicalByProduct.get(id)!));
-  const assisted=buildAssistedProblem(adapter.problem,scope,protectedPlacements);
-  const evidence=executeAssistedPlanning(assisted).evidence;
-  const validationSummary=validatePlan(assisted.originalValidationProblem,protectedPlacements);
-  return {...evidence,validationSummary,structuredViolations:projectPlannerViolations(validationSummary.violations??[],adapter.identityMap)};
+/** Shared product → canonical materialization used by proposals and manual replay. */
+export function materializeAssistedSnapshotOccupations(problem:PlannerNextProblem,
+  identityMap:readonly {namespace:string;sourceId:string;canonicalId:string}[],baseSnapshot:AssistedPlanningSnapshotV1){
+    const sourceByCanonical=new Map(identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId]));
+    const taskById=new Map(problem.tasks.map(t=>[t.id,t]));
+    const canonicalUnitBySource=new Map(identityMap.filter(i=>i.namespace==="itinerant-team").map(i=>[Number(i.sourceId),i.canonicalId]));
+    const protectedPlacements: ScheduledTask[]=baseSnapshot.tasks.flatMap(row=>{
+      if(!row.startPlanned||!row.endPlanned) return []; const id=sourceByCanonical.get(row.taskId); const source=id?taskById.get(id):undefined;
+      const task=source?materializeSnapshotTask(problem,source,row,identityMap,canonicalUnitBySource):undefined;
+      if(source&&!task)throw new Error(`INVALID_SNAPSHOT_ITINERANT_UNIT:${row.taskId}`);
+      const start=engineTimeToMinute(row.startPlanned),end=engineTimeToMinute(row.endPlanned);
+      return task?[{...task,duration:end-start,start,end}]:[];
+    });
+    const operationalPolicyById=new Map((problem.operationalMealPolicies??[]).map(policy=>[policy.id,policy]));
+    const protectedOperationalMeals=(baseSnapshot.operationalMeals??[]).map(meal=>{
+      const policy=operationalPolicyById.get(meal.policyId);
+      if(!policy)throw new Error(`UNREPRESENTABLE_PROTECTED_OPERATIONAL_MEAL:${meal.policyId}`);
+      const start=engineTimeToMinute(meal.startPlanned),end=engineTimeToMinute(meal.endPlanned);
+      return {id:meal.policyId,resourceIds:[...policy.resourceIds],spaceIds:[...policy.spaceIds],duration:end-start,start,end};
+    });
+    const canonicalSpaceBySource=new Map(identityMap.filter(i=>i.namespace==="space").map(i=>[Number(i.sourceId),i.canonicalId]));
+    const canonicalFamilyBySource=new Map(identityMap.filter(i=>i.namespace==="setup-family").map(i=>[i.sourceId,i.canonicalId]));
+    const protectedSetupPreparations:ScheduledSetupPreparation[]=(baseSnapshot.setupPreparations??[]).map(item=>{
+      const spaceId=canonicalSpaceBySource.get(item.spaceId),setupFamilyId=canonicalFamilyBySource.get(item.setupFamilyId);
+      if(!spaceId||!setupFamilyId)throw new Error(`UNREPRESENTABLE_PROTECTED_SETUP_PREPARATION:${item.id}`);
+      return {...item,kind:"setup-preparation",spaceId,setupFamilyId};
+    });
+    const canonicalSynchronizationBySource=new Map(identityMap.filter(i=>i.namespace==="round-synchronization").map(i=>[i.sourceId,i.canonicalId]));
+    const protectedRoundPreparations:ScheduledRoundPreparation[]=(baseSnapshot.roundPreparations??[]).map(item=>{
+      const spaceId=canonicalSpaceBySource.get(item.spaceId),synchronizationId=canonicalSynchronizationBySource.get(item.synchronizationId);
+      if(!spaceId||!synchronizationId)throw new Error(`UNREPRESENTABLE_PROTECTED_ROUND_PREPARATION:${item.id}`);
+      return {...item,id:roundPreparationId(synchronizationId,spaceId,item.roundIndex),kind:"round-preparation",spaceId,synchronizationId};
+    });
+    const mealBySourceId=new Map((problem.participantMeals??[]).map(meal=>[meal.sourceTaskId,meal]));
+    const protectedParticipantMeals:ScheduledParticipantMeal[]=baseSnapshot.tasks.flatMap(row=>{
+      if(!row.startPlanned||!row.endPlanned)return[];
+      const sourceTaskId=sourceByCanonical.get(row.taskId),obligation=sourceTaskId?mealBySourceId.get(sourceTaskId):undefined;
+      if(!obligation)return[];
+      const start=engineTimeToMinute(row.startPlanned),end=engineTimeToMinute(row.endPlanned);
+      return [{id:obligation.id,sourceTaskId:sourceTaskId!,participantId:obligation.participantId,duration:end-start,start,end}];
+    });
+  return {protectedPlacements,protectedOperationalMeals,protectedSetupPreparations,protectedRoundPreparations,protectedParticipantMeals};
 }
 
-/** Evidence-only seam: same immutable placements, validated by Planner Next without search. */
+export function validateManualAssistedDelta(input:EngineInput,draft:AssistedPlanningSnapshotV1,touched:readonly number[]){
+  const adapter=adaptEngineInputToPlannerNextProblem(input);if(adapter.status!=="SUPPORTED")return null;
+  return validateMaterializedManualDelta(adapter.problem,adapter.identityMap,draft,touched);
+}
+
+function validateMaterializedManualDelta(problem:PlannerNextProblem,
+  identityMap:readonly {namespace:string;sourceId:string;canonicalId:string}[],draft:AssistedPlanningSnapshotV1,touched:readonly number[]){
+  const canonicalByProduct=new Map(identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId]));
+  if(touched.some(id=>!canonicalByProduct.has(id)))return null;
+  const materializableIds=new Set([...problem.tasks.map(task=>task.id),...(problem.participantMeals??[]).map(meal=>meal.sourceTaskId)]);
+  if(draft.tasks.some(row=>(row.startPlanned===null)!==(row.endPlanned===null)
+    ||(row.startPlanned!==null&&!materializableIds.has(canonicalByProduct.get(row.taskId)??""))))return null;
+  const context=materializeAssistedSnapshotOccupations(problem,identityMap,draft);
+  const {protectedPlacements,protectedOperationalMeals,protectedSetupPreparations,protectedParticipantMeals,protectedRoundPreparations}=context;
+  const scopeIds=touched.map(id=>canonicalByProduct.get(id)!);
+  const assisted=buildAssistedProblem(problem,createPlanningScope({kind:"TASK_IDS",value:scopeIds.join(",")},
+    {validationMode:"MANUAL_DELTA_CLEAN_V1"},scopeIds),protectedPlacements,undefined,
+    protectedOperationalMeals,protectedSetupPreparations,protectedParticipantMeals,protectedRoundPreparations);
+  const validationProblem=assisted.originalValidationProblem;
+  const resourceMeals=(validationProblem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,
+    resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
+  // Space meals have no placement field in SnapshotV1. Do not invent witnesses;
+  // a required, unrepresented space meal remains a fail-closed reason code.
+  const validationSummary=validatePlan(validationProblem,[...protectedPlacements],[...protectedSetupPreparations],[],
+    [...protectedParticipantMeals],resourceMeals,materializeScheduledItinerantUnitMeals(validationProblem),
+    [...protectedRoundPreparations],[...protectedOperationalMeals]);
+  const placedIds=new Set([...protectedPlacements.map(row=>row.id),...protectedParticipantMeals.map(row=>row.sourceTaskId)]);
+  const completeForScope=scopeIds.every(id=>placedIds.has(id));
+  return {scopeTaskCount:touched.length,scopeTaskIds:scopeIds,supportingTaskIds:assisted.supportingTaskIds,
+    supportingReasonByTaskId:assisted.supportingReasonByTaskId,protectedPlacementCount:protectedPlacements.length,
+    protectedPlacementsPreserved:true,proposalCount:completeForScope&&validationSummary.hardValid?1:0,
+    completeForScope,hardValid:validationSummary.hardValid,requiredValid:validationSummary.hardValid,
+    fingerprint:fingerprintAssistedPlanningSnapshotV1(draft),work:{},causalDiagnostic:null,
+    reasonCodes:validationSummary.reasonCodes,validationSummary,
+    structuredViolations:projectPlannerViolations(validationSummary.violations??[],identityMap)};
+}
+
+/** Evidence seam: same complete materialization and validator, without search. */
 export function createManualDeltaValidationHarness(problem:PlannerNextProblem,identityMap:readonly {namespace:string;sourceId:string;canonicalId:string}[]){
   return (_input:EngineInput,draft:AssistedPlanningSnapshotV1,touched:readonly number[])=>{
-    const canonicalByProduct=new Map(identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId])),taskById=new Map(problem.tasks.map(task=>[task.id,task]));
-    const unitByProduct=new Map(identityMap.filter(i=>i.namespace==="itinerant-team").map(i=>[Number(i.sourceId),i.canonicalId]));
-    const placements:ScheduledTask[]=draft.tasks.flatMap(row=>{if(!row.startPlanned||!row.endPlanned)return[];const id=canonicalByProduct.get(row.taskId),source=id?taskById.get(id):undefined;const task=source?materializeSnapshotTask(problem,source,row,identityMap,unitByProduct):undefined;if(source&&!task)throw new Error(`INVALID_SNAPSHOT_ITINERANT_UNIT:${row.taskId}`);return task?[{...task,start:engineTimeToMinute(row.startPlanned),end:engineTimeToMinute(row.endPlanned)}]:[];});
-    const scopeIds=touched.map(id=>canonicalByProduct.get(id)!);
-    const assisted=buildAssistedProblem(problem,createPlanningScope({kind:"TASK_IDS",value:scopeIds.join(",")},{validationMode:"MANUAL_DELTA_CLEAN_V1"},scopeIds),placements);
-    const validation=validatePlan(assisted.originalValidationProblem,placements),completeForScope=scopeIds.every(id=>placements.some(row=>row.id===id));
-    return {scopeTaskCount:touched.length,scopeTaskIds:scopeIds,supportingTaskIds:assisted.supportingTaskIds,supportingReasonByTaskId:assisted.supportingReasonByTaskId,protectedPlacementCount:placements.length,protectedPlacementsPreserved:true,proposalCount:completeForScope&&validation.hardValid?1:0,completeForScope,hardValid:validation.hardValid,requiredValid:validation.hardValid,fingerprint:fingerprint(placements),work:{},causalDiagnostic:null,reasonCodes:validation.reasonCodes,validationSummary:validation,structuredViolations:projectPlannerViolations(validation.violations??[],identityMap)};
+    const result=validateMaterializedManualDelta(problem,identityMap,draft,touched);
+    if(!result)throw new Error("UNKNOWN_MANUAL_SCOPE_TASK_ID");
+    return result;
   };
 }
 
@@ -177,45 +241,10 @@ export class AssistedProposalService {
     if(adapter.status!=="SUPPORTED") return this.finish(planId,run,{contractVersion:1,outcome:"UNSUPPORTED",selector,scopeTaskIds:run.scope_task_ids_json,includePrerequisites:run.include_prerequisites,proposal:null,proposedDraftSnapshot:null,proposedDraftFingerprint:null,evidence:adapter.diagnostics as unknown as Record<string,unknown>,reasonCodes:adapter.reasonCodes});
     const resolution=resolveAssistedScope(input,adapter,{kind:"TASK_IDS",taskIds:run.scope_task_ids_json});
     const stage=await this.storage.getAssistedPlanningStage(Number(run.base_stage_id)); if(!stage) throw new AssistedProposalError("STALE_BASE_STAGE",409);
-    const sourceByCanonical=new Map(adapter.identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId]));
-    const taskById=new Map(adapter.problem.tasks.map(t=>[t.id,t]));
-    const canonicalUnitBySource=new Map(adapter.identityMap.filter(i=>i.namespace==="itinerant-team").map(i=>[Number(i.sourceId),i.canonicalId]));
     const baseSnapshot=stage.snapshotJson as unknown as AssistedPlanningSnapshotV1;
-    const protectedPlacements: ScheduledTask[]=baseSnapshot.tasks.flatMap(row=>{
-      if(!row.startPlanned||!row.endPlanned) return []; const id=sourceByCanonical.get(row.taskId); const source=id?taskById.get(id):undefined;
-      const task=source?materializeSnapshotTask(adapter.problem,source,row,adapter.identityMap,canonicalUnitBySource):undefined;
-      if(source&&!task)throw new Error(`INVALID_SNAPSHOT_ITINERANT_UNIT:${row.taskId}`);
-      const start=engineTimeToMinute(row.startPlanned),end=engineTimeToMinute(row.endPlanned);
-      return task?[{...task,duration:end-start,start,end}]:[];
-    });
+    const {protectedPlacements,protectedOperationalMeals,protectedSetupPreparations,protectedRoundPreparations,protectedParticipantMeals}=
+      materializeAssistedSnapshotOccupations(adapter.problem,adapter.identityMap,baseSnapshot);
     const operationalPolicyById=new Map((adapter.problem.operationalMealPolicies??[]).map(policy=>[policy.id,policy]));
-    const protectedOperationalMeals=(baseSnapshot.operationalMeals??[]).map(meal=>{
-      const policy=operationalPolicyById.get(meal.policyId);
-      if(!policy)throw new Error(`UNREPRESENTABLE_PROTECTED_OPERATIONAL_MEAL:${meal.policyId}`);
-      const start=engineTimeToMinute(meal.startPlanned),end=engineTimeToMinute(meal.endPlanned);
-      return {id:meal.policyId,resourceIds:[...policy.resourceIds],spaceIds:[...policy.spaceIds],duration:end-start,start,end};
-    });
-    const canonicalSpaceBySource=new Map(adapter.identityMap.filter(i=>i.namespace==="space").map(i=>[Number(i.sourceId),i.canonicalId]));
-    const canonicalFamilyBySource=new Map(adapter.identityMap.filter(i=>i.namespace==="setup-family").map(i=>[i.sourceId,i.canonicalId]));
-    const protectedSetupPreparations:ScheduledSetupPreparation[]=(baseSnapshot.setupPreparations??[]).map(item=>{
-      const spaceId=canonicalSpaceBySource.get(item.spaceId),setupFamilyId=canonicalFamilyBySource.get(item.setupFamilyId);
-      if(!spaceId||!setupFamilyId)throw new Error(`UNREPRESENTABLE_PROTECTED_SETUP_PREPARATION:${item.id}`);
-      return {...item,kind:"setup-preparation",spaceId,setupFamilyId};
-    });
-    const canonicalSynchronizationBySource=new Map(adapter.identityMap.filter(i=>i.namespace==="round-synchronization").map(i=>[i.sourceId,i.canonicalId]));
-    const protectedRoundPreparations:ScheduledRoundPreparation[]=(baseSnapshot.roundPreparations??[]).map(item=>{
-      const spaceId=canonicalSpaceBySource.get(item.spaceId),synchronizationId=canonicalSynchronizationBySource.get(item.synchronizationId);
-      if(!spaceId||!synchronizationId)throw new Error(`UNREPRESENTABLE_PROTECTED_ROUND_PREPARATION:${item.id}`);
-      return {...item,id:roundPreparationId(synchronizationId,spaceId,item.roundIndex),kind:"round-preparation",spaceId,synchronizationId};
-    });
-    const mealBySourceId=new Map((adapter.problem.participantMeals??[]).map(meal=>[meal.sourceTaskId,meal]));
-    const protectedParticipantMeals:ScheduledParticipantMeal[]=baseSnapshot.tasks.flatMap(row=>{
-      if(!row.startPlanned||!row.endPlanned)return[];
-      const sourceTaskId=sourceByCanonical.get(row.taskId),obligation=sourceTaskId?mealBySourceId.get(sourceTaskId):undefined;
-      if(!obligation)return[];
-      const start=engineTimeToMinute(row.startPlanned),end=engineTimeToMinute(row.endPlanned);
-      return [{id:obligation.id,sourceTaskId:sourceTaskId!,participantId:obligation.participantId,duration:end-start,start,end}];
-    });
     const productByCanonical=new Map(adapter.identityMap.filter(i=>i.namespace==="task").map(i=>[i.canonicalId,Number(i.sourceId)]));
     const canonicalByProduct=new Map(adapter.identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId]));
     const spaceByCanonical=new Map(adapter.identityMap.filter(i=>i.namespace==="space").map(i=>[i.canonicalId,Number(i.sourceId)]));
