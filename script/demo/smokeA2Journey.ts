@@ -1,3 +1,4 @@
+import {buildCanonicalFullA2EngineInput} from "../../engine/planner-next/benchmarks/canonicalFullA2EngineInput";
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import type pg from 'pg';
@@ -149,7 +150,13 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
   if(full){
    const final=await state();assert.equal(final.draft.tasks.filter((t:any)=>t.startPlanned&&t.endPlanned).length,266);
    const baseline=JSON.parse(readFileSync('docs/demo/A2-STAGE-ORDER-EVIDENCE.json','utf8')).baselineFingerprint;
-   assert.equal(final.activeStage.snapshotFingerprint,baseline,'preserve the previously certified canonical baseline');
+   // Only parent identities change in topology v1. Compare the entire native
+   // snapshot with the old zone representation to preserve the certified geometry.
+   const oldZones=new Map(buildCanonicalFullA2EngineInput().input.tasks.map(task=>[task.id,task.zoneId??null]));
+   const oldRepresentation={...final.draft,tasks:final.draft.tasks.map((task:any)=>({...task,zoneId:oldZones.get(task.taskId)}))};
+   const normalizedFingerprint=fingerprintAssistedPlanningSnapshotV1(oldRepresentation);
+   assert.equal(normalizedFingerprint,baseline,'topology changes parents only; preserve certified placements, resources, meals and preparations');
+   diagnostics.spatialTopology={contractVersion:1,fingerprint:final.activeStage.snapshotFingerprint,previousNativeFingerprint:baseline,parentNormalizedFingerprint:normalizedFingerprint,onlyParentIdentityChanged:true};
    const persisted=(await db.query('SELECT snapshot_json FROM public.assisted_planning_stages WHERE id=$1',[final.activeStage.id])).rows[0].snapshot_json;
    assert.deepEqual(persisted,final.draft,'SQL snapshot is the accepted and reloaded plan');
    const run=(await db.query('SELECT assisted_result_json FROM public.planning_runs WHERE id=$1',[final.activeStage.proposalRunId])).rows[0].assisted_result_json;

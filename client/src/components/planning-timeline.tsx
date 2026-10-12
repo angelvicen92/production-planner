@@ -1,3 +1,4 @@
+import { planningGroupOrder, planningFilterIds, effectivePlanningResourceIds } from "@/lib/planning-view-policy";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type ReactNode } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
@@ -122,6 +123,7 @@ interface PlanningTimelineProps {
 
   // NEW: recursos fijos por plató (zona) dentro del plan
   zoneResourceAssignments?: Record<number, number[]>;
+  spaceResourceAssignments?: Record<number, number[]>;
   // NEW: nombre por plan_resource_items.id
   planResourceItemNameById?: Record<number, string>;
 
@@ -538,6 +540,7 @@ function TaskStatusMenuTrigger({
     zones = [],
     spaces = [],
     zoneResourceAssignments = {},
+    spaceResourceAssignments = {},
     planResourceItemNameById = {},
     zoneStaffModes = [],
     itinerantTeams = [],
@@ -991,8 +994,8 @@ function TaskStatusMenuTrigger({
   }, [contestants]);
 
   const selectedStageIdsSet = useMemo(
-    () => new Set((stageFilterIds ?? []).map((id) => Number(id)).filter((id) => Number.isFinite(id))),
-    [stageFilterIds],
+    () => new Set(planningFilterIds(stageFilterIds ?? [], zones.map(zone => Number(zone.id)), mode === "assisted-draft").map((id) => Number(id)).filter((id) => Number.isFinite(id))),
+    [stageFilterIds, zones, mode],
   );
 
   const filteredZones = useMemo(() => {
@@ -1050,8 +1053,8 @@ function TaskStatusMenuTrigger({
   }, [timelineTasks, spaces, selectedStageIdsSet, viewMode]);
 
   const selectedResourceKeys = useMemo(
-    () => (resourceFilterIds ?? []).map((id) => String(id ?? "")).filter((id) => id.length > 0),
-    [resourceFilterIds],
+    () => planningFilterIds(resourceFilterIds ?? [], resourceSelectables.map(resource => resource.id), mode === "assisted-draft", true).map((id) => String(id ?? "")).filter((id) => id.length > 0),
+    [resourceFilterIds, resourceSelectables, mode],
   );
 
   const resourceSelectableById = useMemo(() => {
@@ -1136,10 +1139,7 @@ function TaskStatusMenuTrigger({
         zoneTasksMap.set(zoneId, zoneList);
       }
 
-      const assignedRaw = task?.assignedResources ?? task?.assigned_resource_ids ?? [];
-      const ids = Array.isArray(assignedRaw)
-        ? assignedRaw.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0)
-        : [];
+      const ids = effectivePlanningResourceIds(task, spaceById, spaceResourceAssignments, zoneResourceAssignments);
 
       for (const id of ids) {
         const key = `resource_item:${id}`;
@@ -1218,7 +1218,7 @@ function TaskStatusMenuTrigger({
     }
 
     return mapped;
-  }, [filteredDailyTasksByStage, staffAssignments, itinerantTeams, zoneStaffModes, spaces, spaceById]);
+  }, [filteredDailyTasksByStage, staffAssignments, itinerantTeams, zoneStaffModes, spaces, spaceById, spaceResourceAssignments, zoneResourceAssignments]);
 
   const lanes = useMemo(() => {
     const grouped: Record<string, { name: string; tasks: Task[] }> = {};
@@ -1632,7 +1632,7 @@ function TaskStatusMenuTrigger({
                   const zoneCols: ZoneCol[] = (filteredZones as any[])
                     .filter((z: any) => {
                       const idx = (z as any).uiOrderIndex ?? (z as any).ui_order_index;
-                      return idx !== null && idx !== undefined && Number.isInteger(Number(idx));
+                      return planningGroupOrder(idx, mode === "assisted-draft") !== null;
                     })
                     .map((z: any) => {
                       const zid = Number(z.id);
@@ -1647,7 +1647,7 @@ function TaskStatusMenuTrigger({
                         zoneId: zid,
                         zoneName,
                         zoneColor,
-                        orderIndex: Number((z as any).uiOrderIndex ?? (z as any).ui_order_index),
+                        orderIndex: planningGroupOrder((z as any).uiOrderIndex ?? (z as any).ui_order_index, mode === "assisted-draft")!,
                         spaces: spList.map((sp: any) => ({
                           id: Number(sp.id),
                           name: String(sp.name),
@@ -1770,7 +1770,7 @@ function TaskStatusMenuTrigger({
                   itinerantCols.forEach((team) => sortTasks(team.tasks));
                   sortTasks(unlocatedCol.tasks);
 
-                  const itinerantColsToShow = uiItinerantGroupOrderIndex === null || uiItinerantGroupOrderIndex === undefined
+                  const itinerantColsToShow = mode !== "assisted-draft" && (uiItinerantGroupOrderIndex === null || uiItinerantGroupOrderIndex === undefined)
                     ? []
                     : itinerantCols.filter((team) => team.tasks.some(isRealTask));
 
@@ -1783,15 +1783,15 @@ function TaskStatusMenuTrigger({
                     .filter((zc) => zc.spaces.length > 0);
 
                   const showUnlocated =
-                    uiUnlocatedGroupOrderIndex !== null &&
-                    uiUnlocatedGroupOrderIndex !== undefined &&
+                    (mode === "assisted-draft" || (uiUnlocatedGroupOrderIndex !== null &&
+                    uiUnlocatedGroupOrderIndex !== undefined)) &&
                     unlocatedCol.tasks.some(isRealTask);
 
                   const zoneUiOrderById = new Map<number, number>();
                   (filteredZones as any[]).forEach((z: any) => {
                     const zid = Number(z?.id);
-                    const idx = Number((z as any)?.uiOrderIndex ?? (z as any)?.ui_order_index);
-                    if (Number.isFinite(zid) && Number.isFinite(idx)) zoneUiOrderById.set(zid, idx);
+                    const idx = planningGroupOrder((z as any)?.uiOrderIndex ?? (z as any)?.ui_order_index, mode === "assisted-draft");
+                    if (Number.isFinite(zid) && idx !== null) zoneUiOrderById.set(zid, idx);
                   });
 
                   // Render
@@ -2075,7 +2075,7 @@ function TaskStatusMenuTrigger({
                               ))}
 
                               {itinerantColsToShow.length > 0 ? (
-                                <div className="shrink-0 w-max" style={{ order: Number(uiItinerantGroupOrderIndex ?? 0) }}>
+                                <div className="shrink-0 w-max" style={{ order: planningGroupOrder(uiItinerantGroupOrderIndex, mode === "assisted-draft") ?? 0 }}>
                                   <div className={cn("font-semibold mb-2 border", spaceVerticalMode === "list" ? "px-1.5 py-0.5 rounded-none text-xs" : "px-2 py-1 rounded-md")}>
                                     <div className="leading-5">Itinerantes</div>
                                   </div>
@@ -2139,7 +2139,7 @@ function TaskStatusMenuTrigger({
                               ) : null}
 
                               {showUnlocated ? (
-                                <div className="min-w-[260px] shrink-0" style={{ order: Number(uiUnlocatedGroupOrderIndex ?? 0) }}>
+                                <div className="min-w-[260px] shrink-0" style={{ order: planningGroupOrder(uiUnlocatedGroupOrderIndex, mode === "assisted-draft") ?? 0 }}>
                                   <div className="font-semibold mb-2">
                                     Sin ubicación
                                   </div>
@@ -2449,7 +2449,7 @@ function TaskStatusMenuTrigger({
                             ))}
 
                             {itinerantColsToShow.length > 0 ? (
-                              <div className="shrink-0 w-max" style={{ order: Number(uiItinerantGroupOrderIndex ?? 0) }}>
+                              <div className="shrink-0 w-max" style={{ order: planningGroupOrder(uiItinerantGroupOrderIndex, mode === "assisted-draft") ?? 0 }}>
                                 <div className={cn("font-semibold mb-2 border", spaceVerticalMode === "list" ? "px-1.5 py-0.5 rounded-none text-xs" : "px-2 py-1 rounded-md")}>
                                   <div className="leading-5">Itinerantes</div>
                                 </div>
@@ -2501,7 +2501,7 @@ function TaskStatusMenuTrigger({
                             ) : null}
 
                             {showUnlocated ? (
-                              <div className="min-w-[260px]" style={{ order: Number(uiUnlocatedGroupOrderIndex ?? 0) }}>
+                              <div className="min-w-[260px]" style={{ order: planningGroupOrder(uiUnlocatedGroupOrderIndex, mode === "assisted-draft") ?? 0 }}>
                                 <div className="font-semibold mb-2">
                                   Sin ubicación
                                 </div>

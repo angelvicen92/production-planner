@@ -1597,6 +1597,8 @@ export default function PlanDetailsPage() {
           if (Number.isFinite(zid)) zMap[zid] = clean;
         }
         setZoneAssignmentsForTooltip(zMap);
+        const spaceRows = await apiRequest<any[]>("GET", buildUrl(api.plans.spaceResourceAssignments.list.path, { id }));
+        setSpaceAssignmentsForPlanning(Object.fromEntries((spaceRows ?? []).map(row => [Number(row.spaceId), row.planResourceItemIds ?? []])));
       } catch {
         // Silencioso: esto es "nice to have" para tooltip, no debe romper nada
       }
@@ -1607,6 +1609,7 @@ export default function PlanDetailsPage() {
   const [zoneAssignmentsForTooltip, setZoneAssignmentsForTooltip] = useState<
     Record<number, number[]>
   >({});
+  const [spaceAssignmentsForPlanning, setSpaceAssignmentsForPlanning] = useState<Record<number, number[]>>({});
   const [planResourceItemNameById, setPlanResourceItemNameById] = useState<
     Record<number, string>
   >({});
@@ -2812,7 +2815,7 @@ ${reasonMessage}` : message,
               >
                 {selectedResourceOptions.length > 0
                   ? `${selectedResourceOptions.length} seleccionado(s)`
-                  : "Selecciona recursos"}
+                  : planningMode === "assisted" ? "Todos los recursos" : "Selecciona recursos"}
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
@@ -2883,7 +2886,7 @@ ${reasonMessage}` : message,
             ))}
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground">Selecciona recursos</p>
+          <p className="text-xs text-muted-foreground">{planningMode === "assisted" ? "Mostrando todos los recursos. Selecciona para filtrar." : "Selecciona recursos"}</p>
         )}
 
         {resourceFilterOptions.length === 0 ? (
@@ -4481,7 +4484,7 @@ ${reasonMessage}` : message,
                 viewControls={<><div className="flex flex-wrap items-center gap-2">{planningViewSelector}</div>{planningViewFilters}</>}
                 timelineProps={{ contestants, viewMode: timelineView, spaceVerticalMode, stageFilterIds,
                   resourceFilterIds, resourceSelectables: resourceFilterOptions, zones, spaces,
-                  zoneResourceAssignments: zoneAssignmentsForTooltip, planResourceItemNameById,
+                  zoneResourceAssignments: zoneAssignmentsForTooltip, spaceResourceAssignments: spaceAssignmentsForPlanning, planResourceItemNameById,
                   zoneStaffModes: planZoneStaffModes, itinerantTeams, staffAssignments: planStaffAssignments,
                   uiItinerantGroupOrderIndex: (programSettings as any)?.uiItinerantGroupOrderIndex ?? (programSettings as any)?.ui_itinerant_group_order_index ?? null,
                   uiUnlocatedGroupOrderIndex: (programSettings as any)?.uiUnlocatedGroupOrderIndex ?? (programSettings as any)?.ui_unlocated_group_order_index ?? null }}
@@ -4728,6 +4731,7 @@ ${reasonMessage}` : message,
                   zones={zones as any}
                   spaces={spaces as any}
                   zoneResourceAssignments={zoneAssignmentsForTooltip}
+                  spaceResourceAssignments={spaceAssignmentsForPlanning}
                   planResourceItemNameById={planResourceItemNameById}
                   zoneStaffModes={planZoneStaffModes as any}
                   itinerantTeams={itinerantTeams as any}

@@ -15,6 +15,7 @@ on:
       - "client/src/components/planning-timeline.tsx"
       - "client/src/pages/plan-details.tsx"
       - "client/src/lib/contestant-lane-sort*"
+      - "client/src/lib/planning-view-policy*"
       - "shared/assistedStageTiming*"
       - "client/src/lib/assisted-draft-warnings*"
       - "client/src/lib/assisted-planning-view*"
@@ -53,7 +54,7 @@ jobs:
       - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
       - run: npm run test:demo:a2-import
       - run: node --import tsx --test script/demo/a2DraftPreparationRecovery.spec.ts
-      - run: npx --no-install tsx --test shared/assistedAutopilot.test.ts shared/assistedStageTiming.test.ts client/src/components/planning/assisted-planning-workspace.test.ts client/src/components/planning/stage-history-timing.test.ts client/src/lib/assisted-draft-warnings.test.ts client/src/lib/assisted-planning-view.test.ts client/src/lib/contestant-lane-sort.test.ts server/assistedHistoryTimings.spec.ts client/src/lib/assisted-scope-selection.test.ts client/src/components/planning/assisted-location-scope.test.tsx
+      - run: npx --no-install tsx --test shared/assistedAutopilot.test.ts shared/assistedStageTiming.test.ts client/src/components/planning/assisted-planning-workspace.test.ts client/src/components/planning/stage-history-timing.test.ts client/src/lib/assisted-draft-warnings.test.ts client/src/lib/assisted-planning-view.test.ts client/src/lib/contestant-lane-sort.test.ts client/src/lib/planning-view-policy.test.ts server/assistedHistoryTimings.spec.ts client/src/lib/assisted-scope-selection.test.ts client/src/components/planning/assisted-location-scope.test.tsx
       - name: Assisted location selection in a disposable A2 catalog
         run: npm run demo:a2:smoke -- work/a2-scope-integration --scope-selection
       - name: Native SQL, Auth, HTTP and UI; canonical baseline and two deterministic orders
@@ -69,6 +70,7 @@ jobs:
             work/a2-integration/autopilot.json
             work/a2-integration/views-history.json
             work/a2-integration/manual-snapshot-fidelity.json
+            work/a2-integration/restart.json
             work/a2-scope-integration/integration.json
             work/a2-scope-integration/scope-selection-*.json
             work/a2-integration/*-real-ui.png

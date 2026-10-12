@@ -12,13 +12,14 @@ import type { StageValidationReport } from "../shared/assistedStageValidation";
 import { affectedTasksUnchanged, resolveActiveStageLineage } from "./assistedAcceptedBaseline";
 import {recommendNextAssistedScope} from './assistedScopeOrchestrator';
 
-export type AssistedPlanningErrorCode = "SESSION_NOT_FOUND" | "STALE_DRAFT" | "STALE_BASE_STAGE" | "STALE_CONFIG_REVISION" | "STALE_VALIDATION" | "VALIDATION_REQUIRED" | "VALIDATION_NOT_ACCEPTABLE" | "HARD_CONFIRMATION_REQUIRED" | "REQUIRED_CONFIRMATION_REQUIRED" | "RUN_RESULT_INVALID" | "UNSUPPORTED_ENGINE_INPUT" | "TASK_SET_MISMATCH" | "IMMUTABLE_TASK" | "UNSUPPORTED_MANUAL_FIELD" | "INVALID_MANUAL_DURATION" | "INVALID_MANUAL_RESET" | "INVALID_BLOCK_OPERATION" | "PLANNING_BLOCK_ORDER_CONFLICT" | "CORRUPT_EDIT_LEDGER" | "ASSISTED_DELTA_VALIDATION_UNSUPPORTED" | "INVALID_STAGE_TARGET" | "NO_REDO_AVAILABLE" | "NO_UNDO_AVAILABLE" | "CONCURRENT_ACCEPT";
+export type AssistedPlanningErrorCode = "SESSION_NOT_FOUND" | "STALE_DRAFT" | "STALE_BASE_STAGE" | "STALE_CONFIG_REVISION" | "STALE_VALIDATION" | "VALIDATION_REQUIRED" | "VALIDATION_NOT_ACCEPTABLE" | "HARD_CONFIRMATION_REQUIRED" | "REQUIRED_CONFIRMATION_REQUIRED" | "RUN_RESULT_INVALID" | "UNSUPPORTED_ENGINE_INPUT" | "TASK_SET_MISMATCH" | "IMMUTABLE_TASK" | "UNSUPPORTED_MANUAL_FIELD" | "INVALID_MANUAL_DURATION" | "INVALID_MANUAL_RESET" | "INVALID_BLOCK_OPERATION" | "PLANNING_BLOCK_ORDER_CONFLICT" | "CORRUPT_EDIT_LEDGER" | "ASSISTED_DELTA_VALIDATION_UNSUPPORTED" | "INVALID_STAGE_TARGET" | "NO_REDO_AVAILABLE" | "NO_UNDO_AVAILABLE" | "CONCURRENT_ACCEPT" | "RESTART_PROTECTED_DAY" | "RESTART_RUNNING_PROPOSAL";
 export class AssistedPlanningError extends Error {
   constructor(readonly code: AssistedPlanningErrorCode, readonly status: 404 | 409 | 422) { super(code); this.name = "AssistedPlanningError"; }
 }
 const statuses: Record<AssistedPlanningErrorCode, 404 | 409 | 422> = {
   SESSION_NOT_FOUND: 404, STALE_DRAFT: 409, STALE_BASE_STAGE: 409, STALE_VALIDATION: 409,
   STALE_CONFIG_REVISION: 409, VALIDATION_REQUIRED: 422, VALIDATION_NOT_ACCEPTABLE: 422, RUN_RESULT_INVALID: 422, UNSUPPORTED_ENGINE_INPUT: 422, TASK_SET_MISMATCH: 409,
+  RESTART_PROTECTED_DAY: 422, RESTART_RUNNING_PROPOSAL: 409,
   INVALID_STAGE_TARGET: 422, NO_REDO_AVAILABLE: 409, CONCURRENT_ACCEPT: 409,
   IMMUTABLE_TASK: 422, UNSUPPORTED_MANUAL_FIELD: 422, INVALID_MANUAL_DURATION: 422, INVALID_MANUAL_RESET: 422, CORRUPT_EDIT_LEDGER: 409,
   ASSISTED_DELTA_VALIDATION_UNSUPPORTED: 422, NO_UNDO_AVAILABLE: 409,
@@ -239,6 +240,12 @@ export class AssistedPlanningService {
     const state = await this.state(planId);
     return { current: true, mode: "MANUAL_STAGE_VALIDATION_V1", validation: state.validation };
   }
+  async restart(planId: number, expectedDraftFingerprint: string, expectedBaseStageId: number) {
+    const { error } = await this.rpc("assisted_restart_bootstrap", { p_plan_id: planId, p_expected_fingerprint: expectedDraftFingerprint, p_expected_base: expectedBaseStageId });
+    if (error) dbError(error);
+    return this.state(planId);
+  }
+
   async rollback(planId: number, targetStageId: number) { const { error } = await this.rpc("assisted_move_stage", { p_plan_id: planId, p_target: targetStageId, p_redo: false }); if (error) dbError(error); return this.state(planId); }
   async redo(planId: number) { const { error } = await this.rpc("assisted_move_stage", { p_plan_id: planId, p_target: null, p_redo: true }); if (error) dbError(error); return this.state(planId); }
   async undoDraft(planId:number,expectedDraftFingerprint:string,expectedBaseStageId:number) { const {error}=await this.rpc("assisted_move_draft_edit",{p_plan_id:planId,p_expected_fingerprint:expectedDraftFingerprint,p_expected_base:expectedBaseStageId,p_redo:false});if(error)dbError(error);return this.state(planId); }
