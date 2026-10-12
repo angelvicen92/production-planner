@@ -71,4 +71,3 @@ END $$;
 
 REVOKE ALL ON FUNCTION public.assisted_patch_draft(integer,text,bigint,jsonb,text) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.assisted_patch_draft(integer,text,bigint,jsonb,text) TO service_role;
-

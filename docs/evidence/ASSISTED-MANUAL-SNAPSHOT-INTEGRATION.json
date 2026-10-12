@@ -671,5 +671,7 @@
     2550,
     2481,
     2094
-  ]
+  ],
+  "testedSourceCommit": "cabc879ac291a84b0bb54479c83dc5fb412912e6",
+  "postRehearsalChange": "Only the trailing blank line of migration 090 was removed for diff hygiene; the SQL function body and privileges are unchanged. Recorded migration hashes describe the actual rehearsal input."
 }
