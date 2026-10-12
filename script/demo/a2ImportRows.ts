@@ -3,12 +3,19 @@ import { normalizeTaskTemplateCatalogEntry,taskTemplateSnapshotToPersistenceRow 
 import { normalizePlanOptimizerSnapshotV1 } from '../../server/planOptimizerSnapshot';
 import { buildPlanOptimizerSnapshotPersistenceBundleV1 } from '../../server/planOptimizerSnapshotPersistence';
 import { planPlannerNextConfigurationSchema } from '../../server/planPlannerNextConfiguration';
+import { resolveA2SpatialTopology } from './a2SpatialTopology';
 import type { EngineInput } from '../../engine/types';
 
 export function buildA2ImportRows(date:string,offset=0){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||new Date(`${date}T00:00:00Z`).toISOString().slice(0,10)!==date)throw Error('A valid explicit demo date is required');
  const canonical=buildCanonicalFullA2EngineInput({planId:27001,branchBudget:100_000});
- const source=canonical.input;
+ const topology=resolveA2SpatialTopology(canonical.expansion.spaces.map(space=>space.id));
+ const zoneBySpace=new Map(canonical.expansion.spaces.map((space,index)=>[3001+index,topology.zoneBySource.get(space.id)!]));
+ const source:EngineInput={...canonical.input,
+  tasks:canonical.input.tasks.map(task=>({...task,...(task.spaceId==null?{}:{zoneId:zoneBySpace.get(task.spaceId)})})),
+  planZoneSettings:topology.zones.map(zone=>({zoneId:zone.id,availabilityStart:null,availabilityEnd:null,source:'A2_SPATIAL_TOPOLOGY_V1'})),
+  planSpaceSettings:canonical.input.planSpaceSettings!.map(space=>({...space,zoneId:zoneBySpace.get(space.spaceId)!})),
+ };
  // Numeric identities are translated uniformly; durations, clock times and labels are never translated.
  const rid=(n:number)=>n+offset,arr=(a:number[]|readonly number[])=>a.map(rid);
  const mapRecord=(record:Record<number,any>,values:(v:any)=>any=(v)=>v)=>Object.fromEntries(Object.entries(record).map(([k,v])=>[rid(Number(k)),values(v)]));
@@ -32,8 +39,8 @@ export function buildA2ImportRows(date:string,offset=0){
  const tables:Record<string,Record<string,any>[]>={};
  // All operational settings are materialized on the new day. Global defaults
  // are deliberately absent, including on a project that already has days.
- tables.zones=canonical.expansion.spaces.map((s,i)=>({id:rid(6001+i),name:s.id}));
- tables.spaces=canonical.expansion.spaces.map((s,i)=>({id:rid(3001+i),zone_id:rid(6001+i),name:s.id}));
+ tables.zones=topology.zones.map(zone=>({...zone,id:rid(zone.id)}));
+ tables.spaces=canonical.expansion.spaces.map((s,i)=>({id:rid(3001+i),zone_id:rid(zoneBySpace.get(3001+i)!),name:s.id}));
  tables.resource_types=input.planResourceItems.map(r=>({id:r.typeId,code:`a2-${r.typeId}`,name:r.name.startsWith('cam-')?'Cámara':r.name}));
  tables.resource_items=input.planResourceItems.map(r=>({id:r.resourceItemId,type_id:r.typeId,name:r.name,is_active:false}));
  const templateIds=[...new Set(input.tasks.map(t=>t.templateId))].sort((a,b)=>a-b);
@@ -57,5 +64,5 @@ export function buildA2ImportRows(date:string,offset=0){
  tables.plan_optimizer_snapshots=[{id:rid(14001),...optimizerRows.snapshot,baseline_snapshot:null,updated_by:null}];
  tables.plan_optimizer_snapshot_heuristics=optimizerRows.heuristics.map((h,i)=>({id:rid(15001+i),snapshot_id:rid(14001),...h}));
  const order=['zones','spaces','resource_types','resource_items','task_templates','plans','plan_task_template_snapshots','plan_zone_settings','plan_space_settings','plan_resource_items','contestants','daily_tasks','plan_space_resource_assignments','plan_resource_bundle_snapshots','plan_optimizer_snapshots','plan_optimizer_snapshot_heuristics'];
- return {input,configuration,tables,order,optimizer};
+ return {input,configuration,tables,order,optimizer,spatialTopologyVersion:topology.contractVersion};
 }

@@ -1,0 +1,2459 @@
+{
+  "contractVersion": 1,
+  "status": "LOCAL_FUNCTIONAL_GATES_PASS",
+  "base": {
+    "branch": "main",
+    "sha": "56e2fde35b935e2d75cb86d84face0c08be4a087",
+    "relevantMergedPRs": [
+      1110,
+      1114
+    ]
+  },
+  "causes": {
+    "classification": [
+      "UI_ORDER_FILTER",
+      "EMPTY_OR_STALE_SELECTION",
+      "INCOMPLETE_EFFECTIVE_ASSIGNMENT_PROJECTION",
+      "FLAT_IMPORT_TOPOLOGY",
+      "RESET_CURRENT_BASE_INSTEAD_OF_BOOTSTRAP"
+    ],
+    "missingCanonicalTasks": false,
+    "missingAllResourceAssignments": false,
+    "probe": {
+      "topologyVersion": 1,
+      "spaces": 23,
+      "zones": 10,
+      "tasks": 266,
+      "directAssignmentTasks": 72,
+      "effectiveAssignmentTasks": 140,
+      "adapter": "SUPPORTED",
+      "styling": {
+        "id": "space:3018",
+        "availability": [
+          {
+            "start": 540,
+            "end": 1260
+          }
+        ]
+      },
+      "stylingPlacements": [
+        {
+          "type": "ESTILISMO_ENTRADA",
+          "count": 19,
+          "start": "09:55",
+          "end": "13:05",
+          "gaps": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "type": "ESTILISMO_SALIDA",
+          "count": 19,
+          "start": "15:20",
+          "end": "18:55",
+          "gaps": [
+            120,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    }
+  },
+  "changes": {
+    "spatialMappingVersion": 1,
+    "spaces": 23,
+    "zones": 10,
+    "obligations": 266,
+    "solverChanges": 0,
+    "continuityChanges": 0,
+    "marginChanges": 0,
+    "remoteWrites": 0
+  },
+  "localFullRehearsal": {
+    "status": "PASS",
+    "startedAt": "2026-10-12T17:47:38.441Z",
+    "finishedAt": "2026-10-12T18:01:08.785Z",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities",
+      "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved",
+      "real storage/input adapter canon after GET day; no legacy breaks",
+      "HTTP role matrix, 15 real REST/RLS boundaries and client RPC denial; rejected writes leave DB unchanged",
+      "actual browser password login and role bootstrap",
+      "S0 creation from UI, all 19 contestant names, idempotence with admin, native persistence and reload",
+      "all client identities denied direct Stage/Draft writes; validation UPDATE privileges unchanged",
+      "S1 UI → run → apply → validate → accept → SQL persistence → reload (19/266)",
+      "S2 UI → run → apply → validate → accept → SQL persistence → reload (38/266)",
+      "S3 UI → run → apply → validate → accept → SQL persistence → reload (46/266)",
+      "S4 UI → run → apply → validate → accept → SQL persistence → reload (65/266)",
+      "S5 UI → run → apply → validate → accept → SQL persistence → reload (75/266)",
+      "S6 UI → run → apply → validate → accept → SQL persistence → reload (111/266)",
+      "S7 UI → run → apply → validate → accept → SQL persistence → reload (169/266)",
+      "S8 UI → run → apply → validate → accept → SQL persistence → reload (207/266)",
+      "S9 UI → run → apply → validate → accept → SQL persistence → reload (209/266)",
+      "S10 UI → run → apply → validate → accept → SQL persistence → reload (266/266)",
+      "complete SQL snapshot: canonical hard-valid 266/266, all eight operational meals and preparations valid",
+      "ten-stage canonical coverage 266/266 and certified baseline fingerprint; no remaining scope",
+      "independent viewer browser session reopens the same persisted Stage and Draft",
+      "admin atomic rollback to S0 and redo to final accepted Stage",
+      "S10 persisted UI: 266 tasks in contestant and space timeline/list; 140 resource-filtered tasks with Legacy parity; real template sort/name reset; lazy history times and authorization; zero mutations",
+      "complete manual snapshot replay, task/block Undo/Redo and exact reset; real transport conflict stays fail-closed; accepted material unchanged",
+      "order 6/7 repeat 1: explicit OPERATIONAL_MEAL → accepted S11 (133/266)",
+      "order 6/7 repeat 1: explicit OPERATIONAL_MEAL → accepted S12 (169/266)",
+      "order 6/7 repeat 1: explicit PARTICIPANT_OPENING → accepted S13 (207/266)",
+      "order 6/7 repeat 1: explicit JOINT_OPERATION → accepted S14 (209/266)",
+      "order 6/7 repeat 1: explicit PARTICIPANT_CLOSURE → accepted S15 (266/266)",
+      "order 6/7 repeat 2: explicit OPERATIONAL_MEAL → accepted S16 (133/266)",
+      "order 6/7 repeat 2: explicit OPERATIONAL_MEAL → accepted S17 (169/266)",
+      "order 6/7 repeat 2: explicit PARTICIPANT_OPENING → accepted S18 (207/266)",
+      "order 6/7 repeat 2: explicit JOINT_OPERATION → accepted S19 (209/266)",
+      "order 6/7 repeat 2: explicit PARTICIPANT_CLOSURE → accepted S20 (266/266)",
+      "order 5/6 repeat 1: explicit OPERATIONAL_MEAL → accepted S21 (101/266)",
+      "order 5/6 repeat 1: explicit ITINERANT_AGENDA → accepted S22 (111/266)",
+      "order 5/6 repeat 1: explicit OPERATIONAL_MEAL → accepted S23 (169/266)",
+      "order 5/6 repeat 1: explicit PARTICIPANT_OPENING → accepted S24 (207/266)",
+      "order 5/6 repeat 1: explicit JOINT_OPERATION → accepted S25 (209/266)",
+      "order 5/6 repeat 1: explicit PARTICIPANT_CLOSURE → accepted S26 (266/266)",
+      "order 5/6 repeat 2: explicit OPERATIONAL_MEAL → accepted S27 (101/266)",
+      "order 5/6 repeat 2: explicit ITINERANT_AGENDA → accepted S28 (111/266)",
+      "order 5/6 repeat 2: explicit OPERATIONAL_MEAL → accepted S29 (169/266)",
+      "order 5/6 repeat 2: explicit PARTICIPANT_OPENING → accepted S30 (207/266)",
+      "order 5/6 repeat 2: explicit JOINT_OPERATION → accepted S31 (209/266)",
+      "order 5/6 repeat 2: explicit PARTICIPANT_CLOSURE → accepted S32 (266/266)",
+      "order 1/1 repeat 1: explicit MAIN_PIPELINE → accepted S33 (19/266)",
+      "order 1/1 repeat 1: explicit TECHNICAL_CHAIN → accepted S34 (38/266)",
+      "order 1/1 repeat 1: explicit TECHNICAL_CHAIN → accepted S35 (46/266)",
+      "order 1/1 repeat 1: explicit ROUND_SYNCHRONIZATION → accepted S36 (65/266)",
+      "order 1/1 repeat 1: explicit ITINERANT_AGENDA → accepted S37 (75/266)",
+      "order 1/1 repeat 1: explicit OPERATIONAL_MEAL → accepted S38 (111/266)",
+      "order 1/1 repeat 1: explicit OPERATIONAL_MEAL → accepted S39 (169/266)",
+      "order 1/1 repeat 1: explicit PARTICIPANT_OPENING → accepted S40 (207/266)",
+      "order 1/1 repeat 1: explicit JOINT_OPERATION → accepted S41 (209/266)",
+      "order 1/1 repeat 1: explicit PARTICIPANT_CLOSURE → accepted S42 (266/266)",
+      "two focal orders repeated from complete real checkpoints: canonical 266/266, no new HARD/REQUIRED, unchanged original runs/Stages, deterministic",
+      "Autopilot delegation dismissed: no run or mutation",
+      "Autopilot from S5: safe stop after one Stage, double click yields one delegation, reload retains checkpoint",
+      "Autopilot S5 stop/reload/resume: canonical 266/266, clean authenticated accepts, literal protections and reload",
+      "Autopilot same S5 checkpoint repeated: canonical 266/266, clean authenticated accepts, literal protections and reload",
+      "Autopilot S0 uninterrupted: canonical 266/266, clean authenticated accepts, literal protections and reload",
+      "confirmed UI restart from 266/266 to exact S0; audit retained; full Autopilot replans 266/266"
+    ],
+    "runtimeHashes": {
+      "server/storage.ts": "906e56f6f2e043034eeb4eedcf10b7f02fb9345598f6b0737b03ddcd087dd526",
+      "server/assistedPlanningSnapshot.ts": "2184dc531787336e974359fe0e7b0772432dc0a78c9c139a0893f390d3ddab4b",
+      "server/assistedProposalService.ts": "9f75b996a505938141b831af8546160583f82e7a6a0c392bcae879316da8897b",
+      "server/assistedPlanningService.ts": "5a605bebfc7d8e9fb7a6d796b0c123f4af3c288830472318661dc5b82f41a357",
+      "server/routes.ts": "dbbe567c4d054ff8f10bfdf699eadf49d6f598cd20f0b0fbbce8e1acf700e069",
+      "engine/planner-next/jointCompletionWitness.ts": "eff19c666412542cc47a364687f46300982e8690b0a341a69d02c183616068a8",
+      "engine/planner-next/exactItinerantPlan.ts": "aa66ba868d91445424e866387ad8500843db0510e02b315e0e32e5720bc932a2",
+      "client/src/components/layout.tsx": "3be0f0b4501eecb52fe54547d3455d67867be651ead74df852a3562561669697",
+      "client/src/components/planning/assisted-planning-workspace.tsx": "78bb2129c12c11a3f4c0f875fa53103d15ec4a59391012b52225387f41acb8eb",
+      "script/demo/a2ImportRows.ts": "ce42f2579899d2e02d30896fa06bfe38165bac7a9f5a5cd73c856d76351e3952",
+      "script/demo/prepareA2Import.ts": "b055d5e5a3f9ad40c768ce2c863ab7c565fee4aa2822830d7d9af7659e576a2a",
+      "script/demo/prepareA2Schema.ts": "30eebaa8035888f84d1d023703ef88c605a4d264fc23e91e6ddab4c9226898b5",
+      "script/demo/smokeA2Integration.ts": "66977a9654b584829ceb81ddbdea6ba307647cb715d12ce067beeb7855bebcc5",
+      "script/demo/smokeA2Journey.ts": "8266e5540025b331276796b500a60cf82a495e846ff790f79f2c566383298ebc",
+      "client/src/lib/assisted-planning-view.ts": "a0b688796d43afc3504f14012944780c80b4945606dd98815ce06500af82bb4d",
+      "client/src/lib/assisted-draft-warnings.ts": "23bb5fe47f1ce54b46dd9d2cf529fa12da83aca8b50baa8acf8cd9eb2e2d178f",
+      "script/demo/smokeA2ManualSnapshotJourney.ts": "40ca7f120c0f56f84bbafe7e4c5402ba0a48e2f89faa5b1cb9abad20c2ff76bc",
+      "script/demo/smokeA2ViewsHistoryJourney.ts": "1c4b34266193596338e426ebd1c05f7ea638320bdb8793b8a9879f1a024605b3",
+      "shared/assistedStageTiming.ts": "f37982b96bc5fb32d168a9f6f6e7ba1219e7d5a1f5aa51321e43ff6d14e3610c",
+      "client/src/lib/contestant-lane-sort.ts": "8cee83173053fce313e8608b451c9d3e37d75174476321ea1434da70628f25c1",
+      "client/src/components/planning/stage-history-timing.tsx": "b12463f40bf067948e12ae919e5cd807d1fbd61bec671a338318e0b6b67b83a5",
+      "client/src/components/planning-timeline.tsx": "bb7c02cb62bf6872ce4115d4b3cc64dc3f5b5fda906a0a6cb812ef9917532e56",
+      "client/src/pages/plan-details.tsx": "d1c674caaf0c209bdbca093019da3da08ed2749f33d967f3977d1e9ea74d6782",
+      "script/demo/probeA2StageOrder.ts": "757c59c95d82e393b7a4a5cdc83650cce796e644812af1903352072d0cab1948",
+      "server/assistedScopeOrchestrator.ts": "e80f5fb83a8f04f36cd81584be61ce4b5eb74c921909b48664542dd9d25549f1",
+      "shared/assistedAutopilot.ts": "b7200f639a4b7e2d2ed479741fe0c81ffcfc3f2f75731a4618f282b6082177bf",
+      "client/src/lib/assisted-autopilot.ts": "72fdd86a695af1e9f9b4f1adc2354a77f3e60b562be4de2f1b0c159a51c5661b",
+      "script/demo/smokeA2AutopilotJourney.ts": "8301a380932fb7cbd0fc3e09a419a332d0b907bf05ffbeff1b8c86eb08407a6a"
+    },
+    "postgresVersion": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+    "migrations": [
+      {
+        "file": "001_init.sql",
+        "sha256": "ed0ad38bf9c0c31bf9e411eb0d2edd6bc724f25f1cbbf78d1020efc68090f1cf"
+      },
+      {
+        "file": "002_contestants.sql",
+        "sha256": "d0c7337081de996324e0d490897399a178023cc9bb18c65689859b23a216826c"
+      },
+      {
+        "file": "003_contestants_plan.sql",
+        "sha256": "a2c2906f35362b689aa85398a234f63a971089691222e7c28ab0013d952d208c"
+      },
+      {
+        "file": "004_task_locations.sql",
+        "sha256": "9c8a9952d3033d5381ad7c57bdf218a954b8ab46c1b3ce2f56fa46cbbafcb6e9"
+      },
+      {
+        "file": "005_resource_pools.sql",
+        "sha256": "f8b72cd2e5efa8f879a884e602480284885024d8bfb1cc75ef35db772b37f601"
+      },
+      {
+        "file": "006_resource_items.sql",
+        "sha256": "11704fa9dade1929beab474a613ec9b75c6d4d66497cf756776b0842f0968a82"
+      },
+      {
+        "file": "007_contestants_details.sql",
+        "sha256": "20ac4847148ee7e73337044ac92be0a833fe1e660cf1cdbc5468519329fca640"
+      },
+      {
+        "file": "008_task_templates_ui_color.sql",
+        "sha256": "220125c60e17a2eeff78fc27bba9d9f2bfc9523a64289c8ac2eaa0207623fade"
+      },
+      {
+        "file": "009_task_template_dependencies.sql",
+        "sha256": "fa42b4dfa4491bf03936aa535b2464011849de74d084ab9835de4d2336150ae9"
+      },
+      {
+        "file": "010_plan_contestant_meal_settings.sql",
+        "sha256": "f04f7d913e50a40b75086e008ca92db3189bbcdcf0d97132775fee63f953bc0a"
+      },
+      {
+        "file": "011_program_settings.sql",
+        "sha256": "374e818ff6abfaef4f983acea3dbf95ff364584580ce7125da4020ed5b64d116"
+      },
+      {
+        "file": "012_program_settings_meal_task_name.sql",
+        "sha256": "80c60ea5ef71380d6dc9fd524337cbe3f71bcd72e8fe9bb718213476fcc1a061"
+      },
+      {
+        "file": "013_space_resource_assignments.sql",
+        "sha256": "7d06a0e52020fc600ec711ffaa815ae7f9a7c6fcd7097c1b9176d878d868f452"
+      },
+      {
+        "file": "014_zone_resource_assignments.sql",
+        "sha256": "3af1a3718d4f1a8a22f71fd837bea0f7ec1d78479a2e5d81fc71c7dfe702425c"
+      },
+      {
+        "file": "015_add_task_secondary_color.sql",
+        "sha256": "725243fd536dbf5ab7e61e6b2fe187008c94063ccfce459a1fb6b97009a8463e"
+      },
+      {
+        "file": "016_add_zone_color.sql",
+        "sha256": "f0c9bc03853f8555f6160ab6a0fcf366effcd00d6546ebd757cd1fed18f641d3"
+      },
+      {
+        "file": "017_task_template_multi_dependencies.sql",
+        "sha256": "af50644d9da78f41f61dc8bc184f66ebf0931607976c5372c237c2316a52f461"
+      },
+      {
+        "file": "018_resource_item_components.sql",
+        "sha256": "5589e1ad6ac3e1f8c1bc618c7f4b76bb1f581f00c0910b6affc9c86bf104609d"
+      },
+      {
+        "file": "019_daily_tasks_required_plan_resources.sql",
+        "sha256": "dd05d90300ceb510764b6cf0e585fb8ba69a5329bcbe11703ad39b19363d8243"
+      },
+      {
+        "file": "020_zone_space_resource_type_requirements.sql",
+        "sha256": "cecad680843af5e0018e850c2a567a581286177804999f9a6e332b0d3e2c0a7c"
+      },
+      {
+        "file": "021_task_template_resource_requirements.sql",
+        "sha256": "bf19ee7ad73aca8ae65045a9326ecb7251b7d77611472599a1ce4557dacd0bf5"
+      },
+      {
+        "file": "022_daily_tasks_assigned_resources.sql",
+        "sha256": "61f8336e74ac820b4d05f7868e01d65b260e20a832e4f6ccb4fd3b400a6ce007"
+      },
+      {
+        "file": "023_plan_vocal_coach_rules.sql",
+        "sha256": "d0edc8be44e56daca806b7ad946c9a29b94fe73efae5db3cfbab17d01080c78a"
+      },
+      {
+        "file": "024_vocal_coach_rules.sql",
+        "sha256": "1b133945ce420b0edb49d963051be514cfac4b90789fe2190845f63b29e0f2f1"
+      },
+      {
+        "file": "025_contestants_availability_notes_instrument_name.sql",
+        "sha256": "63c1c51e6821414c0c967189cd849d8b3ff4c45afec9e0647e5d884da1515f89"
+      },
+      {
+        "file": "026_optimizer_settings.sql",
+        "sha256": "99adde203c4c4da4e3b6cd58c79e9309276c3d91d936803aeb27f4938b4463a0"
+      },
+      {
+        "file": "027_optimizer_settings_levels.sql",
+        "sha256": "b1e29d87e9bce68de32a15d4cde207dcfebd75c06ddba348e95e02cc26b515dd"
+      },
+      {
+        "file": "028_optimizer_settings_compact_and_main_zone_modes.sql",
+        "sha256": "08c1baa2abc88abfc4bde0f4dd9024b0142b6aa4e33f448825019f22eab86596"
+      },
+      {
+        "file": "029_staff_people_and_assignments.sql",
+        "sha256": "a02221fb3e0c149af6a6c11848558bad354944d45b623553e9fdd00dc588f243"
+      },
+      {
+        "file": "030_staff_defaults.sql",
+        "sha256": "062a79a9ef08b1fd69b4b6ec28a58e1a39baf96869f8d2314eff5601db6dbb55"
+      },
+      {
+        "file": "031_realtime_daily_tasks.sql",
+        "sha256": "66a214ae8570289e707070f61a02329a08fd630f465a54b811c93f336b9c5d5e"
+      },
+      {
+        "file": "032_itinerant_teams.sql",
+        "sha256": "0ac8d1b7df4b0580793ae312221d112a8cf45b82ed1ddaf9152c3ca56b08b7b1"
+      },
+      {
+        "file": "033_staff_assignments_itinerant_team.sql",
+        "sha256": "cdb0ade0db8e814137f468bb7d2100562f410a6cb1001c90f557c786266ac727"
+      },
+      {
+        "file": "034_2_task_templates_itinerant_team_requirement.sql",
+        "sha256": "3e8b48b13d29ff8e1b48e90fff01d7a0612ed11bc80cfda20a382057b207ccee"
+      },
+      {
+        "file": "034_staff_scope_check_itinerant_team.sql",
+        "sha256": "06def9cb6af3d80bf735073f6b947f6c6a4fb9c7687ea8e61aa9d62eab77e303"
+      },
+      {
+        "file": "035_plan_staff_assignments_scope_check_itinerant_team.sql",
+        "sha256": "5eead9f5e0328546a082c38497a7bbe13dbb2a80edd944ac6d568a3bb8aea3a5"
+      },
+      {
+        "file": "036_optimizer_settings_mode_and_advanced.sql",
+        "sha256": "51509cb83228990fe32170978b210a2897f05d63d8234f751b38dfcc370d4476"
+      },
+      {
+        "file": "037_rbac_auth_magic_link.sql",
+        "sha256": "b93e793b87da3e74e1d9bd801b80d892c9db485984d84a421678fea8f362d00c"
+      },
+      {
+        "file": "038_settings_delete_admin_policies.sql",
+        "sha256": "58d83f4e02bd54b6f0c5a9a763ac17cbe30cc6d2a92863121100657e53b3eb2d"
+      },
+      {
+        "file": "039_clock_and_task_events.sql",
+        "sha256": "5c066f2d1986c0efb69676c2d52df6003136583c2ae1d50f95c71415786d1ceb"
+      },
+      {
+        "file": "040_user_entity_links.sql",
+        "sha256": "86d181b5965da068a77853bf244be2323ee791beabb5bf5cd6cd60179458172a"
+      },
+      {
+        "file": "041_abbrev_and_task_comments.sql",
+        "sha256": "b1d6718bdc81ebdcb22a30102cb6480337529f587d72d84f09fc40eb126c9e33"
+      },
+      {
+        "file": "042_daily_tasks_manual_blocks.sql",
+        "sha256": "ec0437571ff1e032cd098271dc1762b4c3cc0878072b5464867b95a60a3b2cad"
+      },
+      {
+        "file": "043_space_itinerant_meal_breaks.sql",
+        "sha256": "aa4666cacfb4862147299793ab14cfb7bf8e63f9ba72ce42636966bc682aea56"
+      },
+      {
+        "file": "044_add_is_active_resource_types.sql",
+        "sha256": "68073b34170baa7792760e6607b7546579aa622302010f3451ce06f446167720"
+      },
+      {
+        "file": "044_grouping_scope_config.sql",
+        "sha256": "dfe9f5b20655e057647ff996d0412597dcc99ac8a1b583e5c97e8d648257b128"
+      },
+      {
+        "file": "045_user_preferences_favorite_plan.sql",
+        "sha256": "f4586d1697ee516b1047b1910be5165258c7ae0d7acb2639d94f04f7a815c0af"
+      },
+      {
+        "file": "046_daily_tasks_real_seconds.sql",
+        "sha256": "dddfc97c94d9fd5b0f81ddea703b5df7ab914e1ae01e818ad51f4cc300639e27"
+      },
+      {
+        "file": "047_control_room_settings_and_planning_runs.sql",
+        "sha256": "23369c94aec5dfc9b71d3d6ddf9d7c2320538ec95f21f6d2fd7165f0a59e9193"
+      },
+      {
+        "file": "048_plan_summaries_view.sql",
+        "sha256": "c0cc21fb6ce4dc6227ce0cffc0b81c13c5ce75330c79c6f571093135f6cf09d5"
+      },
+      {
+        "file": "049_optimizer_contestant_total_span_and_planning_progress.sql",
+        "sha256": "70bb9e34ee0f09bd609541ed3bcf6ad241deece5c2ea6aeeff168aa22b354b67"
+      },
+      {
+        "file": "050_simulated_set_at.sql",
+        "sha256": "ac6ab3d38deed030717614bf7f89a9fac6bab53e5e5217bd64aab1a896e39f51"
+      },
+      {
+        "file": "051_fix_staff_assignment_defaults_invalid.sql",
+        "sha256": "27dda71e0798be0bd41c719d65f403e652cb71597059ce71d0286009e51ea00e"
+      },
+      {
+        "file": "052_global_plan_favorite.sql",
+        "sha256": "7bced8853f4845eed3155f29687f30100effd941f152569cd05d080b40046bcb"
+      },
+      {
+        "file": "053_transport_breaks_settings.sql",
+        "sha256": "ce6d7e6d9ee1f4097b8369c398628704e5d0940065bb02e42c8fd3a617f5f1c3"
+      },
+      {
+        "file": "054_minimize_changes_by_zone_space.sql",
+        "sha256": "4a8876b9d00e9017c0c4848d9f5f20514a367528c19f6aae4523ab8a21f50db0"
+      },
+      {
+        "file": "055_pause_fields_daily_tasks.sql",
+        "sha256": "70fc3bcd0039387b59a785172c5a8b78d461ffdf2e5c48425cf15c6dcf2ec1c9"
+      },
+      {
+        "file": "056_task_templates_auto_create_on_contestant_create.sql",
+        "sha256": "a4a2e459c4229f14f891396fd53a8d18bc9e1ffffed1fca46b7f7ad56230e39f"
+      },
+      {
+        "file": "057_optimizer_grouping_zone_ids.sql",
+        "sha256": "b9355d112fc2f6d503b5184608723b7447b93da18dcc7f838f9edb5df65866ab"
+      },
+      {
+        "file": "058_optimizer_main_zone_split.sql",
+        "sha256": "dc68169fc477625cd488f4835a689b0c45a397c0dca072428b02320e319335aa"
+      },
+      {
+        "file": "059_plans_space_meal_break_minutes.sql",
+        "sha256": "86f0f214dc104140e70ec7a2b7b4604bf337975d5dee3791291da75dea101a33"
+      },
+      {
+        "file": "060_plans_planning_warnings_stats.sql",
+        "sha256": "30631ab6f4c6a6ead7e08c3ee3e989a17ca3c574a0af3c942606db459ce04928"
+      },
+      {
+        "file": "061_ui_order_indexes.sql",
+        "sha256": "2c08fae6db4696a1c29f45ad066cdcb9fa212cca690e91c9ba2252e46a0b3322"
+      },
+      {
+        "file": "062_zones_max_template_changes.sql",
+        "sha256": "ebc0f3fbd5ab04ebccadc9ac1c25403c5e505f89667e7189a4792adeb2f81ceb"
+      },
+      {
+        "file": "063_optimizer_transport_min_gaps.sql",
+        "sha256": "8205d7a6cb77caa9821836811a58b308a073e198d56d01de280757333a33ad32"
+      },
+      {
+        "file": "064_optimizer_near_hard_breaks_max.sql",
+        "sha256": "0d5bce8893174b211927162404190e3351c90ea7907a36585ff19b4360fbd372"
+      },
+      {
+        "file": "064_planning_runs_engine_v3.sql",
+        "sha256": "2945fc639bab4590c811391dcc64ac305d2901248e538572ad4cea36795de99c"
+      },
+      {
+        "file": "065_enable_rls_security_advisor.sql",
+        "sha256": "3a8c84051fbfeecd11a85b7dda29fbd70cccdabe74ef95dd6a9100b54378064d"
+      },
+      {
+        "file": "066_resource_bundles.sql",
+        "sha256": "e79f0ee50d65e1030b08a930ebc8d25cb7f9ce5cb9f2e6d14db5e58c48489aff"
+      },
+      {
+        "file": "067_planning_run_diagnostics.sql",
+        "sha256": "53efc56e4d75b5755d6373f74d0ab1ac1b354c845124b0878a83cd9a9fad78ce"
+      },
+      {
+        "file": "068_flexible_meal_mode_and_progress_history.sql",
+        "sha256": "6db6e92c78a93833b61a69cf8c9b4be9761b1b3ea521eb2b70a70b1f69e3be30"
+      },
+      {
+        "file": "069_planning_run_transactional_cancellation.sql",
+        "sha256": "68cbcde8878b9a0b297d57bbababb8f1264e05efa662a0be9669a0e04c667ae7"
+      },
+      {
+        "file": "070_engine_v4_parallel_results.sql",
+        "sha256": "19ca2db86b27228b3055fd9a5b54d9fdf3933cfeaffc270b6c7a9aa1ce359b20"
+      },
+      {
+        "file": "071_id258_zone_meal_break_minutes.sql",
+        "sha256": "159e9d53605f595fa8ec5e1b9dca1a745ccdea822c9965783d04df08a70c96eb"
+      },
+      {
+        "file": "072_resource_availability_snapshots.sql",
+        "sha256": "261613e4b1105c353077eeb59c1cf18e7a4aa530c60b089107013df996f63a7e"
+      },
+      {
+        "file": "073_workday_space_availability_snapshots.sql",
+        "sha256": "97f2d92821d01a09e96bf9d93fff3ebcee55bd9a90ef1547619b43351ddeb8a1"
+      },
+      {
+        "file": "074_plan_task_template_snapshots.sql",
+        "sha256": "f4f3d1bca7b2dbb31b64968f32dd3800a41460ef74411953cc02b9852a9d1a66"
+      },
+      {
+        "file": "075_plan_optimizer_snapshots.sql",
+        "sha256": "7819065271e7fdbf9cdaddb8fe08554f42d6896fd1f73af5f07013f9433d328f"
+      },
+      {
+        "file": "076_plan_operational_config_snapshots.sql",
+        "sha256": "049a9ec287659cae105543dc9fa79f1e539cca92754032f3a4bec8faeb447027"
+      },
+      {
+        "file": "077_assisted_planning_state.sql",
+        "sha256": "a0602631d7585b452597b4a5a037892ddd73d5eb660238ca02a45dac71bb7ded"
+      },
+      {
+        "file": "078_assisted_planning_workflow.sql",
+        "sha256": "696345975aff94824931ddd8a71448743fd8a20a86f990b23388970f693961eb"
+      },
+      {
+        "file": "079_assisted_proposal_runs.sql",
+        "sha256": "2fe10ec163e51ab70202fce6e282eae0873832b7cb39b979901ce318377a09e2"
+      },
+      {
+        "file": "080_assisted_clean_validation.sql",
+        "sha256": "02a9ffc6d84debc804adf5c9f72769345c0c8bb2f072e8b5e2107258baa65e3c"
+      },
+      {
+        "file": "081_assisted_draft_editing.sql",
+        "sha256": "b7dce87ff65e9a7518ce9526aa59fbb8fc8b470070cede4028a18a7d95d6aca9"
+      },
+      {
+        "file": "082_assisted_stage_validation_exceptions.sql",
+        "sha256": "77d9b7232231447f45dd7d66120f644303c010748daeaf920e149a8d8462ea39"
+      },
+      {
+        "file": "083_assisted_config_refresh.sql",
+        "sha256": "bcfcc064ca52f8e4d95f608584dcdd66a8e0fb0f4e2eccd983918d63809d0c76"
+      },
+      {
+        "file": "084_day_config_provenance.sql",
+        "sha256": "33b456db69df55ea52bcbae04be5e47abf90732b7ba5fbfd611fd04326b47862"
+      },
+      {
+        "file": "085_optimizer_day_config_restore.sql",
+        "sha256": "b57e2602325fbe66a45896c7671b8c86ca7a2fab81bd89f225f18220a2290aa1"
+      },
+      {
+        "file": "086_assisted_itinerant_resource_persistence.sql",
+        "sha256": "305b7334b970fe99411ece5048adfd964f694009603516ccc6474c2c5d82d698"
+      },
+      {
+        "file": "087_participant_transition_margins.sql",
+        "sha256": "fe67550f63987681d15cc2802d19f2ee2a39ec7b6c754c6b8df67d896935a61b"
+      },
+      {
+        "file": "088_plan_planner_next_configuration.sql",
+        "sha256": "7a346ad5be956a0798a79508bb32bb8dc02b0ec84853190d3ee4fd3275321f1b"
+      },
+      {
+        "file": "089_assisted_native_sql_integrity.sql",
+        "sha256": "a42dc7c86abcfe157d1244448ac8455c1740d01aad5a69f6eaf2b75c228bfd20"
+      },
+      {
+        "file": "090_assisted_manual_snapshot_fidelity.sql",
+        "sha256": "0015226018eef7e2beb079634acb4ee731fabf233306f444542c97cf9d785a6b"
+      },
+      {
+        "file": "091_assisted_restart_bootstrap.sql",
+        "sha256": "813d350863d3a5c392767e40045c30b8370b0706160d1f81a9a1c39dd86b0685"
+      }
+    ],
+    "provenance": "Precedes final null-guard, conflict/malformed resource projection and mixed visual-order hardening; exact original hashes retained. Final-head CI reruns the complete native gate.",
+    "firstStageGenerationMs": 99762,
+    "stages": [
+      {
+        "ordinal": 1,
+        "runId": 1,
+        "scope": {
+          "kind": "SPACE",
+          "spaceId": 3004
+        },
+        "scopeCount": 19,
+        "completed": 19,
+        "generationMs": 99762,
+        "fingerprint": "1223c1b3f5abc87d7d3898cf492779e0407fb90be32a22e2abc62a9d43a9a13d",
+        "hardCount": 0,
+        "requiredCount": 0,
+        "independentCanonicalWitness": "PASS",
+        "witnessFingerprint": "5c2e540a5cb0ba998b2aa85b279059ba5fab48eb58c35ea8d66fc2d1b36a8cd9",
+        "closure": "CERTIFIED",
+        "auditCharges": 293,
+        "persistence": "PASS",
+        "reload": "PASS",
+        "protectedPlacements": "PASS",
+        "immutableStageTrigger": "PASS",
+        "staleHttpAndRpcAtomic": "PASS",
+        "draftResourceDisplay": "PASS",
+        "legalOccupancyWarnings": "PASS",
+        "operationalMealConsolidation": [
+          {
+            "policyId": "break:totales-operations",
+            "consumerCount": 19,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:reality-a",
+            "consumerCount": 13,
+            "acceptedConsumers": 2,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:coach-lucia",
+            "consumerCount": 16,
+            "acceptedConsumers": 8,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:coach-jose-maria",
+            "consumerCount": 22,
+            "acceptedConsumers": 11,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:main-flow",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-b",
+            "consumerCount": 10,
+            "acceptedConsumers": 1,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:p15-operations",
+            "consumerCount": 36,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:p14-operations",
+            "consumerCount": 58,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          }
+        ]
+      },
+      {
+        "ordinal": 2,
+        "runId": 2,
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            10009,
+            10024,
+            10037,
+            10050,
+            10063,
+            10080,
+            10095,
+            10108,
+            10123,
+            10138,
+            10153,
+            10168,
+            10183,
+            10197,
+            10210,
+            10224,
+            10236,
+            10249,
+            10262
+          ]
+        },
+        "scopeCount": 19,
+        "completed": 38,
+        "generationMs": 2124,
+        "fingerprint": "7d53fbd1f5611f31fa93648ac225f23d3546a9deca18fb7a42a22ca5dfb452ce",
+        "hardCount": 0,
+        "requiredCount": 0,
+        "independentCanonicalWitness": "PASS",
+        "witnessFingerprint": "5c2e540a5cb0ba998b2aa85b279059ba5fab48eb58c35ea8d66fc2d1b36a8cd9",
+        "closure": "CERTIFIED",
+        "auditCharges": 293,
+        "persistence": "PASS",
+        "reload": "PASS",
+        "protectedPlacements": "PASS",
+        "immutableStageTrigger": "PASS",
+        "staleHttpAndRpcAtomic": "PASS",
+        "draftResourceDisplay": "PASS",
+        "legalOccupancyWarnings": "PASS",
+        "operationalMealConsolidation": [
+          {
+            "policyId": "break:totales-operations",
+            "consumerCount": 19,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:reality-a",
+            "consumerCount": 13,
+            "acceptedConsumers": 2,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:coach-lucia",
+            "consumerCount": 16,
+            "acceptedConsumers": 16,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-jose-maria",
+            "consumerCount": 22,
+            "acceptedConsumers": 22,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:main-flow",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-b",
+            "consumerCount": 10,
+            "acceptedConsumers": 1,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:p15-operations",
+            "consumerCount": 36,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:p14-operations",
+            "consumerCount": 58,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          }
+        ]
+      },
+      {
+        "ordinal": 3,
+        "runId": 3,
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            10041,
+            10069,
+            10081,
+            10129,
+            10154,
+            10169,
+            10173,
+            10215
+          ]
+        },
+        "scopeCount": 8,
+        "completed": 46,
+        "generationMs": 2160,
+        "fingerprint": "a79a595a4786a71dfe142bbb409d95eaa8161021e99dbc2affb1fe0789653b41",
+        "hardCount": 0,
+        "requiredCount": 0,
+        "independentCanonicalWitness": "PASS",
+        "witnessFingerprint": "5c2e540a5cb0ba998b2aa85b279059ba5fab48eb58c35ea8d66fc2d1b36a8cd9",
+        "closure": "CERTIFIED",
+        "auditCharges": 293,
+        "persistence": "PASS",
+        "reload": "PASS",
+        "protectedPlacements": "PASS",
+        "immutableStageTrigger": "PASS",
+        "staleHttpAndRpcAtomic": "PASS",
+        "draftResourceDisplay": "PASS",
+        "legalOccupancyWarnings": "PASS",
+        "operationalMealConsolidation": [
+          {
+            "policyId": "break:totales-operations",
+            "consumerCount": 19,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:reality-a",
+            "consumerCount": 13,
+            "acceptedConsumers": 7,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:coach-lucia",
+            "consumerCount": 16,
+            "acceptedConsumers": 16,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-jose-maria",
+            "consumerCount": 22,
+            "acceptedConsumers": 22,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:main-flow",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-b",
+            "consumerCount": 10,
+            "acceptedConsumers": 6,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:p15-operations",
+            "consumerCount": 36,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:p14-operations",
+            "consumerCount": 58,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          }
+        ]
+      },
+      {
+        "ordinal": 4,
+        "runId": 4,
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            10014,
+            10028,
+            10040,
+            10053,
+            10068,
+            10084,
+            10099,
+            10113,
+            10128,
+            10143,
+            10158,
+            10172,
+            10187,
+            10200,
+            10214,
+            10227,
+            10240,
+            10253,
+            10266
+          ]
+        },
+        "scopeCount": 19,
+        "completed": 65,
+        "generationMs": 2139,
+        "fingerprint": "3c0c26f90781a88fd0ae8ac3abb6d5b8483ce8030ab9eba3cd0ddae082ea237c",
+        "hardCount": 0,
+        "requiredCount": 0,
+        "independentCanonicalWitness": "PASS",
+        "witnessFingerprint": "5c2e540a5cb0ba998b2aa85b279059ba5fab48eb58c35ea8d66fc2d1b36a8cd9",
+        "closure": "CERTIFIED",
+        "auditCharges": 293,
+        "persistence": "PASS",
+        "reload": "PASS",
+        "protectedPlacements": "PASS",
+        "immutableStageTrigger": "PASS",
+        "staleHttpAndRpcAtomic": "PASS",
+        "draftResourceDisplay": "PASS",
+        "legalOccupancyWarnings": "PASS",
+        "operationalMealConsolidation": [
+          {
+            "policyId": "break:totales-operations",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-a",
+            "consumerCount": 13,
+            "acceptedConsumers": 7,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:coach-lucia",
+            "consumerCount": 16,
+            "acceptedConsumers": 16,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-jose-maria",
+            "consumerCount": 22,
+            "acceptedConsumers": 22,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:main-flow",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-b",
+            "consumerCount": 10,
+            "acceptedConsumers": 6,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:p15-operations",
+            "consumerCount": 36,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:p14-operations",
+            "consumerCount": 58,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          }
+        ]
+      },
+      {
+        "ordinal": 5,
+        "runId": 5,
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            10010,
+            10011,
+            10064,
+            10065,
+            10109,
+            10110,
+            10124,
+            10139,
+            10237,
+            10263
+          ]
+        },
+        "scopeCount": 10,
+        "completed": 75,
+        "generationMs": 2513,
+        "fingerprint": "c6be3484566cbb888a94a510645c70040c5fdcca38644064df058b9aab2e2f0e",
+        "hardCount": 0,
+        "requiredCount": 0,
+        "independentCanonicalWitness": "PASS",
+        "witnessFingerprint": "5c2e540a5cb0ba998b2aa85b279059ba5fab48eb58c35ea8d66fc2d1b36a8cd9",
+        "closure": "CERTIFIED",
+        "auditCharges": 293,
+        "persistence": "PASS",
+        "reload": "PASS",
+        "protectedPlacements": "PASS",
+        "immutableStageTrigger": "PASS",
+        "staleHttpAndRpcAtomic": "PASS",
+        "draftResourceDisplay": "PASS",
+        "legalOccupancyWarnings": "PASS",
+        "operationalMealConsolidation": [
+          {
+            "policyId": "break:totales-operations",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-a",
+            "consumerCount": 13,
+            "acceptedConsumers": 13,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-lucia",
+            "consumerCount": 16,
+            "acceptedConsumers": 16,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-jose-maria",
+            "consumerCount": 22,
+            "acceptedConsumers": 22,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:main-flow",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-b",
+            "consumerCount": 10,
+            "acceptedConsumers": 10,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p15-operations",
+            "consumerCount": 36,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:p14-operations",
+            "consumerCount": 58,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          }
+        ]
+      },
+      {
+        "ordinal": 6,
+        "runId": 6,
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            10001,
+            10016,
+            10020,
+            10026,
+            10030,
+            10042,
+            10055,
+            10059,
+            10066,
+            10071,
+            10075,
+            10087,
+            10091,
+            10097,
+            10101,
+            10115,
+            10119,
+            10126,
+            10130,
+            10134,
+            10141,
+            10146,
+            10156,
+            10160,
+            10174,
+            10178,
+            10185,
+            10189,
+            10202,
+            10212,
+            10217,
+            10228,
+            10232,
+            10242,
+            10251,
+            10255
+          ]
+        },
+        "scopeCount": 36,
+        "completed": 111,
+        "generationMs": 2573,
+        "fingerprint": "c9656810e5019c4ec992123b2c447d3c028e966cb4c8bae51b3370534c717c2a",
+        "hardCount": 0,
+        "requiredCount": 0,
+        "independentCanonicalWitness": "PASS",
+        "witnessFingerprint": "5c2e540a5cb0ba998b2aa85b279059ba5fab48eb58c35ea8d66fc2d1b36a8cd9",
+        "closure": "CERTIFIED",
+        "auditCharges": 293,
+        "persistence": "PASS",
+        "reload": "PASS",
+        "protectedPlacements": "PASS",
+        "immutableStageTrigger": "PASS",
+        "staleHttpAndRpcAtomic": "PASS",
+        "draftResourceDisplay": "PASS",
+        "legalOccupancyWarnings": "PASS",
+        "operationalMealConsolidation": [
+          {
+            "policyId": "break:totales-operations",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-a",
+            "consumerCount": 13,
+            "acceptedConsumers": 13,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-lucia",
+            "consumerCount": 16,
+            "acceptedConsumers": 16,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-jose-maria",
+            "consumerCount": 22,
+            "acceptedConsumers": 22,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:main-flow",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-b",
+            "consumerCount": 10,
+            "acceptedConsumers": 10,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p15-operations",
+            "consumerCount": 36,
+            "acceptedConsumers": 36,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p14-operations",
+            "consumerCount": 58,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          }
+        ]
+      },
+      {
+        "ordinal": 7,
+        "runId": 7,
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            10005,
+            10008,
+            10012,
+            10015,
+            10023,
+            10025,
+            10029,
+            10036,
+            10038,
+            10046,
+            10049,
+            10051,
+            10054,
+            10062,
+            10070,
+            10076,
+            10079,
+            10082,
+            10086,
+            10094,
+            10096,
+            10100,
+            10107,
+            10111,
+            10114,
+            10122,
+            10125,
+            10137,
+            10140,
+            10145,
+            10152,
+            10155,
+            10159,
+            10164,
+            10167,
+            10170,
+            10179,
+            10182,
+            10184,
+            10188,
+            10193,
+            10196,
+            10198,
+            10201,
+            10206,
+            10209,
+            10211,
+            10216,
+            10223,
+            10225,
+            10235,
+            10238,
+            10241,
+            10248,
+            10250,
+            10254,
+            10261,
+            10264
+          ]
+        },
+        "scopeCount": 58,
+        "completed": 169,
+        "generationMs": 2429,
+        "fingerprint": "14653db0c91f9e46d3a0fb99ae903b4ba63dd9141c8613ddd7b78b86924cac5a",
+        "hardCount": 0,
+        "requiredCount": 0,
+        "independentCanonicalWitness": "PASS",
+        "witnessFingerprint": "5c2e540a5cb0ba998b2aa85b279059ba5fab48eb58c35ea8d66fc2d1b36a8cd9",
+        "closure": "CERTIFIED",
+        "auditCharges": 293,
+        "persistence": "PASS",
+        "reload": "PASS",
+        "protectedPlacements": "PASS",
+        "immutableStageTrigger": "PASS",
+        "staleHttpAndRpcAtomic": "PASS",
+        "draftResourceDisplay": "PASS",
+        "legalOccupancyWarnings": "PASS",
+        "operationalMealConsolidation": [
+          {
+            "policyId": "break:totales-operations",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-a",
+            "consumerCount": 13,
+            "acceptedConsumers": 13,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-lucia",
+            "consumerCount": 16,
+            "acceptedConsumers": 16,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-jose-maria",
+            "consumerCount": 22,
+            "acceptedConsumers": 22,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:main-flow",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-b",
+            "consumerCount": 10,
+            "acceptedConsumers": 10,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p15-operations",
+            "consumerCount": 36,
+            "acceptedConsumers": 36,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p14-operations",
+            "consumerCount": 58,
+            "acceptedConsumers": 58,
+            "closed": true,
+            "persisted": true
+          }
+        ]
+      },
+      {
+        "ordinal": 8,
+        "runId": 8,
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            10003,
+            10006,
+            10018,
+            10021,
+            10032,
+            10034,
+            10044,
+            10047,
+            10057,
+            10060,
+            10073,
+            10077,
+            10089,
+            10092,
+            10103,
+            10105,
+            10117,
+            10120,
+            10132,
+            10135,
+            10148,
+            10150,
+            10162,
+            10165,
+            10176,
+            10180,
+            10191,
+            10194,
+            10204,
+            10207,
+            10219,
+            10221,
+            10230,
+            10233,
+            10244,
+            10246,
+            10257,
+            10259
+          ]
+        },
+        "scopeCount": 38,
+        "completed": 207,
+        "generationMs": 2387,
+        "fingerprint": "9944d4d1d55fc8c78f095d52d6a59038af7be934e37f28464e68def0f4acd226",
+        "hardCount": 0,
+        "requiredCount": 0,
+        "independentCanonicalWitness": "PASS",
+        "witnessFingerprint": "5c2e540a5cb0ba998b2aa85b279059ba5fab48eb58c35ea8d66fc2d1b36a8cd9",
+        "closure": "CERTIFIED",
+        "auditCharges": 293,
+        "persistence": "PASS",
+        "reload": "PASS",
+        "protectedPlacements": "PASS",
+        "immutableStageTrigger": "PASS",
+        "staleHttpAndRpcAtomic": "PASS",
+        "draftResourceDisplay": "PASS",
+        "legalOccupancyWarnings": "PASS",
+        "operationalMealConsolidation": [
+          {
+            "policyId": "break:totales-operations",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-a",
+            "consumerCount": 13,
+            "acceptedConsumers": 13,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-lucia",
+            "consumerCount": 16,
+            "acceptedConsumers": 16,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-jose-maria",
+            "consumerCount": 22,
+            "acceptedConsumers": 22,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:main-flow",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-b",
+            "consumerCount": 10,
+            "acceptedConsumers": 10,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p15-operations",
+            "consumerCount": 36,
+            "acceptedConsumers": 36,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p14-operations",
+            "consumerCount": 58,
+            "acceptedConsumers": 58,
+            "closed": true,
+            "persisted": true
+          }
+        ]
+      },
+      {
+        "ordinal": 9,
+        "runId": 9,
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            10085,
+            10144
+          ]
+        },
+        "scopeCount": 2,
+        "completed": 209,
+        "generationMs": 2527,
+        "fingerprint": "c8eb2e621c9c382d41c7e26785c413f098ac4565b1f0f91a627cee304c027196",
+        "hardCount": 0,
+        "requiredCount": 0,
+        "independentCanonicalWitness": "PASS",
+        "witnessFingerprint": "5c2e540a5cb0ba998b2aa85b279059ba5fab48eb58c35ea8d66fc2d1b36a8cd9",
+        "closure": "CERTIFIED",
+        "auditCharges": 293,
+        "persistence": "PASS",
+        "reload": "PASS",
+        "protectedPlacements": "PASS",
+        "immutableStageTrigger": "PASS",
+        "staleHttpAndRpcAtomic": "PASS",
+        "draftResourceDisplay": "PASS",
+        "legalOccupancyWarnings": "PASS",
+        "operationalMealConsolidation": [
+          {
+            "policyId": "break:totales-operations",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-a",
+            "consumerCount": 13,
+            "acceptedConsumers": 13,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-lucia",
+            "consumerCount": 16,
+            "acceptedConsumers": 16,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-jose-maria",
+            "consumerCount": 22,
+            "acceptedConsumers": 22,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:main-flow",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-b",
+            "consumerCount": 10,
+            "acceptedConsumers": 10,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p15-operations",
+            "consumerCount": 36,
+            "acceptedConsumers": 36,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p14-operations",
+            "consumerCount": 58,
+            "acceptedConsumers": 58,
+            "closed": true,
+            "persisted": true
+          }
+        ]
+      },
+      {
+        "ordinal": 10,
+        "runId": 10,
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            10004,
+            10007,
+            10013,
+            10019,
+            10022,
+            10027,
+            10033,
+            10035,
+            10039,
+            10045,
+            10048,
+            10052,
+            10058,
+            10061,
+            10067,
+            10074,
+            10078,
+            10083,
+            10090,
+            10093,
+            10098,
+            10104,
+            10106,
+            10112,
+            10118,
+            10121,
+            10127,
+            10133,
+            10136,
+            10142,
+            10149,
+            10151,
+            10157,
+            10163,
+            10166,
+            10171,
+            10177,
+            10181,
+            10186,
+            10192,
+            10195,
+            10199,
+            10205,
+            10208,
+            10213,
+            10220,
+            10222,
+            10226,
+            10231,
+            10234,
+            10239,
+            10245,
+            10247,
+            10252,
+            10258,
+            10260,
+            10265
+          ]
+        },
+        "scopeCount": 57,
+        "completed": 266,
+        "generationMs": 2652,
+        "fingerprint": "7e2576ac0c44daad3ef14c2c79f2ba89b60593bfe5fcd33df1cf5ff67206aa06",
+        "hardCount": 0,
+        "requiredCount": 0,
+        "independentCanonicalWitness": "PASS",
+        "witnessFingerprint": "5c2e540a5cb0ba998b2aa85b279059ba5fab48eb58c35ea8d66fc2d1b36a8cd9",
+        "closure": "CERTIFIED",
+        "auditCharges": 293,
+        "persistence": "PASS",
+        "reload": "PASS",
+        "protectedPlacements": "PASS",
+        "immutableStageTrigger": "PASS",
+        "staleHttpAndRpcAtomic": "PASS",
+        "draftResourceDisplay": "PASS",
+        "legalOccupancyWarnings": "PASS",
+        "operationalMealConsolidation": [
+          {
+            "policyId": "break:totales-operations",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-a",
+            "consumerCount": 13,
+            "acceptedConsumers": 13,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-lucia",
+            "consumerCount": 16,
+            "acceptedConsumers": 16,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-jose-maria",
+            "consumerCount": 22,
+            "acceptedConsumers": 22,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:main-flow",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-b",
+            "consumerCount": 10,
+            "acceptedConsumers": 10,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p15-operations",
+            "consumerCount": 36,
+            "acceptedConsumers": 36,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p14-operations",
+            "consumerCount": 58,
+            "acceptedConsumers": 58,
+            "closed": true,
+            "persisted": true
+          }
+        ]
+      }
+    ],
+    "topology": {
+      "contractVersion": 1,
+      "fingerprint": "7e2576ac0c44daad3ef14c2c79f2ba89b60593bfe5fcd33df1cf5ff67206aa06",
+      "previousNativeFingerprint": "557d0efe105e7a2257f4f7754150e8aff814581ec943e5f623dbbc3640f147b9",
+      "parentNormalizedFingerprint": "557d0efe105e7a2257f4f7754150e8aff814581ec943e5f623dbbc3640f147b9",
+      "onlyParentIdentityChanged": true
+    },
+    "canonical": {
+      "status": "PASS",
+      "obligations": 266,
+      "productiveTasks": 247,
+      "participantMeals": 19,
+      "setupPreparations": 1,
+      "roundPreparations": 17,
+      "operationalMeals": 8,
+      "expectedOperationalMeals": 8,
+      "missingOperationalMealIds": [],
+      "validation": {
+        "hardValid": true,
+        "dependencyViolationCount": 0,
+        "overlapViolationCount": 0,
+        "transitionViolationCount": 0,
+        "availabilityViolationCount": 0,
+        "taskAvailabilityViolationCount": 0,
+        "blockViolationCount": 0,
+        "resourceAvailabilityViolationCount": 0,
+        "resourceOverlapViolationCount": 0,
+        "resourceTransitionViolationCount": 0,
+        "secondaryContinuityViolationCount": 0,
+        "setupViolationCount": 0,
+        "setupPreparationViolationCount": 0,
+        "roundSynchronizationViolationCount": 0,
+        "roundPreparationViolationCount": 0,
+        "jointGroupViolationCount": 0,
+        "transportGroupingViolationCount": 0,
+        "technicalOperationViolationCount": 0,
+        "technicalChainViolationCount": 0,
+        "spaceMealViolationCount": 0,
+        "mainFlowMealViolationCount": 0,
+        "anchoredAccompanimentViolationCount": 0,
+        "participantMealViolationCount": 0,
+        "resourceMealViolationCount": 0,
+        "operationalMealViolationCount": 0,
+        "itinerantUnitMealViolationCount": 0,
+        "reasonCodes": [],
+        "unstructuredReasonCodes": [],
+        "violations": []
+      },
+      "closure": "CERTIFIED",
+      "closureFingerprint": "d439e6d98d092457694486fe8d3317d124e876875e094fc4585ece65faf7b03c",
+      "charges": 1,
+      "placementsFingerprint": "f37fd96cfef52805b87ed49a01dcb6e216ed744da0b3683f8db5c9e692ef9944",
+      "counterfactual": {
+        "mode": "READ_ONLY_NOT_PERSISTED",
+        "addedMealIds": [],
+        "hardValid": true,
+        "violations": [],
+        "allOtherPlacementsUnchanged": true
+      }
+    },
+    "viewsHistory": {
+      "status": "PASS",
+      "stageOrdinal": 10,
+      "stageId": 11,
+      "fingerprint": "7e2576ac0c44daad3ef14c2c79f2ba89b60593bfe5fcd33df1cf5ff67206aa06",
+      "views": [
+        {
+          "view": "contestants default",
+          "tasks": 266
+        },
+        {
+          "view": "contestants sorted by IN",
+          "tasks": 266
+        },
+        {
+          "view": "contestants sorted by CROMA",
+          "tasks": 266
+        },
+        {
+          "view": "contestants sorted by ENSAYO_ESTUDIO_7",
+          "tasks": 266
+        },
+        {
+          "view": "spaces timeline",
+          "tasks": 266
+        },
+        {
+          "view": "spaces list",
+          "tasks": 266
+        },
+        {
+          "view": "spaces timeline again",
+          "tasks": 266
+        },
+        {
+          "view": "resources default",
+          "renderedTasks": 140
+        },
+        {
+          "view": "resources all selections",
+          "totalPlanTasks": 266,
+          "renderedTasks": 140,
+          "filteredTasks": 126
+        },
+        {
+          "view": "contestants restored",
+          "tasks": 266
+        }
+      ],
+      "sorts": [
+        {
+          "template": "IN",
+          "realPointerClick": true,
+          "tasksRetained": 266,
+          "returnedToName": true,
+          "noPendingEdits": true
+        },
+        {
+          "template": "CROMA",
+          "realPointerClick": true,
+          "tasksRetained": 266,
+          "returnedToName": true,
+          "noPendingEdits": true
+        },
+        {
+          "template": "ENSAYO_ESTUDIO_7",
+          "realPointerClick": true,
+          "tasksRetained": 266,
+          "returnedToName": true,
+          "noPendingEdits": true
+        }
+      ],
+      "roles": [
+        {
+          "role": "anon",
+          "status": 401
+        },
+        {
+          "role": "norole",
+          "status": 403
+        },
+        {
+          "role": "viewer",
+          "status": 200
+        },
+        {
+          "role": "aux",
+          "status": 200
+        },
+        {
+          "role": "production",
+          "status": 200
+        },
+        {
+          "role": "admin",
+          "status": 200
+        }
+      ],
+      "remoteWrites": 0,
+      "legacyResourceParity": true,
+      "history": {
+        "lazy": true,
+        "exactRunIntervals": true,
+        "stageZeroUnavailable": true,
+        "roleBoundary": true,
+        "noEvidencePayload": true
+      },
+      "noMutations": true
+    },
+    "restart": {
+      "status": "PASS",
+      "confirmationDismissedWithoutWrites": true,
+      "viewerDenied": 403,
+      "fromCompleted": 266,
+      "restoredCompleted": 0,
+      "bootstrapFingerprint": "a8caa91d30336c6f528acedb6fdd7cd2a0c6e92d8a96a33f8a375f1e7a30e25d",
+      "currentConfigurationPreserved": true,
+      "historyPreserved": true,
+      "replannedCompleted": 266,
+      "newAcceptedStages": 10,
+      "canonical": {
+        "status": "PASS",
+        "obligations": 266,
+        "productiveTasks": 247,
+        "participantMeals": 19,
+        "setupPreparations": 1,
+        "roundPreparations": 17,
+        "operationalMeals": 8,
+        "expectedOperationalMeals": 8,
+        "missingOperationalMealIds": [],
+        "validation": {
+          "hardValid": true,
+          "dependencyViolationCount": 0,
+          "overlapViolationCount": 0,
+          "transitionViolationCount": 0,
+          "availabilityViolationCount": 0,
+          "taskAvailabilityViolationCount": 0,
+          "blockViolationCount": 0,
+          "resourceAvailabilityViolationCount": 0,
+          "resourceOverlapViolationCount": 0,
+          "resourceTransitionViolationCount": 0,
+          "secondaryContinuityViolationCount": 0,
+          "setupViolationCount": 0,
+          "setupPreparationViolationCount": 0,
+          "roundSynchronizationViolationCount": 0,
+          "roundPreparationViolationCount": 0,
+          "jointGroupViolationCount": 0,
+          "transportGroupingViolationCount": 0,
+          "technicalOperationViolationCount": 0,
+          "technicalChainViolationCount": 0,
+          "spaceMealViolationCount": 0,
+          "mainFlowMealViolationCount": 0,
+          "anchoredAccompanimentViolationCount": 0,
+          "participantMealViolationCount": 0,
+          "resourceMealViolationCount": 0,
+          "operationalMealViolationCount": 0,
+          "itinerantUnitMealViolationCount": 0,
+          "reasonCodes": [],
+          "unstructuredReasonCodes": [],
+          "violations": []
+        },
+        "closure": "CERTIFIED",
+        "closureFingerprint": "d439e6d98d092457694486fe8d3317d124e876875e094fc4585ece65faf7b03c",
+        "charges": 1,
+        "placementsFingerprint": "f37fd96cfef52805b87ed49a01dcb6e216ed744da0b3683f8db5c9e692ef9944",
+        "counterfactual": {
+          "mode": "READ_ONLY_NOT_PERSISTED",
+          "addedMealIds": [],
+          "hardValid": true,
+          "violations": [],
+          "allOtherPlacementsUnchanged": true
+        }
+      },
+      "finalFingerprint": "7e2576ac0c44daad3ef14c2c79f2ba89b60593bfe5fcd33df1cf5ff67206aa06",
+      "remoteWrites": 0
+    },
+    "manualSnapshot": {
+      "status": "PASS",
+      "mode": "NATIVE_DISPOSABLE_HTTP_SQL",
+      "remoteWrites": 0,
+      "baselineFingerprint": "7e2576ac0c44daad3ef14c2c79f2ba89b60593bfe5fcd33df1cf5ff67206aa06",
+      "baseline": {
+        "hardValid": true,
+        "dependencyViolationCount": 0,
+        "overlapViolationCount": 0,
+        "transitionViolationCount": 0,
+        "availabilityViolationCount": 0,
+        "taskAvailabilityViolationCount": 0,
+        "blockViolationCount": 0,
+        "resourceAvailabilityViolationCount": 0,
+        "resourceOverlapViolationCount": 0,
+        "resourceTransitionViolationCount": 0,
+        "secondaryContinuityViolationCount": 0,
+        "setupViolationCount": 0,
+        "setupPreparationViolationCount": 0,
+        "roundSynchronizationViolationCount": 0,
+        "roundPreparationViolationCount": 0,
+        "jointGroupViolationCount": 0,
+        "transportGroupingViolationCount": 0,
+        "technicalOperationViolationCount": 0,
+        "technicalChainViolationCount": 0,
+        "spaceMealViolationCount": 0,
+        "mainFlowMealViolationCount": 0,
+        "anchoredAccompanimentViolationCount": 0,
+        "participantMealViolationCount": 0,
+        "resourceMealViolationCount": 0,
+        "operationalMealViolationCount": 0,
+        "itinerantUnitMealViolationCount": 0,
+        "reasonCodes": [],
+        "unstructuredReasonCodes": [],
+        "violations": []
+      },
+      "moved": {
+        "hardValid": false,
+        "dependencyViolationCount": 0,
+        "overlapViolationCount": 0,
+        "transitionViolationCount": 0,
+        "availabilityViolationCount": 1,
+        "taskAvailabilityViolationCount": 0,
+        "blockViolationCount": 0,
+        "resourceAvailabilityViolationCount": 0,
+        "resourceOverlapViolationCount": 0,
+        "resourceTransitionViolationCount": 0,
+        "secondaryContinuityViolationCount": 0,
+        "setupViolationCount": 0,
+        "setupPreparationViolationCount": 0,
+        "roundSynchronizationViolationCount": 0,
+        "roundPreparationViolationCount": 0,
+        "jointGroupViolationCount": 0,
+        "transportGroupingViolationCount": 1,
+        "technicalOperationViolationCount": 0,
+        "technicalChainViolationCount": 0,
+        "spaceMealViolationCount": 0,
+        "mainFlowMealViolationCount": 0,
+        "anchoredAccompanimentViolationCount": 0,
+        "participantMealViolationCount": 0,
+        "resourceMealViolationCount": 0,
+        "operationalMealViolationCount": 0,
+        "itinerantUnitMealViolationCount": 0,
+        "reasonCodes": [
+          "AVAILABILITY_VIOLATION",
+          "TRANSPORT_GROUPING_VIOLATION"
+        ],
+        "unstructuredReasonCodes": [
+          "TRANSPORT_GROUPING_VIOLATION"
+        ],
+        "violations": [
+          {
+            "ruleCode": "AVAILABILITY_VIOLATION",
+            "severity": "HARD",
+            "affectedTaskIds": [
+              "task:10048"
+            ],
+            "affectedResourceIds": [],
+            "affectedSpaceIds": [
+              "space:3023"
+            ],
+            "dimensions": {
+              "start": 1140,
+              "end": 1145
+            }
+          }
+        ]
+      },
+      "productViolations": [
+        {
+          "ruleCode": "AVAILABILITY_VIOLATION",
+          "severity": "HARD",
+          "affectedTaskIds": [
+            10048
+          ],
+          "affectedResourceIds": [],
+          "affectedSpaceIds": [
+            3023
+          ],
+          "details": {
+            "dimensions": {
+              "start": 1140,
+              "end": 1145
+            }
+          },
+          "inheritedAcceptedExceptionId": null,
+          "violationKey": "{\"ruleCode\":\"AVAILABILITY_VIOLATION\",\"taskIds\":[10048],\"resourceIds\":[],\"spaceIds\":[3023],\"dimensions\":{\"end\":1145,\"start\":1140}}"
+        }
+      ],
+      "manualUndoRedo": "PASS",
+      "blockUndoRedo": "PASS",
+      "reset": "EXACT_BASELINE",
+      "acceptedMaterial": "UNCHANGED",
+      "anonymousTransport": "FAIL_CLOSED"
+    },
+    "orders": {
+      "status": "PASS",
+      "algorithmChanges": 0,
+      "experiments": [
+        {
+          "baselineOrdinals": [
+            6,
+            7
+          ],
+          "classification": "VALID_ALTERNATIVE_ACCEPTANCE_ORDER_SAME_GEOMETRY",
+          "deterministic": true,
+          "orderStatus": "PASS",
+          "fullCanonicalStatus": "PASS",
+          "repeats": [
+            {
+              "repeat": 1,
+              "finalFingerprint": "7e2576ac0c44daad3ef14c2c79f2ba89b60593bfe5fcd33df1cf5ff67206aa06",
+              "canonicalStatus": "PASS",
+              "obligations": 266
+            },
+            {
+              "repeat": 2,
+              "finalFingerprint": "7e2576ac0c44daad3ef14c2c79f2ba89b60593bfe5fcd33df1cf5ff67206aa06",
+              "canonicalStatus": "PASS",
+              "obligations": 266
+            }
+          ]
+        },
+        {
+          "baselineOrdinals": [
+            5,
+            6
+          ],
+          "classification": "VALID_ALTERNATIVE_ACCEPTANCE_ORDER_SAME_GEOMETRY",
+          "deterministic": true,
+          "orderStatus": "PASS",
+          "fullCanonicalStatus": "PASS",
+          "repeats": [
+            {
+              "repeat": 1,
+              "finalFingerprint": "7e2576ac0c44daad3ef14c2c79f2ba89b60593bfe5fcd33df1cf5ff67206aa06",
+              "canonicalStatus": "PASS",
+              "obligations": 266
+            },
+            {
+              "repeat": 2,
+              "finalFingerprint": "7e2576ac0c44daad3ef14c2c79f2ba89b60593bfe5fcd33df1cf5ff67206aa06",
+              "canonicalStatus": "PASS",
+              "obligations": 266
+            }
+          ]
+        }
+      ]
+    },
+    "autopilot": {
+      "status": "PASS",
+      "scenarios": [
+        {
+          "label": "S5 stop/reload/resume",
+          "checkpointOrdinal": 37,
+          "checkpointId": 38,
+          "finalOrdinal": 47,
+          "completed": 266,
+          "accepted": 5,
+          "fingerprint": "7e2576ac0c44daad3ef14c2c79f2ba89b60593bfe5fcd33df1cf5ff67206aa06",
+          "canonical": {
+            "status": "PASS",
+            "obligations": 266,
+            "productiveTasks": 247,
+            "participantMeals": 19,
+            "setupPreparations": 1,
+            "roundPreparations": 17,
+            "operationalMeals": 8,
+            "expectedOperationalMeals": 8,
+            "missingOperationalMealIds": [],
+            "validation": {
+              "hardValid": true,
+              "dependencyViolationCount": 0,
+              "overlapViolationCount": 0,
+              "transitionViolationCount": 0,
+              "availabilityViolationCount": 0,
+              "taskAvailabilityViolationCount": 0,
+              "blockViolationCount": 0,
+              "resourceAvailabilityViolationCount": 0,
+              "resourceOverlapViolationCount": 0,
+              "resourceTransitionViolationCount": 0,
+              "secondaryContinuityViolationCount": 0,
+              "setupViolationCount": 0,
+              "setupPreparationViolationCount": 0,
+              "roundSynchronizationViolationCount": 0,
+              "roundPreparationViolationCount": 0,
+              "jointGroupViolationCount": 0,
+              "transportGroupingViolationCount": 0,
+              "technicalOperationViolationCount": 0,
+              "technicalChainViolationCount": 0,
+              "spaceMealViolationCount": 0,
+              "mainFlowMealViolationCount": 0,
+              "anchoredAccompanimentViolationCount": 0,
+              "participantMealViolationCount": 0,
+              "resourceMealViolationCount": 0,
+              "operationalMealViolationCount": 0,
+              "itinerantUnitMealViolationCount": 0,
+              "reasonCodes": [],
+              "unstructuredReasonCodes": [],
+              "violations": []
+            },
+            "closure": "CERTIFIED",
+            "closureFingerprint": "d439e6d98d092457694486fe8d3317d124e876875e094fc4585ece65faf7b03c",
+            "charges": 1,
+            "placementsFingerprint": "f37fd96cfef52805b87ed49a01dcb6e216ed744da0b3683f8db5c9e692ef9944",
+            "counterfactual": {
+              "mode": "READ_ONLY_NOT_PERSISTED",
+              "addedMealIds": [],
+              "hardValid": true,
+              "violations": [],
+              "allOtherPlacementsUnchanged": true
+            }
+          },
+          "noNewExceptions": true,
+          "protectedHistory": true,
+          "persistedAndReloaded": true,
+          "runIds": [
+            43,
+            44,
+            45,
+            46,
+            47
+          ]
+        },
+        {
+          "label": "same S5 checkpoint repeated",
+          "checkpointOrdinal": 37,
+          "checkpointId": 38,
+          "finalOrdinal": 52,
+          "completed": 266,
+          "accepted": 5,
+          "fingerprint": "7e2576ac0c44daad3ef14c2c79f2ba89b60593bfe5fcd33df1cf5ff67206aa06",
+          "canonical": {
+            "status": "PASS",
+            "obligations": 266,
+            "productiveTasks": 247,
+            "participantMeals": 19,
+            "setupPreparations": 1,
+            "roundPreparations": 17,
+            "operationalMeals": 8,
+            "expectedOperationalMeals": 8,
+            "missingOperationalMealIds": [],
+            "validation": {
+              "hardValid": true,
+              "dependencyViolationCount": 0,
+              "overlapViolationCount": 0,
+              "transitionViolationCount": 0,
+              "availabilityViolationCount": 0,
+              "taskAvailabilityViolationCount": 0,
+              "blockViolationCount": 0,
+              "resourceAvailabilityViolationCount": 0,
+              "resourceOverlapViolationCount": 0,
+              "resourceTransitionViolationCount": 0,
+              "secondaryContinuityViolationCount": 0,
+              "setupViolationCount": 0,
+              "setupPreparationViolationCount": 0,
+              "roundSynchronizationViolationCount": 0,
+              "roundPreparationViolationCount": 0,
+              "jointGroupViolationCount": 0,
+              "transportGroupingViolationCount": 0,
+              "technicalOperationViolationCount": 0,
+              "technicalChainViolationCount": 0,
+              "spaceMealViolationCount": 0,
+              "mainFlowMealViolationCount": 0,
+              "anchoredAccompanimentViolationCount": 0,
+              "participantMealViolationCount": 0,
+              "resourceMealViolationCount": 0,
+              "operationalMealViolationCount": 0,
+              "itinerantUnitMealViolationCount": 0,
+              "reasonCodes": [],
+              "unstructuredReasonCodes": [],
+              "violations": []
+            },
+            "closure": "CERTIFIED",
+            "closureFingerprint": "d439e6d98d092457694486fe8d3317d124e876875e094fc4585ece65faf7b03c",
+            "charges": 1,
+            "placementsFingerprint": "f37fd96cfef52805b87ed49a01dcb6e216ed744da0b3683f8db5c9e692ef9944",
+            "counterfactual": {
+              "mode": "READ_ONLY_NOT_PERSISTED",
+              "addedMealIds": [],
+              "hardValid": true,
+              "violations": [],
+              "allOtherPlacementsUnchanged": true
+            }
+          },
+          "noNewExceptions": true,
+          "protectedHistory": true,
+          "persistedAndReloaded": true,
+          "runIds": [
+            48,
+            49,
+            50,
+            51,
+            52
+          ]
+        },
+        {
+          "label": "S0 uninterrupted",
+          "checkpointOrdinal": 0,
+          "checkpointId": 1,
+          "finalOrdinal": 62,
+          "completed": 266,
+          "accepted": 10,
+          "fingerprint": "7e2576ac0c44daad3ef14c2c79f2ba89b60593bfe5fcd33df1cf5ff67206aa06",
+          "canonical": {
+            "status": "PASS",
+            "obligations": 266,
+            "productiveTasks": 247,
+            "participantMeals": 19,
+            "setupPreparations": 1,
+            "roundPreparations": 17,
+            "operationalMeals": 8,
+            "expectedOperationalMeals": 8,
+            "missingOperationalMealIds": [],
+            "validation": {
+              "hardValid": true,
+              "dependencyViolationCount": 0,
+              "overlapViolationCount": 0,
+              "transitionViolationCount": 0,
+              "availabilityViolationCount": 0,
+              "taskAvailabilityViolationCount": 0,
+              "blockViolationCount": 0,
+              "resourceAvailabilityViolationCount": 0,
+              "resourceOverlapViolationCount": 0,
+              "resourceTransitionViolationCount": 0,
+              "secondaryContinuityViolationCount": 0,
+              "setupViolationCount": 0,
+              "setupPreparationViolationCount": 0,
+              "roundSynchronizationViolationCount": 0,
+              "roundPreparationViolationCount": 0,
+              "jointGroupViolationCount": 0,
+              "transportGroupingViolationCount": 0,
+              "technicalOperationViolationCount": 0,
+              "technicalChainViolationCount": 0,
+              "spaceMealViolationCount": 0,
+              "mainFlowMealViolationCount": 0,
+              "anchoredAccompanimentViolationCount": 0,
+              "participantMealViolationCount": 0,
+              "resourceMealViolationCount": 0,
+              "operationalMealViolationCount": 0,
+              "itinerantUnitMealViolationCount": 0,
+              "reasonCodes": [],
+              "unstructuredReasonCodes": [],
+              "violations": []
+            },
+            "closure": "CERTIFIED",
+            "closureFingerprint": "d439e6d98d092457694486fe8d3317d124e876875e094fc4585ece65faf7b03c",
+            "charges": 1,
+            "placementsFingerprint": "f37fd96cfef52805b87ed49a01dcb6e216ed744da0b3683f8db5c9e692ef9944",
+            "counterfactual": {
+              "mode": "READ_ONLY_NOT_PERSISTED",
+              "addedMealIds": [],
+              "hardValid": true,
+              "violations": [],
+              "allOtherPlacementsUnchanged": true
+            }
+          },
+          "noNewExceptions": true,
+          "protectedHistory": true,
+          "persistedAndReloaded": true,
+          "runIds": [
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62
+          ]
+        }
+      ]
+    }
+  },
+  "finalScopeRehearsal": {
+    "status": "PASS",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities",
+      "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved",
+      "real storage/input adapter canon after GET day; no legacy breaks",
+      "HTTP role matrix, 15 real REST/RLS boundaries and client RPC denial; rejected writes leave DB unchanged",
+      "actual browser password login and role bootstrap",
+      "S0 creation from UI, all 19 contestant names, idempotence with admin, native persistence and reload",
+      "initial: real location UI, A2 19/36, zone membership, partial/remove/combine/empty/accepted selections; zero writes and identical Stage/Draft",
+      "all client identities denied direct Stage/Draft writes; validation UPDATE privileges unchanged",
+      "S1 UI → run → apply → validate → accept → SQL persistence → reload (19/266)",
+      "S2 UI → run → apply → validate → accept → SQL persistence → reload (38/266)",
+      "independent viewer browser session reopens the same persisted Stage and Draft",
+      "accepted: real location UI, A2 19/36, zone membership, partial/remove/combine/empty/accepted selections; zero writes and identical Stage/Draft",
+      "admin atomic rollback to S0 and redo to final accepted Stage"
+    ],
+    "runtimeHashes": {
+      "server/storage.ts": "906e56f6f2e043034eeb4eedcf10b7f02fb9345598f6b0737b03ddcd087dd526",
+      "server/assistedPlanningSnapshot.ts": "2184dc531787336e974359fe0e7b0772432dc0a78c9c139a0893f390d3ddab4b",
+      "server/assistedProposalService.ts": "9f75b996a505938141b831af8546160583f82e7a6a0c392bcae879316da8897b",
+      "server/assistedPlanningService.ts": "5a605bebfc7d8e9fb7a6d796b0c123f4af3c288830472318661dc5b82f41a357",
+      "server/routes.ts": "dbbe567c4d054ff8f10bfdf699eadf49d6f598cd20f0b0fbbce8e1acf700e069",
+      "engine/planner-next/jointCompletionWitness.ts": "eff19c666412542cc47a364687f46300982e8690b0a341a69d02c183616068a8",
+      "engine/planner-next/exactItinerantPlan.ts": "aa66ba868d91445424e866387ad8500843db0510e02b315e0e32e5720bc932a2",
+      "client/src/components/layout.tsx": "3be0f0b4501eecb52fe54547d3455d67867be651ead74df852a3562561669697",
+      "client/src/components/planning/assisted-planning-workspace.tsx": "78bb2129c12c11a3f4c0f875fa53103d15ec4a59391012b52225387f41acb8eb",
+      "script/demo/a2ImportRows.ts": "ce42f2579899d2e02d30896fa06bfe38165bac7a9f5a5cd73c856d76351e3952",
+      "script/demo/prepareA2Import.ts": "b055d5e5a3f9ad40c768ce2c863ab7c565fee4aa2822830d7d9af7659e576a2a",
+      "script/demo/prepareA2Schema.ts": "30eebaa8035888f84d1d023703ef88c605a4d264fc23e91e6ddab4c9226898b5",
+      "script/demo/smokeA2Integration.ts": "4dab98af9ffb7ae1786bc69aa533a0304b38daf1c516ad2b9544baf9543fc766",
+      "script/demo/smokeA2Journey.ts": "8266e5540025b331276796b500a60cf82a495e846ff790f79f2c566383298ebc",
+      "client/src/lib/assisted-planning-view.ts": "a0b688796d43afc3504f14012944780c80b4945606dd98815ce06500af82bb4d",
+      "client/src/lib/assisted-draft-warnings.ts": "23bb5fe47f1ce54b46dd9d2cf529fa12da83aca8b50baa8acf8cd9eb2e2d178f",
+      "script/demo/a2SpatialTopology.ts": "1bafc948b14dcff5e580a4284faaa81c9d5de8f2841bb9b3d2e57036afd242b1",
+      "client/src/lib/planning-view-policy.ts": "d67a48b3db23a15c1fe42e86b88b1a0948285904431341f5c7ac2bfa17eed417",
+      "script/demo/smokeA2ManualSnapshotJourney.ts": "40ca7f120c0f56f84bbafe7e4c5402ba0a48e2f89faa5b1cb9abad20c2ff76bc",
+      "script/demo/smokeA2ViewsHistoryJourney.ts": "1c4b34266193596338e426ebd1c05f7ea638320bdb8793b8a9879f1a024605b3",
+      "shared/assistedStageTiming.ts": "f37982b96bc5fb32d168a9f6f6e7ba1219e7d5a1f5aa51321e43ff6d14e3610c",
+      "client/src/lib/contestant-lane-sort.ts": "8cee83173053fce313e8608b451c9d3e37d75174476321ea1434da70628f25c1",
+      "client/src/components/planning/stage-history-timing.tsx": "b12463f40bf067948e12ae919e5cd807d1fbd61bec671a338318e0b6b67b83a5",
+      "client/src/components/planning-timeline.tsx": "603fb68ee007530b049ab13344300feff8901d68ec2d050ad8e24f4f1c0cad2b",
+      "client/src/pages/plan-details.tsx": "d1c674caaf0c209bdbca093019da3da08ed2749f33d967f3977d1e9ea74d6782"
+    },
+    "initial": {
+      "status": "PASS",
+      "phase": "initial",
+      "p15": {
+        "structuredMemberSpaceIds": [
+          3008,
+          3009
+        ],
+        "pending": 36
+      },
+      "caracolas": {
+        "spaceIds": [
+          3002,
+          3003
+        ],
+        "pending": 19
+      },
+      "selectionWrites": 0,
+      "generatedTaskIds": [
+        10009,
+        10024,
+        10037,
+        10050,
+        10063,
+        10080,
+        10095,
+        10108,
+        10123,
+        10138,
+        10153,
+        10168,
+        10183,
+        10197,
+        10210,
+        10224,
+        10236,
+        10249,
+        10262
+      ],
+      "acceptedStageId": 1,
+      "acceptedFingerprint": "a8caa91d30336c6f528acedb6fdd7cd2a0c6e92d8a96a33f8a375f1e7a30e25d",
+      "planningUnchanged": true
+    },
+    "accepted": {
+      "status": "PASS",
+      "phase": "accepted",
+      "p15": {
+        "structuredMemberSpaceIds": [
+          3008,
+          3009
+        ],
+        "pending": 36
+      },
+      "caracolas": {
+        "spaceIds": [
+          3002,
+          3003
+        ],
+        "pending": 0
+      },
+      "selectionWrites": 0,
+      "generatedTaskIds": null,
+      "acceptedStageId": 3,
+      "acceptedFingerprint": "7d53fbd1f5611f31fa93648ac225f23d3546a9deca18fb7a42a22ca5dfb452ce",
+      "planningUnchanged": true
+    }
+  },
+  "finalSourceHashes": {
+    "client/src/lib/planning-view-policy.ts": "d67a48b3db23a15c1fe42e86b88b1a0948285904431341f5c7ac2bfa17eed417",
+    "client/src/components/planning-timeline.tsx": "603fb68ee007530b049ab13344300feff8901d68ec2d050ad8e24f4f1c0cad2b",
+    "client/src/pages/plan-details.tsx": "d1c674caaf0c209bdbca093019da3da08ed2749f33d967f3977d1e9ea74d6782",
+    "client/src/components/planning/assisted-planning-workspace.tsx": "78bb2129c12c11a3f4c0f875fa53103d15ec4a59391012b52225387f41acb8eb",
+    "server/assistedPlanningService.ts": "5a605bebfc7d8e9fb7a6d796b0c123f4af3c288830472318661dc5b82f41a357",
+    "server/routes.ts": "dbbe567c4d054ff8f10bfdf699eadf49d6f598cd20f0b0fbbce8e1acf700e069",
+    "script/demo/a2ImportRows.ts": "ce42f2579899d2e02d30896fa06bfe38165bac7a9f5a5cd73c856d76351e3952",
+    "script/demo/a2SpatialTopology.ts": "1bafc948b14dcff5e580a4284faaa81c9d5de8f2841bb9b3d2e57036afd242b1",
+    "supabase/migrations/091_assisted_restart_bootstrap.sql": "f484b6fb65de88a17d50012001853d227488034d475c315ee12f7df7e322a8b8"
+  },
+  "verification": {
+    "focalTests": {
+      "status": "PASS",
+      "tests": 76
+    },
+    "importTests": {
+      "status": "PASS",
+      "tests": 28
+    },
+    "check": "PASS",
+    "integrationTypeScript": "PASS",
+    "build": "PASS",
+    "migrationSequence": "PASS",
+    "canonicalTemplateDeterminism": "PASS_BYTE_IDENTICAL_TWO_RUNS",
+    "certifiedCanonicalArtifactDiff": "NONE",
+    "diffHygiene": "PASS",
+    "ci": {
+      "requiredOnFinalPRHead": true,
+      "source": ".github/workflows/planner-engine-ci.yml and baseline-ci.yml",
+      "result": "Consult PR checks; dynamic CI status is not fabricated in offline Evidence"
+    }
+  },
+  "limits": [
+    "No connected Supabase/Replit adoption or remote snapshot reproduction",
+    "Insert-only grouped import does not rewrite existing accepted histories or infer existing catalog IDs",
+    "Restart restores initial snapshot; a previously planned bootstrap remains planned",
+    "Full-day restart refuses execution, cancellation, human locks or active proposals",
+    "Resource lanes include only applicable explicit assignments",
+    "Transport manual exception identity remains unsupported and fail-closed",
+    "Continuity/placement policies are diagnosis only"
+  ]
+}

@@ -10,8 +10,8 @@ import { fingerprintAssistedPlanningSnapshotV1 } from "../../server/assistedPlan
  */
 export async function seedA2ScopeCatalog(db: pg.Client, dataset: ReturnType<typeof buildA2ImportRows>) {
   const memberIds = ["p15-croma", "p15-estrellas-sillon"].map(name => dataset.tables.spaces.find(space => space.name === name)!.id);
-  const zone = (await db.query("INSERT INTO public.zones(name) VALUES('Plató 15') RETURNING id")).rows[0];
-  await db.query("UPDATE public.spaces SET zone_id=$1 WHERE id=ANY($2::integer[])", [zone.id, memberIds]);
+  // The import now owns the canonical multi-space parent; do not fabricate it.
+  assert.equal(new Set(dataset.tables.spaces.filter(space=>memberIds.includes(space.id)).map(space=>space.zone_id)).size,1);
   // An existing space has real obligations but shares the Croma display name.
   // It must never enter the P15 scope through that coincidental label.
   const decoy = dataset.tables.spaces.find(space => space.name === "caracola-lucia")!;

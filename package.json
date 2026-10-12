@@ -80,7 +80,7 @@
     "demo:a2:prepare-schema": "node --import tsx script/demo/prepareA2Schema.ts",
     "demo:a2:preflight": "node --import tsx script/demo/a2Preflight.ts",
     "demo:a2:security-rollback": "node --import tsx script/demo/prepareA2SecurityRollback.ts",
-    "test:demo:a2-import": "tsx --test --test-concurrency=1 script/demo/a2Import.spec.ts script/demo/a2ExistingDatabase.spec.ts script/demo/a2Security.spec.ts script/demo/a2Preflight.spec.ts server/apiAuthorization.spec.ts server/assistedNextScope.spec.ts server/effectivePlanConfigRevision.spec.ts server/assistedPlanningConfigRevision.spec.ts",
+    "test:demo:a2-import": "tsx --test --test-concurrency=1 script/demo/a2Import.spec.ts script/demo/a2SpatialTopology.spec.ts script/demo/a2ExistingDatabase.spec.ts script/demo/a2Security.spec.ts script/demo/a2Preflight.spec.ts server/apiAuthorization.spec.ts server/assistedNextScope.spec.ts server/effectivePlanConfigRevision.spec.ts server/assistedPlanningConfigRevision.spec.ts",
     "demo:a2:smoke": "node --import tsx script/demo/smokeA2Integration.ts"
   },
   "dependencies": {

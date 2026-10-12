@@ -36,8 +36,8 @@ export async function runA2AutopilotJourney(options: Options, baseline: Baseline
     const errors: string[] = []; page.on("pageerror", e => errors.push(e.message));
     let consent = false;
     page.on("dialog", dialog => {
-      assert.match(dialog.message(), /^Delegas la aceptación automática exclusivamente/);
-      if (consent) { report.delegatedConfirmations++; void dialog.accept(); } else void dialog.dismiss();
+      assert.match(dialog.message(), /^(Delegas la aceptación automática exclusivamente|Volverás al estado inicial)/);
+      if (consent) { if(dialog.message().startsWith("Delegas")) report.delegatedConfirmations++; else report.restartConfirmations=(report.restartConfirmations??0)+1; void dialog.accept(); } else void dialog.dismiss();
     });
     page.on("request", request => {
       if (request.method() !== "POST" || !request.url().includes(path)) return;
@@ -114,8 +114,26 @@ export async function runA2AutopilotJourney(options: Options, baseline: Baseline
     await api("/rollback", "POST", { targetStageId: Number(s5.id) }); await reopen(); const repeatStart = await markStart();
     await start(); await waitTerminal("COMPLETE"); const repeated = await audit("same S5 checkpoint repeated", s5, repeatStart);
     assert.equal(repeated.fingerprint, resumed.fingerprint, "identical accepted checkpoint and unchanged scopes produce deterministic completion");
-    await api("/rollback", "POST", { targetStageId: Number(s0.id) }); await reopen(); const fullStart = await markStart();
+    consent=false;
+    const beforeRestart=await api(),beforeRestartRequests=report.requests.length;
+    await page.getByRole("button",{name:"Reiniciar Asistida",exact:true}).click();
+    assert.deepEqual(await api(),beforeRestart);assert.equal(report.requests.length,beforeRestartRequests);
+    const denied=await fetch(`${appUrl}${path}/restart`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${users.viewer.token}`},body:JSON.stringify({expectedDraftFingerprint:beforeRestart.draftFingerprint,expectedBaseStageId:Number(beforeRestart.draftBaseStageId),confirmation:"RESTART_BOOTSTRAP"})});
+    assert.equal(denied.status,403);assert.deepEqual(await api(),beforeRestart);
+    consent=true;
+    const restarted=page.waitForResponse(response=>response.url().endsWith(`${path}/restart`)&&response.status()===200);
+    await page.getByRole("button",{name:"Reiniciar Asistida",exact:true}).click();await restarted;
+    await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(button=>button.textContent==='Reiniciar Asistida'&&!button.disabled));
+    const clean=await api();assert.equal(clean.activeStage.ordinal,0);assert.deepEqual(clean.draft,s0.snapshotJson);
+    assert.equal(clean.draft.tasks.filter((task:any)=>task.startPlanned&&task.endPlanned).length,0);
+    assert.equal(clean.session.draftValidationId,null);assert.deepEqual(clean.session.draftScopeJson,{});
+    assert.equal(clean.currentConfigRevisionId,beforeRestart.currentConfigRevisionId);await preserveHistory();
+    assert.equal((await db.query("SELECT count(*) AS n FROM public.daily_tasks WHERE plan_id=$1 AND (start_planned IS NOT NULL OR end_planned IS NOT NULL)",[planId])).rows[0].n,"0");
+    await reopen(); const fullStart = await markStart();
     await start(); await waitTerminal("COMPLETE"); const full = await audit("S0 uninterrupted", s0, fullStart); assert.equal(full.accepted, 10);
+    const restartReport={status:"PASS",confirmationDismissedWithoutWrites:true,viewerDenied:403,fromCompleted:266,restoredCompleted:0,bootstrapFingerprint:clean.draftFingerprint,currentConfigurationPreserved:true,historyPreserved:true,replannedCompleted:full.completed,newAcceptedStages:full.accepted,canonical:full.canonical,finalFingerprint:full.fingerprint,remoteWrites:0};
+    diagnostics.restart=restartReport;writeFileSync(`${directory}/restart.json`,JSON.stringify(restartReport,null,2));
+    pass("confirmed UI restart from 266/266 to exact S0; audit retained; full Autopilot replans 266/266");
     assert.deepEqual(report.requests.slice(fullStart).filter((r: any) => r.suffix === "/proposals").map((r: any) => r.body.selector), baseline.stages.map(s => s.scope), "same unchanged recommender as current manual baseline");
     // Geometry may differ from a valid baseline. Canonical validity above is the
     // gate; the fingerprint comparison is Evidence, not a scheduling hardcode.

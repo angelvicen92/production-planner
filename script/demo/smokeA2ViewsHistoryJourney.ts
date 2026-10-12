@@ -13,13 +13,8 @@ export async function runA2ViewsHistoryJourney(options: Options, page: Page) {
     const response = await fetch(`${appUrl}${suffix}`, { headers: role === "anon" ? {} : { Authorization: `Bearer ${users[role].token}` } });
     return { status: response.status, data: await response.json() as any };
   };
-  // The imported disposable catalog has no UI ordering. Legacy deliberately
-  // hides those groups. Configure display only, then restore it in finally;
-  // never invent placements or change the renderer's existing hide semantics.
-  const originalZones = (await db.query("SELECT id,ui_order_index FROM public.zones ORDER BY id")).rows;
-  const originalSettings = (await db.query("SELECT id,ui_itinerant_group_order_index,ui_unlocated_group_order_index FROM public.program_settings")).rows;
-  for (const [index, zone] of originalZones.entries()) await db.query("UPDATE public.zones SET ui_order_index=$2 WHERE id=$1", [zone.id, index]);
-  await db.query("UPDATE public.program_settings SET ui_itinerant_group_order_index=$1,ui_unlocated_group_order_index=$2", [originalZones.length, originalZones.length + 1]);
+  // Exercise the untouched import and actual display policy. No catalog repair
+  // or index writes are allowed to make the renderer pass.
   const material = async () => {
     const result: unknown[] = [];
     for (const table of ["daily_tasks", "locks", "assisted_planning_sessions", "assisted_planning_stages", "planning_stage_validations", "planning_runs", "plan_config_revisions", "planning_accepted_exceptions"])
@@ -87,11 +82,18 @@ export async function runA2ViewsHistoryJourney(options: Options, page: Page) {
     await workspace.getByRole("button", { name: "Lista", exact: true }).click(); await assertAll("spaces list");
     await workspace.getByRole("button", { name: "Timeline", exact: true }).click(); await assertAll("spaces timeline again");
     await workspace.getByRole("button", { name: "Recursos", exact: true }).click();
+    await page.waitForFunction(()=>document.querySelectorAll('[data-testid="assisted-workspace"] [data-planning-task-id]').length>0);
+    const defaults=await ids();assert.ok(defaults.length>0,"resource default must render assigned tasks without selection");
+    report.views.push({view:"resources default",renderedTasks:defaults.length});
     await workspace.getByRole("combobox").click();
     const options = page.getByRole("option"); const count = await options.count(); assert.ok(count > 0);
     for (let index = 0; index < count; index++) await options.nth(index).click();
     await page.keyboard.press("Escape");
     const resourceIds = await ids();
+    assert.deepEqual(resourceIds,defaults,"explicit all and default all render the same effective assignments");
+    const spaceAssignments=(await db.query("SELECT space_id,plan_resource_item_id FROM public.plan_space_resource_assignments WHERE plan_id=$1",[planId])).rows;
+    const assignedSpaces=new Set(spaceAssignments.map(row=>Number(row.space_id)));
+    for(const task of live.dailyTasks.filter((task:any)=>assignedSpaces.has(Number(task.spaceId))))assert.ok(resourceIds.includes(Number(task.id)),`space-assigned task ${task.id} is visible`);
     assert.ok(resourceIds.length > 0);
     assert.ok(resourceIds.every(id => expectedIds.includes(id)), "resource view contains only real persisted tasks");
     for (const task of live.dailyTasks.filter((t: any) => t.assignedResources?.length)) assert.ok(resourceIds.includes(Number(task.id)), `assigned task ${task.id} must be visible`);
@@ -151,7 +153,6 @@ export async function runA2ViewsHistoryJourney(options: Options, page: Page) {
     await page.screenshot({ path: `${directory}/views-history-failure-real-ui.png` }).catch(() => {}); throw error;
   } finally {
     save(); page.off("request", observe);
-    for (const zone of originalZones) await db.query("UPDATE public.zones SET ui_order_index=$2 WHERE id=$1", [zone.id, zone.ui_order_index]);
-    for (const settings of originalSettings) await db.query("UPDATE public.program_settings SET ui_itinerant_group_order_index=$2,ui_unlocated_group_order_index=$3 WHERE id=$1", [settings.id, settings.ui_itinerant_group_order_index, settings.ui_unlocated_group_order_index]);
+
   }
 }
