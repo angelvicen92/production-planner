@@ -13,7 +13,7 @@ import {
   type ExactCoreContinuationOutcome,
   type ExactFutureFeasibilityCausalAssessment,
 } from "./exactMainAndFeederCore";
-import type { MainFeederArchitecture, MainFeederStructuralRejection } from "./mainFlowPatterns";
+import { createMainFutureDependencyEvidence, type MainFutureDependencyEvidence, type MainFeederArchitecture, type MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { generateExactSetupBlockCandidates, probeExactSetupMacroDomain } from "./exactSetupBlocks";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
@@ -362,6 +362,8 @@ export interface ExactItinerantPlanEvidence extends FutureCollectiveClosureEvide
   deepestPartialFrontierFingerprint: string | null;
   architecturesChecked: number;
   architecturesStructurallyRejected: number;
+  futureDependencyStructural:MainFutureDependencyEvidence;
+  architectureFutureDependencyStructural?:MainFutureDependencyEvidence;
   structuralRejectionsByReason: Partial<Record<MainFeederStructuralRejection, number>>;
   firstExactArchitecture: string | null;
   firstFeedableRunSizes: number[];
@@ -2141,7 +2143,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     mainCandidatesEvaluated:0,feederCandidatesEvaluated:0,deepestCoreDepthReached:0,
     deepestPartialScheduledTaskCount:0,deepestPartialMainRunsClosed:0,deepestPartialFeederRunsClosed:0,
     deepestPartialCoreTasksRemaining:0,deepestPartialFrontierFingerprint:null,architecturesChecked:0,
-    architecturesStructurallyRejected:0,structuralRejectionsByReason:{},firstExactArchitecture:null,firstFeedableRunSizes:[],
+    architecturesStructurallyRejected:0,futureDependencyStructural:createMainFutureDependencyEvidence(),structuralRejectionsByReason:{},firstExactArchitecture:null,firstFeedableRunSizes:[],
     feederOrderBranchesByArchitecture:{},feederOrderBranches:0,feederSlotAnalyticChecks:0,
     feederSlotAnalyticPrunes:0,feederSlotAnalyticAbstentions:0,feederSlotMatchingChecks:0,
     feederSlotMatchingPrunes:0,feederSlotMatchingEdgeChecks:0,feederSlotMatchingAugmentTraversals:0,
@@ -2378,6 +2380,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     if(!hasFuture)return;
     for(const {architecture,materialized} of authorizedPipelineArchitectureMaterializations(problem,evidence,{
       operationalMealBudget:()=>({remaining:Math.max(0,ledger.limit-ledger.branchesExplored),consume:(count=1)=>ledger.consume("CORE",count)}),
+      fixedContext:(options.fixedPlacements?.length??0)>0,
       onBudgetExhausted:()=>{structuralBudgetExhausted=true;evidence.structuralSearchBudgetExhausted=true;},
     })){evidence.architecturesEnumerated++;evidence.architecturesTriedWithFutureReservation++;
       const key=architectureKey(architecture),prepared=preparePipelineBundleGraph(problem,architecture,options.fixedPlacements,materialized);
@@ -2901,6 +2904,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   evidence.feederCandidatesEvaluated=core.evidence.feederCandidatesEvaluated;
   evidence.architecturesChecked=core.evidence.architecturesChecked;
   evidence.architecturesStructurallyRejected=core.evidence.architecturesStructurallyRejected;
+  evidence.futureDependencyStructural=core.evidence.futureDependencyStructural;
   evidence.structuralRejectionsByReason={...core.evidence.structuralRejectionsByReason};
   evidence.firstExactArchitecture=core.evidence.firstExactArchitecture;
   evidence.firstFeedableRunSizes=[...core.evidence.firstFeedableRunSizes];
@@ -3098,7 +3102,7 @@ export function constructFirstHardValidExactItinerantPlan(problem: PlannerNextPr
 /** Accepted exact path: selects the best dominating complete incumbent observed within the shared budget. */
 export function constructExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false,fixedSetupPreparations?:readonly ScheduledSetupPreparation[],fixedRoundPreparations?:readonly ScheduledRoundPreparation[],prior?:readonly import("./anonymousPipelineWitness").FutureStructuralWitness[]|Extract<import("./anonymousPipelineWitness").FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>,checkpoint?:()=>void): ExactItinerantPlanResult {
   const priorFutureStructuralWitnesses=prior?(Array.isArray(prior)?prior:[prior]):undefined;
-  const pipeline=fixedPlacementsAsContext&&!problem.analyticalFutureCollectiveContinuation?materializeFirstNominalPipelineWitness(problem):null;
+  const pipeline=fixedPlacementsAsContext&&!problem.analyticalFutureCollectiveContinuation?materializeFirstNominalPipelineWitness(problem,(fixedPlacements?.length??0)>0):null;
   const preferredArchitecture=pipeline?.witness.status==="FEASIBLE"?{
     pattern:pipeline.witness.pattern,
     slots:[...pipeline.witness.mainSpots].sort((a,b)=>Number(a.id.slice(5))-Number(b.id.slice(5))).map(spot=>spot.start),

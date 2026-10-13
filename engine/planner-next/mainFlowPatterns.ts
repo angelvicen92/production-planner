@@ -1,10 +1,103 @@
 import type { PlannerNextProblem, Resource, Task } from "./contracts";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 import { createHash } from "node:crypto";
+import { exactTaskStaticStartDomain } from "./placement";
+import { participantGapMinutes } from "./participantTransition";
 
 export type MainFeederStructuralRejection = "LOAD_CAPACITY" | "FEEDER_CAPACITY" | "RESOURCE_WINDOW"
   | "TRANSITION_CAPACITY" | "FEEDER_CONTIGUOUS_CAPACITY" | "FEEDER_MULTI_RUN_CONTIGUOUS_CAPACITY"
-  | "PREREQUISITE_WINDOW" | "FEEDER_PREREQUISITE_PREFIX_CAPACITY";
+  | "PREREQUISITE_WINDOW" | "FEEDER_PREREQUISITE_PREFIX_CAPACITY" | "FUTURE_DEPENDENCY_CAPACITY";
+
+export interface MainFutureDependencyCertificate {
+  status: "PASS" | "REJECT" | "ABSTAIN";
+  requiredCount: number;
+  maximumMatchingCount: number;
+  latestEnds: Array<{ mainTaskId: string; latestEnd: number | null }>;
+  abstentions: Array<{ taskId: string; reason: "INCOMPLETE_AUTHORITY" | "DEPENDENCY_CYCLE" | "FIXED_CONTEXT" | "NO_REPRESENTED_SUCCESSORS" }>;
+}
+
+export interface MainFutureDependencyEvidence {
+  checks: number; rejects: number; passes: number; abstentions: number;
+  firstRejection: (MainFutureDependencyCertificate & { architecture: MainFeederArchitecture }) | null;
+}
+export const createMainFutureDependencyEvidence = (): MainFutureDependencyEvidence =>
+  ({ checks: 0, rejects: 0, passes: 0, abstentions: 0, firstRejection: null });
+export function recordMainFutureDependencyCertificate(evidence: MainFutureDependencyEvidence,
+  certificate: MainFutureDependencyCertificate, architecture: MainFeederArchitecture): void {
+  evidence.checks++;
+  if (certificate.status === "REJECT") {
+    evidence.rejects++; evidence.firstRejection ??= { ...certificate, architecture };
+  } else if (certificate.status === "ABSTAIN") evidence.abstentions++;
+  else evidence.passes++;
+}
+
+/** Backward continuous-time relaxation, using the canonical static domains.
+ * No grid, candidate placement, future order or resource assignment is searched.
+ * Coexistence, meals not yet selected and unrepresented precedences are relaxed.
+ */
+function mainFutureLatestEnds(problem: PlannerNextProblem, mains: readonly Task[]):
+  Pick<MainFutureDependencyCertificate, "latestEnds" | "abstentions"> {
+  const tasks = new Map([...problem.analyticalFutureParticipantTasks ?? [], ...problem.tasks].map(task => [task.id, task]));
+  const executable = new Set(problem.tasks.map(task => task.id));
+  const successors = new Map<string, Task[]>();
+  for (const task of tasks.values()) for (const id of task.dependencies ?? [])
+    successors.set(id, [...successors.get(id) ?? [], task]);
+  const abstentions: MainFutureDependencyCertificate["abstentions"] = [];
+  const latest = new Map<string, number>();
+  const visiting = new Set<string>();
+  const cyclic = new Set<string>();
+  const latestStart = (task: Task): number => {
+    const cached = latest.get(task.id); if (cached !== undefined) return cached;
+    if (visiting.has(task.id)) {
+      abstentions.push({ taskId: task.id, reason: "DEPENDENCY_CYCLE" });
+      for (const id of visiting) cyclic.add(id); return Infinity;
+    }
+    // Missing entities and open assignment domains are unknown here, never an
+    // empty-domain proof. Their exact authorities remain responsible for them.
+    const authorities = [task.availability,
+      problem.spaces.find(x => x.id === task.spaceId)?.availability,
+      task.participantId === undefined ? undefined : problem.participants.find(x => x.id === task.participantId)?.availability,
+      task.coachId === undefined ? undefined : problem.coaches.find(x => x.id === task.coachId)?.availability,
+      ...(task.requiredResourceIds ?? []).map(id => problem.resources.find(x => x.id === id)?.availability)];
+    if (!Number.isFinite(task.duration) || task.duration <= 0 || !Array.isArray(task.dependencies)
+      || authorities.some(windows => windows !== undefined && (!Array.isArray(windows)
+        || windows.some(window => !window || !Number.isFinite(window.start) || !Number.isFinite(window.end))))
+      || !problem.spaces.some(x => x.id === task.spaceId)
+      || (task.participantId !== undefined && !problem.participants.some(x => x.id === task.participantId))
+      || (task.coachId !== undefined && !problem.coaches.some(x => x.id === task.coachId))
+      || (task.requiredResourceIds ?? []).some(id => !problem.resources.some(x => x.id === id))
+      || (task.itinerantUnitId !== undefined && !problem.itinerantUnits?.some(x => x.id === task.itinerantUnitId))
+      || (task.allowedItinerantUnitIds?.length ?? 0) > 0
+      || task.dependencies.some(id => !tasks.has(id))) {
+      abstentions.push({ taskId: task.id, reason: "INCOMPLETE_AUTHORITY" });
+      latest.set(task.id, Infinity); return Infinity;
+    }
+    visiting.add(task.id);
+    let deadline = problem.day.end;
+    for (const next of successors.get(task.id) ?? []) {
+      // Projected future contracts may omit an INCLUDED anchored boundary.
+      // Zero is the conservative gap until both endpoints are executable.
+      const gap = executable.has(task.id) && executable.has(next.id) ? participantGapMinutes(problem, task, next) : 0;
+      deadline = Math.min(deadline, latestStart(next) - gap);
+    }
+    visiting.delete(task.id);
+    if (cyclic.has(task.id)) { latest.set(task.id, Infinity); return Infinity; }
+    const domain = exactTaskStaticStartDomain(problem, task);
+    const value = Math.max(problem.day.start - task.duration, ...domain.intervals.flatMap(interval => {
+      const end = Math.min(interval.end, deadline - task.duration);
+      return interval.start <= end ? [end] : [];
+    }));
+    latest.set(task.id, value); return value;
+  };
+  const latestEnds = [...mains].sort((a,b) => a.id.localeCompare(b.id)).map(main => {
+    const next = successors.get(main.id) ?? [];
+    const end = Math.min(Infinity, ...next.map(task => latestStart(task)
+      - (executable.has(task.id) ? participantGapMinutes(problem, main, task) : 0)));
+    if (!next.length) abstentions.push({ taskId: main.id, reason: "NO_REPRESENTED_SUCCESSORS" });
+    return { mainTaskId: main.id, latestEnd: end === Infinity ? null : end };
+  });
+  return { latestEnds, abstentions: abstentions.sort((a,b) => a.taskId.localeCompare(b.taskId) || a.reason.localeCompare(b.reason)) };
+}
 
 export interface MainFeederArchitecture {
   pattern: readonly string[];
@@ -103,6 +196,8 @@ export function proveMainFeederArchitectureImpossible(
   feederByMain: ReadonlyMap<string, Task>,
   architecture: MainFeederArchitecture,
   onSharedCapacity?: (certificate: SharedPrerequisiteCapacityCertificate) => void,
+  onFutureDependency?: (certificate: MainFutureDependencyCertificate) => void,
+  fixedContext = false,
 ): MainFeederStructuralRejection | null {
   if (architecture.pattern.length !== mains.length || architecture.slots.length !== mains.length)
     return "LOAD_CAPACITY";
@@ -314,6 +409,32 @@ export function proveMainFeederArchitectureImpossible(
         ])].some((start) => start + feeder.duration <= slot && fits(feeder, start)));
       return hasMainOnlyEdge && hasFeederEdge ? "PREREQUISITE_WINDOW" : "RESOURCE_WINDOW";
     }
+
+  // Refine the same necessary cover with future deadlines. A failed cover is
+  // a capacity certificate for all nominal assignments, not one failed order.
+  const future = fixedContext ? { latestEnds: [], abstentions: [{ taskId: "", reason: "FIXED_CONTEXT" as const }] }
+    : mainFutureLatestEnds(problem, mains);
+  const deadlines = new Map(future.latestEnds.map(x => [x.mainTaskId, x.latestEnd]));
+  owner.clear();
+  const augmentFuture = (task: Task, seen: Set<number>): boolean => {
+    const deadline = deadlines.get(task.id) ?? Infinity;
+    for (let position = 0; position < architecture.slots.length; position++) {
+      const start = architecture.slots[position]!;
+      if (seen.has(position) || task.blockKey !== architecture.pattern[position]
+        || start + task.duration > deadline || !fits(task, start) || !participantClosureFits(task, start)) continue;
+      seen.add(position);
+      const previous = owner.get(position);
+      if (previous === undefined || augmentFuture(taskById.get(previous)!, seen)) {
+        owner.set(position, task.id); return true;
+      }
+    }
+    return false;
+  };
+  if (!fixedContext) for (const main of [...mains].sort((a,b) => a.id.localeCompare(b.id))) augmentFuture(main, new Set());
+  const rejected = !fixedContext && owner.size < mains.length;
+  onFutureDependency?.({ ...future, requiredCount: mains.length, maximumMatchingCount: fixedContext ? mains.length : owner.size,
+    status: rejected ? "REJECT" : future.abstentions.length ? "ABSTAIN" : "PASS" });
+  if (rejected) return "FUTURE_DEPENDENCY_CAPACITY";
 
   // Only a proven shared coach makes the run serial independently of participant choice.
   // Otherwise parallel feeder work may exist, so capacity remains deliberately unknown.

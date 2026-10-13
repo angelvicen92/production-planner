@@ -5,7 +5,7 @@ import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
 import { buildTimeline, createMainFlowMeal, fallbackCandidateCuts, hasMainFlowMeal, mainFlowMealPolicy, mainFlowMealStarts, materializeMainFlowOperationalMeals, orderTimelines,
   preferredCandidateCuts, type MainFlowTimeline } from "./mainFlowMeal";
 import { generateMainFlowPatterns, optimisticPrerequisiteLeadInMinutes, proveMainFeederArchitectureImpossible,
-  type MainFeederArchitecture, type MainFeederStructuralRejection } from "./mainFlowPatterns";
+  createMainFutureDependencyEvidence, recordMainFutureDependencyCertificate, type MainFutureDependencyEvidence, type MainFeederArchitecture, type MainFeederStructuralRejection } from "./mainFlowPatterns";
 import { canPlaceTask, diagnoseTaskPlacement, effectiveResourceTransitionMinutes, type PlacementRejectionReason } from "./placement";
 import { effectiveCoachTransitionMinutes, latestFeederEndBeforeMain } from "./coachRouteTransitions";
 import { participantGapMinutes } from "./participantTransition";
@@ -102,6 +102,7 @@ export interface ExactMainAndFeederCoreEvidence {
   reasonCodes: string[];
   architecturesChecked: number;
   architecturesStructurallyRejected: number;
+  futureDependencyStructural: MainFutureDependencyEvidence;
   structuralRejectionsByReason: Partial<Record<MainFeederStructuralRejection, number>>;
   prerequisiteSharedCapacityChecks: number;
   prerequisiteSharedCapacityPrunes: number;
@@ -831,7 +832,7 @@ function emptyEvidence(): ExactMainAndFeederCoreEvidence {
     zeroAlternativePrunes: 0, backtracks: 0, maximumDepth: 0,
     completeLeafCount: 0, selectedPattern: null, selectedTimelineKey: null,
     selectedMainTaskIds: [], selectedFeederTaskIds: [], coreFingerprint: null, reasonCodes: [],
-    architecturesChecked: 0, architecturesStructurallyRejected: 0, structuralRejectionsByReason: {},
+    architecturesChecked: 0, architecturesStructurallyRejected: 0, futureDependencyStructural:createMainFutureDependencyEvidence(), structuralRejectionsByReason: {},
     prerequisiteSharedCapacityChecks:0,prerequisiteSharedCapacityPrunes:0,prerequisiteSharedCapacityAbstentions:0,
     prerequisiteSharedCapacityChecksByAuthority:{TRANSPORT:0,ENTRY_STYLING:0,COMBINED:0},
     prerequisiteSharedCapacityAbstentionsByAuthority:{TRANSPORT:0,ENTRY_STYLING:0,COMBINED:0},
@@ -895,7 +896,7 @@ export function deriveArchitectureFromProtectedMains(problem:PlannerNextProblem,
       &&arrival.some(item=>task.dependencies.includes(item.id))&&main.dependencies.includes(task.id));
     if(matching.length!==1||arrival.length!==1||styling.length!==1||!main.dependencies.includes(matching[0]!.id))return null;
     feeders.set(main.id,matching[0]!);}
-  return proveMainFeederArchitectureImpossible(problem,mains,feeders,architecture)===null?architecture:null;
+  return proveMainFeederArchitectureImpossible(problem,mains,feeders,architecture,undefined,undefined,true)===null?architecture:null;
 }
 
 /** Internal exact runner; a continuation may reject a hard-valid leaf and resume core DFS. */
@@ -2504,7 +2505,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                 evidence.firstSharedCapacityPrune={architecture:architectureKey,pattern:[...pattern],...failed};}
               else if(!certificate.abstained&&!evidence.firstSharedCapacityPass)
                 evidence.firstSharedCapacityPass={architecture:architectureKey,pattern:[...pattern]};
-            }):null;
+            },certificate=>recordMainFutureDependencyCertificate(evidence.futureDependencyStructural,certificate,{pattern,slots})):null;
           if (rejection) {
             evidence.architecturesStructurallyRejected += 1;
             evidence.structuralRejectionsByReason[rejection] =

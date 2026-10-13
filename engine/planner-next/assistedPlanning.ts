@@ -166,7 +166,7 @@ export interface AssistedPlanningEvidence {
       "selectedArchitectureFingerprint"|"selectedFutureReservationFingerprint"|"mainPatternCountGenerated"|
       "participantBundleEdgesChecked"|"participantBundleEdgesPruned"|"participantBundleEdgesAbstained"|"firstParticipantBundleEdgePrune"|
       "mainPatternGenerationExhausted"|"mainPatternsVisited"|"timelinesGenerated"|"architectureStructuralProofChecks"|
-      "architectureStructuralProofRejects"|"architectureStructuralRejectsByReason"|"nominalPipelineWitnessChecks"|
+      "architectureStructuralProofRejects"|"architectureStructuralRejectsByReason"|"architectureFutureDependencyStructural"|"futureDependencyStructural"|"nominalPipelineWitnessChecks"|
       "nominalPipelineWitnessFeasible"|"nominalPipelineWitnessInfeasible"|"nominalPipelineWitnessInconclusive"|
       "nominalPipelineWitnessRejectsByReason"|"continuityRejects"|"authorizedArchitecturesYielded">;
   };
@@ -915,6 +915,8 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
         mainPatternsVisited:Number(evidenceRecord.mainPatternsVisited??0),timelinesGenerated:Number(evidenceRecord.timelinesGenerated??0),
         architectureStructuralProofChecks:Number(evidenceRecord.architectureStructuralProofChecks??0),architectureStructuralProofRejects:Number(evidenceRecord.architectureStructuralProofRejects??0),
         architectureStructuralRejectsByReason:{...((evidenceRecord.architectureStructuralRejectsByReason as Record<string,number>|undefined)??{})},
+        architectureFutureDependencyStructural:evidenceRecord.architectureFutureDependencyStructural as ExactItinerantPlanEvidence["architectureFutureDependencyStructural"],
+        futureDependencyStructural:evidenceRecord.futureDependencyStructural as ExactItinerantPlanEvidence["futureDependencyStructural"],
         nominalPipelineWitnessChecks:Number(evidenceRecord.nominalPipelineWitnessChecks??0),nominalPipelineWitnessFeasible:Number(evidenceRecord.nominalPipelineWitnessFeasible??0),
         nominalPipelineWitnessInfeasible:Number(evidenceRecord.nominalPipelineWitnessInfeasible??0),nominalPipelineWitnessInconclusive:Number(evidenceRecord.nominalPipelineWitnessInconclusive??0),
         nominalPipelineWitnessRejectsByReason:{...((evidenceRecord.nominalPipelineWitnessRejectsByReason as Record<string,number>|undefined)??{})},
