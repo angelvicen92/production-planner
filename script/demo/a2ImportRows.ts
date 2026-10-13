@@ -8,7 +8,7 @@ import { reconcileA2Topology } from './reconcileA2Topology';
 import type { A2HistoricalCatalog } from './a2HistoricalCatalog';
 import type { EngineInput } from '../../engine/types';
 
-export interface A2ImportDataset { input:EngineInput; configuration:any; tables:Record<string,Record<string,any>[]>; order:string[]; optimizer:any; spatialTopologyVersion:number; historicalCatalogFingerprint?:string; catalogReferences?:A2HistoricalCatalog; resourceManifest?:unknown; resourceReferences?:Record<string,any>[]; resourceTypeReferences?:Record<string,any>[]; spatialManifest?:unknown; topologyCounts?:unknown }
+export interface A2ImportDataset { input:EngineInput; configuration:any; tables:Record<string,Record<string,any>[]>; order:string[]; optimizer:any; spatialTopologyVersion:number; historicalCatalogFingerprint?:string; catalogReferences?:A2HistoricalCatalog; resourceManifest?:unknown; reusedTaskTemplateReferences?:{id:number;name:string;default_duration:number}[]; resourceReferences?:Record<string,any>[]; resourceTypeReferences?:Record<string,any>[]; spatialManifest?:unknown; topologyCounts?:unknown }
 
 export function buildA2ImportRows(date:string,offset=0,options?:{historicalCatalog:A2HistoricalCatalog;planId:number}):A2ImportDataset{
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||new Date(`${date}T00:00:00Z`).toISOString().slice(0,10)!==date)throw Error('A valid explicit demo date is required');
