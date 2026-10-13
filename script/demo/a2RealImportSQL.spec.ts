@@ -18,7 +18,15 @@ test('real topology SQL checks drift, aborts duplicates, preserves reused rows a
   const material=async()=>({spaces:(await db.query('SELECT * FROM spaces WHERE id<100000 ORDER BY id')).rows,resources:(await db.query('SELECT * FROM resource_items ORDER BY id')).rows,oldTasks:(await db.query('SELECT * FROM daily_tasks WHERE plan_id=27001 ORDER BY id')).rows});
   const before=await material(),bundle=prepareA2RealImport('2026-10-30',27002,100000);
   await db.exec("UPDATE spaces SET name='Drift' WHERE id=39");await assert.rejects(()=>db.exec(bundle.sql),/HISTORICAL_CATALOG_DRIFT/);await db.exec("ROLLBACK;UPDATE spaces SET name='Maqui/Pelu' WHERE id=39");
+  await db.exec("UPDATE task_templates SET name='Drift' WHERE id=20001");
+  await assert.rejects(()=>db.exec(bundle.sql),/HISTORICAL_TEMPLATE_DRIFT:20001/);
+  await db.exec("ROLLBACK;UPDATE task_templates SET name='ALFOMBRA_ROJA' WHERE id=20001");
   await db.exec(bundle.sql);assert.deepEqual(await material(),before);
+  assert.equal((await db.query<{n:number}>('SELECT count(*)::int n FROM task_templates WHERE id BETWEEN 120001 AND 120031')).rows[0].n,0);
+  assert.equal((await db.query<{n:number}>('SELECT count(*)::int n FROM daily_tasks WHERE plan_id=27002 AND template_id BETWEEN 20001 AND 20031')).rows[0].n,266);
+  assert.equal((await db.query<{n:number}>('SELECT count(*)::int n FROM plan_task_template_snapshots WHERE plan_id=27002 AND source_template_id BETWEEN 20001 AND 20031')).rows[0].n,31);
+  const effectiveSpace=(await db.query<{n:number}>('SELECT default_space_id n FROM plan_task_template_snapshots WHERE plan_id=27002 AND template_name=\'REDES\'')).rows[0].n;
+  assert.equal(effectiveSpace,39);
   assert.equal((await db.query<{n:number}>('SELECT count(*)::int n FROM daily_tasks WHERE plan_id=27002')).rows[0].n,266);
   assert.equal((await db.query<{n:number}>('SELECT count(DISTINCT space_id)::int n FROM daily_tasks WHERE plan_id=27002 AND template_id IN (SELECT id FROM task_templates WHERE name IN (\'SILLON\',\'ESTRELLAS\'))')).rows[0].n,1);
   await assert.rejects(()=>db.exec(bundle.sql),/A2_ID_COLLISION/);await db.exec('ROLLBACK');
