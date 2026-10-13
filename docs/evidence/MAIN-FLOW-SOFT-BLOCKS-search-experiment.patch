@@ -1,0 +1,70 @@
+diff --git a/engine/planner-next/contracts.ts b/engine/planner-next/contracts.ts
+--- a/engine/planner-next/contracts.ts
++++ b/engine/planner-next/contracts.ts
+@@ -189,6 +189,7 @@
+     continuity: "REQUIRED";
+     maxBlocksByKey: number;
+     minTasksPerBlock: number;
++    preferredBlockCount?: number;
+   };
+   participantTransitionMinutes: number;
+   resourceTransitionMinutes: number;
+diff --git a/engine/planner-next/mainFlowPatterns.ts b/engine/planner-next/mainFlowPatterns.ts
+--- a/engine/planner-next/mainFlowPatterns.ts
++++ b/engine/planner-next/mainFlowPatterns.ts
+@@ -506,6 +506,7 @@
+   maximumRunsByKey: number,
+   maximumPatterns: number,
+   resources: readonly Resource[] = [],
++  preferredBlockCount?: number,
+ ): { patterns: string[][]; exhausted: boolean } {
+   const counts = new Map<string, number>();
+   for (const task of mains) counts.set(task.blockKey ?? "", (counts.get(task.blockKey ?? "") ?? 0) + 1);
+@@ -565,7 +566,13 @@
+   const maximumTargetRuns=Math.min(mains.length,keys.length*maximumRunsByKey);
+   // Iterative deepening makes maximumPatterns a global prefix of the structural
+   // run-count ordering, rather than an accidental prefix of the construction DFS.
+-  for(let targetRunCount=keys.length;targetRunCount<=maximumTargetRuns;targetRunCount++){
++  const targets=Array.from({length:Math.max(0,maximumTargetRuns-keys.length+1)},(_,i)=>keys.length+i);
++  if(preferredBlockCount!==undefined)targets.sort((a,b)=>Math.abs(a-preferredBlockCount)-Math.abs(b-preferredBlockCount)||a-b);
++  // Diagnostic guard: retain the historical minimum family before truncation.
++  // Exploration still ranks the explicitly preferred family first.
++  const minimumIndex=targets.indexOf(keys.length);
++  if(preferredBlockCount!==undefined && minimumIndex>0)targets.unshift(...targets.splice(minimumIndex,1));
++  for(const targetRunCount of targets){
+     const family:string[][]=[];
+     const visit=(remaining:Map<string,number>,runs:Array<{key:string;count:number}>):void=>{
+       const left=[...remaining.values()].reduce((sum,count)=>sum+count,0);
+@@ -589,6 +596,7 @@
+   }
+   // Retain the assertion locally: every emitted family is complete before the
+   // next one and concentration never outranks the structural run count.
+-  output.sort((a,b)=>runCount(a)-runCount(b)||comparePatterns(a,b));
++  output.sort((a,b)=>(preferredBlockCount===undefined?0:Math.abs(runCount(a)-preferredBlockCount)-Math.abs(runCount(b)-preferredBlockCount))
++    ||runCount(a)-runCount(b)||comparePatterns(a,b));
+   return { patterns: output, exhausted };
+ }
+diff --git a/engine/planner-next/anonymousPipelineWitness.ts b/engine/planner-next/anonymousPipelineWitness.ts
+--- a/engine/planner-next/anonymousPipelineWitness.ts
++++ b/engine/planner-next/anonymousPipelineWitness.ts
+@@ -1172,7 +1172,7 @@
+   const feeders=new Map(mains.flatMap(main=>{const feeder=problem.tasks.find(task=>task.kind==="vocal"
+     &&task.participantId===main.participantId);return feeder?[[main.id,feeder] as const]:[];}));
+   const generated=generateMainFlowPatterns(mains,problem.mainFlow.minTasksPerBlock,
+-    problem.mainFlow.maxBlocksByKey,problem.budget.maxPatterns,problem.resources);
++    problem.mainFlow.maxBlocksByKey,problem.budget.maxPatterns,problem.resources,problem.mainFlow.preferredBlockCount);
+   if(evidence){evidence.mainPatternCountGenerated=generated.patterns.length;evidence.mainPatternGenerationExhausted=generated.exhausted;}
+   let visitedPatterns=0;
+   for(const {architecture,patternOrdinal} of mainFlowTimelineArchitectureFrontier(problem,generated.patterns,mains[0]!.duration)){
+diff --git a/engine/planner-next/exactMainAndFeederCore.ts b/engine/planner-next/exactMainAndFeederCore.ts
+--- a/engine/planner-next/exactMainAndFeederCore.ts
++++ b/engine/planner-next/exactMainAndFeederCore.ts
+@@ -994,7 +994,7 @@
+   };
+   const duration = mains[0]?.duration??0;
+   const patterns = generateMainFlowPatterns(mains, problem.mainFlow.minTasksPerBlock,
+-    problem.mainFlow.maxBlocksByKey, problem.budget.maxPatterns, problem.resources);
++    problem.mainFlow.maxBlocksByKey, problem.budget.maxPatterns, problem.resources, problem.mainFlow.preferredBlockCount);
+   const preferredArchitecture=options.preferredArchitecture;
+   const orderedPatterns=[...(preferredArchitecture?[preferredArchitecture.pattern as string[]]:[]),...patterns.patterns]
+     .filter((pattern,index,all)=>all.findIndex(candidate=>candidate.join("\u0000")===pattern.join("\u0000"))===index);

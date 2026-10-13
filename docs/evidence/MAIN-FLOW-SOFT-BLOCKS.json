@@ -1,0 +1,2598 @@
+{
+  "contractVersion": 1,
+  "status": "BLOCKED_COLD_FALLBACK_COMPLETENESS",
+  "base": "20e4b30fbccde3615602fffadcf5f5e9a136c705",
+  "branch": "codex/mainflow-soft-block-count-preference",
+  "remoteWrites": 0,
+  "productChanges": false,
+  "officialSourceChanges": false,
+  "baseline": {
+    "planId": 27002,
+    "disposableOnly": true,
+    "completedObligations": 266,
+    "stagesIncludingS0": 12,
+    "hardCount": 0,
+    "requiredCount": 0,
+    "fingerprint": "c0cc8bf4e1c466a9640b7ce765e0dceeb5772204a8f387f50e1af12d844ec703",
+    "generationMs": 175923,
+    "integrationChecks": 30,
+    "work": {
+      "coreBranches": 9343,
+      "branchesExplored": 55625,
+      "coreMaximumDepth": 0,
+      "branchBudgetLimit": 100000,
+      "conflictBackjumps": 0,
+      "standaloneBranches": 46282,
+      "feederOrderBranches": 0,
+      "suffixDepthsSkipped": 0,
+      "architecturesChecked": 0,
+      "bundleNogoodBranches": 0,
+      "bundleNogoodsCreated": 0,
+      "bundleMatchingRepairs": 0,
+      "mainRunWitnessRepairs": 0,
+      "bundleCertifiedRepairs": 0,
+      "bundleMatchingAttempts": 21,
+      "mainRunWitnessAttempts": 0,
+      "coreLeafTransportPrunes": 0,
+      "deepestCoreDepthReached": 0,
+      "mainCandidatesEvaluated": 0,
+      "standaloneForwardChecks": 0,
+      "feederSlotMatchingChecks": 0,
+      "feederCandidatesEvaluated": 0,
+      "membershipFallbackEntered": 0,
+      "patternCandidatesExplored": 0,
+      "transportContiguousStates": 732,
+      "bundleNogoodDeduplications": 0,
+      "residualMatchingFullBuilds": 0,
+      "timelineCandidatesExplored": 0,
+      "bundleHardValidationRejects": 0,
+      "residualMatchingInvocations": 0,
+      "bundleNogoodRepairsSucceeded": 0,
+      "feederSlotMatchingEdgeChecks": 0,
+      "standaloneForwardStartChecks": 0,
+      "residualMatchingEdgeCacheHits": 0,
+      "bundleMatchingMaterializations": 21,
+      "residualMatchingPositionChecks": 0,
+      "participantMealZeroDomainPrunes": 0,
+      "residualMatchingEdgeCacheMisses": 0,
+      "mainRunEquivalentOrdersCollapsed": 0,
+      "residualMatchingBranchesExplored": 0,
+      "residualMatchingAugmentTraversals": 0,
+      "standaloneForwardWitnessCacheHits": 0,
+      "feederSlotMatchingBranchesExplored": 0,
+      "futureRoundWitnessBranchesConsumed": 0,
+      "residualMatchingIncrementalUpdates": 0,
+      "feederSlotMatchingAugmentTraversals": 0,
+      "futureRoundWitnessCompleteMatchings": 0,
+      "futureRoundWitnessSearchInvocations": 0,
+      "standaloneForwardWitnessCacheMisses": 0,
+      "futureRoundWitnessPrerequisiteChecks": 0,
+      "participantMealExactMaterializations": 4,
+      "futureRoundWitnessStructuralCandidates": 0,
+      "participantMealFutureFeasibilityChecks": 288,
+      "participantMealAnalyticCollectivePrunes": 0,
+      "participantMealFutureInfeasibleBranches": 0,
+      "futureRoundWitnessParticipantFutureChecks": 0,
+      "participantMealAffectedObligationsChecked": 398
+    },
+    "architecture": {
+      "continuityRejects": 0,
+      "residualDfsEntered": false,
+      "timelinesGenerated": 858,
+      "mainPatternsVisited": 2,
+      "preparedBundleEdges": 3885,
+      "architecturesPrepared": 21,
+      "architecturesEnumerated": 21,
+      "reservationFilteredEdges": 0,
+      "branchesBeforeResidualDfs": null,
+      "mainPatternCountGenerated": 200,
+      "structuralSearchExhausted": false,
+      "bundleEdgesAfterReservation": 0,
+      "futureReservationStructures": 1,
+      "bundleEdgesBeforeReservation": 0,
+      "nominalPipelineWitnessChecks": 136,
+      "participantBundleEdgesPruned": 0,
+      "hardGateRejectsByArchitecture": {
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@710,725,740,755,770,785,800,815,830,845,860,875,965,980,995,1010,1025,1040,1055": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@710,725,740,755,770,785,800,815,830,845,860,950,965,980,995,1010,1025,1040,1055": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@710,725,740,755,770,785,800,815,830,845,935,950,965,980,995,1010,1025,1040,1055": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@710,725,740,755,770,785,800,815,830,920,935,950,965,980,995,1010,1025,1040,1055": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@715,730,745,760,775,790,805,820,835,850,865,955,970,985,1000,1015,1030,1045,1060": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@715,730,745,760,775,790,805,820,835,850,940,955,970,985,1000,1015,1030,1045,1060": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@715,730,745,760,775,790,805,820,835,925,940,955,970,985,1000,1015,1030,1045,1060": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@720,735,750,765,780,795,810,825,840,855,870,960,975,990,1005,1020,1035,1050,1065": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@720,735,750,765,780,795,810,825,840,855,945,960,975,990,1005,1020,1035,1050,1065": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@720,735,750,765,780,795,810,825,840,930,945,960,975,990,1005,1020,1035,1050,1065": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@725,740,755,770,785,800,815,830,845,860,875,965,980,995,1010,1025,1040,1055,1070": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@725,740,755,770,785,800,815,830,845,860,950,965,980,995,1010,1025,1040,1055,1070": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@725,740,755,770,785,800,815,830,845,935,950,965,980,995,1010,1025,1040,1055,1070": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@730,745,760,775,790,805,820,835,850,865,955,970,985,1000,1015,1030,1045,1060,1075": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@730,745,760,775,790,805,820,835,850,940,955,970,985,1000,1015,1030,1045,1060,1075": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@735,750,765,780,795,810,825,840,855,870,960,975,990,1005,1020,1035,1050,1065,1080": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@735,750,765,780,795,810,825,840,855,945,960,975,990,1005,1020,1035,1050,1065,1080": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@740,755,770,785,800,815,830,845,860,875,965,980,995,1010,1025,1040,1055,1070,1085": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@740,755,770,785,800,815,830,845,860,950,965,980,995,1010,1025,1040,1055,1070,1085": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@745,760,775,790,805,820,835,850,865,955,970,985,1000,1015,1030,1045,1060,1075,1090": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@750,765,780,795,810,825,840,855,870,960,975,990,1005,1020,1035,1050,1065,1080,1095": 0
+      },
+      "participantBundleEdgesChecked": 3318,
+      "authorizedArchitecturesYielded": 21,
+      "mainPatternGenerationExhausted": true,
+      "nominalPipelineWitnessFeasible": 21,
+      "perfectMatchingsByArchitecture": {
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@710,725,740,755,770,785,800,815,830,845,860,875,965,980,995,1010,1025,1040,1055": 1,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@710,725,740,755,770,785,800,815,830,845,860,950,965,980,995,1010,1025,1040,1055": 1,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@710,725,740,755,770,785,800,815,830,845,935,950,965,980,995,1010,1025,1040,1055": 1,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@710,725,740,755,770,785,800,815,830,920,935,950,965,980,995,1010,1025,1040,1055": 1,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@715,730,745,760,775,790,805,820,835,850,865,955,970,985,1000,1015,1030,1045,1060": 1,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@715,730,745,760,775,790,805,820,835,850,940,955,970,985,1000,1015,1030,1045,1060": 1,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@715,730,745,760,775,790,805,820,835,925,940,955,970,985,1000,1015,1030,1045,1060": 1,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@720,735,750,765,780,795,810,825,840,855,870,960,975,990,1005,1020,1035,1050,1065": 1,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@720,735,750,765,780,795,810,825,840,855,945,960,975,990,1005,1020,1035,1050,1065": 1,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@720,735,750,765,780,795,810,825,840,930,945,960,975,990,1005,1020,1035,1050,1065": 1,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@725,740,755,770,785,800,815,830,845,860,875,965,980,995,1010,1025,1040,1055,1070": 1,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@725,740,755,770,785,800,815,830,845,860,950,965,980,995,1010,1025,1040,1055,1070": 1,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@725,740,755,770,785,800,815,830,845,935,950,965,980,995,1010,1025,1040,1055,1070": 1,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@730,745,760,775,790,805,820,835,850,865,955,970,985,1000,1015,1030,1045,1060,1075": 1,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@730,745,760,775,790,805,820,835,850,940,955,970,985,1000,1015,1030,1045,1060,1075": 1,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@735,750,765,780,795,810,825,840,855,870,960,975,990,1005,1020,1035,1050,1065,1080": 1,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@735,750,765,780,795,810,825,840,855,945,960,975,990,1005,1020,1035,1050,1065,1080": 1,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@740,755,770,785,800,815,830,845,860,875,965,980,995,1010,1025,1040,1055,1070,1085": 1,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@740,755,770,785,800,815,830,845,860,950,965,980,995,1010,1025,1040,1055,1070,1085": 1,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@745,760,775,790,805,820,835,850,865,955,970,985,1000,1015,1030,1045,1060,1075,1090": 1,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@750,765,780,795,810,825,840,855,870,960,975,990,1005,1020,1035,1050,1065,1080,1095": 1
+      },
+      "firstParticipantBundleEdgePrune": null,
+      "participantBundleEdgesAbstained": 3318,
+      "selectedArchitectureFingerprint": "3e0c69f892248605f160826f84bc0a8fba78dacaeb4f6f4ac28de029e7c214f3",
+      "structuralSearchBudgetExhausted": false,
+      "bundleEdgesRejectedByReservation": 0,
+      "nominalPipelineWitnessInfeasible": 99,
+      "architectureStructuralProofChecks": 858,
+      "futureReservationPerfectMatchings": 21,
+      "architectureStructuralProofRejects": 722,
+      "conditionedLeafFutureRevalidations": 21,
+      "futureWitnessesTriedByArchitecture": {
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@710,725,740,755,770,785,800,815,830,845,860,875,965,980,995,1010,1025,1040,1055": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@710,725,740,755,770,785,800,815,830,845,860,950,965,980,995,1010,1025,1040,1055": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@710,725,740,755,770,785,800,815,830,845,935,950,965,980,995,1010,1025,1040,1055": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@710,725,740,755,770,785,800,815,830,920,935,950,965,980,995,1010,1025,1040,1055": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@715,730,745,760,775,790,805,820,835,850,865,955,970,985,1000,1015,1030,1045,1060": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@715,730,745,760,775,790,805,820,835,850,940,955,970,985,1000,1015,1030,1045,1060": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@715,730,745,760,775,790,805,820,835,925,940,955,970,985,1000,1015,1030,1045,1060": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@720,735,750,765,780,795,810,825,840,855,870,960,975,990,1005,1020,1035,1050,1065": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@720,735,750,765,780,795,810,825,840,855,945,960,975,990,1005,1020,1035,1050,1065": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@720,735,750,765,780,795,810,825,840,930,945,960,975,990,1005,1020,1035,1050,1065": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@725,740,755,770,785,800,815,830,845,860,875,965,980,995,1010,1025,1040,1055,1070": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@725,740,755,770,785,800,815,830,845,860,950,965,980,995,1010,1025,1040,1055,1070": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@725,740,755,770,785,800,815,830,845,935,950,965,980,995,1010,1025,1040,1055,1070": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@730,745,760,775,790,805,820,835,850,865,955,970,985,1000,1015,1030,1045,1060,1075": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@730,745,760,775,790,805,820,835,850,940,955,970,985,1000,1015,1030,1045,1060,1075": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@735,750,765,780,795,810,825,840,855,870,960,975,990,1005,1020,1035,1050,1065,1080": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@735,750,765,780,795,810,825,840,855,945,960,975,990,1005,1020,1035,1050,1065,1080": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@740,755,770,785,800,815,830,845,860,875,965,980,995,1010,1025,1040,1055,1070,1085": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@740,755,770,785,800,815,830,845,860,950,965,980,995,1010,1025,1040,1055,1070,1085": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@745,760,775,790,805,820,835,850,865,955,970,985,1000,1015,1030,1045,1060,1075,1090": 0,
+        "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@750,765,780,795,810,825,840,855,870,960,975,990,1005,1020,1035,1050,1065,1080,1095": 0
+      },
+      "nominalPipelineWitnessInconclusive": 16,
+      "futureReservationWitnessesEvaluated": 1,
+      "structuralArchitecturesFullyVisited": 20,
+      "structuralFutureDomainsFullyVisited": 0,
+      "futureReservationRootOrdersEvaluated": 2808,
+      "futureReservationSelectedFingerprint": null,
+      "selectedFutureReservationFingerprint": null,
+      "architectureStructuralRejectsByReason": {
+        "FEEDER_CAPACITY": 253,
+        "RESOURCE_WINDOW": 210,
+        "PREREQUISITE_WINDOW": 143,
+        "TRANSITION_CAPACITY": 48,
+        "FEEDER_PREREQUISITE_PREFIX_CAPACITY": 68
+      },
+      "nominalPipelineWitnessRejectsByReason": {
+        "JOINT_ARRIVAL_GEOMETRY": 16,
+        "OPERATIONAL_MEAL_FUTURE_INFEASIBLE": 99
+      },
+      "residualDfsBranchesBeforeFirstSolution": 0,
+      "architecturesTriedWithFutureReservation": 21,
+      "conditionedLeafFutureRevalidationPasses": 21,
+      "futureReservationBundleMatchingAttempts": 21,
+      "conditionedLeafFutureRevalidationRejects": 0,
+      "structuralCandidateFingerprintAtHardGate": "f9bd7c4756a89d49a279e7d10a994f9492027d0c1fd5b23ea2d105d622a2b31b",
+      "genericFutureAssessSkippedForConditionedLeaf": 0,
+      "structuralCandidateFingerprintAtContinuation": "f9bd7c4756a89d49a279e7d10a994f9492027d0c1fd5b23ea2d105d622a2b31b",
+      "structuralCandidateFingerprintBeforeStandalone": "f9bd7c4756a89d49a279e7d10a994f9492027d0c1fd5b23ea2d105d622a2b31b",
+      "structuralCandidatesProducedBeforeBudgetExhaustion": 21,
+      "futureReservationCandidatesRejectedByNoBundleMatching": 0,
+      "futureReservationCandidatesRejectedByOtherReservations": 0
+    }
+  },
+  "historicalBaseline": {
+    "generationMs": 155254,
+    "branches": 55625,
+    "fingerprint": "c0cc8bf4e1c466a9640b7ce765e0dceeb5772204a8f387f50e1af12d844ec703"
+  },
+  "initialHarnessAttempt": {
+    "status": "UI_WAIT_TIMEOUT",
+    "timeoutMs": 180000,
+    "interpretation": "No infeasibility certificate; repeated harness awaited the existing engine ceiling of 300000 ms."
+  },
+  "a2Experiments": [
+    {
+      "requested": 3,
+      "durationMs": 236647.089533,
+      "proposal": true,
+      "scopeTaskCount": 19,
+      "achieved": 3,
+      "completedObligations": 266,
+      "validation": {
+        "hardValid": true,
+        "dependencyViolationCount": 0,
+        "overlapViolationCount": 0,
+        "transitionViolationCount": 0,
+        "availabilityViolationCount": 0,
+        "taskAvailabilityViolationCount": 0,
+        "blockViolationCount": 0,
+        "resourceAvailabilityViolationCount": 0,
+        "resourceOverlapViolationCount": 0,
+        "resourceTransitionViolationCount": 0,
+        "secondaryContinuityViolationCount": 0,
+        "setupViolationCount": 0,
+        "setupPreparationViolationCount": 0,
+        "roundSynchronizationViolationCount": 0,
+        "roundPreparationViolationCount": 0,
+        "jointGroupViolationCount": 0,
+        "transportGroupingViolationCount": 0,
+        "technicalOperationViolationCount": 0,
+        "technicalChainViolationCount": 0,
+        "spaceMealViolationCount": 0,
+        "mainFlowMealViolationCount": 0,
+        "anchoredAccompanimentViolationCount": 0,
+        "participantMealViolationCount": 0,
+        "resourceMealViolationCount": 0,
+        "operationalMealViolationCount": 0,
+        "itinerantUnitMealViolationCount": 0,
+        "reasonCodes": [],
+        "unstructuredReasonCodes": [],
+        "violations": []
+      },
+      "architecture": {
+        "futureReservationStructures": 1,
+        "futureReservationWitnessesEvaluated": 99,
+        "futureReservationRootOrdersEvaluated": 2808,
+        "futureReservationCandidatesRejectedByOtherReservations": 0,
+        "futureReservationCandidatesRejectedByNoBundleMatching": 0,
+        "futureReservationBundleMatchingAttempts": 10,
+        "futureReservationPerfectMatchings": 10,
+        "futureReservationSelectedFingerprint": null,
+        "architecturesTriedWithFutureReservation": 10,
+        "bundleEdgesBeforeReservation": 0,
+        "bundleEdgesRejectedByReservation": 0,
+        "bundleEdgesAfterReservation": 0,
+        "residualDfsEntered": false,
+        "residualDfsBranchesBeforeFirstSolution": 0,
+        "architecturesEnumerated": 10,
+        "architecturesPrepared": 10,
+        "participantBundleEdgesChecked": 1580,
+        "participantBundleEdgesPruned": 0,
+        "participantBundleEdgesAbstained": 1580,
+        "firstParticipantBundleEdgePrune": null,
+        "futureWitnessesTriedByArchitecture": {
+          "plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@690,705,720,735,750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035": 0,
+          "plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@705,720,735,750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050": 0,
+          "plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@720,735,750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065": 0,
+          "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@720,735,750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065": 0,
+          "plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@735,750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080": 0,
+          "plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@735,750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080": 0,
+          "plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095": 0,
+          "plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@680,695,710,725,740,755,770,860,875,890,905,920,935,950,965,980,995,1010,1025": 0,
+          "plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@680,695,710,725,740,755,770,860,875,890,905,920,935,950,965,980,995,1010,1025": 0,
+          "plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@695,710,725,740,755,770,860,875,890,905,920,935,950,965,980,995,1010,1025,1040": 0
+        },
+        "preparedBundleEdges": 1802,
+        "reservationFilteredEdges": 0,
+        "perfectMatchingsByArchitecture": {
+          "plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@690,705,720,735,750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035": 1,
+          "plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@705,720,735,750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050": 1,
+          "plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@720,735,750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065": 1,
+          "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@720,735,750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065": 1,
+          "plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@735,750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080": 1,
+          "plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@735,750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080": 1,
+          "plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095": 1,
+          "plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@680,695,710,725,740,755,770,860,875,890,905,920,935,950,965,980,995,1010,1025": 1,
+          "plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@680,695,710,725,740,755,770,860,875,890,905,920,935,950,965,980,995,1010,1025": 1,
+          "plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@695,710,725,740,755,770,860,875,890,905,920,935,950,965,980,995,1010,1025,1040": 1
+        },
+        "hardGateRejectsByArchitecture": {
+          "plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@690,705,720,735,750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035": 0,
+          "plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@705,720,735,750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050": 0,
+          "plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@720,735,750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065": 0,
+          "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@720,735,750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065": 0,
+          "plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@735,750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080": 0,
+          "plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@735,750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080": 0,
+          "plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095": 0,
+          "plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@680,695,710,725,740,755,770,860,875,890,905,920,935,950,965,980,995,1010,1025": 0,
+          "plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@680,695,710,725,740,755,770,860,875,890,905,920,935,950,965,980,995,1010,1025": 0,
+          "plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@695,710,725,740,755,770,860,875,890,905,920,935,950,965,980,995,1010,1025,1040": 0
+        },
+        "structuralSearchExhausted": false,
+        "structuralSearchBudgetExhausted": false,
+        "structuralArchitecturesFullyVisited": 9,
+        "structuralFutureDomainsFullyVisited": 0,
+        "structuralCandidatesProducedBeforeBudgetExhaustion": 10,
+        "conditionedLeafFutureRevalidations": 10,
+        "conditionedLeafFutureRevalidationPasses": 10,
+        "conditionedLeafFutureRevalidationRejects": 0,
+        "genericFutureAssessSkippedForConditionedLeaf": 0,
+        "structuralCandidateFingerprintAtHardGate": "061ecba5954d297bcecf3497acbaa0851eb4dd9d5bea52f7adae18ca1d2081da",
+        "structuralCandidateFingerprintAtContinuation": "061ecba5954d297bcecf3497acbaa0851eb4dd9d5bea52f7adae18ca1d2081da",
+        "structuralCandidateFingerprintBeforeStandalone": "061ecba5954d297bcecf3497acbaa0851eb4dd9d5bea52f7adae18ca1d2081da",
+        "branchesBeforeResidualDfs": null,
+        "selectedArchitectureFingerprint": "0e8d660e6977438ccb1c4974f66fb5fc6033a895fc33d952499461df5fd0cd32",
+        "selectedFutureReservationFingerprint": null,
+        "mainPatternCountGenerated": 200,
+        "mainPatternGenerationExhausted": true,
+        "mainPatternsVisited": 17,
+        "timelinesGenerated": 567,
+        "architectureStructuralProofChecks": 567,
+        "architectureStructuralProofRejects": 438,
+        "architectureStructuralRejectsByReason": {
+          "FEEDER_PREREQUISITE_PREFIX_CAPACITY": 158,
+          "PREREQUISITE_WINDOW": 85,
+          "TRANSITION_CAPACITY": 74,
+          "FEEDER_CAPACITY": 103,
+          "RESOURCE_WINDOW": 18
+        },
+        "nominalPipelineWitnessChecks": 129,
+        "nominalPipelineWitnessFeasible": 10,
+        "nominalPipelineWitnessInfeasible": 86,
+        "nominalPipelineWitnessInconclusive": 33,
+        "nominalPipelineWitnessRejectsByReason": {
+          "OPERATIONAL_MEAL_FUTURE_INFEASIBLE": 81,
+          "JOINT_ARRIVAL_GEOMETRY": 33,
+          "MAIN_PROFILE_MATCHING": 5
+        },
+        "continuityRejects": 0,
+        "authorizedArchitecturesYielded": 10
+      },
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "work": {
+        "branchesExplored": 50419,
+        "coreBranches": 5667,
+        "standaloneBranches": 44752,
+        "coreMaximumDepth": 0,
+        "patternCandidatesExplored": 0,
+        "timelineCandidatesExplored": 0,
+        "mainCandidatesEvaluated": 0,
+        "feederCandidatesEvaluated": 0,
+        "architecturesChecked": 0,
+        "feederOrderBranches": 0,
+        "feederSlotMatchingChecks": 0,
+        "feederSlotMatchingEdgeChecks": 0,
+        "feederSlotMatchingAugmentTraversals": 0,
+        "feederSlotMatchingBranchesExplored": 0,
+        "residualMatchingInvocations": 0,
+        "residualMatchingFullBuilds": 0,
+        "residualMatchingIncrementalUpdates": 0,
+        "residualMatchingEdgeCacheHits": 0,
+        "residualMatchingEdgeCacheMisses": 0,
+        "residualMatchingPositionChecks": 0,
+        "residualMatchingAugmentTraversals": 0,
+        "residualMatchingBranchesExplored": 0,
+        "mainRunWitnessAttempts": 0,
+        "mainRunWitnessRepairs": 0,
+        "mainRunEquivalentOrdersCollapsed": 0,
+        "bundleMatchingAttempts": 10,
+        "bundleMatchingRepairs": 0,
+        "bundleMatchingMaterializations": 10,
+        "bundleHardValidationRejects": 0,
+        "bundleCertifiedRepairs": 0,
+        "bundleNogoodsCreated": 0,
+        "bundleNogoodBranches": 0,
+        "bundleNogoodDeduplications": 0,
+        "bundleNogoodRepairsSucceeded": 0,
+        "conflictBackjumps": 0,
+        "suffixDepthsSkipped": 0,
+        "deepestCoreDepthReached": 0,
+        "standaloneForwardChecks": 0,
+        "standaloneForwardStartChecks": 0,
+        "standaloneForwardWitnessCacheHits": 0,
+        "standaloneForwardWitnessCacheMisses": 0,
+        "coreLeafTransportPrunes": 0,
+        "transportContiguousStates": 644,
+        "membershipFallbackEntered": 0,
+        "participantMealFutureFeasibilityChecks": 387,
+        "participantMealFutureInfeasibleBranches": 0,
+        "participantMealAffectedObligationsChecked": 610,
+        "participantMealZeroDomainPrunes": 0,
+        "participantMealAnalyticCollectivePrunes": 0,
+        "participantMealExactMaterializations": 4,
+        "futureRoundWitnessSearchInvocations": 0,
+        "futureRoundWitnessStructuralCandidates": 0,
+        "futureRoundWitnessCompleteMatchings": 0,
+        "futureRoundWitnessParticipantFutureChecks": 0,
+        "futureRoundWitnessPrerequisiteChecks": 0,
+        "futureRoundWitnessBranchesConsumed": 0,
+        "branchBudgetLimit": 100000
+      },
+      "witnessFingerprint": "ff6ea5bdb284813d320e50a7c57cb15c64d1c7ffa72b723dffab4228468b86c1",
+      "inputFingerprint": "12c1f4e3a5fc1d4d69f1fa8afda3b0af1152bc3ecfb8184faca34c7e77e07594",
+      "budgets": {
+        "bestK": 5,
+        "maxBacktracks": 200,
+        "maxPatterns": 200,
+        "maxBranchExpansions": 100000
+      },
+      "scope": "Main stage plus complete ephemeral JOINT_COMPLETION witness"
+    },
+    {
+      "requested": 4,
+      "durationMs": 130470.191999,
+      "proposal": true,
+      "scopeTaskCount": 19,
+      "achieved": 4,
+      "completedObligations": 266,
+      "validation": {
+        "hardValid": true,
+        "dependencyViolationCount": 0,
+        "overlapViolationCount": 0,
+        "transitionViolationCount": 0,
+        "availabilityViolationCount": 0,
+        "taskAvailabilityViolationCount": 0,
+        "blockViolationCount": 0,
+        "resourceAvailabilityViolationCount": 0,
+        "resourceOverlapViolationCount": 0,
+        "resourceTransitionViolationCount": 0,
+        "secondaryContinuityViolationCount": 0,
+        "setupViolationCount": 0,
+        "setupPreparationViolationCount": 0,
+        "roundSynchronizationViolationCount": 0,
+        "roundPreparationViolationCount": 0,
+        "jointGroupViolationCount": 0,
+        "transportGroupingViolationCount": 0,
+        "technicalOperationViolationCount": 0,
+        "technicalChainViolationCount": 0,
+        "spaceMealViolationCount": 0,
+        "mainFlowMealViolationCount": 0,
+        "anchoredAccompanimentViolationCount": 0,
+        "participantMealViolationCount": 0,
+        "resourceMealViolationCount": 0,
+        "operationalMealViolationCount": 0,
+        "itinerantUnitMealViolationCount": 0,
+        "reasonCodes": [],
+        "unstructuredReasonCodes": [],
+        "violations": []
+      },
+      "architecture": {
+        "futureReservationStructures": 1,
+        "futureReservationWitnessesEvaluated": 33,
+        "futureReservationRootOrdersEvaluated": 2808,
+        "futureReservationCandidatesRejectedByOtherReservations": 0,
+        "futureReservationCandidatesRejectedByNoBundleMatching": 0,
+        "futureReservationBundleMatchingAttempts": 10,
+        "futureReservationPerfectMatchings": 10,
+        "futureReservationSelectedFingerprint": null,
+        "architecturesTriedWithFutureReservation": 10,
+        "bundleEdgesBeforeReservation": 0,
+        "bundleEdgesRejectedByReservation": 0,
+        "bundleEdgesAfterReservation": 0,
+        "residualDfsEntered": false,
+        "residualDfsBranchesBeforeFirstSolution": 17,
+        "architecturesEnumerated": 10,
+        "architecturesPrepared": 10,
+        "participantBundleEdgesChecked": 1580,
+        "participantBundleEdgesPruned": 0,
+        "participantBundleEdgesAbstained": 1580,
+        "firstParticipantBundleEdgePrune": null,
+        "futureWitnessesTriedByArchitecture": {
+          "plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@660,675,690,705,720,735,750,765,855,870,885,900,915,930,945,960,975,990,1005": 0,
+          "plan-resource:104005,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095": 0,
+          "plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@660,675,690,705,720,735,750,765,855,870,885,900,915,930,945,960,975,990,1005": 0,
+          "plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@675,690,705,720,735,750,765,855,870,885,900,915,930,945,960,975,990,1005,1020": 0,
+          "plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095": 0,
+          "plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006@750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095": 0,
+          "plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095,1110": 0,
+          "plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095,1110": 0,
+          "plan-resource:104006,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095,1110": 0,
+          "plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095": 0
+        },
+        "preparedBundleEdges": 1805,
+        "reservationFilteredEdges": 0,
+        "perfectMatchingsByArchitecture": {
+          "plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@660,675,690,705,720,735,750,765,855,870,885,900,915,930,945,960,975,990,1005": 1,
+          "plan-resource:104005,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095": 1,
+          "plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@660,675,690,705,720,735,750,765,855,870,885,900,915,930,945,960,975,990,1005": 1,
+          "plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@675,690,705,720,735,750,765,855,870,885,900,915,930,945,960,975,990,1005,1020": 1,
+          "plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095": 1,
+          "plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006@750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095": 1,
+          "plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095,1110": 1,
+          "plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095,1110": 1,
+          "plan-resource:104006,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095,1110": 1,
+          "plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095": 1
+        },
+        "hardGateRejectsByArchitecture": {
+          "plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@660,675,690,705,720,735,750,765,855,870,885,900,915,930,945,960,975,990,1005": 0,
+          "plan-resource:104005,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095": 0,
+          "plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@660,675,690,705,720,735,750,765,855,870,885,900,915,930,945,960,975,990,1005": 0,
+          "plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@675,690,705,720,735,750,765,855,870,885,900,915,930,945,960,975,990,1005,1020": 0,
+          "plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006@750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095": 0,
+          "plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006@750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095": 0,
+          "plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095,1110": 0,
+          "plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095,1110": 0,
+          "plan-resource:104006,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095,1110": 0,
+          "plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@750,765,855,870,885,900,915,930,945,960,975,990,1005,1020,1035,1050,1065,1080,1095": 0
+        },
+        "structuralSearchExhausted": false,
+        "structuralSearchBudgetExhausted": false,
+        "structuralArchitecturesFullyVisited": 9,
+        "structuralFutureDomainsFullyVisited": 0,
+        "structuralCandidatesProducedBeforeBudgetExhaustion": 10,
+        "conditionedLeafFutureRevalidations": 10,
+        "conditionedLeafFutureRevalidationPasses": 9,
+        "conditionedLeafFutureRevalidationRejects": 1,
+        "genericFutureAssessSkippedForConditionedLeaf": 0,
+        "structuralCandidateFingerprintAtHardGate": "2442274f24794f8d6244c72acad41da9c3eaf8888ef289cb47504b9984adfeb8",
+        "structuralCandidateFingerprintAtContinuation": "2442274f24794f8d6244c72acad41da9c3eaf8888ef289cb47504b9984adfeb8",
+        "structuralCandidateFingerprintBeforeStandalone": "2442274f24794f8d6244c72acad41da9c3eaf8888ef289cb47504b9984adfeb8",
+        "branchesBeforeResidualDfs": null,
+        "selectedArchitectureFingerprint": "b88f8005f06925052845f16b17d22f77601c203afaf86fd81d55d935dd8e407f",
+        "selectedFutureReservationFingerprint": null,
+        "mainPatternCountGenerated": 200,
+        "mainPatternGenerationExhausted": true,
+        "mainPatternsVisited": 140,
+        "timelinesGenerated": 505,
+        "architectureStructuralProofChecks": 505,
+        "architectureStructuralProofRejects": 406,
+        "architectureStructuralRejectsByReason": {
+          "FEEDER_PREREQUISITE_PREFIX_CAPACITY": 226,
+          "FEEDER_CAPACITY": 51,
+          "PREREQUISITE_WINDOW": 75,
+          "TRANSITION_CAPACITY": 36,
+          "FEEDER_CONTIGUOUS_CAPACITY": 2,
+          "FEEDER_MULTI_RUN_CONTIGUOUS_CAPACITY": 16
+        },
+        "nominalPipelineWitnessChecks": 99,
+        "nominalPipelineWitnessFeasible": 10,
+        "nominalPipelineWitnessInfeasible": 68,
+        "nominalPipelineWitnessInconclusive": 21,
+        "nominalPipelineWitnessRejectsByReason": {
+          "FEEDER_RUN_GEOMETRY": 12,
+          "OPERATIONAL_MEAL_FUTURE_INFEASIBLE": 56,
+          "JOINT_ARRIVAL_GEOMETRY": 21
+        },
+        "continuityRejects": 0,
+        "authorizedArchitecturesYielded": 10
+      },
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "work": {
+        "branchesExplored": 29502,
+        "coreBranches": 5113,
+        "standaloneBranches": 24389,
+        "coreMaximumDepth": 0,
+        "patternCandidatesExplored": 0,
+        "timelineCandidatesExplored": 0,
+        "mainCandidatesEvaluated": 0,
+        "feederCandidatesEvaluated": 0,
+        "architecturesChecked": 0,
+        "feederOrderBranches": 0,
+        "feederSlotMatchingChecks": 0,
+        "feederSlotMatchingEdgeChecks": 0,
+        "feederSlotMatchingAugmentTraversals": 0,
+        "feederSlotMatchingBranchesExplored": 0,
+        "residualMatchingInvocations": 0,
+        "residualMatchingFullBuilds": 0,
+        "residualMatchingIncrementalUpdates": 0,
+        "residualMatchingEdgeCacheHits": 0,
+        "residualMatchingEdgeCacheMisses": 0,
+        "residualMatchingPositionChecks": 0,
+        "residualMatchingAugmentTraversals": 0,
+        "residualMatchingBranchesExplored": 17,
+        "mainRunWitnessAttempts": 0,
+        "mainRunWitnessRepairs": 0,
+        "mainRunEquivalentOrdersCollapsed": 0,
+        "bundleMatchingAttempts": 10,
+        "bundleMatchingRepairs": 3,
+        "bundleMatchingMaterializations": 10,
+        "bundleHardValidationRejects": 0,
+        "bundleCertifiedRepairs": 3,
+        "bundleNogoodsCreated": 3,
+        "bundleNogoodBranches": 3,
+        "bundleNogoodDeduplications": 0,
+        "bundleNogoodRepairsSucceeded": 0,
+        "conflictBackjumps": 1,
+        "suffixDepthsSkipped": 9,
+        "deepestCoreDepthReached": 0,
+        "standaloneForwardChecks": 0,
+        "standaloneForwardStartChecks": 0,
+        "standaloneForwardWitnessCacheHits": 0,
+        "standaloneForwardWitnessCacheMisses": 0,
+        "coreLeafTransportPrunes": 0,
+        "transportContiguousStates": 1208,
+        "membershipFallbackEntered": 0,
+        "participantMealFutureFeasibilityChecks": 313,
+        "participantMealFutureInfeasibleBranches": 0,
+        "participantMealAffectedObligationsChecked": 405,
+        "participantMealZeroDomainPrunes": 0,
+        "participantMealAnalyticCollectivePrunes": 0,
+        "participantMealExactMaterializations": 4,
+        "futureRoundWitnessSearchInvocations": 0,
+        "futureRoundWitnessStructuralCandidates": 0,
+        "futureRoundWitnessCompleteMatchings": 0,
+        "futureRoundWitnessParticipantFutureChecks": 0,
+        "futureRoundWitnessPrerequisiteChecks": 0,
+        "futureRoundWitnessBranchesConsumed": 0,
+        "branchBudgetLimit": 100000
+      },
+      "witnessFingerprint": "a2e7ebaa841c8c8676ee9544ce1fd8780c0e6f61148f3ea9a33814ca514d3254",
+      "inputFingerprint": "12c1f4e3a5fc1d4d69f1fa8afda3b0af1152bc3ecfb8184faca34c7e77e07594",
+      "budgets": {
+        "bestK": 5,
+        "maxBacktracks": 200,
+        "maxPatterns": 200,
+        "maxBranchExpansions": 100000
+      },
+      "scope": "Main stage plus complete ephemeral JOINT_COMPLETION witness"
+    }
+  ],
+  "sourceHashes": {
+    "engine/planner-next/mainFlowPatterns.ts": {
+      "base": "a8f1c48650adffed3054f76fa8ead9b5c2c1feb9e53aa60c7e9bb4d2f001f7e6",
+      "experiment": "c18052624290e2ac13d0c402a93c82a84ac1d62bcbf2a4bbfc624fe8f92e6e47"
+    },
+    "engine/planner-next/contracts.ts": {
+      "base": "46cf1e180e942aea0e1059a91346923c767bce49aaa1ed0aa25b41a2c8890426",
+      "experiment": "98ce0e01ecd5b0aa338b2ac45395d940d3bc388dac0cdeab61cdc4ce285e0057"
+    },
+    "engine/planner-next/anonymousPipelineWitness.ts": {
+      "base": "158b186cf1645c8a356e4a8fce9d670b937d71dcede9b97a1d931007a560db8a",
+      "experiment": "792535b311819c0a651a0cf24953d86250a6fabfcd04319a7c74dc8d549a0ce7"
+    },
+    "engine/planner-next/exactMainAndFeederCore.ts": {
+      "base": "a9aa9a7710fb4d9703b2432dd6d4c092e908ca94fae2998c5dacb94ccd9ebfbf",
+      "experiment": "f1ff383ae2ea01b30ecaa7321d0cc1bc4c14043e0f82704b9262790460f00b67"
+    }
+  },
+  "coldDiagnostic": {
+    "preferredPatterns": {
+      "patterns": [
+        [
+          "a",
+          "b",
+          "a",
+          "b"
+        ],
+        [
+          "b",
+          "a",
+          "b",
+          "a"
+        ],
+        [
+          "a",
+          "b",
+          "b",
+          "a"
+        ],
+        [
+          "b",
+          "a",
+          "a",
+          "b"
+        ],
+        [
+          "a",
+          "a",
+          "b",
+          "b"
+        ],
+        [
+          "b",
+          "b",
+          "a",
+          "a"
+        ]
+      ],
+      "exhausted": false
+    },
+    "case": "COLD_FALLBACK",
+    "status": "EXPECTED_REGRESSION_REPRODUCED",
+    "source": {
+      "day": {
+        "start": 0,
+        "end": 120
+      },
+      "spaces": [
+        {
+          "id": "main",
+          "availability": [
+            {
+              "start": 60,
+              "end": 80
+            }
+          ]
+        },
+        {
+          "id": "voice-a",
+          "availability": [
+            {
+              "start": 0,
+              "end": 120
+            }
+          ]
+        },
+        {
+          "id": "voice-b",
+          "availability": [
+            {
+              "start": 0,
+              "end": 120
+            }
+          ]
+        },
+        {
+          "id": "finish-a1",
+          "availability": [
+            {
+              "start": 0,
+              "end": 120
+            }
+          ]
+        },
+        {
+          "id": "finish-a2",
+          "availability": [
+            {
+              "start": 0,
+              "end": 120
+            }
+          ]
+        }
+      ],
+      "resources": [],
+      "participants": [
+        {
+          "id": "a1",
+          "availability": [
+            {
+              "start": 0,
+              "end": 120
+            }
+          ]
+        },
+        {
+          "id": "a2",
+          "availability": [
+            {
+              "start": 0,
+              "end": 120
+            }
+          ]
+        },
+        {
+          "id": "b1",
+          "availability": [
+            {
+              "start": 0,
+              "end": 120
+            }
+          ]
+        },
+        {
+          "id": "b2",
+          "availability": [
+            {
+              "start": 0,
+              "end": 120
+            }
+          ]
+        }
+      ],
+      "coaches": [
+        {
+          "id": "a",
+          "availability": [
+            {
+              "start": 0,
+              "end": 120
+            }
+          ]
+        },
+        {
+          "id": "b",
+          "availability": [
+            {
+              "start": 0,
+              "end": 120
+            }
+          ]
+        }
+      ],
+      "tasks": [
+        {
+          "id": "voice-a1",
+          "kind": "vocal",
+          "participantId": "a1",
+          "coachId": "a",
+          "duration": 5,
+          "spaceId": "voice-a",
+          "dependencies": []
+        },
+        {
+          "id": "main-a1",
+          "kind": "main",
+          "participantId": "a1",
+          "coachId": "a",
+          "duration": 5,
+          "spaceId": "main",
+          "blockKey": "a",
+          "dependencies": [
+            "voice-a1"
+          ]
+        },
+        {
+          "id": "voice-a2",
+          "kind": "vocal",
+          "participantId": "a2",
+          "coachId": "a",
+          "duration": 5,
+          "spaceId": "voice-a",
+          "dependencies": []
+        },
+        {
+          "id": "main-a2",
+          "kind": "main",
+          "participantId": "a2",
+          "coachId": "a",
+          "duration": 5,
+          "spaceId": "main",
+          "blockKey": "a",
+          "dependencies": [
+            "voice-a2"
+          ]
+        },
+        {
+          "id": "voice-b1",
+          "kind": "vocal",
+          "participantId": "b1",
+          "coachId": "b",
+          "duration": 5,
+          "spaceId": "voice-b",
+          "dependencies": []
+        },
+        {
+          "id": "main-b1",
+          "kind": "main",
+          "participantId": "b1",
+          "coachId": "b",
+          "duration": 5,
+          "spaceId": "main",
+          "blockKey": "b",
+          "dependencies": [
+            "voice-b1"
+          ]
+        },
+        {
+          "id": "voice-b2",
+          "kind": "vocal",
+          "participantId": "b2",
+          "coachId": "b",
+          "duration": 5,
+          "spaceId": "voice-b",
+          "dependencies": []
+        },
+        {
+          "id": "main-b2",
+          "kind": "main",
+          "participantId": "b2",
+          "coachId": "b",
+          "duration": 5,
+          "spaceId": "main",
+          "blockKey": "b",
+          "dependencies": [
+            "voice-b2"
+          ]
+        },
+        {
+          "id": "finish-a1",
+          "kind": "auxiliary",
+          "participantId": "a1",
+          "duration": 5,
+          "spaceId": "finish-a1",
+          "dependencies": [
+            "main-a1"
+          ],
+          "availability": [
+            {
+              "start": 70,
+              "end": 75
+            }
+          ]
+        },
+        {
+          "id": "finish-a2",
+          "kind": "auxiliary",
+          "participantId": "a2",
+          "duration": 5,
+          "spaceId": "finish-a2",
+          "dependencies": [
+            "main-a2"
+          ],
+          "availability": [
+            {
+              "start": 70,
+              "end": 75
+            }
+          ]
+        }
+      ],
+      "mainFlow": {
+        "spaceId": "main",
+        "preferredEnd": 80,
+        "continuity": "REQUIRED",
+        "maxBlocksByKey": 2,
+        "minTasksPerBlock": 1
+      },
+      "auxiliaryPolicy": {
+        "participantPresencePreference": "OFF"
+      },
+      "participantTransitionMinutes": 0,
+      "resourceTransitionMinutes": 0,
+      "searchPolicy": "EXACT_CONSTRUCTIVE",
+      "budget": {
+        "bestK": 5,
+        "maxBacktracks": 100,
+        "maxPatterns": 200,
+        "maxBranchExpansions": 1000
+      }
+    },
+    "baseline": {
+      "complete": true,
+      "status": "COMPLETE",
+      "branches": 51,
+      "coreBranches": 46,
+      "standaloneBranches": 5,
+      "achieved": 2,
+      "reasonCodes": [],
+      "fingerprint": "49918248fc89578048eac3accadcc969b62ddffe2645c2e4c005240ca9af245e",
+      "validation": {
+        "hardValid": true,
+        "dependencyViolationCount": 0,
+        "overlapViolationCount": 0,
+        "transitionViolationCount": 0,
+        "availabilityViolationCount": 0,
+        "taskAvailabilityViolationCount": 0,
+        "blockViolationCount": 0,
+        "resourceAvailabilityViolationCount": 0,
+        "resourceOverlapViolationCount": 0,
+        "resourceTransitionViolationCount": 0,
+        "secondaryContinuityViolationCount": 0,
+        "setupViolationCount": 0,
+        "setupPreparationViolationCount": 0,
+        "jointGroupViolationCount": 0,
+        "technicalOperationViolationCount": 0,
+        "technicalChainViolationCount": 0,
+        "spaceMealViolationCount": 0,
+        "mainFlowMealViolationCount": 0,
+        "anchoredAccompanimentViolationCount": 0,
+        "participantMealViolationCount": 0,
+        "resourceMealViolationCount": 0,
+        "itinerantUnitMealViolationCount": 0,
+        "reasonCodes": [],
+        "unstructuredReasonCodes": [],
+        "violations": []
+      },
+      "durationMs": 137.72926599999982,
+      "architecturesChecked": 1,
+      "architecturesStructurallyRejected": 0,
+      "selectedPattern": [
+        "a",
+        "a",
+        "b",
+        "b"
+      ],
+      "causalDiagnostic": {
+        "waterfallByDepth": {
+          "0": {
+            "mainCandidate": 0,
+            "feederStart": 0,
+            "residualMatching": 14,
+            "continuation": 0,
+            "participantMeal": 0,
+            "standaloneForward": 0,
+            "other": 7,
+            "total": 21
+          },
+          "2": {
+            "mainCandidate": 0,
+            "feederStart": 1,
+            "residualMatching": 17,
+            "continuation": 1,
+            "participantMeal": 0,
+            "standaloneForward": 2,
+            "other": 0,
+            "total": 21
+          },
+          "4": {
+            "mainCandidate": 0,
+            "feederStart": 1,
+            "residualMatching": 7,
+            "continuation": 1,
+            "participantMeal": 0,
+            "standaloneForward": 0,
+            "other": 0,
+            "total": 9
+          }
+        },
+        "feederByDepth": {
+          "2": {
+            "startsConsidered": 13,
+            "startsCoachEliminated": 1,
+            "startsEvaluated": 1,
+            "valid": 1,
+            "invalid": 0,
+            "mainChoicesReachingFeeder": 1,
+            "mainChoicesWithValidFeeder": 1
+          },
+          "4": {
+            "startsConsidered": 15,
+            "startsCoachEliminated": 1,
+            "startsEvaluated": 1,
+            "valid": 1,
+            "invalid": 0,
+            "mainChoicesReachingFeeder": 1,
+            "mainChoicesWithValidFeeder": 1
+          }
+        },
+        "feederRejections": [],
+        "feederCoachDomainEliminations": [
+          {
+            "depth": 2,
+            "mainTaskId": "main-a1",
+            "feederTaskId": "voice-a1",
+            "participantId": "a1",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "main-a2",
+            "startsEliminated": 1,
+            "blockingDecisionDepth": 1,
+            "blockingDecisionMainTaskId": "main-a2"
+          },
+          {
+            "depth": 4,
+            "mainTaskId": "main-b1",
+            "feederTaskId": "voice-b1",
+            "participantId": "b1",
+            "reason": "OVERLAP_COACH",
+            "blockingPlacedTaskId": "main-b2",
+            "startsEliminated": 1,
+            "blockingDecisionDepth": 3,
+            "blockingDecisionMainTaskId": "main-b2"
+          }
+        ],
+        "futureFeasibility": {
+          "totalEvaluations": 2,
+          "uniqueAuthorityStates": 2,
+          "repeatedEvaluations": 0,
+          "authorityResultCollisions": 0,
+          "negativeEvaluations": 0,
+          "repeatedNegativeEvaluations": 0,
+          "rejectsWithCertifiedBackjumpTarget": 0,
+          "evaluationsByDepth": {
+            "2": 2
+          },
+          "repeatedByDepth": {},
+          "negativeByDepth": {},
+          "assessments": [
+            {
+              "depth": 2,
+              "taskId": "finish-a1",
+              "authoritySignature": "c9ec77e20bfc9c982bc4f4afc594eb86820c229998622beff02dad71294c5c09",
+              "resultSignature": "6be9eeb208b975a641e05ead20b62ff937a8c243ba8c1abff0ad4d9b2c70edce",
+              "domainEmpty": false,
+              "eligibleStartCount": 1,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            },
+            {
+              "depth": 2,
+              "taskId": "finish-a2",
+              "authoritySignature": "9e07b834e2298f0c4bdb56a7ed8f987fbcd24de79036e33c46df0e9bd261542d",
+              "resultSignature": "6be9eeb208b975a641e05ead20b62ff937a8c243ba8c1abff0ad4d9b2c70edce",
+              "domainEmpty": false,
+              "eligibleStartCount": 1,
+              "blockers": [],
+              "ancestralDecisionDepths": [],
+              "certifiedBackjumpTargetDepth": null,
+              "occurrences": 1
+            }
+          ],
+          "collisions": []
+        },
+        "bundleMaterializations": []
+      }
+    },
+    "results": [
+      {
+        "budget": 51,
+        "auto": {
+          "complete": true,
+          "status": "COMPLETE",
+          "branches": 51,
+          "coreBranches": 46,
+          "standaloneBranches": 5,
+          "achieved": 2,
+          "reasonCodes": [],
+          "fingerprint": "49918248fc89578048eac3accadcc969b62ddffe2645c2e4c005240ca9af245e",
+          "validation": {
+            "hardValid": true,
+            "dependencyViolationCount": 0,
+            "overlapViolationCount": 0,
+            "transitionViolationCount": 0,
+            "availabilityViolationCount": 0,
+            "taskAvailabilityViolationCount": 0,
+            "blockViolationCount": 0,
+            "resourceAvailabilityViolationCount": 0,
+            "resourceOverlapViolationCount": 0,
+            "resourceTransitionViolationCount": 0,
+            "secondaryContinuityViolationCount": 0,
+            "setupViolationCount": 0,
+            "setupPreparationViolationCount": 0,
+            "jointGroupViolationCount": 0,
+            "technicalOperationViolationCount": 0,
+            "technicalChainViolationCount": 0,
+            "spaceMealViolationCount": 0,
+            "mainFlowMealViolationCount": 0,
+            "anchoredAccompanimentViolationCount": 0,
+            "participantMealViolationCount": 0,
+            "resourceMealViolationCount": 0,
+            "itinerantUnitMealViolationCount": 0,
+            "reasonCodes": [],
+            "unstructuredReasonCodes": [],
+            "violations": []
+          },
+          "durationMs": 57.06759600000032,
+          "architecturesChecked": 1,
+          "architecturesStructurallyRejected": 0,
+          "selectedPattern": [
+            "a",
+            "a",
+            "b",
+            "b"
+          ],
+          "causalDiagnostic": {
+            "waterfallByDepth": {
+              "0": {
+                "mainCandidate": 0,
+                "feederStart": 0,
+                "residualMatching": 14,
+                "continuation": 0,
+                "participantMeal": 0,
+                "standaloneForward": 0,
+                "other": 7,
+                "total": 21
+              },
+              "2": {
+                "mainCandidate": 0,
+                "feederStart": 1,
+                "residualMatching": 17,
+                "continuation": 1,
+                "participantMeal": 0,
+                "standaloneForward": 2,
+                "other": 0,
+                "total": 21
+              },
+              "4": {
+                "mainCandidate": 0,
+                "feederStart": 1,
+                "residualMatching": 7,
+                "continuation": 1,
+                "participantMeal": 0,
+                "standaloneForward": 0,
+                "other": 0,
+                "total": 9
+              }
+            },
+            "feederByDepth": {
+              "2": {
+                "startsConsidered": 13,
+                "startsCoachEliminated": 1,
+                "startsEvaluated": 1,
+                "valid": 1,
+                "invalid": 0,
+                "mainChoicesReachingFeeder": 1,
+                "mainChoicesWithValidFeeder": 1
+              },
+              "4": {
+                "startsConsidered": 15,
+                "startsCoachEliminated": 1,
+                "startsEvaluated": 1,
+                "valid": 1,
+                "invalid": 0,
+                "mainChoicesReachingFeeder": 1,
+                "mainChoicesWithValidFeeder": 1
+              }
+            },
+            "feederRejections": [],
+            "feederCoachDomainEliminations": [
+              {
+                "depth": 2,
+                "mainTaskId": "main-a1",
+                "feederTaskId": "voice-a1",
+                "participantId": "a1",
+                "reason": "OVERLAP_COACH",
+                "blockingPlacedTaskId": "main-a2",
+                "startsEliminated": 1,
+                "blockingDecisionDepth": 1,
+                "blockingDecisionMainTaskId": "main-a2"
+              },
+              {
+                "depth": 4,
+                "mainTaskId": "main-b1",
+                "feederTaskId": "voice-b1",
+                "participantId": "b1",
+                "reason": "OVERLAP_COACH",
+                "blockingPlacedTaskId": "main-b2",
+                "startsEliminated": 1,
+                "blockingDecisionDepth": 3,
+                "blockingDecisionMainTaskId": "main-b2"
+              }
+            ],
+            "futureFeasibility": {
+              "totalEvaluations": 2,
+              "uniqueAuthorityStates": 2,
+              "repeatedEvaluations": 0,
+              "authorityResultCollisions": 0,
+              "negativeEvaluations": 0,
+              "repeatedNegativeEvaluations": 0,
+              "rejectsWithCertifiedBackjumpTarget": 0,
+              "evaluationsByDepth": {
+                "2": 2
+              },
+              "repeatedByDepth": {},
+              "negativeByDepth": {},
+              "assessments": [
+                {
+                  "depth": 2,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "c9ec77e20bfc9c982bc4f4afc594eb86820c229998622beff02dad71294c5c09",
+                  "resultSignature": "6be9eeb208b975a641e05ead20b62ff937a8c243ba8c1abff0ad4d9b2c70edce",
+                  "domainEmpty": false,
+                  "eligibleStartCount": 1,
+                  "blockers": [],
+                  "ancestralDecisionDepths": [],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                },
+                {
+                  "depth": 2,
+                  "taskId": "finish-a2",
+                  "authoritySignature": "9e07b834e2298f0c4bdb56a7ed8f987fbcd24de79036e33c46df0e9bd261542d",
+                  "resultSignature": "6be9eeb208b975a641e05ead20b62ff937a8c243ba8c1abff0ad4d9b2c70edce",
+                  "domainEmpty": false,
+                  "eligibleStartCount": 1,
+                  "blockers": [],
+                  "ancestralDecisionDepths": [],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                }
+              ],
+              "collisions": []
+            },
+            "bundleMaterializations": []
+          }
+        },
+        "preferred": {
+          "complete": false,
+          "status": "BRANCH_BUDGET_EXHAUSTED",
+          "branches": 51,
+          "coreBranches": 50,
+          "standaloneBranches": 1,
+          "achieved": null,
+          "reasonCodes": [
+            "CORE_BRANCH_BUDGET_EXHAUSTED"
+          ],
+          "fingerprint": null,
+          "validation": null,
+          "durationMs": 86.42899399999988,
+          "architecturesChecked": 1,
+          "architecturesStructurallyRejected": 0,
+          "selectedPattern": [],
+          "causalDiagnostic": {
+            "waterfallByDepth": {
+              "0": {
+                "mainCandidate": 0,
+                "feederStart": 0,
+                "residualMatching": 14,
+                "continuation": 0,
+                "participantMeal": 0,
+                "standaloneForward": 0,
+                "other": 3,
+                "total": 17
+              },
+              "1": {
+                "mainCandidate": 0,
+                "feederStart": 1,
+                "residualMatching": 15,
+                "continuation": 1,
+                "participantMeal": 0,
+                "standaloneForward": 1,
+                "other": 0,
+                "total": 18
+              },
+              "2": {
+                "mainCandidate": 0,
+                "feederStart": 1,
+                "residualMatching": 8,
+                "continuation": 1,
+                "participantMeal": 0,
+                "standaloneForward": 0,
+                "other": 0,
+                "total": 10
+              },
+              "3": {
+                "mainCandidate": 0,
+                "feederStart": 1,
+                "residualMatching": 5,
+                "continuation": 0,
+                "participantMeal": 0,
+                "standaloneForward": 0,
+                "other": 0,
+                "total": 6
+              }
+            },
+            "feederByDepth": {
+              "1": {
+                "startsConsidered": 12,
+                "startsCoachEliminated": 0,
+                "startsEvaluated": 1,
+                "valid": 1,
+                "invalid": 0,
+                "mainChoicesReachingFeeder": 1,
+                "mainChoicesWithValidFeeder": 1
+              },
+              "2": {
+                "startsConsidered": 13,
+                "startsCoachEliminated": 0,
+                "startsEvaluated": 1,
+                "valid": 1,
+                "invalid": 0,
+                "mainChoicesReachingFeeder": 1,
+                "mainChoicesWithValidFeeder": 1
+              },
+              "3": {
+                "startsConsidered": 14,
+                "startsCoachEliminated": 2,
+                "startsEvaluated": 1,
+                "valid": 1,
+                "invalid": 0,
+                "mainChoicesReachingFeeder": 1,
+                "mainChoicesWithValidFeeder": 1
+              }
+            },
+            "feederRejections": [],
+            "feederCoachDomainEliminations": [
+              {
+                "depth": 3,
+                "mainTaskId": "main-a1",
+                "feederTaskId": "voice-a1",
+                "participantId": "a1",
+                "reason": "OVERLAP_COACH",
+                "blockingPlacedTaskId": "main-a2",
+                "startsEliminated": 1,
+                "blockingDecisionDepth": 1,
+                "blockingDecisionMainTaskId": "main-a2"
+              },
+              {
+                "depth": 3,
+                "mainTaskId": "main-a1",
+                "feederTaskId": "voice-a1",
+                "participantId": "a1",
+                "reason": "OVERLAP_COACH",
+                "blockingPlacedTaskId": "voice-a2",
+                "startsEliminated": 1,
+                "blockingDecisionDepth": 1,
+                "blockingDecisionMainTaskId": "main-a2"
+              }
+            ],
+            "futureFeasibility": {
+              "totalEvaluations": 2,
+              "uniqueAuthorityStates": 2,
+              "repeatedEvaluations": 0,
+              "authorityResultCollisions": 0,
+              "negativeEvaluations": 1,
+              "repeatedNegativeEvaluations": 0,
+              "rejectsWithCertifiedBackjumpTarget": 0,
+              "evaluationsByDepth": {
+                "1": 1,
+                "3": 1
+              },
+              "repeatedByDepth": {},
+              "negativeByDepth": {
+                "3": 1
+              },
+              "assessments": [
+                {
+                  "depth": 1,
+                  "taskId": "finish-a2",
+                  "authoritySignature": "ab7af1895f51ef0ad78c0833c1f3ae31f4b67bcf61b902bd3ae6bce6b6c49d8a",
+                  "resultSignature": "6be9eeb208b975a641e05ead20b62ff937a8c243ba8c1abff0ad4d9b2c70edce",
+                  "domainEmpty": false,
+                  "eligibleStartCount": 1,
+                  "blockers": [],
+                  "ancestralDecisionDepths": [],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "4c2891ec59e2a25a7f2b5ce0fd3884b6cf4cda2155d612a09a50404ae8c41405",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                }
+              ],
+              "collisions": []
+            },
+            "bundleMaterializations": []
+          }
+        },
+        "deterministic": true
+      },
+      {
+        "budget": 102,
+        "auto": {
+          "complete": true,
+          "status": "COMPLETE",
+          "branches": 51,
+          "coreBranches": 46,
+          "standaloneBranches": 5,
+          "achieved": 2,
+          "reasonCodes": [],
+          "fingerprint": "49918248fc89578048eac3accadcc969b62ddffe2645c2e4c005240ca9af245e",
+          "validation": {
+            "hardValid": true,
+            "dependencyViolationCount": 0,
+            "overlapViolationCount": 0,
+            "transitionViolationCount": 0,
+            "availabilityViolationCount": 0,
+            "taskAvailabilityViolationCount": 0,
+            "blockViolationCount": 0,
+            "resourceAvailabilityViolationCount": 0,
+            "resourceOverlapViolationCount": 0,
+            "resourceTransitionViolationCount": 0,
+            "secondaryContinuityViolationCount": 0,
+            "setupViolationCount": 0,
+            "setupPreparationViolationCount": 0,
+            "jointGroupViolationCount": 0,
+            "technicalOperationViolationCount": 0,
+            "technicalChainViolationCount": 0,
+            "spaceMealViolationCount": 0,
+            "mainFlowMealViolationCount": 0,
+            "anchoredAccompanimentViolationCount": 0,
+            "participantMealViolationCount": 0,
+            "resourceMealViolationCount": 0,
+            "itinerantUnitMealViolationCount": 0,
+            "reasonCodes": [],
+            "unstructuredReasonCodes": [],
+            "violations": []
+          },
+          "durationMs": 17.511990000000424,
+          "architecturesChecked": 1,
+          "architecturesStructurallyRejected": 0,
+          "selectedPattern": [
+            "a",
+            "a",
+            "b",
+            "b"
+          ],
+          "causalDiagnostic": {
+            "waterfallByDepth": {
+              "0": {
+                "mainCandidate": 0,
+                "feederStart": 0,
+                "residualMatching": 14,
+                "continuation": 0,
+                "participantMeal": 0,
+                "standaloneForward": 0,
+                "other": 7,
+                "total": 21
+              },
+              "2": {
+                "mainCandidate": 0,
+                "feederStart": 1,
+                "residualMatching": 17,
+                "continuation": 1,
+                "participantMeal": 0,
+                "standaloneForward": 2,
+                "other": 0,
+                "total": 21
+              },
+              "4": {
+                "mainCandidate": 0,
+                "feederStart": 1,
+                "residualMatching": 7,
+                "continuation": 1,
+                "participantMeal": 0,
+                "standaloneForward": 0,
+                "other": 0,
+                "total": 9
+              }
+            },
+            "feederByDepth": {
+              "2": {
+                "startsConsidered": 13,
+                "startsCoachEliminated": 1,
+                "startsEvaluated": 1,
+                "valid": 1,
+                "invalid": 0,
+                "mainChoicesReachingFeeder": 1,
+                "mainChoicesWithValidFeeder": 1
+              },
+              "4": {
+                "startsConsidered": 15,
+                "startsCoachEliminated": 1,
+                "startsEvaluated": 1,
+                "valid": 1,
+                "invalid": 0,
+                "mainChoicesReachingFeeder": 1,
+                "mainChoicesWithValidFeeder": 1
+              }
+            },
+            "feederRejections": [],
+            "feederCoachDomainEliminations": [
+              {
+                "depth": 2,
+                "mainTaskId": "main-a1",
+                "feederTaskId": "voice-a1",
+                "participantId": "a1",
+                "reason": "OVERLAP_COACH",
+                "blockingPlacedTaskId": "main-a2",
+                "startsEliminated": 1,
+                "blockingDecisionDepth": 1,
+                "blockingDecisionMainTaskId": "main-a2"
+              },
+              {
+                "depth": 4,
+                "mainTaskId": "main-b1",
+                "feederTaskId": "voice-b1",
+                "participantId": "b1",
+                "reason": "OVERLAP_COACH",
+                "blockingPlacedTaskId": "main-b2",
+                "startsEliminated": 1,
+                "blockingDecisionDepth": 3,
+                "blockingDecisionMainTaskId": "main-b2"
+              }
+            ],
+            "futureFeasibility": {
+              "totalEvaluations": 2,
+              "uniqueAuthorityStates": 2,
+              "repeatedEvaluations": 0,
+              "authorityResultCollisions": 0,
+              "negativeEvaluations": 0,
+              "repeatedNegativeEvaluations": 0,
+              "rejectsWithCertifiedBackjumpTarget": 0,
+              "evaluationsByDepth": {
+                "2": 2
+              },
+              "repeatedByDepth": {},
+              "negativeByDepth": {},
+              "assessments": [
+                {
+                  "depth": 2,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "c9ec77e20bfc9c982bc4f4afc594eb86820c229998622beff02dad71294c5c09",
+                  "resultSignature": "6be9eeb208b975a641e05ead20b62ff937a8c243ba8c1abff0ad4d9b2c70edce",
+                  "domainEmpty": false,
+                  "eligibleStartCount": 1,
+                  "blockers": [],
+                  "ancestralDecisionDepths": [],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                },
+                {
+                  "depth": 2,
+                  "taskId": "finish-a2",
+                  "authoritySignature": "9e07b834e2298f0c4bdb56a7ed8f987fbcd24de79036e33c46df0e9bd261542d",
+                  "resultSignature": "6be9eeb208b975a641e05ead20b62ff937a8c243ba8c1abff0ad4d9b2c70edce",
+                  "domainEmpty": false,
+                  "eligibleStartCount": 1,
+                  "blockers": [],
+                  "ancestralDecisionDepths": [],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                }
+              ],
+              "collisions": []
+            },
+            "bundleMaterializations": []
+          }
+        },
+        "preferred": {
+          "complete": false,
+          "status": "BRANCH_BUDGET_EXHAUSTED",
+          "branches": 102,
+          "coreBranches": 101,
+          "standaloneBranches": 1,
+          "achieved": null,
+          "reasonCodes": [
+            "CORE_BRANCH_BUDGET_EXHAUSTED"
+          ],
+          "fingerprint": null,
+          "validation": null,
+          "durationMs": 22.55551099999957,
+          "architecturesChecked": 1,
+          "architecturesStructurallyRejected": 0,
+          "selectedPattern": [],
+          "causalDiagnostic": {
+            "waterfallByDepth": {
+              "0": {
+                "mainCandidate": 0,
+                "feederStart": 0,
+                "residualMatching": 14,
+                "continuation": 0,
+                "participantMeal": 0,
+                "standaloneForward": 0,
+                "other": 3,
+                "total": 17
+              },
+              "1": {
+                "mainCandidate": 0,
+                "feederStart": 1,
+                "residualMatching": 15,
+                "continuation": 1,
+                "participantMeal": 0,
+                "standaloneForward": 1,
+                "other": 0,
+                "total": 18
+              },
+              "2": {
+                "mainCandidate": 0,
+                "feederStart": 1,
+                "residualMatching": 8,
+                "continuation": 1,
+                "participantMeal": 0,
+                "standaloneForward": 0,
+                "other": 0,
+                "total": 10
+              },
+              "3": {
+                "mainCandidate": 0,
+                "feederStart": 11,
+                "residualMatching": 46,
+                "continuation": 0,
+                "participantMeal": 0,
+                "standaloneForward": 0,
+                "other": 0,
+                "total": 57
+              }
+            },
+            "feederByDepth": {
+              "1": {
+                "startsConsidered": 12,
+                "startsCoachEliminated": 0,
+                "startsEvaluated": 1,
+                "valid": 1,
+                "invalid": 0,
+                "mainChoicesReachingFeeder": 1,
+                "mainChoicesWithValidFeeder": 1
+              },
+              "2": {
+                "startsConsidered": 13,
+                "startsCoachEliminated": 0,
+                "startsEvaluated": 1,
+                "valid": 1,
+                "invalid": 0,
+                "mainChoicesReachingFeeder": 1,
+                "mainChoicesWithValidFeeder": 1
+              },
+              "3": {
+                "startsConsidered": 14,
+                "startsCoachEliminated": 2,
+                "startsEvaluated": 11,
+                "valid": 11,
+                "invalid": 0,
+                "mainChoicesReachingFeeder": 1,
+                "mainChoicesWithValidFeeder": 1
+              }
+            },
+            "feederRejections": [],
+            "feederCoachDomainEliminations": [
+              {
+                "depth": 3,
+                "mainTaskId": "main-a1",
+                "feederTaskId": "voice-a1",
+                "participantId": "a1",
+                "reason": "OVERLAP_COACH",
+                "blockingPlacedTaskId": "main-a2",
+                "startsEliminated": 1,
+                "blockingDecisionDepth": 1,
+                "blockingDecisionMainTaskId": "main-a2"
+              },
+              {
+                "depth": 3,
+                "mainTaskId": "main-a1",
+                "feederTaskId": "voice-a1",
+                "participantId": "a1",
+                "reason": "OVERLAP_COACH",
+                "blockingPlacedTaskId": "voice-a2",
+                "startsEliminated": 1,
+                "blockingDecisionDepth": 1,
+                "blockingDecisionMainTaskId": "main-a2"
+              }
+            ],
+            "futureFeasibility": {
+              "totalEvaluations": 12,
+              "uniqueAuthorityStates": 12,
+              "repeatedEvaluations": 0,
+              "authorityResultCollisions": 0,
+              "negativeEvaluations": 11,
+              "repeatedNegativeEvaluations": 0,
+              "rejectsWithCertifiedBackjumpTarget": 0,
+              "evaluationsByDepth": {
+                "1": 1,
+                "3": 11
+              },
+              "repeatedByDepth": {},
+              "negativeByDepth": {
+                "3": 11
+              },
+              "assessments": [
+                {
+                  "depth": 1,
+                  "taskId": "finish-a2",
+                  "authoritySignature": "ab7af1895f51ef0ad78c0833c1f3ae31f4b67bcf61b902bd3ae6bce6b6c49d8a",
+                  "resultSignature": "6be9eeb208b975a641e05ead20b62ff937a8c243ba8c1abff0ad4d9b2c70edce",
+                  "domainEmpty": false,
+                  "eligibleStartCount": 1,
+                  "blockers": [],
+                  "ancestralDecisionDepths": [],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "0865f4af2729c00eb58bcb5aa359a698a527b7e472f33725dd9491e222791c39",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "4c2891ec59e2a25a7f2b5ce0fd3884b6cf4cda2155d612a09a50404ae8c41405",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "4d52a25c0d76c18659c739be58c3fb0789bcfa488dd76452ef6a7f1741b040a6",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "54883839e1816276065606df1bf0636d9493c723f34386649d1f6167faea129c",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "80c5abe3e52697d2dc1da00ef12b6bd0de1d52da0d89aebb37352045f3ff41ca",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "8243e9c19a1d05d1cde4c88be1fdb787f4090ddfd7089e697209ac596af58739",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "cbfb5b82318219ddb4118c9f46fde9506f1752fe0323a87028e016a32d7e9817",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "df3c7e586ecb4fad7c0f9aa1745611181c9ed49073aac9653230298938520101",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "ecc6c6cd4e8af8043d152146405940e6b1af6478aab826b036bde32ad95f43a4",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "f0ccf39cb7c4cf2421e133a3bd3f9a1ad36b978d91644e402bf29f35e6b0884b",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "f3e3cf6a25f127e6df42c52b6ec59b9b263bef8e300ecfb9321b551757c116ff",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                }
+              ],
+              "collisions": []
+            },
+            "bundleMaterializations": []
+          }
+        },
+        "deterministic": true
+      },
+      {
+        "budget": 1000,
+        "auto": {
+          "complete": true,
+          "status": "COMPLETE",
+          "branches": 51,
+          "coreBranches": 46,
+          "standaloneBranches": 5,
+          "achieved": 2,
+          "reasonCodes": [],
+          "fingerprint": "49918248fc89578048eac3accadcc969b62ddffe2645c2e4c005240ca9af245e",
+          "validation": {
+            "hardValid": true,
+            "dependencyViolationCount": 0,
+            "overlapViolationCount": 0,
+            "transitionViolationCount": 0,
+            "availabilityViolationCount": 0,
+            "taskAvailabilityViolationCount": 0,
+            "blockViolationCount": 0,
+            "resourceAvailabilityViolationCount": 0,
+            "resourceOverlapViolationCount": 0,
+            "resourceTransitionViolationCount": 0,
+            "secondaryContinuityViolationCount": 0,
+            "setupViolationCount": 0,
+            "setupPreparationViolationCount": 0,
+            "jointGroupViolationCount": 0,
+            "technicalOperationViolationCount": 0,
+            "technicalChainViolationCount": 0,
+            "spaceMealViolationCount": 0,
+            "mainFlowMealViolationCount": 0,
+            "anchoredAccompanimentViolationCount": 0,
+            "participantMealViolationCount": 0,
+            "resourceMealViolationCount": 0,
+            "itinerantUnitMealViolationCount": 0,
+            "reasonCodes": [],
+            "unstructuredReasonCodes": [],
+            "violations": []
+          },
+          "durationMs": 36.68510900000001,
+          "architecturesChecked": 1,
+          "architecturesStructurallyRejected": 0,
+          "selectedPattern": [
+            "a",
+            "a",
+            "b",
+            "b"
+          ],
+          "causalDiagnostic": {
+            "waterfallByDepth": {
+              "0": {
+                "mainCandidate": 0,
+                "feederStart": 0,
+                "residualMatching": 14,
+                "continuation": 0,
+                "participantMeal": 0,
+                "standaloneForward": 0,
+                "other": 7,
+                "total": 21
+              },
+              "2": {
+                "mainCandidate": 0,
+                "feederStart": 1,
+                "residualMatching": 17,
+                "continuation": 1,
+                "participantMeal": 0,
+                "standaloneForward": 2,
+                "other": 0,
+                "total": 21
+              },
+              "4": {
+                "mainCandidate": 0,
+                "feederStart": 1,
+                "residualMatching": 7,
+                "continuation": 1,
+                "participantMeal": 0,
+                "standaloneForward": 0,
+                "other": 0,
+                "total": 9
+              }
+            },
+            "feederByDepth": {
+              "2": {
+                "startsConsidered": 13,
+                "startsCoachEliminated": 1,
+                "startsEvaluated": 1,
+                "valid": 1,
+                "invalid": 0,
+                "mainChoicesReachingFeeder": 1,
+                "mainChoicesWithValidFeeder": 1
+              },
+              "4": {
+                "startsConsidered": 15,
+                "startsCoachEliminated": 1,
+                "startsEvaluated": 1,
+                "valid": 1,
+                "invalid": 0,
+                "mainChoicesReachingFeeder": 1,
+                "mainChoicesWithValidFeeder": 1
+              }
+            },
+            "feederRejections": [],
+            "feederCoachDomainEliminations": [
+              {
+                "depth": 2,
+                "mainTaskId": "main-a1",
+                "feederTaskId": "voice-a1",
+                "participantId": "a1",
+                "reason": "OVERLAP_COACH",
+                "blockingPlacedTaskId": "main-a2",
+                "startsEliminated": 1,
+                "blockingDecisionDepth": 1,
+                "blockingDecisionMainTaskId": "main-a2"
+              },
+              {
+                "depth": 4,
+                "mainTaskId": "main-b1",
+                "feederTaskId": "voice-b1",
+                "participantId": "b1",
+                "reason": "OVERLAP_COACH",
+                "blockingPlacedTaskId": "main-b2",
+                "startsEliminated": 1,
+                "blockingDecisionDepth": 3,
+                "blockingDecisionMainTaskId": "main-b2"
+              }
+            ],
+            "futureFeasibility": {
+              "totalEvaluations": 2,
+              "uniqueAuthorityStates": 2,
+              "repeatedEvaluations": 0,
+              "authorityResultCollisions": 0,
+              "negativeEvaluations": 0,
+              "repeatedNegativeEvaluations": 0,
+              "rejectsWithCertifiedBackjumpTarget": 0,
+              "evaluationsByDepth": {
+                "2": 2
+              },
+              "repeatedByDepth": {},
+              "negativeByDepth": {},
+              "assessments": [
+                {
+                  "depth": 2,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "c9ec77e20bfc9c982bc4f4afc594eb86820c229998622beff02dad71294c5c09",
+                  "resultSignature": "6be9eeb208b975a641e05ead20b62ff937a8c243ba8c1abff0ad4d9b2c70edce",
+                  "domainEmpty": false,
+                  "eligibleStartCount": 1,
+                  "blockers": [],
+                  "ancestralDecisionDepths": [],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                },
+                {
+                  "depth": 2,
+                  "taskId": "finish-a2",
+                  "authoritySignature": "9e07b834e2298f0c4bdb56a7ed8f987fbcd24de79036e33c46df0e9bd261542d",
+                  "resultSignature": "6be9eeb208b975a641e05ead20b62ff937a8c243ba8c1abff0ad4d9b2c70edce",
+                  "domainEmpty": false,
+                  "eligibleStartCount": 1,
+                  "blockers": [],
+                  "ancestralDecisionDepths": [],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                }
+              ],
+              "collisions": []
+            },
+            "bundleMaterializations": []
+          }
+        },
+        "preferred": {
+          "complete": false,
+          "status": "BRANCH_BUDGET_EXHAUSTED",
+          "branches": 1000,
+          "coreBranches": 998,
+          "standaloneBranches": 2,
+          "achieved": null,
+          "reasonCodes": [
+            "CORE_BRANCH_BUDGET_EXHAUSTED"
+          ],
+          "fingerprint": null,
+          "validation": null,
+          "durationMs": 194.87721999999985,
+          "architecturesChecked": 1,
+          "architecturesStructurallyRejected": 0,
+          "selectedPattern": [],
+          "causalDiagnostic": {
+            "waterfallByDepth": {
+              "0": {
+                "mainCandidate": 0,
+                "feederStart": 0,
+                "residualMatching": 14,
+                "continuation": 0,
+                "participantMeal": 0,
+                "standaloneForward": 0,
+                "other": 3,
+                "total": 17
+              },
+              "1": {
+                "mainCandidate": 0,
+                "feederStart": 2,
+                "residualMatching": 22,
+                "continuation": 2,
+                "participantMeal": 0,
+                "standaloneForward": 2,
+                "other": 0,
+                "total": 28
+              },
+              "2": {
+                "mainCandidate": 0,
+                "feederStart": 14,
+                "residualMatching": 77,
+                "continuation": 14,
+                "participantMeal": 0,
+                "standaloneForward": 0,
+                "other": 0,
+                "total": 105
+              },
+              "3": {
+                "mainCandidate": 0,
+                "feederStart": 161,
+                "residualMatching": 689,
+                "continuation": 0,
+                "participantMeal": 0,
+                "standaloneForward": 0,
+                "other": 0,
+                "total": 850
+              }
+            },
+            "feederByDepth": {
+              "1": {
+                "startsConsidered": 12,
+                "startsCoachEliminated": 0,
+                "startsEvaluated": 2,
+                "valid": 2,
+                "invalid": 0,
+                "mainChoicesReachingFeeder": 1,
+                "mainChoicesWithValidFeeder": 1
+              },
+              "2": {
+                "startsConsidered": 26,
+                "startsCoachEliminated": 0,
+                "startsEvaluated": 14,
+                "valid": 14,
+                "invalid": 0,
+                "mainChoicesReachingFeeder": 2,
+                "mainChoicesWithValidFeeder": 2
+              },
+              "3": {
+                "startsConsidered": 196,
+                "startsCoachEliminated": 28,
+                "startsEvaluated": 161,
+                "valid": 161,
+                "invalid": 0,
+                "mainChoicesReachingFeeder": 14,
+                "mainChoicesWithValidFeeder": 14
+              }
+            },
+            "feederRejections": [],
+            "feederCoachDomainEliminations": [
+              {
+                "depth": 3,
+                "mainTaskId": "main-a1",
+                "feederTaskId": "voice-a1",
+                "participantId": "a1",
+                "reason": "OVERLAP_COACH",
+                "blockingPlacedTaskId": "main-a2",
+                "startsEliminated": 14,
+                "blockingDecisionDepth": 1,
+                "blockingDecisionMainTaskId": "main-a2"
+              },
+              {
+                "depth": 3,
+                "mainTaskId": "main-a1",
+                "feederTaskId": "voice-a1",
+                "participantId": "a1",
+                "reason": "OVERLAP_COACH",
+                "blockingPlacedTaskId": "voice-a2",
+                "startsEliminated": 14,
+                "blockingDecisionDepth": 1,
+                "blockingDecisionMainTaskId": "main-a2"
+              }
+            ],
+            "futureFeasibility": {
+              "totalEvaluations": 163,
+              "uniqueAuthorityStates": 15,
+              "repeatedEvaluations": 148,
+              "authorityResultCollisions": 0,
+              "negativeEvaluations": 161,
+              "repeatedNegativeEvaluations": 148,
+              "rejectsWithCertifiedBackjumpTarget": 0,
+              "evaluationsByDepth": {
+                "1": 2,
+                "3": 161
+              },
+              "repeatedByDepth": {
+                "3": 148
+              },
+              "negativeByDepth": {
+                "3": 161
+              },
+              "assessments": [
+                {
+                  "depth": 1,
+                  "taskId": "finish-a2",
+                  "authoritySignature": "9e07b834e2298f0c4bdb56a7ed8f987fbcd24de79036e33c46df0e9bd261542d",
+                  "resultSignature": "6be9eeb208b975a641e05ead20b62ff937a8c243ba8c1abff0ad4d9b2c70edce",
+                  "domainEmpty": false,
+                  "eligibleStartCount": 1,
+                  "blockers": [],
+                  "ancestralDecisionDepths": [],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                },
+                {
+                  "depth": 1,
+                  "taskId": "finish-a2",
+                  "authoritySignature": "ab7af1895f51ef0ad78c0833c1f3ae31f4b67bcf61b902bd3ae6bce6b6c49d8a",
+                  "resultSignature": "6be9eeb208b975a641e05ead20b62ff937a8c243ba8c1abff0ad4d9b2c70edce",
+                  "domainEmpty": false,
+                  "eligibleStartCount": 1,
+                  "blockers": [],
+                  "ancestralDecisionDepths": [],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "0865f4af2729c00eb58bcb5aa359a698a527b7e472f33725dd9491e222791c39",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 14
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "4c2891ec59e2a25a7f2b5ce0fd3884b6cf4cda2155d612a09a50404ae8c41405",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 14
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "4d52a25c0d76c18659c739be58c3fb0789bcfa488dd76452ef6a7f1741b040a6",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 13
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "53cbad50dafda1687e13ba52091c725bccd80c67cd98127d32d10d76684deb38",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 1
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "54883839e1816276065606df1bf0636d9493c723f34386649d1f6167faea129c",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 13
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "80c5abe3e52697d2dc1da00ef12b6bd0de1d52da0d89aebb37352045f3ff41ca",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 13
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "8243e9c19a1d05d1cde4c88be1fdb787f4090ddfd7089e697209ac596af58739",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 13
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "b43934d3fcc82c026d087c8ebac6f9e9d24880c39b02c28343d8eb408cbed068",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 13
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "cbfb5b82318219ddb4118c9f46fde9506f1752fe0323a87028e016a32d7e9817",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 14
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "df3c7e586ecb4fad7c0f9aa1745611181c9ed49073aac9653230298938520101",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 13
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "ecc6c6cd4e8af8043d152146405940e6b1af6478aab826b036bde32ad95f43a4",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 14
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "f0ccf39cb7c4cf2421e133a3bd3f9a1ad36b978d91644e402bf29f35e6b0884b",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 13
+                },
+                {
+                  "depth": 3,
+                  "taskId": "finish-a1",
+                  "authoritySignature": "f3e3cf6a25f127e6df42c52b6ec59b9b263bef8e300ecfb9321b551757c116ff",
+                  "resultSignature": "6279f588afc5e75bac9395922281d29d80d39897d7c2b8a83c34a45736c9c74a",
+                  "domainEmpty": true,
+                  "eligibleStartCount": 0,
+                  "blockers": [
+                    "main-a1",
+                    "voice-a1"
+                  ],
+                  "ancestralDecisionDepths": [
+                    3
+                  ],
+                  "certifiedBackjumpTargetDepth": null,
+                  "occurrences": 13
+                }
+              ],
+              "collisions": []
+            },
+            "bundleMaterializations": []
+          }
+        },
+        "deterministic": true
+      }
+    ],
+    "conclusion": "INCONCLUSIVE search, not an engine infeasibility certificate. AUTO loses a complete valid fallback under identical budgets."
+  },
+  "isolatedDiagnosticManifest": {
+    "contractVersion": 1,
+    "productWrites": 0,
+    "remoteWrites": 0,
+    "codeBase": "20e4b30fbccde3615602fffadcf5f5e9a136c705",
+    "executionHead": "20e4b30fbccde3615602fffadcf5f5e9a136c705",
+    "nodeVersion": "v24.19.0",
+    "v8Version": "13.6.233.17-node.51",
+    "patchSha256": "3c269836b2555c9b5545c51d1a14b84755ba142d67f8ef221259f0190f2b3a8e",
+    "sourceHashes": {
+      "engine/planner-next/contracts.ts": {
+        "base": "46cf1e180e942aea0e1059a91346923c767bce49aaa1ed0aa25b41a2c8890426",
+        "experiment": "98ce0e01ecd5b0aa338b2ac45395d940d3bc388dac0cdeab61cdc4ce285e0057"
+      },
+      "engine/planner-next/mainFlowPatterns.ts": {
+        "base": "a8f1c48650adffed3054f76fa8ead9b5c2c1feb9e53aa60c7e9bb4d2f001f7e6",
+        "experiment": "c18052624290e2ac13d0c402a93c82a84ac1d62bcbf2a4bbfc624fe8f92e6e47"
+      },
+      "engine/planner-next/anonymousPipelineWitness.ts": {
+        "base": "158b186cf1645c8a356e4a8fce9d670b937d71dcede9b97a1d931007a560db8a",
+        "experiment": "792535b311819c0a651a0cf24953d86250a6fabfcd04319a7c74dc8d549a0ce7"
+      },
+      "engine/planner-next/exactMainAndFeederCore.ts": {
+        "base": "a9aa9a7710fb4d9703b2432dd6d4c092e908ca94fae2998c5dacb94ccd9ebfbf",
+        "experiment": "f1ff383ae2ea01b30ecaa7321d0cc1bc4c14043e0f82704b9262790460f00b67"
+      }
+    },
+    "modes": [
+      "COLD"
+    ]
+  },
+  "withdrawnPrototype": {
+    "knownWitnessRetention": "PASS",
+    "timeLocks": "PASS",
+    "typedPersistenceAdapterReplay": "PASS (PGlite native RPC)",
+    "promotion": "WITHDRAWN after cold fallback gate failed"
+  },
+  "artifacts": [
+    {
+      "path": "docs/evidence/MAIN-FLOW-SOFT-BLOCKS-A2-preference-3.json.gz",
+      "sha256": "6208754d6c3e9d95204b3d6efc347121e980245d71585b44a97c81693ae8ab8c",
+      "bytes": 48247
+    },
+    {
+      "path": "docs/evidence/MAIN-FLOW-SOFT-BLOCKS-A2-preference-4.json.gz",
+      "sha256": "253c93e04fe7e28db58f0f88829e89d6209ef231783b109a27177c9ecf677328",
+      "bytes": 45685
+    },
+    {
+      "path": "docs/evidence/MAIN-FLOW-SOFT-BLOCKS-AUTO-native.json.gz",
+      "sha256": "055f8231818b18d44d59f8eaf1023b3c1b3856264bacda410398d8651b7e096e",
+      "bytes": 15527
+    },
+    {
+      "path": "docs/evidence/MAIN-FLOW-SOFT-BLOCKS-search-experiment.patch",
+      "sha256": "3c269836b2555c9b5545c51d1a14b84755ba142d67f8ef221259f0190f2b3a8e",
+      "bytes": 4474
+    }
+  ],
+  "validation": {
+    "productTests": {
+      "pass": 2866,
+      "fail": 0,
+      "skip": 0,
+      "durationMs": 591988.144622,
+      "concurrency": 2,
+      "historicalExclusions": [
+        "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts",
+        "server/benchmarks/runA2Assist7Evidence.spec.ts"
+      ]
+    },
+    "typescript": "PASS",
+    "integrationTypescript": "PASS",
+    "build": "PASS",
+    "migrationSequence": "PASS (unchanged through 091)",
+    "coldDiagnostic": "PASS (expected regression reproduced deterministically)",
+    "officialSourceChecksums": "PASS",
+    "remoteCI": "PENDING"
+  }
+}
