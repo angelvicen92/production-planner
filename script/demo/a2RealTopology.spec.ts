@@ -15,6 +15,14 @@ test('complete versioned manifest covers all 23 original identities plus authori
  const d=buildA2ImportRows('2026-10-30',100000,options);assert.equal(d.input.planId,27002);assert.equal(d.input.tasks.length,266);
  assert.deepEqual(d.tables.spaces.map(s=>s.id),[103030,103031,103032]);assert.equal(d.tables.zones.length,0);
  assert.equal(d.tables.resource_items.length,0);assert.equal(d.tables.resource_types.length,0);
+ assert.equal(d.tables.task_templates.length,0,'no new global template identities');
+ assert.equal(d.reusedTaskTemplateReferences?.length,31);
+ assert.ok(d.input.tasks.every(t=>t.templateId>=20001&&t.templateId<=20031));
+ assert.ok(d.tables.daily_tasks.every(t=>t.template_id>=20001&&t.template_id<=20031));
+ assert.ok(d.tables.plan_task_template_snapshots.every(t=>t.source_template_id>=20001&&t.source_template_id<=20031));
+ assert.equal(d.tables.plan_task_template_snapshots.find(t=>t.template_name==='REDES')!.default_space_id,39);
+ assert.equal(d.tables.plan_task_template_snapshots.find(t=>t.template_name==='ENSAYO_ESTUDIO_7')!.default_space_id,48);
+ assert.equal(d.configuration.mealTaskTemplateId,d.input.mealTaskTemplateId);
  for(const task of d.input.tasks.filter(t=>['REALITY_INFLUENCER','REALITY_CORNER_MUSIC','CORNER_MUSIC','CORNER_INFLUENCER'].includes(t.templateName!)))assert.equal(task.spaceId,31);
  assert.ok(d.input.tasks.filter(t=>t.templateName==='REDES').every(t=>t.spaceId===39&&t.zoneId===14));
  assert.ok(d.input.tasks.filter(t=>t.operationalRole?.startsWith('transport_')).every(t=>t.spaceId===49&&t.blocksSpace===false));
@@ -62,7 +70,7 @@ test('catalog identity/parent drift aborts preparation; SQL checks historical ro
  const changed=structuredClone(a2HistoricalCatalog);changed.spaces.find(s=>s.id===31)!.parent_space_id=null;
  assert.throws(()=>buildA2ImportRows('2026-10-30',100000,{...options,historicalCatalog:changed}),/HISTORICAL_SPACE_DRIFT/);
  const {sql}=buildA2ImportSQL('2026-10-30',100000,'dyqusivzgxebkxkwohwn',options);
- assert.match(sql,/HISTORICAL_CATALOG_DRIFT:spaces:31/);assert.match(sql,/HISTORICAL_RESOURCE_DRIFT/);assert.match(sql,/EXISTING_ROWS_CHANGED/);
+ assert.match(sql,/HISTORICAL_CATALOG_DRIFT:spaces:31/);assert.match(sql,/HISTORICAL_RESOURCE_DRIFT/);assert.match(sql,/HISTORICAL_TEMPLATE_DRIFT/);assert.match(sql,/EXISTING_ROWS_CHANGED/);
  assert.doesNotMatch(sql,/\b(UPDATE|DELETE|TRUNCATE)\b/);
 });
 test('Totales lane construction retains the longer structural lane when catalog IDs reverse the two rooms',()=>{
