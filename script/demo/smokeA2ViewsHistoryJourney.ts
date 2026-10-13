@@ -54,6 +54,11 @@ export async function runA2ViewsHistoryJourney(options: Options, page: Page) {
     await page.goto(`${appUrl}/plans/${planId}?tab=planning`);
     const workspace = page.getByTestId("assisted-workspace"); await workspace.waitFor();
     await assertAll("contestants default");
+    await workspace.getByTestId('anchored-operations').locator('summary').click();
+    const composed=workspace.getByTestId('anchored-operation');assert.equal(await composed.count(),3);
+    for(const item of await composed.all()){assert.match(await item.innerText(),/45 min/);assert.match(await item.innerText(),/Ensayo incluido 15 min/);assert.match(await item.innerText(),/1 operación/);}
+    report.composedOperations={logical:3,technicalObligations:9,operationMinutes:45,anchorMinutes:15,additionalOccupancy:false};
+    await workspace.getByTestId('anchored-operations').locator('summary').click();
     assert.equal(requests.filter(r => r.url.endsWith("/history/timings")).length, 0, "history is lazy");
     requests.length = 0; // Login/role bootstrap precedes the visual-action audit.
     const contestants = (await db.query("SELECT id,name FROM public.contestants WHERE plan_id=$1", [planId])).rows;
@@ -121,7 +126,7 @@ export async function runA2ViewsHistoryJourney(options: Options, page: Page) {
     await workspace.getByRole("button", { name: "Por concursante", exact: true }).click(); await assertAll("contestants restored");
     const opened = page.waitForResponse(response => response.url().endsWith("/history/timings") && response.status() === 200);
     await page.getByText("Historial", { exact: true }).click(); await opened;
-    const history = workspace.locator("details");
+    const history = workspace.locator("details").filter({has:page.getByText("Historial",{exact:true})});
     await history.getByText("Generación", { exact: true }).first().waitFor();
     await history.getByText("Solicitud a aceptación", { exact: true }).first().waitFor();
     await history.getByText("No disponible", { exact: true }).first().waitFor();

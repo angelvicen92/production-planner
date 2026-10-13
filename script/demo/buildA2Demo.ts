@@ -31,7 +31,7 @@ for(let run=1;run<=2;run++){
   return buildAssistedPlanningSnapshotV1(blank.tasks.map(t=>({id:t.taskId,...t,...(rows.get(t.taskId) as object??{})})),undefined,r.proposedSnapshotOperationalMeals,
    next?.baseSnapshotSetupPreparations??r.baseSnapshotSetupPreparations,next?.baseSnapshotRoundPreparations??r.baseSnapshotRoundPreparations);
  });
- assert.equal(result.status,'PASS');assert.equal(result.stageCount,10);assert.equal(result.completedObligationCount,266);
+ assert.equal(result.status,'PASS');assert.equal(result.stageCount,11);assert.equal(result.completedObligationCount,266);
  assert.ok(result.iterations[0].durationMs<=120_000,'S1 reference gate');
  const audit=result.iterations.map((r:any,i:number)=>{
   const witness=r.futureStructuralWitnesses.find((w:any)=>w.kind==='JOINT_COMPLETION') as FutureJointCompletionWitnessV1;
@@ -48,7 +48,7 @@ for(let run=1;run<=2;run++){
   assert.equal(closure.certified,true);
   assert.equal(fingerprintAssistedPlanningSnapshotV1(snapshots[i]!),r.acceptedStageFingerprint);
   assert.ok(r.acceptedStageProposalRunId!=null,'persisted proposalRunId');
-  if(i===9)finalWitness=witness;
+  if(i===result.iterations.length-1)finalWitness=witness;
   return {stage:i+1,completed:r.completedObligationCount,newObligations:r.newObligationCount,scope:r.scopeSelector,
    durationMs:r.durationMs,branches:r.branchesExplored,configuredLedgerLimit:input.plannerNext?.searchBudget?.maxBranchExpansions,
    proposalRunId:r.acceptedStageProposalRunId,fingerprint:r.acceptedStageFingerprint,witnessFingerprint:witness.fingerprint,
@@ -86,7 +86,7 @@ const transport=Object.fromEntries(['arrival','departure'].map(direction=>{
  return [direction,[...groups].sort(([a],[b])=>a-b).map(([start,ids])=>({start,count:ids.length,taskIds:ids}))];
 }));
 const cam1=input.planResourceItems.find(r=>r.name==='cam-1')!;const camRows=finalWitness.tasks.filter(t=>t.requiredResourceIds?.includes(`plan-resource:${cam1.id}`)).sort((a,b)=>a.start-b.start);
-assert.equal(camRows.length,51);assert.ok(camRows.slice(1).every((t,i)=>camRows[i]!.end<=t.start));
+assert.equal(camRows.length,35);assert.ok(camRows.slice(1).every((t,i)=>camRows[i]!.end<=t.start));
 const taskById=new Map([...canonical.taskId].map(([id,n])=>[n,canonical.expansion.tasks.find(t=>t.id===id)!]));
 const uiTasks=input.tasks.map(t=>{const actual=finalWitness!.tasks.find(w=>w.id===`task:${t.id}`);return {...t,assignedResources:[...(actual?.requiredResourceIds??[]),...(actual?.coachId?[actual.coachId]:[])].map(id=>Number(id.split(':').at(-1))),startPlanned:null,endPlanned:null,template:{name:t.templateName,abbrev:t.templateName?.slice(0,5)}};});
 const uiSpaces=adapter.problem.spaces.map((s,i)=>({id:Number(s.id.split(':').at(-1)),name:canonical.expansion.spaces[i]?.id??s.id,zoneId:input.planSpaceSettings?.[i]?.zoneId??null}));
@@ -96,7 +96,7 @@ const bundle={version:1,kind:'VERIFIED_SERVICE_REPLAY',database:'IN_MEMORY_NOT_S
  plan:{workStart:input.workDay.start,workEnd:input.workDay.end,mealStart:input.meal?.start??null,mealEnd:input.meal?.end??null,mealMode:input.mealMode,dailyTasks:uiTasks},
  contestants:[...new Set(input.tasks.flatMap(t=>t.contestantId==null?[]:[t.contestantId]))].map(id=>({id,name:taskById.get(input.tasks.find(t=>t.contestantId===id)!.id)?.participantId??`Participante ${id}`})),
  spaces:uiSpaces,resources:input.planResourceItems.map(r=>({id:r.id,label:r.name,kind:'resource_item'})),
- metrics:{coverage:266,tasks:247,participantMeals:19,hardViolations:0,requiredViolations:0,cam1Tasks:51,cam1Overlaps:0,
+ metrics:{coverage:266,tasks:247,participantMeals:19,hardViolations:0,requiredViolations:0,cam1Tasks:camRows.length,cam1Overlaps:0,
   main,spaces,resources,coaches,participants,transport,operationalMeals:finalWitness.operationalMeals,
   definitions:{occupancy:'Union of occupied task intervals; denominator is configured availability, without deducting breaks.',
    internalGap:'Span from first start to last end minus union of intervals. Participant meals count as occupied. Includes transitions and authorized breaks; not avoidable waiting.',

@@ -9,6 +9,9 @@ import http from 'node:http';
 import net from 'node:net';
 import {resolve} from 'node:path';
 import pg from 'pg';
+import {collectA2TopologyMetrics} from './a2TopologyMetrics';
+import {a2HistoricalCatalog} from './a2HistoricalCatalog';
+import {seedA2HistoricalRehearsal} from './seedA2HistoricalRehearsal';
 import {buildA2ImportSQL} from './prepareA2Import';
 import {buildA2SchemaSQL} from './prepareA2Schema';
 import {inspectA2Catalog} from './a2Preflight';
@@ -30,6 +33,7 @@ if(process.argv.includes('--app')){
  assert.equal(process.env.SUPABASE_URL,process.env.VITE_SUPABASE_URL);
  await import('../../server/index');
 }else{
+ const historicalTopology=process.argv.includes('--historical-topology');
  const full=process.argv.includes('--full');
  const stageOrder=process.argv.includes('--stage-order');
  const autopilot=process.argv.includes('--autopilot');
@@ -45,12 +49,12 @@ if(process.argv.includes('--app')){
  for(const k of ['DOCKER_HOST','DOCKER_CONTEXT','DOCKER_TLS','DOCKER_TLS_VERIFY','DOCKER_CERT_PATH'])delete dockerEnv[k];
  const docker=(...args:string[])=>execFileSync('docker',['--host=unix:///var/run/docker.sock',...args],{env:dockerEnv,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
  const owned:string[]=[];let network=false,gateway:http.Server|undefined,app:ChildProcess|undefined,db:pg.Client|undefined;
- const runtimeFiles=['server/storage.ts','server/assistedPlanningSnapshot.ts','server/assistedProposalService.ts','server/assistedPlanningService.ts','server/routes.ts','engine/planner-next/jointCompletionWitness.ts','engine/planner-next/exactItinerantPlan.ts','client/src/components/layout.tsx','client/src/components/planning/assisted-planning-workspace.tsx','script/demo/a2ImportRows.ts','script/demo/prepareA2Import.ts','script/demo/prepareA2Schema.ts','script/demo/smokeA2Integration.ts','script/demo/smokeA2Journey.ts','client/src/lib/assisted-planning-view.ts','client/src/lib/assisted-draft-warnings.ts'];
- runtimeFiles.push('script/demo/a2SpatialTopology.ts','client/src/lib/planning-view-policy.ts','script/demo/smokeA2ManualSnapshotJourney.ts','script/demo/smokeA2ViewsHistoryJourney.ts','shared/assistedStageTiming.ts','client/src/lib/contestant-lane-sort.ts','client/src/components/planning/stage-history-timing.tsx','client/src/components/planning-timeline.tsx','client/src/pages/plan-details.tsx');
+ const runtimeFiles=['engine/planner-next/benchmarks/canonicalFullA2EngineInput.ts','engine/planner-next/benchmarks/focal-a2/full-day/manifest.ts','engine/planner-next/integration/engineInputPreflight.ts','engine/planner-next/placement.ts','engine/planner-next/validate.ts','script/demo/reconcileA2Topology.ts','script/demo/a2HistoricalCatalog.ts','shared/anchoredOperationProjection.ts','server/storage.ts','server/assistedPlanningSnapshot.ts','server/assistedProposalService.ts','server/assistedPlanningService.ts','server/routes.ts','engine/planner-next/jointCompletionWitness.ts','engine/planner-next/exactItinerantPlan.ts','client/src/components/layout.tsx','client/src/components/planning/assisted-planning-workspace.tsx','script/demo/a2ImportRows.ts','script/demo/prepareA2Import.ts','script/demo/prepareA2Schema.ts','script/demo/smokeA2Integration.ts','script/demo/smokeA2Journey.ts','client/src/lib/assisted-planning-view.ts','client/src/lib/assisted-draft-warnings.ts'];
+ runtimeFiles.push('script/demo/smokeA2HistoricalScopeJourney.ts','engine/planner-next/integration/engineInputAdapter.ts','script/demo/seedA2HistoricalRehearsal.ts','script/demo/a2TopologyMetrics.ts','script/demo/fixtures/a2-legacy-import.json.gz','script/demo/a2SpatialTopology.ts','client/src/lib/planning-view-policy.ts','script/demo/smokeA2ManualSnapshotJourney.ts','script/demo/smokeA2ViewsHistoryJourney.ts','shared/assistedStageTiming.ts','client/src/lib/contestant-lane-sort.ts','client/src/components/planning/stage-history-timing.tsx','client/src/components/planning-timeline.tsx','client/src/pages/plan-details.tsx');
  const hashes=()=>Object.fromEntries(runtimeFiles.map(file=>[file,createHash('sha256').update(readFileSync(file)).digest('hex')]));
  if(stageOrder)runtimeFiles.push('script/demo/probeA2StageOrder.ts','server/assistedScopeOrchestrator.ts');
  if(autopilot)runtimeFiles.push('shared/assistedAutopilot.ts','client/src/lib/assisted-autopilot.ts','script/demo/smokeA2AutopilotJourney.ts');
- const report:any={mode:'REAL_DISPOSABLE_PRODUCT_INTEGRATION',nodeVersion:process.version,v8Version:process.versions.v8,remoteWrites:0,images,requestedStages:full?10:2,startedAt:new Date().toISOString(),runtimeHashes:hashes(),checks:[],pending:['Connected Supabase catalog/backup adoption and original-row preservation','Published Replit runtime and user browser','Supabase Realtime/WebSocket transport']};
+ const report:any={mode:'REAL_DISPOSABLE_PRODUCT_INTEGRATION',nodeVersion:process.version,v8Version:process.versions.v8,remoteWrites:0,images,requestedStages:full?11:2,startedAt:new Date().toISOString(),runtimeHashes:hashes(),checks:[],pending:['Connected Supabase catalog/backup adoption and original-row preservation','Published Replit runtime and user browser','Supabase Realtime/WebSocket transport']};
  const pass=(name:string)=>{report.checks.push(name);console.log(`PASS ${name}`);};
  const cleanup=async()=>{
   if(app&&app.exitCode===null){app.kill('SIGTERM');await Promise.race([new Promise(r=>app!.once('exit',r)),delay(3000)]);if(app.exitCode===null)app.kill('SIGKILL');}
@@ -121,7 +125,9 @@ if(process.argv.includes('--app')){
   // A fresh ledger already owns 088. The adoption bundle targets catalog drift
   // in an existing database; its independent restoration tests remain required.
   await db.query(readFileSync('script/demo/sql/security.sql','utf8'));
-  const {dataset,sql}=buildA2ImportSQL('2026-10-30');await db.query(sql);assert.equal(await defaults(),beforeDefaults);
+  const preservation=historicalTopology?await seedA2HistoricalRehearsal(db,users.production.id):null;
+  const {dataset,sql}=buildA2ImportSQL('2026-10-30',historicalTopology?100000:0,'dyqusivzgxebkxkwohwn',historicalTopology?{historicalCatalog:a2HistoricalCatalog,planId:27002}:undefined);await db.query(sql);
+  if(preservation){await preservation.assertPreserved();report.historicalPreservation=preservation.summary;pass('historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import');}assert.equal(await defaults(),beforeDefaults);
   if(process.argv.includes('--scope-selection'))await seedA2ScopeCatalog(db,dataset);
   const results:any=await db.query(readFileSync('script/demo/sql/catalog-audit.sql','utf8'));
   const catalog=results.find((r:any)=>r.rows?.[0]?.audit)?.rows[0].audit;
@@ -145,6 +151,18 @@ if(process.argv.includes('--app')){
   if(stageOrder){const {probeA2StageOrder}=await import('./probeA2StageOrder');report.stageOrder=await probeA2StageOrder(options,report.journey,initialInput);}
   if(autopilot){const {runA2AutopilotJourney}=await import('./smokeA2AutopilotJourney');report.autopilot=await runA2AutopilotJourney(options,report.journey);}
   assert.deepEqual(hashes(),report.runtimeHashes,'runtime sources changed during integration rehearsal');
+  if(historicalTopology){
+   const metricInput=await buildEngineInput(dataset.input.planId,storage),projected=adaptEngineInputToPlannerNextProblem(metricInput);
+   assert.equal(projected.status,'SUPPORTED');if(projected.status!=='SUPPORTED')throw Error('Final metric input is unsupported');
+   const placements=(await db.query('SELECT id AS "taskId",start_planned AS "startPlanned",end_planned AS "endPlanned" FROM public.daily_tasks WHERE plan_id=$1 ORDER BY id',[dataset.input.planId])).rows.map(row=>({...row,taskId:Number(row.taskId)}));
+   report.topologyMetrics=collectA2TopologyMetrics(metricInput.tasks,placements,metricInput.contestantAvailabilityById!,Object.fromEntries(projected.problem.tasks.map(task=>[Number(task.id.split(':')[1]),(task.requiredResourceIds??[]).map(id=>Number(id.split(':')[1]))])));
+   const assertPhysical=(name:string,spaceId:number)=>assert.ok(metricInput.tasks.filter(t=>t.templateName===name).every(t=>t.spaceId===spaceId));
+   assertPhysical('REDES',39);assertPhysical('PASILLO',3);assertPhysical('REALITY_HALL',4);
+   assertPhysical('REALITY_INFLUENCER',31);assertPhysical('REALITY_CORNER_MUSIC',31);
+   assert.equal(report.topologyMetrics.placedObligations,266);assert.deepEqual(report.topologyMetrics.styling.overlapPairs,[]);
+   pass('persisted physical topology, styling capacity and final SQL KPI projection');
+  }
+  if(preservation){await preservation.assertPreserved();pass('old day, 11 prior Stages, 333 other tasks and historical catalog remain literal after real UI/Autopilot');}
   report.status='PASS';report.finishedAt=new Date().toISOString();
  }catch(error){report.status='FAIL';report.error=(error instanceof Error?error.stack??error.message:String(error)).replaceAll(password,'[local secret]').replaceAll(secret,'[local secret]');process.exitCode=1;console.error(report.error);}
  finally{await cleanup();writeFileSync(`${directory}/integration.json`,JSON.stringify(report,null,2));}

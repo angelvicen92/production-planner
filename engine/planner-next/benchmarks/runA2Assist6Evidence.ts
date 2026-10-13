@@ -23,8 +23,10 @@ const productTaskId=new Map(canonicalFixture.adapter.identityMap.filter(item=>it
 const productSpaceId=new Map(canonicalFixture.adapter.identityMap.filter(item=>item.namespace==="space")
   .map(item=>[item.canonicalId,Number(item.sourceId)]));
 const identity=canonicalFixture.adapter.identityMap;
-const conflictA=canonicalTask("C01.in");
-const conflictB=canonicalTask("C02.in");
+// IN/OUT use grouped transport and do not consume an exclusive physical slot.
+// The manual exception probe needs a real capacity-one pair instead.
+const conflictA=canonicalTask("C01.estilismo_entrada");
+const conflictB=canonicalTask("C02.estilismo_entrada");
 const scopeTask=canonicalTask("C02.ensayo_estudio_7");
 const requiredResourceSourceId=canonicalFixture.input.planResourceItems.find(resource=>resource.name==="cam-2")?.id;assert.ok(requiredResourceSourceId);
 const requiredResourceId=identity.find(item=>item.namespace==="plan-resource"&&item.sourceId===String(requiredResourceSourceId))?.canonicalId;assert.ok(requiredResourceId);

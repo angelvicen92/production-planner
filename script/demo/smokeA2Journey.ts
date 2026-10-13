@@ -16,6 +16,7 @@ import {collectAssistedDraftWarnings} from '../../client/src/lib/assisted-draft-
 import {auditComplete,auditOperationalMealConsolidation} from './probeA2StageOrder';
 import {runA2ManualSnapshotJourney} from './smokeA2ManualSnapshotJourney';
 import {runA2ViewsHistoryJourney} from './smokeA2ViewsHistoryJourney';
+import {runA2HistoricalScopeJourney} from './smokeA2HistoricalScopeJourney';
 import {runA2ScopeSelectionJourney} from './smokeA2ScopeSelectionJourney';
 
 type User={id:string;email:string;password:string;token:string};
@@ -75,12 +76,13 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
   pass('S0 creation from UI, all 19 contestant names, idempotence with admin, native persistence and reload');
   const daily=async()=>(await db.query('SELECT id,start_planned,end_planned,zone_id,space_id,location_label,duration_override,cameras_override,assigned_resource_ids FROM public.daily_tasks WHERE plan_id=$1 ORDER BY id',[planId])).rows.map(row=>({...row,id:Number(row.id),zone_id:row.zone_id==null?null:Number(row.zone_id),space_id:row.space_id==null?null:Number(row.space_id)}));
   const beforeS1=await daily();
+  if(process.argv.includes('--historical-topology'))await runA2HistoricalScopeJourney({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics},page);
   if(process.argv.includes('--scope-selection'))diagnostics.scopeSelectionInitial=await runA2ScopeSelectionJourney({appUrl,users,db,planId,directory,pass},page,'initial');
   const action=async(name:string,suffix:string)=>{
    const response=page!.waitForResponse(r=>r.url().endsWith(path+suffix)&&r.request().method()==='POST');
    await page!.getByRole('button',{name,exact:true}).click();const r=await response;assert.equal(r.status(),200,`${name}: ${await r.text()}`);return r.json();
   };
-  for(let ordinal=1;ordinal<=(full?10:2);ordinal++){
+  for(let ordinal=1;ordinal<=(full?11:2);ordinal++){
    current=await state();const base=structuredClone(current.activeStage.snapshotJson);
    const suggestedResponse:Promise<BrowserResponse>=page.waitForResponse(r=>r.url().endsWith(path+'/next-scope'));
    await page.getByRole('button',{name:'Sugerir siguiente alcance',exact:true}).click();const suggestion=await suggestedResponse;assert.equal(suggestion.status(),200);const scope=await suggestion.json();assert.ok(scope.selector);assert.ok(scope.taskIds.length>0);
@@ -139,9 +141,9 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
    }
    await page.reload();await page.getByTestId('assisted-workspace').waitFor();const reloaded=await state();assert.deepEqual(reloaded,after);
    await page.getByText('Historial',{exact:true}).click();await page.getByText(new RegExp(`Etapa ${ordinal} ·`)).waitFor();
-   if(ordinal===1||ordinal===10){await page.getByTestId('assisted-workspace').scrollIntoViewIfNeeded();await page.screenshot({path:`${directory}/S${ordinal}-real-ui.png`,fullPage:false});}
+   if(ordinal===1||ordinal===11){await page.getByTestId('assisted-workspace').scrollIntoViewIfNeeded();await page.screenshot({path:`${directory}/S${ordinal}-real-ui.png`,fullPage:false});}
    const completed=after.draft.tasks.filter((t:any)=>t.startPlanned&&t.endPlanned).length;
-   const operationalMealConsolidation=auditOperationalMealConsolidation(stageBefore.snapshot_json,witness);
+   const operationalMealConsolidation=auditOperationalMealConsolidation(stageBefore.snapshot_json,witness,adapter.problem);
    stages.push({ordinal,runId:Number(runId),scope:scope.selector,scopeCount:scope.taskIds.length,completed,generationMs,fingerprint:after.activeStage.snapshotFingerprint,hardCount:validated.validation.hardCount,requiredCount:validated.validation.requiredCount,independentCanonicalWitness:'PASS',witnessFingerprint:witness.fingerprint,closure:'CERTIFIED',auditCharges:charges,persistence:'PASS',reload:'PASS',protectedPlacements:'PASS',immutableStageTrigger:'PASS',staleHttpAndRpcAtomic:'PASS',draftResourceDisplay:'PASS',legalOccupancyWarnings:'PASS',operationalMealConsolidation});
    pass(`S${ordinal} UI → run → apply → validate → accept → SQL persistence → reload (${completed}/266)`);
    // S2 is always exercised to prove continuity and automatic protection.
@@ -149,14 +151,9 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
   let persistedCanonical;
   if(full){
    const final=await state();assert.equal(final.draft.tasks.filter((t:any)=>t.startPlanned&&t.endPlanned).length,266);
-   const baseline=JSON.parse(readFileSync('docs/demo/A2-STAGE-ORDER-EVIDENCE.json','utf8')).baselineFingerprint;
-   // Only parent identities change in topology v1. Compare the entire native
-   // snapshot with the old zone representation to preserve the certified geometry.
-   const oldZones=new Map(buildCanonicalFullA2EngineInput().input.tasks.map(task=>[task.id,task.zoneId??null]));
-   const oldRepresentation={...final.draft,tasks:final.draft.tasks.map((task:any)=>({...task,zoneId:oldZones.get(task.taskId)}))};
-   const normalizedFingerprint=fingerprintAssistedPlanningSnapshotV1(oldRepresentation);
-   assert.equal(normalizedFingerprint,baseline,'topology changes parents only; preserve certified placements, resources, meals and preparations');
-   diagnostics.spatialTopology={contractVersion:1,fingerprint:final.activeStage.snapshotFingerprint,previousNativeFingerprint:baseline,parentNormalizedFingerprint:normalizedFingerprint,onlyParentIdentityChanged:true};
+   // Fuente 06 v2.8 changes input/resource/capacity authorities. Comparing an
+   // old schedule fingerprint is not a regression gate for this new model.
+   diagnostics.spatialTopology={contractVersion:process.argv.includes('--historical-topology')?2:1,fingerprint:final.activeStage.snapshotFingerprint,inputModel:'SOURCE_06_V2_8',previousGeometryAuthority:false};
    const persisted=(await db.query('SELECT snapshot_json FROM public.assisted_planning_stages WHERE id=$1',[final.activeStage.id])).rows[0].snapshot_json;
    assert.deepEqual(persisted,final.draft,'SQL snapshot is the accepted and reloaded plan');
    const run=(await db.query('SELECT assisted_result_json FROM public.planning_runs WHERE id=$1',[final.activeStage.proposalRunId])).rows[0].assisted_result_json;
@@ -166,7 +163,7 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
    assert.equal(persistedCanonical.status,'PASS',JSON.stringify(persistedCanonical.validation));
    assert.equal(persistedCanonical.operationalMeals,persistedCanonical.expectedOperationalMeals);assert.deepEqual(persistedCanonical.missingOperationalMealIds,[]);
    pass('complete SQL snapshot: canonical hard-valid 266/266, all eight operational meals and preparations valid');
-   const next=await api(path+'/next-scope');assert.equal(next.status,200);assert.equal(next.data.selector,null);pass('ten-stage canonical coverage 266/266 and certified baseline fingerprint; no remaining scope');
+   const next=await api(path+'/next-scope');assert.equal(next.status,200);assert.equal(next.data.selector,null);pass('complete canonical coverage 266/266 and certified corrected snapshot; no remaining scope');
   }
   assert.deepEqual(pageErrors,[]);assert.notDeepEqual(await daily(),beforeS1);
   const reader=await browser.newPage({viewport:{width:1440,height:1000}});

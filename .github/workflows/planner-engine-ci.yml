@@ -53,12 +53,13 @@ jobs:
       - run: npx --no-install playwright install --with-deps chromium
       - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
       - run: npm run test:demo:a2-import
+      - run: node --import tsx --test script/demo/a2RealTopology.spec.ts script/demo/a2RealImportSQL.spec.ts shared/anchoredOperationProjection.test.ts
       - run: node --import tsx --test script/demo/a2DraftPreparationRecovery.spec.ts
       - run: npx --no-install tsx --test shared/assistedAutopilot.test.ts shared/assistedStageTiming.test.ts client/src/components/planning/assisted-planning-workspace.test.ts client/src/components/planning/stage-history-timing.test.ts client/src/lib/assisted-draft-warnings.test.ts client/src/lib/assisted-planning-view.test.ts client/src/lib/contestant-lane-sort.test.ts client/src/lib/planning-view-policy.test.ts server/assistedHistoryTimings.spec.ts client/src/lib/assisted-scope-selection.test.ts client/src/components/planning/assisted-location-scope.test.tsx
       - name: Assisted location selection in a disposable A2 catalog
         run: npm run demo:a2:smoke -- work/a2-scope-integration --scope-selection
       - name: Native SQL, Auth, HTTP and UI; canonical baseline and two deterministic orders
-        run: npm run demo:a2:smoke -- work/a2-integration --full --stage-order --autopilot
+        run: npm run demo:a2:smoke -- work/a2-integration --historical-topology --full --stage-order --autopilot
       - name: Integration evidence (no private app logs or credentials)
         if: always()
         uses: actions/upload-artifact@v4
@@ -98,7 +99,7 @@ jobs:
         run: |
           set -euo pipefail
           # ASST-010 single-task continuation is a known blocked historical
-          # diagnostic, outside the certified ten-stage SPACE demo release.
+          # diagnostic, outside the certified eleven-stage A2 product flow.
           # Retain its assertion unchanged and run it explicitly on dispatch.
           mapfile -t test_files < <(node script/run-test-suite.mjs --list engine server | grep -v -E '^(engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts|server/benchmarks/runA2Assist7Evidence.spec.ts)$')
           if (( ${#test_files[@]} == 0 )); then

@@ -86,6 +86,8 @@ interface BaseTask {
   duration: number;
   spaceId: string;
   dependencies: string[];
+  /** Explicit non-physical/transport occupancy; availability still applies. */
+  blocksSpace?: boolean;
   requiredResourceIds?: string[];
   availability?: Window[];
   itinerantUnitId?: string;

@@ -4,16 +4,20 @@ import { normalizePlanOptimizerSnapshotV1 } from '../../server/planOptimizerSnap
 import { buildPlanOptimizerSnapshotPersistenceBundleV1 } from '../../server/planOptimizerSnapshotPersistence';
 import { planPlannerNextConfigurationSchema } from '../../server/planPlannerNextConfiguration';
 import { resolveA2SpatialTopology } from './a2SpatialTopology';
+import { reconcileA2Topology } from './reconcileA2Topology';
+import type { A2HistoricalCatalog } from './a2HistoricalCatalog';
 import type { EngineInput } from '../../engine/types';
 
-export function buildA2ImportRows(date:string,offset=0){
+export interface A2ImportDataset { input:EngineInput; configuration:any; tables:Record<string,Record<string,any>[]>; order:string[]; optimizer:any; spatialTopologyVersion:number; historicalCatalogFingerprint?:string; catalogReferences?:A2HistoricalCatalog; resourceManifest?:unknown; resourceReferences?:Record<string,any>[]; resourceTypeReferences?:Record<string,any>[]; spatialManifest?:unknown; topologyCounts?:unknown }
+
+export function buildA2ImportRows(date:string,offset=0,options?:{historicalCatalog:A2HistoricalCatalog;planId:number}):A2ImportDataset{
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||new Date(`${date}T00:00:00Z`).toISOString().slice(0,10)!==date)throw Error('A valid explicit demo date is required');
  const canonical=buildCanonicalFullA2EngineInput({planId:27001,branchBudget:100_000});
  const topology=resolveA2SpatialTopology(canonical.expansion.spaces.map(space=>space.id));
- const zoneBySpace=new Map(canonical.expansion.spaces.map((space,index)=>[3001+index,topology.zoneBySource.get(space.id)!]));
+ const zoneBySpace=new Map(canonical.expansion.spaces.map(space=>[canonical.spaceId.get(space.id)!,topology.zoneBySource.get(space.id)!]));
  const source:EngineInput={...canonical.input,
   tasks:canonical.input.tasks.map(task=>({...task,...(task.spaceId==null?{}:{zoneId:zoneBySpace.get(task.spaceId)})})),
-  planZoneSettings:topology.zones.map(zone=>({zoneId:zone.id,availabilityStart:null,availabilityEnd:null,source:'A2_SPATIAL_TOPOLOGY_V1'})),
+  planZoneSettings:topology.zones.map(zone=>({zoneId:zone.id,availabilityStart:null,availabilityEnd:null,source:'A2_SPATIAL_TOPOLOGY_V2'})),
   planSpaceSettings:canonical.input.planSpaceSettings!.map(space=>({...space,zoneId:zoneBySpace.get(space.spaceId)!})),
  };
  // Numeric identities are translated uniformly; durations, clock times and labels are never translated.
@@ -34,13 +38,13 @@ export function buildA2ImportRows(date:string,offset=0){
   itinerantTeamAvailability:source.itinerantTeamAvailability!.map(p=>({...p,itinerantTeamId:rid(p.itinerantTeamId),planResourceItemIds:arr(p.planResourceItemIds??[])})),
  };
  const configuration=planPlannerNextConfigurationSchema.parse({contractVersion:1,legacyGroupingMode:'DISABLED',mealTaskTemplateId:input.mealTaskTemplateId,plannerNext:input.plannerNext,
-  taskOperations:input.tasks.map(t=>({taskId:t.id,plannerNextKind:t.plannerNextKind,operationalRole:t.operationalRole,dependsOnTaskIds:t.dependsOnTaskIds??[],breakKind:t.breakKind,mealOccupiesSpace:t.mealOccupiesSpace,jointGroupId:t.jointGroupId,setupFamilyId:t.setupFamilyId,itinerantTeamId:t.itinerantTeamId,itinerantTeamRequirement:t.itinerantTeamRequirement,allowedItinerantTeamIds:t.allowedItinerantTeamIds})),
+  taskOperations:input.tasks.map(t=>({taskId:t.id,plannerNextKind:t.plannerNextKind,operationalRole:t.operationalRole,dependsOnTaskIds:t.dependsOnTaskIds??[],breakKind:t.breakKind,mealOccupiesSpace:t.mealOccupiesSpace,blocksSpace:t.blocksSpace,jointGroupId:t.jointGroupId,setupFamilyId:t.setupFamilyId,itinerantTeamId:t.itinerantTeamId,itinerantTeamRequirement:t.itinerantTeamRequirement,allowedItinerantTeamIds:t.allowedItinerantTeamIds})),
   anchoredAccompaniments:input.anchoredAccompaniments,setupPolicies:input.setupPolicies,roundSynchronizations:input.roundSynchronizations,technicalChains:input.technicalChains,coachRouteTransitions:input.coachRouteTransitions,operationalMealPolicies:input.operationalMealPolicies,itinerantTeamAvailability:input.itinerantTeamAvailability,resourcePresenceConcentrationPolicies:input.resourcePresenceConcentrationPolicies,arrivalMaximumGroupSize:input.arrivalMaximumGroupSize,departureMaximumGroupSize:input.departureMaximumGroupSize});
  const tables:Record<string,Record<string,any>[]>={};
  // All operational settings are materialized on the new day. Global defaults
  // are deliberately absent, including on a project that already has days.
  tables.zones=topology.zones.map(zone=>({...zone,id:rid(zone.id)}));
- tables.spaces=canonical.expansion.spaces.map((s,i)=>({id:rid(3001+i),zone_id:rid(zoneBySpace.get(3001+i)!),name:s.id}));
+ tables.spaces=canonical.expansion.spaces.map(s=>({id:rid(canonical.spaceId.get(s.id)!),zone_id:rid(zoneBySpace.get(canonical.spaceId.get(s.id)!)!),name:s.id}));
  tables.resource_types=input.planResourceItems.map(r=>({id:r.typeId,code:`a2-${r.typeId}`,name:r.name.startsWith('cam-')?'Cámara':r.name}));
  tables.resource_items=input.planResourceItems.map(r=>({id:r.resourceItemId,type_id:r.typeId,name:r.name,is_active:false}));
  const templateIds=[...new Set(input.tasks.map(t=>t.templateId))].sort((a,b)=>a-b);
@@ -51,7 +55,7 @@ export function buildA2ImportRows(date:string,offset=0){
  const optimizer=normalizePlanOptimizerSnapshotV1({optimization_mode:'BASIC',group_by_space_and_template:false,main_zone_id:input.tasks.find(t=>t.plannerNextKind==='main')!.zoneId,arrival_grouping_target:input.arrivalGroupingTarget,departure_grouping_target:input.departureGroupingTarget,arrival_min_gap_minutes:input.arrivalMinGapMinutes,departure_min_gap_minutes:input.departureMinGapMinutes,van_capacity:input.vanCapacity,weight_arrival_departure_grouping:input.transportSettings!.groupingWeight},{arrivalPlanTemplateSnapshotId:snapId('IN'),departurePlanTemplateSnapshotId:snapId('OUT')},'DAY_OVERRIDE');
  const optimizerRows=buildPlanOptimizerSnapshotPersistenceBundleV1(input.planId,optimizer);
  tables.plans=[{id:input.planId,date,work_start:input.workDay.start,work_end:input.workDay.end,meal_start:input.meal.start,meal_end:input.meal.end,meal_mode:input.mealMode,
-  work_baseline_start:input.workDay.start,work_baseline_end:input.workDay.end,work_config_source:'DAY_OVERRIDE',work_override_by:null,work_override_at:null,meal_baseline_start:input.meal.start,meal_baseline_end:input.meal.end,meal_baseline_mode:input.mealMode,meal_config_source:'DAY_OVERRIDE',meal_override_by:null,meal_override_at:null,participant_transition_minutes:5,participant_transition_baseline_minutes:5,participant_transition_config_source:'DAY_OVERRIDE',participant_transition_override_by:null,participant_transition_override_at:null,contestant_meal_duration_minutes:input.contestantMealDurationMinutes,contestant_meal_max_simultaneous:input.contestantMealMaxSimultaneous,cameras_available:4,status:'draft',optimizer_engine:'v3',planner_next_configuration:configuration}];
+  work_baseline_start:input.workDay.start,work_baseline_end:input.workDay.end,work_config_source:'DAY_OVERRIDE',work_override_by:null,work_override_at:null,meal_baseline_start:input.meal.start,meal_baseline_end:input.meal.end,meal_baseline_mode:input.mealMode,meal_config_source:'DAY_OVERRIDE',meal_override_by:null,meal_override_at:null,participant_transition_minutes:5,participant_transition_baseline_minutes:5,participant_transition_config_source:'DAY_OVERRIDE',participant_transition_override_by:null,participant_transition_override_at:null,contestant_meal_duration_minutes:input.contestantMealDurationMinutes,contestant_meal_max_simultaneous:input.contestantMealMaxSimultaneous,cameras_available:6,status:'draft',optimizer_engine:'v3',planner_next_configuration:configuration}];
  tables.plan_zone_settings=tables.zones.map((z,i)=>({id:rid(11001+i),plan_id:input.planId,zone_id:z.id,name:z.name,availability_start:null,availability_end:null,source:'default',config_source:'INHERITED'}));
  tables.plan_space_settings=tables.spaces.map((s,i)=>({id:rid(12001+i),plan_id:input.planId,space_id:s.id,zone_id:s.zone_id,name:s.name,availability_start:null,availability_end:null,source:'default',config_source:'INHERITED'}));
  tables.plan_resource_items=input.planResourceItems.map(r=>({id:r.id,plan_id:input.planId,resource_item_id:r.resourceItemId,type_id:r.typeId,name:r.name,is_available:r.isAvailable,source:'adhoc',availability_start:r.availabilityStart,availability_end:r.availabilityEnd}));
@@ -64,5 +68,6 @@ export function buildA2ImportRows(date:string,offset=0){
  tables.plan_optimizer_snapshots=[{id:rid(14001),...optimizerRows.snapshot,baseline_snapshot:null,updated_by:null}];
  tables.plan_optimizer_snapshot_heuristics=optimizerRows.heuristics.map((h,i)=>({id:rid(15001+i),snapshot_id:rid(14001),...h}));
  const order=['zones','spaces','resource_types','resource_items','task_templates','plans','plan_task_template_snapshots','plan_zone_settings','plan_space_settings','plan_resource_items','contestants','daily_tasks','plan_space_resource_assignments','plan_resource_bundle_snapshots','plan_optimizer_snapshots','plan_optimizer_snapshot_heuristics'];
- return {input,configuration,tables,order,optimizer,spatialTopologyVersion:topology.contractVersion};
+ const dataset={input,configuration,tables,order,optimizer,spatialTopologyVersion:topology.contractVersion};
+ return options?reconcileA2Topology(dataset as A2ImportDataset,options.historicalCatalog,offset,options.planId):dataset;
 }

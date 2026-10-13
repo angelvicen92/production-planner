@@ -467,7 +467,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       const internal=(synchronizedJointTasks(a,b) && jointGroupMembers(problem.tasks,a.jointGroupId!).some(t=>t.id===a.id) && jointGroupMembers(problem.tasks,a.jointGroupId!).some(t=>t.id===b.id))
         || synchronizedTransportTasks(problem, a, b);
       const sharedParticipant = a.participantId !== undefined && b.participantId !== undefined && a.participantId === b.participantId;
-      if (!internal && (sharedParticipant || (a.coachId !== undefined && a.coachId === b.coachId) || a.spaceId === b.spaceId)) { overlap += 1; addViolation("OVERLAP_VIOLATION","HARD",[a,b],[],[a.spaceId,b.spaceId],{overlapStart:Math.max(a.start,b.start),overlapEnd:Math.min(a.end,b.end),participantId:sharedParticipant?a.participantId:null,coachId:a.coachId===b.coachId?a.coachId:null}); }
+      if (!internal && (sharedParticipant || (a.coachId !== undefined && a.coachId === b.coachId) || (a.spaceId === b.spaceId && a.blocksSpace!==false && b.blocksSpace!==false))) { overlap += 1; addViolation("OVERLAP_VIOLATION","HARD",[a,b],[],[a.spaceId,b.spaceId],{overlapStart:Math.max(a.start,b.start),overlapEnd:Math.min(a.end,b.end),participantId:sharedParticipant?a.participantId:null,coachId:a.coachId===b.coachId?a.coachId:null}); }
       const sharedResources=(a.requiredResourceIds ?? []).filter((id) => (b.requiredResourceIds ?? []).includes(id));
       if (!internal && sharedResources.length>0) { resourceOverlap += 1; addViolation("RESOURCE_OVERLAP_VIOLATION","HARD",[a,b],sharedResources,[a.spaceId,b.spaceId],{overlapStart:Math.max(a.start,b.start),overlapEnd:Math.min(a.end,b.end)}); }
     }

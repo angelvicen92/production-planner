@@ -22,8 +22,8 @@
       "sha256": "d960cb7dcc46ab15991d37d5153de0aba3b9720a684a3a6e22a65cb176c14ef4"
     }
   ],
-  "manifestFingerprint": "e3691cb4f7c5b398738a9d0124771c3284a83a1230aeaae3f08f283dd7de0624",
-  "expansionFingerprint": "a3a85ef48bd2e2bd2ab250cd121b074d49d4eef5e6d03259ce3ae391231e7412",
+  "manifestFingerprint": "96b60fcb7d8aeee83edc38aba342720681f68239d1876a524e465d5a24c9fab5",
+  "expansionFingerprint": "49267424f4275fd82d32896f7f2688033d82db80cf27eb0c2e1aa89ecc691017",
   "participantCount": 19,
   "contestantTaskCount": 266,
   "technicalTaskCount": 0,
@@ -83,6 +83,18 @@
     {
       "id": "cam-4",
       "label": "CAM 4",
+      "kind": "camera",
+      "availability": "inherits_day_unless_overridden"
+    },
+    {
+      "id": "cam-5",
+      "label": "CAM 5",
+      "kind": "camera",
+      "availability": "inherits_day_unless_overridden"
+    },
+    {
+      "id": "cam-6",
+      "label": "CAM 6",
       "kind": "camera",
       "availability": "inherits_day_unless_overridden"
     },
@@ -1617,7 +1629,7 @@
     "sameExpansionFingerprint": true
   },
   "orderInvariance": {
-    "shuffledExpansionFingerprint": "a3a85ef48bd2e2bd2ab250cd121b074d49d4eef5e6d03259ce3ae391231e7412",
+    "shuffledExpansionFingerprint": "49267424f4275fd82d32896f7f2688033d82db80cf27eb0c2e1aa89ecc691017",
     "matches": true
   },
   "inputImmutable": {

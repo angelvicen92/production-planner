@@ -24,3 +24,9 @@ test("joint activities only share occupancy when explicitly synchronized",()=>{
   assert.deepEqual(collectAssistedDraftWarnings(tasks,undefined,configuration),[]);
   assert.ok(collectAssistedDraftWarnings([{...tasks[0],endPlanned:'10:15'},tasks[1]],undefined,configuration).length>0);
 });
+
+test("configured nonphysical occupancy suppresses only space warnings and retains resource/participant warnings",()=>{
+ const rows=[{id:1,startPlanned:'10:00',endPlanned:'10:15',spaceId:3,contestantId:7,assignedResourceIds:[9]},{id:2,startPlanned:'10:05',endPlanned:'10:20',spaceId:3,contestantId:7,assignedResourceIds:[9]}];
+ const warnings=collectAssistedDraftWarnings(rows,undefined,{taskOperations:[{taskId:1,blocksSpace:false},{taskId:2,blocksSpace:false}]});
+ assert.ok(!warnings.some(w=>w.kind==='SPACE_OVERLAP'));assert.ok(warnings.some(w=>w.kind==='PARTICIPANT_OVERLAP'));assert.ok(warnings.some(w=>w.kind==='RESOURCE_OVERLAP'));
+});

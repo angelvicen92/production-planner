@@ -8,7 +8,7 @@ export function a2ImportStorageFixture(dataset:ReturnType<typeof buildA2ImportRo
  const t=JSON.parse(JSON.stringify(dataset.tables));
  const storage={getPlanEngineInputDetails:async()=>({plan:t.plans[0],tasks:t.daily_tasks,locks:[],breaks:[]}),getContestantsByPlan:async()=>t.contestants,
  getPlanTaskTemplateSnapshots:async()=>t.plan_task_template_snapshots.map(projectTaskTemplateSnapshotRow),getPlanOptimizerSnapshot:async()=>hydratePlanOptimizerSnapshotV1(t.plan_optimizer_snapshots[0],t.plan_optimizer_snapshot_heuristics,[]),
- getCamerasAvailableForPlan:async()=>4,getPlanZoneSettings:async()=>t.plan_zone_settings,getPlanSpaceSettings:async()=>t.plan_space_settings,
+ getCamerasAvailableForPlan:async()=>t.plans[0].cameras_available,getPlanZoneSettings:async()=>t.plan_zone_settings,getPlanSpaceSettings:async()=>t.plan_space_settings,
  getPlanResourceItemsForPlan:async()=>t.plan_resource_items,getZoneResourceAssignmentsForPlan:async()=>({}),getSpaceResourceAssignmentsForPlan:async()=>Object.fromEntries(t.plan_space_resource_assignments.map((r:any)=>[r.space_id,[r.plan_resource_item_id]])),
  getZoneResourceTypeRequirementsForPlan:async()=>({}),getSpaceResourceTypeRequirementsForPlan:async()=>({}),getResourceItemComponentsMap:async()=>({}),getPlanResourceBundleSnapshot:async()=>t.plan_resource_bundle_snapshots[0]};
  return {tables:t,storage:storage as unknown as IStorage};

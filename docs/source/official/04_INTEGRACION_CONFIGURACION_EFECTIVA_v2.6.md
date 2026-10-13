@@ -1,9 +1,13 @@
 # OPTIPLAN — INTEGRACIÓN Y CONFIGURACIÓN OPERATIVA EFECTIVA
 
-**Versión:** 2.5  
-**Fecha:** 30 de septiembre de 2026  
+**Versión:** 2.6<br>
+**Fecha:** 13 de octubre de 2026<br>
 **Estado:** Fuente oficial consolidada  
 **Absorbe:** SPEC-10, SPEC-11 y Addenda oficiales consolidados de dominio/operación.
+
+## Actualización v2.6 — proyección explícita de ocupación no física
+
+`blocksSpace=false` es una configuración tipada por tarea/instancia conservada en el contrato diario, snapshot de configuración, EngineInput y adapter. Omisión conserva ocupación física exclusiva. Una tarea no física o un transporte gobernado por su agrupación puede conservar identidad espacial/disponibilidad sin consumir capacidad exclusiva. Esta proyección no elimina recursos, márgenes, participante, dependencias, disponibilidad ni itinerancia. Search/domain y validación deben aplicar la misma autoridad; `shared`, capacidades generales y aliases de overlap no soportados siguen rechazándose expresamente. Ningún nombre o ID de benchmark activa esta regla.
 
 ## Actualización v2.5 — contrato end-to-end de márgenes específicos de participante
 
@@ -178,7 +182,7 @@ Una `ScopeProposal` automática debe cumplir sus gates HARD/REQUIRED. Una Stage 
 
 # SPEC-10 — Integración de Planner Next con EngineInput, ORC y publicación de producto
 
-**Versión:** 1.0  
+**Versión:** 1.0<br>
 **Provenance:** antigua SPEC-10 v1.0, hoy integrada en esta Fuente; no es una Fuente separada.  
 **Clasificación histórica de implementación:** DB Safe Merge
 
@@ -2117,7 +2121,7 @@ Las tres secciones siguientes se interpretan conjuntamente y bajo la precedencia
 
 **Provenance histórica:** propuesta original incorporada en esta Fuente; no constituye autoridad separada.  
 **Ámbito:** tareas, espacios, platós/zonas, recursos y planificación  
-**Fecha:** 2 de agosto de 2026
+**Fecha:** 2 de agosto de 2026<br>
 
 ---
 
@@ -2354,7 +2358,7 @@ La implementación deberá cubrir:
 
 **Provenance histórica:** propuesta original incorporada en esta Fuente; no constituye autoridad separada.  
 **Ámbito:** recursos globales, recursos del plan, disponibilidad y planificación  
-**Fecha:** 2 de agosto de 2026
+**Fecha:** 2 de agosto de 2026<br>
 
 ---
 
@@ -2578,7 +2582,7 @@ La implementación deberá cubrir:
 
 **Provenance histórica:** propuesta original incorporada en esta Fuente; no constituye autoridad separada.  
 **Ámbito:** configuración general, creación del día, jornada, comidas, platós/zonas, espacios, recursos y overrides diarios  
-**Fecha:** 2 de agosto de 2026
+**Fecha:** 2 de agosto de 2026<br>
 
 ---
 

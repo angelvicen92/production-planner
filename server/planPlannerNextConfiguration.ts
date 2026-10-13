@@ -6,7 +6,7 @@ const ids=z.array(id), text=z.string().min(1), hhmm=z.string().regex(/^([01]\d|2
 const window=z.object({start:hhmm,end:hhmm}).strict().refine(w=>w.start<w.end);
 const task=z.object({taskId:id,plannerNextKind:z.enum(['technical','main','vocal','auxiliary']),
  operationalRole:z.enum(['productive_task','meal_break_placeholder','transport_arrival','transport_departure']),
- breakKind:z.literal('participant_meal').optional(),mealOccupiesSpace:z.boolean().optional(),
+ breakKind:z.literal('participant_meal').optional(),mealOccupiesSpace:z.boolean().optional(),blocksSpace:z.boolean().optional(),
  dependsOnTaskIds:ids,jointGroupId:text.optional(),setupFamilyId:text.optional(),
  itinerantTeamId:id.optional(),itinerantTeamRequirement:z.enum(['none','any','specific']).optional(),allowedItinerantTeamIds:ids.optional()}).strict();
 

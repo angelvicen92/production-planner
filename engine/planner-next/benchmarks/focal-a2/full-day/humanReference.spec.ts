@@ -16,8 +16,8 @@ function intervalsForParticipant(participantId: string) {
 test("human A2 reference is complete, canonical, immutable and reference-only", () => {
   assert.equal(reference.referenceOnly, true);
   assert.equal(reference.forbiddenAsPlannerInput, true);
-  assert.equal(reference.sourceAudit.status, "REQUIRES_CONFIGURATION_CLARIFICATION");
-  assert.equal(reference.sourceAudit.knownAmbiguities.length, 2);
+  assert.equal(reference.sourceAudit.status, "KNOWN_REFERENCE_VIOLATIONS");
+  assert.equal(reference.sourceAudit.knownAmbiguities.length, 1);
   assert.equal(reference.intervals.length, 266);
   assert.equal(new Set(reference.intervals.map(({ taskId }) => taskId)).size, 266);
   assert.deepEqual([...reference.intervals.map(({ taskId }) => taskId)].sort(), [...expanded.taskIds].sort());
@@ -102,7 +102,7 @@ test("official PDF corrections are visible in the normalized reference", () => {
   assert.equal(reference.appliedCorrections.length, 7);
 });
 
-test("source audit preserves unresolved capacity conflicts instead of repairing the human reference", () => {
+test("source audit reports confirmed styling conflicts while Redes/Corner simultaneity remains legitimate", () => {
   const taskById = new Map(expanded.tasks.map((task) => [task.id, task] as const));
   const styling = reference.intervals.filter(({ taskId }) => taskById.get(taskId)?.spaceId === "styling").sort((a, b) => a.start - b.start || a.taskId.localeCompare(b.taskId, "en"));
   const stylingOverlap = styling.some((left, index) => styling.slice(index + 1).some((right) => left.start < right.end && right.start < left.end));
@@ -112,7 +112,7 @@ test("source audit preserves unresolved capacity conflicts instead of repairing 
   assert.deepEqual([c01Redes.start, c01Redes.end], [715, 720]);
   assert.deepEqual([c11Corner.start, c11Corner.end], [710, 720]);
   assert.ok(c01Redes.start < c11Corner.end && c11Corner.start < c01Redes.end);
-  assert.deepEqual(reference.sourceAudit.knownAmbiguities.map(({ code }) => code), ["STYLING_CAPACITY_UNSPECIFIED_BY_MASTER", "C01_REDES_OVERLAPS_C11_CORNER_IN_P14_RECURSOS_REFERENCE"]);
+  assert.deepEqual(reference.sourceAudit.knownAmbiguities.map(({ code }) => code), ["HUMAN_STYLING_CAPACITY_VIOLATION"]);
 });
 
 test("human reference materializes documented setup and round preparations without inflating productive task duration", () => {

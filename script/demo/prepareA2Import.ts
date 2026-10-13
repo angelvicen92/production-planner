@@ -1,11 +1,19 @@
 import {mkdirSync,writeFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {buildA2ImportRows} from './a2ImportRows';
+import type {A2HistoricalCatalog} from './a2HistoricalCatalog';
 import {literal,quote,identifier} from './sql';
 
-export function buildA2ImportSQL(date:string,offset=0,project='dyqusivzgxebkxkwohwn'){
+export function buildA2ImportSQL(date:string,offset=0,project='dyqusivzgxebkxkwohwn',options?:{historicalCatalog:A2HistoricalCatalog;planId:number}){
  if(!/^[a-z]{20}$/.test(project))throw Error('Invalid Supabase project ref');
- const dataset=buildA2ImportRows(date,offset),planId=dataset.input.planId;
+ const dataset=buildA2ImportRows(date,offset,options);
+ return buildA2ImportSQLFromDataset(dataset,project,options);
+}
+
+/** Preparation only; shares all transaction/collision/row-preservation guards. */
+export function buildA2ImportSQLFromDataset(dataset:ReturnType<typeof buildA2ImportRows>,project='dyqusivzgxebkxkwohwn',options?:{historicalCatalog:A2HistoricalCatalog;planId:number}){
+ if(!/^[a-z]{20}$/.test(project))throw Error('Invalid Supabase project ref');
+ const planId=dataset.input.planId;
  const statements=[`-- Canonical A2, unscheduled. No accepted stages, runs or solution times.
 -- Preflight must match the real connection host. Session settings are operator assertions.
 BEGIN;
@@ -23,12 +31,19 @@ END $$;
 CREATE TEMP TABLE a2_existing_rows(table_name text, row_id bigint, row_json jsonb) ON COMMIT DROP;`];
  // Preserve all pre-existing rows in touched tables, including both global defaults.
  for(const table of [...dataset.order,'program_settings','optimizer_settings'])statements.push(`INSERT INTO a2_existing_rows SELECT ${quote(table)},id,to_jsonb(t) FROM public.${identifier(table)} t;`);
+ if(options)for(const [table,rows] of Object.entries(options.historicalCatalog))for(const row of rows){
+  statements.push(`DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM public.${identifier(table)} t WHERE id=${row.id} AND to_jsonb(t) @> ${literal(row)}) THEN RAISE EXCEPTION 'HISTORICAL_CATALOG_DRIFT:${table}:${row.id}'; END IF; END $$;`);
+ }
+ for(const [table,rows] of [['resource_items',dataset.resourceReferences??[]],['resource_types',dataset.resourceTypeReferences??[]]] as const)for(const row of rows){
+  const identity=table==='resource_items'?{id:row.id,name:row.name,type_id:row.type_id}:{id:row.id,name:row.name,code:row.code};
+  statements.push(`DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM public.${identifier(table)} t WHERE id=${row.id} AND to_jsonb(t) @> ${literal(identity)}) THEN RAISE EXCEPTION 'HISTORICAL_RESOURCE_DRIFT:${table}:${row.id}'; END IF; END $$;`);
+ }
  for(const table of dataset.order){
   const ids=dataset.tables[table].filter(r=>r.id!=null).map(r=>r.id);
   if(ids.length)statements.push(`DO $$ BEGIN IF EXISTS(SELECT 1 FROM public.${identifier(table)} WHERE id IN (${ids.join(',')})) THEN RAISE EXCEPTION 'A2_ID_COLLISION:${table}'; END IF; END $$;`);
   if(dataset.tables[table].some(r=>r.plan_id!=null))statements.push(`DO $$ BEGIN IF EXISTS(SELECT 1 FROM public.${identifier(table)} WHERE plan_id=${planId}) THEN RAISE EXCEPTION 'A2_DAY_COLLISION:${table}'; END IF; END $$;`);
  }
- statements.push(`DO $$ BEGIN IF EXISTS(SELECT 1 FROM public.resource_types WHERE code IN (${dataset.tables.resource_types.map(r=>quote(r.code)).join(',')})) THEN RAISE EXCEPTION 'A2_UNIQUE_COLLISION:resource_types.code'; END IF; END $$;`);
+ if(dataset.tables.resource_types.length)statements.push(`DO $$ BEGIN IF EXISTS(SELECT 1 FROM public.resource_types WHERE code IN (${dataset.tables.resource_types.map(r=>quote(r.code)).join(',')})) THEN RAISE EXCEPTION 'A2_UNIQUE_COLLISION:resource_types.code'; END IF; END $$;`);
  for(const table of dataset.order){
   for(const row of dataset.tables[table]){
    const fields=Object.keys(row);

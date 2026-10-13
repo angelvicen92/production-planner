@@ -1,7 +1,7 @@
 export type AssistedDraftWarningKind = "AVAILABILITY"|"PARTICIPANT_OVERLAP"|"SPACE_OVERLAP"|"RESOURCE_OVERLAP"|"DIRECT_DEPENDENCY";
 export interface AssistedDraftWarning { readonly kind: AssistedDraftWarningKind; readonly taskIds: readonly number[]; }
 export interface AssistedWarningConfiguration {
-  readonly taskOperations?: readonly {taskId:number;operationalRole?:string;jointGroupId?:string}[];
+  readonly taskOperations?: readonly {taskId:number;operationalRole?:string;jointGroupId?:string;blocksSpace?:boolean}[];
   readonly arrivalMaximumGroupSize?:number;
   readonly departureMaximumGroupSize?:number;
 }
@@ -32,7 +32,7 @@ export function collectAssistedDraftWarnings(tasks:readonly any[],workday?:{star
   for(let left=0;left<tasks.length;left++)for(let right=left+1;right<tasks.length;right++){
     const a=tasks[left],b=tasks[right];if(!overlaps(a,b)||synchronized(a,b))continue;
     const pair=[Number(a.id),Number(b.id)];
-    if(a.spaceId!=null&&Number(a.spaceId)===Number(b.spaceId))warnings.push({kind:"SPACE_OVERLAP",taskIds:pair});
+    if(a.spaceId!=null&&Number(a.spaceId)===Number(b.spaceId)&&operations.get(Number(a.id))?.blocksSpace!==false&&operations.get(Number(b.id))?.blocksSpace!==false)warnings.push({kind:"SPACE_OVERLAP",taskIds:pair});
     if(a.contestantId!=null&&Number(a.contestantId)===Number(b.contestantId))warnings.push({kind:"PARTICIPANT_OVERLAP",taskIds:pair});
     const ar=ids(a.resourceIds??a.assignedResourceIds),br=new Set(ids(b.resourceIds??b.assignedResourceIds));
     if(ar.some(id=>br.has(id)))warnings.push({kind:"RESOURCE_OVERLAP",taskIds:pair});

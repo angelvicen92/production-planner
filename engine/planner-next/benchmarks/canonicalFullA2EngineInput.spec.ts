@@ -28,7 +28,7 @@ function capacityTask(problem: PlannerNextProblem, fixture: ReturnType<typeof bu
 test("canonical P14 projects exclusive CAM1 to every Recursos/Pasillo task and never to Giratuto", () => {
   const fixture = buildCanonicalFullA2EngineInput();
   const cam1 = fixture.input.planResourceItems.find(resource => resource.name === "cam-1");
-  assert.ok(cam1, "Fuente 06 v2.7 §7.5 requires CAM1 in the canonical resource graph");
+  assert.ok(cam1, "Fuente 06 v2.8 §7.5 requires CAM1 in the canonical resource graph");
   const problem = adaptedProblem(fixture.input);
   const cam1Id = `plan-resource:${cam1.id}`;
   assert.ok(problem.resources.some(resource => resource.id === cam1Id));
@@ -53,7 +53,7 @@ test("a missing shared resource admits the old cross-space conflict; effective C
     delete legacyInput.spaceResourceAssignments[sourceSpaceId(fixture, space)];
   }
   const legacy = adaptedProblem(legacyInput);
-  const redes = capacityTask(legacy, fixture, "C01.redes");
+  const redes = capacityTask(legacy, fixture, "C02.corner_influencer");
   const pasillo = capacityTask(legacy, fixture, "C12.pasillo");
   const start = 13 * 60 + 5;
   const placed: ScheduledTask[] = [{ ...redes, start, end: start + redes.duration }];
@@ -74,7 +74,7 @@ test("a missing shared resource admits the old cross-space conflict; effective C
     correctedInput.spaceResourceAssignments[sourceSpaceId(fixture, space)] = [cam1.id];
   }
   const corrected = adaptedProblem(correctedInput);
-  const correctedRedes = capacityTask(corrected, fixture, "C01.redes");
+  const correctedRedes = capacityTask(corrected, fixture, "C02.corner_influencer");
   const correctedPasillo = capacityTask(corrected, fixture, "C12.pasillo");
   const correctedPlaced: ScheduledTask[] = [{ ...correctedRedes, start, end: start + correctedRedes.duration }];
   assert.equal(canPlaceTask(corrected, correctedPasillo, start, correctedPlaced), false);
@@ -128,7 +128,7 @@ test("P14 remains one Assisted unit containing all three spaces", () => {
   assert.deepEqual(unit.memberSpaceIds, spaces);
   assert.deepEqual(unit.memberTaskIds, fixture.input.tasks.filter(task => task.spaceId != null && spaces.includes(task.spaceId))
     .map(task => task.id).sort((a, b) => a - b));
-  assert.equal(unit.memberTaskIds.length, 58);
+  assert.equal(unit.memberTaskIds.length, 42);
 });
 
 test("canonical P15 projects CAM2 through both member spaces with preferred concentration", () => {
