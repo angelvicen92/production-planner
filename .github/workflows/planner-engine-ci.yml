@@ -108,6 +108,12 @@ jobs:
           fi
           npx --no-install tsx --test "${test_files[@]}"
 
+      - name: Main-flow SOFT count cold-fallback diagnostic (isolated checkout)
+        run: |
+          # Pin the authorized diagnostic base, independently from newer main/template changes.
+          git fetch --no-tags --depth=1 origin 20e4b30fbccde3615602fffadcf5f5e9a136c705
+          node --import tsx script/demo/mainFlowSoftBlockDiagnostic.ts --cold-only
+
       - name: Historical ASST-010 single-task continuation diagnostic
         if: ${{ github.event_name == 'workflow_dispatch' }}
         run: npx --no-install tsx --test server/benchmarks/runA2Assist7Evidence.spec.ts

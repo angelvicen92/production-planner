@@ -177,6 +177,14 @@ Disponibilidades efectivas se derivan en `effectivePlanSpatialAvailability.ts`. 
 
 El adapter es la frontera de wiring y `validatePlan` tiene contadores separados de bloques, continuidad, setup/preparación y round/preparación. Evidence: SPEC10-018 y SPEC10-020, sus benchmarks, `mainFlowPatterns.spec.ts`, `secondaryContinuity.spec.ts` y `roundSynchronization.spec.ts`. Assisted mantiene spaces y policies globales, pero al filtrar tasks puede convertir un contexto global en un problema local distinto; por eso setup y round son `PARTIAL` en esa dimensión.
 
+La preferencia SOFT por número total de bloques sigue sin superficie productiva.
+[MAIN-FLOW-SOFT-BLOCKS](../evidence/MAIN-FLOW-SOFT-BLOCKS.md) certifica witnesses
+A2 completos de 3/4 en un experimento aislado, pero reproduce pérdida de fallback
+frío por agotamiento del CORE antes de alcanzar la familia mínima. Su patch no
+es una capacidad ACTIVE ni cambia el contrato AUTO; la extensión queda bloqueada
+hasta un certificado estructural sound de las obligaciones futuras y protección
+verificada del fallback con el mismo presupuesto.
+
 ### Transitions and resources (TRN-01…RES-05)
 
 Participantes y recursos tienen buffers globales; coaches pueden usar matriz dirigida por origen/destino (`engineInputCoachRouteTransitions.ts`, `coachRouteTransitions.ts`). Placement elimina candidatos inviables y validation vuelve a comprobar overlap/transición. SPEC10-019 enlaza el contrato de coach con test, benchmark y Evidence.
