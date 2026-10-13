@@ -38,6 +38,17 @@ CREATE TEMP TABLE a2_existing_rows(table_name text, row_id bigint, row_json json
   const identity=table==='resource_items'?{id:row.id,name:row.name,type_id:row.type_id}:{id:row.id,name:row.name,code:row.code};
   statements.push(`DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM public.${identifier(table)} t WHERE id=${row.id} AND to_jsonb(t) @> ${literal(identity)}) THEN RAISE EXCEPTION 'HISTORICAL_RESOURCE_DRIFT:${table}:${row.id}'; END IF; END $$;`);
  }
+ // Reused catalogue templates must exist unchanged. A day's snapshot may
+ // legitimately use a different effective location from the global default.
+ // Do not infer template identity from a name-only match or insert duplicates.
+ for(const row of dataset.reusedTaskTemplateReferences??[])statements.push(`DO $ BEGIN
+  IF NOT EXISTS (
+   SELECT 1 FROM public.task_templates t WHERE t.id=${row.id}
+     AND t.name=${quote(row.name)}
+     AND t.default_duration=${row.default_duration}
+     AND t.auto_create_on_contestant_create IS FALSE
+  ) THEN RAISE EXCEPTION 'HISTORICAL_TEMPLATE_DRIFT:${row.id}'; END IF;
+ END $;`);
  for(const table of dataset.order){
   const ids=dataset.tables[table].filter(r=>r.id!=null).map(r=>r.id);
   if(ids.length)statements.push(`DO $$ BEGIN IF EXISTS(SELECT 1 FROM public.${identifier(table)} WHERE id IN (${ids.join(',')})) THEN RAISE EXCEPTION 'A2_ID_COLLISION:${table}'; END IF; END $$;`);
