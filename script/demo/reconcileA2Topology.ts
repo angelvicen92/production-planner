@@ -34,6 +34,25 @@ export function reconcileA2Topology(d:ReturnType<typeof buildA2ImportRows>,catal
  input.planZoneSettings=catalog.zones.map(zone=>({zoneId:zone.id,availabilityStart:null,availabilityEnd:null,source:'A2_REAL_TOPOLOGY_V2'}));
  input.planSpaceSettings=spaces.map(space=>({spaceId:space.id,zoneId:space.zone_id,parentSpaceId:space.parent_space_id,availabilityStart:null,availabilityEnd:null,source:'A2_REAL_TOPOLOGY_V2'}));
  const tables=d.tables;
+ // The global template is an identity/catalog reference, not the day's effective
+ // location contract. Reuse existing identities and retain the translated,
+ // immutable per-day snapshots. Never update historical global templates.
+ const reusedTaskTemplateReferences=tables.task_templates.map(row=>({
+  id:row.id-offset,name:row.name,default_duration:row.default_duration
+ }));
+ const originalIdByImportId=new Map(tables.task_templates.map(row=>[row.id,row.id-offset]));
+ if(originalIdByImportId.size!==tables.task_templates.length)throw Error('DUPLICATE_A2_TEMPLATE_IDENTITY');
+ const originalTemplateId=(id:number)=>{
+  const sourceId=originalIdByImportId.get(id);
+  if(sourceId===undefined||sourceId<=0)throw Error(`UNRESOLVED_A2_TEMPLATE:${id}`);
+  return sourceId;
+ };
+ input.tasks=input.tasks.map(task=>({...task,templateId:originalTemplateId(task.templateId)}));
+ if(input.mealTaskTemplateId!=null)input.mealTaskTemplateId=originalTemplateId(input.mealTaskTemplateId);
+ for(const task of tables.daily_tasks)task.template_id=originalTemplateId(task.template_id);
+ for(const snapshot of tables.plan_task_template_snapshots)
+  snapshot.source_template_id=originalTemplateId(snapshot.source_template_id);
+ tables.task_templates=[];
  // Use the observed product assets, including CAM5/CAM6 already required by 06.
  // Old ad-hoc A2 resource rows remain literal and are never activated or edited.
  const assetBySource=new Map(a2ResourceManifest.map(row=>[row.sourceId,catalog.resource_items.find(asset=>asset.id===row.resourceItemId)!]));
@@ -54,11 +73,11 @@ export function reconcileA2Topology(d:ReturnType<typeof buildA2ImportRows>,catal
  for(const row of tables.plan_space_resource_assignments)row.space_id=sid(row.space_id);
  // Rewrite the already validated day contract with the translated authorities.
  const c=d.configuration;
- const configuration={...c,plannerNext:input.plannerNext,setupPolicies:input.setupPolicies,roundSynchronizations:input.roundSynchronizations,coachRouteTransitions:input.coachRouteTransitions,operationalMealPolicies:input.operationalMealPolicies};
+ const configuration={...c,mealTaskTemplateId:input.mealTaskTemplateId,plannerNext:input.plannerNext,setupPolicies:input.setupPolicies,roundSynchronizations:input.roundSynchronizations,coachRouteTransitions:input.coachRouteTransitions,operationalMealPolicies:input.operationalMealPolicies};
  tables.plans[0].planner_next_configuration=configuration;
  tables.plan_optimizer_snapshots[0].main_zone_id=1;
  return {...d,input,configuration,spatialTopologyVersion:A2_REAL_TOPOLOGY_VERSION,
-  historicalCatalogFingerprint:a2CatalogFingerprint(catalog),catalogReferences:catalog,resourceReferences,resourceTypeReferences,resourceManifest:a2ResourceManifest,spatialManifest:mapping.map(row=>({...row,
+  historicalCatalogFingerprint:a2CatalogFingerprint(catalog),catalogReferences:catalog,reusedTaskTemplateReferences,resourceReferences,resourceTypeReferences,resourceManifest:a2ResourceManifest,spatialManifest:mapping.map(row=>({...row,
    operationalMealPolicyIds:(input.operationalMealPolicies??[]).filter(policy=>(policy.spaceIds??[]).includes(row.targetSpaceId!)).map(policy=>policy.id),
    explicitRequirementsByTask:input.tasks.filter(task=>task.spaceId===row.targetSpaceId).map(task=>({taskId:task.id,
     taskType:task.templateName,dependsOnTaskIds:task.dependsOnTaskIds??[],directResourceIds:task.assignedResourceIds??[],
