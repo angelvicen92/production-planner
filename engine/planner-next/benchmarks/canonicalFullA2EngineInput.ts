@@ -22,12 +22,15 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
   const config = expansion.effectiveConfiguration;
   
   const participantId = new Map(expansion.participants.map((id, index) => [id, 201 + index] as const));
-  const spaceId = new Map(expansion.spaces.map((space, index) => [space.id, 3001 + index] as const));
-  const resourceId = new Map(expansion.resources.map((resource, index) => [resource.id, 4001 + index] as const));
+  // Preserve the 23 historical source IDs; Redes is an explicit V2 extension.
+  const legacySpaces = expansion.spaces.filter(space => space.id !== "redes-maqui-pelu");
+  const spaceId = new Map([...legacySpaces.map((space, index) => [space.id, 3001 + index] as const), ["redes-maqui-pelu", 3024] as const]);
+  const legacyResources=expansion.resources.filter(resource=>!["cam-5","cam-6"].includes(resource.id));
+  const resourceId = new Map([...legacyResources.map((resource,index)=>[resource.id,4001+index] as const),["cam-5",4010] as const,["cam-6",4011] as const]);
   const itinerantUnitId = new Map(expansion.itinerantUnits.map((unit, index) => [unit.id, 5001 + index] as const));
   const taskId = new Map(expansion.tasks.map((task, index) => [task.id, 10001 + index] as const));
   const templateId = new Map([...new Set(expansion.tasks.map((task) => task.type))].sort().map((type, index) => [type, 20001 + index] as const));
-  const zoneId = new Map(expansion.spaces.map((space, index) => [space.id, 6001 + index] as const));
+  const zoneId = new Map([...spaceId].map(([id, numeric]) => [id, numeric + 3000]));
   
   const tasks: TaskInput[] = expansion.tasks.map((task) => {
     const participant = task.participantId ? participantId.get(task.participantId)! : null;
@@ -53,6 +56,7 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
         : task.transport?.direction === "arrival" ? "transport_arrival"
         : task.transport?.direction === "departure" ? "transport_departure"
         : "productive_task",
+      ...(task.spaceId === "reality-plato" || task.transport ? { blocksSpace: false } : {}),
       ...(isMeal ? { breakKind: "participant_meal", mealOccupiesSpace: false } : {}),
       ...(task.requiredResourceIds.length ? { assignedResourceIds: task.requiredResourceIds.map((id) => resourceId.get(id)!) } : {}),
       ...(task.dependencies.length ? { dependsOnTaskIds: task.dependencies.map((id) => taskId.get(id)!) } : {}),
@@ -97,7 +101,7 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
   input.planSpaceSettings = expansion.spaces.map((space) => ({ spaceId: spaceId.get(space.id)!, zoneId: zoneId.get(space.id)!, availabilityStart: null, availabilityEnd: null, source: "A2-FULL-EXEC-001" }));
   input.contestantAvailabilityById = Object.fromEntries(expansion.participants.map((id) => [participantId.get(id)!, { ...config.participantAvailability[id] }]));
   input.planResourceItems = expansion.resources.map((resource, index) => ({
-    id: resourceId.get(resource.id)!, resourceItemId: 7001 + index, typeId: 8001 + index,
+    id: resourceId.get(resource.id)!, resourceItemId: 7000 + resourceId.get(resource.id)! - 4000, typeId: 8000 + resourceId.get(resource.id)! - 4000,
     name: resource.id, isAvailable: true, availabilityStart: resource.id === "eva" ? "16:00" : null,
     availabilityEnd: resource.id === "eva" ? config.effectiveDayWindow.end : null,
   }));
@@ -109,6 +113,7 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
   input.spaceResourceAssignments = Object.fromEntries([
     ["p14-recursos", "cam-1"], ["p14-pasillo", "cam-1"],
     ["p15-croma", "cam-2"], ["p15-estrellas-sillon", "cam-2"],
+    ["totales-1", "cam-5"], ["totales-coreo", "cam-6"],
   ].map(([space, resource]) => [spaceId.get(space)!, [resourceId.get(resource)!]]));
   input.resourcePresenceConcentrationPolicies = { [resourceId.get("cam-2")!]: "PREFERRED" };
   input.zoneResourceTypeRequirements = {};
@@ -213,5 +218,5 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
     source: "engine-buildInput-optimizer-transport",
   };
 
-  return { input, expansion, validation, config, itinerantUnitId, taskId, templateId, operationalMealGroups };
+  return { input, expansion, validation, config, itinerantUnitId, taskId, templateId, spaceId, operationalMealGroups };
 }

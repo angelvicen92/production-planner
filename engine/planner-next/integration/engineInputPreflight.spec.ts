@@ -1078,7 +1078,7 @@ for (const [value, expected] of [[undefined, false], [0, false], [1, true], [2, 
   });
 }
 
-for (const [field, value] of [["blocksSpace", false], ["allowsSpaceOverlap", true], ["spaceOccupancyMode", "shared"], ["spaceOccupancyMode", "non_blocking"]] as const) {
+for (const [field, value] of [["allowsSpaceOverlap", true], ["spaceOccupancyMode", "shared"], ["spaceOccupancyMode", "non_blocking"]] as const) {
   test(`ocupación de tarea ${field}=${String(value)} no se degrada a exclusiva`, () => {
     const found = issue(input({ tasks: [task(1, { [field]: value })] }), "UNSUPPORTED_SPACE_OCCUPANCY", "1");
     assert.equal(found.path, "tasks.1.spaceOccupancy");

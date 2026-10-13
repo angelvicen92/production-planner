@@ -4,15 +4,15 @@ import { acceptedVisibleObligationCounts, runA2Assist8Evidence } from "./runA2As
 
 test("stage metrics include Sodexo obligations and exclude supporting and witness placements",()=>{
   let accepted:Array<{taskId:number}>=[];
-  const sizes=[19,19,8,19,10,36,58,38,2,57];
+  const sizes=[19,19,8,19,8,36,42,38,2,18,57];
   for(const [index,size] of sizes.entries()){
     const ids=Array.from({length:size},(_,offset)=>accepted.length+offset+1);
-    const mealIds=new Set(index===9?ids.slice(-19):[]);
+    const mealIds=new Set(index===10?ids.slice(-19):[]);
     const after=[...accepted,...ids.map(taskId=>({taskId}))];
     const metrics=acceptedVisibleObligationCounts(accepted,after,ids,ids.filter(id=>!mealIds.has(id)),mealIds);
     assert.equal(after.length-accepted.length,metrics.newObligationCount);
     assert.equal(metrics.newObligationCount,metrics.visibleScopeCount);
-    if(index===9){assert.equal(metrics.newObligationCount,57);assert.equal(metrics.newTaskPlacementCount,38);
+    if(index===10){assert.equal(metrics.newObligationCount,57);assert.equal(metrics.newTaskPlacementCount,38);
       assert.equal(metrics.newParticipantMealPlacementCount,19);}
     accepted=after;
   }

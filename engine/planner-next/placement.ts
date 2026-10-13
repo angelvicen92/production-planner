@@ -124,13 +124,14 @@ export function exactTaskDynamicStartDomain(problem:PlannerNextProblem,task:Task
     const sharedCoach=task.coachId!==undefined&&other.coachId===task.coachId;
     const sharedResources=(task.requiredResourceIds??[]).filter(id=>(other.requiredResourceIds??[]).includes(id));
     const sharedItinerantUnit=task.itinerantUnitId!==undefined&&task.itinerantUnitId===other.itinerantUnitId;
-    const sharedSpace=task.spaceId===other.spaceId;
+    const sameLocation=task.spaceId===other.spaceId;
+    const sharedSpace=sameLocation&&task.blocksSpace!==false&&other.blocksSpace!==false;
     if(!sharedParticipant&&!sharedCoach&&!sharedSpace&&sharedResources.length===0&&!sharedItinerantUnit)continue;
     let before=0,after=0;
     // Participant travel is a boundary contract even when both tasks share a space.
     // The other transition authorities intentionally remain zero within one space.
     if(sharedParticipant){before=participantGapMinutes(problem,task,other);after=participantGapMinutes(problem,other,task);}
-    if(!sharedSpace){
+    if(!sameLocation){
       if(sharedCoach&&task.coachId!==undefined){before=Math.max(before,effectiveCoachTransitionMinutes(problem,task.coachId,task.spaceId,other.spaceId));after=Math.max(after,effectiveCoachTransitionMinutes(problem,task.coachId,other.spaceId,task.spaceId));}
       for(const id of sharedResources)before=after=Math.max(before,after,effectiveResourceTransitionMinutes(problem,id));
       if(sharedItinerantUnit){const transition=problem.itinerantUnits?.find(unit=>unit.id===task.itinerantUnitId)?.transitionMinutes??0;before=after=Math.max(before,after,transition);}
@@ -191,7 +192,7 @@ export function diagnoseTaskPlacement(problem: PlannerNextProblem, task: Task, s
     if (overlaps(other,{start,end})) {
       if (sharedParticipant) return reject("OVERLAP_PARTICIPANT",other.id);
       if (sharedCoach) return reject("OVERLAP_COACH",other.id);
-      if (other.spaceId===task.spaceId) return reject("OVERLAP_SPACE",other.id);
+      if (other.spaceId===task.spaceId && task.blocksSpace!==false && other.blocksSpace!==false) return reject("OVERLAP_SPACE",other.id);
       if (sharedResource) return reject("OVERLAP_REQUIRED_RESOURCE",other.id);
       if (sharedItinerantUnit) return reject("OVERLAP_REQUIRED_RESOURCE",other.id);
     }

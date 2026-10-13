@@ -25,7 +25,7 @@ export async function runA2AutopilotJourney(options: Options, baseline: Baseline
   const initial = await api();
   const lineage: any[] = []; let ancestor = initial.activeStage;
   while (ancestor) { lineage.unshift(ancestor); ancestor = initial.history.find((s: any) => Number(s.id) === Number(ancestor.parentStageId)); }
-  assert.equal(lineage.length, 11); const s0 = lineage[0], s5 = lineage[5];
+  assert.equal(lineage.length, baseline.stages.length+1); const s0 = lineage[0], s5 = lineage[5];
   const report: any = { status: "RUNNING", mechanism: "actual UI button → Auth → real planning_runs → native HTTP/RPC/SQL", remoteWrites: 0, baseline: baseline.stages.map(s => ({ scope: s.scope, completed: s.completed, fingerprint: s.fingerprint, hard: s.hardCount, required: s.requiredCount })), scenarios: [], requests: [], delegatedConfirmations: 0 };
   diagnostics.autopilot = report;
   const save = () => writeFileSync(`${directory}/autopilot.json`, JSON.stringify(report, null, 2));
@@ -110,7 +110,9 @@ export async function runA2AutopilotJourney(options: Options, baseline: Baseline
     await page.reload(); await page.getByTestId("assisted-workspace").waitFor(); assert.deepEqual(await api(), stopped);
     pass("Autopilot from S5: safe stop after one Stage, double click yields one delegation, reload retains checkpoint");
     await start(); await waitTerminal("COMPLETE"); const resumed = await audit("S5 stop/reload/resume", s5, requestStart);
-    assert.equal(resumed.accepted, 5);
+    // Stage ordinal counts all accepted branches; lineage position counts the
+    // logical checkpoint after the acceptance-order experiments.
+    assert.equal(resumed.accepted, baseline.stages.length-lineage.indexOf(s5));
     await api("/rollback", "POST", { targetStageId: Number(s5.id) }); await reopen(); const repeatStart = await markStart();
     await start(); await waitTerminal("COMPLETE"); const repeated = await audit("same S5 checkpoint repeated", s5, repeatStart);
     assert.equal(repeated.fingerprint, resumed.fingerprint, "identical accepted checkpoint and unchanged scopes produce deterministic completion");
@@ -130,7 +132,7 @@ export async function runA2AutopilotJourney(options: Options, baseline: Baseline
     assert.equal(clean.currentConfigRevisionId,beforeRestart.currentConfigRevisionId);await preserveHistory();
     assert.equal((await db.query("SELECT count(*) AS n FROM public.daily_tasks WHERE plan_id=$1 AND (start_planned IS NOT NULL OR end_planned IS NOT NULL)",[planId])).rows[0].n,"0");
     await reopen(); const fullStart = await markStart();
-    await start(); await waitTerminal("COMPLETE"); const full = await audit("S0 uninterrupted", s0, fullStart); assert.equal(full.accepted, 10);
+    await start(); await waitTerminal("COMPLETE"); const full = await audit("S0 uninterrupted", s0, fullStart); assert.equal(full.accepted, baseline.stages.length);
     const restartReport={status:"PASS",confirmationDismissedWithoutWrites:true,viewerDenied:403,fromCompleted:266,restoredCompleted:0,bootstrapFingerprint:clean.draftFingerprint,currentConfigurationPreserved:true,historyPreserved:true,replannedCompleted:full.completed,newAcceptedStages:full.accepted,canonical:full.canonical,finalFingerprint:full.fingerprint,remoteWrites:0};
     diagnostics.restart=restartReport;writeFileSync(`${directory}/restart.json`,JSON.stringify(restartReport,null,2));
     pass("confirmed UI restart from 266/266 to exact S0; audit retained; full Autopilot replans 266/266");

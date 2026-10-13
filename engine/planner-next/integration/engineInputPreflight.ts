@@ -1133,7 +1133,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
         addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT", "task", task.id, `${path}.camerasOverride`, "Camera quantity has no explicit fixed resource identities.", { quantity: task.camerasOverride });
       }
     }
-    const unsupportedOccupancy = task.blocksSpace === false || task.allowsSpaceOverlap === true
+    const unsupportedOccupancy = task.allowsSpaceOverlap === true
       || task.spaceOccupancyMode === "shared" || task.spaceOccupancyMode === "non_blocking";
     if (unsupportedOccupancy) {
       addIssue("UNSUPPORTED_SPACE_OCCUPANCY", "task", task.id, `${path}.spaceOccupancy`, "Task space occupancy cannot be represented as exclusive occupancy.", {

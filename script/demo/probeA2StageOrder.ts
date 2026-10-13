@@ -68,10 +68,18 @@ function auditWitness(a:EngineInputAdapterSupportedResult,w:FutureJointCompletio
  return {fingerprint:w.fingerprint,revalidation:'PASS',canonical:'PASS',closure:'CERTIFIED',charges,closureFingerprint:closure.witnessFingerprint};
 }
 
-export function auditOperationalMealConsolidation(snapshot:AssistedPlanningSnapshotV1,witness:FutureJointCompletionWitnessV1){
+export function auditOperationalMealConsolidation(snapshot:AssistedPlanningSnapshotV1,witness:FutureJointCompletionWitnessV1,problem:EngineInputAdapterSupportedResult["problem"]){
  const accepted=new Set(placed(snapshot).map(task=>`task:${task.taskId}`));
  return witness.operationalMeals.map(meal=>{
-  const consumers=witness.tasks.filter(task=>meal.spaceIds.includes(task.spaceId)||(task.requiredResourceIds??[]).some(id=>meal.resourceIds.includes(id))||task.coachId!==undefined&&meal.resourceIds.includes(task.coachId));
+  // Pending eligible A/B compositions remain virtual, not the chosen future
+  // assignment of a particular witness. Accepted assignments are literal.
+  const consumers=problem.tasks.filter(source=>{
+   const task=accepted.has(source.id)?witness.tasks.find(task=>task.id===source.id)??source:source;
+   const domain=task.allowedItinerantUnitIds?.length?task.allowedItinerantUnitIds:task.itinerantUnitId?[task.itinerantUnitId]:[];
+   const resources=[...(task.requiredResourceIds??[]),...(task.coachId?[task.coachId]:[]),
+    ...(accepted.has(source.id)?[]:(problem.itinerantUnits??[]).filter(unit=>domain.includes(unit.id)).flatMap(unit=>unit.resourceIds??[]))];
+   return meal.spaceIds.includes(task.spaceId)||resources.some(id=>meal.resourceIds.includes(id));
+  });
   const closed=consumers.length>0&&consumers.every(task=>accepted.has(task.id));
   const stored=snapshot.operationalMeals?.find(item=>item.policyId===meal.id);
   assert.equal(Boolean(stored),closed,'consolidate complete consumers only; future meals stay virtual');
@@ -172,7 +180,7 @@ export async function probeA2StageOrder(options:Options,journey:Journey,initialI
  };
  const originalStages=await stages(),originalRuns=await runs(),originalFinal=await state();
  const baselineArchive=await archive('baseline');diagnostics.stageOrderBaselineArchive=baselineArchive;
- assert.equal(journey.stages.length,10);assert.equal(count(originalFinal.draft),266);
+ assert.equal(journey.stages.length,11);assert.equal(count(originalFinal.draft),266);
  const stageContent=(s:any)=>{const {archived_at:_archived,...content}=s;return content;};
  const frozenStages=new Map(originalStages.map(s=>[Number(s.id),stageContent(s)]));
  const frozenRuns=new Map(originalRuns.map(r=>[Number(r.id),r]));
@@ -241,7 +249,7 @@ export async function probeA2StageOrder(options:Options,journey:Journey,initialI
      await post('/accept-stage',{...guard(validated),confirmation:'NONE'});const after=await state();
      assert.equal(Number(after.activeStage.proposalRunId),runId);assert.equal(Number(after.activeStage.parentStageId),Number(before.activeStage.id));assert.deepEqual(after.draft,applied.draft);assert.equal(after.activeStage.snapshotFingerprint,fingerprintAssistedPlanningSnapshotV1(after.draft));
      await preserveDaily(after.draft);await immutableHistory();assert.deepEqual(await state(),after,'fresh HTTP reload restores persisted authority');
-     Object.assign(step,{acceptedOrdinal:after.activeStage.ordinal,acceptedStageId:Number(after.activeStage.id),completedAfter:count(after.draft),remaining:266-count(after.draft),fingerprint:after.activeStage.snapshotFingerprint,hard:0,required:0,acceptedContentPreserved:true,dailyPersistence:true,reload:true,operationalMealConsolidation:auditOperationalMealConsolidation(after.draft,w)});save();
+     Object.assign(step,{acceptedOrdinal:after.activeStage.ordinal,acceptedStageId:Number(after.activeStage.id),completedAfter:count(after.draft),remaining:266-count(after.draft),fingerprint:after.activeStage.snapshotFingerprint,hard:0,required:0,acceptedContentPreserved:true,dailyPersistence:true,reload:true,operationalMealConsolidation:auditOperationalMealConsolidation(after.draft,w,adapter(await buildInput()).problem)});save();
      pass(`order ${left.ordinal}/${right.ordinal} repeat ${repeat}: explicit ${unit.recommendation.selectedUnitKind} → accepted S${after.activeStage.ordinal} (${step.completedAfter}/266)`);
     }
     const final=await state(),finalWitness=trace.steps.at(-1).evidence.futureStructuralWitnesses.find((w:any)=>w.kind==='JOINT_COMPLETION');assert.ok(finalWitness);

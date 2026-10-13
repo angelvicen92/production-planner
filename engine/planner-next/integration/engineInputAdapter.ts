@@ -171,6 +171,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
         ? engineTimeToMinute(protectedInterval.interval.end) - engineTimeToMinute(protectedInterval.interval.start)
         : source.durationOverrideMin!,
       spaceId: canonical("space", source.spaceId!),
+      ...(source.blocksSpace === false ? { blocksSpace: false } : {}),
       dependencies: [...new Set(source.dependsOnTaskIds ?? (source.dependsOnTaskId != null ? [source.dependsOnTaskId] : []))].sort((a, b) => a - b).map((id) => canonical("task", id)),
       ...(resources.length ? { requiredResourceIds: resources.map((id) => canonical("plan-resource", id)) } : {}),
       ...(fixed ? { availability: [window(fixed)] } : {}),
@@ -248,7 +249,10 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
       id: canonical("round-synchronization", policy.id),
       synchronization: policy.synchronization,
       lanes: [...policy.lanes]
-        .sort((left, right) => left.spaceId - right.spaceId)
+        // Lane axes follow structural demand, not unrelated database IDs.
+        .sort((left, right) => right.taskIds.length-left.taskIds.length
+          || Math.min(...left.taskIds)-Math.min(...right.taskIds)
+          || left.spaceId-right.spaceId)
         .map((lane) => ({
           spaceId: canonical("space", lane.spaceId),
           taskIds: [...lane.taskIds]

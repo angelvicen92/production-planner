@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import {writeFileSync} from 'node:fs';
 import type {runA2BrowserJourney} from './smokeA2Journey';
-import {fingerprintAssistedPlanningSnapshotV1 as fp} from '../../server/assistedPlanningSnapshot';
+import {fingerprintAssistedPlanningSnapshotV1 as fp,type AssistedPlanningSnapshotV1} from '../../server/assistedPlanningSnapshot';
 export async function runA2ManualSnapshotJourney(options:Parameters<typeof runA2BrowserJourney>[0]){
  const {appUrl,users,db,planId,directory,buildInput,pass}=options;
  assert.equal(new URL(appUrl).hostname,'127.0.0.1');
@@ -15,21 +15,26 @@ export async function runA2ManualSnapshotJourney(options:Parameters<typeof runA2
   return {status:response.status,data:await response.json() as any};
  };
  const state=async()=>{const r=await api('');assert.equal(r.status,200);return r.data;};
- const initial=await state(),base=initial.activeStage.snapshotJson;
- assert.equal(base.tasks.length,266);assert.equal(base.operationalMeals.length,8);assert.equal(base.roundPreparations.length,17);assert.equal(base.setupPreparations.length,1);
+ const initial=await state(),base:AssistedPlanningSnapshotV1=initial.activeStage.snapshotJson;
+ assert.equal(base.tasks.length,266);assert.equal(base.operationalMeals?.length,8);assert.equal(base.roundPreparations?.length,17);assert.equal(base.setupPreparations?.length,1);
  const invariantTables=['daily_tasks','assisted_planning_stages','planning_accepted_exceptions','planning_stage_validations'];
  const invariants=async()=>Promise.all(invariantTables.map(async table=>(await db.query(`SELECT to_jsonb(x) AS row FROM public.${table} x WHERE plan_id=$1 ORDER BY id`,[planId])).rows));
  const before=await invariants();
  const input=await buildInput();
- const original=validateManualAssistedDelta(input,base,[10048])!;assert.deepEqual(original.validationSummary.reasonCodes,[]);
+ const departures=input.tasks.filter(task=>task.operationalRole==='transport_departure');
+ const latestDepartureStart=base.tasks.filter(row=>departures.some(task=>task.id===row.taskId)).map(row=>row.startPlanned!).sort().at(-1)!;
+ const departure=departures.find(task=>input.contestantAvailabilityById?.[task.contestantId!]?.end==='19:00'
+  &&base.tasks.find(row=>row.taskId===task.id)?.startPlanned!==latestDepartureStart);
+ assert.ok(departure,'use a real earlier departure; leave the latest group to prove min-gap violation');
+ const original=validateManualAssistedDelta(input,base,[departure.id])!;assert.deepEqual(original.validationSummary.reasonCodes,[]);
  const guard=(s:any)=>({expectedDraftFingerprint:s.draftFingerprint,expectedBaseStageId:Number(s.draftBaseStageId)});
  const action=async(suffix:string,extra:Record<string,unknown>={},method='POST')=>{const current=await state();const r=await api(suffix,method,{...guard(current),...extra});assert.equal(r.status,200,JSON.stringify(r.data));return state();};
- const moved=await action('/draft',{changes:[{taskId:10048,startPlanned:'19:00',endPlanned:'19:05'}]},'PATCH');
+ const moved=await action('/draft',{changes:[{taskId:departure.id,startPlanned:'19:00',endPlanned:'19:05'}]},'PATCH');
  assert.deepEqual(moved.draft.setupPreparations,base.setupPreparations);assert.deepEqual(moved.draft.roundPreparations,base.roundPreparations);assert.deepEqual(moved.draft.operationalMeals,base.operationalMeals);
- const complete=validateManualAssistedDelta(input,moved.draft,[10048])!;
+ const complete=validateManualAssistedDelta(input,moved.draft,[departure.id])!;
  assert.deepEqual(complete.validationSummary.reasonCodes,['AVAILABILITY_VIOLATION','TRANSPORT_GROUPING_VIOLATION']);
  assert.deepEqual(complete.validationSummary.unstructuredReasonCodes,['TRANSPORT_GROUPING_VIOLATION']);
- assert.deepEqual(complete.structuredViolations[0].affectedTaskIds,[10048]);
+ assert.deepEqual(complete.structuredViolations[0].affectedTaskIds,[departure.id]);
  const blocked=await api('/validate','POST',guard(moved));assert.equal(blocked.status,422);assert.equal(blocked.data.code,'ASSISTED_DELTA_VALIDATION_UNSUPPORTED');
  assert.deepEqual(await invariants(),before,'manual replay records nothing when an anonymous family remains');
  const undone=await action('/draft/undo');assert.deepEqual(undone.draft,base);assert.equal(undone.draftFingerprint,initial.draftFingerprint);

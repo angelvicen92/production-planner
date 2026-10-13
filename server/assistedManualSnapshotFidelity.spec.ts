@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import test,{after} from 'node:test';
 import {readFileSync} from 'node:fs';
+import {gunzipSync} from 'node:zlib';
 import {PGlite} from '@electric-sql/pglite';
 import fixture from './fixtures/assistedA2S10.json';
-import {buildCanonicalA2AssistedStage1Fixture} from '../engine/planner-next/benchmarks/canonicalA2AssistedStage1Fixture';
+import {adaptEngineInputToPlannerNextProblem} from '../engine/planner-next/integration/engineInputAdapter';
+import type {EngineInput} from '../engine/types';
 import {fingerprintAssistedPlanningSnapshotV1,type AssistedPlanningSnapshotV1} from './assistedPlanningSnapshot';
 import type {IStorage} from './storage';
 process.env.SUPABASE_URL??='http://localhost';
@@ -12,7 +14,11 @@ process.env.SUPABASE_SERVICE_ROLE_KEY??='test';
 const {AssistedPlanningService}=await import('./assistedPlanningService');
 const {validateManualAssistedDelta,materializeAssistedSnapshotOccupations}=await import('./assistedProposalService');
 const {validatePlan}=await import('../engine/planner-next/validate');
-const {input,adapter}=buildCanonicalA2AssistedStage1Fixture();
+// Replay the frozen historical S10 with its own effective authorities. The
+// corrected day has a different topology and is certified by native integration.
+const historicalInput=JSON.parse(gunzipSync(readFileSync(new URL('../script/demo/fixtures/a2-legacy-import.json.gz',import.meta.url))).toString()).dataset.input as EngineInput;
+const input=structuredClone(historicalInput),adapter=adaptEngineInputToPlannerNextProblem(input);
+assert.equal(adapter.status,'SUPPORTED');if(adapter.status!=='SUPPORTED')throw Error('Historical A2 must remain representable');
 const base=fixture.snapshot as AssistedPlanningSnapshotV1;
 const moved={...base,tasks:base.tasks.map(row=>row.taskId===10048?{...row,startPlanned:'19:00',endPlanned:'19:05'}:row)};
 const fp=fingerprintAssistedPlanningSnapshotV1;
@@ -52,7 +58,7 @@ test('A2 causal replay distinguishes complete S10, complete C04 Draft and trunca
  const {roundPreparations:_round,setupPreparations:_setup,...truncated}=moved;
  const c=validateManualAssistedDelta(input,truncated,[10048])!;
  assert.deepEqual(c.validationSummary.unstructuredReasonCodes,['ROUND_PREPARATION_VIOLATION','SECONDARY_CONTINUITY_VIOLATION','SETUP_PREPARATION_VIOLATION','TRANSPORT_GROUPING_VIOLATION']);
- assert.deepEqual(input,buildCanonicalA2AssistedStage1Fixture().input,'validation leaves input immutable');
+ assert.deepEqual(input,historicalInput,'validation leaves historical input immutable');
  const unknown={...base,tasks:base.tasks.map(t=>t.taskId===10048?{...t,taskId:999999}:t)};
  assert.equal(validateManualAssistedDelta(input,unknown,[10001]),null,'never silently drops a placed product identity');
 });

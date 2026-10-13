@@ -2,6 +2,25 @@
 
 Proyecto conectado a GitHub y gestionado con Codex.
 
+## Demo A2 sobre catálogo histórico
+
+La Fuente 06 v2.8 y el [procedimiento de implantación](docs/evidence/A2-REAL-TOPOLOGY-DEPLOYMENT.md)
+definen la jornada corregida. Preparar sin conexión ni escrituras:
+
+```sh
+node --import tsx script/demo/prepareA2RealImport.ts 2026-10-30 27002 100000 work/a2-real-import work/catalog-identities.json
+```
+
+Ensayo reproducible en PostgreSQL/Auth/HTTP/UI descartables (requiere Docker y Chromium):
+
+```sh
+PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium node --import tsx script/demo/smokeA2Integration.ts work/a2-real-rehearsal --historical-topology --full --autopilot
+```
+
+El import de identidades source agrupadas se conserva para fixtures de compatibilidad;
+la implantación revisada usa el manifest histórico V2 y una jornada nueva. No ejecutar
+el paquete sobre Supabase/Replit conectados sin la revisión y autorización de implantación.
+
 ## Cómo actualizar Replit desde GitHub
 
 Después de hacer merge en GitHub, hay que ejecutar `git pull` en Replit para traer los cambios más recientes.

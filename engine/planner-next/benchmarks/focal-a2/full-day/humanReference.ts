@@ -33,7 +33,7 @@ export interface HumanA2Reference {
   ];
   readonly appliedCorrections: readonly string[];
   readonly sourceAudit: {
-    readonly status: "REQUIRES_CONFIGURATION_CLARIFICATION";
+    readonly status: "KNOWN_REFERENCE_VIOLATIONS";
     readonly knownAmbiguities: readonly {
       readonly code: string;
       readonly affectedCanonicalIds: readonly string[];
@@ -139,19 +139,13 @@ export function createHumanA2Reference(expanded: ExpandedCanonicalFullA2Template
     sourceDocuments: Object.freeze(["ENSAYO_A2_LV.pdf", "ENSAYO_A2_LV 15 JUNIO 2025 - DESGLOSE A2.pdf", "DOCUMENTO_MAESTRO_INTERPRETACION_ENSAYO_A2_v1.md"] as const),
     appliedCorrections: Object.freeze(["C09_DUPLICATE_SODEXO_REMOVED", "C12_SODEXO_40_MINUTES_AT_C11_REFERENCE_WINDOW", "C13_FINAL_C_IS_ESTILISMO_SALIDA", "C06_C10_JOINT_ALFOMBRA_ROJA_10_MINUTES", "C06_C10_JOINT_TOTALES_POST_5_MINUTES", "C16_ALFOMBRA_ROJA_WITHOUT_TOTALES_POST", "REALITY_EVA_HEADER_IS_CONFIGURATION_NOT_OBLIGATIONS"]),
     sourceAudit: Object.freeze({
-      status: "REQUIRES_CONFIGURATION_CLARIFICATION" as const,
+      status: "KNOWN_REFERENCE_VIOLATIONS" as const,
       knownAmbiguities: Object.freeze([
         Object.freeze({
-          code: "STYLING_CAPACITY_UNSPECIFIED_BY_MASTER",
+          code: "HUMAN_STYLING_CAPACITY_VIOLATION",
           affectedCanonicalIds: Object.freeze(["space:styling"]),
-          explanation: "The human reference contains simultaneous styling intervals, while the A2 master defines styling duration and ordering but does not declare single-person capacity.",
-          consequence: "Do not use an assumed styling capacity to declare the human reference hard-valid or invalid; effective day capacity must come from explicit configuration or source clarification.",
-        }),
-        Object.freeze({
-          code: "C01_REDES_OVERLAPS_C11_CORNER_IN_P14_RECURSOS_REFERENCE",
-          affectedCanonicalIds: Object.freeze(["C01.redes", "C11.corner_influencer", "space:p14-recursos"]),
-          explanation: "The contestant reference places C01 Redes at 11:55-12:00 while the spaces reference places C11 Corner Influencer at 11:50-12:00; both map canonically to Plató 14 - Recursos, whose master contract states single-person use.",
-          consequence: "The raw human timing remains preserved, but P14 Recursos hard-validity cannot be normalized by silently moving either task; source/configuration clarification is required.",
+          explanation: "The original human timing contains simultaneous styling intervals. Production explicitly confirms shared capacity 1 in Fuente 06 v2.8.",
+          consequence: "Preserve reference times, report the violation; do not claim human hard-validity or silently repair them.",
         }),
       ]),
     }),

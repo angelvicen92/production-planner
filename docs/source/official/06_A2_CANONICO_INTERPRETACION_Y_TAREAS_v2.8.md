@@ -1,9 +1,39 @@
 # OPTIPLAN — BENCHMARK A2 CANÓNICO: INTERPRETACIÓN Y OBLIGACIONES
 
-**Versión:** 2.7  
-**Fecha:** 30 de septiembre de 2026  
+**Versión:** 2.8<br>
+**Fecha:** 13 de octubre de 2026<br>
 **Estado:** Fuente oficial consolidada  
 **Absorbe:** Documento Maestro de Interpretación A2 v1.9, Cuadro de tareas A2 v1.3 y Addendum Reality/EVA/Alfombra/márgenes v1.0.
+
+## Actualización v2.8 — reconciliación física autorizada por producción
+
+Esta versión consolida las correcciones operativas expresas del responsable de producción del 13 de octubre de 2026. Sustituye materialmente la antigua asignación de Redes a Recursos/CAM1; ninguna asignación histórica errónea se convierte en requisito hard del nuevo día. Los PDFs originales no se modifican.
+
+| Operación/source | Destino histórico o identidad efectiva | Capacidad y recursos |
+|---|---|---|
+| Estilismo entrada y salida | zona 14, espacio 40 Vestu | Una capacidad compartida HARD=1, con huecos permitidos, sin continuidad obligatoria ni penalización de hueco no configurada; sin descanso de plató 75 min. |
+| Redes | zona 14 Otros, espacio 39 Maqui/Pelu | Independiente de Corner/Pasillo, capacidad 1, sin CAM1 ni recurso añadido automáticamente. Se preservan requisitos explícitos distintos, disponibilidad, dependencias, transporte y márgenes. |
+| P14 Pasillo | zona 3, espacio 3 | Capacidad 1; CAM1 explícita. |
+| P14 Corner/Recursos | zona 3, espacio 31 Corner | Corner Influencer/Music/combinado comparten capacidad 1; CAM1 explícita. |
+| P14 Giratutto | zona 3, espacio 32 | Capacidad 1 propia; sin CAM1 por defecto. |
+| Reality Hall | zona 3, espacio 4 Hall | Identidad catalogada explícita. No se equipara a Pasillo por nombre. Mantiene los equipos itinerantes efectivos por instancia. |
+| P15 Croma | zona 2, espacio 43, padre 42 | CAM2 explícita, independiente de la capacidad del set combinado. |
+| P15 Estrellas + Sillón | nueva identidad efectiva combinada bajo el padre histórico 42 | Una sola capacidad 1; conserva 44/45 sin modificarlos. Cada familia ocupa un bloque, setup de 10 min entre familias, no reentrada; orden flexible salvo autoridad expresa. CAM2 explícita. |
+| Estudio 7 | zona 1, espacio 48 | El Ensayo principal ocupa 15 min; Reality no amplía a 45 min su ocupación física. |
+| Caracola Lucía / José María | zona 13, espacios 35 / 41 | Identidades separadas; transiciones y comidas propias de coaches. |
+| Exterior Alfombra / Manzano / Buggy / Control | zona 11, espacios 25 / 26 / 28 / 46 | Reutilización inequívoca; requisitos itinerantes por instancia. |
+| Salas Totales Coreo / Totales 1 | zona 12, espacios 33 / 34 | Capacidades distintas, sincronización de rondas y descanso común según configuración. |
+| Totales Post | nueva identidad efectiva explícita, independiente de 33/34 | Operación conjunta C06+C10 sincronizada; sin descanso 75 min inferido por nombre. La ubicación es configurable y reasignable a cualquier destino compatible, cuyas autoridades efectivas entonces se aplican. Nunca hardcode en el motor. |
+| Transporte IN / OUT | zona 14, espacio 49 | Capacidad gobernada por las reglas propias de agrupación IN/OUT; no exclusividad serial artificial del espacio. |
+| Reality Plató / Sodexo | proyección virtual no física cuando corresponda | No se crea un plató Reality permanente ni una comida espacial ficticia. Ubicación del equipo y decorado físico son conceptos diferentes. |
+
+La unidad operativa de construcción/descanso P14 sigue siendo Corner/Recursos + Pasillo + Giratutto. Redes queda fuera de su scope y de su corte; las comidas de los participantes permanecen independientes. CAM1 limita Corner/Pasillo incluso con espacios distintos. CAM2 limita todo el trabajo A2 de Croma y Estrellas/Sillón incluso con capacidades espaciales distintas. CAM5 de Totales 1 y CAM6 de Totales Coreo se conservan como requisitos efectivos conforme al catálogo original; no se omiten del modelo ni se crean cámaras ficticias. Estas exclusividades proceden de identidades concretas y asignaciones explícitas, nunca de nombres ni herencia indiscriminada de zona.
+
+Reality standalone en Corner Influencer o Corner Music utiliza el mismo espacio físico 31 que las otras operaciones de Corner, conservando además los recursos itinerantes A/B/C efectivos. No se duplica capacidad por un alias. Los padres históricos se conservan como jerarquía explícita; no se inventan equivalencias físicas adicionales.
+
+Reality Plató es **una operación lógica continua de 45 min**: 15 antes → Ensayo 15 (Reality simultáneo) → 15 después. El participante y el equipo Reality permanecen ocupados 45 min completos; Estudio 7 sólo los 15 del Ensayo. El contrato interno `anchoredAccompaniments` conserva before/anchor/after con continuidad REQUIRED y recursos incluidos. La proyección visible/reporting agrupa los segmentos en una operación, preservando sus IDs técnicos sin crear doble ocupación ni 60 min de estancia. Los tres segmentos no son tres operaciones productivas independientes. Se mantienen **19 concursantes y 266 obligaciones técnicas canónicas**; no se reinterpretan como 263/269.
+
+El manifest de transición conserva las 23 identidades source históricas y registra la extensión explícita de Maqui/Pelu para Redes. El número de identidades source, de destinos efectivos y de capacidades físicas son magnitudes diferentes; los alias se reconcilian antes del motor/import. Una nueva jornada demo preserva literalmente el A2 previo y sus Stages; su implantación requiere preflight, verificación de drift, reversibilidad y autorización separada, sin mutar los originales.
 
 ## Actualización v2.7 — disponibilidad de participantes y cierre Estilismo salida → OUT
 
@@ -174,7 +204,7 @@ Los nombres reales se conservan únicamente en el cuadro de verificación para p
 | Prueba vocal - Lucía | 15 min | Caracola Vocal Coach - Lucía | Debe preceder al Ensayo vocal de Estudio 7; usa a Lucía. |
 | Prueba vocal - José María | 15 min | Caracola Vocal Coach - José María | Debe preceder al Ensayo vocal de Estudio 7; usa a José María. |
 | Ensayo vocal - Estudio 7 | 15 min | Estudio 7 / Plató principal | Flujo principal; usa al mismo coach de la Prueba vocal. |
-| Redes | 5 min | Plató 14 - Recursos | Una persona cada vez; el espacio consume CAM1. |
+| Redes | 5 min | Otros / Maqui/Pelu (zona 14, espacio 39) | Capacidad 1 propia; independiente de P14, sin CAM1. |
 | Pasillo | 5 min | Plató 14 - Pasillo | Una persona cada vez; el espacio consume CAM1. |
 | Totales 1 | 30 min | Salas Totales - Totales 1 | Rondas sincronizadas con Totales Coreo mientras ambas salas estén activas; consume CAM5. |
 | Totales Coreo | 30 min | Salas Totales - Totales Coreo | Rondas sincronizadas con Totales 1 mientras ambas salas estén activas; consume CAM6. |
@@ -397,7 +427,8 @@ Reglas adicionales:
 - CAM1 está asignada de forma efectiva a `Plató 14 - Recursos` y `Plató 14 - Pasillo`.
 - Por compartir CAM1, cualquier tarea de Recursos y cualquier tarea de Pasillo **no pueden ejecutarse simultáneamente** entre sí.
 - `Plató 14 - Giratuto` no consume CAM1 y puede operar simultáneamente con Recursos o Pasillo si el resto de restricciones lo permite.
-- Corner Influencer, Corner Music, Corner Influencer + Music y Redes se realizan en `Plató 14 - Recursos`.
+- Corner Influencer, Corner Music y Corner Influencer + Music se realizan en `Plató 14 - Recursos/Corner` (zona 3, espacio 31).
+- Redes se realiza exclusivamente en Otros / Maqui/Pelu (zona 14, espacio 39), fuera de P14 y sin CAM1. Puede coincidir con Corner o Pasillo cuando participantes, recursos explícitos y demás autoridades lo permitan.
 - Son exclusivos: sólo un concursante a la vez.
 - No requieren cambio de montaje y no se agrupan obligatoriamente por tipo.
 - `Influencer + Music` es una tarea combinada de 15 minutos.

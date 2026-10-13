@@ -1,9 +1,13 @@
 # OPTIPLAN — ÍNDICE Y AUTORIDAD DE FUENTES
 
-**Versión:** 2.10  
-**Fecha:** 30 de septiembre de 2026  
+**Versión:** 2.11<br>
+**Fecha:** 13 de octubre de 2026<br>
 **Estado:** Fuente oficial de gobierno documental  
 **Principio rector:** La producción tiene que salir.
+
+## Actualización v2.11
+
+Eleva Fuente 06 v2.8 con las correcciones expresas de producción: Redes en Maqui/Pelu sin CAM1 y fuera de P14; Estilismo compartido sin continuidad requerida; P15 combinado bajo CAM2; Reality lógica de 45 min con Ensayo incluido; Totales Post independiente y reasignable; reconciliación de identidades históricas sin crear capacidades duplicadas. Eleva Fuente 04 v2.6 para la proyección tipada de ocupación no física. Mantiene las 266 obligaciones técnicas, los PDFs originales y provenance en Git.
 
 ## Actualización v2.10
 
@@ -30,9 +34,9 @@ Actualiza el corpus para incorporar el contrato genérico de márgenes específi
 1. `01_PRODUCTO_DOMINIO_OPERACION_v5.2.md`
 2. `02_ORC_CORE_CONSOLIDADO_v2.2.md`
 3. `03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.6.md`
-4. `04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.5.md`
+4. `04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.6.md`
 5. `05_VALIDACION_CALIDAD_BENCHMARK_v2.6.md`
-6. `06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.7.md`
+6. `06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.8.md`
 7. `07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.2.md`
 8. `ENSAYO_A2_LV.pdf`
 9. `ENSAYO_A2_LV 15 JUNIO 2025 -  DESGLOSE A2.pdf`
@@ -49,9 +53,9 @@ No existe una única escalera documental capaz de resolver correctamente todos l
 | Producto, actores, dominio y operación | `01_PRODUCTO_DOMINIO_OPERACION_v5.2` | Define qué producto existe, autoridad humana, entidades y semántica operativa. |
 | Arquitectura y contratos internos ORC | `02_ORC_CORE_CONSOLIDADO_v2.2` | Gobierna sólo el razonamiento interno; no puede redefinir WorkingPlan, Stage, publicación o aceptación humana. |
 | Construcción, scopes, método de bloques y búsqueda | `03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.6` | En Assisted prevalece sobre contratos legacy del ORC sobre “estado oficial”, completitud global o mejora-only. SPEC-07 v2.2 es la autoridad del método constructivo dentro de este documento. |
-| EffectiveConfig, snapshots, adaptación, persistencia Assisted, AcceptedException y publicación | `04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.5` | Gobierna configuración efectiva, provenance, Stage/Draft, grandfathering, rollback y frontera EngineInput/producto. |
+| EffectiveConfig, snapshots, adaptación, persistencia Assisted, AcceptedException y publicación | `04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.6` | Gobierna configuración efectiva, provenance, Stage/Draft, grandfathering, rollback y frontera EngineInput/producto. |
 | Gates, regresión, Evidence, KPIs y benchmark | `05_VALIDACION_CALIDAD_BENCHMARK_v2.6` | Define qué debe demostrarse; no crea reglas de dominio nuevas. |
-| Hechos y parámetros **específicos del A2 canónico** | `06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.7` | Prevalece sobre defaults, ejemplos y valores genéricos de 01–05. Los PDFs sólo prevalecen cuando 06 no contiene una corrección/interpretación expresa. |
+| Hechos y parámetros **específicos del A2 canónico** | `06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.8` | Prevalece sobre defaults, ejemplos y valores genéricos de 01–05. Los PDFs sólo prevalecen cuando 06 no contiene una corrección/interpretación expresa. |
 | Método de trabajo y continuidad de desarrollo | `07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.2` | Gobierna cómo trabajar; nunca redefine producto, dominio ni A2. |
 | Evidencia humana primaria A2 | dos PDFs A2 | Sirven de evidencia, no de seed; sus errores/correcciones se resuelven por 06. |
 
