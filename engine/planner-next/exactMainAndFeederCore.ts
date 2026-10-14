@@ -413,6 +413,7 @@ export interface ExactPartialCoreCandidate {
 }
 export interface ExactMainAndFeederSearchOptions {
   ledger?: ExactSearchLedger;
+  onMainFlowFamilyEntered?:(blocks:number)=>void;
   /** Assisted-only final gate; candidate placement checks remain strict. */
   acceptsValidation?: (validation: ValidationSummary) => boolean;
   /** Immutable assisted context. Only conflicts between two fixed placements are
@@ -2337,7 +2338,15 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
 
   const timelineCutTiers = hasMainFlowMeal(problem)
     ? [preferredCandidateCuts, fallbackCandidateCuts] : [preferredCandidateCuts];
-  outer: if(mains.length>0) for (const candidateCutsForTier of timelineCutTiers) for (const pattern of orderedPatterns) {
+  const runCount=(pattern:readonly string[])=>pattern.reduce((count,key,index)=>count+(index===0||key!==pattern[index-1]?1:0),0);
+  // AUTO retains its exact tier-first traversal. SOFT finishes all authorized
+  // meal-cut tiers of a family before opening the next distance-ranked family.
+  const patternTiers=problem.mainFlow.preferredBlockCount===undefined
+    ?timelineCutTiers.flatMap(candidateCutsForTier=>orderedPatterns.map(pattern=>({candidateCutsForTier,pattern})))
+    :[...new Set(orderedPatterns.map(runCount))].flatMap(blocks=>timelineCutTiers.flatMap(candidateCutsForTier=>
+      orderedPatterns.filter(pattern=>runCount(pattern)===blocks).map(pattern=>({candidateCutsForTier,pattern}))));
+  outer: if(mains.length>0) for (const {candidateCutsForTier,pattern} of patternTiers) {
+    options.onMainFlowFamilyEntered?.(runCount(pattern));
     if (!consumeBranch("PATTERN_SEARCH_BUDGET_EXHAUSTED"))
       return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
     evidence.patternCandidatesExplored += 1;

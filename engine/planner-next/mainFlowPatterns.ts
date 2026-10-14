@@ -688,9 +688,8 @@ export function generateMainFlowPatterns(
   // Iterative deepening makes maximumPatterns a global prefix of the structural
   // run-count ordering, rather than an accidental prefix of the construction DFS.
   const targets=Array.from({length:Math.max(0,maximumTargetRuns-keys.length+1)},(_,index)=>keys.length+index);
-  // Only the improvement phase supplies this objective: the AUTO incumbent is
-  // already secured. Rank whole families before truncation, without reserving
-  // fixture-specific minimum patterns or widening the configured pattern cap.
+  // SOFT ranks whole families before truncation. AUTO's ordering and the
+  // configured pattern cap stay unchanged; no family receives reserved capacity.
   if(preferredBlockCount!==undefined)targets.sort((a,b)=>Math.abs(a-preferredBlockCount)-Math.abs(b-preferredBlockCount)||a-b);
   for(const targetRunCount of targets){
     const family:string[][]=[];
@@ -714,7 +713,7 @@ export function generateMainFlowPatterns(
     output.push(...family.slice(0,remainingCapacity));
     if(family.length>remainingCapacity){exhausted=true;break;}
   }
-  // AUTO retains its structural order; improvement ranks distance first.
+  // AUTO retains its structural order; SOFT ranks distance first.
   output.sort((a,b)=>(preferredBlockCount===undefined?0:Math.abs(runCount(a)-preferredBlockCount)-Math.abs(runCount(b)-preferredBlockCount))
     ||runCount(a)-runCount(b)||comparePatterns(a,b));
   return { patterns: output, exhausted };

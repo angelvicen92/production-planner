@@ -70,15 +70,41 @@ function coldWorker(destination:string){
     const a=run(auto),b=run(preferred),repeat=run(preferred);
     const stable=({durationMs:_duration,...value}:typeof b)=>value;
     assert.deepEqual(stable(b),stable(repeat));assert.equal(a.complete,true);assert.equal(a.achieved,2);
-    assert.equal(a.validation!.hardValid,true);if(candidate){assert.equal(b.complete,true);assert.equal(b.validation!.hardValid,true);assert.equal(b.achieved,2);assert.equal(b.fingerprint,a.fingerprint);}
+    assert.equal(a.validation!.hardValid,true);if(candidate&&budget>=preferredCost!.branches){
+      assert.equal(b.complete,true);assert.equal(b.validation!.hardValid,true);assert.equal(b.achieved,2);assert.equal(b.fingerprint,a.fingerprint);
+      assert.equal(b.mainFlowSoftPreference!.fallbackUsed,true);
+    }
     else {assert.equal(b.complete,false);assert.equal(b.status,'BRANCH_BUDGET_EXHAUSTED');}
+    if(candidate){
+      assert.deepEqual(b.mainFlowSoftPreference!.familiesExplored.map(row=>row.blocks),[4,3,2]);
+      assert.equal(b.mainFlowSoftPreference!.revalidation,null);
+      assert.equal(b.mainFlowSoftPreference!.hardCertificate,null);
+    }
     assert.ok(b.branches<=budget);return {budget,auto:a,preferred:b,deterministic:true};
   });
   const generator=generateMainFlowPatterns as (...args:any[])=>{patterns:string[][];exhausted:boolean};
   const patterns=generator(source.tasks.filter(t=>t.kind==='main'),1,2,source.budget.maxPatterns,[],4);
   assert.equal(patterns.exhausted,false);assert.ok(patterns.patterns.some(p=>runs(p)===2));
+  const generic=candidate?(()=>{
+    const feasible=structuredClone(source);feasible.tasks=feasible.tasks.filter(task=>task.kind!=='auxiliary');
+    const stable=(value:ReturnType<typeof run>)=>{const {durationMs,...rest}=value;return rest;};
+    const preferences=[2,3,4].flatMap(requested=>[1,200].map(maxPatterns=>{
+      const p=structuredClone(feasible);setPreference(p,requested);p.budget.maxPatterns=maxPatterns;
+      const result=run(p);assert.deepEqual(stable(result),stable(run(p)));
+      assert.equal(result.complete,true);assert.equal(result.achieved,requested);assert.equal(result.validation!.hardValid,true);
+      assert.equal(result.mainFlowSoftPreference!.familiesExplored[0]!.blocks,requested);
+      return {requested,maxPatterns,result,deterministic:true};
+    }));
+    const three=structuredClone(feasible);setPreference(three,4);
+    for(const task of three.tasks.filter(task=>task.kind==='main'&&task.blockKey==='a'))task.availability=[{start:65,end:75}];
+    const result=run(three);assert.deepEqual(stable(result),stable(run(three)));
+    assert.equal(result.complete,true);assert.equal(result.achieved,3);assert.equal(result.validation!.hardValid,true);
+    assert.deepEqual(result.mainFlowSoftPreference!.familiesExplored.map(row=>row.blocks),[4,3]);
+    return {preferences,threeBlockFallback:{source:three,result,deterministic:true}};
+  })():null;
   const result={preferredPatterns:patterns,case:'COLD_FALLBACK',status:candidate?'CANDIDATE_EVALUATED':'EXPECTED_REGRESSION_REPRODUCED',source,baseline,results,
-    conclusion:candidate?'AUTO secures the complete incumbent before SOFT improvement; one ledger accounts for both phases.':'INCONCLUSIVE search, not an engine infeasibility certificate. AUTO loses a complete valid fallback under identical budgets.'};
+    ...(generic?{generic}:{}),
+    conclusion:candidate?'SOFT constructs 4 first, then 3 and 2; the complete alternative costs 95 real branches. A 51-branch limit is inconclusive without a complete fallback.':'INCONCLUSIVE search, not an engine infeasibility certificate. AUTO loses a complete valid fallback under identical budgets.'};
   writeFileSync(resolve(destination,'cold-fallback.json'),JSON.stringify(result,null,2));
   return {case:result.case,status:result.status,baselineBranches:baseline.branches,samples};
 }
@@ -105,7 +131,7 @@ async function a2Worker(count:number|undefined,destination:string){
   assert.ok(witness?.kind==='JOINT_COMPLETION');if(witness?.kind!=='JOINT_COMPLETION')throw Error('No complete A2 witness');
   const validation=validatePlan(adapter.problem,[...witness.tasks],[...witness.preparations],[...witness.spaceMeals],
     [...witness.participantMeals],[],materializeScheduledItinerantUnitMeals(adapter.problem),[...witness.roundPreparations],[...witness.operationalMeals]);
-  const achieved=scheduledRuns(witness.tasks);if(!process.argv.includes('--candidate')||count===undefined)assert.equal(achieved,count??2);
+  const achieved=scheduledRuns(witness.tasks);
   assert.equal(validation.hardValid,true);
   assert.equal(witness.tasks.length+witness.participantMeals.length,266);
   const summary={requested:count??'AUTO',warm,achieved,durationMs:performance.now()-started,completedObligations:266,
@@ -114,6 +140,15 @@ async function a2Worker(count:number|undefined,destination:string){
     mainFlowSoftPreference:result.evidence.mainFlowSoftPreference};
   writeFileSync(resolve(destination,`a2-${label}-result.json`),JSON.stringify(result,null,2));
   writeFileSync(resolve(destination,`a2-${label}-summary.json`),JSON.stringify(summary,null,2));
+  // Persist the actual outcome before a gate assertion, including a valid
+  // incumbent retained after a deadline; a failed gate must remain reviewable.
+  assert.equal(achieved,count??2);
+  if(count!==undefined&&process.argv.includes('--candidate')){
+    assert.equal(result.evidence.mainFlowSoftPreference!.targetAchieved,true);
+    assert.equal(result.evidence.mainFlowSoftPreference!.familiesExplored[0]!.blocks,count);
+    if(!warm){assert.equal(result.evidence.mainFlowSoftPreference!.revalidation,null);
+      assert.equal(result.evidence.mainFlowSoftPreference!.familiesExplored[0]!.atBranch,0);}
+  }
   return summary;
 }
 
