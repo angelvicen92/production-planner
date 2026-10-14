@@ -45,7 +45,7 @@ export default function WarRoomPage() {
   const [planId, setPlanId] = useState(() => new URLSearchParams(window.location.search).get('plan') ?? '');
   const { defaultPlanId } = useDefaultPlanId(plansQ.data ?? [], planId);
   const selected = plansQ.data?.find(plan => Number(plan.id) === Number(defaultPlanId));
-  const [detailId, setDetailId] = useState<string | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(() => new URLSearchParams(window.location.search).get('incident'));
   const room = useWarRoom(selected?.id ?? null, detailId);
   const context = room.context.data;
   const incidents = room.list.data ?? [];
@@ -63,7 +63,11 @@ export default function WarRoomPage() {
   const [saveError, setSaveError] = useState('');
   const suggestionConsumed = useRef(false);
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 30000); return () => window.clearInterval(timer); }, []);
-  useEffect(() => { setFilters({}); setSearch(''); setDetailId(null); setForm(null); setAction(null); setSaveError(''); }, [selected?.id]);
+  useEffect(() => {
+    setFilters({}); setSearch(''); setForm(null); setAction(null); setSaveError('');
+    const linked = new URLSearchParams(window.location.search);
+    setDetailId(Number(linked.get('plan')) === selected?.id ? linked.get('incident') : null);
+  }, [selected?.id]);
   const legacy = useMemo(() => readLegacyIncidents(selected?.id), [selected?.id]);
   const begin = (incident?: Incident) => {
     if (!selected) return;

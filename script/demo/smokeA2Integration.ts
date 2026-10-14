@@ -38,7 +38,8 @@ if(process.argv.includes('--app')){
  const full=process.argv.includes('--full');
  const liveExecution=process.argv.includes('--live-execution');
  const warRoom=process.argv.includes('--war-room-snapshot');
- const liveSnapshot=process.argv.includes('--live-execution-snapshot')||warRoom;
+ const controlRoom=process.argv.includes('--control-room-snapshot');
+ const liveSnapshot=process.argv.includes('--live-execution-snapshot')||warRoom||controlRoom;
  assert.ok(!liveSnapshot||historicalTopology,'accepted snapshot replay requires --historical-topology');
  assert.ok(!liveExecution||full,'--live-execution requires a complete accepted baseline (--full)');
  const workspaceSetup=process.argv.includes("--workspace-setup");
@@ -55,7 +56,7 @@ if(process.argv.includes('--app')){
  const dockerEnv={...process.env};
  for(const k of ['DOCKER_HOST','DOCKER_CONTEXT','DOCKER_TLS','DOCKER_TLS_VERIFY','DOCKER_CERT_PATH'])delete dockerEnv[k];
  const docker=(...args:string[])=>execFileSync('docker',['--host=unix:///var/run/docker.sock',...args],{env:dockerEnv,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
- const owned:string[]=[];let network=false,gateway:http.Server|undefined,app:ChildProcess|undefined,db:pg.Client|undefined;
+ const owned:string[]=[];let network=false,gateway:http.Server|undefined,app:ChildProcess|undefined,baselineApp:ChildProcess|undefined,baselineUrl:string|undefined,db:pg.Client|undefined;
  const runtimeFiles=['engine/planner-next/benchmarks/canonicalFullA2EngineInput.ts','engine/planner-next/benchmarks/focal-a2/full-day/manifest.ts','engine/planner-next/integration/engineInputPreflight.ts','engine/planner-next/placement.ts','engine/planner-next/validate.ts','script/demo/reconcileA2Topology.ts','script/demo/a2HistoricalCatalog.ts','shared/anchoredOperationProjection.ts','server/storage.ts','server/assistedPlanningSnapshot.ts','server/assistedProposalService.ts','server/assistedPlanningService.ts','server/routes.ts','engine/planner-next/jointCompletionWitness.ts','engine/planner-next/exactItinerantPlan.ts','client/src/components/layout.tsx','client/src/components/planning/assisted-planning-workspace.tsx','script/demo/a2ImportRows.ts','script/demo/prepareA2Import.ts','script/demo/prepareA2Schema.ts','script/demo/smokeA2Integration.ts','script/demo/smokeA2Journey.ts','client/src/lib/assisted-planning-view.ts','client/src/lib/assisted-draft-warnings.ts'];
  runtimeFiles.push('script/demo/smokeA2HistoricalScopeJourney.ts','engine/planner-next/integration/engineInputAdapter.ts','script/demo/seedA2HistoricalRehearsal.ts','script/demo/a2TopologyMetrics.ts','script/demo/fixtures/a2-legacy-import.json.gz','script/demo/a2SpatialTopology.ts','client/src/lib/planning-view-policy.ts','script/demo/smokeA2ManualSnapshotJourney.ts','script/demo/smokeA2ViewsHistoryJourney.ts','shared/assistedStageTiming.ts','client/src/lib/contestant-lane-sort.ts','client/src/components/planning/stage-history-timing.tsx','client/src/components/planning-timeline.tsx','client/src/pages/plan-details.tsx');
  runtimeFiles.push('engine/planner-next/mainFlowPatterns.ts','script/demo/smokeMainFlowPreferenceJourney.ts','shared/mainFlowPreference.ts','server/mainFlowPreference.ts','server/dayConfigurationService.ts','server/effectiveConfigurationView.ts','client/src/components/effective-configuration.tsx','client/src/components/main-flow-preference-editor.tsx','client/src/lib/main-flow-preference-result.ts','engine/planner-next/mainFlowMeal.ts','engine/planner-next/anonymousPipelineWitness.ts','engine/planner-next/exactMainAndFeederCore.ts');
@@ -65,10 +66,12 @@ if(process.argv.includes('--app')){
  runtimeFiles.push('client/src/hooks/use-execution-context.ts','client/src/hooks/use-tasks.ts','client/src/hooks/use-production-clock.ts','shared/execution.ts','script/demo/smokeLiveExecutionJourney.ts');
  if(stageOrder)runtimeFiles.push('script/demo/probeA2StageOrder.ts','server/assistedScopeOrchestrator.ts');
  if(autopilot)runtimeFiles.push('shared/assistedAutopilot.ts','client/src/lib/assisted-autopilot.ts','script/demo/smokeA2AutopilotJourney.ts');
- const report:any={mode:liveSnapshot?'REAL_DISPOSABLE_EXECUTION_ACCEPTED_SNAPSHOT_REPLAY':'REAL_DISPOSABLE_PRODUCT_INTEGRATION',nodeVersion:process.version,v8Version:process.versions.v8,remoteWrites:0,images,requestedStages:full?11:2,startedAt:new Date().toISOString(),runtimeHashes:hashes(),checks:[],pending:['Connected Supabase catalog/backup adoption and original-row preservation','Published Replit runtime and user browser','Supabase Realtime/WebSocket transport']};
+ if(controlRoom)runtimeFiles.push('script/demo/smokeControlRoomJourney.ts','client/src/pages/control-room.tsx','client/src/lib/control-room-metrics.ts','client/src/hooks/use-control-room-data.ts','client/src/hooks/use-execution-context.ts','client/src/hooks/use-war-room.ts','client/src/hooks/use-plan-realtime.ts','client/src/components/production-control-panel.tsx','client/src/pages/dashboard.tsx',...readdirSync('client/src/components/control-room').map(file=>`client/src/components/control-room/${file}`));
+ const report:any={mode:liveSnapshot?'REAL_DISPOSABLE_EXECUTION_ACCEPTED_SNAPSHOT_REPLAY':'REAL_DISPOSABLE_PRODUCT_INTEGRATION',nodeVersion:process.version,v8Version:process.versions.v8,remoteWrites:0,images,requestedStages:full?11:2,startedAt:new Date().toISOString(),runtimeHashes:hashes(),checks:[],pending:controlRoom?['Supabase Realtime/WebSocket delivery (HTTP polling certified)']:['Connected Supabase catalog/backup adoption and original-row preservation','Published Replit runtime and user browser','Supabase Realtime/WebSocket transport']};
  const pass=(name:string)=>{report.checks.push(name);console.log(`PASS ${name}`);};
  const cleanup=async()=>{
   if(app&&app.exitCode===null){app.kill('SIGTERM');await Promise.race([new Promise(r=>app!.once('exit',r)),delay(3000)]);if(app.exitCode===null)app.kill('SIGKILL');}
+  if(baselineApp&&baselineApp.exitCode===null){baselineApp.kill('SIGTERM');await Promise.race([new Promise(r=>baselineApp!.once('exit',r)),delay(3000)]);if(baselineApp.exitCode===null)baselineApp.kill('SIGKILL');}
   gateway?.closeAllConnections();if(gateway)await new Promise<void>(r=>gateway!.close(()=>r()));
   await db?.end().catch(()=>{});
   for(const name of owned.reverse())try{docker('rm','-f','-v',name);}catch{}
@@ -105,7 +108,7 @@ if(process.argv.includes('--app')){
   const restPort=start('rest',images.rest,3000,{PGRST_DB_URI:`postgres://authenticator:${password}@db:5432/postgres`,PGRST_DB_SCHEMAS:'public',PGRST_DB_ANON_ROLE:'anon',PGRST_JWT_SECRET:secret,PGRST_SERVER_PORT:'3000'});
   const transport:any[]=[];report.transport=transport;
   gateway=http.createServer((req,res)=>{
-   res.setHeader('Access-Control-Allow-Origin',appUrl);res.setHeader('Access-Control-Allow-Headers',req.headers['access-control-request-headers']??'authorization,apikey,content-type');res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,PATCH,DELETE,OPTIONS');
+   res.setHeader('Access-Control-Allow-Origin',controlRoom&&baselineUrl&&req.headers.origin===baselineUrl?baselineUrl:appUrl);res.setHeader('Access-Control-Allow-Headers',req.headers['access-control-request-headers']??'authorization,apikey,content-type');res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,PATCH,DELETE,OPTIONS');
    if(req.method==='OPTIONS'){res.writeHead(204);res.end();return;}
    const path=req.url??'/',isAuth=path.startsWith('/auth/v1/'),isRest=path.startsWith('/rest/v1/');
    if(!isAuth&&!isRest){res.writeHead(404);res.end();return;}
@@ -150,6 +153,12 @@ if(process.argv.includes('--app')){
   const appLog=createWriteStream(`${directory}/app-private.log`,{mode:0o600});
   app=spawn(process.execPath,['--import','tsx',resolve('script/demo/smokeA2Integration.ts'),'--app'],{env:localEnv,stdio:['ignore','pipe','pipe']});app.stdout!.pipe(appLog);app.stderr!.pipe(appLog);
   await eventually(async()=>{assert.equal(app!.exitCode,null,'product server exited');const r=await fetch(`${appUrl}/api/plans/${dataset.input.planId}`,{headers:{Authorization:`Bearer ${users.production.token}`}});assert.equal(r.status,200);});
+  if(controlRoom&&process.env.CONTROL_ROOM_BASELINE_ROOT){
+   const baselineRoot=resolve(process.env.CONTROL_ROOM_BASELINE_ROOT),baselinePort=await freePort();baselineUrl=`http://127.0.0.1:${baselinePort}`;
+   const baselineLog=createWriteStream(`${directory}/baseline-private.log`,{mode:0o600});
+   baselineApp=spawn(process.execPath,['--import','tsx',resolve(baselineRoot,'script/demo/smokeA2Integration.ts'),'--app'],{cwd:baselineRoot,env:{...localEnv,PORT:String(baselinePort)},stdio:['ignore','pipe','pipe']});baselineApp.stdout!.pipe(baselineLog);baselineApp.stderr!.pipe(baselineLog);
+   await eventually(async()=>{assert.equal(baselineApp!.exitCode,null);assert.equal((await fetch(`${baselineUrl}/api/plans/27001`,{headers:{Authorization:`Bearer ${users.production.token}`}})).status,200);});
+  }
   Object.assign(process.env,{SUPABASE_URL:url,SUPABASE_ANON_KEY:anon,SUPABASE_SERVICE_ROLE_KEY:service});
   const {storage}=await import('../../server/storage');const {buildEngineInput}=await import('../../engine/buildInput');const {adaptEngineInputToPlannerNextProblem}=await import('../../engine/planner-next/integration/engineInputAdapter');
   const initialInput=await buildEngineInput(dataset.input.planId,storage);
@@ -164,7 +173,8 @@ if(process.argv.includes('--app')){
    const source=(await db.query("SELECT snapshot_fingerprint,ordinal FROM assisted_planning_stages WHERE id=(SELECT active_stage_id FROM assisted_planning_sessions WHERE plan_id=27001 AND status='ACTIVE')")).rows[0];
    report.snapshotReplay={source:'script/demo/fixtures/a2-legacy-import.json.gz',sourceSha256:createHash('sha256').update(readFileSync('script/demo/fixtures/a2-legacy-import.json.gz')).digest('hex'),planId:27001,acceptedStage:source.ordinal,fingerprint:source.snapshot_fingerprint,newSolverRun:false};
    if(process.argv.includes("--day-workspace")){const {runDayWorkspaceSnapshot}=await import("./smokeDayWorkspaceJourney");report.dayWorkspace=await runDayWorkspaceSnapshot(options);}
-   if(warRoom){const {runWarRoomJourney}=await import('./smokeWarRoomJourney');report.warRoom=await runWarRoomJourney({...options,planId:27001});}
+   if(controlRoom){const {runControlRoomJourney}=await import('./smokeControlRoomJourney');report.controlRoom=await runControlRoomJourney({...options,planId:27001,baselineUrl});}
+   else if(warRoom){const {runWarRoomJourney}=await import('./smokeWarRoomJourney');report.warRoom=await runWarRoomJourney({...options,planId:27001});}
    else {const {runLiveExecutionJourney}=await import('./smokeLiveExecutionJourney');report.liveExecution=await runLiveExecutionJourney({...options,planId:27001});}
    assert.equal(await otherDays(),untouched);pass('other disposable days remain literal during accepted-snapshot execution');
   }else report.journey=workspaceSetup?await runDayWorkspaceSetup(options):await runA2BrowserJourney(options);

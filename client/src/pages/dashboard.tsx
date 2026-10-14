@@ -80,13 +80,13 @@ export default function DashboardPage() {
   const sync = usePlanRealtime({ planId: planId ?? null });
   const pollInterval = sync.online ? (sync.realtimeConnected ? 30000 : 5000) : false;
   const { data, isLoading, error, refetch } = usePlanOpsData(planId, pollInterval);
-  const { data: execution } = useExecutionContext(planId, pollInterval);
+  const { data: execution, dataUpdatedAt: executionUpdatedAt } = useExecutionContext(planId, pollInterval);
   const { role } = useUserRole();
   const canExecute = (task: any, action: string) => Boolean(executionClockCurrent(task, execution?.clock) && execution?.tasks.find(t => t.taskId === Number(task?.id))?.canExecute && (action === "start" ? ["pending", "interrupted"].includes(task?.status) : task?.status === "in_progress"));
   const { links, staffPerson, resourceItem } = useMeLinks(true);
   const [onlyMine, setOnlyMine] = useState(false);
   const { effectiveNow, nowTime, mode } = useProductionClock();
-  const operationalNowMs = execution ? Date.parse(execution.clock.operationalAt) + Math.max(0, Date.now() - queryClient.getQueryState([`/api/plans/${planId}/execution`])!.dataUpdatedAt) : NaN;
+  const operationalNowMs = execution ? Date.parse(execution.clock.operationalAt) + Math.max(0, Date.now() - executionUpdatedAt) : NaN;
 
   const zonesById = useMemo(() => buildZonesById(data.zones || []), [data.zones]);
   const spacesById = useMemo(() => buildSpacesById(data.spaces || []), [data.spaces]);
