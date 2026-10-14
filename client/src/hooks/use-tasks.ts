@@ -118,12 +118,9 @@ export function useCreateDailyTask() {
         queryClient.setQueryData(planQueryKey(ctx.planId), ctx.previousPlan);
       }
     },
+    onSuccess: () => toast({title:"Tarea añadida",description:"La tarea se ha guardado en esta jornada."}),
     onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({ queryKey: planQueryKey(variables.planId) });
-      toast({
-        title: "Task Added",
-        description: "Task has been added to the plan.",
-      });
     },
   });
 }

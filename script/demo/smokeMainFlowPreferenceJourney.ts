@@ -58,8 +58,9 @@ export async function configureMainFlowPreferenceJourney(options:any,page:Page){
  await db.query('SET ROLE service_role');try{await assert.rejects(()=>db.query('UPDATE public.plans SET main_preferred_block_count=3 WHERE id=$1',[planId]),/MAIN_PREFERENCE_REQUIRES_VERSIONED_OPERATION/);}finally{await db.query('RESET ROLE');}
  await assert.rejects(()=>db.query("UPDATE public.plans SET planner_next_configuration='{}'::jsonb WHERE id=$1",[planId]),/PLANNER_NEXT_CONFIGURATION_IMMUTABLE/);
  // Restore through the same product field; no rewrite of the original snapshot.
+ page.removeAllListeners('dialog');page.on('dialog',dialog=>void dialog.accept());
  const restored=page.waitForResponse(r=>r.url().endsWith(`/plans/${planId}/day-configuration/restore`));
- await page.getByTestId('effective-BLOCK_COUNT_POLICY').getByRole('button',{name:'Restaurar heredado',exact:true}).click();assert.equal((await restored).status(),200);
+ await page.locator('#config-BLOCK_COUNT_POLICY').getByRole('button',{name:'Restaurar heredado',exact:true}).click();assert.equal((await restored).status(),200);
  await page.reload();await editor.waitFor();assert.equal(await editor.getByLabel('Modo de bloques',{exact:true}).inputValue(),'AUTO');
  assert.deepEqual((await api(`/plans/${planId}/effective-configuration`)).data.mainFlowPreference.value,autoMainFlowPreference);
  const reapply=await api(`/plans/${planId}/day-configuration`,'PUT',{mainFlowPreference:preference});assert.equal(reapply.status,200);
@@ -67,7 +68,7 @@ export async function configureMainFlowPreferenceJourney(options:any,page:Page){
  assert.equal((await api('/program-settings','PATCH',{mainFlowPreference:generalThree},'admin')).status,200);
  await page.reload();await editor.waitFor();
  const refreshed=page.waitForResponse(r=>r.url().endsWith(`/plans/${planId}/day-configuration/refresh`));
- await page.getByTestId('effective-BLOCK_COUNT_POLICY').getByRole('button',{name:'Actualizar herencia desde configuración general',exact:true}).click();assert.equal((await refreshed).status(),200);
+ await page.locator('#config-BLOCK_COUNT_POLICY').getByRole('button',{name:'Actualizar herencia desde configuración general',exact:true}).click();assert.equal((await refreshed).status(),200);
  const refreshedView=(await api(`/plans/${planId}/effective-configuration`)).data;
  assert.deepEqual(refreshedView.mainFlowPreference.value,preference);assert.deepEqual(refreshedView.mainFlowPreference.baseline,generalThree);
  assert.equal((await api(`/plans/${planId}/day-configuration/restore`,'POST',{capability:'BLOCK_COUNT_POLICY'})).status,200);
@@ -78,6 +79,7 @@ export async function configureMainFlowPreferenceJourney(options:any,page:Page){
 
  assert.deepEqual((await db.query('SELECT to_jsonb(p) row FROM public.plans p WHERE id<>$1 ORDER BY id',[planId])).rows,otherDays);
  pass('typed main preference: real configuration UI save/reload/restore, unauthorized HTTP denial, revision/replay and immutable 088 snapshot');
+ page.removeAllListeners('dialog');page.on('dialog',dialog=>void dialog.dismiss());
  await page.goto(`${appUrl}/plans/${planId}?tab=planning`);await page.getByTestId('assisted-workspace').waitFor();
  return {preference,original,otherDays,api};
 }

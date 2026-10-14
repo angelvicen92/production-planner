@@ -1,36 +1,36 @@
 {
   "fixture": "server/fixtures/assistedA2S10.json",
   "obligations": 266,
-  "baseline": "eb1b9a04a8c8983479df299e1e40ba4349c9564a",
+  "baseline": "a74b7cba9e92f461ed8dcc596983ef773206230f",
   "node": "v20.20.2",
   "oldEtaOnly": {
-    "coldMs": 1.456197000000003,
+    "coldMs": 1.432582000000025,
     "iterations": 100,
-    "meanMs": 0.3694437700000009,
-    "p95Ms": 0.5805560000000014
+    "meanMs": 0.45155152999999926,
+    "p95Ms": 0.9752680000000282
   },
   "newFullReadProjection": {
-    "coldMs": 39.706717000000026,
+    "coldMs": 40.150896999999986,
     "iterations": 100,
-    "meanMs": 1.2873943000000025,
-    "p95Ms": 1.66802899999999
+    "meanMs": 1.0461757900000022,
+    "p95Ms": 1.6555610000000343
   },
   "limit": "The old measurement covers only its ETA; new projection includes all counts, alerts and locations. This measures CPU, not network or calibrated prediction.",
   "productionBuildBytes": {
     "base": {
-      "javascriptBytes": 1501287,
-      "cssBytes": 90335
+      "javascriptBytes": 1541125,
+      "cssBytes": 91118
     },
     "head": {
-      "javascriptBytes": 1524467,
-      "cssBytes": 90587
+      "javascriptBytes": 1564236,
+      "cssBytes": 90849
     },
     "dependencies": "repository package-lock.json exact"
   },
   "browserDevelopmentLoad": {
-    "headFirstConfirmedMs": 1309.3700669999998,
+    "headFirstConfirmedMs": 1940.0446420000007,
     "obligations": 266,
-    "baseFirstConfirmedMs": 1407.3843810000035,
+    "baseFirstConfirmedMs": 4442.243546000005,
     "limit": "Single local development load per version; includes module compilation, not a calibrated SLA."
   }
 }

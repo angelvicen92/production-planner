@@ -1,4 +1,17 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('/fonts/plus-jakarta-sans.woff') format('woff');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono.woff') format('woff');
+}
 
 @tailwind base;
 @tailwind components;
@@ -172,4 +185,16 @@
 
 .print-only {
   display: none;
+}
+
+/* Dialogs and popovers stay above a maximized Planning panel. */
+body[data-planning-fullscreen="true"] [role="dialog"][data-state="open"],
+body[data-planning-fullscreen="true"] [role="alertdialog"][data-state="open"] {
+  z-index: 130;
+}
+body[data-planning-fullscreen="true"] .fixed.inset-0[data-state="open"] {
+  z-index: 120;
+}
+body[data-planning-fullscreen="true"] [data-radix-popper-content-wrapper] {
+  z-index: 140 !important;
 }

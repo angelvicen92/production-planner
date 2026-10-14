@@ -67,12 +67,13 @@ export function useSavePlanZoneStaffModes(planId: number) {
         variant: "destructive",
       });
     },
+    onSuccess: () => toast({ title: "Modos guardados" }),
     onSettled: () => {
       qc.invalidateQueries({
         queryKey: [api.plans.zoneStaffModes.list.path, planId],
       });
       qc.invalidateQueries({ queryKey: planQueryKey(planId) });
-      toast({ title: "Modos guardados" });
+
     },
   });
 }
@@ -124,12 +125,13 @@ export function useSavePlanStaffAssignments(planId: number) {
         variant: "destructive",
       });
     },
+    onSuccess: () => toast({ title: "Asignaciones guardadas" }),
     onSettled: () => {
       qc.invalidateQueries({
         queryKey: [api.plans.staffAssignments.list.path, planId],
       });
       qc.invalidateQueries({ queryKey: planQueryKey(planId) });
-      toast({ title: "Asignaciones guardadas" });
+
     },
   });
 }

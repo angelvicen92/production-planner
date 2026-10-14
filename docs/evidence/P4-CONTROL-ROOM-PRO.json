@@ -9,7 +9,7 @@
     "rest": "postgrest/postgrest:v12.2.12@sha256:5f4ce744539bbba786b4e24dbbd95bdb2a956dcf568c5374995a0ff4a68f5bd2"
   },
   "requestedStages": 2,
-  "startedAt": "2026-10-14T20:07:24.290Z",
+  "startedAt": "2026-10-14T20:27:52.410Z",
   "runtimeHashes": {
     "engine/planner-next/benchmarks/canonicalFullA2EngineInput.ts": "7c26ca4aea00f5fb7a2ccee803914d2344a923b2445e029e5ffd892f2e757f6a",
     "engine/planner-next/benchmarks/focal-a2/full-day/manifest.ts": "566c9117038a6115b8c7ff0f53d961d320128bdf8889d5bbee4a014ac8d34c5a",
@@ -23,16 +23,16 @@
     "server/assistedPlanningSnapshot.ts": "2184dc531787336e974359fe0e7b0772432dc0a78c9c139a0893f390d3ddab4b",
     "server/assistedProposalService.ts": "9f75b996a505938141b831af8546160583f82e7a6a0c392bcae879316da8897b",
     "server/assistedPlanningService.ts": "5a605bebfc7d8e9fb7a6d796b0c123f4af3c288830472318661dc5b82f41a357",
-    "server/routes.ts": "f17698f21f64a4fd0f34e2e364c7c6646256c222a72ef9c9ca1a6d7ecda699e8",
+    "server/routes.ts": "f429f3e3bb45370d65686e950717d76db1087e639f82e538ca5aa0b4518c743c",
     "engine/planner-next/jointCompletionWitness.ts": "eff19c666412542cc47a364687f46300982e8690b0a341a69d02c183616068a8",
     "engine/planner-next/exactItinerantPlan.ts": "08953e00042eda5be4f4289180605485ec1010de67f7b6252bc7eb28df31583e",
     "client/src/components/layout.tsx": "3be0f0b4501eecb52fe54547d3455d67867be651ead74df852a3562561669697",
-    "client/src/components/planning/assisted-planning-workspace.tsx": "db8609799c7890f58e13165ce9bcfd975f20aea981c14816224bf73cf2411428",
+    "client/src/components/planning/assisted-planning-workspace.tsx": "fcff2402313351b560cd8219814fb447836db3cd5d6765c61243232c7f7a500e",
     "script/demo/a2ImportRows.ts": "734bdba96a4aa242e72aa1b6a7fe283c90f79cc5d4cb70fe0413b3c1e5c306fd",
     "script/demo/prepareA2Import.ts": "8c18275b2786bfccb4a023e07e5270310353e36765418ee7e443b10385247244",
     "script/demo/prepareA2Schema.ts": "1b1b038c3b0b309e65124e347a37d1180efd2629815da2703ed3dbcc416daf48",
-    "script/demo/smokeA2Integration.ts": "f6ce5a553fc833476b0eae599cfb6ffe8b63893d15030809dc0b6c599485e547",
-    "script/demo/smokeA2Journey.ts": "7cb54358ea283c6bb44b3e846797ccb3bb846296e9931330961a3e24d07d0321",
+    "script/demo/smokeA2Integration.ts": "0d5febc801a54b9818ea96ffb20b3d91a456963a3b936d23333df74c1699d93f",
+    "script/demo/smokeA2Journey.ts": "4e126c194f9bc6a3a47e46f04469c5f9034232c64a231da58b5db341cc9d80c8",
     "client/src/lib/assisted-planning-view.ts": "a0b688796d43afc3504f14012944780c80b4945606dd98815ce06500af82bb4d",
     "client/src/lib/assisted-draft-warnings.ts": "7f1ac193a171378a7f1a5d65fe68dab5f208d40ba46d8cbfb0d6ac6d0780bb04",
     "script/demo/smokeA2HistoricalScopeJourney.ts": "0b53ed8c31936d5ab783414502fc46ba8620ed8f998006290a9b2c345fdca46f",
@@ -45,27 +45,50 @@
     "script/demo/smokeA2ManualSnapshotJourney.ts": "d5e68a8813951a8b44779ff4a62b8b8ed25d08cb1e5e9a374e20076eb101fb8d",
     "script/demo/smokeA2ViewsHistoryJourney.ts": "af4c019fa79642c773dbe5b10bccded78e55f2e4fb89fe3bc087482acb9be713",
     "shared/assistedStageTiming.ts": "f37982b96bc5fb32d168a9f6f6e7ba1219e7d5a1f5aa51321e43ff6d14e3610c",
-    "client/src/lib/contestant-lane-sort.ts": "8cee83173053fce313e8608b451c9d3e37d75174476321ea1434da70628f25c1",
+    "client/src/lib/contestant-lane-sort.ts": "a2ac47ded69db5e74f4aaf67ee31666bb9b48be812e967cce826d1427bf81c97",
     "client/src/components/planning/stage-history-timing.tsx": "b12463f40bf067948e12ae919e5cd807d1fbd61bec671a338318e0b6b67b83a5",
-    "client/src/components/planning-timeline.tsx": "6e37ea57bb44b7a995b659fe5321c32e46885399d6ef935279819625d213582f",
-    "client/src/pages/plan-details.tsx": "22d95f27f126d07e4ab27bf2c7909919082a98a3f71355b99011b72d362e76c9",
+    "client/src/components/planning-timeline.tsx": "5ac2953635d95a6716036d77c1b8c42f3e264339575b10a200af3fab0c7ad640",
+    "client/src/pages/plan-details.tsx": "0a5ff0e56eeef8e38936fc5430bdff8a6d35ee7655fd578e8f58dfe71ad87333",
     "engine/planner-next/mainFlowPatterns.ts": "9dc382e2a75f41fe69900390d4c0a0e6bd92fcc3b62166b72aaf417a134f3700",
-    "script/demo/smokeMainFlowPreferenceJourney.ts": "9e3933e7eedf87e82b1c62e5fd757608536be798cb0dc8e1f9422d0726428ba4",
+    "script/demo/smokeMainFlowPreferenceJourney.ts": "040c3d37d9d43c7fc913822bb586263cb6fc9b650c94db747971c7f76f3c7543",
     "shared/mainFlowPreference.ts": "dab5f13363162359b9111c25783049f79c1f767dbae9b46e5b1f98c20a4f3f9a",
     "server/mainFlowPreference.ts": "730e2a9190e02ca2b332989652e605e8f30822c99a421738f581629e2cb59dda",
     "server/dayConfigurationService.ts": "407c30774af0fa5c55b261e22e7a10f54df96041fb19f8a8c6335e4da8d8498c",
-    "server/effectiveConfigurationView.ts": "1c7dedef14d832b93ea893f00dd9e76983e8b1cb8098e1cc59a85104ffd3c1e8",
-    "client/src/components/effective-configuration.tsx": "f7e89a535f1d6ed1eed64f98b2afe32ae8739b33322664849a316a53b5398357",
+    "server/effectiveConfigurationView.ts": "d58e7e0636fc67752d85eea7e77c26cbacd67d8d7baac86cdf4bf375eec08ae6",
+    "client/src/components/effective-configuration.tsx": "f2573c4b13083d8b5ad65d8ab97e6043d257ad1e568dd0627d3643c90b3d49a7",
     "client/src/components/main-flow-preference-editor.tsx": "6401fe7514ffb0ba32b71caa628a04d6a9105fbf068ad09297334b8c88ba65b0",
     "client/src/lib/main-flow-preference-result.ts": "9f27151434586783f8c0cc8f5b1c7cf48eb3523a0c835818bbada9f337b975da",
     "engine/planner-next/mainFlowMeal.ts": "cacb654432e5db02ce8ad844332c4e4a5678deedfdb7d971dbd5d795b5f6835d",
     "engine/planner-next/anonymousPipelineWitness.ts": "7ba27327fbd1b8d840e0054a055b69ebfdae04105e244c5ab9cc32a2eba38034",
     "engine/planner-next/exactMainAndFeederCore.ts": "6b30027c55f86699e0beb59de0adbe69f77301d86f2672475681a63a25bb4b35",
+    "client/index.html": "78d320cec1e1d400e55ce1cf2282139ffefd94a5080b8063f22255f8b9f5aac4",
+    "client/src/index.css": "d58e0eda6818b202d10b3d0c4671a6fd2669fe6c0e9c341dcc5f1dffba867d5a",
+    "server/effectiveConfigurationHttp.ts": "bba73e619447e346e7400f69c97eea7abf0caae27c8643174b642f1d5c1041fe",
+    "client/src/hooks/use-plan-staff.ts": "593853326b4327d1ce58a74dfa4934731d7302a60ce301b7b145e6b61697e461",
+    "client/src/components/planning/planning-workspace-layout.tsx": "78a963ae4b8519ae32290ac6b5ae5ec0ffcf7b7c8a48edf56d7241f7d6c9ba8d",
+    "client/src/components/planning/planning-stage-toolbar.tsx": "cb1d9d38aebcd8a4e362c3f0d62aead4eaaa9c40e3c2fe25de5522ff9f9e4e22",
+    "client/src/lib/day-execution-view.ts": "690032797bd0ce8a81328b38c2190bf43bde09494e529baaccd4b59a0a9009e9",
+    "client/src/lib/planning-workspace-preferences.ts": "3607a738184e0aae24f2b588d9d7d7359ff2af5982caf1c6b26e7b4599e064e3",
+    "script/demo/smokeDayWorkspaceJourney.ts": "fdbdda3f9e1fb5a08d42f90a3c0c4f3f21f7c7a0455877c355af77c6b150b33e",
+    "script/demo/smokeDayWorkspaceSetup.ts": "b75115b0f620bacb6d140f5f09c23c957b1ca0b3f0ddfe4e11b95e3f6a3cf5e7",
+    "client/src/components/day-workspace/contestant-day-roster.tsx": "7424c04dde5f93f383a848202d993b49d7d02d8fecfb1dc9174e2892b3e22105",
+    "client/src/components/day-workspace/contestant-identity.tsx": "27a7815092cc1a2ccf3f65301cf704cab70caae275dc6db412052a511a1fb719",
+    "client/src/components/day-workspace/day-capability-editor.tsx": "d7b951f83fbadfd2b8b7b5037db767a4509c67f30094f0096cf27e66b4202ae8",
+    "client/src/components/day-workspace/day-execution-workspace.tsx": "1c92e0d6c7efbd0cce0d35a8904c8ea0e77cef09a57e380a9f92c88f82b9f37b",
+    "client/src/components/day-workspace/day-resources-workspace.tsx": "baa29c33ae4fb88ae513399e46f587b42d1b1c6cbc4b11efd4d8e188adc863b6",
+    "client/src/components/day-workspace/day-staff-workspace.tsx": "6ba3a7c684aa40a3b58fe3f65b5e474ee9b7d48d179729153c3d6a95c2cbff60",
+    "client/src/components/day-workspace/day-workspace-shell.tsx": "4b8670d6aa9d0e58c3a3c5f4baddfeab9c93cfc5889b324aff5e05509cd6d1d0",
+    "client/src/components/day-workspace/effective-configuration-fields.tsx": "c8bc5b0e91c3cdb70e1487e1f9b255a59ce94d30803d990137918b6f93d4a02c",
+    "client/src/components/day-workspace/legacy-planning-diagnosis.tsx": "80a8d383c75580a40dc36a98689a7d4c4380d295dac3af56c5bbb5093a381d05",
+    "client/src/hooks/use-execution-context.ts": "4912b2048abcff5a33a1439a3076fb15c3b43b9837dd9e15effb8bb2abe9556c",
+    "client/src/hooks/use-tasks.ts": "e7b16366826ac528d5a58bd01d48a45096a4ae2b86c60b4e5426542b51839531",
+    "client/src/hooks/use-production-clock.ts": "e8781e9bc663750ae721b54b064b7d1bed2e024bb6e0cf3befe3a42e4c5581fc",
+    "shared/execution.ts": "047cf61f8114b2397ad3a3516a1f5d2d01055603dd1d28c95f788c1d73185006",
+    "script/demo/smokeLiveExecutionJourney.ts": "ceccddb3445683bb04b29a5c7ad9d7db96e2195ea5b76c3581676fa6c738f6d2",
     "script/demo/smokeControlRoomJourney.ts": "afd2c83bdf5bf4cd9e38cc50727316b0c5b379295150bb7fb1f393dbc40112fc",
     "client/src/pages/control-room.tsx": "13bc084c36655c1c8bc86395668278ea4432e138043a54011434fcb5c0174437",
     "client/src/lib/control-room-metrics.ts": "2777f5f1728c8d6f5973de471e9175adc439f9e466de4013310552295eb58abe",
     "client/src/hooks/use-control-room-data.ts": "93d24fdf063ae0383f717d4d5a55d5b1fb53b6bf03d84d4eb4524046b886a144",
-    "client/src/hooks/use-execution-context.ts": "4912b2048abcff5a33a1439a3076fb15c3b43b9837dd9e15effb8bb2abe9556c",
     "client/src/hooks/use-war-room.ts": "848f52af3ffd44bd6a86372322ee7769dd50eb4bb8696ca97aa2525267ed3a76",
     "client/src/hooks/use-plan-realtime.ts": "cf7933049fd309b522fe48eaed4724df36c0ba9c4db45c64a9f2b44125371bcd",
     "client/src/components/production-control-panel.tsx": "7da09e329132795d669a79528e0f2ef1597009db7c39c694786015377755c72d",
@@ -536,6 +559,56 @@
       "error": null
     },
     {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "95",
+      "receivedBytes": 95,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "95",
+      "receivedBytes": 95,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
       "path": "/rest/v1/rpc/execution_context",
       "method": "POST",
       "contentLength": "68",
@@ -630,6 +703,86 @@
       "method": "POST",
       "contentLength": "68",
       "receivedBytes": 68,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "95",
+      "receivedBytes": 95,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "95",
+      "receivedBytes": 95,
       "requestEnded": true,
       "upstreamFinished": true,
       "responseStatus": 200,
@@ -676,10 +829,40 @@
       "error": null
     },
     {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
       "path": "/rest/v1/rpc/incident_query",
       "method": "POST",
       "contentLength": "95",
       "receivedBytes": 95,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
       "requestEnded": true,
       "upstreamFinished": true,
       "responseStatus": 200,
@@ -726,16 +909,6 @@
       "error": null
     },
     {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
       "path": "/rest/v1/rpc/incident_query",
       "method": "POST",
       "contentLength": "95",
@@ -750,6 +923,16 @@
       "method": "POST",
       "contentLength": "68",
       "receivedBytes": 68,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "95",
+      "receivedBytes": 95,
       "requestEnded": true,
       "upstreamFinished": true,
       "responseStatus": 200,
@@ -808,66 +991,6 @@
     {
       "path": "/rest/v1/rpc/incident_query",
       "method": "POST",
-      "contentLength": "94",
-      "receivedBytes": 94,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/incident_query",
-      "method": "POST",
-      "contentLength": "95",
-      "receivedBytes": 95,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/incident_query",
-      "method": "POST",
-      "contentLength": "129",
-      "receivedBytes": 129,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/incident_query",
-      "method": "POST",
-      "contentLength": "95",
-      "receivedBytes": 95,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/incident_query",
-      "method": "POST",
       "contentLength": "95",
       "receivedBytes": 95,
       "requestEnded": true,
@@ -896,10 +1019,60 @@
       "error": null
     },
     {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "95",
+      "receivedBytes": 95,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
       "path": "/rest/v1/rpc/execution_context",
       "method": "POST",
       "contentLength": "68",
       "receivedBytes": 68,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "95",
+      "receivedBytes": 95,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "94",
+      "receivedBytes": 94,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "129",
+      "receivedBytes": 129,
       "requestEnded": true,
       "upstreamFinished": true,
       "responseStatus": 200,
@@ -938,8 +1111,128 @@
     {
       "path": "/rest/v1/rpc/incident_query",
       "method": "POST",
+      "contentLength": "95",
+      "receivedBytes": 95,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
       "contentLength": "94",
       "receivedBytes": 94,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "129",
+      "receivedBytes": 129,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "95",
+      "receivedBytes": 95,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "129",
+      "receivedBytes": 129,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "94",
+      "receivedBytes": 94,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "95",
+      "receivedBytes": 95,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "95",
+      "receivedBytes": 95,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "95",
+      "receivedBytes": 95,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
       "requestEnded": true,
       "upstreamFinished": true,
       "responseStatus": 200,
@@ -978,36 +1271,6 @@
     {
       "path": "/rest/v1/rpc/incident_query",
       "method": "POST",
-      "contentLength": "129",
-      "receivedBytes": 129,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/incident_query",
-      "method": "POST",
-      "contentLength": "95",
-      "receivedBytes": 95,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/incident_query",
-      "method": "POST",
       "contentLength": "94",
       "receivedBytes": 94,
       "requestEnded": true,
@@ -1016,30 +1279,10 @@
       "error": null
     },
     {
-      "path": "/rest/v1/rpc/incident_query",
-      "method": "POST",
-      "contentLength": "95",
-      "receivedBytes": 95,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
       "path": "/rest/v1/rpc/execution_context",
       "method": "POST",
       "contentLength": "68",
       "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/incident_query",
-      "method": "POST",
-      "contentLength": "95",
-      "receivedBytes": 95,
       "requestEnded": true,
       "upstreamFinished": true,
       "responseStatus": 200,
@@ -1086,16 +1329,6 @@
       "error": null
     },
     {
-      "path": "/rest/v1/rpc/incident_query",
-      "method": "POST",
-      "contentLength": "94",
-      "receivedBytes": 94,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 403,
-      "error": null
-    },
-    {
       "path": "/rest/v1/rpc/execution_context",
       "method": "POST",
       "contentLength": "68",
@@ -1108,18 +1341,18 @@
     {
       "path": "/rest/v1/rpc/incident_query",
       "method": "POST",
-      "contentLength": "95",
-      "receivedBytes": 95,
+      "contentLength": "94",
+      "receivedBytes": 94,
       "requestEnded": true,
       "upstreamFinished": true,
       "responseStatus": 403,
       "error": null
     },
     {
-      "path": "/rest/v1/rpc/execution_context",
+      "path": "/rest/v1/rpc/incident_query",
       "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
+      "contentLength": "95",
+      "receivedBytes": 95,
       "requestEnded": true,
       "upstreamFinished": true,
       "responseStatus": 200,
@@ -1158,8 +1391,68 @@
     {
       "path": "/rest/v1/rpc/incident_query",
       "method": "POST",
+      "contentLength": "129",
+      "receivedBytes": 129,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
       "contentLength": "95",
       "receivedBytes": 95,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "94",
+      "receivedBytes": 94,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "95",
+      "receivedBytes": 95,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "95",
+      "receivedBytes": 95,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
       "requestEnded": true,
       "upstreamFinished": true,
       "responseStatus": 200,
@@ -1180,6 +1473,16 @@
       "method": "POST",
       "contentLength": "95",
       "receivedBytes": 95,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
       "requestEnded": true,
       "upstreamFinished": true,
       "responseStatus": 200,
@@ -1216,36 +1519,6 @@
       "error": null
     },
     {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/incident_query",
-      "method": "POST",
-      "contentLength": "95",
-      "receivedBytes": 95,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
       "path": "/rest/v1/rpc/incident_query",
       "method": "POST",
       "contentLength": "95",
@@ -1286,10 +1559,40 @@
       "error": null
     },
     {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
       "path": "/rest/v1/rpc/incident_query",
       "method": "POST",
       "contentLength": "94",
       "receivedBytes": 94,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "95",
+      "receivedBytes": 95,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "95",
+      "receivedBytes": 95,
       "requestEnded": true,
       "upstreamFinished": true,
       "responseStatus": 200,
@@ -1310,6 +1613,26 @@
       "method": "POST",
       "contentLength": "95",
       "receivedBytes": 95,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/incident_query",
+      "method": "POST",
+      "contentLength": "129",
+      "receivedBytes": 129,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
       "requestEnded": true,
       "upstreamFinished": true,
       "responseStatus": 200,
@@ -1571,22 +1894,23 @@
       }
     ],
     "benchmark": {
-      "headFirstConfirmedMs": 1309.3700669999998,
+      "headFirstConfirmedMs": 1940.0446420000007,
       "obligations": 266,
-      "baseFirstConfirmedMs": 1407.3843810000035
+      "baseFirstConfirmedMs": 4442.243546000005
     },
     "acceptedA2": {
       "total": 266,
       "done": 1,
       "cancelled": 265,
       "sumStates": 266,
-      "unchangedPlanningSha256": "5a8a4e6d56de79cef21ba38d4de5e6ef70f984b5349b705a5c035e5ca37c6d52",
+      "unchangedPlanningSha256": "58f3e9b8795e7658696e18e7553571f08e3e787f738f8c50e0e9c660743e0db4",
       "newSolverRun": false
     },
     "allControlRoomInitialApiRequestsReadOnly": true,
     "errors": []
   },
   "status": "PASS",
-  "finishedAt": "2026-10-14T20:08:42.596Z",
+  "finishedAt": "2026-10-14T20:29:54.533Z",
+  "baseSha": "a74b7cba9e92f461ed8dcc596983ef773206230f",
   "dependencyLockSha256": "cbe75a531336356a5d3baa75202818f1a7060b72f10d205449b8036295ffeaaa"
 }

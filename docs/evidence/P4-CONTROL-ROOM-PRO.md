@@ -1,6 +1,6 @@
 # P4 — Control Room PRO
 
-Base autorizada: `eb1b9a04a8c8983479df299e1e40ba4349c9564a` (#1125), después de #1123 y #1124. Unidad de lectura operativa; no modifica motor, planning, horarios, transacciones de ejecución, DB/RLS, migraciones ni Day Workspace (#1126). La entrega es un PR contra main, sin merge ni publicación Replit.
+Base inicial autorizada: `eb1b9a04a8c8983479df299e1e40ba4349c9564a` (#1125), después de #1123 y #1124. Unidad de lectura operativa; no modifica motor, planning, horarios, transacciones de ejecución, DB/RLS, migraciones ni Day Workspace (#1126). La entrega es un PR contra main, sin merge ni publicación Replit.
 
 ## Diagnóstico causal confirmado
 
@@ -50,7 +50,7 @@ Conversión de HH:mm exige el día completo y Europe/Madrid. Se reutiliza `madri
 
 La Evidence JSON y capturas acompañan el head final. El ensayo reproduce `script/demo/fixtures/a2-legacy-import.json.gz`, Stage aceptado 10, 266 obligaciones; no construye otra solución ni certifica nuevo Full A2. Los servicios PostgreSQL, Auth y PostgREST son locales descartables. El runner rechaza destinos remotos. Los cambios operativos del ensayo se hacen mediante autoridades reales y sólo en esa base.
 
-TypeScript, build y 11 pruebas de proyección pasan; suite de servidor proporcional sin benchmarks de búsqueda: 308/308. Pruebas focales conjuntas: 21/21. El primer intento de HTTP/build con sandbox sin sockets se repitió con el acceso local necesario; no era un defecto del producto. La build conserva el aviso existente de bundle grande.
+TypeScript, build y 11 pruebas de proyección pasan; suite de servidor proporcional sin benchmarks de búsqueda: 309/309. Pruebas focales conjuntas: 21/21. El primer intento de HTTP/build con sandbox sin sockets se repitió con el acceso local necesario; no era un defecto del producto. La build conserva el aviso existente de bundle grande.
 
 Limitaciones explícitas: el transporte certificado es HTTP polling, no entrega WebSocket de Supabase. No hay modelo predictivo ni análisis de saturación validado. No se afirma propagación de retrasos, dependencia crítica, idle causal o factibilidad futura. La ausencia de ubicación por sí sola no produce una alerta: puede corresponder a una obligación no física. Sólo una relación explícita rota verificable en el catálogo se señala. Las lecturas son eventualmente consistentes y no constituyen un snapshot transaccional conjunto; se señalan errores y tiempos de confirmación. No se hacen escrituras en Supabase conectado ni publicación Replit.
 
@@ -61,6 +61,10 @@ Limitaciones explícitas: el transporte certificado es HTTP polling, no entrega 
 - **1:15–1:55:** registrar una crítica en War Room; verla en Control Room y abrir su contexto exacto. Resolver desde la otra sesión y comprobar el contador.
 - **1:55–2:30:** pasar a Producción, filtrar platós activos/con problemas, expandir espacios y abrir una tarea. Señalar que falta de actividad no prueba bloqueo.
 - **2:30–3:00:** mostrar Viewer sin edición, Aux con ámbito autorizado, modo oscuro y error de consulta sin contadores ficticios. Leer fuente/denominador y estado de sincronización; confirmar que el planning aceptado permanece intacto.
+
+## Integración de la nueva base
+
+Durante la CI de P4 se integró #1126 en main (`a74b7cba9e92f461ed8dcc596983ef773206230f`). Se incorporó esa base al mismo PR. El único conflicto estaba en el dispatch del runner de integración: se conservaron el recorrido Day Workspace y el recorrido Control Room. El diff contra el nuevo main no modifica plan-details, day-workspace, PlanningTimeline, Assisted Workspace, effective-configuration, motor, DB o Start/Finish. Se regeneraron capturas/Evidence y se repitieron TypeScript (incluido el runner), build, 21 focales, 309 pruebas de servidor y el ensayo nativo de tres sesiones sobre la nueva base.
 
 ## Resultado del head entregado
 
@@ -75,7 +79,7 @@ Limitaciones explícitas: el transporte certificado es HTTP polling, no entrega 
 | E — ETA/tiempo | PASS: 11 pruebas de proyección incluyen ausencia/incompletitud de timestamps, pausas, segundos, cambio de reloj, simulación, otra fecha, parcial y canceladas. Ninguna confianza/banda/modelo inventado. |
 | F — platós | PASS focal: inactivo permanece visible, actividades simultáneas por espacios, bloqueo explícito, interrupción, relación rota y obligación sin ubicación. Recursos nominales sólo como datos de la autoridad, sin saturación deducida. |
 | G — pantallas | PASS: Dirección 1920, Producción 1440, tablet 820, móvil 390, oscuro, preparación, ejecución, crítica, offline y fallo genuino de consulta. Sin overflow horizontal; muestra del resumen ≥7,7:1 en claro y oscuro. |
-| H — regresión | TypeScript/build/secuencia PASS; 21/21 focales, 308/308 servidor sin benchmarks de búsqueda. Workflow específico añadido; estado CI del commit final en el PR. |
+| H — regresión | TypeScript/build/secuencia PASS; 21/21 focales, 309/309 servidor sin benchmarks de búsqueda. Workflow específico añadido; estado CI del commit final en el PR. |
 
 El ensayo utiliza Node 20.20.2 y las versiones exactas de `package-lock.json`; la Evidence conserva su SHA-256. Se revisaron capturas de `main` y head con el mismo A2 y servicios. La nueva proyección completa mide aproximadamente 1,3 ms de media/1,7 ms p95 repetida para 266 tareas, frente a 0,37 ms de la antigua **ETA aislada**; primera conversión fría ~40 ms. Las operaciones medidas tienen distinto alcance y no permiten afirmar una aceleración frente al antiguo panel. La memoización redujo la primera implementación de la proyección (~305 ms), sin caché de permisos/datos operativos. El benchmark conserva los números exactos y los tamaños comparables de build.
 
@@ -92,4 +96,4 @@ npx --no-install playwright install --with-deps chromium
 node --import tsx script/demo/smokeA2Integration.ts work/control-room-p4 --historical-topology --control-room-snapshot
 ```
 
-Para comparar capturas con main, preparar un checkout de `eb1b9a0` con dependencias y caché Vite independientes, y proporcionar `CONTROL_ROOM_BASELINE_ROOT` al mismo runner. Esta opción sólo afecta al ensayo; no introduce despliegue ni registro nuevo.
+Para comparar capturas con main, preparar un checkout de la base final `a74b7cb` con dependencias y caché Vite independientes, y proporcionar `CONTROL_ROOM_BASELINE_ROOT` al mismo runner. Esta opción sólo afecta al ensayo; no introduce despliegue ni registro nuevo.

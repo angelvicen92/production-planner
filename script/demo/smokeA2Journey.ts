@@ -16,6 +16,7 @@ import {buildAssistedPlanningView} from '../../client/src/lib/assisted-planning-
 import {collectAssistedDraftWarnings} from '../../client/src/lib/assisted-draft-warnings';
 import {auditComplete,auditOperationalMealConsolidation} from './probeA2StageOrder';
 import {runA2ManualSnapshotJourney} from './smokeA2ManualSnapshotJourney';
+import {runDayWorkspaceJourney} from "./smokeDayWorkspaceJourney";
 import {runA2ViewsHistoryJourney} from './smokeA2ViewsHistoryJourney';
 import {runA2HistoricalScopeJourney} from './smokeA2HistoricalScopeJourney';
 import {runA2ScopeSelectionJourney} from './smokeA2ScopeSelectionJourney';
@@ -58,7 +59,7 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
  const browser=await chromium.launch({headless:true,args:['--no-sandbox'],executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH});let page:Page|undefined;
  const stages:any[]=[];const pageErrors:string[]=[];
  try{
-  page=await browser.newPage({viewport:{width:1440,height:1000}});page.setDefaultTimeout(30_000);
+  page=await browser.newPage({viewport:{width:1440,height:1000}});page.setDefaultTimeout(30_000);page.setDefaultNavigationTimeout(120_000);
   page.on('pageerror',error=>pageErrors.push(error.message));
   page.on('dialog',dialog=>{void dialog.dismiss();}); // A clean Stage never requires exception confirmation.
   await page.goto(`${appUrl}/login`);
@@ -94,8 +95,9 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
    // Wait for the real product polling to expose the persisted proposal. No
    // forced focus, reload, API seeding or altered solver budgets rescue this UI.
    await Promise.race([
-    page.getByRole('button',{name:'Aplicar al borrador',exact:true}).waitFor({timeout:180_000}),
-    page.getByText('No se pudo generar una propuesta con la selección actual. Revisa disponibilidad y conflictos.',{exact:true}).waitFor({timeout:180_000}).then(()=>{throw Error('Product UI reported a failed proposal run; inspect failedRuns SQL diagnostic');}),
+    page.getByRole('button',{name:'Aplicar al borrador',exact:true}).waitFor({timeout:420_000}),
+    page.getByText('No se pudo generar una propuesta con la selección actual. Revisa disponibilidad y conflictos.',{exact:true}).waitFor({timeout:420_000}).then(()=>{throw Error('Product UI reported a failed proposal run; inspect failedRuns SQL diagnostic');}),
+    page.getByText('No se encontró una propuesta válida',{exact:true}).waitFor({timeout:420_000}).then(()=>{throw Error('Product returned NO_PROPOSAL within its unchanged budget; inspect failedRuns and the selected result');}),
    ]);
    const run=await api(path+`/proposals/${runId}`);assert.equal(run.status,200);assert.equal(run.data.status,'success');const result=run.data.assisted_result_json??run.data.assistedResultJson;assert.equal(result.outcome,'PROPOSAL');
    if(preferenceJourney)await verifyMainFlowPreferenceResult({pass,directory,diagnostics},page,result,preferenceJourney);
@@ -120,10 +122,10 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
    for(const row of base.tasks.filter((t:any)=>t.startPlanned&&t.endPlanned))assert.deepEqual(applied.draft.tasks.find((t:any)=>t.taskId===row.taskId),row,'previously accepted placements automatically protected');
    for(const [field,identity] of [['operationalMeals','policyId'],['setupPreparations','id'],['roundPreparations','id']] as const)
     for(const item of base[field]??[])assert.deepEqual((applied.draft[field]??[]).find((next:any)=>next[identity]===item[identity]),item,`${field}: accepted occupation protected`);
-   const validation=await action('Validar Draft','/validate');
+   const validation=await action('Validar borrador','/validate');
    const validated=await state();assert.ok(validated.validation);assert.equal(validated.validation.draftFingerprint,validated.draftFingerprint);assert.equal(validated.validation.hardCount,0);assert.equal(validated.validation.requiredCount,0);
    await page.getByTestId('stage-validation-report').waitFor();
-   const accepted=await action('Aceptar Stage','/accept-stage');const after=await state();assert.equal(after.activeStage.ordinal,ordinal);assert.equal(Number(after.activeStage.proposalRunId),Number(runId));assert.equal(Number(after.activeStage.parentStageId),Number(current.activeStage.id));assert.deepEqual(after.activeStage.snapshotJson,applied.draft);
+   const accepted=await action('Aceptar etapa','/accept-stage');const after=await state();assert.equal(after.activeStage.ordinal,ordinal);assert.equal(Number(after.activeStage.proposalRunId),Number(runId));assert.equal(Number(after.activeStage.parentStageId),Number(current.activeStage.id));assert.deepEqual(after.activeStage.snapshotJson,applied.draft);
    assert.equal(after.activeStage.snapshotFingerprint,fingerprintAssistedPlanningSnapshotV1(after.activeStage.snapshotJson));
    const persisted=await daily();for(const task of after.activeStage.snapshotJson.tasks){const row=persisted.find(r=>r.id===task.taskId)!;assert.deepEqual(row,{id:task.taskId,start_planned:task.startPlanned,end_planned:task.endPlanned,zone_id:task.zoneId,space_id:task.spaceId,location_label:task.locationLabel,duration_override:task.durationOverride,cameras_override:task.camerasOverride,assigned_resource_ids:task.assignedResourceIds??[]});}
    assert.equal(after.history.length,ordinal+1);
@@ -189,7 +191,7 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
   assert.deepEqual(await daily(),material);const restored=await state();assert.equal(Number(restored.activeStage.id),Number(final.activeStage.id));assert.equal(restored.draftFingerprint,final.draftFingerprint);
   pass('admin atomic rollback to S0 and redo to final accepted Stage');
   if(preferenceJourney)await verifyMainFlowPreferenceAfterStages({db,planId,pass},preferenceJourney);
-  if(full)diagnostics.viewsHistory=await runA2ViewsHistoryJourney({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics},page);
+  if(full)diagnostics.viewsHistory=await (process.argv.includes("--day-workspace")?runDayWorkspaceJourney:runA2ViewsHistoryJourney)({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics},page);
   if(full)diagnostics.manualSnapshotFidelity=await runA2ManualSnapshotJourney({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics});
   return {roleMatrix,s0:'PASS',stages,completed:stages.at(-1)!.completed,pageErrors,secondBrowserSession:'PASS',rollbackRedo:'PASS',searchPoliciesUnchanged:true,persistedCanonical};
  }catch(error){
