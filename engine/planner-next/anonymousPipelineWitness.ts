@@ -1163,6 +1163,7 @@ export interface PipelineArchitectureMaterializationOptions {
   operationalMealBudget?:()=>OperationalMealSearchBudget;
   onBudgetExhausted?:()=>void;
   fixedContext?:boolean;
+  onMainFlowFamilyEntered?:(blocks:number)=>void;
 }
 
 /** Enumerates authorized architectures together with the nominal certificate already paid for. */
@@ -1177,6 +1178,8 @@ export function* authorizedPipelineArchitectureMaterializations(problem:Readonly
   if(evidence){evidence.mainPatternCountGenerated=generated.patterns.length;evidence.mainPatternGenerationExhausted=generated.exhausted;}
   let visitedPatterns=0;
   for(const {architecture,patternOrdinal} of mainFlowTimelineArchitectureFrontier(problem,generated.patterns,mains[0]!.duration)){
+      options.onMainFlowFamilyEntered?.(architecture.pattern.reduce((count,key,index)=>
+        count+(index===0||key!==architecture.pattern[index-1]?1:0),0));
       if(evidence){evidence.timelinesGenerated++;if(patternOrdinal>visitedPatterns)evidence.mainPatternsVisited++;}
       visitedPatterns=Math.max(visitedPatterns,patternOrdinal);
       if(evidence)evidence.architectureStructuralProofChecks++;

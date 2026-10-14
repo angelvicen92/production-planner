@@ -833,7 +833,9 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     ephemeralSupportingPlacements:structuredClone((evidenceRecord.ephemeralSupportingPlacements as ExactItinerantPlanEvidence["ephemeralSupportingPlacements"]|undefined)??[]),
     acceptedSupportingPlacements:structuredClone((evidenceRecord.acceptedSupportingPlacements as ScheduledTask[]|undefined)??[]),
     futureStructuralWitnesses:structuredClone((evidenceRecord.futureStructuralWitnesses as ExactItinerantPlanEvidence["futureStructuralWitnesses"]|undefined)??[]),
-    ...(evidenceRecord.mainFlowSoftPreference?{mainFlowSoftPreference:structuredClone(evidenceRecord.mainFlowSoftPreference as ExactItinerantPlanEvidence["mainFlowSoftPreference"])}:{}),
+    ...(evidenceRecord.mainFlowSoftPreference?{mainFlowSoftPreference:{
+      ...structuredClone(evidenceRecord.mainFlowSoftPreference as NonNullable<ExactItinerantPlanEvidence["mainFlowSoftPreference"]>),
+      runtime:{elapsedMs:now()-started,limitMs:300_000}}}:{}),
     branchesBeforeCurrentContinuation:(evidenceRecord.branchesBeforeCurrentContinuation as number|null|undefined)??null,
     selectedPipelineWitnessDiagnostic:structuredClone((evidenceRecord.selectedPipelineWitnessDiagnostic as ExactItinerantPlanEvidence["selectedPipelineWitnessDiagnostic"]|undefined)??null),
     selectedPipelineWitnessAuthority:structuredClone((evidenceRecord.selectedPipelineWitnessAuthority as ExactItinerantPlanEvidence["selectedPipelineWitnessAuthority"]|undefined)??null),
