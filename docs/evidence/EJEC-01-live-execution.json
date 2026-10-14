@@ -486,19 +486,19 @@
   "screenshots": [
     {
       "file": "docs/evidence/EJEC-01-UI/mi-dia-mobile-pending.png",
-      "sha256": "a8f108f73a714fca7a72d62c0c741b1f5920aabc1f9c1490887ccad71b76f8a8"
+      "sha256": "ba9dbf7ffdacd9e26a2e0e7a950e93980144d665110946e84340ea35e3b41cd1"
     },
     {
       "file": "docs/evidence/EJEC-01-UI/mi-dia-mobile-running.png",
-      "sha256": "c25c6e5bc62e25709d76ce6222a8054b1cb525a293d20db18283dabb67c2922a"
+      "sha256": "bd4805a3ddf477f24435ca46b9d0d34f8bc09505598b8ef7dfad652c98f2d590"
     },
     {
       "file": "docs/evidence/EJEC-01-UI/mi-dia-desktop-running.png",
-      "sha256": "4378871319112087d9bc453951f42cd902fd244b5d891057f5c521893c264e29"
+      "sha256": "4a3a1cf46228ccb2dbcd595b6b593b36311dac6dd917208344d076e2fd6c22f2"
     },
     {
       "file": "docs/evidence/EJEC-01-UI/mi-dia-desktop-dark.png",
-      "sha256": "73da7ef710d79481be7b3599804251a5a688c581e6953a9da578dd49f82cd7b4"
+      "sha256": "3f64692d494a45141a9b53d4383d02e073b02466b41a63f76c83af9c095f7b8c"
     }
   ],
   "synchronizedMainCommit": "c7f85411ac13b62f4be34de09061124f7460b7e0",
