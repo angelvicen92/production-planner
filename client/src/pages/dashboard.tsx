@@ -11,6 +11,9 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { usePlans, useGeneratePlan } from "@/hooks/use-plans";
 import { useDefaultPlanId } from "@/hooks/use-default-plan-id";
 import { usePlanOpsData } from "@/hooks/usePlanOpsData";
+import { useExecutionContext } from "@/hooks/use-execution-context";
+import { useUserRole } from "@/hooks/use-user-role";
+import { usePlanRealtime } from "@/hooks/use-plan-realtime";
 import { useMeLinks } from "@/hooks/useMeLinks";
 import { useToast } from "@/hooks/use-toast";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -21,10 +24,10 @@ import { QueryState } from "@/components/query-state";
 import { contains, formatRange, hhmmToMinutes, minutesToHHMM, sampleEveryFiveMinutes } from "@/lib/time";
 import { buildUrl, api } from "@shared/routes";
 import { useProductionClock } from "@/hooks/use-production-clock";
-import { useElapsedSince } from "@/hooks/use-elapsed-since";
+import { executionDuration, formatExecutionDuration, executionClockCurrent, type ExecutionContext } from "@shared/execution";
 
-function TaskRealTimeMeta({ task }: { task: any }) {
-  const elapsed = useElapsedSince(task?.startReal ?? null);
+function TaskRealTimeMeta({ task, nowMs, clock }: { task: any; nowMs: number; clock?: ExecutionContext['clock'] }) {
+  const elapsed = formatExecutionDuration(executionDuration(task, nowMs, clock));
 
   const parseHHMM = (value?: string | null) => {
     const m = String(value ?? "").match(/^(\d{2}):(\d{2})$/);
@@ -75,10 +78,16 @@ export default function DashboardPage() {
   const selectedPlan = useMemo(() => plans.find((plan) => plan.id === defaultPlanId) || null, [plans, defaultPlanId]);
 
   const planId = selectedPlan?.id as number | undefined;
-  const { data, isLoading, error, refetch } = usePlanOpsData(planId);
+  const sync = usePlanRealtime({ planId: planId ?? null });
+  const pollInterval = sync.online ? (sync.realtimeConnected ? 30000 : 5000) : false;
+  const { data, isLoading, error, refetch } = usePlanOpsData(planId, pollInterval);
+  const { data: execution } = useExecutionContext(planId, pollInterval);
+  const { role } = useUserRole();
+  const canExecute = (task: any, action: string) => Boolean(executionClockCurrent(task, execution?.clock) && execution?.tasks.find(t => t.taskId === Number(task?.id))?.canExecute && (action === "start" ? ["pending", "interrupted"].includes(task?.status) : task?.status === "in_progress"));
   const { links, staffPerson, resourceItem } = useMeLinks(true);
   const [onlyMine, setOnlyMine] = useState(false);
   const { effectiveNow, nowTime, mode } = useProductionClock();
+  const operationalNowMs = execution ? Date.parse(execution.clock.operationalAt) + Math.max(0, Date.now() - queryClient.getQueryState([`/api/plans/${planId}/execution`])!.dataUpdatedAt) : NaN;
 
   const zonesById = useMemo(() => buildZonesById(data.zones || []), [data.zones]);
   const spacesById = useMemo(() => buildSpacesById(data.spaces || []), [data.spaces]);
@@ -98,13 +107,14 @@ export default function DashboardPage() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: [`/api/plans/${id}/tasks`] }),
       queryClient.invalidateQueries({ queryKey: [`/api/plans/${id}/locks`] }),
+      queryClient.invalidateQueries({ queryKey: [`/api/plans/${id}/execution`] }),
       queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] }),
     ]);
   };
 
   const updateStatus = useMutation({
     mutationFn: async ({ taskId, status }: any) =>
-      apiRequest("PATCH", `/api/tasks/${taskId}/status`, { status, effectiveTimeHHMM: nowTime }),
+      apiRequest("PATCH", `/api/tasks/${taskId}/status`, { status, expectedStatus: data.tasks.find((t: any) => t.id === taskId)?.status }),
     onSettled: async () => invalidateOpsData(planId),
     onError: () => {
       toast({ title: "No se pudo actualizar", description: "La tarea no cambió de estado.", variant: "destructive" });
@@ -478,17 +488,17 @@ export default function DashboardPage() {
                         <div key={task.id} className="rounded border p-2 text-sm">
                           <div className="font-medium">{getTaskName(task)}</div>
                           <div className="text-muted-foreground">{formatRange(task?.startPlanned, task?.endPlanned)} · {task?.spaceId ? getSpaceName(task.spaceId, spacesById) : getZoneName(task.zoneId, zonesById)}</div>
-                          <TaskRealTimeMeta task={task} />
+                          <TaskRealTimeMeta task={task} nowMs={operationalNowMs} clock={execution?.clock} />
                           <div className="mt-1 flex flex-wrap gap-1">
                             <Badge variant="secondary">{Number(task?.camerasOverride ?? task?.template?.defaultCameras ?? 0)} cámaras</Badge>
                             <Badge variant="outline">{task?.status || "pending"}</Badge>
                             {(locksByTask.get(Number(task?.id))?.length || 0) > 0 && <Badge variant="destructive">lock</Badge>}
                           </div>
                           <div className="mt-2 flex flex-wrap gap-1">
-                            <Button size="sm" variant="outline" onClick={() => runQuickAction(task.id, "start")}>Iniciar</Button>
-                            <Button size="sm" variant="outline" onClick={() => runQuickAction(task.id, "interrupt")}>Pausar/Interrumpir</Button>
-                            <Button size="sm" variant="outline" onClick={() => runQuickAction(task.id, "done")}>Finalizar</Button>
-                            <Button size="sm" variant="destructive" disabled={task?.status === "pending" || resetTask.isPending} onClick={() => runResetAction(task)}>Reset a pendiente</Button>
+                            <Button size="sm" variant="outline" disabled={!canExecute(task, "start") || updateStatus.isPending} onClick={() => runQuickAction(task.id, "start")}>Iniciar</Button>
+                            <Button size="sm" variant="outline" disabled={!canExecute(task, "interrupt") || updateStatus.isPending} onClick={() => runQuickAction(task.id, "interrupt")}>Pausar/Interrumpir</Button>
+                            <Button size="sm" variant="outline" disabled={!canExecute(task, "done") || updateStatus.isPending} onClick={() => runQuickAction(task.id, "done")}>Finalizar</Button>
+                            <Button size="sm" variant="destructive" disabled={!["admin", "production"].includes(role ?? "") || task?.status === "pending" || resetTask.isPending} onClick={() => runResetAction(task)}>Reset a pendiente</Button>
                             {!task?.zoneId && !task?.spaceId && <Button size="sm" onClick={() => setLocationDialogTask(task)}>Asignar ubicación</Button>}
                           </div>
                         </div>
@@ -511,7 +521,7 @@ export default function DashboardPage() {
                               <div className="font-semibold">{spaceBlock.space?.name || "Espacio"}</div>
                               <div className="text-xs text-muted-foreground">AHORA: {spaceBlock.nowTask ? `${getTaskName(spaceBlock.nowTask)} (${formatRange(spaceBlock.nowTask?.startPlanned, spaceBlock.nowTask?.endPlanned)})` : "Sin tarea"}</div>
                               <div className="text-xs text-muted-foreground">SIGUIENTE: {spaceBlock.nextTask ? `${getTaskName(spaceBlock.nextTask)} (${formatRange(spaceBlock.nextTask?.startPlanned, spaceBlock.nextTask?.endPlanned)})` : "Sin siguiente"}</div>
-                              {spaceBlock.nowTask ? <TaskRealTimeMeta task={spaceBlock.nowTask} /> : null}
+                              {spaceBlock.nowTask ? <TaskRealTimeMeta task={spaceBlock.nowTask} nowMs={operationalNowMs} clock={execution?.clock} /> : null}
                               <div className="mt-1 flex flex-wrap gap-1">
                                 <Badge variant="secondary">{Number(spaceBlock.nowTask?.camerasOverride ?? spaceBlock.nowTask?.template?.defaultCameras ?? 0)} cámaras</Badge>
                                 <Badge variant="outline">{spaceBlock.nowTask?.status || "pending"}</Badge>
@@ -520,10 +530,10 @@ export default function DashboardPage() {
                               <div className="mt-1 text-xs">Staff: {spaceBlock.staffNames.length ? spaceBlock.staffNames.join(", ") : "Sin asignar"}</div>
                               {spaceBlock.nowTask && (
                                 <div className="mt-2 flex flex-wrap gap-1">
-                                  <Button size="sm" variant="outline" onClick={() => runQuickAction(spaceBlock.nowTask.id, "start")}>Iniciar</Button>
-                                  <Button size="sm" variant="outline" onClick={() => runQuickAction(spaceBlock.nowTask.id, "interrupt")}>Interrumpir</Button>
-                                  <Button size="sm" variant="outline" onClick={() => runQuickAction(spaceBlock.nowTask.id, "done")}>Finalizar</Button>
-                                  <Button size="sm" variant="destructive" disabled={spaceBlock.nowTask?.status === "pending" || resetTask.isPending} onClick={() => runResetAction(spaceBlock.nowTask)}>Reset a pendiente</Button>
+                                  <Button size="sm" variant="outline" disabled={!canExecute(spaceBlock.nowTask, "start") || updateStatus.isPending} onClick={() => runQuickAction(spaceBlock.nowTask.id, "start")}>Iniciar</Button>
+                                  <Button size="sm" variant="outline" disabled={!canExecute(spaceBlock.nowTask, "interrupt") || updateStatus.isPending} onClick={() => runQuickAction(spaceBlock.nowTask.id, "interrupt")}>Interrumpir</Button>
+                                  <Button size="sm" variant="outline" disabled={!canExecute(spaceBlock.nowTask, "done") || updateStatus.isPending} onClick={() => runQuickAction(spaceBlock.nowTask.id, "done")}>Finalizar</Button>
+                                  <Button size="sm" variant="destructive" disabled={!["admin", "production"].includes(role ?? "") || spaceBlock.nowTask?.status === "pending" || resetTask.isPending} onClick={() => runResetAction(spaceBlock.nowTask)}>Reset a pendiente</Button>
                                 </div>
                               )}
                             </div>

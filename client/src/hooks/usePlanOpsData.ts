@@ -3,7 +3,7 @@ import { useQueries } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { buildUrl, api } from "@shared/routes";
 
-export function usePlanOpsData(planId?: number | null) {
+export function usePlanOpsData(planId?: number | null, pollInterval: number | false = false) {
   const safePlanId = Number(planId);
   const enabled = Number.isFinite(safePlanId) && safePlanId > 0;
 
@@ -11,16 +11,19 @@ export function usePlanOpsData(planId?: number | null) {
     queries: [
       {
         queryKey: [buildUrl(api.plans.get.path, { id: safePlanId })],
+        refetchInterval: pollInterval,
         queryFn: () => apiRequest("GET", buildUrl(api.plans.get.path, { id: safePlanId })),
         enabled,
       },
       {
         queryKey: [`/api/plans/${safePlanId}/tasks`],
+        refetchInterval: pollInterval,
         queryFn: () => apiRequest("GET", `/api/plans/${safePlanId}/tasks`),
         enabled,
       },
       {
         queryKey: [`/api/plans/${safePlanId}/locks`],
+        refetchInterval: pollInterval,
         queryFn: () => apiRequest("GET", `/api/plans/${safePlanId}/locks`),
         enabled,
       },

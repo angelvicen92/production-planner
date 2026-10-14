@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
-import { contestantsQueryKey, planQueryKey } from "@/lib/plan-query-keys";
+import { contestantsQueryKey, planQueryKey, planTasksQueryKey, planLocksQueryKey } from "@/lib/plan-query-keys";
 
 export function usePlanRealtime({ planId }: { planId: number | null }) {
   const queryClient = useQueryClient();
   const [realtimeConnected, setRealtimeConnected] = useState(false);
   const [realtimeFailed, setRealtimeFailed] = useState(false);
+  const [online, setOnline] = useState(() => navigator.onLine);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const canSubscribe = useMemo(() => Number.isFinite(planId) && Number(planId) > 0, [planId]);
@@ -18,6 +19,8 @@ export function usePlanRealtime({ planId }: { planId: number | null }) {
       return;
     }
 
+    setRealtimeConnected(false);
+    setRealtimeFailed(false);
     const invalidateDebounced = () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -25,6 +28,9 @@ export function usePlanRealtime({ planId }: { planId: number | null }) {
       timeoutRef.current = setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: planQueryKey(planId) });
         queryClient.invalidateQueries({ queryKey: contestantsQueryKey(planId) });
+        queryClient.invalidateQueries({ queryKey: planTasksQueryKey(planId) });
+        queryClient.invalidateQueries({ queryKey: planLocksQueryKey(planId) });
+        queryClient.invalidateQueries({ queryKey: [`/api/plans/${planId}/execution`] });
         timeoutRef.current = null;
       }, 320);
     };
@@ -71,15 +77,21 @@ export function usePlanRealtime({ planId }: { planId: number | null }) {
     };
 
     const onVisibilityChange = () => {
-      if (document.visibilityState === "visible") ensureSubscribed();
+      if (document.visibilityState === "visible") recover();
     };
+    const recover = () => { setOnline(navigator.onLine); invalidateDebounced(); ensureSubscribed(); };
+    const offline = () => { setOnline(false); setRealtimeConnected(false); };
 
     ensureSubscribed();
-    window.addEventListener("focus", ensureSubscribed);
+    window.addEventListener("focus", recover);
+    window.addEventListener("online", recover);
+    window.addEventListener("offline", offline);
     document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
-      window.removeEventListener("focus", ensureSubscribed);
+      window.removeEventListener("focus", recover);
+      window.removeEventListener("online", recover);
+      window.removeEventListener("offline", offline);
       document.removeEventListener("visibilitychange", onVisibilityChange);
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -92,5 +104,6 @@ export function usePlanRealtime({ planId }: { planId: number | null }) {
   return {
     realtimeConnected,
     realtimeFailed,
+    online,
   };
 }

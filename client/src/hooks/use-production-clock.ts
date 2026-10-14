@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { madridClockBase } from "@shared/execution";
 import { api } from "@shared/routes";
 import { apiRequest } from "@/lib/api";
 
@@ -27,13 +28,6 @@ function isValidHHMM(value: unknown): value is string {
   return typeof value === "string" && /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(value);
 }
 
-function manualBaseDateFromHHMM(hhmm: string): Date {
-  const [h, m] = hhmm.split(":").map((value) => Number(value));
-  const base = new Date();
-  base.setHours(h, m, 0, 0);
-  return base;
-}
-
 export function useProductionClock() {
   const { data, isLoading, error } = useQuery<ProgramSettingsClock>({
     queryKey: [api.programSettings.get.path],
@@ -55,7 +49,7 @@ export function useProductionClock() {
       return new Date(tickMs);
     }
 
-    const manualBaseDate = manualBaseDateFromHHMM(simulatedTime);
+    const manualBaseDate = madridClockBase(simulatedTime, new Date(simulatedSetAt));
     const deltaMs = tickMs - simulatedSetAt;
     return new Date(manualBaseDate.getTime() + Math.max(0, deltaMs));
   }, [mode, simulatedTime, simulatedSetAt, tickMs]);

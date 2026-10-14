@@ -146,6 +146,7 @@ interface PlanningTimelineProps {
     itinerantTeamId: number | null;
   }[];
 
+  canExecuteTask?: (task: Task) => boolean;
   onTaskStatusChange?: (
     task: Task,
     status: "in_progress" | "done" | "interrupted" | "cancelled",
@@ -259,6 +260,7 @@ function TaskStatusMenuTrigger({
   contestantName,
   locationLabel,
   onTaskStatusChange,
+  canExecuteTask,
   taskStatusPending = false,
   hasTimeLock = false,
   canPinTimeLock = false,
@@ -280,6 +282,7 @@ function TaskStatusMenuTrigger({
   task: Task;
   contestantName: string;
   locationLabel: string;
+  canExecuteTask?: (task: Task) => boolean;
   onTaskStatusChange?: (
     task: Task,
     status: "in_progress" | "done" | "interrupted" | "cancelled",
@@ -306,7 +309,7 @@ function TaskStatusMenuTrigger({
   const { toast } = useToast();
   const confirm = useConfirm();
   const suppressNextClickRef = useRef(false);
-  const actions = taskActionsForStatus(task.status ?? "pending");
+  const actions = canExecuteTask && !canExecuteTask(task) ? [] : taskActionsForStatus(task.status ?? "pending");
 
   useEffect(() => {
     if (manualMode && open) setOpen(false);
@@ -546,6 +549,7 @@ function TaskStatusMenuTrigger({
     itinerantTeams = [],
     staffAssignments = [],
     onTaskStatusChange,
+    canExecuteTask,
     taskStatusPending = false,
     timeLockedTaskIds = [],
     fullLockedTaskIds = [],
@@ -2020,6 +2024,7 @@ function TaskStatusMenuTrigger({
                                                 }
                                                 locationLabel={getTaskLocationLabel(task)}
                                                 onTaskStatusChange={onTaskStatusChange}
+                                                canExecuteTask={canExecuteTask}
                                                 taskStatusPending={taskStatusPending}
                                                 hasTimeLock={hasTimeLock(task)}
                                                 canPinTimeLock={canPinTask(task)}
@@ -2109,6 +2114,7 @@ function TaskStatusMenuTrigger({
                                                   contestantName={contestantNameById[Number(task.contestantId)] ?? "—"}
                                                   locationLabel={getTaskLocationLabel(task)}
                                                   onTaskStatusChange={onTaskStatusChange}
+                                                  canExecuteTask={canExecuteTask}
                                                   taskStatusPending={taskStatusPending}
                                                   hasTimeLock={hasTimeLock(task)}
                                                   canPinTimeLock={canPinTask(task)}
@@ -2183,6 +2189,7 @@ function TaskStatusMenuTrigger({
                                             }
                                             locationLabel={getTaskLocationLabel(task)}
                                             onTaskStatusChange={onTaskStatusChange}
+                                            canExecuteTask={canExecuteTask}
                                             taskStatusPending={taskStatusPending}
                                             hasTimeLock={hasTimeLock(task)}
                                             canPinTimeLock={canPinTask(task)}
@@ -2386,6 +2393,7 @@ function TaskStatusMenuTrigger({
                                             }
                                             locationLabel={getTaskLocationLabel(task)}
                                             onTaskStatusChange={onTaskStatusChange}
+                                            canExecuteTask={canExecuteTask}
                                             taskStatusPending={taskStatusPending}
                                             hasTimeLock={hasTimeLock(task)}
                                             canPinTimeLock={canPinTask(task)}
@@ -2472,6 +2480,7 @@ function TaskStatusMenuTrigger({
                                               contestantName={contestantNameById[Number(task.contestantId)] ?? "—"}
                                               locationLabel={getTaskLocationLabel(task)}
                                               onTaskStatusChange={onTaskStatusChange}
+                                              canExecuteTask={canExecuteTask}
                                               taskStatusPending={taskStatusPending}
                                               hasTimeLock={hasTimeLock(task)}
                                               canPinTimeLock={canPinTask(task)}
@@ -2517,6 +2526,7 @@ function TaskStatusMenuTrigger({
                                       }
                                       locationLabel={getTaskLocationLabel(task)}
                                       onTaskStatusChange={onTaskStatusChange}
+                                      canExecuteTask={canExecuteTask}
                                       taskStatusPending={taskStatusPending}
                                       hasTimeLock={hasTimeLock(task)}
                                       canPinTimeLock={canPinTask(task)}
@@ -2676,6 +2686,7 @@ function TaskStatusMenuTrigger({
                             }
                             locationLabel={getTaskLocationLabel(task)}
                             onTaskStatusChange={onTaskStatusChange}
+                            canExecuteTask={canExecuteTask}
                             taskStatusPending={taskStatusPending}
                             hasTimeLock={hasTimeLock(task)}
                             canPinTimeLock={canPinTask(task)}
@@ -3249,6 +3260,7 @@ function TaskStatusMenuTrigger({
                             }
                             locationLabel={getTaskLocationLabel(task)}
                             onTaskStatusChange={onTaskStatusChange}
+                            canExecuteTask={canExecuteTask}
                             taskStatusPending={taskStatusPending}
                             hasTimeLock={hasTimeLock(task)}
                             canPinTimeLock={canPinTask(task)}

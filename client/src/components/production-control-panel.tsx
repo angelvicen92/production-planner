@@ -1,3 +1,4 @@
+import { executionDuration, formatExecutionDuration, type ExecutionContext } from "@shared/execution";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock3, Pause, Play } from "lucide-react";
@@ -78,6 +79,8 @@ export function ProductionControlPanel({
   itinerantTeams,
   nowTime,
   nowSeconds,
+  operationalNowMs,
+  executionClock,
   settings,
   directorMode = false,
 }: {
@@ -90,6 +93,8 @@ export function ProductionControlPanel({
   itinerantTeams?: any[];
   nowTime: string;
   nowSeconds: number;
+  operationalNowMs?: number;
+  executionClock?: ExecutionContext['clock'];
   settings?: ControlRoomSettings;
   directorMode?: boolean;
 }) {
@@ -213,18 +218,19 @@ export function ProductionControlPanel({
                 const ring = taskColor ? hexToRgba(taskColor, isRunning ? 0.25 : 0.16) : null;
                 const glow = taskColor ? hexToRgba(taskColor, isRunning ? 0.2 : 0.12) : null;
                 const halo = ring && glow ? `0 0 0 3px ${ring}, 0 8px 24px ${glow}` : undefined;
-                const elapsed = current ? elapsedSeconds(nowTotalSec, current?.startReal ?? current?.start_real, current?.startRealSeconds ?? current?.start_real_seconds) : 0;
+                const elapsed = current ? executionDuration(current, operationalNowMs ?? Date.now(), executionClock) : null;
                 const lastStart = lastDone?.startReal ?? lastDone?.start_real ?? lastDone?.startPlanned ?? lastDone?.start_planned;
                 const lastEnd = lastDone?.endReal ?? lastDone?.end_real ?? lastDone?.endPlanned ?? lastDone?.end_planned;
                 const nextStart = next?.startPlanned ?? next?.start_planned;
                 return (
                   <div key={laneKey} className="rounded border p-3 grid grid-cols-1 lg:grid-cols-[1fr_1.4fr_1fr] gap-3">
-                    <div>
+                    <div data-testid={lastDone ? `control-room-done-${lastDone.id}` : undefined}>
                       <div className="text-xs text-muted-foreground">Última</div>
                       <div className="font-medium truncate">{String(lastDone?.template?.name ?? "—")}</div>
                       <div className="text-xs text-muted-foreground">{lastDone ? `${lastStart ?? "—"}–${lastEnd ?? "—"}` : "—"}</div>
                     </div>
                     <div
+                      data-testid={current ? `control-room-running-${current.id}` : undefined}
                       className="rounded border bg-muted/20 p-2"
                       style={{
                         borderColor: taskColor ?? undefined,
@@ -239,7 +245,7 @@ export function ProductionControlPanel({
                       </div>
                       {current ? <div className="text-xs">{currentContestant?.name ? `(${currentContestant.name})` : ""}</div> : null}
                       {current ? <div className="text-xs">Inicio real: {String(current?.startReal ?? current?.start_real ?? current?.startPlanned ?? current?.start_planned ?? "—")}</div> : null}
-                      {current ? <div className="text-xs font-mono">Timer: {formatMmSs(elapsed)} / {Math.max(0, durationPlannedMin(current, templatesById))}m</div> : null}
+                      {current ? <div className="text-xs font-mono">Timer: {formatExecutionDuration(elapsed)} / {Math.max(0, durationPlannedMin(current, templatesById))}m</div> : null}
                     </div>
                     <div>
                       <div className="text-xs text-muted-foreground">Próxima</div>

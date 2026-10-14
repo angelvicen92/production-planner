@@ -1,3 +1,6 @@
+import { usePlanRealtime } from "@/hooks/use-plan-realtime";
+import { useExecutionContext } from "@/hooks/use-execution-context";
+import { executionClockCurrent, executionNextStates } from "@shared/execution";
 import { Layout } from "@/components/layout";
 import { QueryGuard } from "@/components/QueryGuard";
 import { useGeneratePlan, usePlan, useUpdatePlan } from "@/hooks/use-plans";
@@ -1400,6 +1403,17 @@ export default function PlanDetailsPage() {
   const updateContestant = useUpdateContestant(id);
   const deleteContestant = useDeleteContestant(id);
   const updateTaskStatus = useUpdateTaskStatus();
+  const executionSync = usePlanRealtime({planId:id});
+  const executionQ = useExecutionContext(id, executionSync.online ? (executionSync.realtimeConnected ? 30000 : 5000) : false);
+  useEffect(() => {
+    if (!id || executionSync.realtimeConnected || !executionSync.online) return;
+    const timer=window.setInterval(()=>queryClient.invalidateQueries({queryKey:[buildUrl(api.plans.get.path,{id})]}),5000);
+    return()=>window.clearInterval(timer);
+  },[id,queryClient,executionSync.realtimeConnected,executionSync.online]);
+  const canChangeExecution = (task: any) => Boolean(!executionQ.error && executionQ.data?.tasks.find(t => t.taskId === Number(task.id))?.hasAuthority && executionClockCurrent(task, executionQ.data.clock));
+  const canOperateTask = (task: any) => canChangeExecution(task) && ((task.status ?? 'pending') !== 'pending' || executionQ.data?.planningReady === true);
+  const canResetExecution = ['admin', 'production'].includes(executionQ.data?.role ?? '');
+  const allowedExecutionStates = (task: any) => (executionNextStates[task.status] ?? []).filter(next => next !== 'in_progress' || task.status !== 'pending' || executionQ.data?.planningReady === true);
   const resetTask = useResetTask();
 
   const [newName, setNewName] = useState("");
@@ -1842,6 +1856,7 @@ ${reasonMessage}` : message,
     const payload: any = {
       taskId: Number(task?.id),
       planId: id,
+      expectedStatus: task?.status ?? "pending",
       status,
       effectiveTimeHHMM: nowTime,
       effectiveSeconds: nowSeconds,
@@ -3801,7 +3816,8 @@ ${reasonMessage}` : message,
                                 zones={zones}
                                 spaces={spaces}
                                 onChangeDraft={(fn) => updateDraftTask(t, fn)}
-                                onChangeStatus={(next) => updateTaskStatus.mutate({ taskId: t.id, planId: id, status: next as any, effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds })}
+                                allowedStatuses={allowedExecutionStates(t)}
+                                onChangeStatus={canChangeExecution(t) ? (next) => updateTaskStatus.mutate({ taskId: t.id, planId: id, expectedStatus: t.status, status: next as any }) : undefined}
                                 onDelete={async () => {
                                   await apiRequest("DELETE", buildUrl(api.dailyTasks.delete.path, { id: t.id }));
                                   await queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
@@ -3856,7 +3872,8 @@ ${reasonMessage}` : message,
                             zones={zones}
                             spaces={spaces}
                             onChangeDraft={(fn) => updateDraftTask(contestantDetailTask, fn)}
-                            onChangeStatus={(next) => updateTaskStatus.mutate({ taskId: contestantDetailTask.id, planId: id, status: next as any, effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds })}
+                            allowedStatuses={allowedExecutionStates(contestantDetailTask)}
+                            onChangeStatus={canChangeExecution(contestantDetailTask) ? (next) => updateTaskStatus.mutate({ taskId: contestantDetailTask.id, planId: id, expectedStatus: contestantDetailTask.status, status: next as any }) : undefined}
                             onDelete={async () => {
                               await apiRequest("DELETE", buildUrl(api.dailyTasks.delete.path, { id: contestantDetailTask.id }));
                               await queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
@@ -4739,6 +4756,7 @@ ${reasonMessage}` : message,
                   uiItinerantGroupOrderIndex={(programSettings as any)?.uiItinerantGroupOrderIndex ?? (programSettings as any)?.ui_itinerant_group_order_index ?? null}
                   uiUnlocatedGroupOrderIndex={(programSettings as any)?.uiUnlocatedGroupOrderIndex ?? (programSettings as any)?.ui_unlocated_group_order_index ?? null}
                   onTaskStatusChange={handlePlanningTaskStatusChange}
+                  canExecuteTask={canOperateTask}
                   taskStatusPending={updateTaskStatus.isPending}
                   timeLockedTaskIds={Array.from(timeLockedTaskIds)}
                   fullLockedTaskIds={Array.from(fullLockedTaskIds)}
@@ -4949,8 +4967,8 @@ ${reasonMessage}` : message,
 
               <CardContent className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  Aquí los ayudantes declaran inicio/fin en tiempo real. Todos
-                  los cambios se verán al instante.
+                  Aquí los ayudantes declaran inicio/fin en tiempo real. Los
+                  cambios se muestran tras la confirmación del servidor y la actualización de las vistas.
                 </p>
 
                 <div className="rounded-md border">
@@ -5024,13 +5042,14 @@ ${reasonMessage}` : message,
 
 
                           const canStart =
-                            status === "pending" || status === "interrupted";
-                          const canFinish = status === "in_progress";
-                          const canInterrupt = status === "in_progress";
+                            canOperateTask(t) && (status === "pending" || status === "interrupted");
+                          const canFinish = canOperateTask(t) && status === "in_progress";
+                          const canInterrupt = canOperateTask(t) && status === "in_progress";
 
                           return (
                             <TableRow
                               key={t.id}
+                              data-testid={`legacy-execution-task-${t.id}`}
                               className={
                                 isMissingSpace(t) ? "bg-yellow-50/50" : ""
                               }
@@ -5095,10 +5114,10 @@ ${reasonMessage}` : message,
                               <TableCell className="text-right">
                                 <TooltipProvider>
                                   <div className="inline-flex gap-1">
-                                    <Tooltip><TooltipTrigger asChild><Button aria-label="Start" variant="ghost" size="icon" disabled={!canStart || updateTaskStatus.isPending} onClick={() => updateTaskStatus.mutate({ taskId: Number(t.id), planId: id, status: "in_progress", effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds } as any)}><Play className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Start</TooltipContent></Tooltip>
-                                    <Tooltip><TooltipTrigger asChild><Button aria-label="Finish" variant="ghost" size="icon" disabled={!canFinish || updateTaskStatus.isPending} onClick={() => updateTaskStatus.mutate({ taskId: Number(t.id), planId: id, status: "done", effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds } as any)}><Check className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Finish</TooltipContent></Tooltip>
-                                    <Tooltip><TooltipTrigger asChild><Button aria-label="Interrupt" variant="ghost" size="icon" disabled={!canInterrupt || updateTaskStatus.isPending} onClick={() => updateTaskStatus.mutate({ taskId: Number(t.id), planId: id, status: "interrupted", effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds } as any)}><Pause className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Interrupt</TooltipContent></Tooltip>
-                                    <Tooltip><TooltipTrigger asChild><Button aria-label="Reset" variant="ghost" size="icon" className="text-red-600 hover:text-red-700" disabled={status === "pending" || resetTask.isPending} onClick={async () => { const msg = status === "in_progress" ? "¿Resetear? Se borrará inicio real." : `Esta tarea está en estado ${status.toUpperCase()}. Al resetear se borrarán inicio/fin reales. ¿Continuar?`; const ok = await confirmDialog({ title: "Resetear tarea", description: msg, confirmText: "Resetear" }); if (!ok) return; resetTask.mutate({ taskId: Number(t.id), planId: id, effectiveTimeHHMM: nowTime }); }}><RotateCcw className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Reset</TooltipContent></Tooltip>
+                                    <Tooltip><TooltipTrigger asChild><Button aria-label="Start" variant="ghost" size="icon" disabled={!canStart || updateTaskStatus.isPending} onClick={() => updateTaskStatus.mutate({ taskId: Number(t.id), planId: id, expectedStatus: status, status: "in_progress", effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds } as any)}><Play className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Start</TooltipContent></Tooltip>
+                                    <Tooltip><TooltipTrigger asChild><Button aria-label="Finish" variant="ghost" size="icon" disabled={!canFinish || updateTaskStatus.isPending} onClick={() => updateTaskStatus.mutate({ taskId: Number(t.id), planId: id, expectedStatus: status, status: "done", effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds } as any)}><Check className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Finish</TooltipContent></Tooltip>
+                                    <Tooltip><TooltipTrigger asChild><Button aria-label="Interrupt" variant="ghost" size="icon" disabled={!canInterrupt || updateTaskStatus.isPending} onClick={() => updateTaskStatus.mutate({ taskId: Number(t.id), planId: id, expectedStatus: status, status: "interrupted", effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds } as any)}><Pause className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Interrupt</TooltipContent></Tooltip>
+                                    <Tooltip><TooltipTrigger asChild><Button aria-label="Reset" variant="ghost" size="icon" className="text-red-600 hover:text-red-700" disabled={!canResetExecution || status === "pending" || resetTask.isPending} onClick={async () => { const msg = status === "in_progress" ? "¿Resetear? Se borrará inicio real." : `Esta tarea está en estado ${status.toUpperCase()}. Al resetear se borrarán inicio/fin reales. ¿Continuar?`; const ok = await confirmDialog({ title: "Resetear tarea", description: msg, confirmText: "Resetear" }); if (!ok) return; resetTask.mutate({ taskId: Number(t.id), planId: id, effectiveTimeHHMM: nowTime }); }}><RotateCcw className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Reset</TooltipContent></Tooltip>
                                   </div>
                                 </TooltipProvider>
                               </TableCell>

@@ -7,6 +7,7 @@ import { supabaseAdmin } from "./supabase";
 import { api, defaultSpatialAvailabilityResponseSchema, planSpaceAvailabilityResponseSchema, planZoneAvailabilityResponseSchema, spatialAvailabilityInitializationResponseSchema } from "@shared/routes";
 import { z } from "zod";
 import { requireAuth } from "./middleware/requireAuth";
+import { canExecuteTask, executionContext, executionError } from "./liveExecution";
 import { createApiAuthorization } from './apiAuthorization';
 import { buildEngineInput } from "../engine/buildInput";
 import { generatePlanV3 } from "../engine/v3";
@@ -133,7 +134,7 @@ function mapDeleteError(err: any, fallback: string) {
 }
 
   // Authentication + coarse-grained authorization for all API endpoints
-  app.use('/api',createApiAuthorization({authenticate:requireAuth,lookupRole:getUserRole}));
+  app.use('/api',createApiAuthorization({authenticate:requireAuth,lookupRole:getUserRole,authorizeTask:canExecuteTask}));
 
   app.post("/api/bootstrap-role", async (req, res) => {
     try {
@@ -3077,6 +3078,12 @@ function mapDeleteError(err: any, fallback: string) {
             endPlanned: t.end_planned ?? t.endPlanned ?? null,
             startReal: t.start_real ?? t.startReal ?? null,
             startRealSeconds: t.start_real_seconds ?? t.startRealSeconds ?? null,
+            startRealAt: t.start_real_at ?? t.startRealAt ?? null,
+            endRealAt: t.end_real_at ?? t.endRealAt ?? null,
+            pausedAt: t.paused_at ?? t.pausedAt ?? null,
+            pausedTotalSeconds: t.paused_total_seconds ?? t.pausedTotalSeconds ?? 0,
+            executionClockMode: t.execution_clock_mode ?? t.executionClockMode ?? null,
+            executionClockRevision: t.execution_clock_revision ?? t.executionClockRevision ?? null,
             endReal: t.end_real ?? t.endReal ?? null,
             endRealSeconds: t.end_real_seconds ?? t.endRealSeconds ?? null,
 
@@ -3555,6 +3562,15 @@ function mapDeleteError(err: any, fallback: string) {
     }
   });
 
+  app.get("/api/plans/:id/execution", async (req, res) => {
+    try {
+      res.json(await executionContext(Number(req.params.id), (req as any).user.id));
+    } catch (error) {
+      const failure = executionError(error);
+      res.status(failure.status).json({ message: failure.message });
+    }
+  });
+
   // Task Status Update (Execution)
   app.patch(api.dailyTasks.updateStatus.path, async (req, res) => {
     const user = (req as any).user;
@@ -3580,6 +3596,12 @@ function mapDeleteError(err: any, fallback: string) {
         endReal: updated.end_real ?? updated.endReal ?? null,
         endRealSeconds: updated.end_real_seconds ?? updated.endRealSeconds ?? null,
 
+        startRealAt: updated.start_real_at ?? null,
+        endRealAt: updated.end_real_at ?? null,
+        pausedAt: updated.paused_at ?? null,
+        pausedTotalSeconds: updated.paused_total_seconds ?? 0,
+        executionClockMode: updated.execution_clock_mode ?? null,
+        executionClockRevision: updated.execution_clock_revision ?? null,
         durationOverride: updated.duration_override ?? updated.durationOverride ?? null,
         camerasOverride: updated.cameras_override ?? updated.camerasOverride ?? null,
       });
@@ -3588,10 +3610,8 @@ function mapDeleteError(err: any, fallback: string) {
       if (err?.name === "ZodError") {
         return res.status(400).json({ message: err.errors?.[0]?.message || "Invalid input" });
       }
-      if ((String(err?.message || "")).toLowerCase().includes("not found")) {
-        return res.status(404).json({ message: "Task not found" });
-      }
-      return res.status(400).json({ message: err?.message || "Bad Request" });
+      const failure = executionError(err);
+      return res.status(failure.status).json({ message: failure.message });
     }
   });
 

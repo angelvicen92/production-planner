@@ -1638,6 +1638,7 @@ export const api = {
             "interrupted",
             "cancelled",
           ]),
+          expectedStatus: z.enum(["pending", "in_progress", "done", "interrupted", "cancelled"]).optional(),
           effectiveTimeHHMM: z
             .string()
             .regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/)
@@ -1648,6 +1649,9 @@ export const api = {
       responses: {
         200: z.custom<typeof dailyTasks.$inferSelect>(),
         400: errorSchemas.validation,
+        403: errorSchemas.validation,
+        409: errorSchemas.validation,
+        503: errorSchemas.validation,
         404: errorSchemas.notFound,
       },
     },

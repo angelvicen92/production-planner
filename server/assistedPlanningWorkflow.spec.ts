@@ -239,6 +239,6 @@ test("API remains globally authenticated/authorized and exposes no proposal oper
   for (const suffix of ["assisted\"", "assisted/session", "assisted/draft", "assisted/accept-stage", "assisted/rollback", "assisted/redo", "assisted/history"])
     assert.ok(routes.includes(suffix), suffix);
   assert.doesNotMatch(serviceSource, /planning_runs/i);
-  assert.match(routes, /app\.use\('\/api',createApiAuthorization\(\{authenticate:requireAuth,lookupRole:getUserRole\}\)\)/);
+  assert.match(routes, /app\.use\('\/api',createApiAuthorization\(\{authenticate:requireAuth,lookupRole:getUserRole,authorizeTask:canExecuteTask\}\)\)/);
   assert.match(authorization,/\['\/plans','\/locks','\/daily-tasks'\]/);
 });

@@ -48,7 +48,7 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
    const rows=await r.json() as any[];const source=(await db.query(`SELECT * FROM public.${table} LIMIT 1`)).rows;
    assert.equal(rows.length,['anon','norole'].includes(role)?0:source.length,`${role} REST ${table}`);
   }
-  const update=await fetch(`${url}/rest/v1/daily_tasks?plan_id=eq.${planId}`,{method:'PATCH',headers,body:JSON.stringify({start_planned:'09:00'})});assert.equal(update.status,200);assert.deepEqual(await update.json(),[]);
+  const update=await fetch(`${url}/rest/v1/daily_tasks?plan_id=eq.${planId}`,{method:'PATCH',headers,body:JSON.stringify({start_planned:'09:00'})});assert.equal(update.status,role==='anon'?401:403,'direct task writes are revoked by the live execution transaction boundary');
   const rpc=await fetch(`${url}/rest/v1/rpc/assisted_bootstrap_session`,{method:'POST',headers,body:JSON.stringify({p_plan_id:planId,p_user_id:users.production.id,p_identity:{},p_replay:{},p_snapshot:{},p_fingerprint:'forbidden'})});
   assert.equal(rpc.status,role==='anon'?401:403,`${role} client RPC must be denied`);
   roleMatrix.push({role,planRead:read.status,clientWrites:'DENIED',restReadBoundary:'PASS'});

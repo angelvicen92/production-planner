@@ -35,6 +35,10 @@ if(process.argv.includes('--app')){
 }else{
  const historicalTopology=process.argv.includes('--historical-topology');
  const full=process.argv.includes('--full');
+ const liveExecution=process.argv.includes('--live-execution');
+ const liveSnapshot=process.argv.includes('--live-execution-snapshot');
+ assert.ok(!liveSnapshot||historicalTopology,'accepted snapshot replay requires --historical-topology');
+ assert.ok(!liveExecution||full,'--live-execution requires a complete accepted baseline (--full)');
  const stageOrder=process.argv.includes('--stage-order');
  const autopilot=process.argv.includes('--autopilot');
  assert.ok(!stageOrder||full,'--stage-order requires the complete real baseline (--full)');
@@ -55,7 +59,7 @@ if(process.argv.includes('--app')){
  const hashes=()=>Object.fromEntries(runtimeFiles.map(file=>[file,createHash('sha256').update(readFileSync(file)).digest('hex')]));
  if(stageOrder)runtimeFiles.push('script/demo/probeA2StageOrder.ts','server/assistedScopeOrchestrator.ts');
  if(autopilot)runtimeFiles.push('shared/assistedAutopilot.ts','client/src/lib/assisted-autopilot.ts','script/demo/smokeA2AutopilotJourney.ts');
- const report:any={mode:'REAL_DISPOSABLE_PRODUCT_INTEGRATION',nodeVersion:process.version,v8Version:process.versions.v8,remoteWrites:0,images,requestedStages:full?11:2,startedAt:new Date().toISOString(),runtimeHashes:hashes(),checks:[],pending:['Connected Supabase catalog/backup adoption and original-row preservation','Published Replit runtime and user browser','Supabase Realtime/WebSocket transport']};
+ const report:any={mode:liveSnapshot?'REAL_DISPOSABLE_EXECUTION_ACCEPTED_SNAPSHOT_REPLAY':'REAL_DISPOSABLE_PRODUCT_INTEGRATION',nodeVersion:process.version,v8Version:process.versions.v8,remoteWrites:0,images,requestedStages:full?11:2,startedAt:new Date().toISOString(),runtimeHashes:hashes(),checks:[],pending:['Connected Supabase catalog/backup adoption and original-row preservation','Published Replit runtime and user browser','Supabase Realtime/WebSocket transport']};
  const pass=(name:string)=>{report.checks.push(name);console.log(`PASS ${name}`);};
  const cleanup=async()=>{
   if(app&&app.exitCode===null){app.kill('SIGTERM');await Promise.race([new Promise(r=>app!.once('exit',r)),delay(3000)]);if(app.exitCode===null)app.kill('SIGKILL');}
@@ -148,11 +152,18 @@ if(process.argv.includes('--app')){
   assert.equal((await db.query('SELECT count(*) AS n FROM public.plan_breaks WHERE plan_id=$1',[dataset.input.planId])).rows[0].n,'0');
   pass('real storage/input adapter canon after GET day; no legacy breaks');
   report.diagnostics={};const options={appUrl,url,anon,users,db,planId:dataset.input.planId,directory,full,pass,diagnostics:report.diagnostics,buildInput:()=>buildEngineInput(dataset.input.planId,storage)};
-  report.journey=await runA2BrowserJourney(options);
+  if(liveSnapshot){
+   const otherDays=async()=>JSON.stringify((await db!.query("SELECT to_jsonb(t) row FROM daily_tasks t WHERE plan_id<>27001 ORDER BY id")).rows);
+   const untouched=await otherDays();
+   const source=(await db.query("SELECT snapshot_fingerprint,ordinal FROM assisted_planning_stages WHERE id=(SELECT active_stage_id FROM assisted_planning_sessions WHERE plan_id=27001 AND status='ACTIVE')")).rows[0];
+   report.snapshotReplay={source:'script/demo/fixtures/a2-legacy-import.json.gz',sourceSha256:createHash('sha256').update(readFileSync('script/demo/fixtures/a2-legacy-import.json.gz')).digest('hex'),planId:27001,acceptedStage:source.ordinal,fingerprint:source.snapshot_fingerprint,newSolverRun:false};
+   const {runLiveExecutionJourney}=await import('./smokeLiveExecutionJourney');report.liveExecution=await runLiveExecutionJourney({...options,planId:27001});
+   assert.equal(await otherDays(),untouched);pass('other disposable days remain literal during accepted-snapshot execution');
+  }else report.journey=await runA2BrowserJourney(options);
   if(stageOrder){const {probeA2StageOrder}=await import('./probeA2StageOrder');report.stageOrder=await probeA2StageOrder(options,report.journey,initialInput);}
   if(autopilot){const {runA2AutopilotJourney}=await import('./smokeA2AutopilotJourney');report.autopilot=await runA2AutopilotJourney(options,report.journey);}
   assert.deepEqual(hashes(),report.runtimeHashes,'runtime sources changed during integration rehearsal');
-  if(historicalTopology){
+  if(historicalTopology&&!liveSnapshot){
    const metricInput=await buildEngineInput(dataset.input.planId,storage),projected=adaptEngineInputToPlannerNextProblem(metricInput);
    assert.equal(projected.status,'SUPPORTED');if(projected.status!=='SUPPORTED')throw Error('Final metric input is unsupported');
    const placements=(await db.query('SELECT id AS "taskId",start_planned AS "startPlanned",end_planned AS "endPlanned" FROM public.daily_tasks WHERE plan_id=$1 ORDER BY id',[dataset.input.planId])).rows.map(row=>({...row,taskId:Number(row.taskId)}));
@@ -163,7 +174,8 @@ if(process.argv.includes('--app')){
    assert.equal(report.topologyMetrics.placedObligations,266);assert.deepEqual(report.topologyMetrics.styling.overlapPairs,[]);
    pass('persisted physical topology, styling capacity and final SQL KPI projection');
   }
-  if(preservation){await preservation.assertPreserved();pass('old day, 11 prior Stages, 333 other tasks and historical catalog remain literal after real UI/Autopilot');}
+  if(liveExecution){const {runLiveExecutionJourney}=await import('./smokeLiveExecutionJourney');report.liveExecution=await runLiveExecutionJourney(options);}
+  if(preservation&&!liveSnapshot){await preservation.assertPreserved();pass('old day, 11 prior Stages, 333 other tasks and historical catalog remain literal after real UI/Autopilot/execution');}
   report.status='PASS';report.finishedAt=new Date().toISOString();
  }catch(error){report.status='FAIL';report.error=(error instanceof Error?error.stack??error.message:String(error)).replaceAll(password,'[local secret]').replaceAll(secret,'[local secret]');process.exitCode=1;console.error(report.error);}
  finally{await cleanup();writeFileSync(`${directory}/integration.json`,JSON.stringify(report,null,2));}

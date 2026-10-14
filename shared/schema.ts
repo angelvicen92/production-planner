@@ -628,6 +628,11 @@ export const dailyTasks = pgTable("daily_tasks", {
   // Real times (Execution)
   startReal: text("start_real"),
   startRealSeconds: integer("start_real_seconds"),
+  startRealAt: timestamp("start_real_at", { withTimezone: true }),
+  endRealAt: timestamp("end_real_at", { withTimezone: true }),
+  pausedAt: timestamp("paused_at", { withTimezone: true }),
+  executionClockMode: text("execution_clock_mode"),
+  executionClockRevision: timestamp("execution_clock_revision", { withTimezone: true }),
   pausedTotalSeconds: integer("paused_total_seconds").notNull().default(0),
   pausedAtSeconds: integer("paused_at_seconds"),
   pausedAtHHMM: text("paused_at_hhmm"),
@@ -754,6 +759,7 @@ export const locks = pgTable("locks", {
   
   createdBy: text("created_by").notNull(),
   reason: text("reason"),
+  executionOwned: boolean("execution_owned").notNull().default(false),
 });
 
 // Relations

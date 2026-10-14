@@ -54,7 +54,8 @@ export const ContestantDailyTaskEditor = React.memo(function ContestantDailyTask
   spaces: any;
   onChangeDraft: (updater: (prev: DraftTask) => DraftTask) => void;
   onDelete: () => Promise<void> | void;
-  onChangeStatus: (next: string) => void;
+  onChangeStatus?: (next: string) => void;
+  allowedStatuses?: readonly string[];
 }) {
   const {
     task,
@@ -66,6 +67,7 @@ export const ContestantDailyTaskEditor = React.memo(function ContestantDailyTask
     onChangeDraft,
     onDelete,
     onChangeStatus,
+    allowedStatuses = [],
   } = props;
 
   const safeZones = Array.isArray(zones) ? zones : [];
@@ -194,14 +196,14 @@ export const ContestantDailyTaskEditor = React.memo(function ContestantDailyTask
           disabled={locked}
         />
         <div className="flex items-center gap-2 justify-between">
-          <Select value={task.status || "pending"} onValueChange={onChangeStatus}>
+          <Select disabled={!onChangeStatus || allowedStatuses.length === 0} value={task.status || "pending"} onValueChange={onChangeStatus}>
             <SelectTrigger className="h-8 w-[120px]"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="pending">pending</SelectItem>
-              <SelectItem value="in_progress">in_progress</SelectItem>
-              <SelectItem value="done">done</SelectItem>
-              <SelectItem value="interrupted">interrupted</SelectItem>
-              <SelectItem value="cancelled">cancelled</SelectItem>
+              <SelectItem disabled={!allowedStatuses.includes("pending")} value="pending">pending</SelectItem>
+              <SelectItem disabled={!allowedStatuses.includes("in_progress")} value="in_progress">in_progress</SelectItem>
+              <SelectItem disabled={!allowedStatuses.includes("done")} value="done">done</SelectItem>
+              <SelectItem disabled={!allowedStatuses.includes("interrupted")} value="interrupted">interrupted</SelectItem>
+              <SelectItem disabled={!allowedStatuses.includes("cancelled")} value="cancelled">cancelled</SelectItem>
             </SelectContent>
           </Select>
           <Button
