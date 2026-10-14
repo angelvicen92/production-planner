@@ -3238,7 +3238,7 @@ ${reasonMessage}` : message,
                 <Button className="mt-3" size="sm" variant="outline" onClick={() => setPlanningMode(planningMode === "assisted" ? "legacy" : "assisted")}>{planningMode === "assisted" ? "Abrir planificación histórica" : "Volver a Assisted"}</Button>
               </details> : null}
               {planningMode === "legacy" ? <Button variant="outline" onClick={() => setPlanningMode("assisted")}>Volver al Workspace Assisted</Button> : null}
-              {planningMode === "assisted" ? planningVisited ? <AssistedPlanningWorkspace
+              {planningMode === "assisted" ? planningVisited ? <AssistedPlanningWorkspace key={id}
                 planId={id}
                 plan={assistedDayPlan as any}
                 spaces={spaces as any[]}
@@ -3699,7 +3699,7 @@ ${reasonMessage}` : message,
             />
           </TabsContent>
           <TabsContent forceMount hidden={activeTab !== "execution"} value="execution" className="mt-0 space-y-4">
-            <DayExecutionWorkspace planId={id} planDate={plan.date} online={executionSync.online} tasks={plan.dailyTasks as any[]} contestants={contestants as any[]} zones={zones as any[]} spaces={spaces as any[]} resourceNames={planResourceItemNameById} spaceAssignments={spaceAssignmentsForPlanning} zoneAssignments={zoneAssignmentsForTooltip} onOpenContestant={openContestantFromExecution} />
+            <DayExecutionWorkspace key={id} planId={id} planDate={plan.date} online={executionSync.online} tasks={plan.dailyTasks as any[]} contestants={contestants as any[]} zones={zones as any[]} spaces={spaces as any[]} resourceNames={planResourceItemNameById} spaceAssignments={spaceAssignmentsForPlanning} zoneAssignments={zoneAssignmentsForTooltip} onOpenContestant={openContestantFromExecution} />
           </TabsContent>
         </Tabs>
 

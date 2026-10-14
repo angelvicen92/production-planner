@@ -10,6 +10,8 @@ on:
       - 'server/storage.ts'
       - 'shared/execution.ts'
       - 'shared/routes.ts'
+      - 'client/src/components/day-workspace/day-execution-workspace.tsx'
+      - 'client/src/pages/plan-details.tsx'
       - 'client/src/pages/my-day.tsx'
       - 'client/src/pages/dashboard.tsx'
       - 'client/src/pages/control-room.tsx'
@@ -53,3 +55,4 @@ jobs:
           path: |
             work/live-day-execution/integration.json
             work/live-day-execution/mi-dia-*.png
+            work/live-day-execution/workspace-*.png

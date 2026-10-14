@@ -89,7 +89,7 @@ const AssignmentPicker = ({
         ? "—"
         : list
             .map((a: any) =>
-              String(a?.staffPersonName ?? `#${a?.staffPersonId}`),
+              String(a?.staffPersonName ?? "Persona sin nombre"),
             )
             .join(", ");
     const rolePeople = activePeople.filter(

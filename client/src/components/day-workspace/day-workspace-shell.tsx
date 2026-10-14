@@ -35,14 +35,13 @@ export function useDayTabNavigation(planId: number) {
   const [activeTab, setActive] = useState<DayTab>(() =>
     readDayTab(window.location.search),
   );
-  const [planningVisited, setPlanningVisited] = useState(
-    activeTab === "planning",
-  );
+  const [planningVisit, setPlanningVisit] = useState({planId,visited:activeTab === "planning"});
+  const planningVisited = planningVisit.planId === planId ? planningVisit.visited : readDayTab(window.location.search) === "planning";
   useEffect(() => {
     const sync = () => {
       const tab = readDayTab(window.location.search);
       setActive(tab);
-      if (tab === "planning") setPlanningVisited(true);
+      if (tab === "planning") setPlanningVisit({planId,visited:true});
     };
     sync();
     window.addEventListener("popstate", sync);
@@ -57,8 +56,8 @@ export function useDayTabNavigation(planId: number) {
       `${window.location.pathname}?${params}${window.location.hash}`,
     );
     setActive(tab);
-    if (tab === "planning") setPlanningVisited(true);
-  }, []);
+    if (tab === "planning") setPlanningVisit({planId,visited:true});
+  }, [planId]);
   return { activeTab, setActiveTab, planningVisited };
 }
 

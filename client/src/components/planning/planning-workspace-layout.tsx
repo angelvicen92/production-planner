@@ -51,9 +51,11 @@ const SharedTimeline = memo(PlanningTimeline);
 export function PlanningWorkspaceLayout({
   planId,
   timelineProps,
+  onPendingEditsChange,
 }: {
   planId: number;
   timelineProps: TimelineProps;
+  onPendingEditsChange?: (count:number)=>void;
 }) {
   const { user } = useAuth();
   const preferenceKey = `optiplan:workspace:${user?.id ?? "session"}:${planId}`;
@@ -80,6 +82,7 @@ export function PlanningWorkspaceLayout({
     }),
     [timelineProps, manualEdits, applying],
   );
+  useEffect(()=>onPendingEditsChange?.(Object.keys(manualEdits).length),[manualEdits,onPendingEditsChange]);
   const placementIdentity = timelineProps.plan.dailyTasks.map(task => [task.id, task.status, task.startPlanned, task.endPlanned, task.spaceId, task.zoneId].join(":")).join("|");
   useEffect(() => {
     setManualEdits({});

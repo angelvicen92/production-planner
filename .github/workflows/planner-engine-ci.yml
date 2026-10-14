@@ -119,6 +119,8 @@ jobs:
             work/main-flow-preference-integration/integration.json
             work/main-flow-preference-integration/main-flow-preference-S1-result.json
             work/main-flow-preference-integration/*-real-ui.png
+            work/main-flow-preference-integration/day-workspace.json
+            work/main-flow-preference-integration/workspace-*.png
 
   planner-engine-ci:
     name: planner-engine-ci

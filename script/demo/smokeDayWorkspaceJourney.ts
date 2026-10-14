@@ -40,7 +40,6 @@ export async function runDayWorkspaceJourney(options: Options, page: Page, expec
   assert.deepEqual(await material(),before,"Legacy reset denial preserves all authorities");
   const requests: Array<{ method: string; url: string }> = [];
   const observer = (request: any) => { if (request.url().includes("/api/")) requests.push({ method: request.method(), url: request.url() }); };
-  page.on("request", observer);
   const report: any = { status: "RUNNING", remoteWrites: 0, baselineFingerprint: initial.draftFingerprint, acceptedStageOrdinal:initial.activeStage.ordinal, freshCanonicalRun:expectedStageOrdinal===11, combinations: [], screenshots: [], operations: [] };
   const capture = async (name: string, fullPage = false) => { await page.screenshot({ path: `${directory}/${name}.png`, fullPage, timeout:10_000 }); report.screenshots.push(`${name}.png`); };
   const panel = (view: typeof views[number]) => page.getByTestId(`planning-panel-${view}`);
@@ -55,6 +54,7 @@ export async function runDayWorkspaceJourney(options: Options, page: Page, expec
     await page.getByTestId("day-header").screenshot({ path: `${directory}/workspace-header-desktop.png` }); report.screenshots.push("workspace-header-desktop.png");
     assert.equal(await page.getByRole("tab").count(), 6);
     assert.equal(await page.getByRole("button", { name: "Generar V3", exact: true }).isVisible(), false);
+    page.on("request", observer); // Auth/role bootstrap precedes the visual-action audit.
     for (const wanted of [["contestants"], ["spaces"], ["resources"], ["contestants", "spaces"], ["contestants", "resources"], ["spaces", "resources"], views] as const) {
       const start = performance.now(); await setViews(wanted);
       for (const view of wanted) {
@@ -88,6 +88,8 @@ export async function runDayWorkspaceJourney(options: Options, page: Page, expec
     const box=await card.boundingBox();assert.ok(box);const originalStart=await card.getAttribute("data-planning-start");
     await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+box.width/2+35,box.y+box.height/2,{steps:8});await page.mouse.up();
     await page.getByText("1 movimientos pendientes en las vistas",{exact:true}).waitFor();
+    assert.equal(await page.getByRole("button",{name:"Validar borrador",exact:true}).isDisabled(),true);
+    assert.equal(await page.getByRole("button",{name:"Planning aceptado · ejecución",exact:true}).isDisabled(),true);
     const movedStart=await card.getAttribute("data-planning-start");assert.notEqual(movedStart,originalStart);
     for(const view of ["spaces","resources"] as const)assert.equal(await panel(view).locator(`[data-planning-task-id="${movable.taskId}"]`).first().getAttribute("data-planning-start"),movedStart);
     await page.waitForTimeout(1100);assert.equal(await card.getAttribute("data-planning-start"),movedStart,"second ticks retain local movement");

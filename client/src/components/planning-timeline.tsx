@@ -26,6 +26,8 @@ import { Input } from "@/components/ui/input";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { countRenderedPlanningTasks, type RenderedPlanningCounts } from "@/lib/planning-ready-gate";
 
+const operationalStatusLabels:Record<string,string>={pending:"Pendiente",in_progress:"En curso",done:"Completada",interrupted:"Interrumpida",cancelled:"Cancelada"};
+
 interface Task {
   id: number;
   templateId: number;
@@ -2481,7 +2483,7 @@ function TaskStatusMenuTrigger({
                                                     variant="outline"
                                                     className="text-[10px]"
                                                   >
-                                                    {task.status}
+                                                    {operationalStatusLabels[task.status] ?? "Estado por revisar"}
                                                   </Badge>
                                                 </div>
                                           </TaskStatusMenuTrigger>
@@ -2768,7 +2770,7 @@ function TaskStatusMenuTrigger({
                                 </div>
                               </div>
                               <Badge variant="outline" className="text-[10px]">
-                                {task.status}
+                                {operationalStatusLabels[task.status] ?? "Estado por revisar"}
                               </Badge>
                             </div>
                           </TaskStatusMenuTrigger>
@@ -2796,7 +2798,7 @@ function TaskStatusMenuTrigger({
               {/* Timeline Header */}
               <div className="flex border-b sticky top-0 bg-card z-20">
                 <div className="w-48 p-3 border-r font-semibold text-sm bg-muted/30 planning-density-row">
-                  Recurso
+                  {viewMode === "contestants" ? "Concursante" : "Recurso"}
                 </div>
                 <div className="flex-1 relative h-10">
                   {timeLabels.map((tl) => (
@@ -2868,12 +2870,14 @@ function TaskStatusMenuTrigger({
               </div> : <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 bg-muted/30">
                 {taskSortControls}
                 <Badge variant="outline">Editar borrador</Badge>
+                {manualEdits === undefined ? <>
                 <span className="text-xs">{Object.keys(pendingManualEdits).length} movimientos pendientes</span>
                 <Button size="sm" disabled={isApplying || Object.keys(pendingManualEdits).length === 0} onClick={async () => {
                   const edits = Object.entries(pendingManualEdits).map(([taskId, value]) => ({ taskId: Number(taskId), start: value.start, end: value.end }));
                   setIsApplying(true); try { await onApplyManualEdits?.(edits); clearManualDraftState(); } catch { toast({title:"No se pudieron aplicar los movimientos",description:"Revisa el borrador antes de reintentar.",variant:"destructive"}); } finally { setIsApplying(false); }
                 }}>Aplicar edición</Button>
                 <Button size="sm" variant="outline" disabled={isApplying || Object.keys(pendingManualEdits).length === 0} onClick={() => clearManualDraftState()}>Cancelar</Button>
+                </> : <span className="text-xs text-muted-foreground">Aplica o descarta los movimientos desde la barra compartida.</span>}
                 <span className="text-xs text-muted-foreground">Espacio, recursos, duración, locks y bloques permanecen deshabilitados.</span>
               </div>}
 

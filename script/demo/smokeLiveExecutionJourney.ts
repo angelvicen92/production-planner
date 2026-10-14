@@ -178,12 +178,32 @@ export async function runLiveExecutionJourney({ appUrl, url, anon, users, db, pl
     assert.equal(await legacyViewer.getByRole('button',{name:'Iniciar',exact:true}).count(),0);
     assert.equal(await legacyViewer.getByRole('button',{name:'Resetear',exact:true}).count(),0);
     pass('day workspace hides execution and reset actions without task authority');
+    // The new global table uses the very same production hook and authority.
+    const pending=(await db.query("SELECT id FROM daily_tasks WHERE plan_id=$1 AND space_id=$2 AND status='pending' ORDER BY start_planned,id LIMIT 1",[planId,task.space_id])).rows[0];assert.ok(pending);
+    await operator.goto(`${appUrl}/plans/${planId}?tab=execution`,{waitUntil:'domcontentloaded'});
+    const row=operator.getByTestId(`day-execution-task-${pending.id}`);await row.waitFor();
+    for(const [label,status] of [['Iniciar','in_progress'],['Interrumpir','interrupted'],['Reanudar','in_progress'],['Finalizar','done']] as const){
+      const response=operator.waitForResponse(r=>r.url().endsWith(`/api/tasks/${pending.id}/status`)&&r.request().method()==='PATCH');
+      await row.getByRole('button',{name:label,exact:true}).click();assert.equal((await response).status(),200);
+      const wanted={in_progress:'En curso',interrupted:'Interrumpida',done:'Completada'}[status];await row.getByText(wanted,{exact:true}).waitFor();
+    }
+    assert.equal(await row.getByRole('button',{name:'Resetear',exact:true}).count(),0,'aux cannot reset');
+    await observer.goto(`${appUrl}/plans/${planId}?tab=execution`,{waitUntil:'domcontentloaded'});
+    const productionRow=observer.getByTestId(`day-execution-task-${pending.id}`);await productionRow.getByText('Completada',{exact:true}).waitFor();
+    await productionRow.getByRole('button',{name:'Resetear',exact:true}).click();
+    const resetResponse=observer.waitForResponse(r=>r.url().endsWith(`/api/tasks/${pending.id}/reset`)&&r.request().method()==='POST');
+    await observer.getByRole('alertdialog').getByRole('button',{name:'Resetear',exact:true}).click();assert.equal((await resetResponse).status(),200);
+    await productionRow.getByText('Pendiente',{exact:true}).waitFor();
+    assert.deepEqual(await baseline(),original,'global execution preserves all planned placements and accepted snapshots');
+    await observer.getByTestId('day-header').scrollIntoViewIfNeeded();await observer.screenshot({path:`${directory}/workspace-execution-confirmed.png`});
+    pass('day workspace real UI: scoped aux Start/Interrupt/Resume/Finish and Production confirmed reset; planned material unchanged');
+
     for (const role of ['viewer', 'aux']) {
       const headers = { apikey: anon, Authorization: `Bearer ${users[role].token}`, 'Content-Type': 'application/json' };
       const direct = await fetch(`${url}/rest/v1/rpc/execute_task_transition`, { method: 'POST', headers, body: JSON.stringify({ p_task_id: task.id, p_actor: users.admin.id, p_status: 'in_progress' }) });
       assert.equal(direct.status, 403);
     }
     pass('two independent real browsers: mobile Start -> Control Room; Finish -> persisted reload; viewer/offline/direct RPC denied');
-    return { status: 'PASS', syncTransport: 'HTTP polling fallback', pollingIntervalMs: 5000, startLatencyMs, finishLatencyMs, durationSeconds, eventCount: events.length, executionLockCount: 1, preservedObligations: 266, remoteWrites: 0, clockModes:'real clock HTTP races + admin-authorized simulation in browser',uiPersistenceFailure:'PASS',multipleSimultaneousTasks:'PASS',screenshots: ['mi-dia-mobile-pending.png', 'mi-dia-mobile-running.png', 'mi-dia-desktop-running.png','mi-dia-desktop-dark.png'], realtimeWebSocket: 'NOT TESTED: disposable gateway has no Realtime service' };
+    return { status: 'PASS', syncTransport: 'HTTP polling fallback', pollingIntervalMs: 5000, startLatencyMs, finishLatencyMs, durationSeconds, eventCount: events.length, executionLockCount: 1, preservedObligations: 266, remoteWrites: 0, dayWorkspaceTransitions:'PASS',clockModes:'real clock HTTP races + admin-authorized simulation in browser',uiPersistenceFailure:'PASS',multipleSimultaneousTasks:'PASS',screenshots: ['mi-dia-mobile-pending.png', 'mi-dia-mobile-running.png', 'mi-dia-desktop-running.png','mi-dia-desktop-dark.png'], realtimeWebSocket: 'NOT TESTED: disposable gateway has no Realtime service' };
   } finally { await browser.close(); }
 }

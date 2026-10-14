@@ -646,7 +646,7 @@ export function PlanResourcesTab({
                               >
                                 <div className="min-w-0">
                                   <div className="text-sm font-medium truncate">
-                                    {nm || `#${sid}`}
+                                    {nm || "Espacio sin nombre"}
                                   </div>
                                   <div className="text-xs text-muted-foreground">
                                     Asignados: {assignedS}
@@ -754,7 +754,7 @@ export function PlanResourcesTab({
               {zoneResourcesZoneId !== null
                 ? ((zones ?? []) as any[]).find(
                     (x) => Number(x?.id) === Number(zoneResourcesZoneId),
-                  )?.name || `#${zoneResourcesZoneId}`
+                  )?.name || "Plató sin nombre"
                 : ""}
             </DialogTitle>
             <DialogDescription>
@@ -902,7 +902,7 @@ export function PlanResourcesTab({
               {zoneTypeZoneId !== null
                 ? ((zones ?? []) as any[]).find(
                     (x) => Number(x?.id) === Number(zoneTypeZoneId),
-                  )?.name || `#${zoneTypeZoneId}`
+                  )?.name || "Plató sin nombre"
                 : ""}
             </DialogTitle>
             <DialogDescription>
@@ -1044,7 +1044,7 @@ export function PlanResourcesTab({
               {spaceResourcesSpaceId !== null
                 ? ((spaces ?? []) as any[]).find(
                     (x) => Number(x?.id) === Number(spaceResourcesSpaceId),
-                  )?.name || `#${spaceResourcesSpaceId}`
+                  )?.name || "Espacio sin nombre"
                 : ""}
             </DialogTitle>
             <DialogDescription>
@@ -1190,7 +1190,7 @@ export function PlanResourcesTab({
               {spaceTypeSpaceId !== null
                 ? ((spaces ?? []) as any[]).find(
                     (x) => Number(x?.id) === Number(spaceTypeSpaceId),
-                  )?.name || `#${spaceTypeSpaceId}`
+                  )?.name || "Espacio sin nombre"
                 : ""}
             </DialogTitle>
             <DialogDescription>
