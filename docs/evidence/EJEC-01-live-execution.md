@@ -93,7 +93,7 @@ El ensayo crea servicios y credenciales locales, comprueba que los hosts son loo
 
 ## Sincronización observada y capturas
 
-El entorno descartable no ejecuta Supabase Realtime. Se prueba el **fallback HTTP cada 5 s**, visible tanto en Mi Día como Control Room. Las latencias de la medición están en JSON (inicio 6.563 s y fin 2.890 s en la medición de entrega); incluyen confirmación de operador y observación de Control Room. No se califica como instantáneo.
+El entorno descartable no ejecuta Supabase Realtime. Se prueba el **fallback HTTP cada 5 s**, visible tanto en Mi Día como Control Room. Las latencias de la medición están en JSON (inicio 6.368 s y fin 1.167 s en la medición de entrega); incluyen confirmación de operador y observación de Control Room. No se califica como instantáneo.
 
 - [Móvil pendiente](EJEC-01-UI/mi-dia-mobile-pending.png)
 - [Móvil en curso](EJEC-01-UI/mi-dia-mobile-running.png)
@@ -106,7 +106,7 @@ El corpus integrado referencia A2 actual 266/266, S0 + 11 Stages, cero HARD/REQU
 
 Los intentos locales de reconstruir A2 desde cero con Node 24 y Node 20 agotaron 180 s antes de aplicar S1, con run todavía running. Se documenta ese gate como **no certificado localmente**; no se cambia el motor ni se oculta el resultado. El ensayo de ejecución usa el snapshot aceptado previo, no atribuye su éxito a una nueva generación de c0cc8bf4.
 
-Quedan pendientes: transporte Realtime/WebSocket en un proyecto de prueba con Realtime real; compatibilidad y autorización de cualquier despliegue en el Supabase real; CI remota del head y una última comprobación de main antes de merge. La colisión de numeración quedó resuelta con 093. No se hicieron writes en Supabase real, publicación ni merge del PR en main.
+Quedan pendientes: transporte Realtime/WebSocket en un proyecto de prueba con Realtime real; compatibilidad y autorización de cualquier despliegue en el Supabase real y una última comprobación de main antes de merge. Los resultados remotos de cada head se consultan en los [checks del PR #1124](https://github.com/angelvicen92/production-planner/pull/1124/checks); esta evidencia local no los sustituye. La colisión de numeración quedó resuelta con 093. No se hicieron writes en Supabase real, publicación ni merge del PR en main.
 
 La unidad paralela se integró en main mediante #1123 durante esta tarea. Se incorporó main sin conflictos ni sobrescribir sus cambios y se renumeró ejecución a **093**, conservando `092_main_flow_soft_preference.sql` de main. Los deltas compartidos en `server/routes.ts`, `shared/routes.ts`, `shared/schema.ts` y helpers de ensayo se mantienen juntos. La comparación contra el nuevo main no contiene cambios en motor, preferencias ni Fuentes. Antes del merge del PR, volver a comprobar que main no haya avanzado y repetir los gates que corresponda.
 

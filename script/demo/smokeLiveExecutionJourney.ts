@@ -133,7 +133,13 @@ export async function runLiveExecutionJourney({ appUrl, url, anon, users, db, pl
     await operatorContext.addInitScript(()=>localStorage.setItem('theme','dark'));
     await operator.emulateMedia({colorScheme:'dark'});
     await operator.evaluate(()=>document.documentElement.classList.add('dark'));
-    await operator.waitForFunction(()=>getComputedStyle(document.querySelector('[data-testid="my-day-execution"] h1')!).color==='rgb(248, 250, 252)');
+    // Badges animate their colors: wait for the complete dark theme, not just the heading.
+    await operator.waitForFunction(()=>{
+      const heading=document.querySelector('[data-testid="my-day-execution"] h1');
+      const identity=document.querySelector('[data-testid="my-day-execution"] header .hover-elevate');
+      return heading&&identity&&getComputedStyle(heading).color==='rgb(248, 250, 252)'
+        &&getComputedStyle(identity).color==='rgb(248, 250, 252)';
+    });
     await operator.screenshot({path:`${directory}/mi-dia-desktop-dark.png`,fullPage:true});
     await operator.evaluate(()=>document.documentElement.classList.remove('dark'));
     await operator.emulateMedia({colorScheme:'light'});
