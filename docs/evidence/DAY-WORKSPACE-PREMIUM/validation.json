@@ -18,5 +18,11 @@
   "buildWarnings": [
     "Existing bundle chunk warning >500 kB",
     "Browserslist data older than twelve months"
-  ]
+  ],
+  "headerPostS0TaskCount": "PASS: real UI creates contestant after S0; header matches actual day task count",
+  "mealModeDto": "PASS: GET day equals existing effective-configuration mode",
+  "readDtoAndAuthorityTests": {
+    "passed": 7,
+    "failed": 0
+  }
 }

@@ -1,0 +1,32 @@
+{
+  "status": "PASS",
+  "sourceHead": "623f36880704a5ce6f4d634693e4a42150f3ff9f",
+  "engineComparisonBase": "c7f85411ac13b62f4be34de09061124f7460b7e0",
+  "profile": "SOFT 4 / 2+2",
+  "completeObligations": 266,
+  "acceptedStages": 11,
+  "hardCount": 0,
+  "requiredCount": 0,
+  "finalFingerprint": "fc506212623067224ed40cf396ac31f1dbdcd5f7cb729126a8af330ad79ea565",
+  "S1Branches": 42276,
+  "baselineS1Branches": 42276,
+  "S1RuntimeMs": 224475.671334,
+  "searchRuntimeLimitMs": 300000,
+  "searchBranchLimit": 100000,
+  "engineHashesEqualToInitialBase": {
+    "engine/planner-next/benchmarks/canonicalFullA2EngineInput.ts": "7c26ca4aea00f5fb7a2ccee803914d2344a923b2445e029e5ffd892f2e757f6a",
+    "engine/planner-next/benchmarks/focal-a2/full-day/manifest.ts": "566c9117038a6115b8c7ff0f53d961d320128bdf8889d5bbee4a014ac8d34c5a",
+    "engine/planner-next/integration/engineInputPreflight.ts": "3cb5fd66d00a0755abeaf30cfa1909f5480ae3af9adf2f1086f0d6e5ec801913",
+    "engine/planner-next/placement.ts": "ebc74f7c3414efb4b3bdccfe60b5b5c2ab392d6cac7646115850fdf4ddcd2f5a",
+    "engine/planner-next/validate.ts": "0043b141d94106c544ee98c9ba5b24ab4aedd142298677ac637123e53c5d23a3",
+    "engine/planner-next/jointCompletionWitness.ts": "eff19c666412542cc47a364687f46300982e8690b0a341a69d02c183616068a8",
+    "engine/planner-next/exactItinerantPlan.ts": "08953e00042eda5be4f4289180605485ec1010de67f7b6252bc7eb28df31583e",
+    "engine/planner-next/integration/engineInputAdapter.ts": "42cae398e60cfc521814c3bf62e492dd2121309b9b7a7a22abe8d4a28c2940ab",
+    "engine/planner-next/mainFlowPatterns.ts": "9dc382e2a75f41fe69900390d4c0a0e6bd92fcc3b62166b72aaf417a134f3700",
+    "engine/planner-next/mainFlowMeal.ts": "cacb654432e5db02ce8ad844332c4e4a5678deedfdb7d971dbd5d795b5f6835d",
+    "engine/planner-next/anonymousPipelineWitness.ts": "7ba27327fbd1b8d840e0054a055b69ebfdae04105e244c5ab9cc32a2eba38034",
+    "engine/planner-next/exactMainAndFeederCore.ts": "6b30027c55f86699e0beb59de0adbe69f77301d86f2672475681a63a25bb4b35"
+  },
+  "visualAuthorityMaterial": "UNCHANGED",
+  "remoteWrites": 0
+}

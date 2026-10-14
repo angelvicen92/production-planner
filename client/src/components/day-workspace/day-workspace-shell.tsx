@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
+import { useExecutionContext } from "@/hooks/use-execution-context";
+import { buildAssistedPlanningView } from "@/lib/assisted-planning-view";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -93,6 +95,7 @@ type HeaderPlan = {
   status: string;
   currentConfigRevisionId?: number | null;
   dailyTasks?: Array<{
+    id: number;
     status: string;
     startPlanned?: string | null;
     endPlanned?: string | null;
@@ -114,19 +117,22 @@ export function DayHeader({
     retry: false,
     staleTime: 10_000,
   });
+  const executionQ = useExecutionContext(plan.id);
   const tasks = plan.dailyTasks ?? [];
   const draftTasks = assisted?.draft?.tasks;
   const accepted = assisted?.activeStage;
-  const obligations = draftTasks ?? tasks;
+  const obligations = draftTasks ? buildAssistedPlanningView(tasks as any,assisted.draft) : tasks;
+  const draftIds = new Set((draftTasks ?? []).map((task:any)=>Number(task.taskId)));
+  const taskSetCurrent = !draftTasks || (tasks.length===draftTasks.length && tasks.every(task=>draftIds.has(Number(task.id))));
   const placed = obligations.filter(
     (task: any) => task.startPlanned && task.endPlanned,
   ).length;
   const running = tasks.filter((task) => task.status === "in_progress").length;
   const done = tasks.filter((task) => task.status === "done").length;
-  const execution = running > 0 || done > 0;
+  const execution = executionQ.data?.planningReady === true || running > 0 || done > 0;
   const validation = assisted?.validation;
   const currentValidation = Boolean(
-    validation &&
+    taskSetCurrent && validation &&
     validation.draftFingerprint === assisted.draftFingerprint &&
     Number(validation.baseStageId) === Number(assisted.draftBaseStageId) &&
     Number(validation.configRevisionId) ===

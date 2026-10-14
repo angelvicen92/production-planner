@@ -21,13 +21,21 @@ export async function runDayWorkspaceSetup({appUrl,planId,users,db,directory,pas
   try {
     await page.goto(`${appUrl}/login`);await page.getByLabel("Email",{exact:true}).fill(users.production.email);await page.getByLabel("Contraseña (opcional para enlace)",{exact:true}).fill(users.production.password);await page.getByRole("button",{name:"Entrar con contraseña",exact:true}).click();await page.waitForURL("**/dashboard");
     await page.goto(`${appUrl}/plans/${planId}?tab=tasks`);
+    await page.getByRole("tab",{name:"Planning",exact:true}).click();await page.getByTestId("assisted-workspace").waitFor();
+    await page.getByRole("tab",{name:"Concursantes",exact:true}).click();
     const initialContestants=(await api(`${base}/contestants`)).data;
     const initialTaskIds=(await api(base)).data.dailyTasks.map((task:any)=>Number(task.id)).sort((a:number,b:number)=>a-b);
+    const effective=(await api(`${base}/effective-configuration`)).data;
+    assert.equal((await api(base)).data.mealMode,effective.values.find((value:any)=>value.capabilityId==="GLOBAL_MEAL_BREAK").value.mode,"timeline DTO exposes the real existing meal mode");
+
     const name="QA Jornada";
     await page.getByLabel("Nombre del nuevo concursante",{exact:true}).fill(name);
     const created=page.waitForResponse(response=>response.url().endsWith(`${base}/contestants`)&&response.request().method()==="POST");
     await page.getByRole("tabpanel").getByRole("button",{name:"Añadir",exact:true}).click();assert.equal((await created).status(),201);
     const contestant=(await api(`${base}/contestants`)).data.find((person:any)=>person.name===name);assert.ok(contestant);
+    const addedTaskCount=(await api(base)).data.dailyTasks.length;
+    await page.getByTestId("day-header").getByText(new RegExp(`0 / ${addedTaskCount}.*con horario`)).waitFor();
+
     await page.getByLabel("Buscar concursantes",{exact:true}).fill(name);
     const article=page.locator("article").filter({has:page.getByRole("heading",{name,exact:true})});await article.getByRole("button").first().click();
     const dialog=page.getByRole("dialog");await dialog.waitFor();

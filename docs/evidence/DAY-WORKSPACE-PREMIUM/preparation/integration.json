@@ -9,7 +9,7 @@
     "rest": "postgrest/postgrest:v12.2.12@sha256:5f4ce744539bbba786b4e24dbbd95bdb2a956dcf568c5374995a0ff4a68f5bd2"
   },
   "requestedStages": 2,
-  "startedAt": "2026-10-14T18:56:43.122Z",
+  "startedAt": "2026-10-14T19:39:25.633Z",
   "runtimeHashes": {
     "engine/planner-next/benchmarks/canonicalFullA2EngineInput.ts": "7c26ca4aea00f5fb7a2ccee803914d2344a923b2445e029e5ffd892f2e757f6a",
     "engine/planner-next/benchmarks/focal-a2/full-day/manifest.ts": "566c9117038a6115b8c7ff0f53d961d320128bdf8889d5bbee4a014ac8d34c5a",
@@ -23,7 +23,7 @@
     "server/assistedPlanningSnapshot.ts": "2184dc531787336e974359fe0e7b0772432dc0a78c9c139a0893f390d3ddab4b",
     "server/assistedProposalService.ts": "9f75b996a505938141b831af8546160583f82e7a6a0c392bcae879316da8897b",
     "server/assistedPlanningService.ts": "5a605bebfc7d8e9fb7a6d796b0c123f4af3c288830472318661dc5b82f41a357",
-    "server/routes.ts": "d462971ad8a93f5a65749207645fb603cd4d4a94400199c0a932ab8bd375ea44",
+    "server/routes.ts": "93ce30b4dce4b28f763ea86d5559f8014046db1c1d28cc810e146f491634771b",
     "engine/planner-next/jointCompletionWitness.ts": "eff19c666412542cc47a364687f46300982e8690b0a341a69d02c183616068a8",
     "engine/planner-next/exactItinerantPlan.ts": "08953e00042eda5be4f4289180605485ec1010de67f7b6252bc7eb28df31583e",
     "client/src/components/layout.tsx": "3be0f0b4501eecb52fe54547d3455d67867be651ead74df852a3562561669697",
@@ -48,7 +48,7 @@
     "client/src/lib/contestant-lane-sort.ts": "a2ac47ded69db5e74f4aaf67ee31666bb9b48be812e967cce826d1427bf81c97",
     "client/src/components/planning/stage-history-timing.tsx": "b12463f40bf067948e12ae919e5cd807d1fbd61bec671a338318e0b6b67b83a5",
     "client/src/components/planning-timeline.tsx": "5ac2953635d95a6716036d77c1b8c42f3e264339575b10a200af3fab0c7ad640",
-    "client/src/pages/plan-details.tsx": "d5318bd5932933352f5ccf364736abe220f524d683ebe1c6b3970f361620df23",
+    "client/src/pages/plan-details.tsx": "0a5ff0e56eeef8e38936fc5430bdff8a6d35ee7655fd578e8f58dfe71ad87333",
     "engine/planner-next/mainFlowPatterns.ts": "9dc382e2a75f41fe69900390d4c0a0e6bd92fcc3b62166b72aaf417a134f3700",
     "script/demo/smokeMainFlowPreferenceJourney.ts": "040c3d37d9d43c7fc913822bb586263cb6fc9b650c94db747971c7f76f3c7543",
     "shared/mainFlowPreference.ts": "dab5f13363162359b9111c25783049f79c1f767dbae9b46e5b1f98c20a4f3f9a",
@@ -70,18 +70,18 @@
     "client/src/lib/day-execution-view.ts": "690032797bd0ce8a81328b38c2190bf43bde09494e529baaccd4b59a0a9009e9",
     "client/src/lib/planning-workspace-preferences.ts": "3607a738184e0aae24f2b588d9d7d7359ff2af5982caf1c6b26e7b4599e064e3",
     "script/demo/smokeDayWorkspaceJourney.ts": "fdbdda3f9e1fb5a08d42f90a3c0c4f3f21f7c7a0455877c355af77c6b150b33e",
-    "script/demo/smokeDayWorkspaceSetup.ts": "a62861dfbbe2bc9b7cacd76d0c9a898343dd73ffce606988a54947b0781f611d",
+    "script/demo/smokeDayWorkspaceSetup.ts": "b75115b0f620bacb6d140f5f09c23c957b1ca0b3f0ddfe4e11b95e3f6a3cf5e7",
     "client/src/components/day-workspace/contestant-day-roster.tsx": "7424c04dde5f93f383a848202d993b49d7d02d8fecfb1dc9174e2892b3e22105",
     "client/src/components/day-workspace/contestant-identity.tsx": "27a7815092cc1a2ccf3f65301cf704cab70caae275dc6db412052a511a1fb719",
     "client/src/components/day-workspace/day-capability-editor.tsx": "d7b951f83fbadfd2b8b7b5037db767a4509c67f30094f0096cf27e66b4202ae8",
     "client/src/components/day-workspace/day-execution-workspace.tsx": "1c92e0d6c7efbd0cce0d35a8904c8ea0e77cef09a57e380a9f92c88f82b9f37b",
     "client/src/components/day-workspace/day-resources-workspace.tsx": "baa29c33ae4fb88ae513399e46f587b42d1b1c6cbc4b11efd4d8e188adc863b6",
     "client/src/components/day-workspace/day-staff-workspace.tsx": "6ba3a7c684aa40a3b58fe3f65b5e474ee9b7d48d179729153c3d6a95c2cbff60",
-    "client/src/components/day-workspace/day-workspace-shell.tsx": "4dddd0b611b811965212ac38cadcf0a54ec39b601776e6612a5e7acbe7657aa1",
+    "client/src/components/day-workspace/day-workspace-shell.tsx": "4b8670d6aa9d0e58c3a3c5f4baddfeab9c93cfc5889b324aff5e05509cd6d1d0",
     "client/src/components/day-workspace/effective-configuration-fields.tsx": "c8bc5b0e91c3cdb70e1487e1f9b255a59ce94d30803d990137918b6f93d4a02c",
     "client/src/components/day-workspace/legacy-planning-diagnosis.tsx": "80a8d383c75580a40dc36a98689a7d4c4380d295dac3af56c5bbb5093a381d05",
     "client/src/hooks/use-execution-context.ts": "b6c54a1d60260687a55482433ca977c907386b90458d40280b1cb67f4bfff7dc",
-    "client/src/hooks/use-tasks.ts": "2758dad6d81d99084fd55a2d2aa8b9021835292ea9ad13d26b7576dd04b06a88",
+    "client/src/hooks/use-tasks.ts": "e7b16366826ac528d5a58bd01d48a45096a4ae2b86c60b4e5426542b51839531",
     "client/src/hooks/use-production-clock.ts": "e8781e9bc663750ae721b54b064b7d1bed2e024bb6e0cf3befe3a42e4c5581fc",
     "shared/execution.ts": "047cf61f8114b2397ad3a3516a1f5d2d01055603dd1d28c95f788c1d73185006",
     "script/demo/smokeLiveExecutionJourney.ts": "6939eb79cc61b569d649b2503eca6b48335d128c8e92553117a58963d483122a"
@@ -91,6 +91,7 @@
     "real password login for five Auth identities",
     "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved",
     "real storage/input adapter canon after GET day; no legacy breaks",
+    "Tarea en ficha: error SQL real visible sin falso éxito, reintento y alta HTTP 201 por UI",
     "Concursante: crear, abrir ficha, editar canción, recargar y retirar por UI; canon preservado",
     "Recurso de jornada: creación por UI sin catálogo general, asignación de plató, recarga y herencia efectiva visible",
     "Asignación directa de espacio guarda y recarga sin convertir la herencia en una copia física",
@@ -500,130 +501,20 @@
       "error": null
     },
     {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
       "path": "/rest/v1/rpc/assisted_bootstrap_session",
       "method": "POST",
-      "contentLength": "143219",
-      "receivedBytes": 143219,
+      "contentLength": "143007",
+      "receivedBytes": 143007,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
       "requestEnded": true,
       "upstreamFinished": true,
       "responseStatus": 200,
@@ -686,6 +577,7 @@
     "status": "PASS",
     "remoteWrites": 0,
     "operations": [
+      "Tarea en ficha: error SQL real visible sin falso éxito, reintento y alta HTTP 201 por UI",
       "Concursante: crear, abrir ficha, editar canción, recargar y retirar por UI; canon preservado",
       "Recurso de jornada: creación por UI sin catálogo general, asignación de plató, recarga y herencia efectiva visible",
       "Asignación directa de espacio guarda y recarga sin convertir la herencia en una copia física",
@@ -694,5 +586,5 @@
     ]
   },
   "status": "PASS",
-  "finishedAt": "2026-10-14T18:59:25.628Z"
+  "finishedAt": "2026-10-14T19:40:23.778Z"
 }

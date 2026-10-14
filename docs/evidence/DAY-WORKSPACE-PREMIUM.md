@@ -8,6 +8,11 @@ Durante el trabajo se integró EJEC-01 (#1124). Se incorporó `main` en
 `cdbf3570c1f55acd6a5d6c3dc196f48458e67866` y se resolvieron los solapamientos
 de la página, el timeline y el arnés conservando su autoridad de ejecución.
 Este PR no cambia el backend, la migración 093 ni los permisos de EJEC-01.
+Posteriormente `main` incorporó War Room (#1125) en `eb1b9a0`. Se actualizó
+la rama y se conservó su recorrido `--war-room-snapshot` al resolver el único
+solapamiento del arnés. La migración 094 y los servicios de incidencias proceden
+de esa base; este PR no los modifica.
+
 
 ## Problema y resultado
 
@@ -18,6 +23,7 @@ planificación y seguimiento compartían el mismo nivel visual.
 La página queda en 4.547 líneas. Conserva el editor de tareas existente y las
 operaciones históricas, y delega navegación, resumen, concursantes, configuración,
 recursos, responsables y ejecución en componentes con responsabilidad concreta.
+La cabecera proyecta el Draft sobre las tareas reales del día: una alta posterior a S0 no desaparece de los contadores. La acción principal usa la disponibilidad de ejecución del contrato EJEC-01.
 Hay exactamente seis pestañas con URL: Concursantes, Planning, Configuración,
 Recursos, Roles y Ejecución. Se conservan los demás parámetros de la URL.
 
@@ -85,11 +91,23 @@ V4 no se activa al abrir una jornada ordinaria.
 La consulta efectiva fallida ya no se convierte silenciosamente en defaults:
 los errores de procedencia se propagan y el HTTP devuelve JSON 500 saneado.
 La pantalla muestra un mensaje operativo, ofrece reintento y restringe detalles
-técnicos a Administración. Éste es el único ajuste de servidor del PR.
+técnicos a Administración. Además, el GET de la jornada expone `mealMode`,
+campo ya existente en el schema que el DTO omitía, para representar su valor
+real en el timeline. Los ajustes de servidor se limitan a estas lecturas.
 
 ## Validación y capturas
 
-Una ejecución interrumpida o agotada no se cuenta como PASS. El recorrido
+Una ejecución interrumpida o agotada no se cuenta como PASS. El recorrido fresco
+[a2-soft/integration.json](DAY-WORKSPACE-PREMIUM/a2-soft/integration.json)
+pasa S0→S11 con 266/266, cero HARD/REQUIRED en las once etapas, auditoría
+canónica, ocho comidas operativas y preparaciones válidas. También pasa la
+multivista sobre ese resultado nuevo, la sesión Viewer independiente,
+rollback/redo, rechazo de propuesta stale y replay manual conservando el
+material aceptado. La jornada histórica y las 333 tareas del otro día quedan
+intactas. El fingerprint final es
+`fc506212623067224ed40cf396ac31f1dbdcd5f7cb729126a8af330ad79ea565`.
+
+El recorrido previo
 [ui-replay/integration.json](DAY-WORKSPACE-PREMIUM/ui-replay/integration.json)
 pasa sobre el snapshot histórico S0–S10, con 266 obligaciones. No se presenta
 esa reapertura como generación fresca de once etapas.
@@ -100,8 +118,10 @@ esa reapertura como generación fresca de once etapas.
 | TypeScript del arnés | PASS |
 | `npm run build` | PASS; conserva aviso de bundle >500 kB y datos Browserslist antiguos |
 | Tests focales y de producto | 120/120; incluye permisos, configuración, workflow Assisted y EJEC-01 |
+| Suite de producto en CI (`623f368`) | 2.927 tests: 2.926 PASS, uno omitido, cero fallos; [registro](DAY-WORKSPACE-PREMIUM/ci-source-head.json) |
 | Checksums oficiales | 10/10 PASS |
-| Reapertura multivista real | PASS; siete combinaciones, 266 tareas, Draft/Stage/material SQL intactos |
+| A2 fresco SOFT 4 / 2+2 | PASS local y CI: 266/266, once etapas, HARD=0 y REQUIRED=0 |
+| Multivista del resultado nuevo | PASS; siete combinaciones, todas las identidades reales de tareas, Draft/Stage/material SQL intactos |
 | Filtro independiente y arrastre local compartido | PASS; movimiento visible en otras representaciones, conservado tras tick y descartado sin write |
 | Fallo HTTP efectivo y reintento | PASS; columna renombrada sólo en DB desechable, HTTP 500 real, restauración y recuperación |
 | Writer diario | PASS; horario por UI, recarga y restore versionado; snapshot aceptado intacto |
@@ -110,7 +130,8 @@ esa reapertura como generación fresca de once etapas.
 
 Preparación verificada con Chromium y PostgreSQL/Auth/HTTP desechables:
 
-- crear concursante, editar canción, recargar y retirar; concursantes originales intactos;
+- crear concursante, editar canción, recargar y retirar; concursantes y tareas originales intactos;
+- añadir tarea en ficha: fallo SQL real visible sin falso éxito, reintento HTTP 201 y retirada posterior del concursante QA;
 - crear recurso del día sin fila en el catálogo general;
 - asignar a plató, recargar y comprobar herencia efectiva;
 - asignar la misma identidad directamente al espacio y conservar la unión;
@@ -118,19 +139,19 @@ Preparación verificada con Chromium y PostgreSQL/Auth/HTTP desechables:
 - seis pestañas a 390 px sin desbordamiento del viewport;
 - capturas de escritorio, móvil y oscuro inspeccionadas.
 
-Capturas reales del snapshot aceptado:
+Capturas reales del A2 nuevo S11:
 
-![Tres paneles simultáneos](DAY-WORKSPACE-PREMIUM/ui-replay/workspace-three-panels-horizontal.png)
+![Tres paneles simultáneos](DAY-WORKSPACE-PREMIUM/a2-soft/workspace-three-panels-horizontal.png)
 
-![Navegación móvil](DAY-WORKSPACE-PREMIUM/ui-replay/workspace-resources-mobile.png)
+![Navegación móvil](DAY-WORKSPACE-PREMIUM/a2-soft/workspace-planning-mobile.png)
 
-![Error HTTP real](DAY-WORKSPACE-PREMIUM/ui-replay/workspace-configuration-real-http-error.png)
+![Error HTTP real](DAY-WORKSPACE-PREMIUM/a2-soft/workspace-configuration-real-http-error.png)
 
 ![Responsables efectivos tras guardar Roles](DAY-WORKSPACE-PREMIUM/execution/workspace-staff-effective-headers.png)
 
-[Fullscreen](DAY-WORKSPACE-PREMIUM/ui-replay/workspace-fullscreen.png),
-[configuración](DAY-WORKSPACE-PREMIUM/ui-replay/workspace-configuration-desktop.png),
-[ejecución](DAY-WORKSPACE-PREMIUM/ui-replay/workspace-execution-desktop.png)
+[Fullscreen](DAY-WORKSPACE-PREMIUM/a2-soft/workspace-fullscreen.png),
+[configuración](DAY-WORKSPACE-PREMIUM/a2-soft/workspace-configuration-desktop.png),
+[ejecución](DAY-WORKSPACE-PREMIUM/a2-soft/workspace-execution-desktop.png)
 y las demás combinaciones y pestañas están en la misma carpeta. El JSON enumera
 las operaciones y capturas sin incluir logs privados ni credenciales.
 
@@ -161,6 +182,14 @@ porcentual controlada. Se conservan medidas y límites en
 [performance.json](DAY-WORKSPACE-PREMIUM/performance.json).
 
 La referencia de búsqueda #1123 es AUTO 55.625 branches y SOFT 4/2+2 42.276.
+El A2 nuevo SOFT conserva exactamente **42.276 branches** (5.809 CORE y 36.467
+standalone). S1 termina en **224,5 s** con límite de 300 s y 100.000 branches,
+alcanza cuatro bloques y el reparto 2+2 sin fallback. Los doce archivos de
+motor del manifiesto tienen hashes idénticos al Git base inicial `c7f8541`;
+[a2-regression.json](DAY-WORKSPACE-PREMIUM/a2-regression.json) conserva la
+comparación y [S1-result.json.gz](DAY-WORKSPACE-PREMIUM/a2-soft/S1-result.json.gz)
+la Evidence del run.
+
 Un intento local AUTO alcanzó el límite productivo de 300 s con 46.403 branches,
 cuando otra suite competía por CPU (cuota local: dos CPU). No demuestra una
 regresión del solver ni certifica el gate. El resultado se registra como
@@ -169,7 +198,13 @@ de render anterior/posterior que permita afirmar una mejora porcentual de UI.
 
 ## Validaciones pendientes y riesgo residual
 
-- Cerrar las pruebas frescas A2 y CI sobre el head entregado.
+- En CI, AUTO llega a S11 y pasa los dos órdenes repetidos y los primeros casos
+  de Autopilot sobre `623f368`. El job completo se cancela a los 20 minutos.
+  Se amplía el límite del job a 30 minutos para la cobertura de UI añadida;
+  los presupuestos del solver siguen en 300 s/100.000 branches. El resultado
+  del último head debe comprobarse en los checks enlazados del PR.
+- Reality/itinerantes conservan sus editores, pero no se han vuelto a certificar
+  por UI todos esos ámbitos en este PR. No se ha hecho una auditoría WCAG completa.
 - La conexión Realtime/WebSocket real y el despliegue publicado quedan fuera del entorno desechable.
 - No se escribe en Supabase real ni se publica en Replit. No hay merge.
 

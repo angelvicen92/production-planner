@@ -3054,6 +3054,7 @@ function mapDeleteError(err: any, fallback: string) {
           workEnd: p.work_end ?? p.workEnd ?? null,
           mealStart: p.meal_start ?? p.mealStart ?? null,
           mealEnd: p.meal_end ?? p.mealEnd ?? null,
+          mealMode: p.meal_mode ?? p.mealMode ?? null,
 
           mealTaskTemplateName: String(p.mealTaskTemplateName ?? "Comer"),
 
