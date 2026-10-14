@@ -627,6 +627,7 @@ export function generateMainFlowPatterns(
   maximumRunsByKey: number,
   maximumPatterns: number,
   resources: readonly Resource[] = [],
+  preferredBlockCount?: number,
 ): { patterns: string[][]; exhausted: boolean } {
   const counts = new Map<string, number>();
   for (const task of mains) counts.set(task.blockKey ?? "", (counts.get(task.blockKey ?? "") ?? 0) + 1);
@@ -686,7 +687,12 @@ export function generateMainFlowPatterns(
   const maximumTargetRuns=Math.min(mains.length,keys.length*maximumRunsByKey);
   // Iterative deepening makes maximumPatterns a global prefix of the structural
   // run-count ordering, rather than an accidental prefix of the construction DFS.
-  for(let targetRunCount=keys.length;targetRunCount<=maximumTargetRuns;targetRunCount++){
+  const targets=Array.from({length:Math.max(0,maximumTargetRuns-keys.length+1)},(_,index)=>keys.length+index);
+  // Only the improvement phase supplies this objective: the AUTO incumbent is
+  // already secured. Rank whole families before truncation, without reserving
+  // fixture-specific minimum patterns or widening the configured pattern cap.
+  if(preferredBlockCount!==undefined)targets.sort((a,b)=>Math.abs(a-preferredBlockCount)-Math.abs(b-preferredBlockCount)||a-b);
+  for(const targetRunCount of targets){
     const family:string[][]=[];
     const visit=(remaining:Map<string,number>,runs:Array<{key:string;count:number}>):void=>{
       const left=[...remaining.values()].reduce((sum,count)=>sum+count,0);
@@ -708,8 +714,8 @@ export function generateMainFlowPatterns(
     output.push(...family.slice(0,remainingCapacity));
     if(family.length>remainingCapacity){exhausted=true;break;}
   }
-  // Retain the assertion locally: every emitted family is complete before the
-  // next one and concentration never outranks the structural run count.
-  output.sort((a,b)=>runCount(a)-runCount(b)||comparePatterns(a,b));
+  // AUTO retains its structural order; improvement ranks distance first.
+  output.sort((a,b)=>(preferredBlockCount===undefined?0:Math.abs(runCount(a)-preferredBlockCount)-Math.abs(runCount(b)-preferredBlockCount))
+    ||runCount(a)-runCount(b)||comparePatterns(a,b));
   return { patterns: output, exhausted };
 }

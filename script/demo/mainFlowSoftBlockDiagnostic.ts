@@ -21,7 +21,7 @@ const runs=(pattern:readonly string[])=>pattern.reduce((n,k,i)=>n+(i===0||patter
 const scheduledRuns=(tasks:readonly ScheduledTask[])=>runs(tasks.filter(t=>t.kind==='main')
   .sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id)).map(t=>t.blockKey??''));
 const setPreference=(problem:PlannerNextProblem,count:number|undefined)=>{
-  // This property is absent from the product contract. Only the archived search patch consumes it.
+  // Candidate: internal safe objective. Historical replay: isolated archived patch.
   (problem.mainFlow as typeof problem.mainFlow&{preferredBlockCount?:number}).preferredBlockCount=count;
 };
 
@@ -56,20 +56,21 @@ function coldWorker(destination:string){
       architecturesChecked:result.evidence.architecturesChecked,architecturesStructurallyRejected:result.evidence.architecturesStructurallyRejected,
       structuralRejectionsByReason:result.evidence.structuralRejectionsByReason,futureDependencyStructural:result.evidence.futureDependencyStructural,
       architectureFutureDependencyStructural:result.evidence.architectureFutureDependencyStructural,
-      selectedPattern:result.scheduledTasks.filter(t=>t.kind==='main').sort((a,b)=>a.start-b.start).map(t=>t.blockKey),causalDiagnostic:result.evidence.causalDiagnostic};
+      selectedPattern:result.scheduledTasks.filter(t=>t.kind==='main').sort((a,b)=>a.start-b.start).map(t=>t.blockKey),
+      mainFlowSoftPreference:result.evidence.mainFlowSoftPreference,causalDiagnostic:result.evidence.causalDiagnostic};
   };
   const baseline=run(source);assert.equal(baseline.complete,true);assert.equal(baseline.validation!.hardValid,true);
   const measuredPreferred=structuredClone(source);setPreference(measuredPreferred,4);
   const preferredCost=candidate?run(measuredPreferred):null;
   if(candidate)assert.equal(preferredCost!.complete,true);
-  const samples=[...new Set([baseline.branches,baseline.branches*2,...(preferredCost?[preferredCost.branches]:[]),source.budget.maxBranchExpansions])].sort((a,b)=>a-b);
+  const samples=[...new Set([baseline.branches,baseline.branches*2,...(preferredCost?[95,preferredCost.branches]:[]),source.budget.maxBranchExpansions])].sort((a,b)=>a-b);
   const results=samples.map(budget=>{
     const auto=structuredClone(source);auto.budget.maxBranchExpansions=budget;
     const preferred=structuredClone(auto);setPreference(preferred,4);
     const a=run(auto),b=run(preferred),repeat=run(preferred);
     const stable=({durationMs:_duration,...value}:typeof b)=>value;
     assert.deepEqual(stable(b),stable(repeat));assert.equal(a.complete,true);assert.equal(a.achieved,2);
-    assert.equal(a.validation!.hardValid,true);if(candidate&&budget>=preferredCost!.branches){assert.equal(b.complete,true);assert.equal(b.validation!.hardValid,true);assert.equal(b.achieved,2);}
+    assert.equal(a.validation!.hardValid,true);if(candidate){assert.equal(b.complete,true);assert.equal(b.validation!.hardValid,true);assert.equal(b.achieved,2);assert.equal(b.fingerprint,a.fingerprint);}
     else {assert.equal(b.complete,false);assert.equal(b.status,'BRANCH_BUDGET_EXHAUSTED');}
     assert.ok(b.branches<=budget);return {budget,auto:a,preferred:b,deterministic:true};
   });
@@ -77,12 +78,14 @@ function coldWorker(destination:string){
   const patterns=generator(source.tasks.filter(t=>t.kind==='main'),1,2,source.budget.maxPatterns,[],4);
   assert.equal(patterns.exhausted,false);assert.ok(patterns.patterns.some(p=>runs(p)===2));
   const result={preferredPatterns:patterns,case:'COLD_FALLBACK',status:candidate?'CANDIDATE_EVALUATED':'EXPECTED_REGRESSION_REPRODUCED',source,baseline,results,
-    conclusion:candidate?'Necessary future-dependency rejection restores the fallback; accounting overhead is measured without changing the ledger.':'INCONCLUSIVE search, not an engine infeasibility certificate. AUTO loses a complete valid fallback under identical budgets.'};
+    conclusion:candidate?'AUTO secures the complete incumbent before SOFT improvement; one ledger accounts for both phases.':'INCONCLUSIVE search, not an engine infeasibility certificate. AUTO loses a complete valid fallback under identical budgets.'};
   writeFileSync(resolve(destination,'cold-fallback.json'),JSON.stringify(result,null,2));
   return {case:result.case,status:result.status,baselineBranches:baseline.branches,samples};
 }
 
 async function a2Worker(count:number|undefined,destination:string){
+  const warm=process.argv.includes('--warm');
+  const label=`${warm?'warm-':''}${count??'AUTO'}`;
   // This worker uses table fixtures only. Prevent any accidental SDK call from reaching a real project.
   process.env.SUPABASE_URL='http://127.0.0.1:1';process.env.SUPABASE_ANON_KEY='diagnostic-local-anon';
   process.env.SUPABASE_SERVICE_ROLE_KEY='diagnostic-local-service';
@@ -94,20 +97,23 @@ async function a2Worker(count:number|undefined,destination:string){
   if(adapter.status!=='SUPPORTED')throw Error('A2 adapter unsupported');
   const source=structuredClone(adapter.problem);setPreference(source,count);
   const resolution=resolveAssistedScope(input,adapter,{kind:'SPACE',spaceId:input.plannerNext!.mainFlow.spaceId});
-  const assisted=buildAssistedProblem(source,resolution.scope,[],analyticalFutureEligibleTaskIds(input,adapter.identityMap));
+  const prior=warm?JSON.parse(readFileSync(resolve(destination,'a2-AUTO-result.json'),'utf8')).evidence.futureStructuralWitnesses:[];
+  const assisted=buildAssistedProblem(source,resolution.scope,[],analyticalFutureEligibleTaskIds(input,adapter.identityMap),[],[],[],[],prior);
   const before=JSON.stringify(assisted),started=performance.now(),result=executeAssistedPlanning(assisted);
   assert.equal(JSON.stringify(assisted),before);
   const witness=result.evidence.futureStructuralWitnesses?.find(w=>w.kind==='JOINT_COMPLETION');
   assert.ok(witness?.kind==='JOINT_COMPLETION');if(witness?.kind!=='JOINT_COMPLETION')throw Error('No complete A2 witness');
   const validation=validatePlan(adapter.problem,[...witness.tasks],[...witness.preparations],[...witness.spaceMeals],
     [...witness.participantMeals],[],materializeScheduledItinerantUnitMeals(adapter.problem),[...witness.roundPreparations],[...witness.operationalMeals]);
-  const achieved=scheduledRuns(witness.tasks);assert.equal(achieved,count??2);assert.equal(validation.hardValid,true);
+  const achieved=scheduledRuns(witness.tasks);if(!process.argv.includes('--candidate')||count===undefined)assert.equal(achieved,count??2);
+  assert.equal(validation.hardValid,true);
   assert.equal(witness.tasks.length+witness.participantMeals.length,266);
-  const summary={requested:count??'AUTO',achieved,durationMs:performance.now()-started,completedObligations:266,
+  const summary={requested:count??'AUTO',warm,achieved,durationMs:performance.now()-started,completedObligations:266,
     validation,witnessFingerprint:witness.fingerprint,inputFingerprint:sha(JSON.stringify(input)),budgets:assisted.problem.budget,
-    work:result.evidence.work,architecture:result.evidence.technicalChainFutureReservation.constructive,reasonCodes:result.evidence.reasonCodes};
-  writeFileSync(resolve(destination,`a2-${count??'AUTO'}-result.json`),JSON.stringify(result,null,2));
-  writeFileSync(resolve(destination,`a2-${count??'AUTO'}-summary.json`),JSON.stringify(summary,null,2));
+    work:result.evidence.work,architecture:result.evidence.technicalChainFutureReservation.constructive,reasonCodes:result.evidence.reasonCodes,
+    mainFlowSoftPreference:result.evidence.mainFlowSoftPreference};
+  writeFileSync(resolve(destination,`a2-${label}-result.json`),JSON.stringify(result,null,2));
+  writeFileSync(resolve(destination,`a2-${label}-summary.json`),JSON.stringify(summary,null,2));
   return summary;
 }
 
@@ -135,17 +141,20 @@ async function parent(){
   copyFileSync(self,resolve(checkout,'script/demo/mainFlowSoftBlockDiagnostic.ts'));
   symlinkSync(resolve(root,'node_modules'),resolve(checkout,'node_modules'),'dir');
   const patch=resolve(root,'docs/evidence/MAIN-FLOW-SOFT-BLOCKS-search-experiment.patch');
-  execFileSync('git',['init','--quiet',checkout]);execFileSync('git',['apply','--check',patch],{cwd:checkout});
-  execFileSync('git',['apply',patch],{cwd:checkout});
+  execFileSync('git',['init','--quiet',checkout]);
+  if(!candidate){execFileSync('git',['apply','--check',patch],{cwd:checkout});execFileSync('git',['apply',patch],{cwd:checkout});}
   const files=['engine/planner-next/contracts.ts','engine/planner-next/mainFlowPatterns.ts',
-    'engine/planner-next/anonymousPipelineWitness.ts','engine/planner-next/exactMainAndFeederCore.ts','engine/planner-next/exactItinerantPlan.ts','engine/planner-next/assistedPlanning.ts'];
+    'engine/planner-next/anonymousPipelineWitness.ts','engine/planner-next/exactMainAndFeederCore.ts','engine/planner-next/exactItinerantPlan.ts','engine/planner-next/assistedPlanning.ts',
+    'engine/planner-next/searchPolicy.ts','engine/planner-next/validate.ts','engine/planner-next/executePlannerNext.ts'];
   const sourceHashes=Object.fromEntries(files.map(file=>[file,{base:sha(readFileSync(resolve(root,file))),experiment:sha(readFileSync(resolve(checkout,file)))}]));
-  const modes=process.argv.includes('--cold-only')?['COLD']:process.argv.includes('--a2-only')?['AUTO','3','4']:['COLD','AUTO','2','3','4'];
+  const a2Modes=candidate?['AUTO','3','4','WARM3','WARM4']:['AUTO','3','4'];
+  const modes=process.argv.includes('--cold-only')?['COLD']:process.argv.includes('--a2-only')?a2Modes:['COLD',...a2Modes];
   const report={contractVersion:1,productWrites:0,remoteWrites:0,codeBase:base,executionHead:execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),
-    nodeVersion:process.version,v8Version:process.versions.v8,patchSha256:sha(readFileSync(patch)),sourceHashes,modes,candidate};
+    nodeVersion:process.version,v8Version:process.versions.v8,patchSha256:candidate?null:sha(readFileSync(patch)),sourceHashes,modes,candidate};
   writeFileSync(resolve(destination,'manifest.json'),JSON.stringify(report,null,2));
   for(const mode of modes){
-    const result=spawnSync(process.execPath,['--import','tsx',resolve(checkout,'script/demo/mainFlowSoftBlockDiagnostic.ts'),'--worker',mode,destination,...(candidate?['--candidate']:[])],
+    const result=spawnSync(process.execPath,['--import','tsx',resolve(checkout,'script/demo/mainFlowSoftBlockDiagnostic.ts'),'--worker',mode.startsWith('WARM')?mode.slice(4):mode,destination,
+      ...(mode.startsWith('WARM')?['--warm']:[]),...(candidate?['--candidate']:[])],
       {cwd:checkout,encoding:'utf8',timeout:305_000,maxBuffer:1024*1024});
     writeFileSync(resolve(destination,`${mode}.log`),(result.stdout??'')+(result.stderr??''));
     assert.equal(result.status,0,`${mode}: ${result.error?.message??result.stderr}`);

@@ -1173,7 +1173,7 @@ export function* authorizedPipelineArchitectureMaterializations(problem:Readonly
   const feeders=new Map(mains.flatMap(main=>{const feeder=problem.tasks.find(task=>task.kind==="vocal"
     &&task.participantId===main.participantId);return feeder?[[main.id,feeder] as const]:[];}));
   const generated=generateMainFlowPatterns(mains,problem.mainFlow.minTasksPerBlock,
-    problem.mainFlow.maxBlocksByKey,problem.budget.maxPatterns,problem.resources);
+    problem.mainFlow.maxBlocksByKey,problem.budget.maxPatterns,problem.resources,problem.mainFlow.preferredBlockCount);
   if(evidence){evidence.mainPatternCountGenerated=generated.patterns.length;evidence.mainPatternGenerationExhausted=generated.exhausted;}
   let visitedPatterns=0;
   for(const {architecture,patternOrdinal} of mainFlowTimelineArchitectureFrontier(problem,generated.patterns,mains[0]!.duration)){

@@ -995,7 +995,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   };
   const duration = mains[0]?.duration??0;
   const patterns = generateMainFlowPatterns(mains, problem.mainFlow.minTasksPerBlock,
-    problem.mainFlow.maxBlocksByKey, problem.budget.maxPatterns, problem.resources);
+    problem.mainFlow.maxBlocksByKey, problem.budget.maxPatterns, problem.resources, problem.mainFlow.preferredBlockCount);
   const preferredArchitecture=options.preferredArchitecture;
   const orderedPatterns=[...(preferredArchitecture?[preferredArchitecture.pattern as string[]]:[]),...patterns.patterns]
     .filter((pattern,index,all)=>all.findIndex(candidate=>candidate.join("\u0000")===pattern.join("\u0000"))===index);

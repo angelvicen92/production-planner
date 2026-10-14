@@ -216,7 +216,47 @@ export interface StandaloneDeadEndCause {
   readonly technicalChainContradiction?: "NO_FEASIBLE_PENDING_MATERIALIZATION";
 }
 
+export interface MainFlowSoftSearchPhase {
+  status: ExactItinerantPlanStatus;
+  complete: boolean;
+  branches: number;
+  coreBranches: number;
+  standaloneBranches: number;
+  patterns: number;
+  timelines: number;
+  architectures: number;
+  architectureEnumeration: number;
+  structuralRejections: Record<string,number>;
+  fingerprint: string|null;
+  reasonCodes: string[];
+  waterfall:ExactCoreCausalDiagnostic["waterfallByDepth"];
+  structural:Pick<ExactItinerantPlanEvidence,"mainPatternCountGenerated"|"mainPatternGenerationExhausted"|"mainPatternsVisited"|
+    "timelinesGenerated"|"architecturesPrepared"|"architectureStructuralRejectsByReason"|"nominalPipelineWitnessChecks"|
+    "futureDependencyStructural"|"architectureFutureDependencyStructural">;
+}
+export interface MainFlowSoftPreferenceEvidence {
+  requested: number;
+  achieved: number|null;
+  incumbentOrigin: "AUTO"|"REVALIDATED_JOINT_COMPLETION"|null;
+  incumbentAtBranch: number|null;
+  incumbentFingerprint: string|null;
+  priorRevalidation: "PASS"|"STALE"|"BUDGET_EXHAUSTED"|null;
+  baseline: MainFlowSoftSearchPhase;
+  improvement: MainFlowSoftSearchPhase|null;
+  stopReason: "NO_COMPLETE_INCUMBENT"|"TARGET_ACHIEVED"|"MAIN_PROTECTED"|"BRANCH_BUDGET_EXHAUSTED"|"TIME_LIMIT_REACHED"|"NO_CLOSER_COMPLETE_CANDIDATE"|"CLOSER_COMPLETE_CANDIDATE";
+}
+
+/** Count the effective coach/key sequence, ignoring authorized meal gaps. */
+export function effectiveMainBlockCount(tasks:readonly ScheduledTask[]):number {
+  const mains=tasks.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+  return mains.reduce((count,task,index)=>count+(index===0
+    ||(task.blockKey??task.coachId)!==(mains[index-1]!.blockKey??mains[index-1]!.coachId)?1:0),0);
+}
+
 export interface ExactItinerantPlanEvidence extends FutureCollectiveClosureEvidence {
+  mainFlowSoftPreference?:MainFlowSoftPreferenceEvidence;
+  priorJointCompletionRevalidation?:"PASS"|"STALE"|"BUDGET_EXHAUSTED";
+  priorJointCompletionReused?:boolean;
   branchesExplored: number;
   coreBranches: number;
   standaloneBranches: number;
@@ -2051,6 +2091,8 @@ return { outcome, tasks: found, preparations: foundPreparations, roundPreparatio
 
 /** Continues every hard-valid exact-core leaf with exact standalone DFS under one shared budget. */
 export interface ExactItinerantPlanSearchOptions {
+  /** The same ledger across AUTO/replay and the optional SOFT improvement phase. */
+  ledger?:ExactSearchLedger;
   /** Cooperative runtime control, never a negative feasibility certificate. */
   checkpoint?:()=>void;
   coreOrderer?: Pick<ExactMainAndFeederSearchOptions, "mainChoiceComparator" | "futureEdgeIntrusion" | "onMainChoicesRanked" | "onMainChoiceEntered" | "onMainChoiceAccepted" | "feederStartDomainMode">;
@@ -2083,7 +2125,8 @@ export interface ExactItinerantPlanSearchOptions {
 export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   options: ExactItinerantPlanSearchOptions = {}): ExactItinerantPlanResult {
   const completeSelectionMode = options.standaloneCompletionSelection ?? "FIRST_HARD_VALID";
-  const ledger = createExactSearchLedger(problem.budget.maxBranchExpansions,options.checkpoint);
+  const ledger = options.ledger??createExactSearchLedger(problem.budget.maxBranchExpansions,options.checkpoint);
+  const invocationBranches=ledger.branchesExplored;
   // One authority per execution: core callbacks reuse the current witness, known
   // alternatives, and the resumable explorer instead of restarting factorial work.
   const futureTechnicalChains=new PreparedFutureTechnicalChainAuthority(problem,
@@ -2275,10 +2318,14 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   let selectedTasks: ScheduledTask[] | null = null, selectedPreparations: ScheduledSetupPreparation[] = [], selectedRoundPreparations: ScheduledRoundPreparation[] = [], selectedMeals: ScheduledSpaceMeal[] = [], selectedParticipantMeals: ParticipantMealWitness | null = null, selectedOperationalMeals: OperationalMealWitness | null = null, selectedCoreIds = new Set<string>();
   let selectedFutureRoundWitnesses:FutureRoundSynchronizationWitnessV1[]=[];
   let selectedFutureItinerantWitnesses:FutureItinerantAgendaWitnessV1[]=[];
+  // Replay can also hit the cooperative deadline, before the core's existing
+  // catch boundary. Preserve its truthful incomplete outcome in that case.
+  try {
   const priorJoint=options.priorFutureStructuralWitnesses?.find((item):item is Extract<FutureStructuralWitness,{kind:"JOINT_COMPLETION"}>=>item.kind==="JOINT_COMPLETION");
   if(priorJoint&&problem.analyticalFutureCollectiveContinuation){
     const source=problem.analyticalFutureCollectiveContinuation;
     const replay=revalidateJointCompletionWitness(source,priorJoint,options.fixedPlacements??[],()=>ledger.consume("STANDALONE"));
+    if(options.ledger)evidence.priorJointCompletionRevalidation=replay;
     const preparationsPreserved=(options.fixedSetupPreparations??[]).every(fixed=>priorJoint.preparations.some(item=>jointCompletionCanonicalJson(item)===jointCompletionCanonicalJson(fixed)))
       &&(options.fixedRoundPreparations??[]).every(fixed=>priorJoint.roundPreparations.some(item=>jointCompletionCanonicalJson(item)===jointCompletionCanonicalJson(fixed)));
     if(replay==="PASS"&&preparationsPreserved){
@@ -2291,6 +2338,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       const unitMeals=materializeScheduledItinerantUnitMeals(problem);
       const closure=new PreparedFutureCollectiveParticipantClosure(source).evaluate(priorJoint.tasks,priorJoint.participantMeals,()=>ledger.consume("STANDALONE"));
       if(closure.certified&&validatePlan(problem,tasks,preparations,[...priorJoint.spaceMeals],meals,resourceMeals,unitMeals,rounds,[...priorJoint.operationalMeals]).hardValid){
+        if(options.ledger)evidence.priorJointCompletionReused=true;
         evidence.branchesExplored=ledger.branchesExplored;evidence.coreBranches=ledger.coreBranches;evidence.standaloneBranches=ledger.standaloneBranches;
         evidence.futureStructuralWitnesses=[structuredClone(priorJoint)];
         evidence.futureCollectiveClosureWitnessFingerprint=closure.witnessFingerprint;
@@ -2886,7 +2934,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     ?? (ledger.branchesExplored >= ledger.limit ? "STANDALONE" : null);
   if (evidence.causalDiagnostic) {
     const accounted = Object.values(evidence.causalDiagnostic.waterfallByDepth).reduce((sum, row) => sum + row.total, 0);
-    const unclassifiedStandalone = Math.max(0, ledger.branchesExplored - accounted);
+    const unclassifiedStandalone = Math.max(0, ledger.branchesExplored - invocationBranches - accounted);
     if (unclassifiedStandalone > 0) {
       const row = evidence.causalDiagnostic.waterfallByDepth["0"]
         ?? { mainCandidate:0,feederStart:0,residualMatching:0,continuation:0,participantMeal:0,standaloneForward:0,other:0,total:0 };
@@ -3092,6 +3140,17 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const scheduledItinerantUnitMeals=materializeScheduledItinerantUnitMeals(problem);const scheduledOperationalMeals=[...(completedOperationalMeals?.scheduled??[])];evidence.fullFingerprint=fingerprint(scheduledTasks,scheduledSetupPreparations,selectedMeals,scheduledItinerantUnitMeals,scheduledRoundPreparations,scheduledOperationalMeals); evidence.remainingTaskIds = []; evidence.reasonCodes = [];
   const scheduledResourceMeals=(problem.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
   return { status: "COMPLETE", complete: true, scheduledTasks, scheduledSetupPreparations, scheduledRoundPreparations, scheduledSpaceMeals: [...selectedMeals], scheduledParticipantMeals:[...(completedParticipantMeals?.scheduled??[])],scheduledResourceMeals,scheduledOperationalMeals,scheduledItinerantUnitMeals,remainingTaskIds: [], evidence };
+  }catch(error){
+    if(!options.ledger||!(error instanceof ExactSearchTimeLimitReached))throw error;
+    evidence.branchesExplored=ledger.branchesExplored;evidence.coreBranches=ledger.coreBranches;
+    evidence.standaloneBranches=ledger.standaloneBranches;evidence.coreStatus="TIME_LIMIT_REACHED";
+    evidence.reasonCodes=["SEARCH_TIME_LIMIT_REACHED"];
+    evidence.futureStructuralWitnesses=[];evidence.futureCollectiveClosureLastCertificate=null;
+    const remainingTaskIds=problem.tasks.map(task=>task.id).sort();evidence.remainingTaskIds=remainingTaskIds;
+    return {status:"TIME_LIMIT_REACHED",complete:false,scheduledTasks:[],scheduledSetupPreparations:[],
+      scheduledRoundPreparations:[],scheduledSpaceMeals:[],scheduledParticipantMeals:[],scheduledResourceMeals:[],
+      scheduledOperationalMeals:[],scheduledItinerantUnitMeals:[],remainingTaskIds,evidence};
+  }
 }
 
 /** Frozen historical control and explicit rollback path. */
@@ -3101,8 +3160,88 @@ export function constructFirstHardValidExactItinerantPlan(problem: PlannerNextPr
 
 /** Accepted exact path: selects the best dominating complete incumbent observed within the shared budget. */
 export function constructExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false,fixedSetupPreparations?:readonly ScheduledSetupPreparation[],fixedRoundPreparations?:readonly ScheduledRoundPreparation[],prior?:readonly import("./anonymousPipelineWitness").FutureStructuralWitness[]|Extract<import("./anonymousPipelineWitness").FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>,checkpoint?:()=>void): ExactItinerantPlanResult {
+  const requested=problem.mainFlow?.preferredBlockCount;
+  const search=(input:PlannerNextProblem,witnesses=prior,ledger?:ExactSearchLedger,firstComplete=false)=>
+    constructConfiguredExactItinerantPlan(input,causalDiagnostic,acceptsValidation,fixedPlacements,fixedPlacementsAsContext,
+      fixedSetupPreparations,fixedRoundPreparations,witnesses,checkpoint,ledger,firstComplete);
+  if(requested===undefined||!Number.isSafeInteger(requested)||requested<1)return search(problem);
+  const ledger=createExactSearchLedger(problem.budget.maxBranchExpansions,checkpoint);
+  const autoProblem={...problem,mainFlow:{...problem.mainFlow,preferredBlockCount:undefined}};
+  // Follow AUTO's construction until its first complete, canonically validated
+  // result (or the existing full replay). Secondary quality search is deferred.
+  const baseline=search(autoProblem,prior,ledger,true);
+  const atIncumbent=ledger.branchesExplored;
+  const phase=(result:ExactItinerantPlanResult,branches:number,coreBranches:number,standaloneBranches:number):MainFlowSoftSearchPhase=>({
+    status:result.status,complete:result.complete,branches,coreBranches,standaloneBranches,
+    patterns:result.evidence.patternCandidatesExplored,timelines:result.evidence.timelineCandidatesExplored,
+    architectures:result.evidence.architecturesChecked,architectureEnumeration:result.evidence.architecturesEnumerated,
+    structuralRejections:{...result.evidence.structuralRejectionsByReason},fingerprint:result.evidence.fullFingerprint,
+    reasonCodes:[...result.evidence.reasonCodes],waterfall:structuredClone(result.evidence.causalDiagnostic?.waterfallByDepth??{}),
+    structural:structuredClone({mainPatternCountGenerated:result.evidence.mainPatternCountGenerated,
+      mainPatternGenerationExhausted:result.evidence.mainPatternGenerationExhausted,
+      mainPatternsVisited:result.evidence.mainPatternsVisited,timelinesGenerated:result.evidence.timelinesGenerated,
+      architecturesPrepared:result.evidence.architecturesPrepared,
+      architectureStructuralRejectsByReason:result.evidence.architectureStructuralRejectsByReason,
+      nominalPipelineWitnessChecks:result.evidence.nominalPipelineWitnessChecks,
+      futureDependencyStructural:result.evidence.futureDependencyStructural,
+      architectureFutureDependencyStructural:result.evidence.architectureFutureDependencyStructural}),
+  });
+  const baselinePhase=phase(baseline,atIncumbent,ledger.coreBranches,ledger.standaloneBranches);
+  const blocks=(result:ExactItinerantPlanResult)=>effectiveMainBlockCount(
+    result.evidence.futureStructuralWitnesses.find(item=>item.kind==="JOINT_COMPLETION")?.tasks??result.scheduledTasks);
+  let selected=baseline,improvement:ExactItinerantPlanResult|null=null;
+  let stopReason:MainFlowSoftPreferenceEvidence["stopReason"]="NO_COMPLETE_INCUMBENT";
+  let improvementPhase:MainFlowSoftSearchPhase|null=null;
+  if(baseline.complete){
+    const fixedIds=new Set((fixedPlacements??[]).map(task=>task.id));
+    const mains=problem.tasks.filter(task=>task.kind==="main");
+    if(blocks(baseline)===requested)stopReason="TARGET_ACHIEVED";
+    else if(mains.length>0&&mains.every(task=>fixedIds.has(task.id)))stopReason="MAIN_PROTECTED";
+    else if(ledger.branchesExplored>=ledger.limit)stopReason="BRANCH_BUDGET_EXHAUSTED";
+    else {
+      // A reusable ephemeral completion/pipeline is evidence, not accepted Main
+      // geometry. Passing it again would short-circuit the improvement search.
+      const witnesses=prior?(Array.isArray(prior)?prior:[prior]).filter(item=>
+        item.kind!=="JOINT_COMPLETION"&&item.kind!=="FIXED_SUPPORTING_PIPELINE"):undefined;
+      const beforeCore=ledger.coreBranches,beforeStandalone=ledger.standaloneBranches;
+      improvement=search(problem,witnesses,ledger,true);
+      improvementPhase=phase(improvement,ledger.branchesExplored-atIncumbent,ledger.coreBranches-beforeCore,
+        ledger.standaloneBranches-beforeStandalone);
+      if(improvement.complete&&Math.abs(blocks(improvement)-requested)<Math.abs(blocks(baseline)-requested)){
+        selected=improvement;stopReason=blocks(improvement)===requested?"TARGET_ACHIEVED":"CLOSER_COMPLETE_CANDIDATE";
+      }else stopReason=improvement.status==="TIME_LIMIT_REACHED"?"TIME_LIMIT_REACHED"
+        :improvement.status==="BRANCH_BUDGET_EXHAUSTED"||ledger.lastExhaustionPhase!==null||ledger.branchesExplored>=ledger.limit
+          ?"BRANCH_BUDGET_EXHAUSTED":"NO_CLOSER_COMPLETE_CANDIDATE";
+    }
+  }
+  // Candidate-specific witnesses/quality belong to the selected completion;
+  // phase records explain all work. The ledger totals never reset or grow.
+  const mergedDiagnostic=selected.evidence.causalDiagnostic?structuredClone(selected.evidence.causalDiagnostic):null;
+  if(mergedDiagnostic){
+    const waterfall:ExactCoreCausalDiagnostic["waterfallByDepth"]={};
+    for(const phase of [baselinePhase,improvementPhase])if(phase)for(const [depth,row] of Object.entries(phase.waterfall)){
+      const sum=waterfall[depth]??={mainCandidate:0,feederStart:0,residualMatching:0,continuation:0,participantMeal:0,standaloneForward:0,other:0,total:0};
+      for(const key of Object.keys(sum) as Array<keyof typeof sum>)sum[key]+=row[key];
+    }
+    const missing=ledger.branchesExplored-Object.values(waterfall).reduce((sum,row)=>sum+row.total,0);
+    if(missing>0){const row=waterfall["0"]??={mainCandidate:0,feederStart:0,residualMatching:0,continuation:0,participantMeal:0,standaloneForward:0,other:0,total:0};row.other+=missing;row.total+=missing;}
+    mergedDiagnostic.waterfallByDepth=waterfall;
+  }
+  return {...selected,evidence:{...selected.evidence,causalDiagnostic:mergedDiagnostic,branchesExplored:ledger.branchesExplored,
+    coreBranches:ledger.coreBranches,standaloneBranches:ledger.standaloneBranches,
+    lastExhaustionPhase:ledger.lastExhaustionPhase,
+    mainFlowSoftPreference:{requested,achieved:selected.complete?blocks(selected):null,
+      incumbentOrigin:baseline.complete?(baseline.evidence.priorJointCompletionReused?"REVALIDATED_JOINT_COMPLETION":"AUTO"):null,
+      incumbentAtBranch:baseline.complete?atIncumbent:null,incumbentFingerprint:baseline.complete?baseline.evidence.fullFingerprint:null,
+      priorRevalidation:baseline.evidence.priorJointCompletionRevalidation??null,
+      baseline:baselinePhase,improvement:improvementPhase,stopReason}}};
+}
+
+function constructConfiguredExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false,fixedSetupPreparations?:readonly ScheduledSetupPreparation[],fixedRoundPreparations?:readonly ScheduledRoundPreparation[],prior?:readonly import("./anonymousPipelineWitness").FutureStructuralWitness[]|Extract<import("./anonymousPipelineWitness").FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>,checkpoint?:()=>void,ledger?:ExactSearchLedger,firstComplete=false): ExactItinerantPlanResult {
   const priorFutureStructuralWitnesses=prior?(Array.isArray(prior)?prior:[prior]):undefined;
-  const pipeline=fixedPlacementsAsContext&&!problem.analyticalFutureCollectiveContinuation?materializeFirstNominalPipelineWitness(problem,(fixedPlacements?.length??0)>0):null;
+  // SOFT improvement enters the budgeted residual/structural explorers directly;
+  // repeating AUTO's legacy eager nominal construction would add uncharged work.
+  const pipeline=fixedPlacementsAsContext&&!problem.analyticalFutureCollectiveContinuation&&problem.mainFlow.preferredBlockCount===undefined?materializeFirstNominalPipelineWitness(problem,(fixedPlacements?.length??0)>0):null;
   const preferredArchitecture=pipeline?.witness.status==="FEASIBLE"?{
     pattern:pipeline.witness.pattern,
     slots:[...pipeline.witness.mainSpots].sort((a,b)=>Number(a.id.slice(5))-Number(b.id.slice(5))).map(spot=>spot.start),
@@ -3122,7 +3261,7 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
   const coreIds = new Set(problem.tasks.filter(({ kind }) => kind === "main" || kind === "vocal").map(({ id }) => id));
   for (const id of anchoredTaskIds(problem)) coreIds.add(id);
   const standaloneTasks = problem.tasks.filter(({ id }) => !coreIds.has(id));
-  if (standaloneTasks.length === 0) return runExactItinerantPlanSearch(problem,{checkpoint,causalDiagnostic,acceptsValidation,
+  if (standaloneTasks.length === 0) return runExactItinerantPlanSearch(problem,{ledger,checkpoint,causalDiagnostic,acceptsValidation,
     fixedPlacements,fixedPlacementsAsContext,fixedSetupPreparations,fixedRoundPreparations,priorFutureStructuralWitnesses,preferredArchitecture,preferredBundleCandidate:matchedBundles??undefined,
     repairPreferredBundleCandidate});
   const orderer = createResidualObligationMainOrderer(problem, standaloneTasks);
@@ -3131,8 +3270,8 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
     // Assisted search protects an accepted baseline and needs one canonical
     // hard-valid completion around it; spending the full residual budget on
     // incumbent domination cannot improve the human-protected placements.
-    standaloneCompletionSelection: fixedPlacementsAsContext ? "FIRST_HARD_VALID" : "BEST_DOMINATING_WITHIN_BUDGET",
-    checkpoint, causalDiagnostic, acceptsValidation, fixedPlacements, fixedPlacementsAsContext, fixedSetupPreparations, fixedRoundPreparations, priorFutureStructuralWitnesses, preferredArchitecture,
+    standaloneCompletionSelection: fixedPlacementsAsContext||firstComplete ? "FIRST_HARD_VALID" : "BEST_DOMINATING_WITHIN_BUDGET",
+    ledger, checkpoint, causalDiagnostic, acceptsValidation, fixedPlacements, fixedPlacementsAsContext, fixedSetupPreparations, fixedRoundPreparations, priorFutureStructuralWitnesses, preferredArchitecture,
     preferredBundleCandidate:matchedBundles??undefined,repairPreferredBundleCandidate,
   });
 }
