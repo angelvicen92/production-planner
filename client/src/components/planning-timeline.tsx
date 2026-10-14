@@ -1,5 +1,5 @@
 import { planningGroupOrder, planningFilterIds, effectivePlanningResourceIds } from "@/lib/planning-view-policy";
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type ReactNode, type Dispatch, type SetStateAction } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { timeToMinutes } from "@/lib/time";
-import { sortContestantLanes } from "@/lib/contestant-lane-sort";
+import { sortContestantLanes, type ContestantLaneOrder } from "@/lib/contestant-lane-sort";
 import { cn } from "@/lib/utils";
 import { useProductionClock } from "@/hooks/use-production-clock";
 import { usePlanningDensity } from "@/components/planning/fullscreen-planning-panel";
@@ -68,6 +68,7 @@ interface Task {
 interface Contestant {
   id: number;
   name: string;
+  availabilityStart?: string | null;
 }
 
 type ResourceSelectable = {
@@ -77,7 +78,14 @@ type ResourceSelectable = {
   meta?: { typeName?: string; color?: string };
 };
 
-interface PlanningTimelineProps {
+export interface PlanningTimelineProps {
+  manualEdits?: Record<number, { start: string; end: string }>;
+  onManualEditsChange?: Dispatch<SetStateAction<Record<number, { start: string; end: string }>>>;
+  readOnly?: boolean;
+  contestantOrder?: ContestantLaneOrder;
+  contestantFilterIds?: number[];
+  spaceFilterIds?: number[];
+  hideEmptyLanes?: boolean;
   mode?: "accepted" | "assisted-draft";
   taskVisualStates?: Record<number, "ACCEPTED" | "DRAFT_CHANGED" | "PROPOSAL_PREVIEW" | "SCOPE_SELECTED" | "UNPLANNED">;
   isHydratingPlanningResult?: boolean;
@@ -88,6 +96,7 @@ interface PlanningTimelineProps {
   spaceVerticalMode?: "timeline" | "list";
 
   plan: {
+    arrivalTaskTemplateName?: string | null;
     workStart: string | null;
     workEnd: string | null;
     mealStart: string | null;
@@ -309,7 +318,7 @@ function TaskStatusMenuTrigger({
   const { toast } = useToast();
   const confirm = useConfirm();
   const suppressNextClickRef = useRef(false);
-  const actions = canExecuteTask && !canExecuteTask(task) ? [] : taskActionsForStatus(task.status ?? "pending");
+  const actions = onTaskStatusChange && (!canExecuteTask || canExecuteTask(task)) ? taskActionsForStatus(task.status ?? "pending") : [];
 
   useEffect(() => {
     if (manualMode && open) setOpen(false);
@@ -531,6 +540,13 @@ function TaskStatusMenuTrigger({
 }
 
   export function PlanningTimeline({
+    manualEdits,
+    onManualEditsChange,
+    readOnly = false,
+    contestantOrder,
+    contestantFilterIds = [],
+    spaceFilterIds = [],
+    hideEmptyLanes = false,
     mode = "accepted",
     taskVisualStates = {},
     plan,
@@ -622,7 +638,7 @@ function TaskStatusMenuTrigger({
 
   const [manualMode, setManualMode] = useState(false);
   const assistedDraftMode = mode === "assisted-draft";
-  useEffect(() => { if (assistedDraftMode) setManualMode(true); }, [assistedDraftMode]);
+  useEffect(() => { setManualMode(assistedDraftMode && !readOnly); }, [assistedDraftMode, readOnly]);
   const assistedVisualClass = (task: Task) => {
     if (!assistedDraftMode) return "";
     const state = taskVisualStates[Number(task.id)];
@@ -641,7 +657,9 @@ function TaskStatusMenuTrigger({
   const [validationResult, setValidationResult] = useState<{ feasible: boolean; reasons?: Array<{ message?: string; [k: string]: any }> } | null>(null);
   const [contestantSort, setContestantSort] = useState<{ mode: "name" } | { mode: "task"; templateId: number; templateName: string }>({ mode: "name" });
   const [dependencyWarnings, setDependencyWarnings] = useState<Record<number, { prereqTaskName: string; prereqEnd: string }>>({});
-  const [pendingManualEdits, setPendingManualEdits] = useState<Record<number, { start: string; end: string }>>({});
+  const [localPendingManualEdits, setLocalPendingManualEdits] = useState<Record<number, { start: string; end: string }>>({});
+  const pendingManualEdits = manualEdits ?? localPendingManualEdits;
+  const setPendingManualEdits = onManualEditsChange ?? setLocalPendingManualEdits;
   const [manualDrag, setManualDrag] = useState<null | {
     taskId: number;
     laneId: string;
@@ -735,7 +753,7 @@ function TaskStatusMenuTrigger({
   };
 
   const canSelectManualTask = (task: Task) => {
-    if (!manualMode || isApplying) return false;
+    if (readOnly || !manualMode || isApplying) return false;
     if (task.status === "in_progress" || task.status === "done") return false;
     if (task.isManualBlock) return false;
     if (isTaskFixed(task)) return false;
@@ -1008,12 +1026,13 @@ function TaskStatusMenuTrigger({
   }, [zones, selectedStageIdsSet]);
 
   const filteredSpaces = useMemo(() => {
-    if (selectedStageIdsSet.size === 0) return spaces ?? [];
-    return (spaces ?? []).filter((space) => {
+    const candidates = hideEmptyLanes ? spaces.filter(space => dailyTasks.some(task => Number(task.spaceId) === Number(space.id))) : spaces;
+    if (selectedStageIdsSet.size === 0) return spaceFilterIds.length ? candidates.filter(space => spaceFilterIds.includes(Number(space.id))) : candidates ?? [];
+    return (candidates ?? []).filter((space) => {
       const zoneId = Number(space?.zoneId);
-      return Number.isFinite(zoneId) && selectedStageIdsSet.has(zoneId);
+      return Number.isFinite(zoneId) && selectedStageIdsSet.has(zoneId) || spaceFilterIds.includes(Number(space.id));
     });
-  }, [spaces, selectedStageIdsSet]);
+  }, [spaces, selectedStageIdsSet, spaceFilterIds, hideEmptyLanes, dailyTasks]);
 
   const timelineTasks = useMemo(() => {
     const breakTasks = (viewMode === "contestants" ? [] : breaks)
@@ -1041,9 +1060,10 @@ function TaskStatusMenuTrigger({
   }, [breaks, dailyTasks, pendingManualEdits, viewMode]);
 
   const filteredDailyTasksByStage = useMemo(() => {
-    if (viewMode === "contestants") return timelineTasks ?? [];
-    if (selectedStageIdsSet.size === 0) return timelineTasks ?? [];
+    if (viewMode === "contestants") return contestantFilterIds.length ? timelineTasks.filter(task => task.contestantId == null || contestantFilterIds.includes(Number(task.contestantId))) : timelineTasks ?? [];
+    if (selectedStageIdsSet.size === 0 && spaceFilterIds.length === 0) return timelineTasks ?? [];
     return (timelineTasks ?? []).filter((task) => {
+      if (spaceFilterIds.includes(Number(task.spaceId))) return true;
       const taskZoneId = Number(task?.zoneId);
       if (Number.isFinite(taskZoneId) && selectedStageIdsSet.has(taskZoneId)) return true;
 
@@ -1054,7 +1074,7 @@ function TaskStatusMenuTrigger({
       const spaceZoneId = Number(space?.zoneId);
       return Number.isFinite(spaceZoneId) && selectedStageIdsSet.has(spaceZoneId);
     });
-  }, [timelineTasks, spaces, selectedStageIdsSet, viewMode]);
+  }, [timelineTasks, spaces, selectedStageIdsSet, viewMode, contestantFilterIds, spaceFilterIds]);
 
   const selectedResourceKeys = useMemo(
     () => planningFilterIds(resourceFilterIds ?? [], resourceSelectables.map(resource => resource.id), mode === "assisted-draft", true).map((id) => String(id ?? "")).filter((id) => id.length > 0),
@@ -1341,7 +1361,7 @@ function TaskStatusMenuTrigger({
     }
 
     // Default: contestants
-    contestants.forEach((c) => {
+    contestants.filter(c => contestantFilterIds.length === 0 || contestantFilterIds.includes(Number(c.id))).forEach((c) => {
       grouped[String(c.id)] = { name: c.name, tasks: [] };
     });
     grouped["none"] = { name: "Sin concursante", tasks: [] };
@@ -1370,17 +1390,17 @@ function TaskStatusMenuTrigger({
     });
 
     const entries = Object.entries(grouped)
-      .filter(([key, lane]) => lane.tasks.length > 0 || key !== "none")
+      .filter(([key, lane]) => lane.tasks.length > 0 || !hideEmptyLanes && key !== "none")
       .sort((a, b) => {
         if (a[0] === "none") return 1;
         if (b[0] === "none") return -1;
         return a[1].name.localeCompare(b[1].name);
       });
 
-    return sortContestantLanes(entries, contestantSort.mode === "task" ? Number(contestantSort.templateId) : undefined);
-  }, [filteredDailyTasksByStage, contestants, viewMode, filteredZones, filteredSpaces, contestantSort]);
+    return sortContestantLanes(entries, contestantOrder ?? (contestantSort.mode === "task" ? Number(contestantSort.templateId) : undefined));
+  }, [filteredDailyTasksByStage, contestants, viewMode, filteredZones, filteredSpaces, contestantSort, contestantOrder, contestantFilterIds, hideEmptyLanes]);
 
-  const taskSortControls = viewMode === "contestants" ? (
+  const taskSortControls = viewMode === "contestants" && !contestantOrder ? (
     <div className="flex items-center gap-2 rounded-md border px-3 py-1.5 bg-muted/20">
       <Button
         size="sm"
@@ -1405,7 +1425,7 @@ function TaskStatusMenuTrigger({
     return (
       <Card className="p-8 text-center bg-muted/50">
         <p className="text-muted-foreground">
-          Falta configurar el horario de trabajo (Work Start/End).
+          Falta configurar el inicio y el fin de la jornada.
         </p>
       </Card>
     );
@@ -2660,6 +2680,7 @@ function TaskStatusMenuTrigger({
                 const option = resourceSelectableById.get(resourceKey);
                 const resourceName = option?.label ?? resourceKey;
                 const tasksForResource = resourceTaskMap.get(resourceKey) ?? [];
+                if(hideEmptyLanes && tasksForResource.length===0)return null;
 
                 return (
                   <Card key={resourceKey} className="p-4">
@@ -2774,7 +2795,7 @@ function TaskStatusMenuTrigger({
                 </div>
               </div>
 
-              {!assistedDraftMode ? <div className="mb-3 flex flex-wrap items-center gap-3">
+              {readOnly ? <div className="mb-3 p-2 text-sm text-muted-foreground">Consulta de la planificación · edición deshabilitada</div> : !assistedDraftMode ? <div className="mb-3 flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={manualMode}
@@ -2787,7 +2808,7 @@ function TaskStatusMenuTrigger({
                       setManualMode(next);
                       if (!next) { setManualDrag(null); setManualDragPreviewStart(null); }
                     }}
-                    disabled={isApplying}
+                    disabled={isApplying || readOnly}
                   />
                   <span className="text-sm">Modo manual</span>
                 </div>
@@ -2832,7 +2853,7 @@ function TaskStatusMenuTrigger({
                 <span className="text-xs">{Object.keys(pendingManualEdits).length} movimientos pendientes</span>
                 <Button size="sm" disabled={isApplying || Object.keys(pendingManualEdits).length === 0} onClick={async () => {
                   const edits = Object.entries(pendingManualEdits).map(([taskId, value]) => ({ taskId: Number(taskId), start: value.start, end: value.end }));
-                  setIsApplying(true); try { await onApplyManualEdits?.(edits); clearManualDraftState(); } finally { setIsApplying(false); }
+                  setIsApplying(true); try { await onApplyManualEdits?.(edits); clearManualDraftState(); } catch { toast({title:"No se pudieron aplicar los movimientos",description:"Revisa el borrador antes de reintentar.",variant:"destructive"}); } finally { setIsApplying(false); }
                 }}>Aplicar edición</Button>
                 <Button size="sm" variant="outline" disabled={isApplying || Object.keys(pendingManualEdits).length === 0} onClick={() => clearManualDraftState()}>Cancelar</Button>
                 <span className="text-xs text-muted-foreground">Espacio, recursos, duración, locks y bloques permanecen deshabilitados.</span>

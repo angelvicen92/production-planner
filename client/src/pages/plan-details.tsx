@@ -1,6 +1,14 @@
 import { usePlanRealtime } from "@/hooks/use-plan-realtime";
 import { useExecutionContext } from "@/hooks/use-execution-context";
 import { executionClockCurrent, executionNextStates } from "@shared/execution";
+import { ContestantIdentity } from "@/components/day-workspace/contestant-identity";
+import { ContestantDayRoster, UnassignedDayTasks } from "@/components/day-workspace/contestant-day-roster";
+import { DayHeader, DayTabNavigation, useDayTabNavigation } from "@/components/day-workspace/day-workspace-shell";
+import { DayExecutionWorkspace } from "@/components/day-workspace/day-execution-workspace";
+import { useUserRole } from "@/hooks/use-user-role";
+import { PlanStaffRolesTab } from '@/components/day-workspace/day-staff-workspace';
+import { PlanResourcesTab } from '@/components/day-workspace/day-resources-workspace';
+import { V4StrategicDiagnosis } from '@/components/day-workspace/legacy-planning-diagnosis';
 import { Layout } from "@/components/layout";
 import { QueryGuard } from "@/components/QueryGuard";
 import { useGeneratePlan, usePlan, useUpdatePlan } from "@/hooks/use-plans";
@@ -184,52 +192,6 @@ const PLANNING_PHASE_LABELS: Record<string, string> = {
   success: "Completado",
 };
 
-function ExecutionElapsedTimer({
-  status,
-  startReal,
-  startRealSeconds,
-  pausedTotalSeconds,
-  pausedAtSeconds,
-}: {
-  status?: string | null;
-  startReal?: string | null;
-  startRealSeconds?: number | null;
-  pausedTotalSeconds?: number | null;
-  pausedAtSeconds?: number | null;
-}) {
-  const { effectiveNow } = useProductionClock();
-  const elapsed = useElapsedSince(startReal, startRealSeconds);
-
-  const elapsedWithPauses = useMemo(() => {
-    if (!startReal) return null;
-    const [hh, mm] = String(startReal).split(":").map((v) => Number(v));
-    if (!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
-
-    const start = new Date(effectiveNow);
-    const ss = Number.isFinite(Number(startRealSeconds)) ? Math.max(0, Math.min(59, Math.floor(Number(startRealSeconds)))) : 0;
-    start.setHours(hh, mm, ss, 0);
-
-    const nowSeconds = effectiveNow.getHours() * 3600 + effectiveNow.getMinutes() * 60 + effectiveNow.getSeconds();
-    const startSecondsOfDay = hh * 3600 + mm * 60 + ss;
-    const pausedTotal = Number.isFinite(Number(pausedTotalSeconds)) ? Math.max(0, Math.floor(Number(pausedTotalSeconds))) : 0;
-    const pausedAt = Number.isFinite(Number(pausedAtSeconds)) ? Math.max(0, Math.floor(Number(pausedAtSeconds))) : null;
-    const currentPause = status === "interrupted" && pausedAt !== null ? Math.max(0, nowSeconds - pausedAt) : 0;
-
-    const elapsedSeconds = Math.max(0, nowSeconds - startSecondsOfDay - pausedTotal - currentPause);
-    const hours = Math.floor(elapsedSeconds / 3600);
-    const minutes = Math.floor((elapsedSeconds % 3600) / 60);
-    const seconds = elapsedSeconds % 60;
-    return hours > 0
-      ? `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
-      : `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  }, [effectiveNow, pausedAtSeconds, pausedTotalSeconds, startReal, startRealSeconds, status]);
-
-  if (status !== "in_progress" || !startReal || !(elapsedWithPauses ?? elapsed)) {
-    return <span className="text-muted-foreground">—</span>;
-  }
-
-  return <span className="text-xs font-medium text-emerald-700">Tiempo en marcha: {elapsedWithPauses ?? elapsed}</span>;
-}
 
 type ResourceSelectable = {
   id: string | number;
@@ -238,1000 +200,14 @@ type ResourceSelectable = {
   meta?: { typeName?: string; color?: string };
 };
 
-function PlanStaffRolesTab({
-  planId,
-  zones,
-  spaces,
-}: {
-  planId: number;
-  zones: any[];
-  spaces: any[];
-}) {
-  const { data: staffPeople = [], isLoading: staffLoading } = useStaffPeople();
-  const { data: itinerantTeams = [] } = useItinerantTeams();
-
-  const { data: modes = [], isLoading: modesLoading } =
-    usePlanZoneStaffModes(planId);
-  const saveModes = useSavePlanZoneStaffModes(planId);
-
-  const { data: assignments = [], isLoading: asgLoading } =
-    usePlanStaffAssignments(planId);
-  const saveAssignments = useSavePlanStaffAssignments(planId);
-
-  const [localModes, setLocalModes] = useState<Map<number, ZoneStaffMode>>(
-    new Map(),
-  );
-  const [localAssignments, setLocalAssignments] = useState<any[]>([]);
-
-  // Init from server
-  useEffect(() => {
-    const m = new Map<number, ZoneStaffMode>();
-    for (const r of modes as any[]) {
-      const zid = Number(r?.zoneId);
-      if (!Number.isFinite(zid)) continue;
-      m.set(zid, (r?.mode ?? "zone") as ZoneStaffMode);
-    }
-    setLocalModes(m);
-  }, [JSON.stringify(modes ?? [])]);
-
-  useEffect(() => {
-    setLocalAssignments((assignments ?? []) as any[]);
-  }, [JSON.stringify(assignments ?? [])]);
-
-  const activePeople = (staffPeople ?? []).filter((p: any) => !!p?.isActive);
-
-  const spacesByZone = new Map<number, any[]>();
-  for (const s of spaces as any[]) {
-    const zid = Number(s?.zoneId ?? s?.zone_id);
-    if (!Number.isFinite(zid)) continue;
-    const list = spacesByZone.get(zid) ?? [];
-    list.push(s);
-    spacesByZone.set(zid, list);
-  }
-
-  const getMode = (zoneId: number): ZoneStaffMode =>
-    localModes.get(zoneId) ?? "zone";
-
-  const setMode = (zoneId: number, mode: ZoneStaffMode) => {
-    setLocalModes((prev) => {
-      const next = new Map(prev);
-      next.set(zoneId, mode);
-      return next;
-    });
-  };
-
-  const listFor = (args: {
-    staffRole: StaffRoleType;
-    scopeType: StaffScopeType;
-    zoneId?: number | null;
-    spaceId?: number | null;
-    realityTeamCode?: string | null;
-    itinerantTeamId?: number | null;
-  }) => {
-    return (localAssignments ?? []).filter((a: any) => {
-      if (a?.staffRole !== args.staffRole) return false;
-      if (a?.scopeType !== args.scopeType) return false;
-
-      const zid = a?.zoneId ?? a?.zone_id ?? null;
-      const sid = a?.spaceId ?? a?.space_id ?? null;
-      const rtc = a?.realityTeamCode ?? a?.reality_team_code ?? null;
-      const itid = a?.itinerantTeamId ?? a?.itinerant_team_id ?? null;
-
-      if ((args.zoneId ?? null) !== (zid ?? null)) return false;
-      if ((args.spaceId ?? null) !== (sid ?? null)) return false;
-      if ((args.realityTeamCode ?? null) !== (rtc ?? null)) return false;
-      if ((args.itinerantTeamId ?? null) !== (itid ?? null)) return false;
-      return true;
-    });
-  };
-
-  const addAssignment = (args: {
-    staffRole: StaffRoleType;
-    scopeType: StaffScopeType;
-    staffPersonId: number;
-    zoneId?: number | null;
-    spaceId?: number | null;
-    realityTeamCode?: string | null;
-    itinerantTeamId?: number | null;
-  }) => {
-    const pid = Number(args.staffPersonId);
-    if (!Number.isFinite(pid) || pid <= 0) return;
-
-    setLocalAssignments((prev) => {
-      const exists = prev.some((a: any) => {
-        if (a?.staffRole !== args.staffRole) return false;
-        if (a?.scopeType !== args.scopeType) return false;
-        if (Number(a?.staffPersonId ?? a?.staff_person_id) !== pid)
-          return false;
-
-        const zid = a?.zoneId ?? a?.zone_id ?? null;
-        const sid = a?.spaceId ?? a?.space_id ?? null;
-        const rtc = a?.realityTeamCode ?? a?.reality_team_code ?? null;
-        const itid = a?.itinerantTeamId ?? a?.itinerant_team_id ?? null;
-
-        if ((args.zoneId ?? null) !== (zid ?? null)) return false;
-        if ((args.spaceId ?? null) !== (sid ?? null)) return false;
-        if ((args.realityTeamCode ?? null) !== (rtc ?? null)) return false;
-        if ((args.itinerantTeamId ?? null) !== (itid ?? null)) return false;
-        return true;
-      });
-      if (exists) return prev;
-
-      return [
-        ...prev,
-        {
-          staffRole: args.staffRole,
-          staffPersonId: pid,
-          staffPersonName:
-            activePeople.find((p: any) => Number(p.id) === pid)?.name ?? "",
-          scopeType: args.scopeType,
-          zoneId: args.scopeType === "zone" ? Number(args.zoneId) : null,
-          spaceId: args.scopeType === "space" ? Number(args.spaceId) : null,
-          realityTeamCode:
-            args.scopeType === "reality_team"
-              ? (args.realityTeamCode ?? null)
-              : null,
-          itinerantTeamId:
-            args.scopeType === "itinerant_team"
-              ? (args.itinerantTeamId ?? null)
-              : null,
-        },
-      ];
-    });
-  };
-  
-  const removeAssignment = (idx: number) => {
-    setLocalAssignments((prev) =>
-      prev.filter((_: any, i: number) => i !== idx),
-    );
-  };
-
-    const AssignmentPicker = ({
-      title,
-      staffRole,
-      scopeType,
-      zoneId,
-      spaceId,
-      realityTeamCode,
-      itinerantTeamId,
-    }: {
-      title: string;
-      staffRole: StaffRoleType;
-      scopeType: StaffScopeType;
-      zoneId?: number | null;
-      spaceId?: number | null;
-      realityTeamCode?: string | null;
-      itinerantTeamId?: number | null;
-    }) => {
-      const list = listFor({
-        staffRole,
-        scopeType,
-        zoneId,
-        spaceId,
-        realityTeamCode,
-        itinerantTeamId,
-      });
-      const [open, setOpen] = useState(false);
-      const [draft, setDraft] = useState<number[]>([]);
-      const selectedLabel =
-        list.length === 0
-          ? "—"
-          : list.map((a: any) => String(a?.staffPersonName ?? `#${a?.staffPersonId}`)).join(", ");
-      const rolePeople = activePeople.filter((p: any) => p.roleType === staffRole);
-
-      return (
-        <div className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
-          <div className="min-w-0">
-            <div className="text-xs text-muted-foreground">{title}</div>
-            <div className="truncate text-sm">{selectedLabel}</div>
-          </div>
-          <Dialog
-            open={open}
-            onOpenChange={(next) => {
-              setOpen(next);
-              if (next) {
-                setDraft(list.map((a: any) => Number(a?.staffPersonId ?? a?.staff_person_id)).filter((n: number) => Number.isFinite(n)));
-              }
-            }}
-          >
-            <DialogTrigger asChild>
-              <Button type="button" variant="outline" size="sm">Editar</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{title}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-2 max-h-72 overflow-auto">
-                {rolePeople.map((p: any) => {
-                  const pid = Number(p.id);
-                  const active = draft.includes(pid);
-                  return (
-                    <label key={pid} className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={active}
-                        onChange={(e) => {
-                          setDraft((prev) =>
-                            e.target.checked ? [...prev, pid] : prev.filter((x) => x !== pid),
-                          );
-                        }}
-                      />
-                      {p.name}
-                    </label>
-                  );
-                })}
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancelar</Button>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    setLocalAssignments((prev) => prev.filter((a: any) => {
-                      if (a?.staffRole !== staffRole || a?.scopeType !== scopeType) return true;
-                      const zid = a?.zoneId ?? a?.zone_id ?? null;
-                      const sid = a?.spaceId ?? a?.space_id ?? null;
-                      const rtc = a?.realityTeamCode ?? a?.reality_team_code ?? null;
-                      const itid = a?.itinerantTeamId ?? a?.itinerant_team_id ?? null;
-                      return (zoneId ?? null) !== (zid ?? null) || (spaceId ?? null) !== (sid ?? null) || (realityTeamCode ?? null) !== (rtc ?? null) || (itinerantTeamId ?? null) !== (itid ?? null);
-                    }));
-                    for (const pid of draft) {
-                      addAssignment({ staffRole, scopeType, staffPersonId: pid, zoneId, spaceId, realityTeamCode, itinerantTeamId });
-                    }
-                    setOpen(false);
-                  }}
-                >Guardar</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-      );
-    };
-
-  const handleSave = async () => {
-    const modesPayload = zones.map((z: any) => ({
-      zoneId: Number(z?.id),
-      mode: getMode(Number(z?.id)),
-    }));
-
-    const assignmentsPayload = (localAssignments ?? []).map((a: any) => ({
-      staffRole: a.staffRole as StaffRoleType,
-      staffPersonId: Number(a.staffPersonId),
-      scopeType: a.scopeType as StaffScopeType,
-      zoneId: a.zoneId ?? null,
-      spaceId: a.spaceId ?? null,
-      realityTeamCode: a.realityTeamCode ?? null,
-      itinerantTeamId: a.itinerantTeamId ?? null,
-    }));
-
-    await saveModes.mutateAsync(modesPayload);
-    await saveAssignments.mutateAsync(assignmentsPayload);
-  };
-
-  const busy =
-    modesLoading ||
-    asgLoading ||
-    staffLoading ||
-    saveModes.isPending ||
-    saveAssignments.isPending;
-
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <div>
-            <CardTitle>Roles por plató / espacio</CardTitle>
-            <div className="text-sm text-muted-foreground mt-1">
-              Regla: por cada plató decides si asignas por <b>Plató</b> o por{" "}
-              <b>Espacios</b>. En modo espacios no hay herencia.
-            </div>
-          </div>
-
-          <Button onClick={handleSave} disabled={busy}>
-            {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Guardar
-          </Button>
-        </CardHeader>
-
-        <CardContent className="space-y-6">
-          {zones.length === 0 ? (
-            <div className="text-sm text-muted-foreground">
-              No hay platós/zones.
-            </div>
-          ) : (
-            <>
-              {zones.map((z: any) => {
-                const zid = Number(z?.id);
-                const zoneName = String(z?.name ?? `Plató ${zid}`);
-                const mode = getMode(zid);
-
-                const zoneSpaces = (spacesByZone.get(zid) ?? [])
-                  .slice()
-                  .sort((a, b) => {
-                    const an = String(a?.name ?? "");
-                    const bn = String(b?.name ?? "");
-                    return an.localeCompare(bn);
-                  });
-
-                return (
-                  <Card key={String(zid)} className="border-muted">
-                    <CardHeader className="pb-3">
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                        <div className="font-semibold">{zoneName}</div>
-
-                        <div className="flex items-center gap-2">
-                          <Label className="text-sm text-muted-foreground">
-                            Asignar por
-                          </Label>
-                          <Select
-                            value={mode}
-                            onValueChange={(v) =>
-                              setMode(zid, v as ZoneStaffMode)
-                            }
-                          >
-                            <SelectTrigger className="w-[220px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="zone">Plató</SelectItem>
-                              <SelectItem value="space">Espacios</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </CardHeader>
-
-                    <CardContent className="space-y-6">
-                      {mode === "zone" ? (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                          <AssignmentPicker
-                            title="Producción"
-                            staffRole="production"
-                            scopeType="zone"
-                            zoneId={zid}
-                          />
-                          <AssignmentPicker
-                            title="Redacción"
-                            staffRole="editorial"
-                            scopeType="zone"
-                            zoneId={zid}
-                          />
-                        </div>
-                      ) : mode === "space" ? (
-                        zoneSpaces.length === 0 ? (
-                          <div className="text-sm text-muted-foreground">
-                            Este plató no tiene espacios.
-                          </div>
-                        ) : (
-                          <div className="space-y-6">
-                            {zoneSpaces.map((s: any) => {
-                              const sid = Number(s?.id);
-                              const spaceName = String(
-                                s?.name ?? `Espacio ${sid}`,
-                              );
-                              return (
-                                <Card
-                                  key={String(sid)}
-                                  className="border-border/60"
-                                >
-                                  <CardHeader className="pb-3">
-                                    <div className="font-medium">
-                                      {spaceName}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                      En modo espacios, si aquí no asignas →
-                                      queda vacío.
-                                    </div>
-                                  </CardHeader>
-                                  <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    <AssignmentPicker
-                                      title="Producción"
-                                      staffRole="production"
-                                      scopeType="space"
-                                      spaceId={sid}
-                                    />
-                                    <AssignmentPicker
-                                      title="Redacción"
-                                      staffRole="editorial"
-                                      scopeType="space"
-                                      spaceId={sid}
-                                    />
-                                  </CardContent>
-                                </Card>
-                              );
-                            })}
-                          </div>
-                        )
-                      ) : (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                          <AssignmentPicker
-                            title="Producción"
-                            staffRole="production"
-                            scopeType="zone"
-                            zoneId={zid}
-                          />
-                          <AssignmentPicker
-                            title="Redacción"
-                            staffRole="editorial"
-                            scopeType="zone"
-                            zoneId={zid}
-                          />
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </>
-          )}
-          {/* ✅ Reality: equipos itinerantes (siempre aparte, NO es modo del plató) */}
-          <Card className="border-border/60">
-            <CardHeader className="pb-3">
-              <div className="font-semibold">Reality (equipos itinerantes)</div>
-              <div className="text-sm text-muted-foreground">
-                Aparecen en “Por espacios” como columnas lógicas, pero hacen
-                tareas en otros sitios.
-              </div>
-            </CardHeader>
-
-            <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {(itinerantTeams as any[]).filter((t: any) => !!t?.isActive).length === 0 ? (
-                <div className="text-sm text-muted-foreground">
-                  No hay equipos itinerantes activos.
-                </div>
-              ) : (
-                (itinerantTeams as any[])
-                  .filter((t: any) => !!t?.isActive)
-                  .slice()
-                  .sort((a: any, b: any) => {
-                    const ao = Number(a?.orderIndex ?? a?.order_index ?? 0);
-                    const bo = Number(b?.orderIndex ?? b?.order_index ?? 0);
-                    return ao - bo;
-                  })
-                  .map((t: any) => {
-                    const tid = Number(t?.id);
-                    const teamName = String(t?.name ?? t?.code ?? `Equipo ${tid}`);
-
-                    return (
-                      <Card key={String(tid)} className="border-border/60">
-                        <CardHeader className="pb-3">
-                          <div className="font-medium">{teamName}</div>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <AssignmentPicker
-                            title="Producción"
-                            staffRole="production"
-                            scopeType="itinerant_team"
-                            itinerantTeamId={tid}
-                          />
-                          <AssignmentPicker
-                            title="Redacción"
-                            staffRole="editorial"
-                            scopeType="itinerant_team"
-                            itinerantTeamId={tid}
-                          />
-                        </CardContent>
-                      </Card>
-                    );
-                  })
-              )}
-            </CardContent>
-          </Card>
-        </CardContent>
-      </Card>
-
-      <Alert>
-        <AlertTitle>Importante</AlertTitle>
-        <AlertDescription>
-          Este tab define quién opera (Producción) y quién está asignado
-          (Redacción). En el siguiente lote, estos nombres se mostrarán en
-          cabeceras del planning por plató/espacio.
-        </AlertDescription>
-      </Alert>
-    </div>
-  );
-}
-
-function V4StrategicDiagnosis({ result, isLoading, error, state = "idle" }: { result: any; isLoading: boolean; error: unknown; state?: "idle" | "loading" | "pending_diagnostics" | "success" | "error" }) {
-  const diagnostics = result?.diagnostics ?? null;
-  const analysis = diagnostics?.strategicAnalysis ?? null;
-  const guidedOrdering = diagnostics?.guidedOrdering ?? null;
-  const mainFlowImprovement = diagnostics?.mainFlowImprovement ?? null;
-  const candidateRunner = diagnostics?.candidateRunner ?? null;
-  const sequenceSearch = diagnostics?.mainFlowSequenceSearch ?? candidateRunner?.mainFlowSequenceSearch ?? null;
-  const postOptimizer = diagnostics?.postOptimizer ?? null;
-  const blockRepacker = diagnostics?.blockRepacker ?? null;
-  const executiveSummary = diagnostics?.executiveSummary ?? null;
-  const finalAcceptance = diagnostics?.finalAcceptance ?? null;
-  const performance = diagnostics?.performance ?? null;
-  const list = (value: unknown) => Array.isArray(value) ? value : [];
-  const score = (value: unknown) => Number.isFinite(Number(value)) ? `${Math.round(Number(value))}/100` : "—";
-  const riskVariant = analysis?.riskScore === "CRITICAL" || analysis?.riskScore === "HIGH" ? "destructive" : analysis?.riskScore === "MEDIUM" ? "secondary" : "outline";
-
-  if (isLoading || state === "loading" || state === "pending_diagnostics") {
-    return <p className="text-muted-foreground">{state === "loading" ? "Generando planificación V4/ORC..." : "Planificación generada, esperando diagnóstico..."}</p>;
-  }
-  if (error || state === "error") {
-    return <Alert variant="destructive"><AlertTitle>Error V4</AlertTitle><AlertDescription>No se pudo cargar la diagnosis V4.</AlertDescription></Alert>;
-  }
-  if (!diagnostics) {
-    return <p className="text-muted-foreground">Todavía no existe planificación V4 para este plan.</p>;
-  }
-  if (!analysis) {
-    return <p className="text-muted-foreground">La diagnosis V4 no contiene análisis estratégico todavía.</p>;
-  }
-
-  const mainFlow = analysis?.mainFlow ?? null;
-  const continuousSpaces = list(analysis?.continuousSpaces);
-  const criticalTalents = list(analysis?.criticalTalents);
-  const criticalResources = list(analysis?.criticalResources);
-  const criticalSpaces = list(analysis?.criticalSpaces);
-  const mainFlowSequence = list(analysis?.mainFlowSequence);
-  const costOfDelayRanking = list(analysis?.costOfDelayRanking);
-  const priorityBuckets = list(guidedOrdering?.priorityBuckets);
-  const topOrderedTasks = list(guidedOrdering?.topOrderedTasks);
-  const improvementMoves = list(mainFlowImprovement?.moves);
-  const improvementSkippedReasons = list(mainFlowImprovement?.skippedReasons);
-  const candidateDiagnostics = list(candidateRunner?.candidates);
-  const sequenceVariants = list(sequenceSearch?.variants);
-  const mainFlowFirst = candidateDiagnostics.find((candidate: any) => candidate?.strategyId === "strategy_v4_main_flow_first")?.mainFlowFirstScheduler ?? diagnostics?.mainFlowFirstScheduler ?? null;
-  const productionWave = candidateDiagnostics.find((candidate: any) => candidate?.strategyId === "strategy_v4_production_wave")?.productionWaveScheduler ?? diagnostics?.productionWaveScheduler ?? null;
-  const mainFlowFirstBlockers = list(mainFlowFirst?.blockers);
-  const productionWaveBlockers = list(productionWave?.blockers);
-  const productionWaveWarnings = list(productionWave?.warnings);
-  const postOptimizerWarnings = list(postOptimizer?.warnings);
-  const postOptimizerPasses = list(postOptimizer?.passes);
-  const blockRepackerWarnings = list(blockRepacker?.warnings);
-  const blockRepackerMoves = list(blockRepacker?.acceptedMoves);
-
-  const renderCritical = (items: any[], empty: string) => items.length ? (
-    <ul className="space-y-1">
-      {items.map((item: any) => (
-        <li key={`${item?.id}-${item?.name}`} className="rounded border p-2">
-          <div className="flex items-center justify-between gap-2">
-            <span className="font-medium">{String(item?.name ?? item?.id ?? "—")}</span>
-            <Badge variant="outline">{score(item?.pressureScore)}</Badge>
-          </div>
-          <div className="text-xs text-muted-foreground">{Number(item?.taskCount ?? 0)} tareas · {Number(item?.totalDurationMinutes ?? 0)} min</div>
-        </li>
-      ))}
-    </ul>
-  ) : <p className="text-muted-foreground">{empty}</p>;
-
-  const renderReasons = (item: any) => list(item?.reasons).slice(0, 3).map(String).join(" · ") || "—";
-
-  return (
-    <div className="space-y-4">
-      <div className="grid gap-2 md:grid-cols-3">
-        <div><span className="font-medium">Estado:</span> {String(result?.status ?? diagnostics?.status ?? "—")}</div>
-        <div><span className="font-medium">Motor:</span> {String(diagnostics?.engineVersion ?? "v4")}</div>
-        <div><span className="font-medium">Timestamp:</span> {String(diagnostics?.generatedAt ?? result?.createdAt ?? "—")}</div>
-        <div><span className="font-medium">Tareas planificadas:</span> {Number(diagnostics?.plannedTasks ?? 0)}</div>
-        <div><span className="font-medium">Tareas no planificadas:</span> {Number(diagnostics?.unplannedTasks ?? 0)}</div>
-        <div><span className="font-medium">Risk Score:</span> <Badge variant={riskVariant as any}>{String(analysis?.riskScore ?? "—")}</Badge></div>
-        <div className="md:col-span-3 text-amber-700">{String(diagnostics?.warning ?? "La lógica V4 real aún no está implementada.")}</div>
-      </div>
-
-      <div className="grid gap-3 lg:grid-cols-3">
-        <section className="rounded-lg border p-3">
-          <h3 className="font-medium">Executive Summary</h3>
-          {executiveSummary ? (
-            <div className="mt-2 space-y-2 text-sm">
-              <div><span className="font-medium">Verdict:</span> {String(executiveSummary?.verdict ?? "—")}</div>
-              <div><span className="font-medium">Headline:</span> {String(executiveSummary?.headline ?? "—")}</div>
-              <div><span className="font-medium">Selected strategy:</span> {String(executiveSummary?.selectedStrategy ?? "—")}</div>
-              <div><span className="font-medium">Fallback:</span> {finalAcceptance?.fallbackToV3Baseline ? "sí" : "no"}</div>
-              <div><span className="font-medium">Wins:</span> {list(executiveSummary?.wins).map(String).join(" · ") || "—"}</div>
-              <div><span className="font-medium">Losses:</span> {list(executiveSummary?.losses).map(String).join(" · ") || "—"}</div>
-              <div><span className="font-medium">Risks:</span> {list(executiveSummary?.risks).map(String).join(" · ") || "—"}</div>
-            </div>
-          ) : <p className="mt-2 text-sm text-muted-foreground">Sin resumen ejecutivo V4.</p>}
-        </section>
-        <section className="rounded-lg border p-3">
-          <h3 className="font-medium">Final Acceptance</h3>
-          {finalAcceptance ? (
-            <div className="mt-2 space-y-2 text-sm">
-              <div><span className="font-medium">Aceptado:</span> {finalAcceptance?.accepted ? "sí" : "no"}</div>
-              <div><span className="font-medium">Fallback V3:</span> {finalAcceptance?.fallbackToV3Baseline ? "sí" : "no"}</div>
-              <div><span className="font-medium">Razón:</span> {String(finalAcceptance?.reason ?? "—")}</div>
-            </div>
-          ) : <p className="mt-2 text-sm text-muted-foreground">Sin final acceptance gate.</p>}
-        </section>
-        <section className="rounded-lg border p-3">
-          <h3 className="font-medium">Performance</h3>
-          {performance ? (
-            <div className="mt-2 space-y-2 text-sm">
-              <div><span className="font-medium">Runtime:</span> {Number(performance?.runtimeMs ?? 0)} ms</div>
-              <div><span className="font-medium">Estrategias:</span> {Number(performance?.strategiesEvaluated ?? 0)}</div>
-              <div><span className="font-medium">Perfil:</span> {String(performance?.profile ?? "—")}</div>
-              <div><span className="font-medium">Budget exceeded:</span> {performance?.budgetExceeded ? "sí" : "no"}</div>
-              <div><span className="font-medium">Omitidas:</span> {list(performance?.skippedStrategies).map(String).join(" · ") || "—"}</div>
-            </div>
-          ) : <p className="mt-2 text-sm text-muted-foreground">Sin métricas de performance.</p>}
-        </section>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2">
-        <section className="rounded-lg border p-3">
-          <h3 className="font-medium">Main Flow</h3>
-          {mainFlow ? (
-            <p className="text-sm">{String(mainFlow?.name ?? "—")} · prioridad {String(mainFlow?.priority ?? "—")} · id {String(mainFlow?.id ?? "—")}</p>
-          ) : <p className="text-sm text-muted-foreground">No hay flujo principal configurado.</p>}
-        </section>
-        <section className="rounded-lg border p-3">
-          <h3 className="font-medium">Continuous Spaces</h3>
-          {continuousSpaces.length ? (
-            <ul className="text-sm">{continuousSpaces.map((space: any) => <li key={space?.id}>{String(space?.name ?? space?.id)} · {Number(space?.totalLoadMinutes ?? 0)} min · ocupación {score(space?.estimatedOccupancy)}</li>)}</ul>
-          ) : <p className="text-sm text-muted-foreground">No hay espacios continuos detectados.</p>}
-        </section>
-      </div>
-
-      <div className="grid gap-3 lg:grid-cols-2">
-        <section className="rounded-lg border p-3">
-          <h3 className="mb-2 font-medium">Main Flow Sequence</h3>
-          {mainFlowSequence.length ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="text-left text-xs text-muted-foreground">
-                  <tr><th className="py-1 pr-2">#</th><th className="py-1 pr-2">Talent</th><th className="py-1 pr-2">Score</th><th className="py-1">Motivos principales</th></tr>
-                </thead>
-                <tbody>
-                  {mainFlowSequence.map((item: any, index: number) => (
-                    <tr key={`${item?.talentId}-${index}`} className="border-t align-top">
-                      <td className="py-2 pr-2">{index + 1}</td>
-                      <td className="py-2 pr-2 font-medium">{String(item?.talentName ?? item?.talentId ?? "—")}</td>
-                      <td className="py-2 pr-2"><Badge variant="outline">{score(item?.score)}</Badge></td>
-                      <td className="py-2 text-muted-foreground">{renderReasons(item)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : <p className="text-sm text-muted-foreground">No hay talentos candidatos para atravesar el flujo principal.</p>}
-        </section>
-        <section className="rounded-lg border p-3">
-          <h3 className="mb-2 font-medium">Cost Of Delay Ranking</h3>
-          {costOfDelayRanking.length ? (
-            <ul className="space-y-2">
-              {costOfDelayRanking.map((item: any, index: number) => (
-                <li key={`${item?.talentId}-${index}`} className="rounded border p-2 text-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium">{index + 1}. {String(item?.talentName ?? item?.talentId ?? "—")}</span>
-                    <Badge variant={Number(item?.costOfDelay ?? 0) >= 75 ? "destructive" : "secondary"}>{score(item?.costOfDelay)}</Badge>
-                  </div>
-                  <div className="text-xs text-muted-foreground">{renderReasons(item)}</div>
-                </li>
-              ))}
-            </ul>
-          ) : <p className="text-sm text-muted-foreground">Sin ranking de coste de demora.</p>}
-        </section>
-      </div>
-
-      <section className="rounded-lg border p-3">
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-medium">Main Flow Sequence Search</h3>
-          <Badge variant={sequenceSearch?.applied ? "default" : "outline"}>
-            {sequenceSearch?.applied ? "Aplicado" : "No aplicado"}
-          </Badge>
-        </div>
-        {sequenceSearch ? (
-          <div className="space-y-3 text-sm">
-            <div className="grid gap-2 md:grid-cols-2">
-              <div><span className="font-medium">Variantes generadas:</span> {Number(sequenceSearch?.variantCount ?? sequenceVariants.length ?? 0)}</div>
-              <div><span className="font-medium">Variante seleccionada:</span> {String(sequenceSearch?.selectedVariantId ?? "—")}</div>
-            </div>
-            {sequenceVariants.length ? (
-              <div className="grid gap-2 md:grid-cols-2">
-                {sequenceVariants.map((variant: any) => (
-                  <div key={String(variant?.id ?? variant?.label)} className="rounded border p-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium">{String(variant?.label ?? variant?.id ?? "—")}</span>
-                      <Badge variant="outline">{Number(variant?.talentCount ?? 0)} talentos</Badge>
-                    </div>
-                    <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-                      {list(variant?.topTalents).slice(0, 5).map((talent: any, index: number) => (
-                        <li key={`${variant?.id}-${talent?.talentId}-${index}`}>
-                          #{index + 1} Talent {String(talent?.talentId ?? "—")} · {score(talent?.score)} · {renderReasons(talent)}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            ) : <p className="text-sm text-muted-foreground">No hay variantes de secuencia para mostrar.</p>}
-            {list(sequenceSearch?.warnings).length ? <div className="text-xs text-amber-700">{list(sequenceSearch?.warnings).map(String).join(" · ")}</div> : null}
-          </div>
-        ) : <p className="text-sm text-muted-foreground">La diagnosis V4 todavía no contiene búsqueda de secuencias.</p>}
-      </section>
-
-      <section className="rounded-lg border p-3">
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-medium">Candidate Strategies</h3>
-          <Badge variant={candidateRunner?.applied ? "default" : "outline"}>
-            {candidateRunner?.applied ? "Aplicado" : "Sin datos"}
-          </Badge>
-        </div>
-        {candidateRunner ? (
-          <div className="space-y-3 text-sm">
-            <div className="grid gap-2 md:grid-cols-2">
-              <div><span className="font-medium">Estrategia ganadora:</span> {String(candidateRunner?.bestStrategyId ?? diagnostics?.bestStrategyId ?? "—")}</div>
-              <div><span className="font-medium">Candidatos evaluados:</span> {Number(candidateRunner?.candidateCount ?? candidateDiagnostics.length ?? 0)}</div>
-            </div>
-            {candidateDiagnostics.length ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="text-left text-xs text-muted-foreground">
-                    <tr>
-                      <th className="py-1 pr-2">Estrategia</th>
-                      <th className="py-1 pr-2">Quality</th>
-                      <th className="py-1 pr-2">Sequence variant</th>
-                      <th className="py-1 pr-2">Gaps flujo</th>
-                      <th className="py-1 pr-2">Makespan</th>
-                      <th className="py-1 pr-2">No planificadas</th>
-                      <th className="py-1">Seleccionada</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {candidateDiagnostics.map((candidate: any, index: number) => (
-                      <tr key={`${candidate?.strategyId ?? "strategy"}-${index}`} className="border-t align-top">
-                        <td className="py-2 pr-2 font-medium">{String(candidate?.strategyId ?? "—")}</td>
-                        <td className="py-2 pr-2"><Badge variant="outline">{score(candidate?.qualityScore)}</Badge></td>
-                        <td className="py-2 pr-2">{String(candidate?.sequenceVariantId ?? "—")}</td>
-                        <td className="py-2 pr-2">{Number(candidate?.mainFlowGapMinutes ?? 0)} min</td>
-                        <td className="py-2 pr-2">{String(candidate?.makespan ?? "—")}</td>
-                        <td className="py-2 pr-2">{Number(candidate?.unplannedTasks ?? 0)}</td>
-                        <td className="py-2">{candidate?.selected ? <Badge>Ganadora</Badge> : <Badge variant="outline">No</Badge>}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : <p className="text-sm text-muted-foreground">No hay candidatos de estrategia para mostrar.</p>}
-          </div>
-        ) : <p className="text-sm text-muted-foreground">La diagnosis V4 todavía no contiene candidate runner.</p>}
-      </section>
-
-
-      <section className="rounded-lg border p-3">
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-medium">Post Optimizer</h3>
-          <Badge variant={postOptimizer?.applied ? "default" : "outline"}>
-            {postOptimizer?.applied ? "Aplicado" : "No aplicado"}
-          </Badge>
-        </div>
-        {postOptimizer ? (
-          <div className="space-y-3 text-sm">
-            <div className="grid gap-2 md:grid-cols-3">
-              <div><span className="font-medium">Makespan antes:</span> {String(postOptimizer?.makespanBefore ?? "—")}</div>
-              <div><span className="font-medium">Makespan después:</span> {String(postOptimizer?.makespanAfter ?? postOptimizer?.makespanBefore ?? "—")}</div>
-              <div><span className="font-medium">Movimientos:</span> {Number(postOptimizer?.movesAccepted ?? 0)} aceptados / {Number(postOptimizer?.movesRejected ?? 0)} rechazados</div>
-              <div><span className="font-medium">Gaps flujo antes:</span> {Number(postOptimizer?.mainFlowGapMinutesBefore ?? 0)} min</div>
-              <div><span className="font-medium">Gaps flujo después:</span> {Number(postOptimizer?.mainFlowGapMinutesAfter ?? postOptimizer?.mainFlowGapMinutesBefore ?? 0)} min</div>
-              <div><span className="font-medium">Permanencia total:</span> {Number(postOptimizer?.totalTalentStayBefore ?? 0)} → {Number(postOptimizer?.totalTalentStayAfter ?? postOptimizer?.totalTalentStayBefore ?? 0)} min</div>
-            </div>
-            {postOptimizerPasses.length ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="text-left text-xs text-muted-foreground">
-                    <tr><th className="py-1 pr-2">Pass</th><th className="py-1 pr-2">Aceptados</th><th className="py-1">Rechazados</th></tr>
-                  </thead>
-                  <tbody>
-                    {postOptimizerPasses.map((pass: any, index: number) => (
-                      <tr key={`${pass?.name ?? "pass"}-${index}`} className="border-t">
-                        <td className="py-2 pr-2 font-medium">{String(pass?.name ?? "—")}</td>
-                        <td className="py-2 pr-2">{Number(pass?.accepted ?? 0)}</td>
-                        <td className="py-2">{Number(pass?.rejected ?? 0)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : <p className="text-muted-foreground">Sin passes registrados.</p>}
-            <div>
-              <div className="font-medium">Warnings</div>
-              {postOptimizerWarnings.length ? (
-                <ul className="mt-1 list-disc space-y-1 pl-5 text-xs text-amber-700">{postOptimizerWarnings.map((warning: any, index: number) => <li key={`${String(warning)}-${index}`}>{String(warning)}</li>)}</ul>
-              ) : <p className="text-xs text-muted-foreground">Sin warnings.</p>}
-            </div>
-          </div>
-        ) : <p className="text-sm text-muted-foreground">La diagnosis V4 todavía no contiene post optimizer.</p>}
-      </section>
-
-      <section className="rounded-lg border p-3">
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-medium">Strategic Block Repacker</h3>
-          <Badge variant={blockRepacker?.applied ? "default" : "outline"}>
-            {blockRepacker?.applied ? "Aplicado" : "Omitido"}
-          </Badge>
-        </div>
-        {blockRepacker ? (
-          <div className="space-y-3 text-sm">
-            {blockRepacker?.skippedReason ? <p className="text-muted-foreground">{String(blockRepacker.skippedReason)}</p> : null}
-            <div className="grid gap-2 md:grid-cols-3">
-              <div><span className="font-medium">Bloques:</span> {Number(blockRepacker?.blocksDetected ?? 0)} detectados / {Number(blockRepacker?.blocksEvaluated ?? 0)} evaluados</div>
-              <div><span className="font-medium">Movimientos:</span> {Number(blockRepacker?.movesAccepted ?? 0)} aceptados / {Number(blockRepacker?.movesRejected ?? 0)} rechazados</div>
-              <div><span className="font-medium">Makespan:</span> {String(blockRepacker?.makespanBefore ?? "—")} → {String(blockRepacker?.makespanAfter ?? blockRepacker?.makespanBefore ?? "—")}</div>
-              <div><span className="font-medium">Gaps flujo:</span> {Number(blockRepacker?.mainFlowGapMinutesBefore ?? 0)} → {Number(blockRepacker?.mainFlowGapMinutesAfter ?? blockRepacker?.mainFlowGapMinutesBefore ?? 0)} min</div>
-              <div><span className="font-medium">Permanencia total:</span> {Number(blockRepacker?.totalTalentStayBefore ?? 0)} → {Number(blockRepacker?.totalTalentStayAfter ?? blockRepacker?.totalTalentStayBefore ?? 0)} min</div>
-            </div>
-            {blockRepackerMoves.length ? (
-              <div>
-                <div className="font-medium">Top movimientos aceptados</div>
-                <ul className="mt-1 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
-                  {blockRepackerMoves.slice(0, 5).map((move: any, index: number) => <li key={`${move?.blockType ?? "block"}-${index}`}>{String(move?.blockType ?? "—")} · {String(move?.from ?? "—")} → {String(move?.to ?? "—")} · tareas {list(move?.taskIds).join(", ") || "—"}</li>)}
-                </ul>
-              </div>
-            ) : <p className="text-xs text-muted-foreground">Sin movimientos aceptados.</p>}
-            <div>
-              <div className="font-medium">Warnings</div>
-              {blockRepackerWarnings.length ? (
-                <ul className="mt-1 list-disc space-y-1 pl-5 text-xs text-amber-700">{blockRepackerWarnings.map((warning: any, index: number) => <li key={`${String(warning)}-${index}`}>{String(warning)}</li>)}</ul>
-              ) : <p className="text-xs text-muted-foreground">Sin warnings.</p>}
-            </div>
-          </div>
-        ) : <p className="text-sm text-muted-foreground">La diagnosis V4 todavía no contiene strategic block repacker.</p>}
-      </section>
-
-      <section className="rounded-lg border p-3">
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-medium">Production Wave</h3>
-          <Badge variant={productionWave?.applied ? "default" : productionWave?.fallbackUsed ? "secondary" : productionWave?.infeasible ? "destructive" : "outline"}>
-            {productionWave?.applied ? "Aplicada" : productionWave?.fallbackUsed ? "Fallback" : productionWave?.infeasible ? "Descartada" : "Sin datos"}
-          </Badge>
-        </div>
-        {productionWave ? (
-          <div className="space-y-3 text-sm">
-            <div className="grid gap-2 md:grid-cols-3">
-              <div><span className="font-medium">Espacio principal:</span> {String(productionWave?.mainFlowSpaceId ?? mainFlow?.id ?? "—")}</div>
-              <div><span className="font-medium">Inicio / fin wave:</span> {String(productionWave?.waveStart ?? "—")} / {String(productionWave?.waveEnd ?? "—")}</div>
-              <div><span className="font-medium">Flujo principal:</span> {Number(productionWave?.mainFlowTasksPlaced ?? 0)}</div>
-              <div><span className="font-medium">Prerequisitos:</span> {Number(productionWave?.prerequisitesPlaced ?? 0)}</div>
-              <div><span className="font-medium">Dependientes compactados:</span> {Number(productionWave?.dependentTasksPlaced ?? 0)}</div>
-              <div><span className="font-medium">Locks internos estratégicos:</span> {Number(productionWave?.strategicInternalLocks ?? 0)}</div>
-              <div><span className="font-medium">Huecos flujo principal:</span> {Number(productionWave?.mainFlowGapMinutes ?? 0)} min</div>
-              <div><span className="font-medium">Validación recursos:</span> {productionWave?.resourceAwareValidation ? "Sí" : "No"}</div>
-            </div>
-            <p className="text-muted-foreground">{String(productionWave?.reason ?? "Sin detalle registrado.")}</p>
-            <div className="grid gap-3 md:grid-cols-2">
-              <div>
-                <h4 className="font-medium">Blockers</h4>
-                {productionWaveBlockers.length ? (
-                  <ul className="mt-2 space-y-2">
-                    {productionWaveBlockers.slice(0, 6).map((blocker: any, index: number) => (
-                      <li key={`${blocker?.taskId ?? "blocker"}-${index}`} className="rounded border p-2">
-                        <span className="font-medium">Tarea {String(blocker?.taskId ?? "—")}:</span> {String(blocker?.reason ?? "Blocker sin motivo")}
-                        {blocker?.details ? <div className="text-xs text-muted-foreground">{String(blocker?.details)}</div> : null}
-                      </li>
-                    ))}
-                  </ul>
-                ) : <p className="mt-2 text-muted-foreground">Sin blockers principales.</p>}
-              </div>
-              <div>
-                <h4 className="font-medium">Warnings</h4>
-                {productionWaveWarnings.length ? (
-                  <ul className="mt-2 space-y-2">
-                    {productionWaveWarnings.slice(0, 6).map((warning: any, index: number) => (
-                      <li key={`production-wave-warning-${index}`} className="rounded border p-2 text-amber-700">{String(warning)}</li>
-                    ))}
-                  </ul>
-                ) : <p className="mt-2 text-muted-foreground">Sin warnings.</p>}
-              </div>
-            </div>
-          </div>
-        ) : <p className="text-sm text-muted-foreground">La diagnosis V4 todavía no contiene datos de Production Wave.</p>}
-      </section>
-
-      <section className="rounded-lg border p-3">
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-medium">Main Flow First Scheduler</h3>
-          <Badge variant={mainFlowFirst?.applied ? "default" : mainFlowFirst?.fallbackUsed ? "secondary" : "outline"}>
-            {mainFlowFirst?.applied ? "Aplicado" : mainFlowFirst?.fallbackUsed ? "Fallback" : "Sin datos"}
-          </Badge>
-        </div>
-        {mainFlowFirst ? (
-          <div className="space-y-3 text-sm">
-            <div className="grid gap-2 md:grid-cols-3">
-              <div><span className="font-medium">Espacio principal:</span> {String(mainFlowFirst?.mainFlowSpaceId ?? mainFlow?.id ?? "—")}</div>
-              <div><span className="font-medium">Tareas flujo colocadas:</span> {Number(mainFlowFirst?.scheduledMainFlowTasks ?? 0)}</div>
-              <div><span className="font-medium">Tareas flujo sin colocar:</span> {Number(mainFlowFirst?.unscheduledMainFlowTasks ?? 0)}</div>
-              <div><span className="font-medium">Prerequisitos colocados:</span> {Number(mainFlowFirst?.placedPrerequisites ?? 0)}</div>
-              <div><span className="font-medium">Inicio / fin:</span> {String(mainFlowFirst?.blockStart ?? "—")} / {String(mainFlowFirst?.blockEnd ?? "—")}</div>
-              <div><span className="font-medium">Huecos internos:</span> {Number(mainFlowFirst?.internalGapMinutes ?? 0)} min</div>
-            </div>
-            <p className="text-muted-foreground">{String(mainFlowFirst?.reason ?? "Sin detalle registrado.")}</p>
-            {mainFlowFirstBlockers.length ? (
-              <ul className="grid gap-2 md:grid-cols-2">
-                {mainFlowFirstBlockers.slice(0, 6).map((blocker: any, index: number) => (
-                  <li key={`${blocker?.taskId ?? "blocker"}-${index}`} className="rounded border p-2">
-                    <span className="font-medium">Tarea {String(blocker?.taskId ?? "—")}:</span> {String(blocker?.reason ?? "Blocker sin motivo")}
-                  </li>
-                ))}
-              </ul>
-            ) : <p className="text-muted-foreground">Sin blockers principales.</p>}
-          </div>
-        ) : <p className="text-sm text-muted-foreground">La diagnosis V4 todavía no contiene datos del Main Flow First Scheduler.</p>}
-      </section>
-
-      <section className="rounded-lg border p-3">
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-medium">Guided Ordering</h3>
-          <Badge variant={guidedOrdering?.applied ? "default" : "outline"}>
-            {guidedOrdering?.applied ? "Aplicado" : "No aplicado"}
-          </Badge>
-        </div>
-        {guidedOrdering ? (
-          <div className="space-y-2 text-sm">
-            <div className="grid gap-2 md:grid-cols-2">
-              <div><span className="font-medium">Tareas reordenadas:</span> {Number(guidedOrdering?.reorderedTaskCount ?? 0)}</div>
-              <div><span className="font-medium">Top tareas:</span> {topOrderedTasks.length ? topOrderedTasks.slice(0, 10).map(String).join(", ") : "—"}</div>
-            </div>
-            <p className="text-muted-foreground">{String(guidedOrdering?.reason ?? "Sin motivo registrado.")}</p>
-            {priorityBuckets.length ? (
-              <ul className="grid gap-2 md:grid-cols-2">
-                {priorityBuckets.map((bucket: any, index: number) => (
-                  <li key={`${bucket?.name ?? "bucket"}-${index}`} className="rounded border p-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium">{String(bucket?.name ?? "Prioridad")}</span>
-                      <Badge variant="outline">{Number(bucket?.taskCount ?? 0)} tareas</Badge>
-                    </div>
-                    <div className="text-xs text-muted-foreground">{String(bucket?.reason ?? "—")}</div>
-                  </li>
-                ))}
-              </ul>
-            ) : <p className="text-sm text-muted-foreground">No hay buckets de prioridad para mostrar.</p>}
-          </div>
-        ) : <p className="text-sm text-muted-foreground">La diagnosis V4 todavía no contiene guided ordering.</p>}
-      </section>
-
-
-      <section className="rounded-lg border p-3">
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-medium">Main Flow Improvement</h3>
-          <Badge variant={mainFlowImprovement?.applied ? "default" : "outline"}>
-            {mainFlowImprovement?.applied ? "Aplicado" : "No aplicado"}
-          </Badge>
-        </div>
-        {mainFlowImprovement ? (
-          <div className="space-y-3 text-sm">
-            <div className="grid gap-2 md:grid-cols-4">
-              <div><span className="font-medium">Gaps antes:</span> {Number(mainFlowImprovement?.gapsBefore ?? 0)}</div>
-              <div><span className="font-medium">Gaps después:</span> {Number(mainFlowImprovement?.gapsAfter ?? mainFlowImprovement?.gapsBefore ?? 0)}</div>
-              <div><span className="font-medium">Min antes:</span> {Number(mainFlowImprovement?.gapMinutesBefore ?? 0)}</div>
-              <div><span className="font-medium">Min después:</span> {Number(mainFlowImprovement?.gapMinutesAfter ?? mainFlowImprovement?.gapMinutesBefore ?? 0)}</div>
-            </div>
-            {!mainFlowImprovement?.applied ? <p className="text-muted-foreground">{String(mainFlowImprovement?.reason ?? "No se encontró mejora segura.")}</p> : null}
-            <div>
-              <div className="font-medium">Movimientos realizados</div>
-              {improvementMoves.length ? (
-                <ul className="mt-1 space-y-1">{improvementMoves.map((move: any, index: number) => (
-                  <li key={`${move?.taskId ?? "move"}-${index}`} className="rounded border p-2 text-xs">
-                    Tarea {String(move?.taskId ?? "—")} → {String(move?.toStart ?? "—")}-{String(move?.toEnd ?? "—")} (gap {String(move?.coveredGapStart ?? "—")}-{String(move?.coveredGapEnd ?? "—")})
-                  </li>
-                ))}</ul>
-              ) : <p className="text-xs text-muted-foreground">Sin movimientos aplicados.</p>}
-            </div>
-            <div>
-              <div className="font-medium">Motivos de descarte</div>
-              {improvementSkippedReasons.length ? (
-                <ul className="mt-1 list-disc space-y-1 pl-5 text-xs text-muted-foreground">{improvementSkippedReasons.slice(0, 8).map((reason: any, index: number) => <li key={`${String(reason)}-${index}`}>{String(reason)}</li>)}</ul>
-              ) : <p className="text-xs text-muted-foreground">Sin descartes registrados.</p>}
-            </div>
-          </div>
-        ) : <p className="text-sm text-muted-foreground">La diagnosis V4 todavía no contiene main flow improvement.</p>}
-      </section>
-
-      <div className="grid gap-3 md:grid-cols-3">
-        <section className="rounded-lg border p-3"><h3 className="mb-2 font-medium">Critical Talents</h3>{renderCritical(criticalTalents, "Sin talentos críticos detectados.")}</section>
-        <section className="rounded-lg border p-3"><h3 className="mb-2 font-medium">Critical Resources</h3>{renderCritical(criticalResources, "Sin recursos críticos detectados.")}</section>
-        <section className="rounded-lg border p-3"><h3 className="mb-2 font-medium">Critical Spaces</h3>{renderCritical(criticalSpaces, "Sin espacios críticos detectados.")}</section>
-      </div>
-    </div>
-  );
-}
-
 export default function PlanDetailsPage() {
   const params = useParams();
   const id = parseInt(params.id || "0");
   const [, setLocation] = useLocation();
+  const {role} = useUserRole();
+  const canEditDay = role === "admin" || role === "production";
+  const [showMaintenance, setShowMaintenance] = useState(false);
+  const [resourceVersion, setResourceVersion] = useState(0);
 
   // Single source of truth for Planning UI: every task/day refresh comes from this plan bundle query.
   const {
@@ -1254,7 +230,7 @@ export default function PlanDetailsPage() {
   const v4ResultQ = useQuery({
     queryKey: engineResultQueryKey(id, "v4"),
     queryFn: () => apiRequest("GET", buildUrl(api.planningRuns.latestEngineResult.path, { id, engineVersion: "v4" })),
-    enabled: Number.isFinite(id) && id > 0,
+    enabled: showMaintenance && role === "admin" && Number.isFinite(id) && id > 0,
     retry: false,
     refetchInterval: v4ResultState === "loading" || v4ResultState === "pending_diagnostics" ? 1500 : false,
   });
@@ -1277,6 +253,8 @@ export default function PlanDetailsPage() {
     queryKey: [api.programSettings.get.path],
     queryFn: () => apiRequest("GET", api.programSettings.get.path),
   });
+
+  const assistedDayPlan = useMemo(() => plan ? ({ ...plan, arrivalTaskTemplateName: (programSettings as any)?.arrivalTaskTemplateName ?? null }) : plan, [plan, programSettings]);
 
   const parseHHMMToMinutes = (v: string) => {
     const s = String(v ?? "").trim();
@@ -1493,13 +471,7 @@ export default function PlanDetailsPage() {
     }
   });
 
-  const [activeTab, setActiveTab] = useState<
-    "tasks" | "planning" | "configuration" | "resources" | "staff" | "execution"
-  >(() => {
-    if (typeof window === "undefined") return "tasks";
-    const tab = new URLSearchParams(window.location.search).get("tab");
-    return tab === "planning" || tab === "configuration" || tab === "resources" || tab === "staff" || tab === "execution" ? tab : "tasks";
-  });
+  const {activeTab, setActiveTab, planningVisited} = useDayTabNavigation(id);
   const [tasksShowUnplannedOnly, setTasksShowUnplannedOnly] = useState(false);
   const [unplannedDialogOpen, setUnplannedDialogOpen] = useState(false);
   const [unplannedFocusTaskId, setUnplannedFocusTaskId] = useState<number | null>(null);
@@ -1531,7 +503,7 @@ export default function PlanDetailsPage() {
   const [manualBlockSaving, setManualBlockSaving] = useState(false);
   const [replanPending, setReplanPending] = useState(false);
   const [resetPending, setResetPending] = useState(false);
-  const [contestantTasksMode, setContestantTasksMode] = useState<"list" | "cards">("list");
+  const [contestantTasksMode, setContestantTasksMode] = useState<"list" | "cards">("cards");
   const [contestantDetailTask, setContestantDetailTask] = useState<any | null>(null);
   const [timeLockDialog, setTimeLockDialog] = useState<{
     open: boolean;
@@ -1617,7 +589,7 @@ export default function PlanDetailsPage() {
         // Silencioso: esto es "nice to have" para tooltip, no debe romper nada
       }
     })();
-  }, [id]);
+  }, [id, resourceVersion]);
 
   // NEW: para tooltip de planning (explicabilidad)
   const [zoneAssignmentsForTooltip, setZoneAssignmentsForTooltip] = useState<
@@ -1875,6 +847,7 @@ ${reasonMessage}` : message,
   };
 
   async function handleRefreshTasksFromTemplates() {
+    if (!await confirmDialog({title: "Actualizar tareas del día", description: "Se actualizarán las tareas materializadas con los valores de sus plantillas. Las tareas protegidas se conservarán según el contrato vigente. Revisa el resultado y vuelve a validar el borrador.", confirmText: "Actualizar tareas"})) return;
     const loadingToast = toast({
       title: "Actualizando tareas desde templates...",
       description: "Esto puede tardar hasta 2 minutos.",
@@ -2914,206 +1887,17 @@ ${reasonMessage}` : message,
   return (
     <Layout>
       <div className="w-full">
-        <div className="mx-auto w-full max-w-[1500px] space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setLocation("/plans")}
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold">Plan #{plan.id}</h1>
-                <Badge
-                  variant={plan.status === "draft" ? "secondary" : "default"}
-                >
-                  {plan.status}
-                </Badge>
-              </div>
-              <p className="text-muted-foreground flex items-center mt-1">
-                <Calendar className="h-4 w-4 mr-1" />
-                {format(new Date(plan.date), "EEEE, MMMM d, yyyy")}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button
-              size="lg"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20"
-              onClick={() => { void handleGenerate(); }}
-              disabled={generatePlan.isPending}
-            >
-              {generatePlan.isPending ? (
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              ) : (
-                <Play className="mr-2 h-5 w-5" />
-              )}
-              {generatePlan.isPending
-                ? "Planificando..."
-                : "Generar V3"}
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={async () => {
-                setSelectedPlanningEngine("v4");
-                setV4ResultState("loading");
-                try {
-                  const response = await generatePlan.mutateAsync({ id, mode: "generate_planning", timeLimitMs: planningTimeLimitSec * 1000, engineVersion: "v4" }) as any;
-                  const expectedRunId = Number(response?.runId ?? NaN);
-                  setV4ResultState("pending_diagnostics");
-                  await queryClient.invalidateQueries({ queryKey: ["engine-result", id, "v4"] });
-                  let found = false;
-                  for (let attempt = 0; attempt < 12; attempt += 1) {
-                    const result = await v4ResultQ.refetch();
-                    const row = result.data as any;
-                    if (row?.id && (!Number.isFinite(expectedRunId) || Number(row?.planningRunId) === expectedRunId)) {
-                      found = true;
-                      break;
-                    }
-                    await new Promise((resolve) => window.setTimeout(resolve, 1000));
-                  }
-                  setV4ResultState(found ? "success" : "idle");
-                  toast({ title: "Planificación V4 generada", description: found ? "Resultado V4/ORC disponible sin recargar la página." : "Guardada separada de V3; esperando diagnóstico persistido." });
-                } catch (err: any) {
-                  setV4ResultState("error");
-                  toast({ title: "No se pudo generar V4", description: err?.message || "Error desconocido", variant: "destructive" });
-                }
-              }}
-              disabled={generatePlan.isPending || v4ResultState === "loading"}
-            >
-              {generatePlan.isPending || v4ResultState === "loading" ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Play className="mr-2 h-5 w-5" />}
-              {v4ResultState === "loading" ? "Generando V4/ORC..." : "Generar V4"}
-            </Button>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Límite</span>
-              <Select value={String(planningTimeLimitSec)} onValueChange={(v) => setPlanningTimeLimitSec(Number(v))}>
-                <SelectTrigger className="w-[110px] h-10">
-                  <SelectValue placeholder="Tiempo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10s</SelectItem>
-                  <SelectItem value="30">30s</SelectItem>
-                  <SelectItem value="60">60s</SelectItem>
-                  <SelectItem value="180">180s</SelectItem>
-                  <SelectItem value="300">300s</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => {
-                setPlanningInProgress(true);
-                setExpectedPlanningRunId(null);
-                void (async () => {
-                  try {
-                    await generatePlan.mutateAsync({ id, mode: "plan_pending", timeLimitMs: planningTimeLimitSec * 1000 });
-                    await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
-                    await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
-                  } catch (err: any) {
-                    if (isAbortLikeError(err)) {
-                      toast({ title: "La optimización tardó más de lo esperado, comprobando estado..." });
-                      await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
-                    }
-                  } finally {
-                    setPlanningInProgress(false);
-                  }
-                })();
-              }}
-              disabled={generatePlan.isPending}
-            >
-              Planificar pendientes
-            </Button>
-            <Button variant="outline" onClick={openEdit}>
-              Editar día
-            </Button>
-          </div>
-        </div>
-
-        <PlanningWarningsPanel
-          enabled
-          warnings={Array.isArray((plan as any)?.planningWarnings) ? (plan as any).planningWarnings : []}
-          planningStats={(plan as any)?.planningStats ?? {}}
-          arrivalName={(plan as any)?.arrivalTaskTemplateName ?? null}
-          departureName={(plan as any)?.departureTaskTemplateName ?? null}
-        />
-
-        {/* Metadata Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-card p-4 rounded-xl border border-border flex items-center gap-3">
-            <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                Horario del día
-              </p>
-              <p className="text-lg font-semibold">
-                {" "}
-                {plan?.workStart && plan?.workEnd
-                  ? `${plan.workStart} – ${plan.workEnd}`
-                  : "—"}
-              </p>
-            </div>
-          </div>
-          <div className="bg-card p-4 rounded-xl border border-border flex items-center gap-3">
-            <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-              <Utensils className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                Horario de comida
-              </p>
-              <p className="text-lg font-semibold">
-                {plan?.mealStart && plan?.mealEnd
-                  ? `${plan.mealStart} – ${plan.mealEnd}`
-                  : "—"}
-              </p>
-            </div>
-          </div>
-        </div>
-
+        <div className="mx-auto w-full max-w-[1800px] space-y-5">
+        <DayHeader plan={plan as any} onNavigate={setActiveTab} onBack={() => setLocation("/plans")} />
         <Tabs
           value={activeTab}
           onValueChange={(v) => setActiveTab(v as any)}
           className="space-y-6"
         >
-          <TabsList className="bg-muted/50 p-1">
-            <TabsTrigger value="tasks" className="flex items-center gap-2">
-              <LayoutList className="h-4 w-4" />
-              Concursantes
-            </TabsTrigger>
-            <TabsTrigger value="planning" className="flex items-center gap-2">
-              <GanttChartSquare className="h-4 w-4" />
-              Planning
-            </TabsTrigger>
-            <TabsTrigger value="configuration" className="flex items-center gap-2">
-              <Settings2 className="h-4 w-4" />
-              Configuración del día
-            </TabsTrigger>
-            <TabsTrigger value="resources" className="flex items-center gap-2">
-              <Video className="h-4 w-4" />
-              Recursos
-            </TabsTrigger>
-            <TabsTrigger value="staff" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Roles
-            </TabsTrigger>
+          <DayTabNavigation />
 
-            <TabsTrigger value="execution" className="flex items-center gap-2">
-              <Play className="h-4 w-4" />
-              Ejecución
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="tasks" className="space-y-6 mt-0">
-            <Card>
+          <TabsContent forceMount hidden={activeTab !== "tasks"} value="tasks" className="space-y-6 mt-0">
+            <Card className="border-border">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Concursantes</CardTitle>
                 <Button
@@ -3121,7 +1905,7 @@ ${reasonMessage}` : message,
                   size="sm"
                   title="Actualizar tareas con datos por defecto"
                   onClick={handleRefreshTasksFromTemplates}
-                  disabled={refreshingTasksFromTemplates}
+                  disabled={!canEditDay || (refreshingTasksFromTemplates)}
                   className="gap-2"
                 >
                   {refreshingTasksFromTemplates ? (
@@ -3132,7 +1916,7 @@ ${reasonMessage}` : message,
                   ) : (
                     <>
                       <RotateCcw className="h-4 w-4" />
-                      Actualizar tareas desde templates
+                      Actualizar tareas desde plantillas
                     </>
                   )}
                 </Button>
@@ -3144,165 +1928,24 @@ ${reasonMessage}` : message,
                   </p>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {contestants.map((c: any) => {
-                    const coachName = c.vocalCoachPlanResourceItemId
-                      ? (coachOptions.find(
-                          (x) =>
-                            x.id === Number(c.vocalCoachPlanResourceItemId),
-                        )?.name ?? null)
-                      : null;
+                <ContestantDayRoster contestants={contestants as any[]} tasks={plan.dailyTasks as any[]} coaches={coachOptions} onOpen={setSelectedContestant} canEdit={role === "admin" || role === "production"} deletePending={deleteContestant.isPending} onDelete={async contestant => {if(!await confirmDialog({title:"Eliminar concursante",description:`Se retirará a ${contestant.name} y sus tareas permitidas. Las tareas en curso o completadas permanecen protegidas.`,confirmText:"Eliminar"}))return; await deleteContestant.mutateAsync(contestant.id);if(selectedContestant?.id===contestant.id)setSelectedContestant(null);}} />
 
-                    const coachLabel = coachLabelFor(
-                      c.vocalCoachPlanResourceItemId,
-                    );
-
-                    const contestantTasks = (plan.dailyTasks ?? []).filter(
-                      (t: any) => Number(t.contestantId) === Number(c.id),
-                    );
-
-                    const totalCount = contestantTasks.length;
-                    const missingSpaceCount =
-                      contestantTasks.filter(isMissingSpace).length;
-
-                    const inProgressCount = contestantTasks.filter(
-                      (t: any) => t.status === "in_progress",
-                    ).length;
-
-                    const doneCount = contestantTasks.filter(
-                      (t: any) => t.status === "done",
-                    ).length;
-
-                    const interruptedCount = contestantTasks.filter(
-                      (t: any) => t.status === "interrupted",
-                    ).length;
-
-                    const cancelledCount = contestantTasks.filter(
-                      (t: any) => t.status === "cancelled",
-                    ).length;
-
-                    const hasInProgress = inProgressCount > 0;
-
-                    const badgeParts = [
-                      String(totalCount),
-                      ...(missingSpaceCount > 0
-                        ? [`${missingSpaceCount}⚠`]
-                        : []),
-                      ...(inProgressCount > 0 ? [`${inProgressCount}▶`] : []),
-                      ...(doneCount > 0 ? [`${doneCount}✓`] : []),
-                      ...(interruptedCount > 0
-                        ? [`${interruptedCount}⏸`]
-                        : []),
-                      ...(cancelledCount > 0 ? [`${cancelledCount}✖`] : []),
-                    ];
-
-                    const badgeText = badgeParts.join(" · ");
-
-                    const canDeleteContestant = inProgressCount === 0 && doneCount === 0;
-
-                    return (
-                      <div
-                        key={c.id}
-                        className="relative w-full text-left bg-card rounded-lg border border-border px-4 py-2 hover:bg-muted/40 transition h-full min-h-[88px]"
-                      >
-                        <button
-                          type="button"
-                          aria-label="Eliminar concursante"
-                          className="absolute top-2 right-2 text-red-600 font-bold text-lg leading-none hover:scale-110 transition-transform"
-                          disabled={!canDeleteContestant || deleteContestant.isPending}
-                          onClick={async (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            const ok = await confirmDialog({
-                              title: "Eliminar concursante",
-                              description: `¿Seguro que quieres eliminar a ${c.name}? Se borrarán también sus daily tasks no iniciadas/finalizadas.`,
-                              confirmText: "Eliminar",
-                            });
-                            if (!ok) return;
-                            try {
-                              await deleteContestant.mutateAsync(Number(c.id));
-                              if (selectedContestant?.id === c.id) {
-                                setSelectedContestant(null);
-                              }
-                            } catch (err: any) {
-                              if (Number((err as any)?.status) === 400) {
-                                toast({
-                                  title: "No se puede eliminar",
-                                  description: err?.message || "El concursante tiene tareas in_progress o done.",
-                                  variant: "destructive",
-                                });
-                              }
-                            }
-                          }}
-                          title={canDeleteContestant ? "Eliminar concursante" : "Solo se puede borrar si no tiene tareas in_progress/done"}
-                        >
-                          ×
-                        </button>
-                        <button
-                          type="button"
-                          className="w-full pr-6 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
-                          onClick={() => setSelectedContestant(c)}
-                        >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0 flex flex-col space-y-1">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className="text-lg font-bold leading-tight truncate">
-                                {c.name}
-                              </span>
-                              <span className="text-base leading-none shrink-0">
-                                {c.instrument ? "🎸" : "🎤"}
-                              </span>
-                            </div>
-
-                            {c.instrument && c.instrumentName ? (
-                              <span className="text-xs text-[#ff0000] truncate">
-                                {c.instrumentName}
-                              </span>
-                            ) : null}
-
-                            <span className="text-sm text-[#5781c1] truncate">
-                              {c.song || "(sin canción)"}
-                            </span>
-
-                            <span className="text-sm text-gray-600 truncate">
-                              {coachLabel}
-                            </span>
-                          </div>
-
-                          <span
-                            className={[
-                              "shrink-0 rounded-full border px-2 py-0.5 text-xs",
-                              hasInProgress
-                                ? "border-blue-200 bg-blue-50 text-blue-700"
-                                : "border-border text-muted-foreground",
-                            ].join(" ")}
-                            title="Total · ⚠ sin espacio · in_progress ▶ · done ✓ · interrupted ⏸ · cancelled ✖"
-                          >
-                            {badgeText}
-                          </span>
-                        </div>
-                      </button>
-                    </div>
-                    );
-                  })}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-2">
-                  <Input
+                <div className="grid grid-cols-1 gap-3 border-t pt-4 md:grid-cols-3">
+                  <Input disabled={!canEditDay}
                     className="md:col-span-1"
-                    placeholder="Nombre"
+                    placeholder="Nombre" aria-label="Nombre del nuevo concursante"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                   />
 
-                  <Input
+                  <Input disabled={!canEditDay}
                     className="md:col-span-1"
-                    placeholder="Canción"
+                    placeholder="Canción" aria-label="Canción del nuevo concursante"
                     value={newSong}
                     onChange={(e) => setNewSong(e.target.value)}
                   />
 
-                  <Select
+                  <Select disabled={!canEditDay}
                     value={newCoachPriId}
                     onValueChange={setNewCoachPriId}
                   >
@@ -3319,9 +1962,9 @@ ${reasonMessage}` : message,
                     </SelectContent>
                   </Select>
 
-                  <div className="md:col-span-1 flex items-center gap-3">
+                  <div className="md:col-span-3 flex flex-wrap items-center gap-3">
                     <div className="flex items-center gap-2">
-                      <Checkbox
+                      <Checkbox disabled={!canEditDay}
                         checked={newInstrument}
                         onCheckedChange={(v) => setNewInstrument(!!v)}
                       />
@@ -3329,7 +1972,7 @@ ${reasonMessage}` : message,
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Checkbox
+                      <Checkbox disabled={!canEditDay}
                         checked={newAvailabilityEnabled}
                         onCheckedChange={(v) => {
                           const enabled = !!v;
@@ -3346,14 +1989,14 @@ ${reasonMessage}` : message,
                     <Button
                       className="ml-auto"
                       onClick={handleCreateContestant}
-                      disabled={createContestant.isPending}
+                      disabled={!canEditDay || (createContestant.isPending)}
                     >
                       Añadir
                     </Button>
                   </div>
 
                   {newInstrument && (
-                    <Input
+                    <Input disabled={!canEditDay}
                       className="md:col-span-1"
                       placeholder="Instrumento"
                       value={newInstrumentName}
@@ -3363,14 +2006,14 @@ ${reasonMessage}` : message,
 
                   {newAvailabilityEnabled && (
                     <>
-                      <Input
+                      <Input disabled={!canEditDay}
                         className="md:col-span-1"
                         type="time"
                         value={newAvailabilityStart}
                         onChange={(e) => setNewAvailabilityStart(e.target.value)}
                         title="Hora inicio"
                       />
-                      <Input
+                      <Input disabled={!canEditDay}
                         className="md:col-span-1"
                         type="time"
                         value={newAvailabilityEnd}
@@ -3389,7 +2032,7 @@ ${reasonMessage}` : message,
                 if (!open) setSelectedContestant(null);
               }}
             >
-              <DialogContent className="w-[95vw] max-w-[1400px] max-h-[85vh] overflow-hidden p-8">
+              <DialogContent className="w-[calc(100vw-2rem)] max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
                 <DialogHeader>
                   <DialogTitle>
                     Ficha: {selectedContestant?.name ?? "Concursante"}
@@ -3399,7 +2042,8 @@ ${reasonMessage}` : message,
                   </DialogDescription>
                 </DialogHeader>
 
-                <div className="max-h-[75vh] overflow-y-auto pr-2 space-y-4">
+                <div className="space-y-4">
+                  {selectedContestant?<ContestantIdentity name={selectedContestant.name}/>:null}
                   {/* Info básica (editable) */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="bg-muted/30 rounded-lg p-3 border border-border">
@@ -3432,7 +2076,7 @@ ${reasonMessage}` : message,
                             patch: { song: next },
                           });
                         }}
-                        disabled={updateContestant.isPending}
+                        disabled={!canEditDay || (updateContestant.isPending)}
                       />
                     </div>
 
@@ -3468,7 +2112,7 @@ ${reasonMessage}` : message,
                             patch: { vocalCoachPlanResourceItemId: next },
                           });
                         }}
-                        disabled={updateContestant.isPending}
+                        disabled={!canEditDay || (updateContestant.isPending)}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="— Sin coach —" />
@@ -3568,7 +2212,7 @@ ${reasonMessage}` : message,
                                 patch: { availabilityStart: next },
                               });
                             }}
-                            disabled={updateContestant.isPending}
+                            disabled={!canEditDay || (updateContestant.isPending)}
                           />
                         </div>
 
@@ -3639,7 +2283,7 @@ ${reasonMessage}` : message,
                                 patch: { availabilityEnd: next },
                               });
                             }}
-                            disabled={updateContestant.isPending}
+                            disabled={!canEditDay || (updateContestant.isPending)}
                           />
                         </div>
                       </div>
@@ -3656,7 +2300,7 @@ ${reasonMessage}` : message,
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <Checkbox
+                        <Checkbox disabled={!canEditDay}
                           checked={editInstrumentLocal}
                           onCheckedChange={(v) => {
                             const next = !!v;
@@ -3713,7 +2357,7 @@ ${reasonMessage}` : message,
                                 patch: { instrumentName: next },
                               });
                             }}
-                            disabled={updateContestant.isPending}
+                            disabled={!canEditDay || (updateContestant.isPending)}
                           />
                         </div>
                       ) : null}
@@ -3746,7 +2390,7 @@ ${reasonMessage}` : message,
                             patch: { notes: next },
                           });
                         }}
-                        disabled={updateContestant.isPending}
+                        disabled={!canEditDay || (updateContestant.isPending)}
                         className="min-h-[90px]"
                       />
                     </div>
@@ -3758,7 +2402,7 @@ ${reasonMessage}` : message,
                     </h3>
 
                     <div className="flex items-center gap-2">
-                      <AddTaskDialog
+                      <AddTaskDialog disabled={!canEditDay}
                         planId={id}
                         contestantId={selectedContestant?.id ?? null}
                         // Nota: si AddTaskDialog NO acepta contestantId, lo dejamos como está en este lote
@@ -3784,7 +2428,7 @@ ${reasonMessage}` : message,
                         <Button variant="outline" size="sm" onClick={handleCancelContestantTasks} disabled={isSaving}>
                           Cancelar
                         </Button>
-                        <Button size="sm" onClick={() => void handleSaveContestantTasks()} disabled={!isDirty || isSaving}>
+                        <Button size="sm" onClick={() => void handleSaveContestantTasks()} disabled={!canEditDay || (!isDirty || isSaving)}>
                           {isSaving ? "Guardando..." : "Guardar"}
                         </Button>
                       </div>
@@ -3812,7 +2456,7 @@ ${reasonMessage}` : message,
                                 task={t}
                                 variant="list"
                                 draft={draft}
-                                locked={locked}
+                                locked={!canEditDay || (locked)}
                                 zones={zones}
                                 spaces={spaces}
                                 onChangeDraft={(fn) => updateDraftTask(t, fn)}
@@ -3868,7 +2512,7 @@ ${reasonMessage}` : message,
                             task={contestantDetailTask}
                             variant="detail"
                             draft={draftById[Number(contestantDetailTask.id)] ?? buildTaskDraft(contestantDetailTask)}
-                            locked={contestantDetailTask.status === "in_progress" || contestantDetailTask.status === "done"}
+                            locked={!canEditDay || (contestantDetailTask.status === "in_progress" || contestantDetailTask.status === "done")}
                             zones={zones}
                             spaces={spaces}
                             onChangeDraft={(fn) => updateDraftTask(contestantDetailTask, fn)}
@@ -3895,13 +2539,14 @@ ${reasonMessage}` : message,
               </DialogContent>
             </Dialog>
 
+            <UnassignedDayTasks planId={id} tasks={plan.dailyTasks as any[]} spaces={spaces as any[]} zones={zones as any[]} canEdit={role==="admin"||role==="production"} onPlanning={()=>setActiveTab("planning")} onEdit={task=>{setShowAdminTasks(true);setUnplannedFocusTaskId(Number(task.id));setTimeout(()=>document.querySelector(`[data-day-task="${task.id}"]`)?.scrollIntoView({block:"center",behavior:"smooth"}),50);}} />
             {/* Tasks Section */}
             <Collapsible open={showAdminTasks} onOpenChange={setShowAdminTasks}>
               <div className="space-y-2">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h2 className="text-xl font-semibold">
-                      Daily Tasks (administración)
+                      Detalle de todas las tareas
                     </h2>
                     <p className="text-sm text-muted-foreground">
                       Recomendado: asigna y gestiona tareas desde la ficha de
@@ -3931,7 +2576,7 @@ ${reasonMessage}` : message,
                     <div className="flex items-center gap-2">
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-auto px-2 py-1" onClick={() => setLocksDialogOpen(true)}>
+                          <Button disabled={!canEditDay} variant="ghost" size="sm" className="h-auto px-2 py-1" onClick={() => setLocksDialogOpen(true)}>
                             <Badge variant="secondary">Locks (time): {timeLockedTaskIds.size}</Badge>
                           </Button>
                         </TooltipTrigger>
@@ -3951,10 +2596,10 @@ ${reasonMessage}` : message,
                           Ver todas
                         </Button>
                       ) : null}
-                      <Button variant="destructive" size="sm" onClick={() => setClearTimeLocksDialogOpen(true)}>
+                      <Button disabled={!canEditDay} variant="destructive" size="sm" onClick={() => setClearTimeLocksDialogOpen(true)}>
                         Liberar todas
                       </Button>
-                      <AddTaskDialog planId={id} />
+                      <AddTaskDialog disabled={!canEditDay} planId={id} />
                     </div>
                   </div>
 
@@ -3963,21 +2608,21 @@ ${reasonMessage}` : message,
                       <TableHeader>
                         <TableRow>
                           <TableHead className="w-[300px]">
-                            Task Template
+                            Plantilla de tarea
                           </TableHead>
-                          <TableHead>Contestant</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Planned Start</TableHead>
-                          <TableHead>Planned End</TableHead>
-                          <TableHead className="w-[140px]">Duration</TableHead>
-                          <TableHead className="w-[140px]">Cameras</TableHead>
+                          <TableHead>Concursante</TableHead>
+                          <TableHead>Estado</TableHead>
+                          <TableHead>Inicio previsto</TableHead>
+                          <TableHead>Fin previsto</TableHead>
+                          <TableHead className="w-[140px]">Duración</TableHead>
+                          <TableHead className="w-[140px]">Cámaras</TableHead>
                           <TableHead className="w-[200px]">Plató</TableHead>
                           <TableHead className="w-[220px]">Espacio</TableHead>
                           <TableHead className="w-[180px]">Comment 1</TableHead>
                           <TableHead className="w-[140px]">Color C1</TableHead>
                           <TableHead className="w-[180px]">Comment 2</TableHead>
                           <TableHead className="w-[140px]">Color C2</TableHead>
-                          <TableHead className="w-[90px]">Actions</TableHead>
+                          <TableHead className="w-[90px]">Acciones</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -4004,7 +2649,7 @@ ${reasonMessage}` : message,
                                 : true,
                             )
                             .map((task: any) => (
-                            <TableRow key={task.id}>
+                            <TableRow key={task.id} data-day-task={task.id}>
                               <TableCell className="font-medium">
                                 {task.template?.name ||
                                   `Template #${task.templateId}`}
@@ -4017,7 +2662,7 @@ ${reasonMessage}` : message,
                                   : "—"}
                               </TableCell>
                               <TableCell>
-                                <Select
+                                <Select disabled={!canEditDay}
                                   value={task.status || "pending"}
                                   onValueChange={(next) => {
                                     updateTaskStatus.mutate({
@@ -4059,7 +2704,7 @@ ${reasonMessage}` : message,
                               <TableCell>
                                 {task.status !== "in_progress" &&
                                 task.status !== "done" ? (
-                                  <Input
+                                  <Input disabled={!canEditDay}
                                     type="number"
                                     className="h-8"
                                     defaultValue={task.durationOverride ?? ""}
@@ -4094,7 +2739,7 @@ ${reasonMessage}` : message,
                               <TableCell>
                                 {task.status !== "in_progress" &&
                                 task.status !== "done" ? (
-                                  <Input
+                                  <Input disabled={!canEditDay}
                                     type="number"
                                     className="h-8"
                                     defaultValue={task.camerasOverride ?? ""}
@@ -4162,7 +2807,7 @@ ${reasonMessage}` : message,
                                           (locationLabel ?? "—")
                                         )
                                       ) : (
-                                        <Select
+                                        <Select disabled={!canEditDay}
                                           value={
                                             zoneId === null
                                               ? locationLabel
@@ -4280,7 +2925,7 @@ ${reasonMessage}` : message,
                                               title: "Espacio actualizado",
                                             });
                                           }}
-                                          disabled={zoneId === null}
+                                          disabled={!canEditDay || (zoneId === null)}
                                         >
                                           <SelectTrigger className="h-8">
                                             <SelectValue
@@ -4432,9 +3077,9 @@ ${reasonMessage}` : message,
                   )}
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setLocksDialogOpen(false)}>Cerrar</Button>
+                  <Button disabled={!canEditDay} variant="outline" onClick={() => setLocksDialogOpen(false)}>Cerrar</Button>
                   {timeLockedTaskIds.size > 0 ? (
-                    <Button variant="destructive" onClick={() => {
+                    <Button disabled={!canEditDay} variant="destructive" onClick={() => {
                       setLocksDialogOpen(false);
                       setClearTimeLocksDialogOpen(true);
                     }}>
@@ -4454,8 +3099,8 @@ ${reasonMessage}` : message,
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setClearTimeLocksDialogOpen(false)}>Cancelar</Button>
-                  <Button
+                  <Button disabled={!canEditDay} variant="outline" onClick={() => setClearTimeLocksDialogOpen(false)}>Cancelar</Button>
+                  <Button disabled={!canEditDay}
                     variant="destructive"
                     onClick={async () => {
                       await apiRequest("DELETE", buildUrl(api.plans.clearTimeLocks.path, { id }));
@@ -4491,21 +3136,117 @@ ${reasonMessage}` : message,
             </Dialog>
           </TabsContent>
 
-          <TabsContent value="planning" className="mt-0">
+          <TabsContent forceMount hidden={activeTab !== "planning"} value="planning" className="mt-0">
             <div className="space-y-4">
-              <Card className="p-3"><div className="flex items-center justify-between gap-3"><div><div className="font-medium">Planificación asistida</div><div className="text-xs text-muted-foreground">El Draft es el workspace principal; Legacy permanece disponible.</div></div><div className="flex gap-2"><Button size="sm" variant={planningMode === "assisted" ? "default" : "outline"} onClick={() => setPlanningMode("assisted")}>Asistida</Button><Button size="sm" variant={planningMode === "legacy" ? "default" : "outline"} onClick={() => setPlanningMode("legacy")}>Legacy</Button></div></div></Card>
-              {planningMode === "assisted" ? <AssistedPlanningWorkspace
+              {role === "admin" ? <details className="rounded-lg border bg-muted/10 p-3" onToggle={event => setShowMaintenance(event.currentTarget.open)}><summary className="cursor-pointer text-sm text-muted-foreground">Herramientas históricas y mantenimiento</summary><p className="my-3 text-sm text-muted-foreground">Operaciones de generaciones anteriores. La planificación habitual se realiza con Assisted.</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              size="lg"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/20"
+              onClick={() => { void handleGenerate(); }}
+              disabled={generatePlan.isPending}
+            >
+              {generatePlan.isPending ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                <Play className="mr-2 h-5 w-5" />
+              )}
+              {generatePlan.isPending
+                ? "Planificando..."
+                : "Generar V3"}
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={async () => {
+                setSelectedPlanningEngine("v4");
+                setV4ResultState("loading");
+                try {
+                  const response = await generatePlan.mutateAsync({ id, mode: "generate_planning", timeLimitMs: planningTimeLimitSec * 1000, engineVersion: "v4" }) as any;
+                  const expectedRunId = Number(response?.runId ?? NaN);
+                  setV4ResultState("pending_diagnostics");
+                  await queryClient.invalidateQueries({ queryKey: ["engine-result", id, "v4"] });
+                  let found = false;
+                  for (let attempt = 0; attempt < 12; attempt += 1) {
+                    const result = await v4ResultQ.refetch();
+                    const row = result.data as any;
+                    if (row?.id && (!Number.isFinite(expectedRunId) || Number(row?.planningRunId) === expectedRunId)) {
+                      found = true;
+                      break;
+                    }
+                    await new Promise((resolve) => window.setTimeout(resolve, 1000));
+                  }
+                  setV4ResultState(found ? "success" : "idle");
+                  toast({ title: "Planificación V4 generada", description: found ? "Resultado V4/ORC disponible sin recargar la página." : "Guardada separada de V3; esperando diagnóstico persistido." });
+                } catch (err: any) {
+                  setV4ResultState("error");
+                  toast({ title: "No se pudo generar V4", description: err?.message || "Error desconocido", variant: "destructive" });
+                }
+              }}
+              disabled={generatePlan.isPending || v4ResultState === "loading"}
+            >
+              {generatePlan.isPending || v4ResultState === "loading" ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Play className="mr-2 h-5 w-5" />}
+              {v4ResultState === "loading" ? "Generando V4/ORC..." : "Generar V4"}
+            </Button>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Límite</span>
+              <Select value={String(planningTimeLimitSec)} onValueChange={(v) => setPlanningTimeLimitSec(Number(v))}>
+                <SelectTrigger className="w-[110px] h-10">
+                  <SelectValue placeholder="Tiempo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10s</SelectItem>
+                  <SelectItem value="30">30s</SelectItem>
+                  <SelectItem value="60">60s</SelectItem>
+                  <SelectItem value="180">180s</SelectItem>
+                  <SelectItem value="300">300s</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => {
+                setPlanningInProgress(true);
+                setExpectedPlanningRunId(null);
+                void (async () => {
+                  try {
+                    await generatePlan.mutateAsync({ id, mode: "plan_pending", timeLimitMs: planningTimeLimitSec * 1000 });
+                    await queryClient.invalidateQueries({ queryKey: planQueryKey(id) });
+                    await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
+                  } catch (err: any) {
+                    if (isAbortLikeError(err)) {
+                      toast({ title: "La optimización tardó más de lo esperado, comprobando estado..." });
+                      await queryClient.refetchQueries({ queryKey: planQueryKey(id) });
+                    }
+                  } finally {
+                    setPlanningInProgress(false);
+                  }
+                })();
+              }}
+              disabled={generatePlan.isPending}
+            >
+              Planificar pendientes
+            </Button>
+            <Button variant="outline" onClick={openEdit}>
+              Editar día
+            </Button>
+          </div>
+                <Button className="mt-3" size="sm" variant="outline" onClick={() => setPlanningMode(planningMode === "assisted" ? "legacy" : "assisted")}>{planningMode === "assisted" ? "Abrir planificación histórica" : "Volver a Assisted"}</Button>
+              </details> : null}
+              {planningMode === "legacy" ? <Button variant="outline" onClick={() => setPlanningMode("assisted")}>Volver al Workspace Assisted</Button> : null}
+              {planningMode === "assisted" ? planningVisited ? <AssistedPlanningWorkspace
                 planId={id}
-                plan={plan as any}
+                plan={assistedDayPlan as any}
                 spaces={spaces as any[]}
-                viewControls={<><div className="flex flex-wrap items-center gap-2">{planningViewSelector}</div>{planningViewFilters}</>}
+                onOpenExecution={() => setActiveTab("execution")}
                 timelineProps={{ contestants, viewMode: timelineView, spaceVerticalMode, stageFilterIds,
                   resourceFilterIds, resourceSelectables: resourceFilterOptions, zones, spaces,
                   zoneResourceAssignments: zoneAssignmentsForTooltip, spaceResourceAssignments: spaceAssignmentsForPlanning, planResourceItemNameById,
                   zoneStaffModes: planZoneStaffModes, itinerantTeams, staffAssignments: planStaffAssignments,
                   uiItinerantGroupOrderIndex: (programSettings as any)?.uiItinerantGroupOrderIndex ?? (programSettings as any)?.ui_itinerant_group_order_index ?? null,
                   uiUnlocatedGroupOrderIndex: (programSettings as any)?.uiUnlocatedGroupOrderIndex ?? (programSettings as any)?.ui_unlocated_group_order_index ?? null }}
-              /> : <>
+              /> : null : <>
               <Card className="p-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
@@ -4946,200 +3687,21 @@ ${reasonMessage}` : message,
             </div>
           </TabsContent>
 
-          <TabsContent value="resources" className="mt-0">
-            <PlanResourcesTab planId={id} />
+          <TabsContent forceMount hidden={activeTab !== "resources"} value="resources" className="mt-0">
+            <PlanResourcesTab planId={id} onChanged={() => setResourceVersion(version => version + 1)} onOpenAgenda={resourceId=>{const params=new URLSearchParams(window.location.search);params.set("resource",String(resourceId));window.history.replaceState(null,"",`${window.location.pathname}?${params}`);setActiveTab("planning");window.dispatchEvent(new Event("optiplan:planning-focus"));}} />
           </TabsContent>
-          <TabsContent value="configuration" className="mt-0">
-            <DayConfiguration planId={id} />
+          <TabsContent forceMount hidden={activeTab !== "configuration"} value="configuration" className="mt-0">
+            <DayConfiguration planId={id} onNavigate={setActiveTab} />
           </TabsContent>
-          <TabsContent value="staff" className="space-y-6 mt-0">
+          <TabsContent forceMount hidden={activeTab !== "staff"} value="staff" className="space-y-6 mt-0">
             <PlanStaffRolesTab
               planId={id}
               zones={zones as any[]}
               spaces={spaces as any[]}
             />
           </TabsContent>
-          <TabsContent value="execution" className="mt-0 space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Ejecución del día</CardTitle>
-              </CardHeader>
-
-              <CardContent className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Aquí los ayudantes declaran inicio/fin en tiempo real. Los
-                  cambios se muestran tras la confirmación del servidor y la actualización de las vistas.
-                </p>
-
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[95px]">Inicio teórico</TableHead>
-                        <TableHead className="w-[95px]">Fin teórico</TableHead>
-                        <TableHead className="w-[95px]">Inicio real</TableHead>
-                        <TableHead className="w-[95px]">Fin real</TableHead>
-                        <TableHead className="w-[95px]">Fin previsto</TableHead>
-                        <TableHead className="w-[170px]">Timer</TableHead>
-                        <TableHead>Tarea</TableHead>
-                        <TableHead className="w-[170px]">Concursante</TableHead>
-                        <TableHead className="w-[220px]">Ubicación</TableHead>
-                        <TableHead className="w-[140px]">Estado</TableHead>
-                        <TableHead className="w-[260px] text-right">
-                          Acciones
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-
-                    <TableBody>
-                      {((plan?.dailyTasks ?? []) as any[])
-                        .slice()
-                        .sort((a, b) => {
-                          const am =
-                            parseHHMMToMinutes(a?.startPlanned ?? "") ?? 99999;
-                          const bm =
-                            parseHHMMToMinutes(b?.startPlanned ?? "") ?? 99999;
-                          return am - bm;
-                        })
-                        .map((t: any) => {
-                          const status = String(t?.status ?? "pending");
-                          const taskTitle = String(
-                            t?.template?.name ??
-                              t?.name ??
-                              t?.templateName ??
-                              t?.taskTemplateName ??
-                              `Tarea #${t?.id}`,
-                          ).trim();
-
-                          const zoneId =
-                            Number(t?.zoneId ?? t?.zone_id ?? 0) || null;
-                          const spaceId =
-                            Number(t?.spaceId ?? t?.space_id ?? 0) || null;
-
-                          const zoneName = zoneId
-                            ? String(
-                                zonesById.get(zoneId)?.name ??
-                                  `Zona #${zoneId}`,
-                              )
-                            : null;
-                          const spaceName = spaceId
-                            ? String(
-                                (spaces as any[]).find(
-                                  (s: any) => Number(s?.id) === spaceId,
-                                )?.name ?? `Espacio #${spaceId}`,
-                              )
-                            : null;
-
-                          const contestantName = String(
-                            t?.contestant?.name ?? contestants.find((c: any) => Number(c?.id) === Number(t?.contestantId ?? t?.contestant_id ?? 0))?.name ?? "—",
-                          );
-
-                          const location = t?.locationLabel
-                            ? String(t.locationLabel)
-                            : spaceName
-                              ? `${zoneName ?? "Zona"} · ${spaceName}`
-                              : (zoneName ?? "Sin asignar");
-
-
-                          const canStart =
-                            canOperateTask(t) && (status === "pending" || status === "interrupted");
-                          const canFinish = canOperateTask(t) && status === "in_progress";
-                          const canInterrupt = canOperateTask(t) && status === "in_progress";
-
-                          return (
-                            <TableRow
-                              key={t.id}
-                              data-testid={`legacy-execution-task-${t.id}`}
-                              className={
-                                isMissingSpace(t) ? "bg-yellow-50/50" : ""
-                              }
-                            >
-                              <TableCell className="font-mono text-xs">{t?.startPlanned ?? "—"}</TableCell>
-                              <TableCell className="font-mono text-xs">{t?.endPlanned ?? "—"}</TableCell>
-                              <TableCell className="font-mono text-xs">{t?.startReal ?? "—"}</TableCell>
-                              <TableCell className="font-mono text-xs">{t?.endReal ?? "—"}</TableCell>
-                              <TableCell className="font-mono text-xs">
-                                {status === "done" && t?.endReal
-                                  ? t.endReal
-                                  : status === "in_progress" && t?.startReal
-                                    ? (() => {
-                                        const startMin = parseHHMMToMinutes(String(t.startReal));
-                                        const durationMinutes = Number(t?.durationOverride ?? t?.template?.defaultDuration ?? 0);
-                                        if (startMin === null || !Number.isFinite(durationMinutes) || durationMinutes <= 0) {
-                                          return "—";
-                                        }
-                                        return minutesToHHMM(startMin + durationMinutes);
-                                      })()
-                                    : "—"}
-                              </TableCell>
-                              <TableCell className="font-mono text-xs">
-                                <ExecutionElapsedTimer status={status} startReal={t?.startReal ?? null} startRealSeconds={t?.startRealSeconds ?? t?.start_real_seconds ?? null} pausedTotalSeconds={t?.pausedTotalSeconds ?? t?.paused_total_seconds ?? 0} pausedAtSeconds={t?.pausedAtSeconds ?? t?.paused_at_seconds ?? null} />
-                              </TableCell>
-
-                              <TableCell className="font-medium">
-                                {taskTitle}
-                                {isMissingSpace(t) && (
-                                  <span className="ml-2 text-xs text-amber-700">
-                                    ⚠ Sin espacio
-                                  </span>
-                                )}
-                              </TableCell>
-
-                              <TableCell className="text-sm text-muted-foreground">
-                                {contestantName}
-                              </TableCell>
-
-                              <TableCell className="text-sm text-muted-foreground">
-                                {location}
-                              </TableCell>
-
-                              <TableCell>
-                                <Badge
-                                  variant={
-                                    status === "done"
-                                      ? "default"
-                                      : status === "in_progress"
-                                        ? "secondary"
-                                        : status === "interrupted"
-                                          ? "outline"
-                                          : status === "cancelled"
-                                            ? "destructive"
-                                            : "outline"
-                                  }
-                                >
-                                  {status}
-                                </Badge>
-                              </TableCell>
-
-                              <TableCell className="text-right">
-                                <TooltipProvider>
-                                  <div className="inline-flex gap-1">
-                                    <Tooltip><TooltipTrigger asChild><Button aria-label="Start" variant="ghost" size="icon" disabled={!canStart || updateTaskStatus.isPending} onClick={() => updateTaskStatus.mutate({ taskId: Number(t.id), planId: id, expectedStatus: status, status: "in_progress", effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds } as any)}><Play className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Start</TooltipContent></Tooltip>
-                                    <Tooltip><TooltipTrigger asChild><Button aria-label="Finish" variant="ghost" size="icon" disabled={!canFinish || updateTaskStatus.isPending} onClick={() => updateTaskStatus.mutate({ taskId: Number(t.id), planId: id, expectedStatus: status, status: "done", effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds } as any)}><Check className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Finish</TooltipContent></Tooltip>
-                                    <Tooltip><TooltipTrigger asChild><Button aria-label="Interrupt" variant="ghost" size="icon" disabled={!canInterrupt || updateTaskStatus.isPending} onClick={() => updateTaskStatus.mutate({ taskId: Number(t.id), planId: id, expectedStatus: status, status: "interrupted", effectiveTimeHHMM: nowTime, effectiveSeconds: nowSeconds } as any)}><Pause className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Interrupt</TooltipContent></Tooltip>
-                                    <Tooltip><TooltipTrigger asChild><Button aria-label="Reset" variant="ghost" size="icon" className="text-red-600 hover:text-red-700" disabled={!canResetExecution || status === "pending" || resetTask.isPending} onClick={async () => { const msg = status === "in_progress" ? "¿Resetear? Se borrará inicio real." : `Esta tarea está en estado ${status.toUpperCase()}. Al resetear se borrarán inicio/fin reales. ¿Continuar?`; const ok = await confirmDialog({ title: "Resetear tarea", description: msg, confirmText: "Resetear" }); if (!ok) return; resetTask.mutate({ taskId: Number(t.id), planId: id, effectiveTimeHHMM: nowTime }); }}><RotateCcw className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Reset</TooltipContent></Tooltip>
-                                  </div>
-                                </TooltipProvider>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-
-                      {(plan?.dailyTasks ?? []).length === 0 && (
-                        <TableRow>
-                          <TableCell
-                            colSpan={10}
-                            className="text-sm text-muted-foreground"
-                          >
-                            Aún no hay tareas en este plan.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent forceMount hidden={activeTab !== "execution"} value="execution" className="mt-0 space-y-4">
+            <DayExecutionWorkspace planId={id} tasks={plan.dailyTasks as any[]} contestants={contestants as any[]} zones={zones as any[]} spaces={spaces as any[]} resourceNames={planResourceItemNameById} spaceAssignments={spaceAssignmentsForPlanning} zoneAssignments={zoneAssignmentsForTooltip} onOpenContestant={contestantId => { setSelectedContestant(contestants.find(contestant => Number(contestant.id) === contestantId)); setActiveTab("tasks"); }} />
           </TabsContent>
         </Tabs>
 
@@ -5984,1307 +4546,5 @@ ${reasonMessage}` : message,
         </div>
       </div>
     </Layout>
-  );
-}
-type PlanResourceItemRow = {
-  id: number;
-  planId: number;
-  typeId: number;
-  resourceItemId: number | null;
-  name: string;
-  isAvailable: boolean;
-  source: "default" | "adhoc" | string;
-  type: { id: number; code: string; name: string };
-};
-
-function PlanResourcesTab({ planId }: { planId: number }) {
-  const { toast } = useToast();
-  const confirmDialog = useConfirm();
-  const [rows, setRows] = useState<PlanResourceItemRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const [addTypeId, setAddTypeId] = useState<string>("");
-  const [addName, setAddName] = useState("");
-
-  // Zonas/Espacios (para mostrar el árbol en el plan)
-  const { data: zones = [], isLoading: zonesLoading } = useZones();
-  const { data: spaces = [], isLoading: spacesLoading } = useSpaces();
-
-  const zonesById = new Map<number, any>();
-  for (const z of zones as any[]) zonesById.set(Number(z.id), z);
-
-  const spacesByZone = new Map<number, any[]>();
-  for (const s of spaces as any[]) {
-    const zoneId = Number((s as any).zoneId ?? (s as any).zone_id);
-    if (!Number.isFinite(zoneId)) continue;
-    const list = spacesByZone.get(zoneId) ?? [];
-    list.push(s);
-    spacesByZone.set(zoneId, list);
-  }
-  for (const [zid, list] of spacesByZone.entries()) {
-    list.sort((a, b) =>
-      String(a?.name ?? "").localeCompare(String(b?.name ?? "")),
-    );
-    spacesByZone.set(zid, list);
-  }
-
-  // Override por plan: asignación de plan_resource_items por ZONA (PLATÓ)
-  const [zoneAssignments, setZoneAssignments] = useState<
-    Record<number, number[]>
-  >({});
-  // ✅ Requisitos genéricos por tipo (override por plan): zoneId -> { typeId -> qty }
-  const [zoneTypeReqs, setZoneTypeReqs] = useState<
-    Record<number, Record<number, number>>
-  >({});
-  const [zoneTypeLoading, setZoneTypeLoading] = useState(false);
-  const [zoneTypeError, setZoneTypeError] = useState<string | null>(null);
-
-  const [zoneTypeZoneId, setZoneTypeZoneId] = useState<number | null>(null);
-  const [zoneTypeDraft, setZoneTypeDraft] = useState<Record<number, number>>(
-    {},
-  );
-  const [zoneTypeSaving, setZoneTypeSaving] = useState(false);
-
-  const [zoneAssignLoading, setZoneAssignLoading] = useState(false);
-  const [zoneAssignError, setZoneAssignError] = useState<string | null>(null);
-
-  const [zoneResourcesZoneId, setZoneResourcesZoneId] = useState<number | null>(
-    null,
-  );
-  const [zoneResourcesDraftPriIds, setZoneResourcesDraftPriIds] = useState<
-    number[]
-  >([]);
-  const [zoneResourcesSaving, setZoneResourcesSaving] = useState(false);
-
-  // Override por plan: asignación de plan_resource_items por ESPACIO
-  const [spaceAssignments, setSpaceAssignments] = useState<
-    Record<number, number[]>
-  >({});
-  // ✅ Requisitos genéricos por tipo (override por plan): spaceId -> { typeId -> qty }
-  const [spaceTypeReqs, setSpaceTypeReqs] = useState<
-    Record<number, Record<number, number>>
-  >({});
-  const [spaceTypeLoading, setSpaceTypeLoading] = useState(false);
-  const [spaceTypeError, setSpaceTypeError] = useState<string | null>(null);
-
-  const [spaceTypeSpaceId, setSpaceTypeSpaceId] = useState<number | null>(null);
-  const [spaceTypeDraft, setSpaceTypeDraft] = useState<Record<number, number>>(
-    {},
-  );
-  const [spaceTypeSaving, setSpaceTypeSaving] = useState(false);
-
-  const [spaceAssignLoading, setSpaceAssignLoading] = useState(false);
-  const [spaceAssignError, setSpaceAssignError] = useState<string | null>(null);
-
-  const [spaceResourcesSpaceId, setSpaceResourcesSpaceId] = useState<
-    number | null
-  >(null);
-  const [spaceResourcesDraftPriIds, setSpaceResourcesDraftPriIds] = useState<
-    number[]
-  >([]);
-  const [spaceResourcesSaving, setSpaceResourcesSaving] = useState(false);
-
-  async function loadSpaceAssignments() {
-    try {
-      setSpaceAssignLoading(true);
-      setSpaceAssignError(null);
-
-      const json = await apiRequest<any[]>(
-        "GET",
-        buildUrl(api.plans.spaceResourceAssignments.list.path, { id: planId }),
-      );
-
-      const next: Record<number, number[]> = {};
-      for (const r of json ?? []) {
-        const spaceId = Number(r?.spaceId);
-        const ids = Array.isArray(r?.planResourceItemIds)
-          ? r.planResourceItemIds
-          : [];
-        const clean = ids
-          .map((n: any) => Number(n))
-          .filter((n: number) => Number.isFinite(n) && n > 0);
-
-        if (Number.isFinite(spaceId)) next[spaceId] = clean;
-      }
-
-      setSpaceAssignments(next);
-    } catch (e: any) {
-      setSpaceAssignError(
-        e?.message || "Error cargando recursos por espacio (plan)",
-      );
-    } finally {
-      setSpaceAssignLoading(false);
-    }
-  }
-
-  async function loadSpaceTypeRequirements() {
-    try {
-      setSpaceTypeLoading(true);
-      setSpaceTypeError(null);
-
-      const json = await apiRequest<any[]>(
-        "GET",
-        buildUrl(api.plans.spaceResourceTypeRequirements.list.path, {
-          id: planId,
-        }),
-      );
-
-      const next: Record<number, Record<number, number>> = {};
-      for (const r of json ?? []) {
-        const spaceId = Number((r as any)?.spaceId);
-        if (!Number.isFinite(spaceId)) continue;
-
-        const reqsArr = Array.isArray((r as any)?.requirements)
-          ? (r as any).requirements
-          : [];
-        const map: Record<number, number> = {};
-        for (const q of reqsArr) {
-          const tid = Number((q as any)?.resourceTypeId);
-          const qty = Number((q as any)?.quantity ?? 0);
-          if (!Number.isFinite(tid) || tid <= 0) continue;
-          map[tid] = Number.isFinite(qty) && qty >= 0 ? qty : 0;
-        }
-        next[spaceId] = map;
-      }
-
-      setSpaceTypeReqs(next);
-    } catch (e: any) {
-      setSpaceTypeError(
-        e?.message || "Error cargando requisitos genéricos por espacio (plan)",
-      );
-    } finally {
-      setSpaceTypeLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (spaceTypeSpaceId === null) return;
-    setSpaceTypeDraft(spaceTypeReqs[spaceTypeSpaceId] ?? {});
-  }, [spaceTypeSpaceId, spaceTypeReqs]);
-
-  useEffect(() => {
-    if (spaceResourcesSpaceId === null) return;
-    setSpaceResourcesDraftPriIds(spaceAssignments[spaceResourcesSpaceId] ?? []);
-  }, [spaceResourcesSpaceId, spaceAssignments]);
-
-  async function loadZoneAssignments() {
-    try {
-      setZoneAssignLoading(true);
-      setZoneAssignError(null);
-
-      const json = await apiRequest<any[]>(
-        "GET",
-        buildUrl(api.plans.zoneResourceAssignments.list.path, { id: planId }),
-      );
-
-      const next: Record<number, number[]> = {};
-      for (const r of json ?? []) {
-        const zoneId = Number(r?.zoneId);
-        const ids = Array.isArray(r?.planResourceItemIds)
-          ? r.planResourceItemIds
-          : [];
-        const clean = ids
-          .map((n: any) => Number(n))
-          .filter((n: number) => Number.isFinite(n) && n > 0);
-
-        if (Number.isFinite(zoneId)) next[zoneId] = clean;
-      }
-
-      setZoneAssignments(next);
-    } catch (e: any) {
-      setZoneAssignError(
-        e?.message || "Error cargando recursos por plató (plan)",
-      );
-    } finally {
-      setZoneAssignLoading(false);
-    }
-  }
-
-  async function loadZoneTypeRequirements() {
-    try {
-      setZoneTypeLoading(true);
-      setZoneTypeError(null);
-
-      const json = await apiRequest<any[]>(
-        "GET",
-        buildUrl(api.plans.zoneResourceTypeRequirements.list.path, {
-          id: planId,
-        }),
-      );
-
-      const next: Record<number, Record<number, number>> = {};
-      for (const r of json ?? []) {
-        const zoneId = Number((r as any)?.zoneId);
-        if (!Number.isFinite(zoneId)) continue;
-
-        const reqsArr = Array.isArray((r as any)?.requirements)
-          ? (r as any).requirements
-          : [];
-        const map: Record<number, number> = {};
-        for (const q of reqsArr) {
-          const tid = Number((q as any)?.resourceTypeId);
-          const qty = Number((q as any)?.quantity ?? 0);
-          if (!Number.isFinite(tid) || tid <= 0) continue;
-          map[tid] = Number.isFinite(qty) && qty >= 0 ? qty : 0;
-        }
-        next[zoneId] = map;
-      }
-
-      setZoneTypeReqs(next);
-    } catch (e: any) {
-      setZoneTypeError(
-        e?.message || "Error cargando requisitos genéricos por plató (plan)",
-      );
-    } finally {
-      setZoneTypeLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (zoneTypeZoneId === null) return;
-    setZoneTypeDraft(zoneTypeReqs[zoneTypeZoneId] ?? {});
-  }, [zoneTypeZoneId, zoneTypeReqs]);
-
-  useEffect(() => {
-    if (zoneResourcesZoneId === null) return;
-    setZoneResourcesDraftPriIds(zoneAssignments[zoneResourcesZoneId] ?? []);
-  }, [zoneResourcesZoneId, zoneAssignments]);
-
-  function friendlyError(e: any) {
-    const status = e?.status;
-    if (status === 401) {
-      return "No autorizado (401). Inicia sesión y recarga la página.";
-    }
-    return e?.message || "Error cargando recursos del plan";
-  }
-
-  async function load() {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const json = await apiRequest<PlanResourceItemRow[]>(
-        "GET",
-        buildUrl(api.plans.resourceItems.list.path, { id: planId }),
-      );
-
-      setRows(json ?? []);
-    } catch (e: any) {
-      setError(friendlyError(e));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function initIfEmpty() {
-    try {
-      setLoading(true);
-      setError(null);
-
-      await apiRequest(
-        "POST",
-        buildUrl(api.plans.resourceItems.init.path, { id: planId }),
-      );
-
-      await load();
-    } catch (e: any) {
-      setError(friendlyError(e));
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    load();
-    loadZoneAssignments();
-    loadZoneTypeRequirements();
-
-    loadSpaceAssignments();
-    loadSpaceTypeRequirements();
-  }, [planId]);
-
-  if (loading) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        Cargando recursos del plan…
-      </p>
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertTitle>Error cargando recursos del plan</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
-        <div className="mt-3">
-          <Button variant="outline" size="sm" onClick={load}>
-            Reintentar
-          </Button>
-        </div>
-      </Alert>
-    );
-  }
-
-  if (rows.length === 0) {
-    return (
-      <div className="space-y-3">
-        <p className="text-sm text-muted-foreground">
-          Este plan no tiene recursos inicializados (probablemente es un plan
-          antiguo).
-        </p>
-        <Button onClick={initIfEmpty}>Inicializar recursos del plan</Button>
-      </div>
-    );
-  }
-
-  const types = Array.from(
-    new Map(rows.map((r) => [r.typeId, r.type])).values(),
-  ).sort((a, b) => a.name.localeCompare(b.name));
-
-  const grouped = new Map<number, PlanResourceItemRow[]>();
-  for (const r of rows) {
-    const list = grouped.get(r.typeId) ?? [];
-    list.push(r);
-    grouped.set(r.typeId, list);
-  }
-  for (const [k, list] of grouped.entries()) {
-    list.sort((a, b) => a.name.localeCompare(b.name));
-    grouped.set(k, list);
-  }
-
-  return (
-    <div className="space-y-4">
-      {/* Añadir recurso adhoc */}
-      <Card>
-        <CardHeader className="py-3">
-          <CardTitle className="text-base">
-            Añadir recurso solo para este plan
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label>Tipo</Label>
-              <Select value={addTypeId} onValueChange={setAddTypeId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona tipo…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {types.map((t) => (
-                    <SelectItem key={t.id} value={String(t.id)}>
-                      {t.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1">
-              <Label>Nombre</Label>
-              <Input
-                value={addName}
-                onChange={(e) => setAddName(e.target.value)}
-                placeholder="Ej: Cámara extra / Micro 4 / Coach invitado…"
-              />
-            </div>
-          </div>
-
-          <Button
-            onClick={async () => {
-              const typeId = Number(addTypeId);
-              const name = addName.trim();
-              if (!Number.isFinite(typeId) || !name) return;
-
-              try {
-                await apiRequest(
-                  "POST",
-                  buildUrl(api.plans.resourceItems.create.path, { id: planId }),
-                  { typeId, name },
-                );
-                setAddName("");
-                await load();
-              } catch (e: any) {
-                alert(friendlyError(e) || "No se pudo añadir");
-              }
-            }}
-            disabled={!addTypeId || !addName.trim()}
-          >
-            Añadir
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Recursos por plató (override dentro del plan) */}
-      <Card>
-        <CardHeader className="py-3">
-          <CardTitle className="text-base">
-            Recursos por plató (este plan)
-          </CardTitle>
-        </CardHeader>
-
-        <CardContent className="pt-0 space-y-3">
-          {(zonesLoading || spacesLoading) && (
-            <p className="text-sm text-muted-foreground">
-              Cargando zonas/espacios…
-            </p>
-          )}
-
-          {zoneAssignError && (
-            <Alert variant="destructive">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{zoneAssignError}</AlertDescription>
-              <div className="mt-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={loadZoneAssignments}
-                >
-                  Reintentar
-                </Button>
-              </div>
-            </Alert>
-          )}
-
-          {!zonesLoading && !spacesLoading && (zones as any[]).length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No hay zonas creadas todavía.
-            </p>
-          )}
-
-          {!zonesLoading && !spacesLoading && (zones as any[]).length > 0 && (
-            <div className="space-y-3">
-              {(zones as any[])
-                .slice()
-                .sort((a, b) =>
-                  String(a?.name ?? "").localeCompare(String(b?.name ?? "")),
-                )
-                .map((z: any) => {
-                  const zid = Number(z.id);
-                  const assigned = zoneAssignments[zid]?.length ?? 0;
-                  const list = spacesByZone.get(zid) ?? [];
-
-                  return (
-                    <div key={zid} className="border rounded-lg p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="font-medium truncate">{z?.name}</div>
-                          <div className="text-xs text-muted-foreground">
-                            Asignados: {assigned} · Espacios: {list.length}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={zoneAssignLoading}
-                            onClick={() => setZoneResourcesZoneId(zid)}
-                          >
-                            Recursos
-                          </Button>
-
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={zoneTypeLoading}
-                            onClick={() => setZoneTypeZoneId(zid)}
-                            title="Requisitos genéricos por tipo (este plan)"
-                          >
-                            Requisitos
-                          </Button>
-                        </div>
-                      </div>
-
-                      {list.length > 0 && (
-                        <div className="mt-3 space-y-2">
-                          {spaceAssignError && (
-                            <Alert variant="destructive">
-                              <AlertTitle>Error</AlertTitle>
-                              <AlertDescription>
-                                {spaceAssignError}
-                              </AlertDescription>
-                              <div className="mt-3">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={loadSpaceAssignments}
-                                >
-                                  Reintentar
-                                </Button>
-                              </div>
-                            </Alert>
-                          )}
-
-                          {spaceTypeError && (
-                            <Alert variant="destructive">
-                              <AlertTitle>Error</AlertTitle>
-                              <AlertDescription>
-                                {spaceTypeError}
-                              </AlertDescription>
-                              <div className="mt-3">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={loadSpaceTypeRequirements}
-                                >
-                                  Reintentar
-                                </Button>
-                              </div>
-                            </Alert>
-                          )}
-
-                          {list.map((s: any) => {
-                            const sid = Number(s?.id);
-                            const nm = String(s?.name ?? "");
-                            if (!Number.isFinite(sid)) return null;
-
-                            const assignedS =
-                              spaceAssignments[sid]?.length ?? 0;
-
-                            return (
-                              <div
-                                key={sid}
-                                className="flex items-center justify-between gap-3 border rounded-md px-3 py-2"
-                              >
-                                <div className="min-w-0">
-                                  <div className="text-sm font-medium truncate">
-                                    {nm || `#${sid}`}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    Asignados: {assignedS}
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={spaceAssignLoading}
-                                    onClick={() =>
-                                      setSpaceResourcesSpaceId(sid)
-                                    }
-                                  >
-                                    Recursos
-                                  </Button>
-
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={spaceTypeLoading}
-                                    onClick={() => setSpaceTypeSpaceId(sid)}
-                                    title="Requisitos genéricos por tipo (este plan)"
-                                  >
-                                    Requisitos
-                                  </Button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Dialog: editar recursos del PLATÓ dentro del plan */}
-      <Dialog
-        open={zoneResourcesZoneId !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setZoneResourcesZoneId(null);
-            setZoneResourcesDraftPriIds([]);
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>
-              Recursos del plató (este plan):{" "}
-              {zoneResourcesZoneId !== null
-                ? ((zones ?? []) as any[]).find(
-                    (x) => Number(x?.id) === Number(zoneResourcesZoneId),
-                  )?.name || `#${zoneResourcesZoneId}`
-                : ""}
-            </DialogTitle>
-            <DialogDescription>
-              Estos recursos quedan anclados al plató para este plan (override
-              del snapshot).
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="text-sm text-muted-foreground">
-            Seleccionados: {zoneResourcesDraftPriIds.length}
-            {zoneResourcesSaving ? " · Guardando…" : ""}
-          </div>
-
-          {/* Tipos agrupados (NO hardcodea: permite anclar cualquier tipo si Admin lo quiere) */}
-          <div className="space-y-3 max-h-[55vh] overflow-auto pr-1">
-            {types.map((t) => {
-              const all = grouped.get(t.id) ?? [];
-              const activeItems = all.filter((x) => x.isAvailable);
-
-              if (activeItems.length === 0) return null;
-
-              const typeName = String(t?.name ?? "Tipo");
-
-              return (
-                <div key={t.id} className="border rounded-lg p-3">
-                  <div className="font-medium mb-2">{typeName}</div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    {[...activeItems]
-                      .sort((a: any, b: any) =>
-                        String(a?.name ?? "").localeCompare(
-                          String(b?.name ?? ""),
-                        ),
-                      )
-                      .map((it: any) => {
-                        const priId = Number(it.id);
-                        const checked =
-                          zoneResourcesDraftPriIds.includes(priId);
-
-                        return (
-                          <label
-                            key={priId}
-                            className="flex items-center gap-2 text-sm"
-                          >
-                            <Checkbox
-                              checked={checked}
-                              onCheckedChange={(v) => {
-                                const nextChecked = Boolean(v);
-                                setZoneResourcesDraftPriIds((prev) => {
-                                  const set = new Set(prev);
-                                  if (nextChecked) set.add(priId);
-                                  else set.delete(priId);
-                                  return Array.from(set);
-                                });
-                              }}
-                            />
-                            <span className="truncate">
-                              {String(it?.name ?? "")}
-                            </span>
-                          </label>
-                        );
-                      })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              variant="ghost"
-              disabled={zoneResourcesSaving}
-              onClick={() => {
-                setZoneResourcesZoneId(null);
-                setZoneResourcesDraftPriIds([]);
-              }}
-            >
-              Cancelar
-            </Button>
-
-            <Button
-              disabled={zoneResourcesZoneId === null || zoneResourcesSaving}
-              onClick={async () => {
-                if (zoneResourcesZoneId === null) return;
-
-                const unique = Array.from(
-                  new Set(
-                    (zoneResourcesDraftPriIds ?? [])
-                      .map((n) => Number(n))
-                      .filter((n) => Number.isFinite(n) && n > 0),
-                  ),
-                );
-
-                try {
-                  setZoneResourcesSaving(true);
-
-                  await apiRequest(
-                    "PATCH",
-                    buildUrl(api.plans.zoneResourceAssignments.update.path, {
-                      id: planId,
-                      zoneId: zoneResourcesZoneId,
-                    }),
-                    { planResourceItemIds: unique },
-                  );
-
-                  // refresca desde backend para quedar 100% sincronizado
-                  await loadZoneAssignments();
-
-                  setZoneResourcesZoneId(null);
-                  setZoneResourcesDraftPriIds([]);
-                } catch (e: any) {
-                  toast({
-                    title: "No se pudo guardar",
-                    description:
-                      e?.message ||
-                      "Revisa conexión/permisos y prueba de nuevo.",
-                    variant: "destructive",
-                  });
-                } finally {
-                  setZoneResourcesSaving(false);
-                }
-              }}
-            >
-              Guardar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog: requisitos genéricos por tipo del PLATÓ dentro del plan */}
-      <Dialog
-        open={zoneTypeZoneId !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setZoneTypeZoneId(null);
-            setZoneTypeDraft({});
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              Requisitos genéricos del plató (este plan):{" "}
-              {zoneTypeZoneId !== null
-                ? ((zones ?? []) as any[]).find(
-                    (x) => Number(x?.id) === Number(zoneTypeZoneId),
-                  )?.name || `#${zoneTypeZoneId}`
-                : ""}
-            </DialogTitle>
-            <DialogDescription>
-              Define cuántos recursos de cada tipo necesita el plató (sin fijar
-              unidad concreta). Esto es un override del snapshot del plan.
-            </DialogDescription>
-          </DialogHeader>
-
-          {zoneTypeError && (
-            <Alert variant="destructive">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{zoneTypeError}</AlertDescription>
-            </Alert>
-          )}
-
-          <div className="space-y-2 max-h-[50vh] overflow-auto pr-1">
-            {types.map((t) => {
-              const typeId = Number(t.id);
-              const qty = Number(zoneTypeDraft[typeId] ?? 0);
-
-              return (
-                <div
-                  key={typeId}
-                  className="flex items-center justify-between gap-3 border rounded px-3 py-2"
-                >
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium truncate">{t.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      Disponible en plan:{" "}
-                      {
-                        (grouped.get(typeId) ?? []).filter((x) => x.isAvailable)
-                          .length
-                      }
-                    </div>
-                  </div>
-
-                  <Input
-                    className="w-28"
-                    type="number"
-                    min={0}
-                    max={99}
-                    value={qty}
-                    onChange={(e) => {
-                      const next = Number(e.target.value ?? 0);
-                      setZoneTypeDraft((prev) => ({
-                        ...prev,
-                        [typeId]: Number.isFinite(next) && next >= 0 ? next : 0,
-                      }));
-                    }}
-                  />
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              variant="ghost"
-              disabled={zoneTypeSaving}
-              onClick={() => {
-                setZoneTypeZoneId(null);
-                setZoneTypeDraft({});
-              }}
-            >
-              Cancelar
-            </Button>
-
-            <Button
-              disabled={zoneTypeZoneId === null || zoneTypeSaving}
-              onClick={async () => {
-                if (zoneTypeZoneId === null) return;
-
-                const requirements = Object.entries(zoneTypeDraft ?? {})
-                  .map(([k, v]) => ({
-                    resourceTypeId: Number(k),
-                    quantity: Number(v ?? 0),
-                  }))
-                  .filter(
-                    (r) =>
-                      Number.isFinite(r.resourceTypeId) &&
-                      r.resourceTypeId > 0 &&
-                      Number.isFinite(r.quantity) &&
-                      r.quantity >= 0,
-                  );
-
-                try {
-                  setZoneTypeSaving(true);
-
-                  await apiRequest(
-                    "PATCH",
-                    buildUrl(
-                      api.plans.zoneResourceTypeRequirements.update.path,
-                      {
-                        id: planId,
-                        zoneId: zoneTypeZoneId,
-                      },
-                    ),
-                    { requirements },
-                  );
-
-                  await loadZoneTypeRequirements();
-
-                  setZoneTypeZoneId(null);
-                  setZoneTypeDraft({});
-                } catch (e: any) {
-                  toast({
-                    title: "No se pudo guardar",
-                    description:
-                      e?.message ||
-                      "Revisa conexión/permisos y prueba de nuevo.",
-                    variant: "destructive",
-                  });
-                } finally {
-                  setZoneTypeSaving(false);
-                }
-              }}
-            >
-              Guardar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog: editar recursos del ESPACIO dentro del plan */}
-      <Dialog
-        open={spaceResourcesSpaceId !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSpaceResourcesSpaceId(null);
-            setSpaceResourcesDraftPriIds([]);
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>
-              Recursos del espacio (este plan):{" "}
-              {spaceResourcesSpaceId !== null
-                ? ((spaces ?? []) as any[]).find(
-                    (x) => Number(x?.id) === Number(spaceResourcesSpaceId),
-                  )?.name || `#${spaceResourcesSpaceId}`
-                : ""}
-            </DialogTitle>
-            <DialogDescription>
-              Estos recursos quedan anclados al espacio para este plan (override
-              del snapshot).
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="text-sm text-muted-foreground">
-            Seleccionados: {spaceResourcesDraftPriIds.length}
-            {spaceResourcesSaving ? " · Guardando…" : ""}
-          </div>
-
-          <div className="space-y-3 max-h-[55vh] overflow-auto pr-1">
-            {types.map((t) => {
-              const all = grouped.get(t.id) ?? [];
-              const activeItems = all.filter((x) => x.isAvailable);
-
-              if (activeItems.length === 0) return null;
-
-              const typeName = String(t?.name ?? "Tipo");
-
-              return (
-                <div key={t.id} className="border rounded-lg p-3">
-                  <div className="font-medium mb-2">{typeName}</div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    {[...activeItems]
-                      .sort((a: any, b: any) =>
-                        String(a?.name ?? "").localeCompare(
-                          String(b?.name ?? ""),
-                        ),
-                      )
-                      .map((it: any) => {
-                        const priId = Number(it.id);
-                        const checked =
-                          spaceResourcesDraftPriIds.includes(priId);
-
-                        return (
-                          <label
-                            key={priId}
-                            className="flex items-center gap-2 text-sm"
-                          >
-                            <Checkbox
-                              checked={checked}
-                              onCheckedChange={(v) => {
-                                const nextChecked = Boolean(v);
-                                setSpaceResourcesDraftPriIds((prev) => {
-                                  const set = new Set(prev);
-                                  if (nextChecked) set.add(priId);
-                                  else set.delete(priId);
-                                  return Array.from(set);
-                                });
-                              }}
-                            />
-                            <span className="truncate">
-                              {String(it?.name ?? "")}
-                            </span>
-                          </label>
-                        );
-                      })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              variant="ghost"
-              disabled={spaceResourcesSaving}
-              onClick={() => {
-                setSpaceResourcesSpaceId(null);
-                setSpaceResourcesDraftPriIds([]);
-              }}
-            >
-              Cancelar
-            </Button>
-
-            <Button
-              disabled={spaceResourcesSpaceId === null || spaceResourcesSaving}
-              onClick={async () => {
-                if (spaceResourcesSpaceId === null) return;
-
-                const unique = Array.from(
-                  new Set(
-                    (spaceResourcesDraftPriIds ?? [])
-                      .map((n) => Number(n))
-                      .filter((n) => Number.isFinite(n) && n > 0),
-                  ),
-                );
-
-                try {
-                  setSpaceResourcesSaving(true);
-
-                  await apiRequest(
-                    "PATCH",
-                    buildUrl(api.plans.spaceResourceAssignments.update.path, {
-                      id: planId,
-                      spaceId: spaceResourcesSpaceId,
-                    }),
-                    { planResourceItemIds: unique },
-                  );
-
-                  await loadSpaceAssignments();
-
-                  setSpaceResourcesSpaceId(null);
-                  setSpaceResourcesDraftPriIds([]);
-                } catch (e: any) {
-                  toast({
-                    title: "No se pudo guardar",
-                    description:
-                      e?.message ||
-                      "Revisa conexión/permisos y prueba de nuevo.",
-                    variant: "destructive",
-                  });
-                } finally {
-                  setSpaceResourcesSaving(false);
-                }
-              }}
-            >
-              Guardar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog: requisitos genéricos por tipo del ESPACIO dentro del plan */}
-      <Dialog
-        open={spaceTypeSpaceId !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSpaceTypeSpaceId(null);
-            setSpaceTypeDraft({});
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              Requisitos genéricos del espacio (este plan):{" "}
-              {spaceTypeSpaceId !== null
-                ? ((spaces ?? []) as any[]).find(
-                    (x) => Number(x?.id) === Number(spaceTypeSpaceId),
-                  )?.name || `#${spaceTypeSpaceId}`
-                : ""}
-            </DialogTitle>
-            <DialogDescription>
-              Define cuántos recursos de cada tipo necesita el espacio (sin
-              fijar unidad concreta). Esto es un override del snapshot del plan.
-            </DialogDescription>
-          </DialogHeader>
-
-          {spaceTypeError && (
-            <Alert variant="destructive">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{spaceTypeError}</AlertDescription>
-            </Alert>
-          )}
-
-          <div className="space-y-2 max-h-[50vh] overflow-auto pr-1">
-            {types.map((t) => {
-              const typeId = Number(t.id);
-              const qty = Number(spaceTypeDraft[typeId] ?? 0);
-
-              return (
-                <div
-                  key={typeId}
-                  className="flex items-center justify-between gap-3 border rounded px-3 py-2"
-                >
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium truncate">{t.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      Disponible en plan:{" "}
-                      {
-                        (grouped.get(typeId) ?? []).filter((x) => x.isAvailable)
-                          .length
-                      }
-                    </div>
-                  </div>
-
-                  <Input
-                    className="w-28"
-                    type="number"
-                    min={0}
-                    max={99}
-                    value={qty}
-                    onChange={(e) => {
-                      const next = Number(e.target.value ?? 0);
-                      setSpaceTypeDraft((prev) => ({
-                        ...prev,
-                        [typeId]: Number.isFinite(next) && next >= 0 ? next : 0,
-                      }));
-                    }}
-                  />
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              variant="ghost"
-              disabled={spaceTypeSaving}
-              onClick={() => {
-                setSpaceTypeSpaceId(null);
-                setSpaceTypeDraft({});
-              }}
-            >
-              Cancelar
-            </Button>
-
-            <Button
-              disabled={spaceTypeSpaceId === null || spaceTypeSaving}
-              onClick={async () => {
-                if (spaceTypeSpaceId === null) return;
-
-                const requirements = Object.entries(spaceTypeDraft ?? {})
-                  .map(([k, v]) => ({
-                    resourceTypeId: Number(k),
-                    quantity: Number(v ?? 0),
-                  }))
-                  .filter(
-                    (r) =>
-                      Number.isFinite(r.resourceTypeId) &&
-                      r.resourceTypeId > 0 &&
-                      Number.isFinite(r.quantity) &&
-                      r.quantity >= 0,
-                  );
-
-                try {
-                  setSpaceTypeSaving(true);
-
-                  await apiRequest(
-                    "PATCH",
-                    buildUrl(
-                      api.plans.spaceResourceTypeRequirements.update.path,
-                      {
-                        id: planId,
-                        spaceId: spaceTypeSpaceId,
-                      },
-                    ),
-                    { requirements },
-                  );
-
-                  await loadSpaceTypeRequirements();
-
-                  setSpaceTypeSpaceId(null);
-                  setSpaceTypeDraft({});
-                } catch (e: any) {
-                  toast({
-                    title: "No se pudo guardar",
-                    description:
-                      e?.message ||
-                      "Revisa conexión/permisos y prueba de nuevo.",
-                    variant: "destructive",
-                  });
-                } finally {
-                  setSpaceTypeSaving(false);
-                }
-              }}
-            >
-              Guardar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Listado agrupado */}
-      {types.map((t) => {
-        const list = grouped.get(t.id) ?? [];
-        const available = list.filter((x) => x.isAvailable).length;
-
-        return (
-          <Card key={t.id}>
-            <CardHeader className="py-3">
-              <CardTitle className="text-base flex justify-between items-center">
-                <span>{t.name}</span>
-                <span className="text-sm text-muted-foreground">
-                  {available}/{list.length}
-                </span>
-              </CardTitle>
-            </CardHeader>
-
-            <CardContent className="pt-0 space-y-2">
-              {list.map((r) => (
-                <div key={r.id} className="flex items-center gap-2">
-                  <Checkbox
-                    checked={r.isAvailable}
-                    onCheckedChange={async (v) => {
-                      const next = !!v;
-
-                      // Optimistic UI
-                      setRows((prev) =>
-                        prev.map((x) =>
-                          x.id === r.id ? { ...x, isAvailable: next } : x,
-                        ),
-                      );
-
-                      try {
-                        await apiRequest(
-                          "PATCH",
-                          buildUrl(api.plans.resourceItems.update.path, {
-                            id: planId,
-                            itemId: r.id,
-                          }),
-                          { isAvailable: next },
-                        );
-                      } catch (e: any) {
-                        alert(friendlyError(e) || "No se pudo guardar");
-                        await load();
-                      }
-                    }}
-                  />
-
-                  {r.source === "adhoc" ? (
-                    <Input
-                      defaultValue={r.name}
-                      onBlur={async (e) => {
-                        const name = e.currentTarget.value.trim();
-                        if (!name || name === r.name) return;
-
-                        try {
-                          await apiRequest(
-                            "PATCH",
-                            buildUrl(api.plans.resourceItems.update.path, {
-                              id: planId,
-                              itemId: r.id,
-                            }),
-                            { name },
-                          );
-
-                          setRows((prev) =>
-                            prev.map((x) =>
-                              x.id === r.id ? { ...x, name } : x,
-                            ),
-                          );
-                        } catch (err: any) {
-                          alert(friendlyError(err) || "No se pudo renombrar");
-                          await load();
-                        }
-                      }}
-                    />
-                  ) : (
-                    <span
-                      className={
-                        r.isAvailable
-                          ? ""
-                          : "line-through text-muted-foreground"
-                      }
-                    >
-                      {r.name}
-                    </span>
-                  )}
-
-                  {r.source === "adhoc" ? (
-                    <button
-                      className="text-sm text-red-600 hover:underline ml-auto"
-                      onClick={async () => {
-                        const ok = await confirmDialog({
-                          title: "Eliminar recurso",
-                          description: "¿Eliminar este recurso adhoc del plan?",
-                          confirmText: "Eliminar",
-                        });
-                        if (!ok) return;
-
-                        try {
-                          await apiRequest(
-                            "DELETE",
-                            buildUrl(api.plans.resourceItems.delete.path, {
-                              id: planId,
-                              itemId: r.id,
-                            }),
-                          );
-                          await load();
-                        } catch (e: any) {
-                          alert(friendlyError(e) || "No se pudo borrar");
-                        }
-                      }}
-                    >
-                      Eliminar
-                    </button>
-                  ) : null}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
   );
 }

@@ -20,15 +20,17 @@ const ZOOM_MIN = 70;
 const ZOOM_MAX = 160;
 const ZOOM_STEP = 10;
 
-const getStoredDensity = (): DensityMode => {
+const getStoredDensity = (viewKey: string): DensityMode => {
   if (typeof window === "undefined") return "normal";
-  const raw = localStorage.getItem("planning-density");
+  try {
+  const raw = localStorage.getItem(`${viewKey}:density`) ?? localStorage.getItem("planning-density");
   if (raw === "compact") {
     localStorage.setItem("planning-density", "normal");
     return "normal";
   }
   if (raw === "pdf") return "pdf";
   return "normal";
+  } catch { return "normal"; }
 };
 
 export const PlanningDensityContext = createContext<DensityMode>("normal");
@@ -37,11 +39,13 @@ export function usePlanningDensity(): DensityMode {
   return useContext(PlanningDensityContext);
 }
 
-const getStoredZoom = () => {
+const getStoredZoom = (viewKey: string) => {
   if (typeof window === "undefined") return 100;
-  const parsed = Number(localStorage.getItem("planning-zoom"));
+  try {
+  const parsed = Number(localStorage.getItem(`${viewKey}:zoom`) ?? localStorage.getItem("planning-zoom") ?? 100);
   if (!Number.isFinite(parsed)) return 100;
   return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(parsed / ZOOM_STEP) * ZOOM_STEP));
+  } catch { return 100; }
 };
 
 export function FullscreenPlanningPanel({
@@ -57,8 +61,8 @@ export function FullscreenPlanningPanel({
     if (cached) return cached;
     return {
       isFullscreen: false,
-      density: getStoredDensity(),
-      zoom: getStoredZoom(),
+      density: getStoredDensity(viewKey),
+      zoom: getStoredZoom(viewKey),
     };
   }, [viewKey]);
 
@@ -71,22 +75,23 @@ export function FullscreenPlanningPanel({
   }, [viewKey, isFullscreen, density, zoom]);
 
   useEffect(() => {
-    localStorage.setItem("planning-density", density);
-  }, [density]);
+    try { localStorage.setItem(`${viewKey}:density`, density); } catch {}
+  }, [density, viewKey]);
 
   useEffect(() => {
-    localStorage.setItem("planning-zoom", String(zoom));
-  }, [zoom]);
+    try { localStorage.setItem(`${viewKey}:zoom`, String(zoom)); } catch {}
+  }, [zoom, viewKey]);
 
   useEffect(() => {
     if (!isFullscreen) return;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    document.body.dataset.planningFullscreen = "true";
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      const hasOpenDialog = Boolean(document.querySelector('[role="dialog"][data-state="open"]'));
+      const hasOpenDialog = Boolean(document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]'));
       if (hasOpenDialog) return;
       event.preventDefault();
       setIsFullscreen(false);
@@ -97,6 +102,7 @@ export function FullscreenPlanningPanel({
     return () => {
       window.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = previousOverflow;
+      delete document.body.dataset.planningFullscreen;
     };
   }, [isFullscreen]);
 
@@ -119,12 +125,12 @@ export function FullscreenPlanningPanel({
           : "600px",
       } as CSSProperties}
     >
-      <div className="sticky top-0 z-20 mb-3 flex items-center justify-between gap-3 rounded-lg border bg-card/95 px-3 py-2 backdrop-blur">
+      <div className="sticky top-0 z-20 mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card/95 px-3 py-2 backdrop-blur">
         <div className="min-w-0">
           {title ? <p className="truncate text-sm font-semibold">{title}</p> : null}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {toolbarRight}
 
           <div className="flex items-center gap-1 rounded-md border p-1">
@@ -136,7 +142,7 @@ export function FullscreenPlanningPanel({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span>
-                  <Button size="icon" variant="ghost" disabled={!supportsZoom} onClick={() => setZoom((z) => Math.max(ZOOM_MIN, z - ZOOM_STEP))}>
+                  <Button size="icon" variant="ghost" aria-label="Reducir zoom" disabled={!supportsZoom} onClick={() => setZoom((z) => Math.max(ZOOM_MIN, z - ZOOM_STEP))}>
                     <Minus className="h-4 w-4" />
                   </Button>
                 </span>
@@ -147,7 +153,7 @@ export function FullscreenPlanningPanel({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span>
-                  <Button size="icon" variant="ghost" disabled={!supportsZoom} onClick={() => setZoom((z) => Math.min(ZOOM_MAX, z + ZOOM_STEP))}>
+                  <Button size="icon" variant="ghost" aria-label="Ampliar zoom" disabled={!supportsZoom} onClick={() => setZoom((z) => Math.min(ZOOM_MAX, z + ZOOM_STEP))}>
                     <Plus className="h-4 w-4" />
                   </Button>
                 </span>

@@ -41,9 +41,11 @@ interface AddTaskDialogProps {
 export function AddTaskDialog({
   planId,
   contestantId,
+  disabled = false,
 }: {
   planId: number;
   contestantId?: number | null;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const createTask = useCreateDailyTask();
@@ -93,6 +95,7 @@ export function AddTaskDialog({
   }, [selectedTemplateId, templates, form]);
 
   function onSubmit(data: InsertDailyTask) {
+    if(disabled)return;
     createTask.mutate(data, {
       onSuccess: () => {
         setOpen(false);
@@ -112,14 +115,14 @@ export function AddTaskDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button disabled={disabled} variant="outline" size="sm" className="gap-2">
           <PlusCircle className="h-4 w-4" />
-          Add Task
+          Añadir tarea
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add Task to Plan</DialogTitle>
+          <DialogTitle>Añadir tarea a la jornada</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -128,14 +131,14 @@ export function AddTaskDialog({
               name="templateId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Task Template</FormLabel>
+                  <FormLabel>Plantilla de tarea</FormLabel>
                   <Select
                     onValueChange={(val) => field.onChange(parseInt(val))}
                     value={field.value?.toString()}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a template" />
+                        <SelectValue placeholder="Selecciona una plantilla" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -317,7 +320,7 @@ export function AddTaskDialog({
               className="w-full"
               disabled={createTask.isPending}
             >
-              {createTask.isPending ? "Adding..." : "Add Task"}
+              {createTask.isPending ? "Añadiendo…" : "Añadir tarea"}
             </Button>
           </form>
         </Form>
