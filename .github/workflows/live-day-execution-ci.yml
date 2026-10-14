@@ -10,11 +10,14 @@ on:
       - 'server/storage.ts'
       - 'shared/execution.ts'
       - 'shared/routes.ts'
+      - 'client/src/components/day-workspace/day-execution-workspace.tsx'
+      - 'client/src/pages/plan-details.tsx'
       - 'client/src/pages/my-day.tsx'
       - 'client/src/pages/dashboard.tsx'
       - 'client/src/pages/control-room.tsx'
       - 'client/src/hooks/use-plan-realtime.ts'
       - 'client/src/hooks/use-execution-context.ts'
+      - 'client/src/hooks/use-tasks.ts'
       - 'client/src/hooks/usePlanOpsData.ts'
       - 'client/src/components/production-control-panel.tsx'
       - 'supabase/migrations/**'
@@ -53,3 +56,4 @@ jobs:
           path: |
             work/live-day-execution/integration.json
             work/live-day-execution/mi-dia-*.png
+            work/live-day-execution/workspace-*.png

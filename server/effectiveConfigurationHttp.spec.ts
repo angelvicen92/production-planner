@@ -11,3 +11,12 @@ test("effective configuration API maps a missing real plan without Assisted stat
   const result=await getEffectiveConfigurationResponse({getPlan:async()=>undefined} as any,"42");
   assert.deepEqual(result,{status:404,body:{message:"Plan no encontrado"}});
 });
+
+test("authority failures return a useful JSON 500 without fabricating configuration or exposing database internals",async()=>{
+  const storage={getPlan:async()=>{throw Object.assign(new Error("column main_before_meal_blocks does not exist"),{code:"42703"});}};
+  const result=await getEffectiveConfigurationResponse(storage as any,"42");
+  assert.equal(result.status,500);
+  assert.equal((result.body as any).code,"EFFECTIVE_CONFIGURATION_UNAVAILABLE");
+  assert.match(result.body.message,/versión del esquema/);
+  assert.doesNotMatch(JSON.stringify(result.body),/main_before|42703|values/);
+});

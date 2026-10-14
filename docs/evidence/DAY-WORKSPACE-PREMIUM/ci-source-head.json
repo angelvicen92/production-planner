@@ -1,0 +1,29 @@
+{
+  "sourceHead": "623f36880704a5ce6f4d634693e4a42150f3ff9f",
+  "workflowRun": "https://github.com/angelvicen92/production-planner/actions/runs/38620746737",
+  "productJob": {
+    "url": "https://github.com/angelvicen92/production-planner/actions/runs/38620746737/job/116047338990",
+    "status": "PASS",
+    "tests": 2927,
+    "passed": 2926,
+    "failed": 0,
+    "skipped": 1
+  },
+  "softPreferenceJob": {
+    "url": "https://github.com/angelvicen92/production-planner/actions/runs/38620746737/job/116047339501",
+    "status": "PASS",
+    "completeObligations": 266,
+    "acceptedStages": 11,
+    "profile": "SOFT 4 / 2+2",
+    "workspace": "PASS"
+  },
+  "autoJob": {
+    "url": "https://github.com/angelvicen92/production-planner/actions/runs/38620746737/job/116047339149",
+    "jobStatus": "TIMEOUT_20_MINUTES",
+    "canonicalA2": "PASS 266/266 S11",
+    "twoRepeatedOrders": "PASS",
+    "autopilot": "Delegation dismissal, stop/reload/resume and repeated S5 passed; full job interrupted",
+    "searchRuntimeLimitMs": 300000,
+    "searchBranchLimit": 100000
+  }
+}

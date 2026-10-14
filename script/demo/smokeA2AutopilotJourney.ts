@@ -118,6 +118,7 @@ export async function runA2AutopilotJourney(options: Options, baseline: Baseline
     assert.equal(repeated.fingerprint, resumed.fingerprint, "identical accepted checkpoint and unchanged scopes produce deterministic completion");
     consent=false;
     const beforeRestart=await api(),beforeRestartRequests=report.requests.length;
+    await page.getByText("Configuración y mantenimiento de la sesión",{exact:true}).click();
     await page.getByRole("button",{name:"Reiniciar Asistida",exact:true}).click();
     assert.deepEqual(await api(),beforeRestart);assert.equal(report.requests.length,beforeRestartRequests);
     const denied=await fetch(`${appUrl}${path}/restart`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${users.viewer.token}`},body:JSON.stringify({expectedDraftFingerprint:beforeRestart.draftFingerprint,expectedBaseStageId:Number(beforeRestart.draftBaseStageId),confirmation:"RESTART_BOOTSTRAP"})});

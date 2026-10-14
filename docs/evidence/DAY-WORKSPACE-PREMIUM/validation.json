@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "applicationTypes": "npm run check",
+  "integrationTypes": "node node_modules/typescript/bin/tsc -p script/demo/tsconfig.integration.json",
+  "productionBuild": "npm run build",
+  "focusedAndProductTests": {
+    "passed": 120,
+    "failed": 0,
+    "durationMs": 18779.184378
+  },
+  "officialChecksums": {
+    "passed": 10,
+    "failed": 0
+  },
+  "protectedDiffAgainstMain": "EMPTY: engine, shared/schema.ts, shared/routes.ts, server/storage.ts, server/apiAuthorization.ts, supabase/migrations",
+  "nativeNodeVersion": "v20.20.2",
+  "remoteWrites": 0,
+  "buildWarnings": [
+    "Existing bundle chunk warning >500 kB",
+    "Browserslist data older than twelve months"
+  ],
+  "headerPostS0TaskCount": "PASS: real UI creates contestant after S0; header matches actual day task count",
+  "mealModeDto": "PASS: GET day equals existing effective-configuration mode",
+  "readDtoAndAuthorityTests": {
+    "passed": 7,
+    "failed": 0
+  }
+}

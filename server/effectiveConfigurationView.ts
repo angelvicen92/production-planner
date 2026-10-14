@@ -40,6 +40,10 @@ export async function buildEffectiveConfigurationView(storage:IStorage,planId:nu
   const plan=await storage.getPlan(planId); if(!plan)throw Object.assign(new Error("PLAN_NOT_FOUND"),{status:404});
   const hasProvenance=!!(plan as any).work_config_source;
   const [input,session,revisions,generalResult,optimizer,optimizerStateResult]=await Promise.all([inputBuilder(planId,storage),storage.getActiveAssistedPlanningSession(planId),typeof (storage as any).listPlanConfigRevisions==="function"?storage.listPlanConfigRevisions(planId):Promise.resolve([]),hasProvenance?import("./supabase").then(({supabaseAdmin})=>supabaseAdmin.from("program_settings").select("default_work_start,default_work_end,meal_start,meal_end,meal_mode,default_participant_transition_minutes,main_preferred_block_count,main_before_meal_blocks").eq("id",1).single()):Promise.resolve({data:{}} as any),typeof (storage as any).getPlanOptimizerSnapshot==="function"?storage.getPlanOptimizerSnapshot(planId):Promise.resolve(undefined),hasProvenance?import("./supabase").then(({supabaseAdmin})=>supabaseAdmin.from("plan_optimizer_snapshots").select("baseline_snapshot,override_by,override_at").eq("plan_id",planId).single()):Promise.resolve({data:{}} as any)]);
+  // A failed provenance read is different from a legacy day with no provenance.
+  // Schema drift must not silently turn an unknown authority into AUTO/defaults.
+  if (generalResult.error) throw generalResult.error;
+  if (optimizerStateResult.error) throw optimizerStateResult.error;
   const revision=revisions.at(-1); const rawPlan=plan as any; const general=generalResult.data??{};
   const geometry=mainFlowPreferenceGeometry(input);
   const values=configurabilityRegistry.map(c=>projected(c,input,rawPlan,general,Number(rawPlan.current_config_revision_id??revision?.id) || undefined,revision?.fingerprint,optimizer,optimizerStateResult.data,geometry));
