@@ -33,6 +33,9 @@ export async function runDayWorkspaceJourney(options: Options, page: Page, expec
   const material = async () => Promise.all(["daily_tasks", "locks", "assisted_planning_sessions", "assisted_planning_stages", "planning_stage_validations", "planning_runs", "plan_config_revisions", "planning_accepted_exceptions"].map(async table => (await db.query(`SELECT to_jsonb(x) AS row FROM public.${table} x WHERE plan_id=$1 ORDER BY id`, [planId])).rows));
   const before = await material(); const initial = (await api("/assisted")).data;
   assert.equal(initial.draft.tasks.length, 266); assert.equal(initial.activeStage.ordinal, expectedStageOrdinal);
+  const expectedIds:number[]=initial.draft.tasks.map((task:any)=>Number(task.taskId)).sort((a:number,b:number)=>a-b);
+  const live=(await api("")).data;const people=(await api("/contestants")).data;
+
   for (const mode of ["partial","total"]) {
     const response = await api("/reset","POST",{mode});
     assert.equal(response.status,409);assert.equal(response.data.code,"ASSISTED_SESSION_RESET_REQUIRED");
@@ -59,8 +62,8 @@ export async function runDayWorkspaceJourney(options: Options, page: Page, expec
       const start = performance.now(); await setViews(wanted);
       for (const view of wanted) {
         const ids = await panel(view).locator("[data-planning-task-id]").evaluateAll(elements => [...new Set(elements.map(element => Number(element.getAttribute("data-planning-task-id"))))]);
-        if (view !== "resources") assert.equal(ids.length, 266, `${view}: all canonical obligations`);
-        else assert.ok(ids.length > 0, "resource agenda uses effective nominal assignments");
+        if (view !== "resources") assert.deepEqual(ids.sort((a,b)=>a-b),expectedIds, `${view}: every actual obligation identity`);
+        else {assert.ok(ids.length > 0, "resource agenda uses effective nominal assignments");assert.ok(ids.every(id=>expectedIds.includes(id)));}
       }
       report.combinations.push({ views: wanted, renderAndInteractionMs: Math.round(performance.now() - start) });
       await page.getByTestId("planning-multiview").scrollIntoViewIfNeeded(); await capture(`workspace-${wanted.join("-")}`, true);
@@ -72,7 +75,16 @@ export async function runDayWorkspaceJourney(options: Options, page: Page, expec
     pass("day workspace: all seven visual combinations retain actual obligations");
     for (const layout of ["horizontal", "vertical", "rejilla"]) { await page.getByRole("button", { name: `Distribución ${layout}`, exact: true }).click(); assert.equal(await page.getByTestId("planning-multiview").locator("[data-layout]").getAttribute("data-layout"), layout === "rejilla" ? "grid" : layout); }
     const contestants = panel("contestants");
-    for (const order of ["arrival", "first", "last", "task", "name"]) { await contestants.getByLabel("Ordenar concursantes", { exact: true }).selectOption(order); if (order === "task") { const select = contestants.getByLabel("Tipo de tarea para ordenar"); const value = await select.locator("option").nth(1).getAttribute("value"); await select.selectOption(value!); } }
+    for (const order of ["arrival", "first", "last", "task", "name"]) {
+      await contestants.getByLabel("Ordenar concursantes", { exact: true }).selectOption(order);
+      if (order === "task") {
+        const select = contestants.getByLabel("Tipo de tarea para ordenar");const value = await select.locator("option").nth(1).getAttribute("value");await select.selectOption(value!);
+        const first=(person:any)=>{const times=live.dailyTasks.filter((task:any)=>Number(task.contestantId)===Number(person.id)&&Number(task.templateId)===Number(value)&&task.startPlanned).map((task:any)=>task.startPlanned).sort();return times[0]??null;};
+        const expected=people.slice().sort((a:any,b:any)=>{const left=first(a),right=first(b);return left&&right?left.localeCompare(right)||a.name.localeCompare(b.name):left?-1:right?1:a.name.localeCompare(b.name);}).map((person:any)=>String(person.id));
+        if(live.dailyTasks.some((task:any)=>task.contestantId==null))expected.push("none");
+        assert.deepEqual(await contestants.locator("[data-planning-lane]").evaluateAll(elements=>elements.map(element=>element.getAttribute("data-planning-lane"))),expected,"real selected template orders whole contestant lanes");
+      }
+    }
     await contestants.getByRole("button", {name:"Filtros",exact:true}).click();
     await contestants.getByLabel("Buscar en Concursantes",{exact:true}).fill("C01");
     await contestants.getByRole("checkbox",{name:"C01",exact:true}).check();

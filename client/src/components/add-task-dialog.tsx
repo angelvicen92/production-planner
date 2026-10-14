@@ -95,7 +95,7 @@ export function AddTaskDialog({
   }, [selectedTemplateId, templates, form]);
 
   function onSubmit(data: InsertDailyTask) {
-    if(disabled)return;
+    if(disabled || createTask.isPending)return;
     createTask.mutate(data, {
       onSuccess: () => {
         setOpen(false);
@@ -120,7 +120,7 @@ export function AddTaskDialog({
           Añadir tarea
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Añadir tarea a la jornada</DialogTitle>
         </DialogHeader>
@@ -158,8 +158,7 @@ export function AddTaskDialog({
                         </div>
                       ) : (templates?.length ?? 0) === 0 ? (
                         <div className="p-2 text-sm text-muted-foreground">
-                          No hay plantillas en la base de datos
-                          (task_templates).
+                          No hay plantillas disponibles.
                         </div>
                       ) : (
                         templates!.map((t) => (
@@ -181,11 +180,11 @@ export function AddTaskDialog({
                 name="durationOverride"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Duration (Optional)</FormLabel>
+                    <FormLabel>Duración (opcional)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
-                        placeholder="Minutes"
+                        placeholder="Minutos"
                         {...field}
                         value={field.value || ""}
                         onChange={(e) =>
@@ -206,7 +205,7 @@ export function AddTaskDialog({
                 name="camerasOverride"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cameras (Optional)</FormLabel>
+                    <FormLabel>Cámaras (opcional)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -315,6 +314,7 @@ export function AddTaskDialog({
               />
             </div>
 
+            {createTask.error ? <p role="alert" className="text-sm text-destructive">No se pudo añadir la tarea. Revisa los datos y vuelve a intentarlo.</p> : null}
             <Button
               type="submit"
               className="w-full"

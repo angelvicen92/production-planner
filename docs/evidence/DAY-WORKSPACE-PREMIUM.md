@@ -1,6 +1,7 @@
 # Day Workspace — Evidence y revisión
 
-Estado: candidato en validación; no autorizado para merge por esta Evidence.
+Estado: PR [#1126](https://github.com/angelvicen92/production-planner/pull/1126)
+en borrador. No se ha hecho merge.
 
 Base inicial solicitada: `c7f85411ac13b62f4be34de09061124f7460b7e0`.
 Durante el trabajo se integró EJEC-01 (#1124). Se incorporó `main` en
@@ -14,7 +15,7 @@ La página anterior tenía 7.290 líneas, controles V3/V4 en la cabecera y una
 selección ordinaria de generaciones del planificador. Preparación, diagnóstico,
 planificación y seguimiento compartían el mismo nivel visual.
 
-La página queda en 4.550 líneas. Conserva el editor de tareas existente y las
+La página queda en 4.547 líneas. Conserva el editor de tareas existente y las
 operaciones históricas, y delega navegación, resumen, concursantes, configuración,
 recursos, responsables y ejecución en componentes con responsabilidad concreta.
 Hay exactamente seis pestañas con URL: Concursantes, Planning, Configuración,
@@ -78,7 +79,7 @@ V4 no se activa al abrir una jornada ordinaria.
 | Planning | Siete combinaciones no vacías, tres layouts, filtros independientes, orden por nombre/llegada/primera/última/plantilla real, zoom, densidad, fullscreen/Esc; Draft y aceptado | El ajuste manual mueve tareas con horario; no coloca obligaciones aún sin planificar. |
 | Configuración | Horario, comida/modo, transición, preferencia AUTO/SOFT y reparto, campos existentes del optimizador; restore/refresh y procedencia | Las capacidades parciales siguen en diagnóstico. No se crean capacidades que no tenga el contrato. |
 | Recursos | Catálogo de tipos de consulta, creación diaria, disponibilidad, asignación a zona/espacio, unión nominal efectiva, requisitos separados y enlace a agenda | La disponibilidad del inventario se representa según el booleano del contrato. No se inventan turnos de disponibilidad nominal. |
-| Roles | Selección de personal existente, Producción/Redacción, zone/space, Reality e itinerantes existentes, guardar y recargar | Asignar responsables no concede permisos. La prueba de preparación verifica zone; la cobertura adicional se declara separadamente. |
+| Roles | Selección de personal existente, Producción/Redacción, zone/space, Reality e itinerantes existentes, guardar y recargar | Asignar responsables no concede permisos. La preparación verifica zone y la ejecución verifica autoridad space, guardado zone y lectura efectiva en cabeceras. Reality/itinerantes conservan sus contratos; no se han vuelto a certificar por UI en este PR. |
 | Ejecución | Contadores reales, búsqueda, filtros combinables, diez ordenaciones, columnas, acciones según autoridad, reset confirmado | Requiere contexto verificable, conexión y estado permitido por EJEC-01; el servidor resuelve carreras y conflictos. |
 
 La consulta efectiva fallida ya no se convierte silenciosamente en defaults:
@@ -88,8 +89,24 @@ técnicos a Administración. Éste es el único ajuste de servidor del PR.
 
 ## Validación y capturas
 
-Los resultados finales y sus archivos se completan al cerrar los recorridos.
-Una ejecución interrumpida o agotada no se cuenta como PASS.
+Una ejecución interrumpida o agotada no se cuenta como PASS. El recorrido
+[ui-replay/integration.json](DAY-WORKSPACE-PREMIUM/ui-replay/integration.json)
+pasa sobre el snapshot histórico S0–S10, con 266 obligaciones. No se presenta
+esa reapertura como generación fresca de once etapas.
+
+| Comprobación | Resultado registrado |
+| --- | --- |
+| `npm run check` | PASS |
+| TypeScript del arnés | PASS |
+| `npm run build` | PASS; conserva aviso de bundle >500 kB y datos Browserslist antiguos |
+| Tests focales y de producto | 120/120; incluye permisos, configuración, workflow Assisted y EJEC-01 |
+| Checksums oficiales | 10/10 PASS |
+| Reapertura multivista real | PASS; siete combinaciones, 266 tareas, Draft/Stage/material SQL intactos |
+| Filtro independiente y arrastre local compartido | PASS; movimiento visible en otras representaciones, conservado tras tick y descartado sin write |
+| Fallo HTTP efectivo y reintento | PASS; columna renombrada sólo en DB desechable, HTTP 500 real, restauración y recuperación |
+| Writer diario | PASS; horario por UI, recarga y restore versionado; snapshot aceptado intacto |
+| Ejecución global UI y responsables | PASS; [ejecución](DAY-WORKSPACE-PREMIUM/execution/integration.json), incluidas Interrumpir/Reanudar, reset autorizado y cabeceras tras guardar Roles |
+| CI | [Checks del PR](https://github.com/angelvicen92/production-planner/pull/1126/checks); los resultados por head no se extrapolan a commits posteriores |
 
 Preparación verificada con Chromium y PostgreSQL/Auth/HTTP desechables:
 
@@ -100,6 +117,22 @@ Preparación verificada con Chromium y PostgreSQL/Auth/HTTP desechables:
 - seleccionar Producción y Redacción del catálogo, guardar y recargar;
 - seis pestañas a 390 px sin desbordamiento del viewport;
 - capturas de escritorio, móvil y oscuro inspeccionadas.
+
+Capturas reales del snapshot aceptado:
+
+![Tres paneles simultáneos](DAY-WORKSPACE-PREMIUM/ui-replay/workspace-three-panels-horizontal.png)
+
+![Navegación móvil](DAY-WORKSPACE-PREMIUM/ui-replay/workspace-resources-mobile.png)
+
+![Error HTTP real](DAY-WORKSPACE-PREMIUM/ui-replay/workspace-configuration-real-http-error.png)
+
+![Responsables efectivos tras guardar Roles](DAY-WORKSPACE-PREMIUM/execution/workspace-staff-effective-headers.png)
+
+[Fullscreen](DAY-WORKSPACE-PREMIUM/ui-replay/workspace-fullscreen.png),
+[configuración](DAY-WORKSPACE-PREMIUM/ui-replay/workspace-configuration-desktop.png),
+[ejecución](DAY-WORKSPACE-PREMIUM/ui-replay/workspace-execution-desktop.png)
+y las demás combinaciones y pestañas están en la misma carpeta. El JSON enumera
+las operaciones y capturas sin incluir logs privados ni credenciales.
 
 Las personas QA sólo se crean como fixture SQL del entorno desechable; no hay
 writer de catálogo general nuevo en la aplicación.
@@ -121,6 +154,12 @@ refresca datos ni solicita un run. Los movimientos locales no se descartan por
 el tick del reloj. El arnés mide la interacción de las siete combinaciones;
 estos tiempos incluyen automatización y no son un benchmark de frames.
 
+La instrumentación durante el desarrollo registra medianas de 6.842 ms antes
+y 1.621 ms después de aislar los ticks. Son tiempos de secuencias automatizadas,
+con concurrencia diferente al arrancar; no permiten atribuir una mejora
+porcentual controlada. Se conservan medidas y límites en
+[performance.json](DAY-WORKSPACE-PREMIUM/performance.json).
+
 La referencia de búsqueda #1123 es AUTO 55.625 branches y SOFT 4/2+2 42.276.
 Un intento local AUTO alcanzó el límite productivo de 300 s con 46.403 branches,
 cuando otra suite competía por CPU (cuota local: dos CPU). No demuestra una
@@ -131,9 +170,6 @@ de render anterior/posterior que permita afirmar una mejora porcentual de UI.
 ## Validaciones pendientes y riesgo residual
 
 - Cerrar las pruebas frescas A2 y CI sobre el head entregado.
-- Inspeccionar capturas de Planning con las siete combinaciones y fullscreen.
-- Verificar interacción manual compartida y cabeceras con responsables sobre tareas planificadas.
-- Registrar la prueba real de fallo HTTP/reintento y writer diario versionado.
 - La conexión Realtime/WebSocket real y el despliegue publicado quedan fuera del entorno desechable.
 - No se escribe en Supabase real ni se publica en Replit. No hay merge.
 

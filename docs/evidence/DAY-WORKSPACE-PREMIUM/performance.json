@@ -1,0 +1,123 @@
+{
+  "kind": "OBSERVATIONAL_IMPLEMENTATION_TUNING",
+  "certifiesBaseVsHead": false,
+  "nodeVersion": "v20.20.2",
+  "cpuQuota": 2,
+  "remoteWrites": 0,
+  "limitations": [
+    "Includes automation and multiple clicks per combination, not frame latency",
+    "Earlier iteration overlapped a focal suite during startup",
+    "Earlier iteration failed later in mobile navigation; its seven combinations had already completed",
+    "This does not compare the original production page against the final page under controlled conditions"
+  ],
+  "iterations": [
+    {
+      "iteration": "2",
+      "status": "FAIL",
+      "combinations": [
+        {
+          "views": [
+            "contestants"
+          ],
+          "renderAndInteractionMs": 493
+        },
+        {
+          "views": [
+            "spaces"
+          ],
+          "renderAndInteractionMs": 6836
+        },
+        {
+          "views": [
+            "resources"
+          ],
+          "renderAndInteractionMs": 4008
+        },
+        {
+          "views": [
+            "contestants",
+            "spaces"
+          ],
+          "renderAndInteractionMs": 14831
+        },
+        {
+          "views": [
+            "contestants",
+            "resources"
+          ],
+          "renderAndInteractionMs": 9462
+        },
+        {
+          "views": [
+            "spaces",
+            "resources"
+          ],
+          "renderAndInteractionMs": 6842
+        },
+        {
+          "views": [
+            "contestants",
+            "spaces",
+            "resources"
+          ],
+          "renderAndInteractionMs": 12250
+        }
+      ],
+      "medianInteractionMs": 6842
+    },
+    {
+      "iteration": "4",
+      "status": "PASS",
+      "combinations": [
+        {
+          "views": [
+            "contestants"
+          ],
+          "renderAndInteractionMs": 277
+        },
+        {
+          "views": [
+            "spaces"
+          ],
+          "renderAndInteractionMs": 1400
+        },
+        {
+          "views": [
+            "resources"
+          ],
+          "renderAndInteractionMs": 1621
+        },
+        {
+          "views": [
+            "contestants",
+            "spaces"
+          ],
+          "renderAndInteractionMs": 2007
+        },
+        {
+          "views": [
+            "contestants",
+            "resources"
+          ],
+          "renderAndInteractionMs": 2561
+        },
+        {
+          "views": [
+            "spaces",
+            "resources"
+          ],
+          "renderAndInteractionMs": 2203
+        },
+        {
+          "views": [
+            "contestants",
+            "spaces",
+            "resources"
+          ],
+          "renderAndInteractionMs": 1131
+        }
+      ],
+      "medianInteractionMs": 1621
+    }
+  ]
+}

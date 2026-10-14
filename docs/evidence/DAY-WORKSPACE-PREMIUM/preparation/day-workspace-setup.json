@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "remoteWrites": 0,
+  "operations": [
+    "Concursante: crear, abrir ficha, editar canción, recargar y retirar por UI; canon preservado",
+    "Recurso de jornada: creación por UI sin catálogo general, asignación de plató, recarga y herencia efectiva visible",
+    "Asignación directa de espacio guarda y recarga sin convertir la herencia en una copia física",
+    "Responsables existentes: asignar Producción y Redacción al plató, guardar y recargar por UI",
+    "S0 conserva el estado sin horarios. La prueba de cabeceras con tareas planificadas se ejecuta en el recorrido de ejecución sobre el snapshot aceptado."
+  ]
+}

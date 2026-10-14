@@ -197,6 +197,27 @@ export async function runLiveExecutionJourney({ appUrl, url, anon, users, db, pl
     assert.deepEqual(await baseline(),original,'global execution preserves all planned placements and accepted snapshots');
     await observer.getByTestId('day-header').scrollIntoViewIfNeeded();await observer.screenshot({path:`${directory}/workspace-execution-confirmed.png`});
     pass('day workspace real UI: scoped aux Start/Interrupt/Resume/Finish and Production confirmed reset; planned material unchanged');
+    await db.query("INSERT INTO staff_people(name,role_type,is_active) VALUES('Redacción de ensayo','editorial',true)");
+    await observer.reload();await observer.getByRole('tab',{name:'Roles',exact:true}).click();
+    const staffWorkspace=observer.getByTestId('day-staff');await staffWorkspace.waitFor();
+    const zoneName=(await db.query('SELECT name FROM zones WHERE id=$1',[task.zone_id])).rows[0].name;
+    const staffCard=staffWorkspace.getByText(zoneName,{exact:true}).locator('..').locator('..').locator('..');
+    await staffCard.getByRole('combobox').click();await observer.getByRole('option',{name:'Plató',exact:true}).click();
+    for(const [role,name] of [['Producción','Operador de ensayo'],['Redacción','Redacción de ensayo']]){
+      await staffCard.getByText(role,{exact:true}).locator('..').locator('..').getByRole('button',{name:'Editar',exact:true}).click();
+      await observer.getByRole('dialog').getByRole('checkbox',{name,exact:true}).check();
+      await observer.getByRole('dialog').getByRole('button',{name:'Guardar',exact:true}).click();
+    }
+    const staffSaved=observer.waitForResponse(r=>r.request().method()==='PUT'&&r.url().includes('staff-assignments'));
+    await staffWorkspace.getByRole('button',{name:'Guardar',exact:true}).first().click();assert.equal((await staffSaved).status(),200);
+    await observer.reload();await observer.getByRole('tab',{name:'Planning',exact:true}).click();await observer.getByTestId('assisted-workspace').waitFor();
+    await observer.getByRole('button',{name:'Mostrar Platós y espacios',exact:true}).click();
+    const staffPanel=observer.getByTestId('planning-panel-spaces');await staffPanel.getByText('Operador de ensayo',{exact:false}).first().waitFor();await staffPanel.getByText('Redacción de ensayo',{exact:false}).first().waitFor();
+    await staffPanel.getByRole('button',{name:'Maximizar',exact:true}).click();await staffPanel.getByText('Redacción de ensayo',{exact:false}).first().scrollIntoViewIfNeeded();
+    await observer.screenshot({path:`${directory}/workspace-staff-effective-headers.png`});await observer.keyboard.press('Escape');
+    assert.deepEqual(await baseline(),original);
+    pass('day workspace real Roles UI: save/reload Production and Editorial, then verify both effective names in accepted Planning headers');
+
 
     for (const role of ['viewer', 'aux']) {
       const headers = { apikey: anon, Authorization: `Bearer ${users[role].token}`, 'Content-Type': 'application/json' };
@@ -204,6 +225,6 @@ export async function runLiveExecutionJourney({ appUrl, url, anon, users, db, pl
       assert.equal(direct.status, 403);
     }
     pass('two independent real browsers: mobile Start -> Control Room; Finish -> persisted reload; viewer/offline/direct RPC denied');
-    return { status: 'PASS', syncTransport: 'HTTP polling fallback', pollingIntervalMs: 5000, startLatencyMs, finishLatencyMs, durationSeconds, eventCount: events.length, executionLockCount: 1, preservedObligations: 266, remoteWrites: 0, dayWorkspaceTransitions:'PASS',clockModes:'real clock HTTP races + admin-authorized simulation in browser',uiPersistenceFailure:'PASS',multipleSimultaneousTasks:'PASS',screenshots: ['mi-dia-mobile-pending.png', 'mi-dia-mobile-running.png', 'mi-dia-desktop-running.png','mi-dia-desktop-dark.png'], realtimeWebSocket: 'NOT TESTED: disposable gateway has no Realtime service' };
+    return { status: 'PASS', syncTransport: 'HTTP polling fallback', pollingIntervalMs: 5000, startLatencyMs, finishLatencyMs, durationSeconds, eventCount: events.length, executionLockCount: 1, preservedObligations: 266, remoteWrites: 0, dayWorkspaceTransitions:'PASS',dayWorkspaceStaffHeaders:'PASS',clockModes:'real clock HTTP races + admin-authorized simulation in browser',uiPersistenceFailure:'PASS',multipleSimultaneousTasks:'PASS',screenshots: ['mi-dia-mobile-pending.png', 'mi-dia-mobile-running.png', 'mi-dia-desktop-running.png','mi-dia-desktop-dark.png'], realtimeWebSocket: 'NOT TESTED: disposable gateway has no Realtime service' };
   } finally { await browser.close(); }
 }

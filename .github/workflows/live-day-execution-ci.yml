@@ -17,6 +17,7 @@ on:
       - 'client/src/pages/control-room.tsx'
       - 'client/src/hooks/use-plan-realtime.ts'
       - 'client/src/hooks/use-execution-context.ts'
+      - 'client/src/hooks/use-tasks.ts'
       - 'client/src/hooks/usePlanOpsData.ts'
       - 'client/src/components/production-control-panel.tsx'
       - 'supabase/migrations/**'

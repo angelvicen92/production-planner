@@ -1,0 +1,86 @@
+{
+  "status": "PASS",
+  "remoteWrites": 0,
+  "baselineFingerprint": "a58fc840fa4b8d04049c96d8310eac6e5d4df66f08069d968fe7a5e0adf9e2dc",
+  "acceptedStageOrdinal": 10,
+  "freshCanonicalRun": false,
+  "combinations": [
+    {
+      "views": [
+        "contestants"
+      ],
+      "renderAndInteractionMs": 277
+    },
+    {
+      "views": [
+        "spaces"
+      ],
+      "renderAndInteractionMs": 1400
+    },
+    {
+      "views": [
+        "resources"
+      ],
+      "renderAndInteractionMs": 1621
+    },
+    {
+      "views": [
+        "contestants",
+        "spaces"
+      ],
+      "renderAndInteractionMs": 2007
+    },
+    {
+      "views": [
+        "contestants",
+        "resources"
+      ],
+      "renderAndInteractionMs": 2561
+    },
+    {
+      "views": [
+        "spaces",
+        "resources"
+      ],
+      "renderAndInteractionMs": 2203
+    },
+    {
+      "views": [
+        "contestants",
+        "spaces",
+        "resources"
+      ],
+      "renderAndInteractionMs": 1131
+    }
+  ],
+  "screenshots": [
+    "workspace-header-desktop.png",
+    "workspace-contestants.png",
+    "workspace-spaces.png",
+    "workspace-resources.png",
+    "workspace-contestants-spaces.png",
+    "workspace-contestants-resources.png",
+    "workspace-spaces-resources.png",
+    "workspace-contestants-spaces-resources.png",
+    "workspace-three-panels-horizontal.png",
+    "workspace-fullscreen.png",
+    "workspace-contestants-desktop.png",
+    "workspace-resources-desktop.png",
+    "workspace-roles-desktop.png",
+    "workspace-execution-desktop.png",
+    "workspace-configuration-desktop.png",
+    "workspace-contestants-mobile.png",
+    "workspace-configuration-mobile.png",
+    "workspace-resources-mobile.png",
+    "workspace-roles-mobile.png",
+    "workspace-execution-mobile.png",
+    "workspace-planning-mobile.png",
+    "workspace-configuration-real-http-error.png"
+  ],
+  "operations": [
+    "Independent contestant filter and real shared pointer movement/discard; no HTTP writer",
+    "Visual actions preserve all 266 tasks, Stage and Draft fingerprints",
+    "Real HTTP 500 from schema drift is explained; retry recovers after authority restoration",
+    "Workday UI save/reload + versioned inherited restore; accepted Stage unchanged"
+  ]
+}

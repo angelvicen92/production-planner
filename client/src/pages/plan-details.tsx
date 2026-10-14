@@ -2401,14 +2401,13 @@ ${reasonMessage}` : message,
 
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold">
-                      Daily Tasks asignadas
+                      Tareas asignadas
                     </h3>
 
                     <div className="flex items-center gap-2">
                       <AddTaskDialog disabled={!canEditDay}
                         planId={id}
                         contestantId={selectedContestant?.id ?? null}
-                        // Nota: si AddTaskDialog NO acepta contestantId, lo dejamos como está en este lote
                       />
                     </div>
                   </div>
@@ -2416,7 +2415,7 @@ ${reasonMessage}` : message,
                   {/* Tareas del concursante */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between gap-2">
-                      <h3 className="text-sm font-semibold">Daily Tasks asignadas</h3>
+                      <h3 className="text-sm font-semibold">Tareas asignadas</h3>
                       <div className="flex items-center gap-3">
                         <span className="text-xs text-muted-foreground">
                           {contestantTasks.length} tareas

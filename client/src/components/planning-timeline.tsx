@@ -1463,8 +1463,7 @@ function TaskStatusMenuTrigger({
     return (
       <Card className="p-8 bg-muted/50 space-y-4">
         <p className="text-muted-foreground text-center">
-          Aún no hay planificación. Pulsa "Generate Planning" para calcular los
-          horarios.
+          {assistedDraftMode ? "Aún no hay tareas con horario. Selecciona un alcance y genera una propuesta en Assisted." : "Aún no hay tareas con horario para consultar en esta vista."}
         </p>
         {unscheduledPendingTasks.length > 0 && (
           <div className="rounded-md border bg-background/80 p-3">
@@ -1821,7 +1820,7 @@ function TaskStatusMenuTrigger({
                   const zoneColsToShow = zoneCols
                     .map((zc) => ({
                       ...zc,
-                      spaces: zc.spaces.filter((sp) => sp.tasks.some(isRealTask)),
+                      spaces: zc.spaces.filter((sp) => !hideEmptyLanes || sp.tasks.some(isRealTask)),
                     }))
                     .filter((zc) => zc.spaces.length > 0);
 

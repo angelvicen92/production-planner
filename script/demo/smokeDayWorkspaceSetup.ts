@@ -22,6 +22,7 @@ export async function runDayWorkspaceSetup({appUrl,planId,users,db,directory,pas
     await page.goto(`${appUrl}/login`);await page.getByLabel("Email",{exact:true}).fill(users.production.email);await page.getByLabel("Contraseña (opcional para enlace)",{exact:true}).fill(users.production.password);await page.getByRole("button",{name:"Entrar con contraseña",exact:true}).click();await page.waitForURL("**/dashboard");
     await page.goto(`${appUrl}/plans/${planId}?tab=tasks`);
     const initialContestants=(await api(`${base}/contestants`)).data;
+    const initialTaskIds=(await api(base)).data.dailyTasks.map((task:any)=>Number(task.id)).sort((a:number,b:number)=>a-b);
     const name="QA Jornada";
     await page.getByLabel("Nombre del nuevo concursante",{exact:true}).fill(name);
     const created=page.waitForResponse(response=>response.url().endsWith(`${base}/contestants`)&&response.request().method()==="POST");
@@ -32,10 +33,20 @@ export async function runDayWorkspaceSetup({appUrl,planId,users,db,directory,pas
     const dialog=page.getByRole("dialog");await dialog.waitFor();
     const renamed=page.waitForResponse(response=>response.url().endsWith(`/contestants/${contestant.id}`)&&response.request().method()==="PATCH");
     await dialog.locator("input").first().fill(`${name} editada`);await dialog.locator("input").first().press("Tab");assert.equal((await renamed).status(),204);
+    await dialog.getByRole("button",{name:"Añadir tarea",exact:true}).click();
+    const addTask=page.getByRole("dialog").filter({has:page.getByRole("heading",{name:"Añadir tarea a la jornada",exact:true})});
+    await addTask.getByRole("combobox",{name:"Plantilla de tarea",exact:true}).click();await page.getByRole("option").first().click();
+    await db.query("CREATE FUNCTION public.day_workspace_task_fail() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RAISE EXCEPTION 'Injected task creation failure';END;$$; CREATE TRIGGER day_workspace_task_fail BEFORE INSERT ON daily_tasks FOR EACH ROW EXECUTE FUNCTION public.day_workspace_task_fail();");
+    try {
+      const failed=page.waitForResponse(response=>response.url().endsWith("/api/daily-tasks")&&response.request().method()==="POST");await addTask.getByRole("button",{name:"Añadir tarea",exact:true}).click();assert.equal((await failed).status(),500);
+      await addTask.getByRole("alert").filter({hasText:"No se pudo añadir la tarea"}).waitFor();assert.equal(await page.getByText("Tarea añadida",{exact:true}).count(),0);
+    } finally {await db.query("DROP TRIGGER day_workspace_task_fail ON daily_tasks; DROP FUNCTION public.day_workspace_task_fail();");}
+    const added=page.waitForResponse(response=>response.url().endsWith("/api/daily-tasks")&&response.request().method()==="POST");await addTask.getByRole("button",{name:"Añadir tarea",exact:true}).click();assert.equal((await added).status(),201);await addTask.waitFor({state:"hidden"});
+    report.operations.push("Tarea en ficha: error SQL real visible sin falso éxito, reintento y alta HTTP 201 por UI");pass(report.operations.at(-1));
     await dialog.getByRole("button",{name:"Cerrar",exact:true}).click();await page.reload();await page.getByLabel("Buscar concursantes",{exact:true}).fill(name);
     await page.getByRole("button",{name:`Eliminar concursante ${name}`,exact:true}).click();
     const removed=page.waitForResponse(response=>response.url().endsWith(`/contestants/${contestant.id}`)&&response.request().method()==="DELETE");await page.getByRole("button",{name:"Eliminar",exact:true}).click();assert.equal((await removed).status(),204);
-    assert.deepEqual((await api(`${base}/contestants`)).data,initialContestants);report.operations.push("Concursante: crear, abrir ficha, editar canción, recargar y retirar por UI; canon preservado");pass(report.operations.at(-1));
+    assert.deepEqual((await api(`${base}/contestants`)).data,initialContestants);assert.deepEqual((await api(base)).data.dailyTasks.map((task:any)=>Number(task.id)).sort((a:number,b:number)=>a-b),initialTaskIds);report.operations.push("Concursante: crear, abrir ficha, editar canción, recargar y retirar por UI; canon preservado");pass(report.operations.at(-1));
     await page.getByRole("tab",{name:"Recursos",exact:true}).click();
     const resources=page.getByTestId("day-resources");await resources.waitFor();
     await resources.getByRole("combobox",{name:"Tipo de recurso del día",exact:true}).click();await page.getByRole("option").first().click();
@@ -68,11 +79,7 @@ export async function runDayWorkspaceSetup({appUrl,planId,users,db,directory,pas
       if(editor){const picker=card.getByText("Redacción",{exact:true}).locator("..").locator("..");await picker.getByRole("button",{name:"Editar",exact:true}).click();await page.getByRole("dialog").getByRole("checkbox",{name:editor.name,exact:true}).check();await page.getByRole("dialog").getByRole("button",{name:"Guardar",exact:true}).click();}
       const saved=page.waitForResponse(response=>response.request().method()==="PUT"&&response.url().includes("staff-assignments"));await staff.getByRole("button",{name:"Guardar",exact:true}).first().click();assert.equal((await saved).status(),200);
       await page.reload();await staff.waitFor();assert.ok((await staff.innerText()).includes(producer.name));report.operations.push("Responsables existentes: asignar Producción y Redacción al plató, guardar y recargar por UI");pass(report.operations.at(-1));
-      await page.getByRole("tab",{name:"Planning",exact:true}).click();await page.getByTestId("assisted-workspace").waitFor();
-      await page.getByRole("button",{name:"Mostrar Platós y espacios",exact:true}).click();
-      const planningSpace=page.getByTestId("planning-panel-spaces");await planningSpace.getByText(producer.name,{exact:false}).first().waitFor();if(editor)await planningSpace.getByText(editor.name,{exact:false}).first().waitFor();
-      assert.equal((await db.query("SELECT count(*) n FROM daily_tasks WHERE plan_id=$1 AND start_planned IS NOT NULL",[planId])).rows[0].n,"0");
-      report.operations.push("Cabeceras reales de Planning reflejan Producción y Redacción guardadas en el scope correcto; ninguna obligación recibe horarios artificiales");pass(report.operations.at(-1));
+      report.operations.push("S0 conserva el estado sin horarios. La prueba de cabeceras con tareas planificadas se ejecuta en el recorrido de ejecución sobre el snapshot aceptado.");
     } else report.operations.push("GAP de fixture: catálogo sin responsable de Producción; no se fabrica una persona");
     for (const [tab,name] of [["Concursantes","contestants"],["Planning","planning"],["Configuración","configuration"],["Recursos","resources"],["Roles","roles"],["Ejecución","execution"]] as const) {
       await page.getByRole("tab",{name:tab,exact:true}).click();
