@@ -1,4 +1,5 @@
 import { mainFlowPreferenceFromRow } from "../shared/mainFlowPreference";
+import { registerIncidentRoutes } from './incidents';
 import type { Express } from "express";
 import { pool } from "./db";
 import type { Server } from "http";
@@ -135,6 +136,7 @@ function mapDeleteError(err: any, fallback: string) {
 
   // Authentication + coarse-grained authorization for all API endpoints
   app.use('/api',createApiAuthorization({authenticate:requireAuth,lookupRole:getUserRole,authorizeTask:canExecuteTask}));
+  registerIncidentRoutes(app);
 
   app.post("/api/bootstrap-role", async (req, res) => {
     try {

@@ -12,7 +12,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { getIncidents } from "@/lib/war-room-store";
 import { formatRange, hhmmToMinutes, minutesToHHMM } from "@/lib/time";
 import { useDefaultPlanId } from "@/hooks/use-default-plan-id";
 import { buildSpacesById, buildZonesById, getSpaceName, getTaskName, getZoneName } from "@/lib/lookups";
@@ -165,7 +164,6 @@ export default function CallSheetPage() {
     return [...grouped.entries()];
   };
 
-  const incidents = getIncidents(selected?.id);
 
   const technicalTopCams = [...tasks]
     .sort((a: any, b: any) => Number(b?.camerasOverride ?? b?.template?.defaultCameras ?? 0) - Number(a?.camerasOverride ?? a?.template?.defaultCameras ?? 0))
@@ -276,7 +274,7 @@ export default function CallSheetPage() {
             <ul className="list-disc pl-5 text-sm">
               <li>Locks activos: {data.locks.length}</li>
               <li>Tareas sin ubicación: {tasks.filter((task: any) => !task?.zoneId && !task?.spaceId).length}</li>
-              <li>Incidencias abiertas (War Room): {incidents.filter((incident) => !incident.resolved).length}</li>
+              <li><Link href={`/war-room?plan=${selected?.id}`}>Consultar incidencias compartidas en War Room</Link></li>
             </ul>
           )}
           {role === "Técnico" && (

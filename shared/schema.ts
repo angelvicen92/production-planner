@@ -911,3 +911,32 @@ export const updateContestantSchema = z.object({
 export type Contestant = typeof contestants.$inferSelect;
 export type InsertContestant = z.infer<typeof insertContestantSchema>;
 export type UpdateContestant = z.infer<typeof updateContestantSchema>;
+
+// P3: mutations use the versioned incident_command RPC; these definitions do
+// not grant client writes. SQL owns reference validation, RLS and audit atomicity.
+export const operationalIncidents = pgTable('operational_incidents', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  planId: bigint('plan_id', { mode: 'number' }).notNull().references(() => plans.id),
+  requestId: uuid('request_id').notNull(), type: text('type').notNull(), severity: text('severity').notNull(),
+  description: text('description').notNull(), status: text('status').notNull().default('open'), version: integer('version').notNull().default(1),
+  authorId: uuid('author_id').notNull(), authorName: text('author_name').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(), resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+  resolutionNote: text('resolution_note'),
+  taskId: bigint('task_id', { mode: 'number' }).references(() => dailyTasks.id),
+  contestantId: bigint('contestant_id', { mode: 'number' }).references(() => contestants.id),
+  zoneId: bigint('zone_id', { mode: 'number' }).references(() => zones.id), spaceId: bigint('space_id', { mode: 'number' }).references(() => spaces.id),
+  resourceId: bigint('resource_id', { mode: 'number' }).references(() => planResourceItems.id),
+  responsibleId: bigint('responsible_id', { mode: 'number' }), cause: text('cause'), context: text('context'),
+}, table => ({
+  request: uniqueIndex('operational_incidents_plan_id_author_id_request_id_key').on(table.planId, table.authorId, table.requestId),
+  dayStateDate: index('operational_incidents_day_state_date').on(table.planId, table.status, table.createdAt),
+  dayDate: index('operational_incidents_day_date').on(table.planId, table.createdAt),
+}));
+export const operationalIncidentEvents = pgTable('operational_incident_events', {
+  id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+  incidentId: uuid('incident_id').notNull().references(() => operationalIncidents.id),
+  planId: bigint('plan_id', { mode: 'number' }).notNull().references(() => plans.id), version: integer('version').notNull(),
+  action: text('action').notNull(), actorId: uuid('actor_id').notNull(), actorName: text('actor_name').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(), note: text('note'), snapshot: jsonb('snapshot').notNull(),
+}, table => ({ revision: uniqueIndex('operational_incident_events_incident_id_version_key').on(table.incidentId, table.version) }));

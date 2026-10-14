@@ -19,7 +19,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { apiRequest } from "@/lib/api";
 import { buildSpacesById, buildZonesById, getSpaceName, getTaskName, getZoneName } from "@/lib/lookups";
-import { addIncident } from "@/lib/war-room-store";
 import { QueryState } from "@/components/query-state";
 import { contains, formatRange, hhmmToMinutes, minutesToHHMM, sampleEveryFiveMinutes } from "@/lib/time";
 import { buildUrl, api } from "@shared/routes";
@@ -327,15 +326,9 @@ export default function DashboardPage() {
 
   const createIncidentAndGo = (task?: any, title?: string) => {
     if (!selectedPlan?.id) return;
-    addIncident(selectedPlan.id!, {
-      type: "Riesgo",
-      severity: "warn",
-      text: title || `Incidencia detectada: ${task ? getTaskName(task) : "sin detalle"}`,
-      taskId: Number(task?.id) || null,
-      zoneId: Number(task?.zoneId) || null,
-      spaceId: Number(task?.spaceId) || null,
-    });
-    window.location.assign("/war-room");
+    const context = new URLSearchParams({ plan: String(selectedPlan.id), new: '1', type: task && title?.startsWith('Retraso') ? 'delay' : 'other', severity: 'warn', description: title || (task ? `Incidencia detectada: ${getTaskName(task)}` : '') });
+    for (const key of ['taskId', 'zoneId', 'spaceId'] as const) if (task?.[key === 'taskId' ? 'id' : key]) context.set(key, String(task[key === 'taskId' ? 'id' : key]));
+    window.location.assign(`/war-room?${context}`);
   };
 
   const liveAlerts = [
@@ -428,6 +421,7 @@ export default function DashboardPage() {
               </SelectContent>
             </Select>
             <Button asChild variant="outline"><Link href={`/plans/${selectedPlan?.id || ""}`}>Abrir plan</Link></Button>
+            {role && role !== 'viewer' && <Button variant="outline" onClick={() => createIncidentAndGo()} disabled={!selectedPlan?.id}>Crear incidencia</Button>}
             <Button onClick={() => selectedPlan?.id && generate.mutate({ id: selectedPlan.id, mode: "full" })} disabled={!selectedPlan?.id || generate.isPending}>
               <Sparkles className="mr-2 h-4 w-4" /> Generar/Recalcular
             </Button>
