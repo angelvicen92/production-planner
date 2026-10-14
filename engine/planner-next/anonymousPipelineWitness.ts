@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { ParticipantMealObligation, ParticipantTask, PlannerNextProblem, ScheduledTask, Task, Window } from "./contracts";
-import { generateMainFlowPatterns, proveMainFeederArchitectureImpossible, type MainFeederArchitecture } from "./mainFlowPatterns";
+import { generateMainFlowPatterns, proveMainFeederArchitectureImpossible, createMainFutureDependencyEvidence, recordMainFutureDependencyCertificate, type MainFutureDependencyEvidence, type MainFeederArchitecture } from "./mainFlowPatterns";
 import { buildTimeline, candidateCuts, hasMainFlowMeal, isBlockBoundary, mainFlowMealStarts, timelineSignature } from "./mainFlowMeal";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 import { assessCoreArrivalTransportFeasibility, validateCertifiedArrivalSchedule } from "./transportGrouping";
@@ -376,7 +376,7 @@ export function revalidateFutureStructuralWitness(problem:PlannerNextProblem,arc
 export interface PipelineArchitectureEnumerationEvidence {
   mainPatternCountGenerated:number;mainPatternGenerationExhausted:boolean;mainPatternsVisited:number;timelinesGenerated:number;
   architectureStructuralProofChecks:number;architectureStructuralProofRejects:number;
-  architectureStructuralRejectsByReason:Record<string,number>;nominalPipelineWitnessChecks:number;
+  architectureStructuralRejectsByReason:Record<string,number>; architectureFutureDependencyStructural?:MainFutureDependencyEvidence; nominalPipelineWitnessChecks:number;
   nominalPipelineWitnessFeasible:number;nominalPipelineWitnessInfeasible:number;nominalPipelineWitnessInconclusive:number;
   nominalPipelineWitnessRejectsByReason:Record<string,number>;continuityRejects:number;authorizedArchitecturesYielded:number;
 }
@@ -1117,9 +1117,9 @@ export function materializePreparedPipelineBundleMatching(problem:Readonly<Plann
 }
 
 /** Finds the first structural architecture using the same pattern/timeline authorities as the exact core. */
-export function materializeFirstNominalPipelineWitness(problem:Readonly<PlannerNextProblem>):
+export function materializeFirstNominalPipelineWitness(problem:Readonly<PlannerNextProblem>,fixedContext=false):
   { witness:AnonymousPipelineWitness; scheduledTasks:readonly ScheduledTask[] }|null {
-  for(const architecture of authorizedPipelineArchitectures(problem)){const materialized=materializeNominalPipelineWitness(problem,architecture);
+  for(const architecture of authorizedPipelineArchitectures(problem,undefined,{fixedContext})){const materialized=materializeNominalPipelineWitness(problem,architecture);
     return materialized;}return null;
 }
 
@@ -1155,13 +1155,14 @@ export function* mainFlowTimelineArchitectureFrontier(problem:Readonly<PlannerNe
   }
 }
 
-export function* authorizedPipelineArchitectures(problem:Readonly<PlannerNextProblem>,evidence?:PipelineArchitectureEnumerationEvidence):Generator<MainFeederArchitecture> {
-  for(const {architecture} of authorizedPipelineArchitectureMaterializations(problem,evidence))yield architecture;
+export function* authorizedPipelineArchitectures(problem:Readonly<PlannerNextProblem>,evidence?:PipelineArchitectureEnumerationEvidence,options:PipelineArchitectureMaterializationOptions={}):Generator<MainFeederArchitecture> {
+  for(const {architecture} of authorizedPipelineArchitectureMaterializations(problem,evidence,options))yield architecture;
 }
 
 export interface PipelineArchitectureMaterializationOptions {
   operationalMealBudget?:()=>OperationalMealSearchBudget;
   onBudgetExhausted?:()=>void;
+  fixedContext?:boolean;
 }
 
 /** Enumerates authorized architectures together with the nominal certificate already paid for. */
@@ -1179,7 +1180,9 @@ export function* authorizedPipelineArchitectureMaterializations(problem:Readonly
       if(evidence){evidence.timelinesGenerated++;if(patternOrdinal>visitedPatterns)evidence.mainPatternsVisited++;}
       visitedPatterns=Math.max(visitedPatterns,patternOrdinal);
       if(evidence)evidence.architectureStructuralProofChecks++;
-      const structuralRejection=proveMainFeederArchitectureImpossible(problem,mains,feeders,architecture);
+      const structuralRejection=proveMainFeederArchitectureImpossible(problem,mains,feeders,architecture,undefined,certificate=>{
+        if(evidence)recordMainFutureDependencyCertificate(evidence.architectureFutureDependencyStructural??=createMainFutureDependencyEvidence(),certificate,architecture);
+      },options.fixedContext);
       if(structuralRejection){if(evidence){evidence.architectureStructuralProofRejects++;evidence.architectureStructuralRejectsByReason[structuralRejection]=(evidence.architectureStructuralRejectsByReason[structuralRejection]??0)+1;}continue;}
       if(evidence)evidence.nominalPipelineWitnessChecks++;
       const materialized=materializeNominalPipelineWitnessWithBudget(problem,architecture,options.operationalMealBudget?.());

@@ -1,4 +1,5 @@
-/** Read-only diagnostic. The search patch runs exclusively in an archived checkout. */
+/** Read-only diagnostic. The search patch runs exclusively in an isolated checkout.
+ * --candidate snapshots current files, including uncommitted edits; default replays #1119. */
 import assert from 'node:assert/strict';
 import {execFileSync,spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
@@ -40,6 +41,7 @@ export function coldFallbackFixture():PlannerNextProblem {
 }
 
 function coldWorker(destination:string){
+  const candidate=process.argv.includes("--candidate");
   const source=coldFallbackFixture();
   const run=(p:PlannerNextProblem)=>{
     const before=JSON.stringify(p),started=performance.now(),execution=executePlannerNext(p,{causalDiagnostic:true});
@@ -48,27 +50,34 @@ function coldWorker(destination:string){
     const result=execution.result,validation=result.complete?validatePlan(p,result.scheduledTasks):null;
     return {complete:result.complete,status:result.status,branches:result.evidence.branchesExplored,
       coreBranches:result.evidence.coreBranches,standaloneBranches:result.evidence.standaloneBranches,
+      patternsExplored:result.evidence.patternCandidatesExplored,timelinesExplored:result.evidence.timelineCandidatesExplored,
       achieved:result.complete?scheduledRuns(result.scheduledTasks):null,reasonCodes:result.evidence.reasonCodes,
       fingerprint:result.evidence.fullFingerprint,validation,durationMs:performance.now()-started,
       architecturesChecked:result.evidence.architecturesChecked,architecturesStructurallyRejected:result.evidence.architecturesStructurallyRejected,
+      structuralRejectionsByReason:result.evidence.structuralRejectionsByReason,futureDependencyStructural:result.evidence.futureDependencyStructural,
+      architectureFutureDependencyStructural:result.evidence.architectureFutureDependencyStructural,
       selectedPattern:result.scheduledTasks.filter(t=>t.kind==='main').sort((a,b)=>a.start-b.start).map(t=>t.blockKey),causalDiagnostic:result.evidence.causalDiagnostic};
   };
   const baseline=run(source);assert.equal(baseline.complete,true);assert.equal(baseline.validation!.hardValid,true);
-  const samples=[...new Set([baseline.branches,baseline.branches*2,source.budget.maxBranchExpansions])].sort((a,b)=>a-b);
+  const measuredPreferred=structuredClone(source);setPreference(measuredPreferred,4);
+  const preferredCost=candidate?run(measuredPreferred):null;
+  if(candidate)assert.equal(preferredCost!.complete,true);
+  const samples=[...new Set([baseline.branches,baseline.branches*2,...(preferredCost?[preferredCost.branches]:[]),source.budget.maxBranchExpansions])].sort((a,b)=>a-b);
   const results=samples.map(budget=>{
     const auto=structuredClone(source);auto.budget.maxBranchExpansions=budget;
     const preferred=structuredClone(auto);setPreference(preferred,4);
     const a=run(auto),b=run(preferred),repeat=run(preferred);
     const stable=({durationMs:_duration,...value}:typeof b)=>value;
     assert.deepEqual(stable(b),stable(repeat));assert.equal(a.complete,true);assert.equal(a.achieved,2);
-    assert.equal(a.validation!.hardValid,true);assert.equal(b.complete,false);assert.equal(b.status,'BRANCH_BUDGET_EXHAUSTED');
+    assert.equal(a.validation!.hardValid,true);if(candidate&&budget>=preferredCost!.branches){assert.equal(b.complete,true);assert.equal(b.validation!.hardValid,true);assert.equal(b.achieved,2);}
+    else {assert.equal(b.complete,false);assert.equal(b.status,'BRANCH_BUDGET_EXHAUSTED');}
     assert.ok(b.branches<=budget);return {budget,auto:a,preferred:b,deterministic:true};
   });
   const generator=generateMainFlowPatterns as (...args:any[])=>{patterns:string[][];exhausted:boolean};
   const patterns=generator(source.tasks.filter(t=>t.kind==='main'),1,2,source.budget.maxPatterns,[],4);
   assert.equal(patterns.exhausted,false);assert.ok(patterns.patterns.some(p=>runs(p)===2));
-  const result={preferredPatterns:patterns,case:'COLD_FALLBACK',status:'EXPECTED_REGRESSION_REPRODUCED',source,baseline,results,
-    conclusion:'INCONCLUSIVE search, not an engine infeasibility certificate. AUTO loses a complete valid fallback under identical budgets.'};
+  const result={preferredPatterns:patterns,case:'COLD_FALLBACK',status:candidate?'CANDIDATE_EVALUATED':'EXPECTED_REGRESSION_REPRODUCED',source,baseline,results,
+    conclusion:candidate?'Necessary future-dependency rejection restores the fallback; accounting overhead is measured without changing the ledger.':'INCONCLUSIVE search, not an engine infeasibility certificate. AUTO loses a complete valid fallback under identical budgets.'};
   writeFileSync(resolve(destination,'cold-fallback.json'),JSON.stringify(result,null,2));
   return {case:result.case,status:result.status,baselineBranches:baseline.branches,samples};
 }
@@ -115,24 +124,28 @@ async function parent(){
   const destination=resolve(argument??'work/main-flow-soft-blocks');mkdirSync(destination,{recursive:true});
   const checkout=resolve(destination,`checkout-${Date.now()}`);mkdirSync(checkout,{recursive:true});
   const archive=resolve(destination,'source.tar');
-  const base='20e4b30fbccde3615602fffadcf5f5e9a136c705';
+  const candidate=process.argv.includes('--candidate');
+  const base=candidate?execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim():'20e4b30fbccde3615602fffadcf5f5e9a136c705';
   execFileSync('git',['cat-file','-e',`${base}^{commit}`],{cwd:root});
   execFileSync('git',['archive','--format=tar',`--output=${archive}`,base],{cwd:root});
   execFileSync('tar',['-xf',archive,'-C',checkout]);
+  if(candidate)for(const file of execFileSync('git',['ls-files','--cached','-z'],{cwd:root,encoding:'utf8'}).split('\0').filter(Boolean)){
+    mkdirSync(dirname(resolve(checkout,file)),{recursive:true});copyFileSync(resolve(root,file),resolve(checkout,file));
+  }
   copyFileSync(self,resolve(checkout,'script/demo/mainFlowSoftBlockDiagnostic.ts'));
   symlinkSync(resolve(root,'node_modules'),resolve(checkout,'node_modules'),'dir');
   const patch=resolve(root,'docs/evidence/MAIN-FLOW-SOFT-BLOCKS-search-experiment.patch');
   execFileSync('git',['init','--quiet',checkout]);execFileSync('git',['apply','--check',patch],{cwd:checkout});
   execFileSync('git',['apply',patch],{cwd:checkout});
   const files=['engine/planner-next/contracts.ts','engine/planner-next/mainFlowPatterns.ts',
-    'engine/planner-next/anonymousPipelineWitness.ts','engine/planner-next/exactMainAndFeederCore.ts'];
+    'engine/planner-next/anonymousPipelineWitness.ts','engine/planner-next/exactMainAndFeederCore.ts','engine/planner-next/exactItinerantPlan.ts','engine/planner-next/assistedPlanning.ts'];
   const sourceHashes=Object.fromEntries(files.map(file=>[file,{base:sha(readFileSync(resolve(root,file))),experiment:sha(readFileSync(resolve(checkout,file)))}]));
-  const modes=process.argv.includes('--cold-only')?['COLD']:['COLD','AUTO','2','3','4'];
+  const modes=process.argv.includes('--cold-only')?['COLD']:process.argv.includes('--a2-only')?['AUTO','3','4']:['COLD','AUTO','2','3','4'];
   const report={contractVersion:1,productWrites:0,remoteWrites:0,codeBase:base,executionHead:execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),
-    nodeVersion:process.version,v8Version:process.versions.v8,patchSha256:sha(readFileSync(patch)),sourceHashes,modes};
+    nodeVersion:process.version,v8Version:process.versions.v8,patchSha256:sha(readFileSync(patch)),sourceHashes,modes,candidate};
   writeFileSync(resolve(destination,'manifest.json'),JSON.stringify(report,null,2));
   for(const mode of modes){
-    const result=spawnSync(process.execPath,['--import','tsx',resolve(checkout,'script/demo/mainFlowSoftBlockDiagnostic.ts'),'--worker',mode,destination],
+    const result=spawnSync(process.execPath,['--import','tsx',resolve(checkout,'script/demo/mainFlowSoftBlockDiagnostic.ts'),'--worker',mode,destination,...(candidate?['--candidate']:[])],
       {cwd:checkout,encoding:'utf8',timeout:305_000,maxBuffer:1024*1024});
     writeFileSync(resolve(destination,`${mode}.log`),(result.stdout??'')+(result.stderr??''));
     assert.equal(result.status,0,`${mode}: ${result.error?.message??result.stderr}`);
