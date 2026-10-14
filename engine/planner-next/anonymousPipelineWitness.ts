@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { ParticipantMealObligation, ParticipantTask, PlannerNextProblem, ScheduledTask, Task, Window } from "./contracts";
 import { generateMainFlowPatterns, proveMainFeederArchitectureImpossible, createMainFutureDependencyEvidence, recordMainFutureDependencyCertificate, type MainFutureDependencyEvidence, type MainFeederArchitecture } from "./mainFlowPatterns";
-import { buildTimeline, candidateCuts, hasMainFlowMeal, isBlockBoundary, mainFlowMealStarts, timelineSignature } from "./mainFlowMeal";
+import { buildTimeline, mainFlowMealCutTiers, candidateCuts, hasMainFlowMeal, isBlockBoundary, mainFlowMealStarts, timelineSignature } from "./mainFlowMeal";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 import { assessCoreArrivalTransportFeasibility, validateCertifiedArrivalSchedule } from "./transportGrouping";
 import { anchoredAccompanimentIndex, materializeAnchoredOperation, type AnchoredOperation } from "./anchoredAccompaniment";
@@ -1130,6 +1130,8 @@ export function* mainFlowTimelineArchitectureFrontier(problem:Readonly<PlannerNe
   for(let familyStart=0;familyStart<patterns.length;){
     const familyRunCount=runCount(patterns[familyStart]!);let familyEnd=familyStart+1;
     while(familyEnd<patterns.length&&runCount(patterns[familyEnd]!)===familyRunCount)familyEnd++;
+    const tiers=problem.mainFlow.mealSplitPreference&&hasMainFlowMeal(problem)?mainFlowMealCutTiers(problem):[candidateCuts];
+    for(const tier of tiers){
     const family=patterns.slice(familyStart,familyEnd).map((pattern,offset)=>({pattern,ordinal:familyStart+offset+1,
       iterator:(function*():Generator<MainFeederArchitecture>{
         if(!hasMainFlowMeal(problem)){
@@ -1140,7 +1142,7 @@ export function* mainFlowTimelineArchitectureFrontier(problem:Readonly<PlannerNe
         const seen=new Set<string>();
         // Preserve the established timeline ranking without materializing its Cartesian product.
         const rank=(cut:number)=>cut===pattern.length?0:isBlockBoundary([...pattern],cut)?1:2;
-        const cuts=candidateCuts([...pattern]).sort((left,right)=>rank(left)-rank(right)||right-left);
+        const cuts=tier([...pattern]).sort((left,right)=>rank(left)-rank(right)||right-left);
         for(const mealStart of mainFlowMealStarts(problem))for(const cut of cuts){
           const timeline=buildTimeline(problem,[...pattern],duration,cut,mealStart),signature=timelineSignature(timeline);
           if(seen.has(signature))continue;seen.add(signature);
@@ -1150,6 +1152,7 @@ export function* mainFlowTimelineArchitectureFrontier(problem:Readonly<PlannerNe
     while(family.some(entry=>!entry.done))for(const entry of family){
       if(entry.done)continue;const next=entry.iterator.next();entry.done=next.done===true;
       if(!next.done)yield {architecture:next.value,patternOrdinal:entry.ordinal};
+    }
     }
     familyStart=familyEnd;
   }

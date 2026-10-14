@@ -620,6 +620,21 @@ export function proveMainFeederArchitectureImpossible(
   return null;
 }
 
+/** Counts representable by this pattern grammar, without enumerating patterns.
+ * Each key needs 1..floor(tasks/minimumRun) runs, capped by maximumRunsByKey.
+ * A multiset of runs admits a no-equal-neighbour sequence iff every key has at
+ * most ceil(total/2) runs. This is configuration geometry, not a viability proof. */
+export function representableMainFlowBlockCounts(mains:readonly Task[],minimumRun:number,maximumRunsByKey:number):number[] {
+  const counts=new Map<string,number>();for(const task of mains)counts.set(task.blockKey??"",(counts.get(task.blockKey??"")??0)+1);
+  if(!counts.size||minimumRun<1||maximumRunsByKey<1)return [];
+  const capacities=[...counts.values()].map(count=>Math.min(maximumRunsByKey,Math.floor(count/minimumRun)));
+  if(capacities.some(capacity=>capacity<1))return [];
+  const upper=capacities.reduce((sum,n)=>sum+n,0),result:number[]=[];
+  for(let total=capacities.length;total<=upper;total++)
+    if(capacities.reduce((sum,n)=>sum+Math.min(n,Math.ceil(total/2)),0)>=total)result.push(total);
+  return result;
+}
+
 /** Canonical generator for the block-key sequences admitted by the main-flow contract. */
 export function generateMainFlowPatterns(
   mains: Task[],

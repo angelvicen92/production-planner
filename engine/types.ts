@@ -209,6 +209,7 @@ export interface PlannerNextSearchBudgetInput {
 }
 
 export interface PlannerNextMainFlowInput {
+  preference?: import("../shared/mainFlowPreference").MainFlowPreference;
   spaceId: number;
   preferredEnd: string;
   continuity: "REQUIRED";

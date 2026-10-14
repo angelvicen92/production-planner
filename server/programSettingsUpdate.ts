@@ -1,7 +1,9 @@
+import { mainFlowPreferenceColumns, type MainFlowPreference } from "../shared/mainFlowPreference";
 import { runSpatialAvailabilityValidation, SpatialAvailabilityValidationError } from "./spatialAvailabilityErrors";
 import { validateSpatialAvailabilityCatalog, type SpatialCatalogSpace, type SpatialCatalogZone } from "./spaceAvailabilityHierarchy";
 
 export type ProgramSettingsUpdateInput = Readonly<{
+  mainFlowPreference?: MainFlowPreference;
   defaultWorkStart?: string; defaultWorkEnd?: string; mealStart?: string; mealEnd?: string;
   mealMode?: string; contestantMealDurationMinutes?: number; contestantMealMaxSimultaneous?: number;
   spaceMealBreakMinutes?: number; itinerantMealBreakMinutes?: number; mealTaskTemplateName?: string;
@@ -14,7 +16,7 @@ export function buildProgramSettingsAtomicPatch(input: ProgramSettingsUpdateInpu
   const hasEnd = input.defaultWorkEnd !== undefined;
   if (hasStart !== hasEnd) throw new SpatialAvailabilityValidationError("WORKDAY_REQUEST_PARTIAL");
   if (hasStart && hasEnd) runSpatialAvailabilityValidation(() => validateSpatialAvailabilityCatalog({ workDay: { start: input.defaultWorkStart, end: input.defaultWorkEnd }, zones, spaces }));
-  const patch: Record<string, unknown> = {};
+  const patch: Record<string, unknown> = input.mainFlowPreference ? {...mainFlowPreferenceColumns(input.mainFlowPreference)} : {};
   const mappings = [
     ["defaultWorkStart", "default_work_start"], ["defaultWorkEnd", "default_work_end"],
     ["mealStart", "meal_start"], ["mealEnd", "meal_end"], ["mealMode", "meal_mode"],

@@ -1,3 +1,4 @@
+import type { MainFlowPreferenceResultEvidence } from "../../shared/mainFlowPreference";
 import type { PlannerNextProblem, ScheduledItinerantUnitMeal, ScheduledOperationalMeal, ScheduledParticipantMeal, ScheduledResourceMeal, ScheduledRoundPreparation, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { createHash } from "node:crypto";
 import { anchoredTaskIds } from "./anchoredAccompaniment";
@@ -32,7 +33,7 @@ import { probeParticipantFutureReservations, type ParticipantFutureReservationPr
 import { PreparedFutureTechnicalChainAuthority, probeTechnicalChainFutureReservations, type PreparedFutureTechnicalChainEvidence, type TechnicalChainFutureReservationProbe } from "./technicalChainFutureFeasibility";
 import { operationalMealWitnessFingerprint, type OperationalMealWitness } from "./operationalMeals";
 import { PreparedOperationalMealAuthority, type PreparedOperationalMealEvidence } from "./preparedOperationalMealAuthority";
-import { createMainFlowMeal, mainFlowMealPolicy, materializeMainFlowOperationalMeals } from "./mainFlowMeal";
+import { mainFlowMealBlockDistribution, createMainFlowMeal, mainFlowMealPolicy, materializeMainFlowOperationalMeals } from "./mainFlowMeal";
 import { setupFamilySequence } from "./setupGrouping";
 import { roundSynchronizationTaskIds, validateRoundSynchronizations } from "./roundSynchronization";
 import { exploreExactRoundSynchronizationPolicy, revalidateFutureRoundSynchronizationWitness, probeExactRoundSynchronizationMacroDomain, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
@@ -234,11 +235,9 @@ export interface MainFlowSoftSearchPhase {
     "timelinesGenerated"|"architecturesPrepared"|"architectureStructuralRejectsByReason"|"nominalPipelineWitnessChecks"|
     "futureDependencyStructural"|"architectureFutureDependencyStructural">;
 }
-export interface MainFlowSoftPreferenceEvidence {
+export interface MainFlowSoftPreferenceEvidence extends MainFlowPreferenceResultEvidence {
   mode: "SOFT";
-  requested: number;
-  achieved: number|null;
-  targetAchieved: boolean;
+  fallbackKind: "QUANTITY"|"DISTRIBUTION"|null;
   outcome: "TARGET_ACHIEVED"|"COMPLETE_ALTERNATIVE"|"NO_COMPLETE_ALTERNATIVE"|"HARD_INCOMPATIBLE";
   firstComplete: { origin:"REQUESTED_FAMILY"|"ALTERNATIVE_FAMILY"|"REVALIDATED_JOINT_COMPLETION"|"PROTECTED_MAIN";
     blocks:number; atBranch:number; fingerprint:string|null; witnessFingerprint:string|null }|null;
@@ -246,7 +245,7 @@ export interface MainFlowSoftPreferenceEvidence {
   selectedFingerprint: string|null;
   selectedWitnessFingerprint: string|null;
   fallbackUsed: boolean;
-  fallbackReason: "MAIN_PROTECTED"|"BRANCH_BUDGET_EXHAUSTED"|"TIME_LIMIT_REACHED"|"NO_TARGET_COMPLETION"|null;
+  fallbackReason: "MAIN_PROTECTED"|"BRANCH_BUDGET_EXHAUSTED"|"TIME_LIMIT_REACHED"|"NO_TARGET_COMPLETION"|"NO_PREFERRED_SPLIT_COMPLETION"|null;
   preferredSearchStatus: "TARGET_ACHIEVED"|"NOT_FOUND_WITHIN_LIMITS"|"SEARCH_EXHAUSTED"|"HARD_INCOMPATIBLE";
   /** Actual family transitions in the existing explorers; never a planned order. */
   familiesExplored: { blocks:number; explorer:"STRUCTURAL"|"RESIDUAL"; atBranch:number }[];
@@ -256,7 +255,6 @@ export interface MainFlowSoftPreferenceEvidence {
   branches: { total:number; core:number; standalone:number; limit:number };
   /** Filled by the runtime owning the deadline; direct engine calls have no clock limit. */
   runtime: { elapsedMs:number; limitMs:number }|null;
-  hardCertificate: { authority:"PROTECTED_MAIN_GEOMETRY"; blocks:number; taskIds:string[] }|null;
   stopReason: "TARGET_ACHIEVED"|"MAIN_PROTECTED"|"BRANCH_BUDGET_EXHAUSTED"|"TIME_LIMIT_REACHED"|"SEARCH_EXHAUSTED"|"COMPLETE_ALTERNATIVE";
 }
 
@@ -3223,6 +3221,15 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
   const totals=()=>({total:ledger.branchesExplored,core:ledger.coreBranches,standalone:ledger.standaloneBranches});
   const joint=(result:ExactItinerantPlanResult)=>result.evidence.futureStructuralWitnesses.find(item=>item.kind==="JOINT_COMPLETION");
   const blocks=(result:ExactItinerantPlanResult)=>effectiveMainBlockCount(joint(result)?.tasks??result.scheduledTasks);
+  const splitPreference=problem.mainFlow.mealSplitPreference;
+  const distribution=(result:ExactItinerantPlanResult)=>{
+    const witness=joint(result),meals=witness?[...witness.spaceMeals,...witness.operationalMeals]
+      :[...result.scheduledSpaceMeals,...result.scheduledOperationalMeals];
+    const meal=meals.find(m=>("spaceId" in m?m.spaceId===problem.mainFlow.spaceId:m.spaceIds.includes(problem.mainFlow.spaceId)));
+    return mainFlowMealBlockDistribution(witness?.tasks??result.scheduledTasks,meal);
+  };
+  const splitAchieved=(result:ExactItinerantPlanResult)=>{const d=distribution(result);return !splitPreference
+    ||(!d.blockSpansMeal&&d.blocksBeforeMeal===splitPreference.beforeMealBlocks&&d.blocksAfterMeal===splitPreference.afterMealBlocks);};
   const origin=(result:ExactItinerantPlanResult):NonNullable<MainFlowSoftPreferenceEvidence["firstComplete"]>["origin"]=>
     result.evidence.priorJointCompletionReused?"REVALIDATED_JOINT_COMPLETION":mainProtected?"PROTECTED_MAIN"
       :blocks(result)===requested?"REQUESTED_FAMILY":"ALTERNATIVE_FAMILY";
@@ -3239,7 +3246,7 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
     revalidation=phase(replay,before);
   }
   let firstComplete=replay?completion(replay):null,searched:ExactItinerantPlanResult|null=null,search:MainFlowSoftSearchPhase|null=null;
-  const targetAlreadyValidated=replay?.complete&&blocks(replay)===requested;
+  const targetAlreadyValidated=replay?.complete&&blocks(replay)===requested&&splitAchieved(replay);
   const replayStopped=replay?.status==="TIME_LIMIT_REACHED"||replay?.status==="BRANCH_BUDGET_EXHAUSTED";
   if(!targetAlreadyValidated&&!replayStopped&&!(mainProtected&&replay?.complete)){
     const before=totals();
@@ -3251,16 +3258,19 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
   }
   let selected=searched??replay!;
   if(replay?.complete&&(!selected.complete||Math.abs(blocks(replay)-requested)<Math.abs(blocks(selected)-requested)
-    ||(Math.abs(blocks(replay)-requested)===Math.abs(blocks(selected)-requested)&&blocks(replay)<=blocks(selected))))selected=replay;
+    ||(Math.abs(blocks(replay)-requested)===Math.abs(blocks(selected)-requested)&&(blocks(replay)<blocks(selected)||(blocks(replay)===blocks(selected)
+      &&(splitAchieved(replay)||!splitAchieved(selected)))))))selected=replay;
   const achieved=selected.complete?blocks(selected):null,targetAchieved=achieved===requested;
   const protectedBlocks=mainProtected?effectiveMainBlockCount((fixedPlacements??[]).filter(task=>mains.some(main=>main.id===task.id))):null;
   const hardCertificate=protectedBlocks!==null&&protectedBlocks!==requested
     ?{authority:"PROTECTED_MAIN_GEOMETRY" as const,blocks:protectedBlocks,taskIds:mains.map(task=>task.id).sort()}:null;
   const last=searched??replay!;
-  const stopReason:MainFlowSoftPreferenceEvidence["stopReason"]=targetAchieved?"TARGET_ACHIEVED":hardCertificate?"MAIN_PROTECTED"
+  const mealSplitPreferenceAchieved=splitPreference?(selected.complete&&splitAchieved(selected)):null;
+  const allPreferencesAchieved=targetAchieved&&mealSplitPreferenceAchieved!==false;
+  const stopReason:MainFlowSoftPreferenceEvidence["stopReason"]=allPreferencesAchieved?"TARGET_ACHIEVED":hardCertificate?"MAIN_PROTECTED"
     :last.status==="TIME_LIMIT_REACHED"?"TIME_LIMIT_REACHED":last.status==="BRANCH_BUDGET_EXHAUSTED"?"BRANCH_BUDGET_EXHAUSTED"
       :selected.complete?"COMPLETE_ALTERNATIVE":"SEARCH_EXHAUSTED";
-  const fallbackUsed=selected.complete&&!targetAchieved;
+  const fallbackUsed=selected.complete&&!allPreferencesAchieved;
   // Keep selected witnesses and diagnostics; phase records account for all paid work.
   const diagnostic=selected.evidence.causalDiagnostic??searched?.evidence.causalDiagnostic;
   const mergedDiagnostic=diagnostic?structuredClone(diagnostic):null;
@@ -3277,11 +3287,14 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
   return {...selected,evidence:{...selected.evidence,causalDiagnostic:mergedDiagnostic,branchesExplored:ledger.branchesExplored,
     coreBranches:ledger.coreBranches,standaloneBranches:ledger.standaloneBranches,lastExhaustionPhase:ledger.lastExhaustionPhase,
     mainFlowSoftPreference:{mode:"SOFT",requested,achieved,targetAchieved,
-      outcome:targetAchieved?"TARGET_ACHIEVED":hardCertificate?"HARD_INCOMPATIBLE":selected.complete?"COMPLETE_ALTERNATIVE":"NO_COMPLETE_ALTERNATIVE",
+      mealSplitRequested:splitPreference?{...splitPreference}:null,
+      mealSplitAchieved:selected.complete?distribution(selected):null,mealSplitPreferenceAchieved,
+      fallbackKind:fallbackUsed?(targetAchieved?"DISTRIBUTION":"QUANTITY"):null,
+      outcome:allPreferencesAchieved?"TARGET_ACHIEVED":hardCertificate?"HARD_INCOMPATIBLE":selected.complete?"COMPLETE_ALTERNATIVE":"NO_COMPLETE_ALTERNATIVE",
       firstComplete,selectedOrigin:selected.complete?origin(selected):null,selectedFingerprint:selected.evidence.fullFingerprint,
       selectedWitnessFingerprint:joint(selected)?.fingerprint??null,fallbackUsed,
       fallbackReason:fallbackUsed?(stopReason==="MAIN_PROTECTED"||stopReason==="BRANCH_BUDGET_EXHAUSTED"||stopReason==="TIME_LIMIT_REACHED"
-        ?stopReason:"NO_TARGET_COMPLETION"):null,
+        ?stopReason:targetAchieved?"NO_PREFERRED_SPLIT_COMPLETION":"NO_TARGET_COMPLETION"):null,
       preferredSearchStatus:targetAchieved?"TARGET_ACHIEVED":hardCertificate?"HARD_INCOMPATIBLE"
         :stopReason==="SEARCH_EXHAUSTED"?"SEARCH_EXHAUSTED":"NOT_FOUND_WITHIN_LIMITS",
       familiesExplored,priorRevalidation:replay?.evidence.priorJointCompletionRevalidation??null,revalidation,search,

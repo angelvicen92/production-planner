@@ -1,3 +1,4 @@
+import { applyEffectiveMainFlowPreference } from "../server/mainFlowPreference";
 import type { IStorage } from "../server/storage";
 import type { EngineInput, PlanResourceItemInput, PlanSpaceAvailabilityInput, PlanZoneAvailabilityInput, ResourceRequirementsInput } from "./types";
 import { adaptPlanOptimizerSnapshotToLegacyEngineV1 } from "./planOptimizerSnapshotLegacyAdapter";
@@ -986,5 +987,5 @@ export async function buildEngineInput(
       lockedResourceId: l.locked_resource_id ?? l.lockedResourceId ?? null,
     })),
   };
-  return applyPlanPlannerNextConfiguration(input,p.planner_next_configuration??p.plannerNextConfiguration);
+  return applyEffectiveMainFlowPreference(applyPlanPlannerNextConfiguration(input,p.planner_next_configuration??p.plannerNextConfiguration),p);
 }

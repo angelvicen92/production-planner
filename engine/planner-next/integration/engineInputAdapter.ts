@@ -1,3 +1,5 @@
+import { representableMainFlowBlockCounts } from "../mainFlowPatterns";
+import { mainFlowMealPolicy } from "../mainFlowMeal";
 import { createHash } from "node:crypto";
 import type { EngineInput, TimeWindow } from "../../types";
 import type { AnchoredAccompaniment, PlannerNextProblem, RoundSynchronizationPolicy, Task, TechnicalChainPolicy, Window } from "../contracts";
@@ -292,6 +294,8 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
       continuity: config.mainFlow.continuity,
       maxBlocksByKey: config.mainFlow.maxBlocksByKey,
       minTasksPerBlock: config.mainFlow.minTasksPerBlock,
+      ...(config.mainFlow.preference?.blockCountPolicy.mode === "SOFT_PREFER_N" ? {preferredBlockCount:config.mainFlow.preference.blockCountPolicy.count} : {}),
+      ...(config.mainFlow.preference?.mealSplitPreference.mode === "PREFERRED" ? {mealSplitPreference:{...config.mainFlow.preference.mealSplitPreference}} : {}),
     },
     participantTransitionMinutes: config.participantTransitionMinutes,
     resourceTransitionMinutes: config.resourceTransitionMinutes,
@@ -334,4 +338,13 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
   }
   const problemFingerprint = fingerprintPlannerNextProblem(problem);
   return deepFreeze({ ...envelope, status: "SUPPORTED" as const, problem, reasonCodes: [] as const, problemFingerprint });
+}
+
+export function mainFlowPreferenceGeometry(input:EngineInput) {
+  const adapted=adaptEngineInputToPlannerNextProblem(input);
+  if(adapted.status!=='SUPPORTED')return {available:false,mealApplicable:false,zeroBeforeRepresentable:false,counts:[] as number[]};
+  const p=adapted.problem,mains=p.tasks.filter(t=>t.kind==='main');
+  const counts=representableMainFlowBlockCounts(mains,p.mainFlow.minTasksPerBlock,p.mainFlow.maxBlocksByKey);
+  const meal=mainFlowMealPolicy(p);
+  return {available:mains.length>0&&p.searchPolicy==='EXACT_CONSTRUCTIVE',mealApplicable:!!meal,zeroBeforeRepresentable:meal?.source==='OPERATIONAL_MEAL_POLICY',counts};
 }

@@ -1,0 +1,3166 @@
+{
+  "unit": "MAIN-FLOW-SOFT-MEAL-SPLIT-DAY-CONFIG",
+  "base": "022a2db19245e406eb1774901e4dc55a331c4d0c",
+  "branch": "codex/mainflow-soft-meal-split-day-config",
+  "remoteWrites": 0,
+  "productionDatabaseWrites": 0,
+  "mergePerformed": false,
+  "runtime": {
+    "node": "v24.19.0",
+    "v8": "13.6.233.17-node.51",
+    "postgres": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+    "images": {
+      "db": "postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24",
+      "auth": "supabase/gotrue:v2.177.0@sha256:6a916b47af0386b7e0152ca84f3d45d050bf056e449a75a5460b48742fd67822",
+      "rest": "postgrest/postgrest:v12.2.12@sha256:5f4ce744539bbba786b4e24dbbd95bdb2a956dcf568c5374995a0ff4a68f5bd2"
+    }
+  },
+  "causalFocal": {
+    "before": {
+      "complete": true,
+      "branches": 57,
+      "mains": [
+        [
+          "a",
+          60,
+          65
+        ],
+        [
+          "b",
+          65,
+          70
+        ],
+        [
+          "a",
+          70,
+          75
+        ],
+        [
+          "b",
+          75,
+          80
+        ]
+      ],
+      "meal": {
+        "id": "space-meal:main:1",
+        "kind": "space-meal",
+        "spaceId": "main",
+        "entryIndex": 1,
+        "duration": 5,
+        "start": 80,
+        "end": 85
+      },
+      "cuts": [
+        4,
+        3,
+        2,
+        1
+      ],
+      "boundaries": [
+        1,
+        2,
+        3
+      ],
+      "split2": {
+        "key": "SPLIT|2|MEAL:80|a|b|a|b|70|75|85|90",
+        "slots": [
+          70,
+          75,
+          85,
+          90
+        ],
+        "meal": {
+          "id": "space-meal:main:1",
+          "kind": "space-meal",
+          "spaceId": "main",
+          "entryIndex": 1,
+          "duration": 5,
+          "start": 80,
+          "end": 85
+        },
+        "mealAuthority": {
+          "window": {
+            "start": 80,
+            "end": 100
+          },
+          "duration": 5,
+          "source": "SPACE_MEAL_POLICY",
+          "sourceIds": [
+            "main"
+          ]
+        },
+        "splitIndex": 2,
+        "morningTaskCount": 2,
+        "afternoonTaskCount": 2,
+        "strategyRank": 1
+      }
+    },
+    "after": {
+      "complete": true,
+      "branches": 57,
+      "mains": [
+        [
+          "a",
+          70,
+          75
+        ],
+        [
+          "b",
+          75,
+          80
+        ],
+        [
+          "a",
+          85,
+          90
+        ],
+        [
+          "b",
+          90,
+          95
+        ]
+      ],
+      "meal": {
+        "id": "space-meal:main:1",
+        "kind": "space-meal",
+        "spaceId": "main",
+        "entryIndex": 1,
+        "duration": 5,
+        "start": 80,
+        "end": 85
+      },
+      "cuts": [
+        4,
+        3,
+        2,
+        1
+      ],
+      "boundaries": [
+        1,
+        2,
+        3
+      ],
+      "split2": {
+        "key": "SPLIT|2|MEAL:80|a|b|a|b|70|75|85|90",
+        "slots": [
+          70,
+          75,
+          85,
+          90
+        ],
+        "meal": {
+          "id": "space-meal:main:1",
+          "kind": "space-meal",
+          "spaceId": "main",
+          "entryIndex": 1,
+          "duration": 5,
+          "start": 80,
+          "end": 85
+        },
+        "mealAuthority": {
+          "window": {
+            "start": 80,
+            "end": 100
+          },
+          "duration": 5,
+          "source": "SPACE_MEAL_POLICY",
+          "sourceIds": [
+            "main"
+          ]
+        },
+        "splitIndex": 2,
+        "morningTaskCount": 2,
+        "afternoonTaskCount": 2,
+        "strategyRank": 1
+      }
+    }
+  },
+  "baselines": {
+    "AUTO": {
+      "completed": 266,
+      "hardValid": true,
+      "requiredValid": true,
+      "work": {
+        "branchesExplored": 55625,
+        "coreBranches": 9343,
+        "standaloneBranches": 46282,
+        "coreMaximumDepth": 0,
+        "patternCandidatesExplored": 0,
+        "timelineCandidatesExplored": 0,
+        "mainCandidatesEvaluated": 0,
+        "feederCandidatesEvaluated": 0,
+        "architecturesChecked": 0,
+        "feederOrderBranches": 0,
+        "feederSlotMatchingChecks": 0,
+        "feederSlotMatchingEdgeChecks": 0,
+        "feederSlotMatchingAugmentTraversals": 0,
+        "feederSlotMatchingBranchesExplored": 0,
+        "residualMatchingInvocations": 0,
+        "residualMatchingFullBuilds": 0,
+        "residualMatchingIncrementalUpdates": 0,
+        "residualMatchingEdgeCacheHits": 0,
+        "residualMatchingEdgeCacheMisses": 0,
+        "residualMatchingPositionChecks": 0,
+        "residualMatchingAugmentTraversals": 0,
+        "residualMatchingBranchesExplored": 0,
+        "mainRunWitnessAttempts": 0,
+        "mainRunWitnessRepairs": 0,
+        "mainRunEquivalentOrdersCollapsed": 0,
+        "bundleMatchingAttempts": 21,
+        "bundleMatchingRepairs": 0,
+        "bundleMatchingMaterializations": 21,
+        "bundleHardValidationRejects": 0,
+        "bundleCertifiedRepairs": 0,
+        "bundleNogoodsCreated": 0,
+        "bundleNogoodBranches": 0,
+        "bundleNogoodDeduplications": 0,
+        "bundleNogoodRepairsSucceeded": 0,
+        "conflictBackjumps": 0,
+        "suffixDepthsSkipped": 0,
+        "deepestCoreDepthReached": 0,
+        "standaloneForwardChecks": 0,
+        "standaloneForwardStartChecks": 0,
+        "standaloneForwardWitnessCacheHits": 0,
+        "standaloneForwardWitnessCacheMisses": 0,
+        "coreLeafTransportPrunes": 0,
+        "transportContiguousStates": 732,
+        "membershipFallbackEntered": 0,
+        "participantMealFutureFeasibilityChecks": 288,
+        "participantMealFutureInfeasibleBranches": 0,
+        "participantMealAffectedObligationsChecked": 398,
+        "participantMealZeroDomainPrunes": 0,
+        "participantMealAnalyticCollectivePrunes": 0,
+        "participantMealExactMaterializations": 4,
+        "futureRoundWitnessSearchInvocations": 0,
+        "futureRoundWitnessStructuralCandidates": 0,
+        "futureRoundWitnessCompleteMatchings": 0,
+        "futureRoundWitnessParticipantFutureChecks": 0,
+        "futureRoundWitnessPrerequisiteChecks": 0,
+        "futureRoundWitnessBranchesConsumed": 0,
+        "branchBudgetLimit": 100000
+      },
+      "elapsedMs": 123567.300127,
+      "witnessFingerprint": "0f3bcac7a1a447203edbb6c41307291968a7be731f09ae8353560e8427b04bf8",
+      "mainFlowSoftPreference": null
+    },
+    "3": {
+      "completed": 266,
+      "hardValid": true,
+      "requiredValid": true,
+      "work": {
+        "branchesExplored": 50419,
+        "coreBranches": 5667,
+        "standaloneBranches": 44752,
+        "coreMaximumDepth": 0,
+        "patternCandidatesExplored": 0,
+        "timelineCandidatesExplored": 0,
+        "mainCandidatesEvaluated": 0,
+        "feederCandidatesEvaluated": 0,
+        "architecturesChecked": 0,
+        "feederOrderBranches": 0,
+        "feederSlotMatchingChecks": 0,
+        "feederSlotMatchingEdgeChecks": 0,
+        "feederSlotMatchingAugmentTraversals": 0,
+        "feederSlotMatchingBranchesExplored": 0,
+        "residualMatchingInvocations": 0,
+        "residualMatchingFullBuilds": 0,
+        "residualMatchingIncrementalUpdates": 0,
+        "residualMatchingEdgeCacheHits": 0,
+        "residualMatchingEdgeCacheMisses": 0,
+        "residualMatchingPositionChecks": 0,
+        "residualMatchingAugmentTraversals": 0,
+        "residualMatchingBranchesExplored": 0,
+        "mainRunWitnessAttempts": 0,
+        "mainRunWitnessRepairs": 0,
+        "mainRunEquivalentOrdersCollapsed": 0,
+        "bundleMatchingAttempts": 10,
+        "bundleMatchingRepairs": 0,
+        "bundleMatchingMaterializations": 10,
+        "bundleHardValidationRejects": 0,
+        "bundleCertifiedRepairs": 0,
+        "bundleNogoodsCreated": 0,
+        "bundleNogoodBranches": 0,
+        "bundleNogoodDeduplications": 0,
+        "bundleNogoodRepairsSucceeded": 0,
+        "conflictBackjumps": 0,
+        "suffixDepthsSkipped": 0,
+        "deepestCoreDepthReached": 0,
+        "standaloneForwardChecks": 0,
+        "standaloneForwardStartChecks": 0,
+        "standaloneForwardWitnessCacheHits": 0,
+        "standaloneForwardWitnessCacheMisses": 0,
+        "coreLeafTransportPrunes": 0,
+        "transportContiguousStates": 644,
+        "membershipFallbackEntered": 0,
+        "participantMealFutureFeasibilityChecks": 387,
+        "participantMealFutureInfeasibleBranches": 0,
+        "participantMealAffectedObligationsChecked": 610,
+        "participantMealZeroDomainPrunes": 0,
+        "participantMealAnalyticCollectivePrunes": 0,
+        "participantMealExactMaterializations": 4,
+        "futureRoundWitnessSearchInvocations": 0,
+        "futureRoundWitnessStructuralCandidates": 0,
+        "futureRoundWitnessCompleteMatchings": 0,
+        "futureRoundWitnessParticipantFutureChecks": 0,
+        "futureRoundWitnessPrerequisiteChecks": 0,
+        "futureRoundWitnessBranchesConsumed": 0,
+        "branchBudgetLimit": 100000
+      },
+      "elapsedMs": 163542.46830699997,
+      "witnessFingerprint": "ff6ea5bdb284813d320e50a7c57cb15c64d1c7ffa72b723dffab4228468b86c1",
+      "mainFlowSoftPreference": {
+        "mode": "SOFT",
+        "requested": 3,
+        "achieved": 3,
+        "targetAchieved": true,
+        "mealSplitRequested": null,
+        "mealSplitAchieved": {
+          "total": 3,
+          "mealStart": 785,
+          "mealEnd": 860,
+          "blocksBeforeMeal": 1,
+          "blocksAfterMeal": 1,
+          "blockSpansMeal": true
+        },
+        "mealSplitPreferenceAchieved": null,
+        "fallbackKind": null,
+        "outcome": "TARGET_ACHIEVED",
+        "firstComplete": {
+          "origin": "REQUESTED_FAMILY",
+          "blocks": 3,
+          "atBranch": 50419,
+          "fingerprint": "066442f07ebe0893c02dacfbdf61481f43b0eb2ec3002d9b0df098c67216da0e",
+          "witnessFingerprint": "ff6ea5bdb284813d320e50a7c57cb15c64d1c7ffa72b723dffab4228468b86c1"
+        },
+        "selectedOrigin": "REQUESTED_FAMILY",
+        "selectedFingerprint": "066442f07ebe0893c02dacfbdf61481f43b0eb2ec3002d9b0df098c67216da0e",
+        "selectedWitnessFingerprint": "ff6ea5bdb284813d320e50a7c57cb15c64d1c7ffa72b723dffab4228468b86c1",
+        "fallbackUsed": false,
+        "fallbackReason": null,
+        "preferredSearchStatus": "TARGET_ACHIEVED",
+        "familiesExplored": [
+          {
+            "blocks": 3,
+            "explorer": "STRUCTURAL",
+            "atBranch": 0
+          }
+        ],
+        "priorRevalidation": null,
+        "revalidation": null,
+        "search": {
+          "status": "COMPLETE",
+          "complete": true,
+          "branches": 50419,
+          "coreBranches": 5667,
+          "standaloneBranches": 44752,
+          "patterns": 0,
+          "timelines": 0,
+          "architectures": 0,
+          "architectureEnumeration": 10,
+          "structuralRejections": {},
+          "fingerprint": "066442f07ebe0893c02dacfbdf61481f43b0eb2ec3002d9b0df098c67216da0e",
+          "reasonCodes": [],
+          "waterfall": {
+            "0": {
+              "mainCandidate": 0,
+              "feederStart": 0,
+              "residualMatching": 0,
+              "continuation": 0,
+              "participantMeal": 0,
+              "standaloneForward": 0,
+              "other": 50419,
+              "total": 50419
+            }
+          },
+          "structural": {
+            "mainPatternCountGenerated": 200,
+            "mainPatternGenerationExhausted": true,
+            "mainPatternsVisited": 17,
+            "timelinesGenerated": 567,
+            "architecturesPrepared": 10,
+            "architectureStructuralRejectsByReason": {
+              "FEEDER_PREREQUISITE_PREFIX_CAPACITY": 157,
+              "PREREQUISITE_WINDOW": 85,
+              "TRANSITION_CAPACITY": 72,
+              "FEEDER_CAPACITY": 102,
+              "FUTURE_DEPENDENCY_CAPACITY": 9,
+              "RESOURCE_WINDOW": 18
+            },
+            "nominalPipelineWitnessChecks": 124,
+            "futureDependencyStructural": {
+              "checks": 0,
+              "rejects": 0,
+              "passes": 0,
+              "abstentions": 0,
+              "firstRejection": null
+            },
+            "architectureFutureDependencyStructural": {
+              "checks": 328,
+              "rejects": 9,
+              "passes": 0,
+              "abstentions": 319,
+              "firstRejection": {
+                "latestEnds": [
+                  {
+                    "mainTaskId": "task:110002",
+                    "latestEnd": 915
+                  },
+                  {
+                    "mainTaskId": "task:110017",
+                    "latestEnd": null
+                  },
+                  {
+                    "mainTaskId": "task:110031",
+                    "latestEnd": null
+                  },
+                  {
+                    "mainTaskId": "task:110043",
+                    "latestEnd": null
+                  },
+                  {
+                    "mainTaskId": "task:110056",
+                    "latestEnd": 1125
+                  },
+                  {
+                    "mainTaskId": "task:110072",
+                    "latestEnd": null
+                  },
+                  {
+                    "mainTaskId": "task:110088",
+                    "latestEnd": null
+                  },
+                  {
+                    "mainTaskId": "task:110102",
+                    "latestEnd": 1125
+                  },
+                  {
+                    "mainTaskId": "task:110116",
+                    "latestEnd": null
+                  },
+                  {
+                    "mainTaskId": "task:110131",
+                    "latestEnd": null
+                  },
+                  {
+                    "mainTaskId": "task:110147",
+                    "latestEnd": null
+                  },
+                  {
+                    "mainTaskId": "task:110161",
+                    "latestEnd": null
+                  },
+                  {
+                    "mainTaskId": "task:110175",
+                    "latestEnd": null
+                  },
+                  {
+                    "mainTaskId": "task:110190",
+                    "latestEnd": null
+                  },
+                  {
+                    "mainTaskId": "task:110203",
+                    "latestEnd": null
+                  },
+                  {
+                    "mainTaskId": "task:110218",
+                    "latestEnd": null
+                  },
+                  {
+                    "mainTaskId": "task:110229",
+                    "latestEnd": null
+                  },
+                  {
+                    "mainTaskId": "task:110243",
+                    "latestEnd": null
+                  },
+                  {
+                    "mainTaskId": "task:110256",
+                    "latestEnd": null
+                  }
+                ],
+                "abstentions": [
+                  {
+                    "taskId": "task:110004",
+                    "reason": "INCOMPLETE_AUTHORITY"
+                  },
+                  {
+                    "taskId": "task:110019",
+                    "reason": "INCOMPLETE_AUTHORITY"
+                  },
+                  {
+                    "taskId": "task:110033",
+                    "reason": "INCOMPLETE_AUTHORITY"
+                  },
+                  {
+                    "taskId": "task:110045",
+                    "reason": "INCOMPLETE_AUTHORITY"
+                  },
+                  {
+                    "taskId": "task:110058",
+                    "reason": "INCOMPLETE_AUTHORITY"
+                  },
+                  {
+                    "taskId": "task:110074",
+                    "reason": "INCOMPLETE_AUTHORITY"
+                  },
+                  {
+                    "taskId": "task:110090",
+                    "reason": "INCOMPLETE_AUTHORITY"
+                  },
+                  {
+                    "taskId": "task:110104",
+                    "reason": "INCOMPLETE_AUTHORITY"
+                  },
+                  {
+                    "taskId": "task:110118",
+                    "reason": "INCOMPLETE_AUTHORITY"
+                  },
+                  {
+                    "taskId": "task:110133",
+                    "reason": "INCOMPLETE_AUTHORITY"
+                  },
+                  {
+                    "taskId": "task:110149",
+                    "reason": "INCOMPLETE_AUTHORITY"
+                  },
+                  {
+                    "taskId": "task:110163",
+                    "reason": "INCOMPLETE_AUTHORITY"
+                  },
+                  {
+                    "taskId": "task:110177",
+                    "reason": "INCOMPLETE_AUTHORITY"
+                  },
+                  {
+                    "taskId": "task:110192",
+                    "reason": "INCOMPLETE_AUTHORITY"
+                  },
+                  {
+                    "taskId": "task:110205",
+                    "reason": "INCOMPLETE_AUTHORITY"
+                  },
+                  {
+                    "taskId": "task:110220",
+                    "reason": "INCOMPLETE_AUTHORITY"
+                  },
+                  {
+                    "taskId": "task:110231",
+                    "reason": "INCOMPLETE_AUTHORITY"
+                  },
+                  {
+                    "taskId": "task:110245",
+                    "reason": "INCOMPLETE_AUTHORITY"
+                  },
+                  {
+                    "taskId": "task:110258",
+                    "reason": "INCOMPLETE_AUTHORITY"
+                  }
+                ],
+                "requiredCount": 19,
+                "maximumMatchingCount": 18,
+                "status": "REJECT",
+                "architecture": {
+                  "pattern": [
+                    "plan-resource:104005",
+                    "plan-resource:104005",
+                    "plan-resource:104005",
+                    "plan-resource:104005",
+                    "plan-resource:104005",
+                    "plan-resource:104005",
+                    "plan-resource:104005",
+                    "plan-resource:104005",
+                    "plan-resource:104005",
+                    "plan-resource:104005",
+                    "plan-resource:104006",
+                    "plan-resource:104006",
+                    "plan-resource:104006",
+                    "plan-resource:104006",
+                    "plan-resource:104006",
+                    "plan-resource:104006",
+                    "plan-resource:104006",
+                    "plan-resource:104006",
+                    "plan-resource:104005"
+                  ],
+                  "slots": [
+                    690,
+                    705,
+                    720,
+                    735,
+                    750,
+                    765,
+                    855,
+                    870,
+                    885,
+                    900,
+                    915,
+                    930,
+                    945,
+                    960,
+                    975,
+                    990,
+                    1005,
+                    1020,
+                    1035
+                  ],
+                  "mealStart": 780
+                }
+              }
+            }
+          }
+        },
+        "branches": {
+          "total": 50419,
+          "core": 5667,
+          "standalone": 44752,
+          "limit": 100000
+        },
+        "runtime": {
+          "elapsedMs": 163533.923126,
+          "limitMs": 300000
+        },
+        "hardCertificate": null,
+        "stopReason": "TARGET_ACHIEVED"
+      }
+    },
+    "4": {
+      "completed": 266,
+      "hardValid": true,
+      "requiredValid": true,
+      "work": {
+        "branchesExplored": 29502,
+        "coreBranches": 5113,
+        "standaloneBranches": 24389,
+        "coreMaximumDepth": 0,
+        "patternCandidatesExplored": 0,
+        "timelineCandidatesExplored": 0,
+        "mainCandidatesEvaluated": 0,
+        "feederCandidatesEvaluated": 0,
+        "architecturesChecked": 0,
+        "feederOrderBranches": 0,
+        "feederSlotMatchingChecks": 0,
+        "feederSlotMatchingEdgeChecks": 0,
+        "feederSlotMatchingAugmentTraversals": 0,
+        "feederSlotMatchingBranchesExplored": 0,
+        "residualMatchingInvocations": 0,
+        "residualMatchingFullBuilds": 0,
+        "residualMatchingIncrementalUpdates": 0,
+        "residualMatchingEdgeCacheHits": 0,
+        "residualMatchingEdgeCacheMisses": 0,
+        "residualMatchingPositionChecks": 0,
+        "residualMatchingAugmentTraversals": 0,
+        "residualMatchingBranchesExplored": 17,
+        "mainRunWitnessAttempts": 0,
+        "mainRunWitnessRepairs": 0,
+        "mainRunEquivalentOrdersCollapsed": 0,
+        "bundleMatchingAttempts": 10,
+        "bundleMatchingRepairs": 3,
+        "bundleMatchingMaterializations": 10,
+        "bundleHardValidationRejects": 0,
+        "bundleCertifiedRepairs": 3,
+        "bundleNogoodsCreated": 3,
+        "bundleNogoodBranches": 3,
+        "bundleNogoodDeduplications": 0,
+        "bundleNogoodRepairsSucceeded": 0,
+        "conflictBackjumps": 1,
+        "suffixDepthsSkipped": 9,
+        "deepestCoreDepthReached": 0,
+        "standaloneForwardChecks": 0,
+        "standaloneForwardStartChecks": 0,
+        "standaloneForwardWitnessCacheHits": 0,
+        "standaloneForwardWitnessCacheMisses": 0,
+        "coreLeafTransportPrunes": 0,
+        "transportContiguousStates": 1208,
+        "membershipFallbackEntered": 0,
+        "participantMealFutureFeasibilityChecks": 313,
+        "participantMealFutureInfeasibleBranches": 0,
+        "participantMealAffectedObligationsChecked": 405,
+        "participantMealZeroDomainPrunes": 0,
+        "participantMealAnalyticCollectivePrunes": 0,
+        "participantMealExactMaterializations": 4,
+        "futureRoundWitnessSearchInvocations": 0,
+        "futureRoundWitnessStructuralCandidates": 0,
+        "futureRoundWitnessCompleteMatchings": 0,
+        "futureRoundWitnessParticipantFutureChecks": 0,
+        "futureRoundWitnessPrerequisiteChecks": 0,
+        "futureRoundWitnessBranchesConsumed": 0,
+        "branchBudgetLimit": 100000
+      },
+      "elapsedMs": 106755.157926,
+      "witnessFingerprint": "a2e7ebaa841c8c8676ee9544ce1fd8780c0e6f61148f3ea9a33814ca514d3254",
+      "mainFlowSoftPreference": {
+        "mode": "SOFT",
+        "requested": 4,
+        "achieved": 4,
+        "targetAchieved": true,
+        "mealSplitRequested": null,
+        "mealSplitAchieved": {
+          "total": 4,
+          "mealStart": 780,
+          "mealEnd": 855,
+          "blocksBeforeMeal": 1,
+          "blocksAfterMeal": 3,
+          "blockSpansMeal": false
+        },
+        "mealSplitPreferenceAchieved": null,
+        "fallbackKind": null,
+        "outcome": "TARGET_ACHIEVED",
+        "firstComplete": {
+          "origin": "REQUESTED_FAMILY",
+          "blocks": 4,
+          "atBranch": 29502,
+          "fingerprint": "2b5e6d596383dfc4b16f40c77233da2e5eceb2106882edf32397273dfcfbba64",
+          "witnessFingerprint": "a2e7ebaa841c8c8676ee9544ce1fd8780c0e6f61148f3ea9a33814ca514d3254"
+        },
+        "selectedOrigin": "REQUESTED_FAMILY",
+        "selectedFingerprint": "2b5e6d596383dfc4b16f40c77233da2e5eceb2106882edf32397273dfcfbba64",
+        "selectedWitnessFingerprint": "a2e7ebaa841c8c8676ee9544ce1fd8780c0e6f61148f3ea9a33814ca514d3254",
+        "fallbackUsed": false,
+        "fallbackReason": null,
+        "preferredSearchStatus": "TARGET_ACHIEVED",
+        "familiesExplored": [
+          {
+            "blocks": 4,
+            "explorer": "STRUCTURAL",
+            "atBranch": 0
+          }
+        ],
+        "priorRevalidation": null,
+        "revalidation": null,
+        "search": {
+          "status": "COMPLETE",
+          "complete": true,
+          "branches": 29502,
+          "coreBranches": 5113,
+          "standaloneBranches": 24389,
+          "patterns": 0,
+          "timelines": 0,
+          "architectures": 0,
+          "architectureEnumeration": 10,
+          "structuralRejections": {},
+          "fingerprint": "2b5e6d596383dfc4b16f40c77233da2e5eceb2106882edf32397273dfcfbba64",
+          "reasonCodes": [],
+          "waterfall": {
+            "0": {
+              "mainCandidate": 0,
+              "feederStart": 0,
+              "residualMatching": 17,
+              "continuation": 0,
+              "participantMeal": 0,
+              "standaloneForward": 0,
+              "other": 29485,
+              "total": 29502
+            }
+          },
+          "structural": {
+            "mainPatternCountGenerated": 200,
+            "mainPatternGenerationExhausted": true,
+            "mainPatternsVisited": 140,
+            "timelinesGenerated": 505,
+            "architecturesPrepared": 10,
+            "architectureStructuralRejectsByReason": {
+              "FEEDER_PREREQUISITE_PREFIX_CAPACITY": 226,
+              "FEEDER_CAPACITY": 51,
+              "PREREQUISITE_WINDOW": 75,
+              "TRANSITION_CAPACITY": 36,
+              "FEEDER_CONTIGUOUS_CAPACITY": 2,
+              "FEEDER_MULTI_RUN_CONTIGUOUS_CAPACITY": 16
+            },
+            "nominalPipelineWitnessChecks": 99,
+            "futureDependencyStructural": {
+              "checks": 0,
+              "rejects": 0,
+              "passes": 0,
+              "abstentions": 0,
+              "firstRejection": null
+            },
+            "architectureFutureDependencyStructural": {
+              "checks": 233,
+              "rejects": 0,
+              "passes": 0,
+              "abstentions": 233,
+              "firstRejection": null
+            }
+          }
+        },
+        "branches": {
+          "total": 29502,
+          "core": 5113,
+          "standalone": 24389,
+          "limit": 100000
+        },
+        "runtime": {
+          "elapsedMs": 106740.341288,
+          "limitMs": 300000
+        },
+        "hardCertificate": null,
+        "stopReason": "TARGET_ACHIEVED"
+      }
+    }
+  },
+  "typedSplitReplay": {
+    "mode": "COLD_TYPED_PRODUCT_INPUT_FIXTURE",
+    "remoteWrites": 0,
+    "preference": {
+      "blockCountPolicy": {
+        "mode": "SOFT_PREFER_N",
+        "count": 4
+      },
+      "mealSplitPreference": {
+        "mode": "PREFERRED",
+        "beforeMealBlocks": 2,
+        "afterMealBlocks": 2
+      }
+    },
+    "elapsedMs": 110853.712332,
+    "inputFingerprint": "b941f5603fba4b816b860b08e6106ea875fd2451405c304ffea4710df3e64f32",
+    "budgets": {
+      "bestK": 5,
+      "maxBacktracks": 200,
+      "maxPatterns": 200,
+      "maxBranchExpansions": 100000
+    },
+    "blocks": 4,
+    "completedObligations": 266,
+    "validation": {
+      "hardValid": true,
+      "dependencyViolationCount": 0,
+      "overlapViolationCount": 0,
+      "transitionViolationCount": 0,
+      "availabilityViolationCount": 0,
+      "taskAvailabilityViolationCount": 0,
+      "blockViolationCount": 0,
+      "resourceAvailabilityViolationCount": 0,
+      "resourceOverlapViolationCount": 0,
+      "resourceTransitionViolationCount": 0,
+      "secondaryContinuityViolationCount": 0,
+      "setupViolationCount": 0,
+      "setupPreparationViolationCount": 0,
+      "roundSynchronizationViolationCount": 0,
+      "roundPreparationViolationCount": 0,
+      "jointGroupViolationCount": 0,
+      "transportGroupingViolationCount": 0,
+      "technicalOperationViolationCount": 0,
+      "technicalChainViolationCount": 0,
+      "spaceMealViolationCount": 0,
+      "mainFlowMealViolationCount": 0,
+      "anchoredAccompanimentViolationCount": 0,
+      "participantMealViolationCount": 0,
+      "resourceMealViolationCount": 0,
+      "operationalMealViolationCount": 0,
+      "itinerantUnitMealViolationCount": 0,
+      "reasonCodes": [],
+      "unstructuredReasonCodes": [],
+      "violations": []
+    },
+    "witnessFingerprint": "d32e8c85cd49ccec1a6e1a6e3e470bb2094d044f7f07c232d5275d8f31a55542",
+    "work": {
+      "branchesExplored": 42276,
+      "coreBranches": 5809,
+      "standaloneBranches": 36467,
+      "coreMaximumDepth": 0,
+      "patternCandidatesExplored": 0,
+      "timelineCandidatesExplored": 0,
+      "mainCandidatesEvaluated": 0,
+      "feederCandidatesEvaluated": 0,
+      "architecturesChecked": 0,
+      "feederOrderBranches": 0,
+      "feederSlotMatchingChecks": 0,
+      "feederSlotMatchingEdgeChecks": 0,
+      "feederSlotMatchingAugmentTraversals": 0,
+      "feederSlotMatchingBranchesExplored": 0,
+      "residualMatchingInvocations": 0,
+      "residualMatchingFullBuilds": 0,
+      "residualMatchingIncrementalUpdates": 0,
+      "residualMatchingEdgeCacheHits": 0,
+      "residualMatchingEdgeCacheMisses": 0,
+      "residualMatchingPositionChecks": 0,
+      "residualMatchingAugmentTraversals": 0,
+      "residualMatchingBranchesExplored": 0,
+      "mainRunWitnessAttempts": 0,
+      "mainRunWitnessRepairs": 0,
+      "mainRunEquivalentOrdersCollapsed": 0,
+      "bundleMatchingAttempts": 10,
+      "bundleMatchingRepairs": 0,
+      "bundleMatchingMaterializations": 10,
+      "bundleHardValidationRejects": 0,
+      "bundleCertifiedRepairs": 0,
+      "bundleNogoodsCreated": 0,
+      "bundleNogoodBranches": 0,
+      "bundleNogoodDeduplications": 0,
+      "bundleNogoodRepairsSucceeded": 0,
+      "conflictBackjumps": 0,
+      "suffixDepthsSkipped": 0,
+      "deepestCoreDepthReached": 0,
+      "standaloneForwardChecks": 0,
+      "standaloneForwardStartChecks": 0,
+      "standaloneForwardWitnessCacheHits": 0,
+      "standaloneForwardWitnessCacheMisses": 0,
+      "coreLeafTransportPrunes": 0,
+      "transportContiguousStates": 1208,
+      "membershipFallbackEntered": 0,
+      "participantMealFutureFeasibilityChecks": 317,
+      "participantMealFutureInfeasibleBranches": 0,
+      "participantMealAffectedObligationsChecked": 410,
+      "participantMealZeroDomainPrunes": 0,
+      "participantMealAnalyticCollectivePrunes": 0,
+      "participantMealExactMaterializations": 4,
+      "futureRoundWitnessSearchInvocations": 0,
+      "futureRoundWitnessStructuralCandidates": 0,
+      "futureRoundWitnessCompleteMatchings": 0,
+      "futureRoundWitnessParticipantFutureChecks": 0,
+      "futureRoundWitnessPrerequisiteChecks": 0,
+      "futureRoundWitnessBranchesConsumed": 0,
+      "branchBudgetLimit": 100000
+    },
+    "mainFlowSoftPreference": {
+      "mode": "SOFT",
+      "requested": 4,
+      "achieved": 4,
+      "targetAchieved": true,
+      "mealSplitRequested": {
+        "mode": "PREFERRED",
+        "beforeMealBlocks": 2,
+        "afterMealBlocks": 2
+      },
+      "mealSplitAchieved": {
+        "total": 4,
+        "mealStart": 790,
+        "mealEnd": 865,
+        "blocksBeforeMeal": 2,
+        "blocksAfterMeal": 2,
+        "blockSpansMeal": false
+      },
+      "mealSplitPreferenceAchieved": true,
+      "fallbackKind": null,
+      "outcome": "TARGET_ACHIEVED",
+      "firstComplete": {
+        "origin": "REQUESTED_FAMILY",
+        "blocks": 4,
+        "atBranch": 42276,
+        "fingerprint": "da779e9a569d07591b74044af3dfa952e09e28adf8ffd290e9217e024b824671",
+        "witnessFingerprint": "d32e8c85cd49ccec1a6e1a6e3e470bb2094d044f7f07c232d5275d8f31a55542"
+      },
+      "selectedOrigin": "REQUESTED_FAMILY",
+      "selectedFingerprint": "da779e9a569d07591b74044af3dfa952e09e28adf8ffd290e9217e024b824671",
+      "selectedWitnessFingerprint": "d32e8c85cd49ccec1a6e1a6e3e470bb2094d044f7f07c232d5275d8f31a55542",
+      "fallbackUsed": false,
+      "fallbackReason": null,
+      "preferredSearchStatus": "TARGET_ACHIEVED",
+      "familiesExplored": [
+        {
+          "blocks": 4,
+          "explorer": "STRUCTURAL",
+          "atBranch": 0
+        }
+      ],
+      "priorRevalidation": null,
+      "revalidation": null,
+      "search": {
+        "status": "COMPLETE",
+        "complete": true,
+        "branches": 42276,
+        "coreBranches": 5809,
+        "standaloneBranches": 36467,
+        "patterns": 0,
+        "timelines": 0,
+        "architectures": 0,
+        "architectureEnumeration": 10,
+        "structuralRejections": {},
+        "fingerprint": "da779e9a569d07591b74044af3dfa952e09e28adf8ffd290e9217e024b824671",
+        "reasonCodes": [],
+        "waterfall": {
+          "0": {
+            "mainCandidate": 0,
+            "feederStart": 0,
+            "residualMatching": 0,
+            "continuation": 0,
+            "participantMeal": 0,
+            "standaloneForward": 0,
+            "other": 42276,
+            "total": 42276
+          }
+        },
+        "structural": {
+          "mainPatternCountGenerated": 200,
+          "mainPatternGenerationExhausted": true,
+          "mainPatternsVisited": 140,
+          "timelinesGenerated": 345,
+          "architecturesPrepared": 10,
+          "architectureStructuralRejectsByReason": {
+            "FEEDER_CAPACITY": 78,
+            "PREREQUISITE_WINDOW": 45,
+            "FEEDER_PREREQUISITE_PREFIX_CAPACITY": 29,
+            "TRANSITION_CAPACITY": 45,
+            "FEEDER_MULTI_RUN_CONTIGUOUS_CAPACITY": 29,
+            "FEEDER_CONTIGUOUS_CAPACITY": 2
+          },
+          "nominalPipelineWitnessChecks": 117,
+          "futureDependencyStructural": {
+            "checks": 0,
+            "rejects": 0,
+            "passes": 0,
+            "abstentions": 0,
+            "firstRejection": null
+          },
+          "architectureFutureDependencyStructural": {
+            "checks": 285,
+            "rejects": 0,
+            "passes": 0,
+            "abstentions": 285,
+            "firstRejection": null
+          }
+        }
+      },
+      "branches": {
+        "total": 42276,
+        "core": 5809,
+        "standalone": 36467,
+        "limit": 100000
+      },
+      "runtime": {
+        "elapsedMs": 110848.646494,
+        "limitMs": 300000
+      },
+      "hardCertificate": null,
+      "stopReason": "TARGET_ACHIEVED"
+    }
+  },
+  "native": {
+    "status": "PASS",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities",
+      "historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import",
+      "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved",
+      "real storage/input adapter canon after GET day; no legacy breaks",
+      "HTTP role matrix, 15 real REST/RLS boundaries and client RPC denial; rejected writes leave DB unchanged",
+      "actual browser password login and role bootstrap",
+      "S0 creation from UI, all 19 contestant names, idempotence with admin, native persistence and reload",
+      "habitual preference saved/reloaded in settings UI; new-day baseline inherits it and later general edits do not rewrite existing days",
+      "explicit preference refresh advances inherited baseline, preserves active override and restores locally without consulting general",
+      "typed main preference: real configuration UI save/reload/restore, unauthorized HTTP denial, revision/replay and immutable 088 snapshot",
+      "historical UI scope: P15 36/17, P14 44 including Hall but no Redes, Maqui/Pelu 18, Caracolas 19; zero writes",
+      "selected production run Evidence renders achieved 4 blocks and real 2+2 distribution",
+      "all client identities denied direct Stage/Draft writes; validation UPDATE privileges unchanged",
+      "S1 UI → run → apply → validate → accept → SQL persistence → reload (19/266)",
+      "selected production run Evidence renders achieved 4 blocks and real 2+2 distribution",
+      "S2 UI → run → apply → validate → accept → SQL persistence → reload (38/266)",
+      "selected production run Evidence renders achieved 4 blocks and real 2+2 distribution",
+      "S3 UI → run → apply → validate → accept → SQL persistence → reload (46/266)",
+      "selected production run Evidence renders achieved 4 blocks and real 2+2 distribution",
+      "S4 UI → run → apply → validate → accept → SQL persistence → reload (65/266)",
+      "selected production run Evidence renders achieved 4 blocks and real 2+2 distribution",
+      "S5 UI → run → apply → validate → accept → SQL persistence → reload (73/266)",
+      "selected production run Evidence renders achieved 4 blocks and real 2+2 distribution",
+      "S6 UI → run → apply → validate → accept → SQL persistence → reload (109/266)",
+      "selected production run Evidence renders achieved 4 blocks and real 2+2 distribution",
+      "S7 UI → run → apply → validate → accept → SQL persistence → reload (151/266)",
+      "selected production run Evidence renders achieved 4 blocks and real 2+2 distribution",
+      "S8 UI → run → apply → validate → accept → SQL persistence → reload (189/266)",
+      "selected production run Evidence renders achieved 4 blocks and real 2+2 distribution",
+      "S9 UI → run → apply → validate → accept → SQL persistence → reload (191/266)",
+      "selected production run Evidence renders achieved 4 blocks and real 2+2 distribution",
+      "S10 UI → run → apply → validate → accept → SQL persistence → reload (209/266)",
+      "selected production run Evidence renders achieved 4 blocks and real 2+2 distribution",
+      "S11 UI → run → apply → validate → accept → SQL persistence → reload (266/266)",
+      "complete SQL snapshot: canonical hard-valid 266/266, all eight operational meals and preparations valid",
+      "complete canonical coverage 266/266 and certified corrected snapshot; no remaining scope",
+      "independent viewer browser session reopens the same persisted Stage and Draft",
+      "admin atomic rollback to S0 and redo to final accepted Stage",
+      "preference revision keeps accepted Stages, rejects stale proposals and survives real rollback/redo without touching other days",
+      "Legacy partial/total reset is blocked on active Assisted session, without any SQL writes",
+      "S11 persisted UI: 266 tasks in contestant and space timeline/list; 141 resource-filtered tasks with Legacy parity; real template sort/name reset; lazy history times and authorization; zero mutations",
+      "complete manual snapshot replay, task/block Undo/Redo and exact reset; real transport conflict stays fail-closed; accepted material unchanged",
+      "persisted physical topology, styling capacity and final SQL KPI projection",
+      "old day, 11 prior Stages, 333 other tasks and historical catalog remain literal after real UI/Autopilot"
+    ],
+    "pending": [
+      "Connected Supabase catalog/backup adoption and original-row preservation",
+      "Published Replit runtime and user browser",
+      "Supabase Realtime/WebSocket transport"
+    ],
+    "diagnostics": {
+      "mainFlowPreference": {
+        "soft": {
+          "mode": "SOFT",
+          "search": {
+            "status": "COMPLETE",
+            "branches": 42276,
+            "complete": true,
+            "patterns": 0,
+            "timelines": 0,
+            "waterfall": {
+              "0": {
+                "other": 42276,
+                "total": 42276,
+                "feederStart": 0,
+                "continuation": 0,
+                "mainCandidate": 0,
+                "participantMeal": 0,
+                "residualMatching": 0,
+                "standaloneForward": 0
+              }
+            },
+            "structural": {
+              "timelinesGenerated": 345,
+              "mainPatternsVisited": 140,
+              "architecturesPrepared": 10,
+              "mainPatternCountGenerated": 200,
+              "futureDependencyStructural": {
+                "checks": 0,
+                "passes": 0,
+                "rejects": 0,
+                "abstentions": 0,
+                "firstRejection": null
+              },
+              "nominalPipelineWitnessChecks": 117,
+              "mainPatternGenerationExhausted": true,
+              "architectureStructuralRejectsByReason": {
+                "FEEDER_CAPACITY": 78,
+                "PREREQUISITE_WINDOW": 45,
+                "TRANSITION_CAPACITY": 45,
+                "FEEDER_CONTIGUOUS_CAPACITY": 2,
+                "FEEDER_PREREQUISITE_PREFIX_CAPACITY": 29,
+                "FEEDER_MULTI_RUN_CONTIGUOUS_CAPACITY": 29
+              },
+              "architectureFutureDependencyStructural": {
+                "checks": 285,
+                "passes": 0,
+                "rejects": 0,
+                "abstentions": 285,
+                "firstRejection": null
+              }
+            },
+            "fingerprint": "da779e9a569d07591b74044af3dfa952e09e28adf8ffd290e9217e024b824671",
+            "reasonCodes": [],
+            "coreBranches": 5809,
+            "architectures": 0,
+            "standaloneBranches": 36467,
+            "structuralRejections": {},
+            "architectureEnumeration": 10
+          },
+          "outcome": "TARGET_ACHIEVED",
+          "runtime": {
+            "limitMs": 300000,
+            "elapsedMs": 108102.39116600002
+          },
+          "achieved": 4,
+          "branches": {
+            "core": 5809,
+            "limit": 100000,
+            "total": 42276,
+            "standalone": 36467
+          },
+          "requested": 4,
+          "stopReason": "TARGET_ACHIEVED",
+          "fallbackKind": null,
+          "fallbackUsed": false,
+          "revalidation": null,
+          "firstComplete": {
+            "blocks": 4,
+            "origin": "REQUESTED_FAMILY",
+            "atBranch": 42276,
+            "fingerprint": "da779e9a569d07591b74044af3dfa952e09e28adf8ffd290e9217e024b824671",
+            "witnessFingerprint": "d32e8c85cd49ccec1a6e1a6e3e470bb2094d044f7f07c232d5275d8f31a55542"
+          },
+          "fallbackReason": null,
+          "selectedOrigin": "REQUESTED_FAMILY",
+          "targetAchieved": true,
+          "hardCertificate": null,
+          "familiesExplored": [
+            {
+              "blocks": 4,
+              "atBranch": 0,
+              "explorer": "STRUCTURAL"
+            }
+          ],
+          "mealSplitAchieved": {
+            "total": 4,
+            "mealEnd": 865,
+            "mealStart": 790,
+            "blockSpansMeal": false,
+            "blocksAfterMeal": 2,
+            "blocksBeforeMeal": 2
+          },
+          "priorRevalidation": null,
+          "mealSplitRequested": {
+            "mode": "PREFERRED",
+            "afterMealBlocks": 2,
+            "beforeMealBlocks": 2
+          },
+          "selectedFingerprint": "da779e9a569d07591b74044af3dfa952e09e28adf8ffd290e9217e024b824671",
+          "preferredSearchStatus": "TARGET_ACHIEVED",
+          "selectedWitnessFingerprint": "d32e8c85cd49ccec1a6e1a6e3e470bb2094d044f7f07c232d5275d8f31a55542",
+          "mealSplitPreferenceAchieved": true
+        },
+        "work": {
+          "coreBranches": 5809,
+          "branchesExplored": 42276,
+          "coreMaximumDepth": 0,
+          "branchBudgetLimit": 100000,
+          "conflictBackjumps": 0,
+          "standaloneBranches": 36467,
+          "feederOrderBranches": 0,
+          "suffixDepthsSkipped": 0,
+          "architecturesChecked": 0,
+          "bundleNogoodBranches": 0,
+          "bundleNogoodsCreated": 0,
+          "bundleMatchingRepairs": 0,
+          "mainRunWitnessRepairs": 0,
+          "bundleCertifiedRepairs": 0,
+          "bundleMatchingAttempts": 10,
+          "mainRunWitnessAttempts": 0,
+          "coreLeafTransportPrunes": 0,
+          "deepestCoreDepthReached": 0,
+          "mainCandidatesEvaluated": 0,
+          "standaloneForwardChecks": 0,
+          "feederSlotMatchingChecks": 0,
+          "feederCandidatesEvaluated": 0,
+          "membershipFallbackEntered": 0,
+          "patternCandidatesExplored": 0,
+          "transportContiguousStates": 1208,
+          "bundleNogoodDeduplications": 0,
+          "residualMatchingFullBuilds": 0,
+          "timelineCandidatesExplored": 0,
+          "bundleHardValidationRejects": 0,
+          "residualMatchingInvocations": 0,
+          "bundleNogoodRepairsSucceeded": 0,
+          "feederSlotMatchingEdgeChecks": 0,
+          "standaloneForwardStartChecks": 0,
+          "residualMatchingEdgeCacheHits": 0,
+          "bundleMatchingMaterializations": 10,
+          "residualMatchingPositionChecks": 0,
+          "participantMealZeroDomainPrunes": 0,
+          "residualMatchingEdgeCacheMisses": 0,
+          "mainRunEquivalentOrdersCollapsed": 0,
+          "residualMatchingBranchesExplored": 0,
+          "residualMatchingAugmentTraversals": 0,
+          "standaloneForwardWitnessCacheHits": 0,
+          "feederSlotMatchingBranchesExplored": 0,
+          "futureRoundWitnessBranchesConsumed": 0,
+          "residualMatchingIncrementalUpdates": 0,
+          "feederSlotMatchingAugmentTraversals": 0,
+          "futureRoundWitnessCompleteMatchings": 0,
+          "futureRoundWitnessSearchInvocations": 0,
+          "standaloneForwardWitnessCacheMisses": 0,
+          "futureRoundWitnessPrerequisiteChecks": 0,
+          "participantMealExactMaterializations": 4,
+          "futureRoundWitnessStructuralCandidates": 0,
+          "participantMealFutureFeasibilityChecks": 317,
+          "participantMealAnalyticCollectivePrunes": 0,
+          "participantMealFutureInfeasibleBranches": 0,
+          "futureRoundWitnessParticipantFutureChecks": 0,
+          "participantMealAffectedObligationsChecked": 410
+        },
+        "completeObligations": 266
+      },
+      "spatialTopology": {
+        "contractVersion": 2,
+        "fingerprint": "fc506212623067224ed40cf396ac31f1dbdcd5f7cb729126a8af330ad79ea565",
+        "inputModel": "SOURCE_06_V2_8",
+        "previousGeometryAuthority": false
+      },
+      "persistedCanonical": {
+        "status": "PASS",
+        "obligations": 266,
+        "productiveTasks": 247,
+        "participantMeals": 19,
+        "setupPreparations": 1,
+        "roundPreparations": 17,
+        "operationalMeals": 8,
+        "expectedOperationalMeals": 8,
+        "missingOperationalMealIds": [],
+        "validation": {
+          "hardValid": true,
+          "dependencyViolationCount": 0,
+          "overlapViolationCount": 0,
+          "transitionViolationCount": 0,
+          "availabilityViolationCount": 0,
+          "taskAvailabilityViolationCount": 0,
+          "blockViolationCount": 0,
+          "resourceAvailabilityViolationCount": 0,
+          "resourceOverlapViolationCount": 0,
+          "resourceTransitionViolationCount": 0,
+          "secondaryContinuityViolationCount": 0,
+          "setupViolationCount": 0,
+          "setupPreparationViolationCount": 0,
+          "roundSynchronizationViolationCount": 0,
+          "roundPreparationViolationCount": 0,
+          "jointGroupViolationCount": 0,
+          "transportGroupingViolationCount": 0,
+          "technicalOperationViolationCount": 0,
+          "technicalChainViolationCount": 0,
+          "spaceMealViolationCount": 0,
+          "mainFlowMealViolationCount": 0,
+          "anchoredAccompanimentViolationCount": 0,
+          "participantMealViolationCount": 0,
+          "resourceMealViolationCount": 0,
+          "operationalMealViolationCount": 0,
+          "itinerantUnitMealViolationCount": 0,
+          "reasonCodes": [],
+          "unstructuredReasonCodes": [],
+          "violations": []
+        },
+        "closure": "CERTIFIED",
+        "closureFingerprint": "6139442f691efde701375ae1143278e49b6b9e7e5cead180345a8aa225aca776",
+        "charges": 1,
+        "placementsFingerprint": "a660fccc0d8bc42f9dcc0c66a6c042eadf1864f02241ef84d863203f69b660f0",
+        "counterfactual": {
+          "mode": "READ_ONLY_NOT_PERSISTED",
+          "addedMealIds": [],
+          "hardValid": true,
+          "violations": [],
+          "allOtherPlacementsUnchanged": true
+        }
+      },
+      "viewsHistory": {
+        "status": "PASS",
+        "stageOrdinal": 11,
+        "stageId": 23,
+        "fingerprint": "fc506212623067224ed40cf396ac31f1dbdcd5f7cb729126a8af330ad79ea565",
+        "views": [
+          {
+            "view": "contestants default",
+            "tasks": 266
+          },
+          {
+            "view": "contestants sorted by IN",
+            "tasks": 266
+          },
+          {
+            "view": "contestants sorted by CROMA",
+            "tasks": 266
+          },
+          {
+            "view": "contestants sorted by ENSAYO_ESTUDIO_7",
+            "tasks": 266
+          },
+          {
+            "view": "spaces timeline",
+            "tasks": 266
+          },
+          {
+            "view": "spaces list",
+            "tasks": 266
+          },
+          {
+            "view": "spaces timeline again",
+            "tasks": 266
+          },
+          {
+            "view": "resources default",
+            "renderedTasks": 141
+          },
+          {
+            "view": "resources all selections",
+            "totalPlanTasks": 266,
+            "renderedTasks": 141,
+            "filteredTasks": 125
+          },
+          {
+            "view": "contestants restored",
+            "tasks": 266
+          }
+        ],
+        "sorts": [
+          {
+            "template": "IN",
+            "realPointerClick": true,
+            "tasksRetained": 266,
+            "returnedToName": true,
+            "noPendingEdits": true
+          },
+          {
+            "template": "CROMA",
+            "realPointerClick": true,
+            "tasksRetained": 266,
+            "returnedToName": true,
+            "noPendingEdits": true
+          },
+          {
+            "template": "ENSAYO_ESTUDIO_7",
+            "realPointerClick": true,
+            "tasksRetained": 266,
+            "returnedToName": true,
+            "noPendingEdits": true
+          }
+        ],
+        "roles": [
+          {
+            "role": "anon",
+            "status": 401
+          },
+          {
+            "role": "norole",
+            "status": 403
+          },
+          {
+            "role": "viewer",
+            "status": 200
+          },
+          {
+            "role": "aux",
+            "status": 200
+          },
+          {
+            "role": "production",
+            "status": 200
+          },
+          {
+            "role": "admin",
+            "status": 200
+          }
+        ],
+        "remoteWrites": 0,
+        "composedOperations": {
+          "logical": 3,
+          "technicalObligations": 9,
+          "operationMinutes": 45,
+          "anchorMinutes": 15,
+          "additionalOccupancy": false
+        },
+        "legacyResourceParity": true,
+        "history": {
+          "lazy": true,
+          "exactRunIntervals": true,
+          "stageZeroUnavailable": true,
+          "roleBoundary": true,
+          "noEvidencePayload": true
+        },
+        "noMutations": true
+      },
+      "manualSnapshotFidelity": {
+        "status": "PASS",
+        "mode": "NATIVE_DISPOSABLE_HTTP_SQL",
+        "remoteWrites": 0,
+        "baselineFingerprint": "fc506212623067224ed40cf396ac31f1dbdcd5f7cb729126a8af330ad79ea565",
+        "baseline": {
+          "hardValid": true,
+          "dependencyViolationCount": 0,
+          "overlapViolationCount": 0,
+          "transitionViolationCount": 0,
+          "availabilityViolationCount": 0,
+          "taskAvailabilityViolationCount": 0,
+          "blockViolationCount": 0,
+          "resourceAvailabilityViolationCount": 0,
+          "resourceOverlapViolationCount": 0,
+          "resourceTransitionViolationCount": 0,
+          "secondaryContinuityViolationCount": 0,
+          "setupViolationCount": 0,
+          "setupPreparationViolationCount": 0,
+          "roundSynchronizationViolationCount": 0,
+          "roundPreparationViolationCount": 0,
+          "jointGroupViolationCount": 0,
+          "transportGroupingViolationCount": 0,
+          "technicalOperationViolationCount": 0,
+          "technicalChainViolationCount": 0,
+          "spaceMealViolationCount": 0,
+          "mainFlowMealViolationCount": 0,
+          "anchoredAccompanimentViolationCount": 0,
+          "participantMealViolationCount": 0,
+          "resourceMealViolationCount": 0,
+          "operationalMealViolationCount": 0,
+          "itinerantUnitMealViolationCount": 0,
+          "reasonCodes": [],
+          "unstructuredReasonCodes": [],
+          "violations": []
+        },
+        "moved": {
+          "hardValid": false,
+          "dependencyViolationCount": 0,
+          "overlapViolationCount": 0,
+          "transitionViolationCount": 0,
+          "availabilityViolationCount": 1,
+          "taskAvailabilityViolationCount": 0,
+          "blockViolationCount": 0,
+          "resourceAvailabilityViolationCount": 0,
+          "resourceOverlapViolationCount": 0,
+          "resourceTransitionViolationCount": 0,
+          "secondaryContinuityViolationCount": 0,
+          "setupViolationCount": 0,
+          "setupPreparationViolationCount": 0,
+          "roundSynchronizationViolationCount": 0,
+          "roundPreparationViolationCount": 0,
+          "jointGroupViolationCount": 0,
+          "transportGroupingViolationCount": 1,
+          "technicalOperationViolationCount": 0,
+          "technicalChainViolationCount": 0,
+          "spaceMealViolationCount": 0,
+          "mainFlowMealViolationCount": 0,
+          "anchoredAccompanimentViolationCount": 0,
+          "participantMealViolationCount": 0,
+          "resourceMealViolationCount": 0,
+          "operationalMealViolationCount": 0,
+          "itinerantUnitMealViolationCount": 0,
+          "reasonCodes": [
+            "AVAILABILITY_VIOLATION",
+            "TRANSPORT_GROUPING_VIOLATION"
+          ],
+          "unstructuredReasonCodes": [
+            "TRANSPORT_GROUPING_VIOLATION"
+          ],
+          "violations": [
+            {
+              "ruleCode": "AVAILABILITY_VIOLATION",
+              "severity": "HARD",
+              "affectedTaskIds": [
+                "task:110022"
+              ],
+              "affectedResourceIds": [],
+              "affectedSpaceIds": [
+                "space:49"
+              ],
+              "dimensions": {
+                "start": 1140,
+                "end": 1145
+              }
+            }
+          ]
+        },
+        "productViolations": [
+          {
+            "ruleCode": "AVAILABILITY_VIOLATION",
+            "severity": "HARD",
+            "affectedTaskIds": [
+              110022
+            ],
+            "affectedResourceIds": [],
+            "affectedSpaceIds": [
+              49
+            ],
+            "details": {
+              "dimensions": {
+                "start": 1140,
+                "end": 1145
+              }
+            },
+            "inheritedAcceptedExceptionId": null,
+            "violationKey": "{\"ruleCode\":\"AVAILABILITY_VIOLATION\",\"taskIds\":[110022],\"resourceIds\":[],\"spaceIds\":[49],\"dimensions\":{\"end\":1145,\"start\":1140}}"
+          }
+        ],
+        "manualUndoRedo": "PASS",
+        "blockUndoRedo": "PASS",
+        "reset": "EXACT_BASELINE",
+        "acceptedMaterial": "UNCHANGED",
+        "anonymousTransport": "FAIL_CLOSED"
+      }
+    },
+    "s0": "PASS",
+    "stages": [
+      {
+        "ordinal": 1,
+        "runId": 1,
+        "scope": {
+          "kind": "SPACE",
+          "spaceId": 48
+        },
+        "scopeCount": 19,
+        "completed": 19,
+        "generationMs": 109041,
+        "fingerprint": "2199312a68eeab7d2494c1bf1fc576cb51eef196a605d58ca806997c65465992",
+        "hardCount": 0,
+        "requiredCount": 0,
+        "independentCanonicalWitness": "PASS",
+        "witnessFingerprint": "d32e8c85cd49ccec1a6e1a6e3e470bb2094d044f7f07c232d5275d8f31a55542",
+        "closure": "CERTIFIED",
+        "auditCharges": 293,
+        "persistence": "PASS",
+        "reload": "PASS",
+        "protectedPlacements": "PASS",
+        "immutableStageTrigger": "PASS",
+        "staleHttpAndRpcAtomic": "PASS",
+        "draftResourceDisplay": "PASS",
+        "legalOccupancyWarnings": "PASS",
+        "operationalMealConsolidation": [
+          {
+            "policyId": "break:coach-jose-maria",
+            "consumerCount": 22,
+            "acceptedConsumers": 11,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:coach-lucia",
+            "consumerCount": 16,
+            "acceptedConsumers": 8,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:main-flow",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:totales-operations",
+            "consumerCount": 19,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:p15-operations",
+            "consumerCount": 36,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:reality-a",
+            "consumerCount": 15,
+            "acceptedConsumers": 2,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:reality-b",
+            "consumerCount": 12,
+            "acceptedConsumers": 1,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:p14-operations",
+            "consumerCount": 42,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          }
+        ]
+      },
+      {
+        "ordinal": 2,
+        "runId": 2,
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            110009,
+            110024,
+            110037,
+            110050,
+            110063,
+            110080,
+            110095,
+            110108,
+            110123,
+            110138,
+            110153,
+            110168,
+            110183,
+            110197,
+            110210,
+            110224,
+            110236,
+            110249,
+            110262
+          ]
+        },
+        "scopeCount": 19,
+        "completed": 38,
+        "generationMs": 1825,
+        "fingerprint": "3028973f22485a418815c6b3f493d8d027394f4823471fde2c2d32146891dcbc",
+        "hardCount": 0,
+        "requiredCount": 0,
+        "independentCanonicalWitness": "PASS",
+        "witnessFingerprint": "d32e8c85cd49ccec1a6e1a6e3e470bb2094d044f7f07c232d5275d8f31a55542",
+        "closure": "CERTIFIED",
+        "auditCharges": 293,
+        "persistence": "PASS",
+        "reload": "PASS",
+        "protectedPlacements": "PASS",
+        "immutableStageTrigger": "PASS",
+        "staleHttpAndRpcAtomic": "PASS",
+        "draftResourceDisplay": "PASS",
+        "legalOccupancyWarnings": "PASS",
+        "operationalMealConsolidation": [
+          {
+            "policyId": "break:coach-jose-maria",
+            "consumerCount": 22,
+            "acceptedConsumers": 22,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-lucia",
+            "consumerCount": 16,
+            "acceptedConsumers": 16,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:main-flow",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:totales-operations",
+            "consumerCount": 19,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:p15-operations",
+            "consumerCount": 36,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:reality-a",
+            "consumerCount": 15,
+            "acceptedConsumers": 2,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:reality-b",
+            "consumerCount": 12,
+            "acceptedConsumers": 1,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:p14-operations",
+            "consumerCount": 42,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          }
+        ]
+      },
+      {
+        "ordinal": 3,
+        "runId": 3,
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            110041,
+            110069,
+            110081,
+            110129,
+            110154,
+            110169,
+            110173,
+            110215
+          ]
+        },
+        "scopeCount": 8,
+        "completed": 46,
+        "generationMs": 1933,
+        "fingerprint": "06e2767bc6318fb1660e34752fe66629a0834576bbfef489cb3111caebaf9f1e",
+        "hardCount": 0,
+        "requiredCount": 0,
+        "independentCanonicalWitness": "PASS",
+        "witnessFingerprint": "d32e8c85cd49ccec1a6e1a6e3e470bb2094d044f7f07c232d5275d8f31a55542",
+        "closure": "CERTIFIED",
+        "auditCharges": 293,
+        "persistence": "PASS",
+        "reload": "PASS",
+        "protectedPlacements": "PASS",
+        "immutableStageTrigger": "PASS",
+        "staleHttpAndRpcAtomic": "PASS",
+        "draftResourceDisplay": "PASS",
+        "legalOccupancyWarnings": "PASS",
+        "operationalMealConsolidation": [
+          {
+            "policyId": "break:coach-jose-maria",
+            "consumerCount": 22,
+            "acceptedConsumers": 22,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-lucia",
+            "consumerCount": 16,
+            "acceptedConsumers": 16,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:main-flow",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:totales-operations",
+            "consumerCount": 19,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:p15-operations",
+            "consumerCount": 36,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:reality-a",
+            "consumerCount": 15,
+            "acceptedConsumers": 7,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:reality-b",
+            "consumerCount": 12,
+            "acceptedConsumers": 6,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:p14-operations",
+            "consumerCount": 42,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          }
+        ]
+      },
+      {
+        "ordinal": 4,
+        "runId": 4,
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            110014,
+            110028,
+            110040,
+            110053,
+            110068,
+            110084,
+            110099,
+            110113,
+            110128,
+            110143,
+            110158,
+            110172,
+            110187,
+            110200,
+            110214,
+            110227,
+            110240,
+            110253,
+            110266
+          ]
+        },
+        "scopeCount": 19,
+        "completed": 65,
+        "generationMs": 1840,
+        "fingerprint": "fb949eada0a36789ee829e20fb1492efabc6a9dce56511259e12a718413bb220",
+        "hardCount": 0,
+        "requiredCount": 0,
+        "independentCanonicalWitness": "PASS",
+        "witnessFingerprint": "d32e8c85cd49ccec1a6e1a6e3e470bb2094d044f7f07c232d5275d8f31a55542",
+        "closure": "CERTIFIED",
+        "auditCharges": 293,
+        "persistence": "PASS",
+        "reload": "PASS",
+        "protectedPlacements": "PASS",
+        "immutableStageTrigger": "PASS",
+        "staleHttpAndRpcAtomic": "PASS",
+        "draftResourceDisplay": "PASS",
+        "legalOccupancyWarnings": "PASS",
+        "operationalMealConsolidation": [
+          {
+            "policyId": "break:coach-jose-maria",
+            "consumerCount": 22,
+            "acceptedConsumers": 22,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-lucia",
+            "consumerCount": 16,
+            "acceptedConsumers": 16,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:main-flow",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:totales-operations",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p15-operations",
+            "consumerCount": 36,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:reality-a",
+            "consumerCount": 15,
+            "acceptedConsumers": 7,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:reality-b",
+            "consumerCount": 12,
+            "acceptedConsumers": 6,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:p14-operations",
+            "consumerCount": 42,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          }
+        ]
+      },
+      {
+        "ordinal": 5,
+        "runId": 5,
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            110010,
+            110011,
+            110064,
+            110065,
+            110109,
+            110110,
+            110139,
+            110237
+          ]
+        },
+        "scopeCount": 8,
+        "completed": 73,
+        "generationMs": 1751,
+        "fingerprint": "bef0cd1e9b55832bf620cd0bc9e1a4cbbaa177ec0416ccfce07df5f828fc0146",
+        "hardCount": 0,
+        "requiredCount": 0,
+        "independentCanonicalWitness": "PASS",
+        "witnessFingerprint": "d32e8c85cd49ccec1a6e1a6e3e470bb2094d044f7f07c232d5275d8f31a55542",
+        "closure": "CERTIFIED",
+        "auditCharges": 293,
+        "persistence": "PASS",
+        "reload": "PASS",
+        "protectedPlacements": "PASS",
+        "immutableStageTrigger": "PASS",
+        "staleHttpAndRpcAtomic": "PASS",
+        "draftResourceDisplay": "PASS",
+        "legalOccupancyWarnings": "PASS",
+        "operationalMealConsolidation": [
+          {
+            "policyId": "break:coach-jose-maria",
+            "consumerCount": 22,
+            "acceptedConsumers": 22,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-lucia",
+            "consumerCount": 16,
+            "acceptedConsumers": 16,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:main-flow",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:totales-operations",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p15-operations",
+            "consumerCount": 36,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:reality-a",
+            "consumerCount": 14,
+            "acceptedConsumers": 12,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:reality-b",
+            "consumerCount": 11,
+            "acceptedConsumers": 9,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:p14-operations",
+            "consumerCount": 42,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          }
+        ]
+      },
+      {
+        "ordinal": 6,
+        "runId": 6,
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            110001,
+            110016,
+            110020,
+            110026,
+            110030,
+            110042,
+            110055,
+            110059,
+            110066,
+            110071,
+            110075,
+            110087,
+            110091,
+            110097,
+            110101,
+            110115,
+            110119,
+            110126,
+            110130,
+            110134,
+            110141,
+            110146,
+            110156,
+            110160,
+            110174,
+            110178,
+            110185,
+            110189,
+            110202,
+            110212,
+            110217,
+            110228,
+            110232,
+            110242,
+            110251,
+            110255
+          ]
+        },
+        "scopeCount": 36,
+        "completed": 109,
+        "generationMs": 2014,
+        "fingerprint": "348cca99aecaf9237471691eab8c4dd9f6cfbd7a8d16699d135f581cf6cedf12",
+        "hardCount": 0,
+        "requiredCount": 0,
+        "independentCanonicalWitness": "PASS",
+        "witnessFingerprint": "d32e8c85cd49ccec1a6e1a6e3e470bb2094d044f7f07c232d5275d8f31a55542",
+        "closure": "CERTIFIED",
+        "auditCharges": 293,
+        "persistence": "PASS",
+        "reload": "PASS",
+        "protectedPlacements": "PASS",
+        "immutableStageTrigger": "PASS",
+        "staleHttpAndRpcAtomic": "PASS",
+        "draftResourceDisplay": "PASS",
+        "legalOccupancyWarnings": "PASS",
+        "operationalMealConsolidation": [
+          {
+            "policyId": "break:coach-jose-maria",
+            "consumerCount": 22,
+            "acceptedConsumers": 22,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-lucia",
+            "consumerCount": 16,
+            "acceptedConsumers": 16,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:main-flow",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:totales-operations",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p15-operations",
+            "consumerCount": 36,
+            "acceptedConsumers": 36,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-a",
+            "consumerCount": 14,
+            "acceptedConsumers": 12,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:reality-b",
+            "consumerCount": 11,
+            "acceptedConsumers": 9,
+            "closed": false,
+            "persisted": false
+          },
+          {
+            "policyId": "break:p14-operations",
+            "consumerCount": 42,
+            "acceptedConsumers": 0,
+            "closed": false,
+            "persisted": false
+          }
+        ]
+      },
+      {
+        "ordinal": 7,
+        "runId": 7,
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            110005,
+            110008,
+            110015,
+            110023,
+            110029,
+            110036,
+            110046,
+            110049,
+            110054,
+            110062,
+            110070,
+            110076,
+            110079,
+            110086,
+            110094,
+            110100,
+            110107,
+            110114,
+            110122,
+            110124,
+            110137,
+            110145,
+            110152,
+            110159,
+            110164,
+            110167,
+            110179,
+            110182,
+            110188,
+            110193,
+            110196,
+            110201,
+            110206,
+            110209,
+            110216,
+            110223,
+            110235,
+            110241,
+            110248,
+            110254,
+            110261,
+            110263
+          ]
+        },
+        "scopeCount": 42,
+        "completed": 151,
+        "generationMs": 1986,
+        "fingerprint": "12a97f2067c434041cf821256ae9209115d43b1eba783d218368b15784995c70",
+        "hardCount": 0,
+        "requiredCount": 0,
+        "independentCanonicalWitness": "PASS",
+        "witnessFingerprint": "d32e8c85cd49ccec1a6e1a6e3e470bb2094d044f7f07c232d5275d8f31a55542",
+        "closure": "CERTIFIED",
+        "auditCharges": 293,
+        "persistence": "PASS",
+        "reload": "PASS",
+        "protectedPlacements": "PASS",
+        "immutableStageTrigger": "PASS",
+        "staleHttpAndRpcAtomic": "PASS",
+        "draftResourceDisplay": "PASS",
+        "legalOccupancyWarnings": "PASS",
+        "operationalMealConsolidation": [
+          {
+            "policyId": "break:coach-jose-maria",
+            "consumerCount": 22,
+            "acceptedConsumers": 22,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-lucia",
+            "consumerCount": 16,
+            "acceptedConsumers": 16,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:main-flow",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:totales-operations",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p15-operations",
+            "consumerCount": 36,
+            "acceptedConsumers": 36,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-a",
+            "consumerCount": 12,
+            "acceptedConsumers": 12,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-b",
+            "consumerCount": 11,
+            "acceptedConsumers": 11,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p14-operations",
+            "consumerCount": 42,
+            "acceptedConsumers": 42,
+            "closed": true,
+            "persisted": true
+          }
+        ]
+      },
+      {
+        "ordinal": 8,
+        "runId": 8,
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            110003,
+            110006,
+            110018,
+            110021,
+            110032,
+            110034,
+            110044,
+            110047,
+            110057,
+            110060,
+            110073,
+            110077,
+            110089,
+            110092,
+            110103,
+            110105,
+            110117,
+            110120,
+            110132,
+            110135,
+            110148,
+            110150,
+            110162,
+            110165,
+            110176,
+            110180,
+            110191,
+            110194,
+            110204,
+            110207,
+            110219,
+            110221,
+            110230,
+            110233,
+            110244,
+            110246,
+            110257,
+            110259
+          ]
+        },
+        "scopeCount": 38,
+        "completed": 189,
+        "generationMs": 1928,
+        "fingerprint": "115ca6947e28de2beaaa0e5329f932189b725bfea47ec4e2eb025eeac93f135a",
+        "hardCount": 0,
+        "requiredCount": 0,
+        "independentCanonicalWitness": "PASS",
+        "witnessFingerprint": "d32e8c85cd49ccec1a6e1a6e3e470bb2094d044f7f07c232d5275d8f31a55542",
+        "closure": "CERTIFIED",
+        "auditCharges": 293,
+        "persistence": "PASS",
+        "reload": "PASS",
+        "protectedPlacements": "PASS",
+        "immutableStageTrigger": "PASS",
+        "staleHttpAndRpcAtomic": "PASS",
+        "draftResourceDisplay": "PASS",
+        "legalOccupancyWarnings": "PASS",
+        "operationalMealConsolidation": [
+          {
+            "policyId": "break:coach-jose-maria",
+            "consumerCount": 22,
+            "acceptedConsumers": 22,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-lucia",
+            "consumerCount": 16,
+            "acceptedConsumers": 16,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:main-flow",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:totales-operations",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p15-operations",
+            "consumerCount": 36,
+            "acceptedConsumers": 36,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-a",
+            "consumerCount": 12,
+            "acceptedConsumers": 12,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-b",
+            "consumerCount": 11,
+            "acceptedConsumers": 11,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p14-operations",
+            "consumerCount": 42,
+            "acceptedConsumers": 42,
+            "closed": true,
+            "persisted": true
+          }
+        ]
+      },
+      {
+        "ordinal": 9,
+        "runId": 9,
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            110085,
+            110144
+          ]
+        },
+        "scopeCount": 2,
+        "completed": 191,
+        "generationMs": 2058,
+        "fingerprint": "dba6efba7ed28f6fec084bfddb5ee271a33f417c7c4062265551a37660b170de",
+        "hardCount": 0,
+        "requiredCount": 0,
+        "independentCanonicalWitness": "PASS",
+        "witnessFingerprint": "d32e8c85cd49ccec1a6e1a6e3e470bb2094d044f7f07c232d5275d8f31a55542",
+        "closure": "CERTIFIED",
+        "auditCharges": 293,
+        "persistence": "PASS",
+        "reload": "PASS",
+        "protectedPlacements": "PASS",
+        "immutableStageTrigger": "PASS",
+        "staleHttpAndRpcAtomic": "PASS",
+        "draftResourceDisplay": "PASS",
+        "legalOccupancyWarnings": "PASS",
+        "operationalMealConsolidation": [
+          {
+            "policyId": "break:coach-jose-maria",
+            "consumerCount": 22,
+            "acceptedConsumers": 22,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-lucia",
+            "consumerCount": 16,
+            "acceptedConsumers": 16,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:main-flow",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:totales-operations",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p15-operations",
+            "consumerCount": 36,
+            "acceptedConsumers": 36,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-a",
+            "consumerCount": 12,
+            "acceptedConsumers": 12,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-b",
+            "consumerCount": 11,
+            "acceptedConsumers": 11,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p14-operations",
+            "consumerCount": 42,
+            "acceptedConsumers": 42,
+            "closed": true,
+            "persisted": true
+          }
+        ]
+      },
+      {
+        "ordinal": 10,
+        "runId": 10,
+        "scope": {
+          "kind": "SPACE",
+          "spaceId": 39
+        },
+        "scopeCount": 18,
+        "completed": 209,
+        "generationMs": 1996,
+        "fingerprint": "4d93b7d453eecfd7853b9180b608869af75954eb6e1aac9e4526fc1d2efce1f6",
+        "hardCount": 0,
+        "requiredCount": 0,
+        "independentCanonicalWitness": "PASS",
+        "witnessFingerprint": "d32e8c85cd49ccec1a6e1a6e3e470bb2094d044f7f07c232d5275d8f31a55542",
+        "closure": "CERTIFIED",
+        "auditCharges": 293,
+        "persistence": "PASS",
+        "reload": "PASS",
+        "protectedPlacements": "PASS",
+        "immutableStageTrigger": "PASS",
+        "staleHttpAndRpcAtomic": "PASS",
+        "draftResourceDisplay": "PASS",
+        "legalOccupancyWarnings": "PASS",
+        "operationalMealConsolidation": [
+          {
+            "policyId": "break:coach-jose-maria",
+            "consumerCount": 22,
+            "acceptedConsumers": 22,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-lucia",
+            "consumerCount": 16,
+            "acceptedConsumers": 16,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:main-flow",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:totales-operations",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p15-operations",
+            "consumerCount": 36,
+            "acceptedConsumers": 36,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-a",
+            "consumerCount": 12,
+            "acceptedConsumers": 12,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-b",
+            "consumerCount": 11,
+            "acceptedConsumers": 11,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p14-operations",
+            "consumerCount": 42,
+            "acceptedConsumers": 42,
+            "closed": true,
+            "persisted": true
+          }
+        ]
+      },
+      {
+        "ordinal": 11,
+        "runId": 11,
+        "scope": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            110004,
+            110007,
+            110013,
+            110019,
+            110022,
+            110027,
+            110033,
+            110035,
+            110039,
+            110045,
+            110048,
+            110052,
+            110058,
+            110061,
+            110067,
+            110074,
+            110078,
+            110083,
+            110090,
+            110093,
+            110098,
+            110104,
+            110106,
+            110112,
+            110118,
+            110121,
+            110127,
+            110133,
+            110136,
+            110142,
+            110149,
+            110151,
+            110157,
+            110163,
+            110166,
+            110171,
+            110177,
+            110181,
+            110186,
+            110192,
+            110195,
+            110199,
+            110205,
+            110208,
+            110213,
+            110220,
+            110222,
+            110226,
+            110231,
+            110234,
+            110239,
+            110245,
+            110247,
+            110252,
+            110258,
+            110260,
+            110265
+          ]
+        },
+        "scopeCount": 57,
+        "completed": 266,
+        "generationMs": 1986,
+        "fingerprint": "fc506212623067224ed40cf396ac31f1dbdcd5f7cb729126a8af330ad79ea565",
+        "hardCount": 0,
+        "requiredCount": 0,
+        "independentCanonicalWitness": "PASS",
+        "witnessFingerprint": "d32e8c85cd49ccec1a6e1a6e3e470bb2094d044f7f07c232d5275d8f31a55542",
+        "closure": "CERTIFIED",
+        "auditCharges": 293,
+        "persistence": "PASS",
+        "reload": "PASS",
+        "protectedPlacements": "PASS",
+        "immutableStageTrigger": "PASS",
+        "staleHttpAndRpcAtomic": "PASS",
+        "draftResourceDisplay": "PASS",
+        "legalOccupancyWarnings": "PASS",
+        "operationalMealConsolidation": [
+          {
+            "policyId": "break:coach-jose-maria",
+            "consumerCount": 22,
+            "acceptedConsumers": 22,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:coach-lucia",
+            "consumerCount": 16,
+            "acceptedConsumers": 16,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:main-flow",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:totales-operations",
+            "consumerCount": 19,
+            "acceptedConsumers": 19,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p15-operations",
+            "consumerCount": 36,
+            "acceptedConsumers": 36,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-a",
+            "consumerCount": 12,
+            "acceptedConsumers": 12,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:reality-b",
+            "consumerCount": 11,
+            "acceptedConsumers": 11,
+            "closed": true,
+            "persisted": true
+          },
+          {
+            "policyId": "break:p14-operations",
+            "consumerCount": 42,
+            "acceptedConsumers": 42,
+            "closed": true,
+            "persisted": true
+          }
+        ]
+      }
+    ],
+    "pageErrors": []
+  },
+  "autoNative": {
+    "status": "PASS",
+    "lastStage": {
+      "ordinal": 11,
+      "runId": 11,
+      "scope": {
+        "kind": "TASK_IDS",
+        "taskIds": [
+          110004,
+          110007,
+          110013,
+          110019,
+          110022,
+          110027,
+          110033,
+          110035,
+          110039,
+          110045,
+          110048,
+          110052,
+          110058,
+          110061,
+          110067,
+          110074,
+          110078,
+          110083,
+          110090,
+          110093,
+          110098,
+          110104,
+          110106,
+          110112,
+          110118,
+          110121,
+          110127,
+          110133,
+          110136,
+          110142,
+          110149,
+          110151,
+          110157,
+          110163,
+          110166,
+          110171,
+          110177,
+          110181,
+          110186,
+          110192,
+          110195,
+          110199,
+          110205,
+          110208,
+          110213,
+          110220,
+          110222,
+          110226,
+          110231,
+          110234,
+          110239,
+          110245,
+          110247,
+          110252,
+          110258,
+          110260,
+          110265
+        ]
+      },
+      "scopeCount": 57,
+      "completed": 266,
+      "generationMs": 2144,
+      "fingerprint": "c0cc8bf4e1c466a9640b7ce765e0dceeb5772204a8f387f50e1af12d844ec703",
+      "hardCount": 0,
+      "requiredCount": 0,
+      "independentCanonicalWitness": "PASS",
+      "witnessFingerprint": "0f3bcac7a1a447203edbb6c41307291968a7be731f09ae8353560e8427b04bf8",
+      "closure": "CERTIFIED",
+      "auditCharges": 293,
+      "persistence": "PASS",
+      "reload": "PASS",
+      "protectedPlacements": "PASS",
+      "immutableStageTrigger": "PASS",
+      "staleHttpAndRpcAtomic": "PASS",
+      "draftResourceDisplay": "PASS",
+      "legalOccupancyWarnings": "PASS",
+      "operationalMealConsolidation": [
+        {
+          "policyId": "break:reality-a",
+          "consumerCount": 12,
+          "acceptedConsumers": 12,
+          "closed": true,
+          "persisted": true
+        },
+        {
+          "policyId": "break:totales-operations",
+          "consumerCount": 19,
+          "acceptedConsumers": 19,
+          "closed": true,
+          "persisted": true
+        },
+        {
+          "policyId": "break:coach-lucia",
+          "consumerCount": 16,
+          "acceptedConsumers": 16,
+          "closed": true,
+          "persisted": true
+        },
+        {
+          "policyId": "break:coach-jose-maria",
+          "consumerCount": 22,
+          "acceptedConsumers": 22,
+          "closed": true,
+          "persisted": true
+        },
+        {
+          "policyId": "break:main-flow",
+          "consumerCount": 19,
+          "acceptedConsumers": 19,
+          "closed": true,
+          "persisted": true
+        },
+        {
+          "policyId": "break:p15-operations",
+          "consumerCount": 36,
+          "acceptedConsumers": 36,
+          "closed": true,
+          "persisted": true
+        },
+        {
+          "policyId": "break:reality-b",
+          "consumerCount": 11,
+          "acceptedConsumers": 11,
+          "closed": true,
+          "persisted": true
+        },
+        {
+          "policyId": "break:p14-operations",
+          "consumerCount": 42,
+          "acceptedConsumers": 42,
+          "closed": true,
+          "persisted": true
+        }
+      ]
+    },
+    "pending": [
+      "Connected Supabase catalog/backup adoption and original-row preservation",
+      "Published Replit runtime and user browser",
+      "Supabase Realtime/WebSocket transport"
+    ]
+  },
+  "gates": {
+    "product-final": {
+      "sha256": "0508cc8591e8bca6118669477c25e19b616aafa4e1dc6820408c35dede26ae16",
+      "summary": [
+        "✔ 074 creates the versioned per-plan snapshot without a destructive template FK (0.796856ms)",
+        "✔ 074 backfills the complete legacy catalog idempotently (0.238812ms)",
+        "✔ 074 is server-only and protects table and sequence (0.201437ms)",
+        "✔ Drizzle schema mirrors the migration constraints and omits a stored fingerprint (0.290419ms)",
+        "ℹ tests 2921",
+        "ℹ suites 9",
+        "ℹ pass 2921",
+        "ℹ fail 0",
+        "ℹ cancelled 0",
+        "ℹ skipped 0",
+        "ℹ todo 0",
+        "ℹ duration_ms 431137.461145"
+      ]
+    },
+    "import-tests": {
+      "sha256": "cb3efad45438a33bfbec74cacbbabbe6f1973e9e3b5b751f7cf4f688b8dfd464",
+      "summary": [
+        "✔ a semantic effective component change changes both component and compound fingerprints (0.920889ms)",
+        "✔ missing required daily authority fails closed with a typed deterministic reason (0.594347ms)",
+        "✔ unavailable optional bundle signal is neutral, deterministic, and distinct from an empty catalog (2.03265ms)",
+        "✔ existing snapshot fingerprints are reused and no mutable configuration reader exists (0.452428ms)",
+        "ℹ tests 28",
+        "ℹ suites 0",
+        "ℹ pass 28",
+        "ℹ fail 0",
+        "ℹ cancelled 0",
+        "ℹ skipped 0",
+        "ℹ todo 0",
+        "ℹ duration_ms 15871.022358"
+      ]
+    },
+    "boundary": {
+      "sha256": "b815ae683842c0c0b6459e0c54b306a46101be6a3831cb70b23b46d01af68e15",
+      "summary": [
+        "✔ missing relationships and invalid availability never crash (1.354369ms)",
+        "✔ unsupported focal structures are rejected explicitly (1.084842ms)",
+        "✔ results and logical metrics are deterministic and array-order independent (28.433327ms)",
+        "✔ planner-next remains isolated from legacy and production (14.660599ms)",
+        "ℹ tests 8",
+        "ℹ suites 0",
+        "ℹ pass 8",
+        "ℹ fail 0",
+        "ℹ cancelled 0",
+        "ℹ skipped 0",
+        "ℹ todo 0",
+        "ℹ duration_ms 124.711863"
+      ]
+    },
+    "config-tests": {
+      "sha256": "b5f83c6226ebcfa9cce42e94bc5fd4f4edcea664a9667eef17aeac507d27f049",
+      "summary": [
+        "✔ effective product rows feed the internal SOFT count and structured meal preference without rewriting 088 (148.82856ms)",
+        "✔ count choices come from actual geometry, and absent meal cannot become an effective preference (185.968315ms)",
+        "✔ production result wording distinguishes quantity, distribution, completion and bounded exhaustion (0.676539ms)",
+        "✔ habitual preference does not manufacture a Next authority in legacy days (50.739021ms)",
+        "ℹ tests 5",
+        "ℹ suites 0",
+        "ℹ pass 5",
+        "ℹ fail 0",
+        "ℹ cancelled 0",
+        "ℹ skipped 0",
+        "ℹ todo 0",
+        "ℹ duration_ms 407.232181"
+      ]
+    },
+    "focal-detail": {
+      "sha256": "411ddced2299080c68f128148aa81efb9ebcf96ad6505b101fc5a2bfafeb0e08",
+      "summary": [
+        "✔ product geometry counts equal the existing pattern grammar without enumerating it at configuration reads (4.298925ms)",
+        "✔ flexible operational meal moves inside its real window before distribution fallback (7.264132ms)",
+        "✔ a valid zero-before distribution remains a four-block fallback, never a HARD filter (6.303454ms)",
+        "✔ materialized spanning block is reported once in the selected run Evidence (14.177296ms)",
+        "ℹ tests 14",
+        "ℹ suites 0",
+        "ℹ pass 14",
+        "ℹ fail 0",
+        "ℹ cancelled 0",
+        "ℹ skipped 0",
+        "ℹ todo 0",
+        "ℹ duration_ms 241.947103"
+      ]
+    },
+    "soft-detail": {
+      "sha256": "6777c5fb3d0768f0e40e303b3913ce5ecb52f9aca19634ebd4b702fb29c75316",
+      "summary": [
+        "✔ SOFT family tracing is neutral to causal diagnostics and input ordering (58.281742ms)",
+        "✔ a meal inside the requested logical block is tried before another family's preferred cuts (14.598636ms)",
+        "✔ changed availability invalidates a prior witness without constructing AUTO (33.69144ms)",
+        "✔ Assisted records the owning runtime's elapsed time and existing deadline (21.159118ms)",
+        "ℹ tests 28",
+        "ℹ suites 0",
+        "ℹ pass 28",
+        "ℹ fail 0",
+        "ℹ cancelled 0",
+        "ℹ skipped 0",
+        "ℹ todo 0",
+        "ℹ duration_ms 978.66894"
+      ]
+    },
+    "effective-view": {
+      "sha256": "7afd47846b6b1f518b0180ae32e6a403c072823e87cc00f08c1c38f94deb28c3",
+      "summary": [
+        "✔ effective values without auditable provenance stay usable and do not degrade readiness (18.352878ms)",
+        "✔ optimizer exposes only the provenance carried by its authoritative snapshot (2.961171ms)",
+        "✔ readiness categories follow demonstrated causal validation only (0.283979ms)",
+        "ℹ tests 3",
+        "ℹ suites 0",
+        "ℹ pass 3",
+        "ℹ fail 0",
+        "ℹ cancelled 0",
+        "ℹ skipped 0",
+        "ℹ todo 0",
+        "ℹ duration_ms 42.797459"
+      ]
+    },
+    "types": {
+      "sha256": "a3524d5e43d767e9b4be9b919cafac7158a8650a095963e00ef859ff7f4eaf27",
+      "summary": [
+        "",
+        "> rest-express@1.0.0 check",
+        "> tsc",
+        ""
+      ]
+    },
+    "integration-types": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "summary": []
+    },
+    "build": {
+      "sha256": "0c0aad274b84674a5ff630983d49dbee3eb9bd071601e9272b26bb00589572e1",
+      "summary": [
+        "../dist/public/assets/index-DTki4Ijl.js   1,562.42 kB │ gzip: 425.79 kB",
+        "",
+        "(!) Some chunks are larger than 500 kB after minification. Consider:",
+        "- Using dynamic import() to code-split the application",
+        "- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks",
+        "- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.",
+        "✓ built in 8.00s",
+        "building server...",
+        "",
+        "  dist/index.cjs  3.4mb ⚠️",
+        "",
+        "⚡ Done in 612ms"
+      ]
+    },
+    "migrations": {
+      "sha256": "c565279e875a5f9d01d56ed191dc358f343ca1ac636bad234e406e0d4fb3a213",
+      "summary": [
+        "",
+        "> rest-express@1.0.0 check:migrations",
+        "> node script/check-migration-sequence.mjs",
+        "",
+        "Migration sequence valid: 73 historical files; post-cutoff 071, 072, 073, 074, 075, 076, 077, 078, 079, 080, 081, 082, 083, 084, 085, 086, 087, 088, 089, 090, 091, 092."
+      ]
+    },
+    "canonical-first": {
+      "sha256": "9931bb6e4eca8becdabf58b667c97487f2507ef78b0b7d1d7e1ae530395aa1dd",
+      "summary": [
+        "{",
+        "  \"status\": \"FULLY_REPRESENTABLE\",",
+        "  \"gateStatus\": \"EXECUTED\",",
+        "  \"executorCallCount\": 1,",
+        "  \"expansionFingerprint\": \"49267424f4275fd82d32896f7f2688033d82db80cf27eb0c2e1aa89ecc691017\",",
+        "  \"manifestFingerprint\": \"96b60fcb7d8aeee83edc38aba342720681f68239d1876a524e465d5a24c9fab5\",",
+        "  \"totalTaskCount\": 266",
+        "}"
+      ]
+    },
+    "canonical-second": {
+      "sha256": "9931bb6e4eca8becdabf58b667c97487f2507ef78b0b7d1d7e1ae530395aa1dd",
+      "summary": [
+        "{",
+        "  \"status\": \"FULLY_REPRESENTABLE\",",
+        "  \"gateStatus\": \"EXECUTED\",",
+        "  \"executorCallCount\": 1,",
+        "  \"expansionFingerprint\": \"49267424f4275fd82d32896f7f2688033d82db80cf27eb0c2e1aa89ecc691017\",",
+        "  \"manifestFingerprint\": \"96b60fcb7d8aeee83edc38aba342720681f68239d1876a524e465d5a24c9fab5\",",
+        "  \"totalTaskCount\": 266",
+        "}"
+      ]
+    },
+    "cold-fallback": {
+      "sha256": "16603afe658920fd9ae7eec4b0557bd5c8effd3bb39d5f080fe140936443a8d8",
+      "summary": [
+        "    51,",
+        "    95,",
+        "    102,",
+        "    1000",
+        "  ]",
+        "}",
+        "{",
+        "  \"status\": \"DIAGNOSTIC_COMPLETE\",",
+        "  \"evidence\": \"/workspace/production-planner/work/meal-split-audit/cold-fallback-head\",",
+        "  \"productWrites\": 0,",
+        "  \"remoteWrites\": 0",
+        "}"
+      ]
+    }
+  },
+  "runtimeHashes": {
+    "client/src/components/effective-configuration.tsx": "f7e89a535f1d6ed1eed64f98b2afe32ae8739b33322664849a316a53b5398357",
+    "client/src/components/general-program-settings.tsx": "4622dc1e8a3c18eeb30c67b1966429c623abe72482fe7a2fdb96a16a1bd3a6ca",
+    "client/src/components/layout.tsx": "3be0f0b4501eecb52fe54547d3455d67867be651ead74df852a3562561669697",
+    "client/src/components/main-flow-preference-editor.tsx": "6401fe7514ffb0ba32b71caa628a04d6a9105fbf068ad09297334b8c88ba65b0",
+    "client/src/components/planning-timeline.tsx": "603fb68ee007530b049ab13344300feff8901d68ec2d050ad8e24f4f1c0cad2b",
+    "client/src/components/planning/assisted-planning-workspace.tsx": "db8609799c7890f58e13165ce9bcfd975f20aea981c14816224bf73cf2411428",
+    "client/src/components/planning/stage-history-timing.tsx": "b12463f40bf067948e12ae919e5cd807d1fbd61bec671a338318e0b6b67b83a5",
+    "client/src/lib/assisted-draft-warnings.ts": "7f1ac193a171378a7f1a5d65fe68dab5f208d40ba46d8cbfb0d6ac6d0780bb04",
+    "client/src/lib/assisted-planning-view.ts": "a0b688796d43afc3504f14012944780c80b4945606dd98815ce06500af82bb4d",
+    "client/src/lib/contestant-lane-sort.ts": "8cee83173053fce313e8608b451c9d3e37d75174476321ea1434da70628f25c1",
+    "client/src/lib/main-flow-preference-result.ts": "9f27151434586783f8c0cc8f5b1c7cf48eb3523a0c835818bbada9f337b975da",
+    "client/src/lib/planning-view-policy.ts": "d67a48b3db23a15c1fe42e86b88b1a0948285904431341f5c7ac2bfa17eed417",
+    "client/src/pages/plan-details.tsx": "d1c674caaf0c209bdbca093019da3da08ed2749f33d967f3977d1e9ea74d6782",
+    "engine/buildInput.ts": "8f6c28bc60fed32b2f01cffc0354a5d536c83f571c4506fd7ab71abd04427fe7",
+    "engine/planner-next/anonymousPipelineWitness.ts": "7ba27327fbd1b8d840e0054a055b69ebfdae04105e244c5ab9cc32a2eba38034",
+    "engine/planner-next/benchmarks/canonicalFullA2EngineInput.ts": "7c26ca4aea00f5fb7a2ccee803914d2344a923b2445e029e5ffd892f2e757f6a",
+    "engine/planner-next/benchmarks/focal-a2/full-day/manifest.ts": "566c9117038a6115b8c7ff0f53d961d320128bdf8889d5bbee4a014ac8d34c5a",
+    "engine/planner-next/benchmarks/runMainFlowPreferenceEvidence.ts": "bf2608b95f926592a1e345ceae769498de3ae4021c7bcacfdf3124f9b025468f",
+    "engine/planner-next/exactItinerantPlan.ts": "08953e00042eda5be4f4289180605485ec1010de67f7b6252bc7eb28df31583e",
+    "engine/planner-next/exactMainAndFeederCore.ts": "6b30027c55f86699e0beb59de0adbe69f77301d86f2672475681a63a25bb4b35",
+    "engine/planner-next/integration/engineInputAdapter.ts": "42cae398e60cfc521814c3bf62e492dd2121309b9b7a7a22abe8d4a28c2940ab",
+    "engine/planner-next/integration/engineInputPreflight.ts": "3cb5fd66d00a0755abeaf30cfa1909f5480ae3af9adf2f1086f0d6e5ec801913",
+    "engine/planner-next/jointCompletionWitness.ts": "eff19c666412542cc47a364687f46300982e8690b0a341a69d02c183616068a8",
+    "engine/planner-next/mainFlowMeal.ts": "cacb654432e5db02ce8ad844332c4e4a5678deedfdb7d971dbd5d795b5f6835d",
+    "engine/planner-next/mainFlowPatterns.ts": "9dc382e2a75f41fe69900390d4c0a0e6bd92fcc3b62166b72aaf417a134f3700",
+    "engine/planner-next/placement.ts": "ebc74f7c3414efb4b3bdccfe60b5b5c2ab392d6cac7646115850fdf4ddcd2f5a",
+    "engine/planner-next/validate.ts": "0043b141d94106c544ee98c9ba5b24ab4aedd142298677ac637123e53c5d23a3",
+    "engine/types.ts": "2c1726929b33da06f03e67508fbb8c40e58249feccf2f0cfc23eea790058a2fb",
+    "script/demo/a2HistoricalCatalog.ts": "2c7fcecc01479958f639fd9bbc4a857947698ef6aadcf265357024400a65cdb5",
+    "script/demo/a2ImportRows.ts": "734bdba96a4aa242e72aa1b6a7fe283c90f79cc5d4cb70fe0413b3c1e5c306fd",
+    "script/demo/a2SpatialTopology.ts": "c225c09d0097ae66c1e59aaee2934b3dcd8150ee1f1b3a378df0b00242f2c31a",
+    "script/demo/a2TopologyMetrics.ts": "e8438ceb57ef098b31b411e152b4fcefa27f9bc5220aafd29c890ad7e6aa1337",
+    "script/demo/fixtures/a2-legacy-import.json.gz": "7e71838142dcb8c6a43004058f14bad1be93f624005fcfc8c4fc5c4ad8863d72",
+    "script/demo/prepareA2Import.ts": "8c18275b2786bfccb4a023e07e5270310353e36765418ee7e443b10385247244",
+    "script/demo/prepareA2Schema.ts": "1b1b038c3b0b309e65124e347a37d1180efd2629815da2703ed3dbcc416daf48",
+    "script/demo/reconcileA2Topology.ts": "15061ba3ea40a1236b52088b8944b9b0a06bf78f8f2e8cdc26cd892ea54345e8",
+    "script/demo/seedA2HistoricalRehearsal.ts": "02997b41eac761bffdc295029918dd0cabc810370b62980428ece115f0ecedd1",
+    "script/demo/smokeA2HistoricalScopeJourney.ts": "0b53ed8c31936d5ab783414502fc46ba8620ed8f998006290a9b2c345fdca46f",
+    "script/demo/smokeA2Integration.ts": "20629877ed847dc647a2d5f5a49330824ade5ced1b79343c2bc6a74ede000882",
+    "script/demo/smokeA2Journey.ts": "143d7c232c94707f4b0a719b834d31cf111012fea55cf4201840edb2df379e04",
+    "script/demo/smokeA2ManualSnapshotJourney.ts": "d5e68a8813951a8b44779ff4a62b8b8ed25d08cb1e5e9a374e20076eb101fb8d",
+    "script/demo/smokeA2ViewsHistoryJourney.ts": "af4c019fa79642c773dbe5b10bccded78e55f2e4fb89fe3bc087482acb9be713",
+    "script/demo/smokeMainFlowPreferenceJourney.ts": "9e3933e7eedf87e82b1c62e5fd757608536be798cb0dc8e1f9422d0726428ba4",
+    "server/assistedPlanningService.ts": "5a605bebfc7d8e9fb7a6d796b0c123f4af3c288830472318661dc5b82f41a357",
+    "server/assistedPlanningSnapshot.ts": "2184dc531787336e974359fe0e7b0772432dc0a78c9c139a0893f390d3ddab4b",
+    "server/assistedProposalService.ts": "9f75b996a505938141b831af8546160583f82e7a6a0c392bcae879316da8897b",
+    "server/assistedScopeResolver.ts": "6f5e0e19003238fdcbbc58ddd6b33a5748de3eb206d8b20df4b5dd45dd55a705",
+    "server/dayConfigurationService.ts": "407c30774af0fa5c55b261e22e7a10f54df96041fb19f8a8c6335e4da8d8498c",
+    "server/effectiveConfigurationView.ts": "1c7dedef14d832b93ea893f00dd9e76983e8b1cb8098e1cc59a85104ffd3c1e8",
+    "server/mainFlowPreference.ts": "730e2a9190e02ca2b332989652e605e8f30822c99a421738f581629e2cb59dda",
+    "server/programSettingsUpdate.ts": "239289a96ddbe90637d5ca4e4431606a062c83d4482edec3cd6dcbcf0439d73b",
+    "server/routes.ts": "ecf11c1cd9190b0b69161a87eb648b5bae065902c32767fd3275b786963fdb2b",
+    "server/storage.ts": "906e56f6f2e043034eeb4eedcf10b7f02fb9345598f6b0737b03ddcd087dd526",
+    "shared/anchoredOperationProjection.ts": "9cf39663ff52452c11958aaa7c2a65d858ed1796e092fc7867bda1d22f99c9a0",
+    "shared/assistedStageTiming.ts": "f37982b96bc5fb32d168a9f6f6e7ba1219e7d5a1f5aa51321e43ff6d14e3610c",
+    "shared/dayConfig.ts": "2954cd9f6f7f9b8236eb689937b8efa4128127ecb0ab0feab80a293e78bc7448",
+    "shared/mainFlowPreference.ts": "dab5f13363162359b9111c25783049f79c1f767dbae9b46e5b1f98c20a4f3f9a",
+    "shared/routes.ts": "efe45fb17acdbbf434fe702f83051f9eb85f2c91c30e1d6bafe14c074c81a907",
+    "shared/schema.ts": "7293365e5886a9d952a001639eea5214525e83f83aa81849f7727bdbe02d27a6",
+    "supabase/migrations/092_main_flow_soft_preference.sql": "3d4f8193e0d7fccc0efc385e487edad5403d8c76d7d07ed1610385e93fc79f59"
+  },
+  "artifacts": {
+    "A2-AUTO": {
+      "path": "MAIN-FLOW-SOFT-MEAL-SPLIT-DAY-CONFIG-A2-AUTO.json.gz",
+      "sha256": "5e66f16a5124178cf02d62679d3391b04107219a3240236a2febb13d6844ec80",
+      "uncompressedSha256": "d9d58d02c3c8336e256707d5b97254ff03ee89ea720948bd88badb12421066c1"
+    },
+    "A2-3": {
+      "path": "MAIN-FLOW-SOFT-MEAL-SPLIT-DAY-CONFIG-A2-3.json.gz",
+      "sha256": "5eb0b0855e248f7b0a68aadc06e0d0ede717d27bacff70bbb93a1e0784317bbb",
+      "uncompressedSha256": "5b23563e759c9bc760a18abc06c623956e85b4159d6ed4a880ecad264b77ad01"
+    },
+    "A2-4": {
+      "path": "MAIN-FLOW-SOFT-MEAL-SPLIT-DAY-CONFIG-A2-4.json.gz",
+      "sha256": "d4e943545df6696c938ebdf49b45fa370e3525a4da7c77b5d52b0b6e71154f8c",
+      "uncompressedSha256": "3559852e57e49d7ca7cf54140281a9bfa0afc12b5ad379336a8a4d336392bf8e"
+    },
+    "A2-4-2-2": {
+      "path": "MAIN-FLOW-SOFT-MEAL-SPLIT-DAY-CONFIG-A2-4-2-2.json.gz",
+      "sha256": "6414bb23aeb5d8b1b838c813d5a30f4902f722a2903974ea71be684f35d04e7e",
+      "uncompressedSha256": "a553df8a3b8797a7cd5dd13deb7e71d8500749a0fc2332db568d80bd4dea0209"
+    },
+    "native": {
+      "path": "MAIN-FLOW-SOFT-MEAL-SPLIT-DAY-CONFIG-native.json.gz",
+      "sha256": "cc72ab04ef916debaf448e022c266f2cd0566b516234e4069fe044dd43ea12bf",
+      "uncompressedSha256": "a1d7a7347dbb0c454dfc1d13c9c5fce55bd3227c59acf747b1c6a06d7540c367"
+    },
+    "native-S1": {
+      "path": "MAIN-FLOW-SOFT-MEAL-SPLIT-DAY-CONFIG-native-S1.json.gz",
+      "sha256": "0fd79f1fad1b6063695e4c5ef569268b0947df8da885cd063c47bc880d2f7635",
+      "uncompressedSha256": "de116cebef68ad0938920be2c1c20f9830649692d506554de28df3617d6cc46f"
+    },
+    "AUTO-native": {
+      "path": "MAIN-FLOW-SOFT-MEAL-SPLIT-DAY-CONFIG-AUTO-native.json.gz",
+      "sha256": "a91b0c69b6068a6554f535fb79e163cff0dc3b836bc3fe50d966a6b8259a051a",
+      "uncompressedSha256": "c0ab41a8ac1a6078d354c8221fb93dbb83b92e0eb03f0932084274c0b0d86c88"
+    },
+    "cold-fallback": {
+      "path": "MAIN-FLOW-SOFT-MEAL-SPLIT-DAY-CONFIG-cold-fallback.json.gz",
+      "sha256": "e521ccb195af23fecd6e94c3175b18c948c018b052a66b7c0cfeba5d57948a45",
+      "uncompressedSha256": "4a5f1c7d06451d6ac488c27d5ca4ad5f1df39c059c5d25110a1f7dac25e45a77"
+    }
+  },
+  "certificationLimits": [
+    "Bounded search; no general infeasibility or global optimality proof.",
+    "Native disposable SQL/Auth/HTTP/UI only. No connected Supabase, published Replit or Realtime certification.",
+    "Existing configured Next EXACT main flows only; legacy days without Next cannot enable the preference.",
+    "FIXED_COUNT/REQUIRED is unavailable. No changes to search budgets, canonical fixtures or immutable 088 snapshot."
+  ]
+}
