@@ -18,6 +18,7 @@ import {
 import { timeToMinutes } from "@/lib/time";
 import { sortContestantLanes, type ContestantLaneOrder } from "@/lib/contestant-lane-sort";
 import { cn } from "@/lib/utils";
+import { useExecutionContext } from "@/hooks/use-execution-context";
 import { useProductionClock } from "@/hooks/use-production-clock";
 import { usePlanningDensity } from "@/components/planning/fullscreen-planning-panel";
 import { useToast } from "@/hooks/use-toast";
@@ -78,6 +79,19 @@ type ResourceSelectable = {
   meta?: { typeName?: string; color?: string };
 };
 
+// Keep second ticks outside the expensive timeline tree. Execution owns time;
+// only a changed operational minute refreshes the current-time marker.
+function PlanningMinuteClock({planId,date,onChange}:{planId?:number;date?:string;onChange:(value:string)=>void}) {
+  const {effectiveNow}=useProductionClock();
+  const contextQ=useExecutionContext(planId);
+  const instant=contextQ.data ? Date.parse(contextQ.data.clock.operationalAt)+Math.max(0,Date.now()-contextQ.dataUpdatedAt) : date ? NaN : effectiveNow.getTime();
+  const valid=Number.isFinite(instant);
+  const day=valid?new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Madrid",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(instant)):"";
+  const minute=valid&&(!date||day===String(date).slice(0,10))?new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/Madrid",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(instant)):"";
+  useEffect(()=>onChange(minute),[minute,onChange]);
+  return null;
+}
+
 export interface PlanningTimelineProps {
   manualEdits?: Record<number, { start: string; end: string }>;
   onManualEditsChange?: Dispatch<SetStateAction<Record<number, { start: string; end: string }>>>;
@@ -96,6 +110,8 @@ export interface PlanningTimelineProps {
   spaceVerticalMode?: "timeline" | "list";
 
   plan: {
+    id?: number;
+    date?: string;
     arrivalTaskTemplateName?: string | null;
     workStart: string | null;
     workEnd: string | null;
@@ -342,6 +358,7 @@ function TaskStatusMenuTrigger({
     <button
       type="button"
       data-planning-task-id={task.id}
+      data-planning-start={task.startPlanned ?? ""}
       className={cn(className, "group text-left")}
       style={style}
       onClick={handleCardClick}
@@ -592,7 +609,7 @@ function TaskStatusMenuTrigger({
     }: PlanningTimelineProps) {
   const { workStart, workEnd, mealStart, mealEnd, mealMode, dailyTasks, breaks = [] } = plan;
   const isFlexibleMealWindow = mealMode === "flexible_meal_window";
-  const { nowTime } = useProductionClock();
+  const [nowTime,setNowTime] = useState("");
   const { toast } = useToast();
   const confirm = useConfirm();
   const density = usePlanningDensity();
@@ -2771,6 +2788,7 @@ function TaskStatusMenuTrigger({
 
   return (
     <TooltipProvider>
+      <PlanningMinuteClock planId={plan.id} date={plan.date} onChange={setNowTime}/>
       <div className="border rounded-xl bg-card shadow-sm">
         <ScrollArea className="w-full" style={{ height: "var(--planning-scroll-height)" }}>
           <div className="overflow-x-auto">

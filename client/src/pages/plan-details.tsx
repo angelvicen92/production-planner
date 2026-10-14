@@ -74,7 +74,7 @@ import {
 } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { format } from "date-fns";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -388,8 +388,9 @@ export default function PlanDetailsPage() {
     const timer=window.setInterval(()=>queryClient.invalidateQueries({queryKey:[buildUrl(api.plans.get.path,{id})]}),5000);
     return()=>window.clearInterval(timer);
   },[id,queryClient,executionSync.realtimeConnected,executionSync.online]);
-  const canChangeExecution = (task: any) => Boolean(!executionQ.error && executionQ.data?.tasks.find(t => t.taskId === Number(task.id))?.hasAuthority && executionClockCurrent(task, executionQ.data.clock));
-  const canOperateTask = (task: any) => canChangeExecution(task) && ((task.status ?? 'pending') !== 'pending' || executionQ.data?.planningReady === true);
+  const executionPermissionIdentity = JSON.stringify([executionQ.error ? "unavailable" : "ready",executionQ.data?.clock.mode,executionQ.data?.clock.revision,executionQ.data?.tasks]);
+  const canChangeExecution = useCallback((task: any) => Boolean(executionSync.online && !executionQ.error && executionQ.data?.tasks.find(t => t.taskId === Number(task.id))?.hasAuthority && executionClockCurrent(task, executionQ.data.clock)), [executionSync.online,executionPermissionIdentity]);
+  const canOperateTask = useCallback((task: any) => canChangeExecution(task) && ((task.status ?? 'pending') !== 'pending' || executionQ.data?.planningReady === true), [canChangeExecution,executionQ.data?.planningReady]);
   const canResetExecution = ['admin', 'production'].includes(executionQ.data?.role ?? '');
   const allowedExecutionStates = (task: any) => (executionNextStates[task.status] ?? []).filter(next => next !== 'in_progress' || task.status !== 'pending' || executionQ.data?.planningReady === true);
   const resetTask = useResetTask();
@@ -821,7 +822,7 @@ ${reasonMessage}` : message,
     });
   };
 
-  const handlePlanningTaskStatusChange = async (
+  const handlePlanningTaskStatusChange = useCallback(async (
     task: any,
     status: "in_progress" | "done" | "interrupted" | "cancelled",
   ) => {
@@ -830,8 +831,6 @@ ${reasonMessage}` : message,
       planId: id,
       expectedStatus: task?.status ?? "pending",
       status,
-      effectiveTimeHHMM: nowTime,
-      effectiveSeconds: nowSeconds,
     };
 
     try {
@@ -844,7 +843,7 @@ ${reasonMessage}` : message,
       }
       throw err;
     }
-  };
+  }, [id,updateTaskStatus.mutateAsync]);
 
   async function handleRefreshTasksFromTemplates() {
     if (!await confirmDialog({title: "Actualizar tareas del día", description: "Se actualizarán las tareas materializadas con los valores de sus plantillas. Las tareas protegidas se conservarán según el contrato vigente. Revisa el resultado y vuelve a validar el borrador.", confirmText: "Actualizar tareas"})) return;
@@ -1300,6 +1299,10 @@ ${reasonMessage}` : message,
 
     return options.sort((a, b) => a.label.localeCompare(b.label));
   }, [plan, planResourceItemNameById, staffPeople, itinerantTeams]);
+
+  const openExecution = useCallback(() => setActiveTab("execution"), [setActiveTab]);
+  const openContestantFromExecution = useCallback((contestantId:number) => {setSelectedContestant(contestants.find(contestant=>Number(contestant.id)===contestantId));setActiveTab("tasks");}, [contestants,setActiveTab]);
+  const assistedTimelineProps = useMemo(() => ({contestants,onTaskStatusChange:handlePlanningTaskStatusChange,canExecuteTask:canOperateTask,taskStatusPending:updateTaskStatus.isPending,viewMode:timelineView,spaceVerticalMode,stageFilterIds,resourceFilterIds,resourceSelectables:resourceFilterOptions,zones,spaces,zoneResourceAssignments:zoneAssignmentsForTooltip,spaceResourceAssignments:spaceAssignmentsForPlanning,planResourceItemNameById,zoneStaffModes:planZoneStaffModes,itinerantTeams,staffAssignments:planStaffAssignments,uiItinerantGroupOrderIndex:(programSettings as any)?.uiItinerantGroupOrderIndex??(programSettings as any)?.ui_itinerant_group_order_index??null,uiUnlocatedGroupOrderIndex:(programSettings as any)?.uiUnlocatedGroupOrderIndex??(programSettings as any)?.ui_unlocated_group_order_index??null}),[contestants,handlePlanningTaskStatusChange,canOperateTask,updateTaskStatus.isPending,timelineView,spaceVerticalMode,stageFilterIds,resourceFilterIds,resourceFilterOptions,zones,spaces,zoneAssignmentsForTooltip,spaceAssignmentsForPlanning,planResourceItemNameById,planZoneStaffModes,itinerantTeams,planStaffAssignments,programSettings]);
 
   const resourceOptionById = useMemo(
     () => new Map(resourceFilterOptions.map((opt) => [String(opt.id), opt])),
@@ -3239,13 +3242,8 @@ ${reasonMessage}` : message,
                 planId={id}
                 plan={assistedDayPlan as any}
                 spaces={spaces as any[]}
-                onOpenExecution={() => setActiveTab("execution")}
-                timelineProps={{ contestants, viewMode: timelineView, spaceVerticalMode, stageFilterIds,
-                  resourceFilterIds, resourceSelectables: resourceFilterOptions, zones, spaces,
-                  zoneResourceAssignments: zoneAssignmentsForTooltip, spaceResourceAssignments: spaceAssignmentsForPlanning, planResourceItemNameById,
-                  zoneStaffModes: planZoneStaffModes, itinerantTeams, staffAssignments: planStaffAssignments,
-                  uiItinerantGroupOrderIndex: (programSettings as any)?.uiItinerantGroupOrderIndex ?? (programSettings as any)?.ui_itinerant_group_order_index ?? null,
-                  uiUnlocatedGroupOrderIndex: (programSettings as any)?.uiUnlocatedGroupOrderIndex ?? (programSettings as any)?.ui_unlocated_group_order_index ?? null }}
+                onOpenExecution={openExecution}
+                timelineProps={assistedTimelineProps}
               /> : null : <>
               <Card className="p-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -3701,7 +3699,7 @@ ${reasonMessage}` : message,
             />
           </TabsContent>
           <TabsContent forceMount hidden={activeTab !== "execution"} value="execution" className="mt-0 space-y-4">
-            <DayExecutionWorkspace planId={id} tasks={plan.dailyTasks as any[]} contestants={contestants as any[]} zones={zones as any[]} spaces={spaces as any[]} resourceNames={planResourceItemNameById} spaceAssignments={spaceAssignmentsForPlanning} zoneAssignments={zoneAssignmentsForTooltip} onOpenContestant={contestantId => { setSelectedContestant(contestants.find(contestant => Number(contestant.id) === contestantId)); setActiveTab("tasks"); }} />
+            <DayExecutionWorkspace planId={id} planDate={plan.date} online={executionSync.online} tasks={plan.dailyTasks as any[]} contestants={contestants as any[]} zones={zones as any[]} spaces={spaces as any[]} resourceNames={planResourceItemNameById} spaceAssignments={spaceAssignmentsForPlanning} zoneAssignments={zoneAssignmentsForTooltip} onOpenContestant={openContestantFromExecution} />
           </TabsContent>
         </Tabs>
 

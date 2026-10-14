@@ -68,10 +68,15 @@ export async function runDayWorkspaceSetup({appUrl,planId,users,db,directory,pas
       if(editor){const picker=card.getByText("Redacción",{exact:true}).locator("..").locator("..");await picker.getByRole("button",{name:"Editar",exact:true}).click();await page.getByRole("dialog").getByRole("checkbox",{name:editor.name,exact:true}).check();await page.getByRole("dialog").getByRole("button",{name:"Guardar",exact:true}).click();}
       const saved=page.waitForResponse(response=>response.request().method()==="PUT"&&response.url().includes("staff-assignments"));await staff.getByRole("button",{name:"Guardar",exact:true}).first().click();assert.equal((await saved).status(),200);
       await page.reload();await staff.waitFor();assert.ok((await staff.innerText()).includes(producer.name));report.operations.push("Responsables existentes: asignar Producción y Redacción al plató, guardar y recargar por UI");pass(report.operations.at(-1));
-      report.operations.push("Cabeceras con tareas planificadas: comprobación reservada al recorrido canónico S11; el contrato manual no coloca obligaciones aún sin horario");
+      await page.getByRole("tab",{name:"Planning",exact:true}).click();await page.getByTestId("assisted-workspace").waitFor();
+      await page.getByRole("button",{name:"Mostrar Platós y espacios",exact:true}).click();
+      const planningSpace=page.getByTestId("planning-panel-spaces");await planningSpace.getByText(producer.name,{exact:false}).first().waitFor();if(editor)await planningSpace.getByText(editor.name,{exact:false}).first().waitFor();
+      assert.equal((await db.query("SELECT count(*) n FROM daily_tasks WHERE plan_id=$1 AND start_planned IS NOT NULL",[planId])).rows[0].n,"0");
+      report.operations.push("Cabeceras reales de Planning reflejan Producción y Redacción guardadas en el scope correcto; ninguna obligación recibe horarios artificiales");pass(report.operations.at(-1));
     } else report.operations.push("GAP de fixture: catálogo sin responsable de Producción; no se fabrica una persona");
     for (const [tab,name] of [["Concursantes","contestants"],["Planning","planning"],["Configuración","configuration"],["Recursos","resources"],["Roles","roles"],["Ejecución","execution"]] as const) {
       await page.getByRole("tab",{name:tab,exact:true}).click();
+      if(tab==="Planning") await page.getByTestId("assisted-workspace").waitFor();
       if(tab==="Configuración") await page.getByTestId("day-editor-WORKDAY_WINDOW").waitFor();
       await page.getByTestId("day-header").scrollIntoViewIfNeeded();
       await page.screenshot({path:`${directory}/workspace-setup-${name}-desktop.png`});

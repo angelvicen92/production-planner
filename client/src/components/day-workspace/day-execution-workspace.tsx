@@ -1,5 +1,4 @@
-import { ExecutionElapsedTimer } from "./execution-elapsed-timer";
-import { useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { Check, Pause, Play, RotateCcw, Search, Columns3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,8 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useUserRole } from "@/hooks/use-user-role";
-import { useProductionClock } from "@/hooks/use-production-clock";
+import { useExecutionContext } from "@/hooks/use-execution-context";
+import { executionClockCurrent, executionDuration, formatExecutionDuration } from "@shared/execution";
 import { useUpdateTaskStatus, useResetTask } from "@/hooks/use-tasks";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import {
@@ -25,6 +24,14 @@ import {
   type ExecutionTask,
   type ExecutionSort,
 } from "@/lib/day-execution-view";
+
+function ExecutionDurationCell({task,clock,updatedAt}:{task:ExecutionTask;clock?:import("@shared/execution").ExecutionContext["clock"];updatedAt:number}) {
+  const [tick,setTick]=useState(Date.now());
+  useEffect(()=>{if(task.status!=="in_progress")return;const interval=window.setInterval(()=>setTick(Date.now()),1000);return()=>window.clearInterval(interval);},[task.status]);
+  if(!task.startRealAt)return null;
+  const instant=clock?Date.parse(clock.operationalAt)+Math.max(0,tick-updatedAt):NaN;
+  return <span>{formatExecutionDuration(executionDuration(task,instant,clock))}{!executionClockCurrent(task,clock)?" · reloj modificado":" activos"}</span>;
+}
 
 export const executionStatusLabels: Record<string, string> = {
   pending: "Pendiente",
@@ -39,8 +46,10 @@ const columnLabels = {
   duration: "Duración",
   resources: "Recursos",
 };
-export function DayExecutionWorkspace({
+export const DayExecutionWorkspace = memo(function DayExecutionWorkspace({
   planId,
+  planDate,
+  online,
   tasks,
   contestants,
   zones,
@@ -51,6 +60,8 @@ export function DayExecutionWorkspace({
   onOpenContestant,
 }: {
   planId: number;
+  planDate: string;
+  online: boolean;
   tasks: ExecutionTask[];
   contestants: Array<{ id: number; name: string }>;
   zones: Array<{ id: number; name: string }>;
@@ -60,9 +71,14 @@ export function DayExecutionWorkspace({
   zoneAssignments: Record<number, number[]>;
   onOpenContestant?: (id: number) => void;
 }) {
-  const { role } = useUserRole();
-  const canOperate = role === "admin" || role === "production";
-  const { nowTime, nowSeconds } = useProductionClock();
+  const contextQ = useExecutionContext(planId);
+  const context = contextQ.data;
+  const nowMs = context ? Date.parse(context.clock.operationalAt) + Math.max(0, Date.now() - contextQ.dataUpdatedAt) : NaN;
+  const operationalDay = Number.isFinite(nowMs) ? new Intl.DateTimeFormat("en-CA", { timeZone:"Europe/Madrid",year:"numeric",month:"2-digit",day:"2-digit" }).format(new Date(nowMs)) : "";
+  const nowTime = operationalDay === String(planDate).slice(0,10) ? new Intl.DateTimeFormat("en-GB", { timeZone:"Europe/Madrid", hour:"2-digit",minute:"2-digit",hour12:false }).format(new Date(nowMs)) : "";
+  const permissions = new Map(context?.tasks.map(task => [task.taskId, task]) ?? []);
+  const canOperate = (task:ExecutionTask) => Boolean(online && !contextQ.error && permissions.get(task.id)?.canExecute && executionClockCurrent(task,context?.clock));
+  const canReset = Boolean(online && !contextQ.error && (context?.role === "admin" || context?.role === "production"));
   const statusMutation = useUpdateTaskStatus();
   const reset = useResetTask();
   const confirm = useConfirm();
@@ -158,13 +174,12 @@ export function DayExecutionWorkspace({
     task: ExecutionTask,
     status: "in_progress" | "done" | "interrupted",
   ) => {
-    if (canOperate && !busy)
+    if (canOperate(task) && !busy)
       statusMutation.mutate({
         taskId: Number(task.id),
         planId,
         status,
-        effectiveTimeHHMM: nowTime,
-        effectiveSeconds: nowSeconds,
+        expectedStatus: task.status,
       });
   };
   return (
@@ -336,12 +351,9 @@ export function DayExecutionWorkspace({
           </details>
         </div>
       </div>
-      {!canOperate ? (
-        <p className="rounded-lg border p-3 text-sm text-muted-foreground">
-          Consulta de ejecución. El contrato actual autoriza las acciones
-          globales a Producción y Administración.
-        </p>
-      ) : null}
+      <p className="rounded-lg border p-3 text-sm text-muted-foreground" role="status">
+        {!online ? "Sin conexión. Los registros se conservan; espera a recuperar la conexión para actuar." : contextQ.error ? "No se pudo verificar la autoridad de ejecución. Actualiza la jornada antes de actuar." : !context ? "Comprobando autoridad de ejecución…" : context.role === "viewer" ? "Tu perfil permite consultar la ejecución." : !context.planningReady ? "Es necesario aceptar el planning completo antes de iniciar tareas pendientes. Las actividades en curso conservan sus acciones autorizadas." : "Las acciones disponibles corresponden a tu autoridad sobre cada tarea. El servidor confirma cada registro."}
+      </p>
       <div className="overflow-x-auto rounded-xl border bg-card">
         <Table>
           <TableHeader>
@@ -363,7 +375,7 @@ export function DayExecutionWorkspace({
               const task = row.task;
               const running = task.status === "in_progress";
               return (
-                <TableRow key={task.id}>
+                <TableRow key={task.id} data-testid={`day-execution-task-${task.id}`}>
                   <TableCell>
                     <p className="font-medium">{row.title}</p>
                     {task.contestantId && onOpenContestant ? (
@@ -389,7 +401,7 @@ export function DayExecutionWorkspace({
                   ) : null}
                   {columns.actual ? (
                     <TableCell className="whitespace-nowrap font-mono text-xs">
-                      {task.startReal ?? "—"}–{task.endReal ?? "—"}<div><ExecutionElapsedTimer status={task.status} startReal={task.startReal} startRealSeconds={task.startRealSeconds} pausedTotalSeconds={task.pausedTotalSeconds} pausedAtSeconds={task.pausedAtSeconds}/></div>
+                      {task.startReal ?? "—"}–{task.endReal ?? "—"}<div><ExecutionDurationCell task={task} clock={context?.clock} updatedAt={contextQ.dataUpdatedAt}/></div>
                     </TableCell>
                   ) : null}
                   {columns.duration ? (
@@ -417,12 +429,12 @@ export function DayExecutionWorkspace({
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-1">
-                      {task.status === "pending" ||
-                      task.status === "interrupted" ? (
+                      {permissions.get(task.id)?.hasAuthority && (task.status === "pending" ||
+                      task.status === "interrupted") ? (
                         <Button
                           size="sm"
                           variant="outline"
-                          disabled={!canOperate || busy}
+                          disabled={!canOperate(task) || busy}
                           onClick={() => update(task, "in_progress")}
                         >
                           <Play className="mr-1 h-3 w-3" />
@@ -431,11 +443,11 @@ export function DayExecutionWorkspace({
                             : "Iniciar"}
                         </Button>
                       ) : null}
-                      {running ? (
+                      {running && permissions.get(task.id)?.hasAuthority ? (
                         <>
                           <Button
                             size="sm"
-                            disabled={!canOperate || busy}
+                            disabled={!canOperate(task) || busy}
                             onClick={() => update(task, "done")}
                           >
                             <Check className="mr-1 h-3 w-3" />
@@ -444,7 +456,7 @@ export function DayExecutionWorkspace({
                           <Button
                             size="sm"
                             variant="outline"
-                            disabled={!canOperate || busy}
+                            disabled={!canOperate(task) || busy}
                             onClick={() => update(task, "interrupted")}
                           >
                             <Pause className="mr-1 h-3 w-3" />
@@ -452,7 +464,7 @@ export function DayExecutionWorkspace({
                           </Button>
                         </>
                       ) : null}
-                      {canOperate && task.status !== "pending" ? (
+                      {canReset && task.status !== "pending" ? (
                         <Button
                           size="sm"
                           variant="ghost"
@@ -463,14 +475,13 @@ export function DayExecutionWorkspace({
                               await confirm({
                                 title: "Resetear tarea",
                                 description:
-                                  "Se retirarán el inicio y el fin reales. La tarea volverá a pendiente mediante el contrato de ejecución vigente. ¿Continuar?",
+                                  "Se retirarán el inicio y el fin reales y la tarea volverá a pendiente. El histórico de ejecución se conserva. ¿Continuar?",
                                 confirmText: "Resetear",
                               })
                             )
                               reset.mutate({
                                 taskId: task.id,
                                 planId,
-                                effectiveTimeHHMM: nowTime,
                               });
                           }}
                         >
@@ -499,4 +510,4 @@ export function DayExecutionWorkspace({
       </div>
     </section>
   );
-}
+});

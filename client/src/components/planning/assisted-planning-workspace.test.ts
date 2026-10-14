@@ -15,7 +15,7 @@ test("the complete Assisted operator surface renders human context rather than i
   assert.match(source,/hardAffectedTaskIds/);
   assert.doesNotMatch(source,/setMessage\(errorCode|setMessage\(run\.message/);
 });
-test("Assisted receives product plan while V4 remains outside its authority",async()=>{const page=await readFile(new URL("../../pages/plan-details.tsx",import.meta.url),"utf8");const call=page.slice(page.indexOf("<AssistedPlanningWorkspace"),page.indexOf("/> : null : <>",page.indexOf("<AssistedPlanningWorkspace")));assert.match(call,/plan=\{plan as any\}/);assert.doesNotMatch(call,/planningViewPlan/);});
+test("Assisted receives product plan while V4 remains outside its authority",async()=>{const page=await readFile(new URL("../../pages/plan-details.tsx",import.meta.url),"utf8");const call=page.slice(page.indexOf("<AssistedPlanningWorkspace"),page.indexOf("/> : null : <>",page.indexOf("<AssistedPlanningWorkspace")));assert.match(call,/plan=\{assistedDayPlan as any\}/);assert.match(page,/const assistedDayPlan = useMemo\(\(\) => plan \? \(\{ \.\.\.plan, arrivalTaskTemplateName:/);assert.doesNotMatch(call,/planningViewPlan/);});
 
 test("restart requires operator consent and delegates a guarded bootstrap move before clearing local state",()=>{
   assert.match(source,/window.confirm\("Volverás al estado inicial/);

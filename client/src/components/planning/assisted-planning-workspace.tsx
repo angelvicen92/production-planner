@@ -2,7 +2,7 @@ import { PlanningStageToolbar } from "./planning-stage-toolbar";
 import { PlanningWorkspaceLayout } from "./planning-workspace-layout";
 import { mainFlowPreferenceResultMessage } from "@/lib/main-flow-preference-result";
 import { projectAnchoredOperations } from '@shared/anchoredOperationProjection';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { planQueryKey } from "@/lib/plan-query-keys";
@@ -39,7 +39,7 @@ const operatorError=(error:any)=>{
 export const isMissingAssistedSession=(error:any)=>error?.status===404||error?.code==="SESSION_NOT_FOUND";
 export const isAssistedConflict=(error:any)=>error?.status===409;
 
-export function AssistedPlanningWorkspace({planId,plan,timelineProps,spaces=[],viewControls,onOpenExecution}:{planId:number;plan:any;timelineProps:Record<string,unknown>;spaces?:any[];viewControls?:ReactNode;onOpenExecution?:()=>void}) {
+export const AssistedPlanningWorkspace = memo(function AssistedPlanningWorkspace({planId,plan,timelineProps,spaces=[],viewControls,onOpenExecution}:{planId:number;plan:any;timelineProps:Record<string,unknown>;spaces?:any[];viewControls?:ReactNode;onOpenExecution?:()=>void}) {
   const client=useQueryClient(); const bootstrapped=useRef(false);
   const {role}=useUserRole();const authorized=useRef(false);authorized.current=role==="admin"||role==="production";
   const autopilot=useRef<AssistedAutopilot|null>(null);
@@ -195,7 +195,7 @@ export function AssistedPlanningWorkspace({planId,plan,timelineProps,spaces=[],v
     <ol className="flex max-w-full gap-2 overflow-x-auto py-2" aria-label="Progreso de etapas">{(state.history??[]).map((stage:any)=><li key={stage.id} className={`shrink-0 rounded-md border px-3 py-2 text-xs ${stage.archivedAt?"opacity-50":stage.id===active?.id?"border-primary bg-primary/5":"bg-card"}`}><strong>S{stage.ordinal}</strong> · {(stage.snapshotJson?.tasks??[]).filter((task:any)=>task.startPlanned&&task.endPlanned).length}/{stage.snapshotJson?.tasks?.length??0}{stage.archivedAt?" · rama archivada":stage.id===active?.id?" · aceptada actual":" · aceptada"}</li>)}<li className="shrink-0 rounded-md border border-dashed px-3 py-2 text-xs">{preview?"Propuesta pendiente":modified?"Borrador con cambios":"Borrador actual"}</li></ol>
     {viewControls}
     {composedOperations.length>0&&<details data-testid="anchored-operations"><summary>Operaciones acompañadas · {composedOperations.length}</summary><ul>{composedOperations.map(operation=><li key={operation.id} data-testid="anchored-operation">Acompañamiento · {operation.status==='CONTINUOUS'?`${operation.start}–${operation.end} · ${operation.durationMinutes} min · Ensayo incluido ${operation.anchorOccupation?.durationMinutes} min`:'Pendiente de completar'} · 1 operación</li>)}</ul></details>}
-    <div className="flex flex-wrap items-center gap-2"><span className="text-sm font-medium">Planificación consultada</span><Button size="sm" variant={viewAuthority==="draft"?"default":"outline"} onClick={()=>setViewAuthority("draft")}>Edición del borrador</Button><Button size="sm" variant={viewAuthority==="accepted"?"default":"outline"} onClick={()=>setViewAuthority("accepted")}>Etapa aceptada · consulta</Button>{viewAuthority==="accepted"?<><Badge variant="outline">Sólo consulta · sin arrastre de tareas</Badge><Button size="sm" variant="outline" onClick={onOpenExecution}>Abrir ejecución</Button></>:null}</div>
-    <PlanningWorkspaceLayout planId={planId} timelineProps={{...timelineProps as any,plan:viewAuthority==="accepted"?{...plan,dailyTasks:buildAssistedPlanningView(plan.dailyTasks??[],active?.snapshotJson)}:assistedPlan,mode:viewAuthority==="accepted"?"accepted":"assisted-draft",readOnly:viewAuthority==="accepted"||!authorized.current,taskVisualStates:viewAuthority==="draft"?visual:{},onApplyManualEdits:viewAuthority==="draft"&&authorized.current?applyTimelineEdits:undefined}} />
+    <div className="flex flex-wrap items-center gap-2"><span className="text-sm font-medium">Planificación consultada</span><Button size="sm" variant={viewAuthority==="draft"?"default":"outline"} onClick={()=>setViewAuthority("draft")}>Edición del borrador</Button><Button size="sm" variant={viewAuthority==="accepted"?"default":"outline"} onClick={()=>setViewAuthority("accepted")}>Planning aceptado · ejecución</Button>{viewAuthority==="accepted"?<><Badge variant="outline">Sin arrastre · acciones según autoridad</Badge><Button size="sm" variant="outline" onClick={onOpenExecution}>Abrir ejecución</Button></>:null}</div>
+    <PlanningWorkspaceLayout planId={planId} timelineProps={{...timelineProps as any,onTaskStatusChange:viewAuthority==="accepted"?timelineProps.onTaskStatusChange:undefined,plan:viewAuthority==="accepted"?{...plan,dailyTasks:buildAssistedPlanningView(plan.dailyTasks??[],active?.snapshotJson)}:assistedPlan,mode:viewAuthority==="accepted"?"accepted":"assisted-draft",readOnly:viewAuthority==="accepted"||!authorized.current,taskVisualStates:viewAuthority==="draft"?visual:{},onApplyManualEdits:viewAuthority==="draft"&&authorized.current?applyTimelineEdits:undefined}} />
   </div>;
-}
+});

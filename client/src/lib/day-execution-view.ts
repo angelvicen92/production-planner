@@ -13,6 +13,11 @@ export type ExecutionTask = {
   startPlanned?: string | null;
   endPlanned?: string | null;
   startReal?: string | null;
+  startRealAt?: string | null;
+  endRealAt?: string | null;
+  pausedAt?: string | null;
+  executionClockMode?: string | null;
+  executionClockRevision?: string | null;
   endReal?: string | null;
   durationOverride?: number | null;
   startRealSeconds?: number | null;

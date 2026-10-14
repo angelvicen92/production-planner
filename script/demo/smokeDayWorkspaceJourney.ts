@@ -3,13 +3,28 @@
  */
 import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
-import type { Page } from "playwright";
+import { chromium, type Page } from "playwright";
 import type { runA2BrowserJourney } from "./smokeA2Journey";
 type Options = Parameters<typeof runA2BrowserJourney>[0];
 const views = ["contestants", "spaces", "resources"] as const;
 const labels = { contestants: "Concursantes", spaces: "Platós y espacios", resources: "Recursos" };
 
-export async function runDayWorkspaceJourney(options: Options, page: Page) {
+/** Reopens the versioned historical accepted snapshot. This is UI evidence,
+ * explicitly separate from a fresh S0 → S11 solver certification. */
+export async function runDayWorkspaceSnapshot(options: Options) {
+  const browser = await chromium.launch({headless:true,args:["--no-sandbox"],executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH});
+  const page = await browser.newPage({viewport:{width:1440,height:1000}});
+  page.setDefaultTimeout(30_000);page.setDefaultNavigationTimeout(120_000);
+  try {
+    await page.goto(`${options.appUrl}/login`);
+    await page.getByLabel("Email",{exact:true}).fill(options.users.production.email);
+    await page.getByLabel("Contraseña (opcional para enlace)",{exact:true}).fill(options.users.production.password);
+    await page.getByRole("button",{name:"Entrar con contraseña",exact:true}).click();await page.waitForURL("**/dashboard");
+    return await runDayWorkspaceJourney({...options,planId:27001},page,10);
+  } finally { await browser.close(); }
+}
+
+export async function runDayWorkspaceJourney(options: Options, page: Page, expectedStageOrdinal = 11) {
   const { appUrl, planId, db, directory, pass, users } = options;
   const api = async (suffix: string, method = "GET", body?: unknown) => {
     const response = await fetch(`${appUrl}/api/plans/${planId}${suffix}`, { method, headers: { Authorization: `Bearer ${users.production.token}`, "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -17,12 +32,17 @@ export async function runDayWorkspaceJourney(options: Options, page: Page) {
   };
   const material = async () => Promise.all(["daily_tasks", "locks", "assisted_planning_sessions", "assisted_planning_stages", "planning_stage_validations", "planning_runs", "plan_config_revisions", "planning_accepted_exceptions"].map(async table => (await db.query(`SELECT to_jsonb(x) AS row FROM public.${table} x WHERE plan_id=$1 ORDER BY id`, [planId])).rows));
   const before = await material(); const initial = (await api("/assisted")).data;
-  assert.equal(initial.draft.tasks.length, 266); assert.equal(initial.activeStage.ordinal, 11);
+  assert.equal(initial.draft.tasks.length, 266); assert.equal(initial.activeStage.ordinal, expectedStageOrdinal);
+  for (const mode of ["partial","total"]) {
+    const response = await api("/reset","POST",{mode});
+    assert.equal(response.status,409);assert.equal(response.data.code,"ASSISTED_SESSION_RESET_REQUIRED");
+  }
+  assert.deepEqual(await material(),before,"Legacy reset denial preserves all authorities");
   const requests: Array<{ method: string; url: string }> = [];
   const observer = (request: any) => { if (request.url().includes("/api/")) requests.push({ method: request.method(), url: request.url() }); };
   page.on("request", observer);
-  const report: any = { status: "RUNNING", remoteWrites: 0, baselineFingerprint: initial.draftFingerprint, combinations: [], screenshots: [], operations: [] };
-  const capture = async (name: string, fullPage = false) => { await page.screenshot({ path: `${directory}/${name}.png`, fullPage }); report.screenshots.push(`${name}.png`); };
+  const report: any = { status: "RUNNING", remoteWrites: 0, baselineFingerprint: initial.draftFingerprint, acceptedStageOrdinal:initial.activeStage.ordinal, freshCanonicalRun:expectedStageOrdinal===11, combinations: [], screenshots: [], operations: [] };
+  const capture = async (name: string, fullPage = false) => { await page.screenshot({ path: `${directory}/${name}.png`, fullPage, timeout:10_000 }); report.screenshots.push(`${name}.png`); };
   const panel = (view: typeof views[number]) => page.getByTestId(`planning-panel-${view}`);
   const setViews = async (wanted: readonly typeof views[number][]) => {
     // Add before removing so the final-pane protection is exercised honestly.
@@ -45,9 +65,34 @@ export async function runDayWorkspaceJourney(options: Options, page: Page) {
       report.combinations.push({ views: wanted, renderAndInteractionMs: Math.round(performance.now() - start) });
       await page.getByTestId("planning-multiview").scrollIntoViewIfNeeded(); await capture(`workspace-${wanted.join("-")}`, true);
     }
+    await page.setViewportSize({width:1920,height:1200});
+    await page.getByRole("button",{name:"Distribución horizontal",exact:true}).click();
+    await page.getByTestId("planning-multiview").scrollIntoViewIfNeeded();await capture("workspace-three-panels-horizontal");
+    await page.setViewportSize({width:1440,height:1000});
+    pass("day workspace: all seven visual combinations retain actual obligations");
     for (const layout of ["horizontal", "vertical", "rejilla"]) { await page.getByRole("button", { name: `Distribución ${layout}`, exact: true }).click(); assert.equal(await page.getByTestId("planning-multiview").locator("[data-layout]").getAttribute("data-layout"), layout === "rejilla" ? "grid" : layout); }
     const contestants = panel("contestants");
     for (const order of ["arrival", "first", "last", "task", "name"]) { await contestants.getByLabel("Ordenar concursantes", { exact: true }).selectOption(order); if (order === "task") { const select = contestants.getByLabel("Tipo de tarea para ordenar"); const value = await select.locator("option").nth(1).getAttribute("value"); await select.selectOption(value!); } }
+    await contestants.getByRole("button", {name:"Filtros",exact:true}).click();
+    await contestants.getByLabel("Buscar en Concursantes",{exact:true}).fill("C01");
+    await contestants.getByRole("checkbox",{name:"C01",exact:true}).check();
+    assert.ok((await contestants.locator("[data-planning-task-id]").count())<266);
+    assert.equal(new Set(await panel("spaces").locator("[data-planning-task-id]").evaluateAll(elements=>elements.map(element=>element.getAttribute("data-planning-task-id")))).size,266,"contestant filter leaves spaces intact");
+    await contestants.getByRole("button",{name:"Mostrar todos",exact:true}).click();
+    await contestants.getByRole("button",{name:"Filtros",exact:true}).click();
+    // A real pointer drag stays local and is visible in the other representations.
+    const resourceIds=await panel("resources").locator("[data-planning-task-id]").evaluateAll(elements=>elements.map(element=>Number(element.getAttribute("data-planning-task-id"))));
+    const movable=initial.draft.tasks.find((task:any)=>resourceIds.includes(Number(task.taskId))&&task.startPlanned&&task.endPlanned);
+    assert.ok(movable);
+    const card=contestants.locator(`[data-planning-task-id="${movable.taskId}"]`).first();await card.scrollIntoViewIfNeeded();
+    const box=await card.boundingBox();assert.ok(box);const originalStart=await card.getAttribute("data-planning-start");
+    await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(box.x+box.width/2+35,box.y+box.height/2,{steps:8});await page.mouse.up();
+    await page.getByText("1 movimientos pendientes en las vistas",{exact:true}).waitFor();
+    const movedStart=await card.getAttribute("data-planning-start");assert.notEqual(movedStart,originalStart);
+    for(const view of ["spaces","resources"] as const)assert.equal(await panel(view).locator(`[data-planning-task-id="${movable.taskId}"]`).first().getAttribute("data-planning-start"),movedStart);
+    await page.waitForTimeout(1100);assert.equal(await card.getAttribute("data-planning-start"),movedStart,"second ticks retain local movement");
+    await page.getByRole("button",{name:"Descartar movimientos",exact:true}).click();assert.equal(await card.getAttribute("data-planning-start"),originalStart);
+    report.operations.push("Independent contestant filter and real shared pointer movement/discard; no HTTP writer");
     await contestants.getByRole("button", { name: "Ampliar zoom", exact: true }).click(); await contestants.getByRole("button", { name: "Maximizar", exact: true }).click();
     await capture("workspace-fullscreen"); await page.keyboard.press("Escape"); assert.equal(await contestants.getByRole("button", { name: "Maximizar", exact: true }).isVisible(), true);
     // Draft selection and panel state survive switching tabs without remounting.
@@ -58,12 +103,13 @@ export async function runDayWorkspaceJourney(options: Options, page: Page) {
     await page.getByLabel("Buscar tareas de ejecución", { exact: true }).fill("C01"); assert.ok((await page.getByTestId("day-execution").locator("tbody tr").count()) < 266); await page.getByRole("button", { name: "Limpiar filtros", exact: true }).click();
     await page.getByRole("tab", { name: "Configuración", exact: true }).click(); await page.getByTestId("day-editor-WORKDAY_WINDOW").waitFor(); await capture("workspace-configuration-desktop");
     await page.getByRole("tab", { name: "Planning", exact: true }).click(); assert.match(page.url(), /tab=planning/); assert.equal(await contestants.getByRole("button", { name: "110%", exact: true }).isVisible(), true);
-    await page.getByRole("button", { name: "Etapa aceptada · consulta", exact: true }).click(); await page.getByText("Sólo consulta · sin arrastre de tareas", { exact: true }).waitFor();
+    await page.getByRole("button", { name: "Planning aceptado · ejecución", exact: true }).click(); await page.getByText("Sin arrastre · acciones según autoridad", { exact: true }).waitFor();
     await page.getByRole("button", { name: "Edición del borrador", exact: true }).click();
     await setViews(["contestants"]); await page.getByRole("button", { name: "Mostrar Concursantes", exact: true }).click(); assert.equal(await contestants.isVisible(), true, "last pane cannot disappear");
     const timings = page.waitForResponse(response => response.url().endsWith("/assisted/history/timings")); await page.getByText("Historial", { exact: true }).click(); assert.equal((await timings).status(), 200);
+    pass("day workspace: sorting, shared local drag, fullscreen/Esc and desktop navigation complete");
     await page.setViewportSize({ width: 390, height: 844 });
-    for (const [tab, name] of [["Concursantes", "workspace-contestants-mobile"], ["Configuración", "workspace-configuration-mobile"], ["Recursos", "workspace-resources-mobile"], ["Roles", "workspace-roles-mobile"], ["Ejecución", "workspace-execution-mobile"], ["Planning", "workspace-planning-mobile"]] as const) { await page.getByRole("tab", { name: tab, exact: true }).click(); await capture(name); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), `${tab}: no viewport overflow`); }
+    for (const [tab, name] of [["Concursantes", "workspace-contestants-mobile"], ["Configuración", "workspace-configuration-mobile"], ["Recursos", "workspace-resources-mobile"], ["Roles", "workspace-roles-mobile"], ["Ejecución", "workspace-execution-mobile"], ["Planning", "workspace-planning-mobile"]] as const) { await page.getByRole("tab", { name: tab, exact: true }).click(); await page.getByTestId("day-header").scrollIntoViewIfNeeded(); await capture(name); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), `${tab}: no viewport overflow`); }
     await page.setViewportSize({ width: 1440, height: 1000 });
     assert.deepEqual(requests.filter(request => !["GET", "OPTIONS"].includes(request.method)), [], "visual actions never write");
     assert.deepEqual(await material(), before, "visual actions preserve all product authorities");

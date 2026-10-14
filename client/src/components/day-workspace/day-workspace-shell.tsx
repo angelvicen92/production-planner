@@ -68,14 +68,14 @@ export function DayTabNavigation() {
       className="max-w-full overflow-x-auto border-b"
       aria-label="Secciones de la jornada"
     >
-      <TabsList className="h-auto min-w-max justify-start gap-1 rounded-none bg-transparent p-0">
+      <TabsList className="grid h-auto w-full grid-cols-3 justify-start gap-1 rounded-none bg-transparent p-0 sm:inline-flex sm:w-auto sm:min-w-max">
         {dayTabs.map(({ id, label, icon: Icon }) => (
           <TabsTrigger
             key={id}
             value={id}
-            className="gap-2 rounded-none border-b-2 border-transparent px-4 py-3 text-sm data-[state=active]:border-primary data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:shadow-none"
+            className="gap-2 rounded-none border-b-2 border-transparent px-2 py-3 text-xs sm:px-4 sm:text-sm data-[state=active]:border-primary data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:shadow-none"
           >
-            <Icon className="h-4 w-4" aria-hidden />
+            <Icon className="hidden h-4 w-4 sm:block" aria-hidden />
             {label}
           </TabsTrigger>
         ))}
@@ -156,7 +156,7 @@ export function DayHeader({
     )[plan.status] ?? "Estado por revisar";
   return (
     <header
-      className="space-y-5 rounded-xl border bg-card p-4 shadow-sm sm:p-6"
+      className="space-y-4 rounded-xl border bg-card p-4 shadow-sm sm:space-y-5 sm:p-6"
       data-testid="day-header"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -173,7 +173,7 @@ export function DayHeader({
             <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               Workspace de producción
             </p>
-            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            <h1 className="text-xl font-semibold tracking-tight sm:text-3xl">
               {plan.name?.trim() ||
                 plan.title?.trim() ||
                 "Jornada de producción"}
@@ -206,13 +206,13 @@ export function DayHeader({
           </Button>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4 border-t pt-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 border-t pt-3 text-sm sm:gap-4 sm:pt-4 sm:text-base lg:grid-cols-4">
         <div>
           <p className="text-xs text-muted-foreground">
             {draftTasks ? "Borrador actual" : "Plan de trabajo"}
           </p>
           <p className="mt-1 font-semibold tabular-nums">
-            {placed} / {obligations.length} obligaciones con horario
+            {placed} / {obligations.length} <span className="hidden sm:inline">obligaciones </span>con horario
           </p>
           <button
             className="text-xs text-primary underline-offset-4 hover:underline"
@@ -226,7 +226,7 @@ export function DayHeader({
           <p className="mt-1 font-semibold">
             {accepted ? `Etapa ${accepted.ordinal}` : "Sin etapa aceptada"}
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="hidden text-xs text-muted-foreground sm:block">
             Checkpoint del plan de trabajo
           </p>
         </div>
@@ -256,7 +256,7 @@ export function DayHeader({
           <p className="mt-1 font-semibold tabular-nums">
             {running} en curso · {done} completadas
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="hidden text-xs text-muted-foreground sm:block">
             La aceptación de una etapa no publica el día
           </p>
         </div>

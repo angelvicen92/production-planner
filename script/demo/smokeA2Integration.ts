@@ -162,6 +162,7 @@ if(process.argv.includes('--app')){
    const untouched=await otherDays();
    const source=(await db.query("SELECT snapshot_fingerprint,ordinal FROM assisted_planning_stages WHERE id=(SELECT active_stage_id FROM assisted_planning_sessions WHERE plan_id=27001 AND status='ACTIVE')")).rows[0];
    report.snapshotReplay={source:'script/demo/fixtures/a2-legacy-import.json.gz',sourceSha256:createHash('sha256').update(readFileSync('script/demo/fixtures/a2-legacy-import.json.gz')).digest('hex'),planId:27001,acceptedStage:source.ordinal,fingerprint:source.snapshot_fingerprint,newSolverRun:false};
+   if(process.argv.includes("--day-workspace")){const {runDayWorkspaceSnapshot}=await import("./smokeDayWorkspaceJourney");report.dayWorkspace=await runDayWorkspaceSnapshot(options);}
    if(warRoom){const {runWarRoomJourney}=await import('./smokeWarRoomJourney');report.warRoom=await runWarRoomJourney({...options,planId:27001});}
    else {const {runLiveExecutionJourney}=await import('./smokeLiveExecutionJourney');report.liveExecution=await runLiveExecutionJourney({...options,planId:27001});}
    assert.equal(await otherDays(),untouched);pass('other disposable days remain literal during accepted-snapshot execution');

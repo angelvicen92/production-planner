@@ -73,7 +73,7 @@ export async function runLiveExecutionJourney({ appUrl, url, anon, users, db, pl
   const simulated=await request('aux',`/api/plans/${planId}/execution`);
   assert.equal(simulated.body.clock.mode,'manual');assert.ok(simulated.body.clock.revision);
   pass('admin HTTP enables the existing simulated clock; viewer cannot alter it');
-  const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+  const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'], executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH });
   const errors: string[] = [];
   const operatorContext = await browser.newContext({ viewport: { width: 390, height: 844 }, timezoneId: 'America/New_York' });
   const observerContext = await browser.newContext({ viewport: { width: 1440, height: 1000 }, timezoneId: 'Europe/Madrid' });
@@ -173,11 +173,11 @@ export async function runLiveExecutionJourney({ appUrl, url, anon, users, db, pl
     await operator.getByTestId(`agenda-task-${task.id}`).getByText('Completada', { exact: true }).waitFor();
     assert.deepEqual(errors, []);
     await viewer.goto(`${appUrl}/plans/${planId}?tab=execution`,{waitUntil:'domcontentloaded'});
-    const legacyViewer=viewer.getByTestId(`legacy-execution-task-${outside.id}`);
+    const legacyViewer=viewer.getByTestId(`day-execution-task-${outside.id}`);
     await legacyViewer.waitFor();
-    assert.equal(await legacyViewer.getByRole('button',{name:'Start',exact:true}).isDisabled(),true);
-    assert.equal(await legacyViewer.getByRole('button',{name:'Reset',exact:true}).isDisabled(),true);
-    pass('legacy task controls also disable execution and reset for viewer');
+    assert.equal(await legacyViewer.getByRole('button',{name:'Iniciar',exact:true}).count(),0);
+    assert.equal(await legacyViewer.getByRole('button',{name:'Resetear',exact:true}).count(),0);
+    pass('day workspace hides execution and reset actions without task authority');
     for (const role of ['viewer', 'aux']) {
       const headers = { apikey: anon, Authorization: `Bearer ${users[role].token}`, 'Content-Type': 'application/json' };
       const direct = await fetch(`${url}/rest/v1/rpc/execute_task_transition`, { method: 'POST', headers, body: JSON.stringify({ p_task_id: task.id, p_actor: users.admin.id, p_status: 'in_progress' }) });
