@@ -32,7 +32,7 @@ async function database() {
     CREATE TABLE assisted_planning_stages(id bigint PRIMARY KEY,plan_id integer,ordinal integer,archived_at timestamptz,snapshot_json jsonb,snapshot_fingerprint text);
     GRANT ALL ON ALL TABLES IN SCHEMA public TO anon,authenticated,service_role;
     GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon,authenticated,service_role;`);
-  await db.exec(readFileSync('supabase/migrations/092_live_task_execution.sql', 'utf8'));
+  await db.exec(readFileSync('supabase/migrations/093_live_task_execution.sql', 'utf8'));
   return db;
 }
 const transition = (db: PGlite, task: number, status: string, user = actor(2), expected: string | null = null) => db.query<any>('SELECT * FROM public.execute_task_transition($1,$2,$3,$4)', [task, user, status, expected]);

@@ -1,6 +1,6 @@
 # EJEC-01 — Mi Día y ejecución persistente
 
-Base: `022a2db19245e406eb1774901e4dc55a331c4d0c`. Rama objetivo: `codex/live-day-execution-p1`.
+Base inicial: `022a2db19245e406eb1774901e4dc55a331c4d0c`. Sincronizada con main `c7f85411ac13b62f4be34de09061124f7460b7e0` (#1123). Rama objetivo: `codex/live-day-execution-p1`.
 
 ## Resultado y frontera
 
@@ -24,7 +24,7 @@ La aceptación de ejecución usa una **copia descartable del snapshot A2 previam
 | Rechazo → feedback antiguo | Hook compartido actualizaba optimistamente y anunciaba éxito en `onSettled`, incluso al fallar | Estado confirmado por servidor; éxito sólo en `onSuccess`; controles antiguos según autoridad y transición |
 | Reset → locks humanos | Reset anterior borraba todos los locks full | Conserva locks humanos e histórico; limpia sólo protección de ejecución y razones legacy generadas conocidas |
 
-Autoridades consultadas: Fuentes oficiales 00 v2.11, 01 v5.2 (11–13, Anexo A), 02 v2.2, 03 v3.6, 04 v2.6, 05 v2.6, 06 v2.8 y 07 v2.2; Evidence de A2-ASSIST-8 e integración nativa actual. No se modifican Fuentes, motor, Assisted workspace ni preferencias de bloques/comida.
+Autoridades iniciales consultadas: Fuentes oficiales 00 v2.11, 01 v5.2 (11–13, Anexo A), 02 v2.2, 03 v3.6, 04 v2.6, 05 v2.6, 06 v2.8 y 07 v2.2; Evidence de A2-ASSIST-8 e integración nativa actual. Tras sincronizar #1123 se revisaron las Fuentes vigentes 00 v2.12, 03 v3.7, 04 v2.7, 05 v2.7 y 06 v2.9. El delta propio no modifica Fuentes, motor, Assisted workspace ni preferencias de bloques/comida.
 
 ## Contrato HTTP, estados y permisos
 
@@ -50,7 +50,7 @@ Las operaciones de interrupción/reanudación existentes conservan inicio, pausa
 
 ## Migración y diff técnico
 
-`092_live_task_execution.sql` es necesaria porque varias llamadas REST no forman una transacción conjunta.
+`093_live_task_execution.sql` es necesaria porque varias llamadas REST no forman una transacción conjunta.
 
 - Timestamps completos y modo/revisión de reloj en `daily_tasks`, sin backfill inventado de tiempos legacy.
 - Estado previo, hora operativa, modo y snapshot de tarea en eventos; `created_at` conserva la hora física del servidor incluso en simulación.
@@ -67,7 +67,7 @@ Backend: `server/liveExecution.ts`, `apiAuthorization.ts`, `routes.ts`, `storage
 
 | Gate | Resultado |
 |---|---|
-| TypeScript, build, secuencia 071–092 | PASS local |
+| TypeScript, build, secuencia 071–093 | PASS local |
 | Servidor (Node 20) | 304/304 PASS |
 | Focal HTTP + RPC + workflow | 24/24 PASS |
 | Suite ampliada server/shared/client-lib | 449/451: dos fallos reproducidos en la base sin delta |
@@ -106,9 +106,9 @@ El corpus integrado referencia A2 actual 266/266, S0 + 11 Stages, cero HARD/REQU
 
 Los intentos locales de reconstruir A2 desde cero con Node 24 y Node 20 agotaron 180 s antes de aplicar S1, con run todavía running. Se documenta ese gate como **no certificado localmente**; no se cambia el motor ni se oculta el resultado. El ensayo de ejecución usa el snapshot aceptado previo, no atribuye su éxito a una nueva generación de c0cc8bf4.
 
-Quedan pendientes: transporte Realtime/WebSocket en un proyecto de prueba con Realtime real; compatibilidad y autorización de cualquier despliegue en el Supabase real; CI remota del head; y sincronización/renumeración antes de merge. No se hicieron writes en Supabase real, publicación ni merge.
+Quedan pendientes: transporte Realtime/WebSocket en un proyecto de prueba con Realtime real; compatibilidad y autorización de cualquier despliegue en el Supabase real; CI remota del head y una última comprobación de main antes de merge. La colisión de numeración quedó resuelta con 093. No se hicieron writes en Supabase real, publicación ni merge.
 
-La rama paralela `codex/mainflow-soft-meal-split-day-config` (`dc626065…` al verificar) también añade `092_main_flow_soft_preference.sql`. Esta unidad mantiene `092_live_task_execution.sql` aislada y válida sobre main 022a2db. **Antes de integrar la segunda rama, renumerar su migración al siguiente número disponible, sincronizar con main y repetir secuencia/ledger/CI.** También coinciden los archivos `server/routes.ts`, `shared/routes.ts`, `shared/schema.ts` y dos helpers de ensayo; conservar ambos deltas. No se importó ni sobreescribió el trabajo paralelo.
+La unidad paralela se integró en main mediante #1123 durante esta tarea. Se incorporó main sin conflictos ni sobrescribir sus cambios y se renumeró ejecución a **093**, conservando `092_main_flow_soft_preference.sql` de main. Los deltas compartidos en `server/routes.ts`, `shared/routes.ts`, `shared/schema.ts` y helpers de ensayo se mantienen juntos. La comparación contra el nuevo main no contiene cambios en motor, preferencias ni Fuentes. Antes del merge del PR, volver a comprobar que main no haya avanzado y repetir los gates que corresponda.
 
 ## Guion de demostración de dos minutos
 
