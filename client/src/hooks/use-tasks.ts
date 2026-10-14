@@ -131,56 +131,25 @@ export function useCreateDailyTask() {
 export function useUpdateTaskStatus() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-
   return useMutation({
-    mutationFn: ({ taskId, status, effectiveTimeHHMM, effectiveSeconds }: {
+    mutationFn: ({ taskId, planId, status, expectedStatus }: {
       taskId: number;
       planId: number;
       status: "pending" | "in_progress" | "done" | "interrupted" | "cancelled";
+      expectedStatus?: string;
       effectiveTimeHHMM?: string;
       effectiveSeconds?: number;
-    }) =>
-      apiRequest(
-        "PATCH",
-        buildUrl(api.dailyTasks.updateStatus.path, { id: taskId }),
-        { status, ...(effectiveTimeHHMM ? { effectiveTimeHHMM } : {}), ...(Number.isFinite(effectiveSeconds) ? { effectiveSeconds } : {}) },
-      ),
-    onMutate: async ({ planId, taskId, status }) => {
-      const key = planQueryKey(planId);
-      await queryClient.cancelQueries({ queryKey: key });
-      const previousPlan = queryClient.getQueryData(key);
-
-      queryClient.setQueryData(key, (old: any) => {
-        if (!old) return old;
-        const nextDailyTasks = Array.isArray(old.dailyTasks)
-          ? old.dailyTasks.map((task: any) =>
-              Number(task?.id) === taskId ? { ...task, status } : task,
-            )
-          : old.dailyTasks;
-        return { ...old, dailyTasks: nextDailyTasks };
-      });
-
-      return { previousPlan, planId };
-    },
-    onError: (err: any, _vars, ctx) => {
-      if (ctx?.previousPlan) {
-        queryClient.setQueryData(planQueryKey(ctx.planId), ctx.previousPlan);
-      }
-      toast({
-        title: "No se pudo actualizar la tarea",
-        description: err?.message || "Error desconocido",
-        variant: "destructive",
+    }) => {
+      const task = queryClient.getQueryData<any[]>(planTasksQueryKey(planId))?.find(t => Number(t.id) === taskId)
+        ?? queryClient.getQueryData<any>(planQueryKey(planId))?.dailyTasks?.find((t: any) => Number(t.id) === taskId);
+      return apiRequest("PATCH", buildUrl(api.dailyTasks.updateStatus.path, { id: taskId }), {
+        status, ...((expectedStatus ?? task?.status) ? { expectedStatus: expectedStatus ?? task.status } : {}),
       });
     },
-    onSettled: (data: any, _error, vars) => {
-      const planId = Number(data?.planId ?? data?.plan_id ?? vars.planId ?? 0);
-      if (planId) {
-        queryClient.invalidateQueries({ queryKey: planQueryKey(planId) });
-      }
-      toast({
-        title: "Task Updated",
-        description: `Status changed to ${data?.status ?? vars.status}`,
-      });
+    onSuccess: () => toast({ title: "Actividad actualizada", description: "Registro confirmado por el servidor." }),
+    onError: (error: any) => toast({ title: "No se confirmó la acción", description: error?.status ? error.message : "Actualiza la agenda antes de reintentar.", variant: "destructive" }),
+    onSettled: async (_data, _error, variables) => {
+      await Promise.all([planQueryKey(variables.planId), planTasksQueryKey(variables.planId), planLocksQueryKey(variables.planId), [`/api/plans/${variables.planId}/execution`]].map(queryKey => queryClient.invalidateQueries({ queryKey })));
     },
   });
 }
@@ -188,45 +157,12 @@ export function useUpdateTaskStatus() {
 export function useResetTask() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-
   return useMutation({
-    mutationFn: ({ taskId, effectiveTimeHHMM }: { taskId: number; planId: number; effectiveTimeHHMM?: string }) =>
-      apiRequest("POST", buildUrl(api.dailyTasks.reset.path, { id: taskId }), effectiveTimeHHMM ? { effectiveTimeHHMM } : {}),
-    onMutate: async ({ planId, taskId }) => {
-      const key = planQueryKey(planId);
-      await queryClient.cancelQueries({ queryKey: key });
-      const previousPlan = queryClient.getQueryData(key);
-
-      queryClient.setQueryData(key, (old: any) => {
-        if (!old) return old;
-        const nextDailyTasks = Array.isArray(old.dailyTasks)
-          ? old.dailyTasks.map((task: any) =>
-              Number(task?.id) === taskId
-                ? { ...task, status: "pending", startReal: null, endReal: null }
-                : task,
-            )
-          : old.dailyTasks;
-        return { ...old, dailyTasks: nextDailyTasks };
-      });
-
-      return { previousPlan, planId };
-    },
-    onError: (err: any, _vars, ctx) => {
-      if (ctx?.previousPlan) {
-        queryClient.setQueryData(planQueryKey(ctx.planId), ctx.previousPlan);
-      }
-      toast({
-        title: "No se pudo resetear la tarea",
-        description: err?.message || "Error desconocido",
-        variant: "destructive",
-      });
-    },
-    onSettled: (data: any, _error, vars) => {
-      const planId = Number(data?.planId ?? data?.plan_id ?? vars.planId ?? 0);
-      if (planId) {
-        queryClient.invalidateQueries({ queryKey: planQueryKey(planId) });
-      }
-      toast({ title: "Tarea reseteada", description: "La tarea volvió a pendiente." });
+    mutationFn: ({ taskId }: { taskId: number; planId: number; effectiveTimeHHMM?: string }) => apiRequest("POST", buildUrl(api.dailyTasks.reset.path, { id: taskId }), {}),
+    onSuccess: () => toast({ title: "Actividad restablecida", description: "El histórico se conserva." }),
+    onError: (error: any) => toast({ title: "No se confirmó el restablecimiento", description: error?.status ? error.message : "Actualiza la agenda antes de reintentar.", variant: "destructive" }),
+    onSettled: async (_data, _error, variables) => {
+      await Promise.all([planQueryKey(variables.planId), planTasksQueryKey(variables.planId), planLocksQueryKey(variables.planId), [`/api/plans/${variables.planId}/execution`]].map(queryKey => queryClient.invalidateQueries({ queryKey })));
     },
   });
 }

@@ -1,270 +1,155 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "wouter";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Camera, CheckCircle2, Clock, MapPin, Play, Square, UserCheck, XCircle } from "lucide-react";
-import { buildUrl, api } from "@shared/routes";
-import { Layout } from "@/components/layout";
-import { QueryGuard } from "@/components/QueryGuard";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { useConfirm } from "@/components/ui/confirm-dialog";
-import { useDefaultPlanId } from "@/hooks/use-default-plan-id";
-import { useMeLinks } from "@/hooks/useMeLinks";
-import { usePlanOpsData } from "@/hooks/usePlanOpsData";
-import { usePlans } from "@/hooks/use-plans";
-import { useProductionClock } from "@/hooks/use-production-clock";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/api";
-import { buildSpacesById, buildZonesById, getSpaceName, getTaskName, getZoneName } from "@/lib/lookups";
-import { formatRange, hhmmToMinutes } from "@/lib/time";
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'wouter';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { AlertTriangle, ArrowRight, CheckCircle2, Clock, MapPin, Play, RefreshCw, ShieldCheck, User, Wifi, WifiOff, PauseCircle, XCircle, Circle } from 'lucide-react';
+import { Layout } from '@/components/layout';
+import { QueryGuard } from '@/components/QueryGuard';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { useDefaultPlanId } from '@/hooks/use-default-plan-id';
+import { useMeLinks } from '@/hooks/useMeLinks';
+import { usePlanOpsData } from '@/hooks/usePlanOpsData';
+import { usePlans } from '@/hooks/use-plans';
+import { useContestants } from '@/hooks/use-tasks';
+import { usePlanRealtime } from '@/hooks/use-plan-realtime';
+import { useExecutionContext } from '@/hooks/use-execution-context';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/api';
+import { buildSpacesById, buildZonesById, getSpaceName, getTaskName, getZoneName } from '@/lib/lookups';
+import { formatRange, hhmmToMinutes } from '@/lib/time';
+import { planQueryKey, planTasksQueryKey, planLocksQueryKey } from '@/lib/plan-query-keys';
+import { executionDuration, formatExecutionDuration, executionClockCurrent, madridClockBase } from '@shared/execution';
 
-const STATUS_LABELS: Record<string, string> = {
-  pending: "Pendiente",
-  in_progress: "En curso",
-  done: "Completada",
-  interrupted: "Interrumpida",
-  cancelled: "Cancelada",
+const states = {
+  pending: { label: 'Pendiente', Icon: Circle, style: 'text-muted-foreground bg-muted' },
+  in_progress: { label: 'En curso', Icon: Play, style: 'text-emerald-800 bg-emerald-100 dark:text-emerald-200 dark:bg-emerald-950' },
+  done: { label: 'Completada', Icon: CheckCircle2, style: 'text-blue-800 bg-blue-100 dark:text-blue-200 dark:bg-blue-950' },
+  interrupted: { label: 'Interrumpida', Icon: PauseCircle, style: 'text-amber-800 bg-amber-100 dark:text-amber-200 dark:bg-amber-950' },
+  cancelled: { label: 'Cancelada', Icon: XCircle, style: 'text-rose-800 bg-rose-100 dark:text-rose-200 dark:bg-rose-950' },
 };
-
-const statusVariant = (status?: string) => {
-  if (status === "done") return "secondary" as const;
-  if (status === "cancelled" || status === "interrupted") return "destructive" as const;
-  return "outline" as const;
-};
-
-function taskStatus(task: any) {
-  return String(task?.status || "pending");
+function Status({ status }: { status: keyof typeof states }) {
+  const { label, Icon, style } = states[status] ?? states.pending;
+  return <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${style}`}><Icon className="h-3.5 w-3.5" />{label}</span>;
 }
-
-function camerasFor(task: any) {
-  return Number(task?.camerasOverride ?? task?.template?.defaultCameras ?? 0) || 0;
+function dayLabel(value: unknown) {
+  const date = String(value ?? '').slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? new Intl.DateTimeFormat('es-ES', { dateStyle: 'full', timeZone: 'Europe/Madrid' }).format(new Date(`${date}T12:00:00Z`)) : 'Fecha por definir';
 }
-
-function talentFor(task: any) {
-  return task?.contestant?.name || task?.contestantName || task?.talent?.name || task?.talentName || "";
-}
-
-function locationFor(task: any, zonesById: Map<number, any>, spacesById: Map<number, any>) {
-  if (task?.spaceId) return getSpaceName(task.spaceId, spacesById);
-  if (task?.zoneId) return getZoneName(task.zoneId, zonesById);
-  return "Ubicación por definir";
-}
-
-function plannedLabel(task: any) {
-  return task?.startPlanned || task?.endPlanned ? formatRange(task?.startPlanned, task?.endPlanned) : "Horario por definir";
-}
-
-function isDelayed(task: any, nowMinutes: number) {
-  const start = hhmmToMinutes(task?.startPlanned);
-  return taskStatus(task) === "pending" && start !== null && nowMinutes > start;
-}
-
-function isExceeded(task: any, nowMinutes: number) {
-  const end = hhmmToMinutes(task?.endPlanned);
-  return taskStatus(task) === "in_progress" && end !== null && nowMinutes > end;
-}
-
-function lockTaskId(lock: any) {
-  return Number(lock?.task_id ?? lock?.taskId ?? lock?.dailyTaskId ?? lock?.daily_task_id);
-}
-
-function taskWarnings(task: any, nowMinutes: number, locksByTask: Map<number, any[]>) {
-  const warnings: string[] = [];
-  if (!task?.spaceId && !task?.zoneId) warnings.push("Sin ubicación");
-  if (!task?.startPlanned || !task?.endPlanned) warnings.push("Sin horario");
-  if (isDelayed(task, nowMinutes)) warnings.push("Retrasada");
-  if (isExceeded(task, nowMinutes)) warnings.push("Excedida");
-  if ((locksByTask.get(Number(task?.id)) || []).length) warnings.push("Bloqueada");
-  return warnings;
-}
-
-function TaskMiniCard({ task, zonesById, spacesById, nowMinutes, locksByTask }: any) {
-  const warnings = taskWarnings(task, nowMinutes, locksByTask);
-  return (
-    <div className="rounded-xl border bg-card p-3 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs text-muted-foreground">{plannedLabel(task)}</p>
-          <p className="truncate font-semibold">{getTaskName(task)}</p>
-          <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground"><MapPin className="h-3.5 w-3.5" />{locationFor(task, zonesById, spacesById)}</p>
-        </div>
-        <Badge variant={statusVariant(taskStatus(task))}>{STATUS_LABELS[taskStatus(task)] || taskStatus(task)}</Badge>
-      </div>
-      {warnings.length ? <div className="mt-2 flex flex-wrap gap-1">{warnings.map((item) => <Badge key={item} variant="destructive" className="text-[10px]">{item}</Badge>)}</div> : null}
-    </div>
-  );
-}
-
-function HeroTask({ title, task, empty, zonesById, spacesById, nowMinutes, locksByTask, children }: any) {
-  if (!task) {
-    return <Card className="border-dashed"><CardHeader><CardTitle>{title}</CardTitle></CardHeader><CardContent><p className="text-muted-foreground">{empty}</p></CardContent></Card>;
-  }
-  const warnings = taskWarnings(task, nowMinutes, locksByTask);
-  const talent = talentFor(task);
-  const cameras = camerasFor(task);
-  return (
-    <Card className={title === "Ahora" ? "border-primary/40 bg-primary/5 shadow-md" : "shadow-sm"}>
-      <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2"><Clock className="h-5 w-5" />{title}</CardTitle></CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2"><h2 className="text-2xl font-bold">{getTaskName(task)}</h2><Badge variant={statusVariant(taskStatus(task))}>{STATUS_LABELS[taskStatus(task)] || taskStatus(task)}</Badge></div>
-          <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-            <p><strong className="text-foreground">Plan:</strong> {plannedLabel(task)}</p>
-            <p><strong className="text-foreground">Real:</strong> {task?.startReal || "--:--"}–{task?.endReal || "--:--"}</p>
-            <p className="flex items-center gap-1"><MapPin className="h-4 w-4" />{locationFor(task, zonesById, spacesById)}</p>
-            {talent ? <p><strong className="text-foreground">Talent:</strong> {talent}</p> : null}
-            {cameras > 0 ? <p className="flex items-center gap-1"><Camera className="h-4 w-4" />{cameras} cámara{cameras === 1 ? "" : "s"}</p> : null}
-          </div>
-        </div>
-        {warnings.length ? <div className="flex flex-wrap gap-2">{warnings.map((item) => <Badge key={item} variant="destructive"><AlertTriangle className="mr-1 h-3 w-3" />{item}</Badge>)}</div> : null}
-        {children}
-      </CardContent>
-    </Card>
-  );
+function madridDay(value: string | number) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return null;
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);
+  return ['year', 'month', 'day'].map(type => parts.find(part => part.type === type)!.value).join('-');
 }
 
 export default function MyDayPage() {
-  const { data: plans = [], isLoading: plansLoading, error: plansError, refetch: refetchPlans } = usePlans();
-  const [planId, setPlanId] = useState("");
+  const plansQ = usePlans();
+  const plans = plansQ.data ?? [];
+  const [planId, setPlanId] = useState(() => new URLSearchParams(window.location.search).get('plan') ?? '');
   const [onlyMine, setOnlyMine] = useState(true);
-  const queryClient = useQueryClient();
-  const confirm = useConfirm();
-  const { toast } = useToast();
+  const [search, setSearch] = useState('');
   const { defaultPlanId } = useDefaultPlanId(plans, planId);
-  const selected = useMemo(() => plans.find((plan) => Number(plan.id) === Number(defaultPlanId)) || null, [plans, defaultPlanId]);
-  const { data, isLoading, error, refetch } = usePlanOpsData(selected?.id);
-  const { links, staffPerson, resourceItem } = useMeLinks(true);
-  const { nowTime, effectiveNow } = useProductionClock();
-
-  useEffect(() => { if (!planId && defaultPlanId) setPlanId(String(defaultPlanId)); }, [defaultPlanId, planId]);
-
-  const zonesById = useMemo(() => buildZonesById(data.zones || []), [data.zones]);
-  const spacesById = useMemo(() => buildSpacesById(data.spaces || []), [data.spaces]);
-  const nowMinutes = hhmmToMinutes(nowTime) ?? effectiveNow.getHours() * 60 + effectiveNow.getMinutes();
-
-  const locksByTask = useMemo(() => {
-    const map = new Map<number, any[]>();
-    for (const lock of data.locks || []) {
-      const id = lockTaskId(lock);
-      if (!Number.isFinite(id)) continue;
-      if (!map.has(id)) map.set(id, []);
-      map.get(id)?.push(lock);
-    }
-    return map;
-  }, [data.locks]);
-
-  const myScope = useMemo(() => {
-    const set = new Set<string>();
-    if (!links?.staffPersonId) return set;
-    for (const assignment of data.staffAssignments || []) {
-      if (Number(assignment?.staffPersonId) !== Number(links.staffPersonId)) continue;
-      if (assignment?.scopeType === "zone" && assignment?.zoneId) set.add(`zone:${assignment.zoneId}`);
-      if (assignment?.scopeType === "space" && assignment?.spaceId) set.add(`space:${assignment.spaceId}`);
-    }
-    return set;
-  }, [data.staffAssignments, links?.staffPersonId]);
-
-  const resourceKind = String(resourceItem?.typeName || resourceItem?.typeCode || "").toLowerCase();
-  const isCameraResource = Boolean(links?.resourceItemId && (resourceKind.includes("cámara") || resourceKind.includes("camara") || resourceKind.includes("camera")));
-  const hasOperationalLink = Boolean((links?.staffPersonId && myScope.size > 0) || isCameraResource);
-  const tasks = useMemo(() => [...(data.tasks || [])].sort((a: any, b: any) => (hhmmToMinutes(a?.startPlanned) ?? 9999) - (hhmmToMinutes(b?.startPlanned) ?? 9999)), [data.tasks]);
-  const visibleTasks = useMemo(() => {
-    if (!onlyMine || !hasOperationalLink) return tasks;
-    if (links?.staffPersonId && myScope.size > 0) return tasks.filter((task: any) => myScope.has(`space:${task?.spaceId}`) || myScope.has(`zone:${task?.zoneId}`));
-    if (isCameraResource) return tasks.filter((task: any) => camerasFor(task) > 0);
-    return tasks;
-  }, [hasOperationalLink, isCameraResource, links?.staffPersonId, myScope, onlyMine, tasks]);
-
-  const nowTask = useMemo(() => visibleTasks.find((task: any) => taskStatus(task) === "in_progress") || visibleTasks.find((task: any) => {
-    const start = hhmmToMinutes(task?.startPlanned); const end = hhmmToMinutes(task?.endPlanned);
-    return start !== null && end !== null && nowMinutes >= start && nowMinutes <= end;
-  }) || null, [visibleTasks, nowMinutes]);
-  const nextTask = useMemo(() => visibleTasks.find((task: any) => taskStatus(task) === "pending" && (hhmmToMinutes(task?.startPlanned) ?? 9999) > nowMinutes) || null, [visibleTasks, nowMinutes]);
-
-  const invalidateOpsData = async () => {
-    const id = Number(selected?.id);
-    if (!id) return;
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: [`/api/plans/${id}/tasks`] }),
-      queryClient.invalidateQueries({ queryKey: [`/api/plans/${id}/locks`] }),
-      queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] }),
-    ]);
+  const selected = plans.find(plan => Number(plan.id) === Number(defaultPlanId));
+  const sync = usePlanRealtime({ planId: selected?.id ?? null });
+  const poll = sync.online ? (sync.realtimeConnected ? 30000 : 5000) : false;
+  const ops = usePlanOpsData(selected?.id, poll);
+  const contextQ = useExecutionContext(selected?.id, poll);
+  const context = contextQ.data;
+  const peopleQ = useContestants(selected?.id ?? 0);
+  const { staffPerson, resourceItem } = useMeLinks();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [tick, setTick] = useState(Date.now());
+  const pressing = useRef(false);
+  const [actionError, setActionError] = useState('');
+  useEffect(() => { const timer = window.setInterval(() => setTick(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
+  useEffect(() => { setActionError(''); setSearch(''); }, [selected?.id]);
+  const nowMs = context ? Date.parse(context.clock.operationalAt) + Math.max(0, tick - contextQ.dataUpdatedAt) : NaN;
+  const clockLabel = Number.isFinite(nowMs) ? new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(nowMs)) : '—';
+  const selectedDate = String(selected?.date ?? '').slice(0, 10);
+  const sameOperationalDay = madridDay(nowMs) === selectedDate;
+  const nowMinute = sameOperationalDay ? hhmmToMinutes(clockLabel.slice(0, 5)) : null;
+  const zones = useMemo(() => buildZonesById(ops.data.zones), [ops.data.zones]);
+  const spaces = useMemo(() => buildSpacesById(ops.data.spaces), [ops.data.spaces]);
+  const permissions = new Map(context?.tasks.map(task => [task.taskId, task]) ?? []);
+  const tasks = useMemo(() => {
+    const day = new Date(`${selectedDate}T12:00:00Z`);
+    const moment = (task: any) => {
+      const actual = Date.parse(task.startRealAt ?? '');
+      if (Number.isFinite(actual)) return actual;
+      if (!Number.isFinite(day.getTime()) || hhmmToMinutes(task.startPlanned) === null) return Infinity;
+      return madridClockBase(task.startPlanned, day).getTime();
+    };
+    return ops.data.tasks.map(task => ({ task, at: moment(task) })).sort((a, b) => a.at - b.at || a.task.id - b.task.id).map(row => row.task);
+  }, [ops.data.tasks, selectedDate]);
+  const visible = onlyMine && context?.hasScope ? tasks.filter(task => permissions.get(task.id)?.inScope) : tasks;
+  const running = visible.filter(task => task.status === 'in_progress');
+  const waiting = visible.filter(task => task.status === 'pending');
+  const next = waiting.find(task => permissions.get(task.id)?.canExecute) ?? waiting[0];
+  const upcoming = waiting.find(task => nowMinute !== null && (hhmmToMinutes(task.startPlanned) ?? -1) > nowMinute);
+  const contestants = new Map((peopleQ.data ?? []).map((person: any) => [Number(person.id), person.name]));
+  const location = (task: any) => task.locationLabel || (task.spaceId ? getSpaceName(task.spaceId, spaces) : task.zoneId ? getZoneName(task.zoneId, zones) : 'Ubicación por confirmar');
+  const talent = (task: any) => task.contestant?.name ?? contestants.get(Number(task.contestantId)) ?? (task.contestantId ? 'Persona por confirmar' : 'Actividad de equipo');
+  const invalidate = async () => {
+    if (!selected) return;
+    await Promise.all([planQueryKey(selected.id), planTasksQueryKey(selected.id), planLocksQueryKey(selected.id), [`/api/plans/${selected.id}/execution`]].map(queryKey => queryClient.invalidateQueries({ queryKey })));
   };
-
-  const updateStatus = useMutation({
-    mutationFn: ({ taskId, status }: { taskId: number; status: string }) => apiRequest("PATCH", `/api/tasks/${taskId}/status`, { status, effectiveTimeHHMM: nowTime }),
-    onSuccess: () => toast({ title: "Tarea actualizada", description: "El estado se ha sincronizado." }),
-    onSettled: invalidateOpsData,
-    onError: (err: any) => toast({ title: err?.type === "permission_denied" ? "No tienes permisos para realizar esta acción." : "No se pudo actualizar la tarea.", variant: "destructive" }),
+  const mutation = useMutation({
+    mutationFn: (task: any) => apiRequest('PATCH', `/api/tasks/${task.id}/status`, { status: task.status === 'pending' ? 'in_progress' : 'done', expectedStatus: task.status }),
+    onSuccess: (_result, task) => { setActionError(''); toast({ title: task.status === 'pending' ? 'Actividad iniciada' : 'Actividad finalizada', description: 'Registro guardado por el servidor.' }); },
+    onError: (error: any) => { const message = error?.status ? error.message : 'No se recibió confirmación. Actualiza la agenda antes de reintentar.'; setActionError(message); toast({ title: 'No se confirmó la acción', description: message, variant: 'destructive' }); },
+    onSettled: async () => { await invalidate(); pressing.current = false; },
   });
-
-  const runAction = async (task: any, status: "in_progress" | "done" | "interrupted" | "cancelled") => {
-    if (!task?.id) return;
-    if (status === "cancelled" || status === "interrupted") {
-      const ok = await confirm({ title: status === "cancelled" ? "Cancelar tarea" : "Interrumpir tarea", description: status === "cancelled" ? "La tarea pasará a cancelada." : "La tarea pasará a interrumpida.", confirmText: status === "cancelled" ? "Cancelar tarea" : "Interrumpir" });
-      if (!ok) return;
-    }
-    updateStatus.mutate({ taskId: Number(task.id), status });
-  };
-
-  const alerts = useMemo(() => {
-    const output: string[] = [];
-    if (!hasOperationalLink) output.push("Tu usuario todavía no está vinculado a una persona/recurso operativo. Mostrando vista general del plan.");
-    for (const task of visibleTasks) {
-      if (!task?.spaceId && !task?.zoneId) output.push(`${getTaskName(task)}: sin ubicación`);
-      if (!task?.startPlanned || !task?.endPlanned) output.push(`${getTaskName(task)}: sin horario`);
-      if ((locksByTask.get(Number(task?.id)) || []).length) output.push(`${getTaskName(task)}: bloqueo activo`);
-      if (isDelayed(task, nowMinutes)) output.push(`${getTaskName(task)}: pendiente con inicio superado`);
-      if (isExceeded(task, nowMinutes)) output.push(`${getTaskName(task)}: en curso excedida`);
-      if (output.length >= 5) break;
-    }
-    return output.slice(0, 5);
-  }, [hasOperationalLink, locksByTask, nowMinutes, visibleTasks]);
-
-  const groups = {
-    "Pendientes próximas": visibleTasks.filter((t: any) => taskStatus(t) === "pending"),
-    "En curso": visibleTasks.filter((t: any) => taskStatus(t) === "in_progress"),
-    "Completadas": visibleTasks.filter((t: any) => taskStatus(t) === "done"),
-    "Interrumpidas/canceladas": visibleTasks.filter((t: any) => ["interrupted", "cancelled"].includes(taskStatus(t))),
-  };
-
-  if (plansLoading || plansError) return <Layout><QueryGuard isLoading={plansLoading} isError={Boolean(plansError)} error={plansError} loadingText="Cargando planes..." onRetry={refetchPlans} /></Layout>;
-  if (!plans.length) return <Layout><Card><CardContent className="p-6">No hay planes disponibles. <Link className="text-primary underline" href="/plans">Ir a planes</Link>.</CardContent></Card></Layout>;
-
-  return <Layout><div className="mx-auto max-w-5xl space-y-4 pb-10">
-    <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-card to-primary/5">
-      <CardContent className="space-y-4 p-4 sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div><p className="text-sm text-muted-foreground">Mi Día operativo</p><h1 className="text-3xl font-bold">{(selected as any)?.name || "Plan sin nombre"}</h1><p className="text-sm text-muted-foreground">{String(selected?.date || "Fecha por definir").slice(0, 10)} · Hora operativa {nowTime}</p></div>
-          {plans.length > 1 ? <Select value={selected ? String(selected.id) : undefined} onValueChange={setPlanId}><SelectTrigger className="w-full sm:w-[280px]"><SelectValue placeholder="Seleccionar plan" /></SelectTrigger><SelectContent>{plans.map((plan) => <SelectItem key={plan.id} value={String(plan.id)}>{(plan as any).name || "Plan sin nombre"}</SelectItem>)}</SelectContent></Select> : null}
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Badge variant={hasOperationalLink ? "default" : "secondary"}><UserCheck className="mr-1 h-3 w-3" />{staffPerson ? `Operador: ${staffPerson.name}` : resourceItem ? `Recurso: ${resourceItem.name}` : "Vista general"}</Badge>
-          {hasOperationalLink ? <label className="flex items-center gap-2 rounded-full border px-3 py-1 text-sm"><Switch checked={onlyMine} onCheckedChange={setOnlyMine} />Solo mi ámbito</label> : null}
-        </div>
-      </CardContent>
-    </Card>
-
-    {(isLoading || error) ? <QueryGuard isLoading={isLoading} isError={Boolean(error)} error={error} loadingText="Cargando datos operativos..." onRetry={refetch} /> : null}
-    {!hasOperationalLink ? <Card className="border-amber-300 bg-amber-50 text-amber-950"><CardContent className="p-4">Tu usuario todavía no está vinculado a una persona/recurso operativo. Mostrando vista general del plan.</CardContent></Card> : null}
-    {!visibleTasks.length && !isLoading ? <Card><CardContent className="p-6 text-center text-muted-foreground">{hasOperationalLink ? "No hay tareas en tu ámbito" : "Este plan no tiene tareas todavía"}</CardContent></Card> : null}
-
-    <HeroTask title="Ahora" task={nowTask} empty="Sin tarea activa" zonesById={zonesById} spacesById={spacesById} nowMinutes={nowMinutes} locksByTask={locksByTask}>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {taskStatus(nowTask) === "pending" ? <><Button size="lg" disabled={updateStatus.isPending} onClick={() => runAction(nowTask, "in_progress")}><Play className="mr-2 h-4 w-4" />Start</Button><Button size="lg" variant="destructive" disabled={updateStatus.isPending} onClick={() => runAction(nowTask, "cancelled")}><XCircle className="mr-2 h-4 w-4" />Cancel</Button></> : null}
-        {taskStatus(nowTask) === "in_progress" ? <><Button size="lg" disabled={updateStatus.isPending} onClick={() => runAction(nowTask, "done")}><CheckCircle2 className="mr-2 h-4 w-4" />Finish</Button><Button size="lg" variant="destructive" disabled={updateStatus.isPending} onClick={() => runAction(nowTask, "interrupted")}><Square className="mr-2 h-4 w-4" />Interrupt</Button></> : null}
+  const canAct = (task: any) => Boolean(executionClockCurrent(task, context?.clock) && sync.online && !ops.error && !contextQ.error && permissions.get(task.id)?.canExecute && ['pending', 'in_progress'].includes(task.status));
+  const act = (task: any) => { if (pressing.current || mutation.isPending || !canAct(task)) return; pressing.current = true; mutation.mutate(task); };
+  const actions = (task: any, large = false) => canAct(task) ? <Button className={`bg-blue-700 text-white hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 ${large ? 'h-16 w-full rounded-2xl text-lg font-semibold shadow-sm' : 'min-h-11 rounded-xl'}`} disabled={mutation.isPending} onClick={() => act(task)} aria-label={`${task.status === 'pending' ? 'Iniciar' : 'Finalizar'} ${getTaskName(task)}`}>
+    {task.status === 'pending' ? <Play className="mr-2 h-5 w-5" /> : <CheckCircle2 className="mr-2 h-5 w-5" />}{mutation.isPending && mutation.variables?.id === task.id ? 'Guardando…' : task.status === 'pending' ? 'INICIAR ACTIVIDAD' : 'FINALIZAR ACTIVIDAD'}
+  </Button> : ['pending', 'in_progress'].includes(task.status) ? <p className="flex items-start gap-2 rounded-xl border p-3 text-sm text-muted-foreground"><ShieldCheck className="h-4 w-4 shrink-0" />{!executionClockCurrent(task, context?.clock) ? 'El reloj cambió durante la actividad. Producción debe revisar el registro.' : !sync.online ? 'Sin conexión. Espera para registrar la actividad.' : !context?.planningReady && task.status === 'pending' ? 'Pendiente de aceptación del planning completo.' : context?.role === 'viewer' ? 'Tu acceso permite consultar la agenda.' : 'Sin autoridad operativa demostrada para esta actividad.'}</p> : null;
+  const hero = (task: any, heading: string) => {
+    const start = hhmmToMinutes(task.startPlanned);
+    const late = task.status === 'pending' && start !== null && nowMinute !== null && nowMinute > start;
+    const realStart = hhmmToMinutes(task.startReal);
+    const deviation = realStart !== null && start !== null && task.startRealAt && madridDay(task.startRealAt) === selectedDate ? realStart - start : null;
+    const duration = executionDuration(task, nowMs, context?.clock);
+    return <article key={task.id} data-testid={`execution-task-${task.id}`} className="overflow-hidden rounded-3xl border border-primary/20 bg-card shadow-sm">
+      <div className="h-1.5 bg-primary" /><div className="space-y-4 p-4 sm:space-y-6 sm:p-8">
+        <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">{heading}</p><Status status={task.status} /></div>
+        <div><h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{getTaskName(task)}</h2><p className="mt-2 flex items-center gap-2 text-lg text-muted-foreground"><User className="h-5 w-5" />{talent(task)}</p></div>
+        <p className="flex items-center gap-2 text-lg font-medium"><MapPin className="h-5 w-5 text-primary" />{location(task)}</p>
+        <div className="grid grid-cols-3 gap-2 rounded-2xl bg-muted/50 p-3 sm:gap-3 sm:p-4"><div><p className="text-[10px] text-muted-foreground sm:text-xs">HORARIO PREVISTO</p><p className="mt-1 text-xs font-semibold sm:text-base">{task.startPlanned ? formatRange(task.startPlanned, task.endPlanned) : 'Por confirmar'}</p></div><div><p className="text-[10px] text-muted-foreground sm:text-xs">INICIO REAL</p><p className="mt-1 text-xs font-semibold sm:text-base">{task.startReal ?? 'Sin iniciar'}</p></div>{task.startReal ? <div><p className="text-[10px] text-muted-foreground sm:text-xs">TIEMPO ACTIVO</p><p className="mt-1 font-mono text-xl font-semibold tabular-nums sm:text-2xl" data-testid="execution-timer">{formatExecutionDuration(duration)}</p></div> : null}</div>
+        {late ? <p className="flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300"><AlertTriangle className="h-4 w-4" />Pendiente desde hace {nowMinute! - start!} min</p> : null}
+        {deviation !== null ? <p className="text-sm text-muted-foreground">Inicio {deviation > 0 ? `${deviation} min después` : deviation < 0 ? `${-deviation} min antes` : 'a la hora prevista'} del planning.</p> : null}
+        {permissions.get(task.id)?.resources.length ? <div className="flex flex-wrap gap-2">{permissions.get(task.id)!.resources.map(name => <Badge key={name} variant="secondary">{name}</Badge>)}</div> : null}
+        {actions(task, true)}
       </div>
-    </HeroTask>
-
-    <HeroTask title="Siguiente" task={nextTask} empty="Sin próxima tarea" zonesById={zonesById} spacesById={spacesById} nowMinutes={nowMinutes} locksByTask={locksByTask}>
-      <Badge variant="secondary">{hhmmToMinutes(nextTask?.startPlanned) !== null ? `Empieza en ${Math.max(0, (hhmmToMinutes(nextTask?.startPlanned) || 0) - nowMinutes)} min` : "Ya debería haber empezado"}</Badge>
-    </HeroTask>
-
-    <Card><CardHeader><CardTitle>Agenda del día</CardTitle></CardHeader><CardContent className="space-y-4">{Object.entries(groups).map(([name, items]) => <section key={name}><h3 className="mb-2 font-semibold">{name}</h3><div className="grid gap-2">{items.length ? items.map((task: any) => <TaskMiniCard key={task.id} task={task} zonesById={zonesById} spacesById={spacesById} nowMinutes={nowMinutes} locksByTask={locksByTask} />) : <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">Sin tareas</p>}</div></section>)}</CardContent></Card>
-
-    <Card><CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5" />Avisos operativos</CardTitle></CardHeader><CardContent>{alerts.length ? <ul className="space-y-2">{alerts.map((alert) => <li key={alert} className="rounded-lg border bg-muted/40 p-3 text-sm">{alert}</li>)}</ul> : <p className="text-sm text-muted-foreground">Sin avisos relevantes.</p>}</CardContent></Card>
+    </article>;
+  };
+  if (plansQ.isLoading || plansQ.error) return <Layout><QueryGuard isLoading={plansQ.isLoading} isError={Boolean(plansQ.error)} error={plansQ.error} loadingText="Preparando tu jornada…" onRetry={plansQ.refetch} /></Layout>;
+  if (!selected) return <Layout><div className="rounded-3xl border bg-card p-8"><Clock className="mb-4 h-8 w-8 text-primary" /><h1 className="text-2xl font-semibold">Tu próxima jornada empieza aquí</h1><p className="mt-2 text-muted-foreground">Todavía no hay planning disponible.</p><Link className="mt-5 inline-block text-primary underline" href="/plans">Ver jornadas</Link></div></Layout>;
+  const loading = ops.isLoading || contextQ.isLoading || peopleQ.isLoading;
+  const error = ops.error ?? contextQ.error ?? peopleQ.error;
+  return <Layout><div className="mx-auto max-w-5xl space-y-7 pb-12 text-foreground" data-testid="my-day-execution">
+    <header className="space-y-3 rounded-3xl border bg-card p-4 sm:space-y-5 sm:p-6">
+      <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[0.15em] text-blue-700 dark:text-blue-300 sm:text-xs">OPTIPLAN · EN PLATÓ</p><h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Mi Día</h1>{plans.length === 1 ? <p className="mt-2 text-sm capitalize text-muted-foreground">{dayLabel(selected.date)}</p> : null}</div><div className="text-right"><p className="font-mono text-2xl font-semibold tabular-nums sm:text-3xl">{clockLabel}</p><p className="text-xs text-muted-foreground">{context?.clock.mode === 'manual' ? 'Reloj simulado autorizado' : 'Hora operativa · Madrid'}</p></div></div>
+      {plans.length > 1 ? <Select value={String(selected.id)} onValueChange={setPlanId}><SelectTrigger className="min-h-11 rounded-xl" aria-label="Seleccionar jornada"><SelectValue /></SelectTrigger><SelectContent>{plans.map(plan => <SelectItem key={plan.id} value={String(plan.id)}>{dayLabel(plan.date)}</SelectItem>)}</SelectContent></Select> : null}
+      <div className="flex flex-wrap items-center gap-2"><Badge variant="outline"><User className="mr-1 h-3 w-3" />{staffPerson?.name ?? resourceItem?.name ?? (context?.role === 'production' || context?.role === 'admin' ? 'Producción · ámbito global' : 'Agenda de consulta')}</Badge><Badge variant="secondary">{context?.planningState === 'published' ? 'Planning publicado' : context?.planningReady ? 'Planning aceptado' : 'Planning pendiente'}</Badge>{context?.draftPending ? <Badge variant="outline">Borrador con cambios pendientes</Badge> : null}</div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4"><p className="flex items-center gap-2 text-xs text-muted-foreground" role="status">{sync.online ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}{!sync.online ? 'Sin conexión · datos conservados' : error ? 'Actualización no disponible' : ops.isFetching || contextQ.isFetching ? 'Actualizando…' : sync.realtimeConnected ? 'Realtime conectado · comprobación cada 30 s' : 'Consulta cada 5 s · Realtime no disponible'}</p><Button variant="ghost" className="min-h-11" disabled={!sync.online || ops.isFetching} onClick={() => { void ops.refetch(); void contextQ.refetch(); }}><RefreshCw className="mr-2 h-4 w-4" />Actualizar</Button></div>
+      {context?.hasScope ? <label className="flex min-h-11 items-center gap-3 text-sm"><Switch checked={onlyMine} onCheckedChange={setOnlyMine} />Solo mi ámbito asignado</label> : null}
+      {context && !sameOperationalDay ? <p className="text-sm text-amber-800 dark:text-amber-300">La hora operativa corresponde a otra fecha. Confirma la jornada con Producción; no se calcula retraso sobre este planning.</p> : null}
+    </header>
+    {loading || error ? <QueryGuard isLoading={loading} isError={Boolean(error)} error={error} loadingText="Preparando tu agenda…" onRetry={() => { void ops.refetch(); void contextQ.refetch(); }} /> : null}
+    {actionError ? <div role="alert" className="rounded-2xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">{actionError}</div> : null}
+    {!loading && context && !context.hasScope && !['admin', 'production'].includes(context.role ?? '') ? <p className="rounded-2xl border bg-muted/50 p-4 text-sm text-muted-foreground">Sin vinculación operativa para esta jornada. Puedes consultar la agenda; Producción debe asignarte una persona o un recurso concreto para ejecutar.</p> : null}
+    {!loading && !error ? <>
+      {running.length > 1 ? <p className="flex items-center gap-2 text-sm font-medium"><Play className="h-4 w-4 text-primary" />{running.length} actividades en curso en este ámbito</p> : null}
+      <div className="grid gap-5">{running.length ? running.map(task => hero(task, 'ACTIVIDAD EN CURSO')) : next ? hero(next, 'PRÓXIMA ACTIVIDAD PENDIENTE') : <div className="rounded-3xl border border-dashed p-8 text-center"><CheckCircle2 className="mx-auto mb-3 h-8 w-8 text-primary" /><h2 className="text-xl font-semibold">{visible.length ? 'Sin actividades pendientes' : 'Sin obligaciones en este ámbito'}</h2><p className="mt-2 text-sm text-muted-foreground">{visible.length ? 'Puedes consultar los registros en tu agenda.' : 'La agenda se actualizará cuando Producción confirme asignaciones.'}</p></div>}</div>
+      {upcoming && (running.length > 0 || upcoming.id !== next?.id) ? <section className="flex items-center gap-4 rounded-2xl border bg-card p-5"><ArrowRight className="h-5 w-5 shrink-0 text-primary" /><div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">DESPUÉS · {upcoming.startPlanned} · en {(hhmmToMinutes(upcoming.startPlanned) ?? 0) - (nowMinute ?? 0)} min</p><h2 className="mt-1 text-lg font-semibold">{getTaskName(upcoming)}</h2><p className="text-sm text-muted-foreground">{talent(upcoming)} · {location(upcoming)}</p></div></section> : null}
+      <section className="space-y-4"><div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-2xl font-semibold tracking-tight">Agenda de la jornada</h2><p className="mt-1 text-sm text-muted-foreground">{visible.filter(task => task.status === 'done').length} completadas · {visible.length} actividades</p></div><input className="min-h-11 w-full rounded-xl border bg-background px-4 text-sm sm:w-64" aria-label="Buscar actividad" placeholder="Buscar actividad o persona" value={search} onChange={event => setSearch(event.target.value)} /></div>
+        <div className="space-y-3">{visible.filter(task => `${getTaskName(task)} ${talent(task)} ${location(task)}`.toLocaleLowerCase().includes(search.toLocaleLowerCase())).map(task => <article key={task.id} className="rounded-2xl border bg-card p-4 sm:p-5" data-testid={`agenda-task-${task.id}`}><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-medium text-muted-foreground">{task.startPlanned ? formatRange(task.startPlanned, task.endPlanned) : 'Horario por confirmar'}</p><h3 className="mt-1 text-lg font-semibold">{getTaskName(task)}</h3><p className="mt-1 text-sm text-muted-foreground">{talent(task)}</p><p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground"><MapPin className="h-4 w-4" />{location(task)}</p></div><Status status={task.status} /></div>{task.startReal ? <p className="mt-3 text-sm text-muted-foreground">Real {task.startReal}–{task.endReal ?? 'en curso'} · tiempo activo {formatExecutionDuration(executionDuration(task, nowMs, context?.clock))}</p> : null}{['pending', 'in_progress'].includes(task.status) ? <div className="mt-4">{actions(task)}</div> : null}</article>)}</div>
+        {search && !visible.some(task => `${getTaskName(task)} ${talent(task)} ${location(task)}`.toLocaleLowerCase().includes(search.toLocaleLowerCase())) ? <p className="rounded-2xl border border-dashed p-5 text-sm text-muted-foreground">No hay actividades que coincidan con la búsqueda.</p> : null}
+      </section>
+    </> : null}
   </div></Layout>;
 }

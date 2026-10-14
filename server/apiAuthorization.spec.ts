@@ -6,7 +6,7 @@ import type {AppRole} from './authz';
 
 test('real HTTP middleware blocks anonymous/debug and task writes while preserving authorized application flows',async()=>{
  const app=express();let writes=0;
- app.use('/api',createApiAuthorization({authenticate:(req,res,next)=>{const id=req.header('x-test-user');if(!id)return void res.sendStatus(401);(req as any).user={id};next();},lookupRole:async id=>id==='norole'?null:id as AppRole}));
+ app.use('/api',createApiAuthorization({authenticate:(req,res,next)=>{const id=req.header('x-test-user');if(!id)return void res.sendStatus(401);(req as any).user={id};next();},lookupRole:async id=>id==='norole'?null:id as AppRole,authorizeTask:async(id,user)=>user==='admin'||user==='production'||(user==='aux'&&id===10001)}));
  app.use('/api',(req,res)=>{if(req.method!=='GET')writes++;res.json({ok:true});});
  const server=app.listen(0,'127.0.0.1');await new Promise<void>(r=>server.once('listening',r));
  const address=server.address();assert.ok(address&&typeof address!=='string');const url=`http://127.0.0.1:${address.port}`;
@@ -23,6 +23,19 @@ test('real HTTP middleware blocks anonymous/debug and task writes while preservi
    assert.equal((await request('/debug/generate/27001','GET',role)).status,role==null?401:role==='admin'?200:403);
   }
   assert.equal(writes,5,'denied requests must never reach a write handler');
+  for (const role of [undefined,'norole','viewer','aux','production','admin']) {
+   const before:number=writes;
+   const response=await request('/tasks/10002/status','PATCH',role);
+   assert.equal(response.status,role==null?401:role==='admin'||role==='production'?200:403);
+   if(response.status!==200)assert.equal(writes,before,'execution denial precedes the privileged write');
+  }
+  assert.equal((await request('/tasks/10001/status','PATCH','aux')).status,200);
+  assert.equal((await request('/tasks/10001/reset','POST','viewer')).status,403);
+  assert.equal((await request('/tasks/10001/reset','POST','aux')).status,403);
+  for(const path of ['/tasks/10002.0/status','/tasks/10002/status/']) {
+   assert.equal((await request(path,'PATCH','viewer')).status,403);
+   assert.equal((await request(path,'PATCH','aux')).status,403);
+  }
   assert.equal((await request('/bootstrap-role','POST','norole')).status,200,'first login can bootstrap its viewer role');
  }finally{await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}
 });

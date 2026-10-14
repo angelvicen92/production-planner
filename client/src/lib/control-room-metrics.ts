@@ -22,6 +22,9 @@ function durationPlannedMin(task: TaskLike, templatesById: Map<number, any>): nu
 }
 
 function durationRealMin(task: TaskLike): number {
+  const start = Date.parse(task?.startRealAt ?? task?.start_real_at ?? '');
+  const end = Date.parse(task?.endRealAt ?? task?.end_real_at ?? '');
+  if (Number.isFinite(start) && Number.isFinite(end) && end >= start) return Math.max(0, (end - start) / 60000 - Number(task?.pausedTotalSeconds ?? task?.paused_total_seconds ?? 0) / 60);
   const startMin = parseHHMMToMinutes(task?.startReal ?? task?.start_real);
   const endMin = parseHHMMToMinutes(task?.endReal ?? task?.end_real);
   if (startMin == null || endMin == null || endMin <= startMin) return 0;

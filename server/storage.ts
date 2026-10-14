@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "./supabase";
+import { executeTask } from "./liveExecution";
 import { planPlannerNextConfigurationSchema } from "./planPlannerNextConfiguration";
 import type { EngineRunDiagnostics } from "../engine/v3/runDiagnostics";
 import { normalizePipelineDiagnosticsMetadata } from "../engine/v3/pipelineDiagnostics";
@@ -60,26 +61,8 @@ import {
 } from "./planResourceBundleSnapshot";
 import { initializeDayConfigurationRevision } from "./dayConfigurationService";
 
-function getEuropeMadridTimeHHMM(): string {
-  const formatted = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/Madrid",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(new Date());
-  return formatted.slice(0, 5);
-}
-
 function isValidHHMM(value: unknown): value is string {
   return typeof value === "string" && /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(value);
-}
-
-function coerceSecond(value: unknown): number | null {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return null;
-  const sec = Math.floor(n);
-  if (sec < 0 || sec > 59) return null;
-  return sec;
 }
 
 function addMinutesToHHMM(base: string, durationMinutes: number): { hhmm: string; seconds: number } | null {
@@ -196,6 +179,7 @@ export interface IStorage {
       status: "pending" | "in_progress" | "done" | "interrupted" | "cancelled";
       effectiveTimeHHMM?: string;
       effectiveSeconds?: number;
+      expectedStatus?: string;
     },
     userId: string,
   ): Promise<DailyTask>;
@@ -2210,6 +2194,12 @@ export class SupabaseStorage implements IStorage {
       endPlanned: t.end_planned ?? null,
       startReal: t.start_real ?? null,
       startRealSeconds: t.start_real_seconds ?? null,
+      startRealAt: t.start_real_at ?? null,
+      endRealAt: t.end_real_at ?? null,
+      pausedAt: t.paused_at ?? null,
+      pausedTotalSeconds: t.paused_total_seconds ?? 0,
+      executionClockMode: t.execution_clock_mode ?? null,
+      executionClockRevision: t.execution_clock_revision ?? null,
       endReal: t.end_real ?? null,
       endRealSeconds: t.end_real_seconds ?? null,
       createdAt: t.created_at ?? null,
@@ -2468,262 +2458,13 @@ export class SupabaseStorage implements IStorage {
     updates: any,
     userId: string,
   ): Promise<DailyTask> {
-    // 1. Get current task
-    const { data: task, error: fetchError } = await supabaseAdmin
-      .from("daily_tasks")
-      .select("*")
-      .eq("id", taskId)
-      .single();
-    if (fetchError || !task) throw new Error("Task not found");
-
-    // 2. Business Rules
-    if (["in_progress", "done"].includes(task.status as string)) {
-      // Prohibit changing planned times or key identifiers
-      // For now, we only allow status updates in this function
-    }
-
-    // ✅ Guardas de ejecución (evita estados imposibles en tiempo real)
-    // - Un concursante no puede tener 2 tareas simultáneas
-    // - Un espacio no puede tener 2 tareas simultáneas
-    if (updates?.status === "in_progress") {
-      const planId = Number(task.plan_id);
-      const contestantId = task.contestant_id ? Number(task.contestant_id) : null;
-      const spaceId = task.space_id ? Number(task.space_id) : null;
-
-      if (contestantId && Number.isFinite(contestantId)) {
-        const { data: cConflicts, error: cErr } = await supabaseAdmin
-          .from("daily_tasks")
-          .select("id")
-          .eq("plan_id", planId)
-          .eq("contestant_id", contestantId)
-          .eq("status", "in_progress")
-          .neq("id", taskId)
-          .limit(1);
-
-        if (cErr) throw cErr;
-        if ((cConflicts ?? []).length > 0) {
-          throw new Error(
-            `No se puede iniciar: el concursante ya tiene otra tarea en curso (#${cConflicts![0].id}).`,
-          );
-        }
-      }
-
-      if (spaceId && Number.isFinite(spaceId)) {
-        const { data: sConflicts, error: sErr } = await supabaseAdmin
-          .from("daily_tasks")
-          .select("id")
-          .eq("plan_id", planId)
-          .eq("space_id", spaceId)
-          .eq("status", "in_progress")
-          .neq("id", taskId)
-          .limit(1);
-
-        if (sErr) throw sErr;
-        if ((sConflicts ?? []).length > 0) {
-          throw new Error(
-            `No se puede iniciar: este espacio ya tiene otra tarea en curso (#${sConflicts![0].id}).`,
-          );
-        }
-      }
-    }
-
-    const effectiveTime = isValidHHMM(updates?.effectiveTimeHHMM)
-      ? updates.effectiveTimeHHMM
-      : getEuropeMadridTimeHHMM();
-    const effectiveSeconds = coerceSecond(updates?.effectiveSeconds);
-
-    const nextStartReal =
-      updates?.status === "in_progress" && !task.start_real
-        ? effectiveTime
-        : (task.start_real ?? null);
-    const nextStartRealSeconds =
-      updates?.status === "in_progress" && !task.start_real
-        ? effectiveSeconds
-        : (task.start_real_seconds ?? null);
-
-    const currentPausedTotalSeconds = Number(task.paused_total_seconds ?? 0);
-    const currentPausedAtSeconds = Number.isFinite(Number(task.paused_at_seconds))
-      ? Number(task.paused_at_seconds)
-      : null;
-
-    let nextPausedTotalSeconds = Number.isFinite(currentPausedTotalSeconds)
-      ? Math.max(0, Math.floor(currentPausedTotalSeconds))
-      : 0;
-    let nextPausedAtSeconds = task.paused_at_seconds ?? null;
-    let nextPausedAtHHMM = task.paused_at_hhmm ?? null;
-
-    if (updates?.status === "interrupted") {
-      nextPausedAtSeconds = effectiveSeconds;
-      nextPausedAtHHMM = effectiveTime;
-    }
-
-    if (updates?.status === "in_progress" && String(task.status ?? "") === "interrupted") {
-      if (currentPausedAtSeconds !== null && effectiveSeconds !== null) {
-        const delta = Math.max(0, Math.floor(effectiveSeconds - currentPausedAtSeconds));
-        nextPausedTotalSeconds = Math.max(0, nextPausedTotalSeconds + delta);
-      }
-      nextPausedAtSeconds = null;
-      nextPausedAtHHMM = null;
-    }
-
-    if (["done", "cancelled"].includes(String(updates?.status)) && currentPausedAtSeconds !== null && effectiveSeconds !== null) {
-      const delta = Math.max(0, Math.floor(effectiveSeconds - currentPausedAtSeconds));
-      nextPausedTotalSeconds = Math.max(0, nextPausedTotalSeconds + delta);
-      nextPausedAtSeconds = null;
-      nextPausedAtHHMM = null;
-    }
-
-    const nextEndReal =
-      ["done", "cancelled"].includes(String(updates?.status)) && !task.end_real
-        ? effectiveTime
-        : (task.end_real ?? null);
-    const nextEndRealSeconds =
-      ["done", "cancelled"].includes(String(updates?.status)) && !task.end_real
-        ? effectiveSeconds
-        : (task.end_real_seconds ?? null);
-
-    // 3. Update status
-    const { data: updated, error: updateError } = await supabaseAdmin
-      .from("daily_tasks")
-      .update({
-        status: updates.status,
-        start_real: nextStartReal,
-        end_real: nextEndReal,
-        start_real_seconds: nextStartRealSeconds,
-        end_real_seconds: nextEndRealSeconds,
-        paused_total_seconds: nextPausedTotalSeconds,
-        paused_at_seconds: nextPausedAtSeconds,
-        paused_at_hhmm: nextPausedAtHHMM,
-      })
-      .eq("id", taskId)
-      .select()
-      .single();
-
-    if (updateError) throw updateError;
-
-    const { error: eventErr } = await supabaseAdmin.from("task_status_events").insert({
-      plan_id: task.plan_id,
-      task_id: task.id,
-      status: updates.status,
-      changed_by: userId ?? null,
-      time_real: effectiveTime,
-    });
-    if (eventErr) throw eventErr;
-
-    // 4. Create Execution Lock if in_progress or done
-    if (["in_progress", "done"].includes(updates.status)) {
-      if (!task?.id) throw new Error("Cannot create execution lock: taskId missing");
-      await this.createLock({
-        planId: task.plan_id,
-        taskId: task.id,
-        lockType: "full",
-        lockedStart: nextStartReal || task.start_planned,
-        lockedEnd: nextEndReal || task.end_planned,
-        createdBy: userId,
-        reason: `Execution lock for status: ${updates.status}`,
-      });
-    }
-
-    return updated as DailyTask;
+    return await executeTask(taskId, userId, updates.status, updates.expectedStatus) as DailyTask;
   }
 
-  async resetTask(taskId: number, userId: string, effectiveTimeHHMM?: string): Promise<DailyTask> {
-    const { data: task, error: fetchError } = await supabaseAdmin
-      .from("daily_tasks")
-      .select("*")
-      .eq("id", taskId)
-      .single();
-
-    if (fetchError || !task) throw new Error("Task not found");
-
-    const previousStatus = String(task.status ?? "pending");
-    const previousStartReal = task.start_real ?? null;
-    const previousEndReal = task.end_real ?? null;
-
-    const executionLockReasonPrefix = "Execution lock";
-
-    const { data: taskLocks, error: locksErr } = await supabaseAdmin
-      .from("locks")
-      .select("id, lock_type, reason")
-      .eq("plan_id", Number(task.plan_id))
-      .eq("task_id", taskId)
-      .in("lock_type", ["time", "full"]);
-
-    if (locksErr) throw locksErr;
-
-    const resetFromExecutedStatus = ["in_progress", "done"].includes(previousStatus);
-    const lockIdsToDelete = (taskLocks ?? [])
-      .filter((lock: any) => String(lock?.lock_type ?? "") === "full")
-      .map((lock: any) => Number(lock?.id))
-      .filter((id: number) => Number.isFinite(id) && id > 0);
-
-    let locksCleared = 0;
-    let clearedExecutionFull = false;
-
-    if (lockIdsToDelete.length > 0) {
-      const { data: deletedLocks, error: delLocksErr } = await supabaseAdmin
-        .from("locks")
-        .delete()
-        .in("id", lockIdsToDelete)
-        .select("id, lock_type, reason");
-      if (delLocksErr) throw delLocksErr;
-      locksCleared = (deletedLocks ?? []).length;
-      clearedExecutionFull = (deletedLocks ?? []).some(
-        (lock: any) =>
-          String(lock?.lock_type ?? "") === "full" &&
-          String(lock?.reason ?? "").startsWith(executionLockReasonPrefix),
-      );
-    }
-
-    const updatePatch: any = {
-      status: "pending",
-      start_real: null,
-      end_real: null,
-      start_real_seconds: null,
-      end_real_seconds: null,
-      paused_total_seconds: 0,
-      paused_at_seconds: null,
-      paused_at_hhmm: null,
-    };
-
-    const { data: updated, error: updateError } = await supabaseAdmin
-      .from("daily_tasks")
-      .update(updatePatch)
-      .eq("id", taskId)
-      .select()
-      .single();
-
-    if (updateError) throw updateError;
-
-    const { error: eventErr } = await supabaseAdmin.from("task_status_events").insert({
-      plan_id: task.plan_id,
-      task_id: task.id,
-      status: "pending",
-      changed_by: userId ?? null,
-      time_real: isValidHHMM(effectiveTimeHHMM) ? effectiveTimeHHMM : getEuropeMadridTimeHHMM(),
-    });
-
-    if (eventErr) throw eventErr;
-
-    console.info("[TASK_RESET]", {
-      taskId: task.id,
-      planId: task.plan_id,
-      previousStatus,
-      previousStartReal,
-      previousEndReal,
-      userId: userId ?? null,
-      timestamp: new Date().toISOString(),
-    });
-
-    console.info("[TASK_RESET_LOCK_CLEANUP]", {
-      taskId: task.id,
-      planId: task.plan_id,
-      locksDeletedCount: locksCleared,
-      clearedExecutionFull,
-      resetFromExecutedStatus,
-    });
-
-    return updated as DailyTask;
+  async resetTask(taskId: number, userId: string, _effectiveTimeHHMM?: string): Promise<DailyTask> {
+    const { data, error } = await supabaseAdmin.rpc("reset_task_execution", { p_task_id: taskId, p_actor: userId });
+    if (error) throw error;
+    return data as DailyTask;
   }
 
   async getPlanZoneSettings(planId: number): Promise<any[]> {

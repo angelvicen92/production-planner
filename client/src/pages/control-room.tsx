@@ -16,6 +16,7 @@ import { useSpaces, useZones } from "@/hooks/use-spaces";
 import { useProductionClock } from "@/hooks/use-production-clock";
 import { useContestants, useTaskTemplates } from "@/hooks/use-tasks";
 import { useItinerantTeams } from "@/hooks/use-itinerant-teams";
+import { useExecutionContext } from "@/hooks/use-execution-context";
 import { usePlanRealtime } from "@/hooks/use-plan-realtime";
 import { usePlanningRun } from "@/hooks/use-planning-run";
 import { useControlRoomSettings } from "@/hooks/use-control-room-settings";
@@ -37,7 +38,7 @@ export default function ControlRoomPage() {
   const setFavoritePlan = useSetFavoritePlan();
   const { data: zones = [] } = useZones();
   const { data: spaces = [] } = useSpaces();
-  const { nowTime, nowSeconds } = useProductionClock();
+  const { effectiveNow } = useProductionClock();
   const { data: settings } = useControlRoomSettings();
 
   const [directorMode, setDirectorMode] = useState<boolean>(() => localStorage.getItem("control-room:director-mode") === "1");
@@ -67,18 +68,23 @@ export default function ControlRoomPage() {
   const { data: itinerantTeams = [] } = useItinerantTeams();
   const planningRunQ = usePlanningRun(effectivePlanId);
 
-  const { realtimeConnected, realtimeFailed } = usePlanRealtime({ planId: effectivePlanId });
+  const { realtimeConnected, realtimeFailed, online } = usePlanRealtime({ planId: effectivePlanId });
+  const clockQuery = useExecutionContext(effectivePlanId, 5000);
+  const operationalNowMs = clockQuery.data ? Date.parse(clockQuery.data.clock.operationalAt) + Math.max(0, Date.now() - clockQuery.dataUpdatedAt) : effectiveNow.getTime();
+  const nowTime = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(operationalNowMs));
+  const nowSeconds = new Date(operationalNowMs).getUTCSeconds();
 
   useEffect(() => {
     if (!effectivePlanId) return;
     queryClient.invalidateQueries({ queryKey: planQueryKey(effectivePlanId) });
     if (!realtimeConnected || realtimeFailed) {
+      if (!online) return;
       const id = window.setInterval(() => {
         queryClient.invalidateQueries({ queryKey: planQueryKey(effectivePlanId) });
-      }, 30000);
+      }, 5000);
       return () => window.clearInterval(id);
     }
-  }, [effectivePlanId, queryClient, realtimeConnected, realtimeFailed]);
+  }, [effectivePlanId, queryClient, realtimeConnected, realtimeFailed, online]);
 
   useEffect(() => {
     localStorage.setItem("control-room:director-mode", directorMode ? "1" : "0");
@@ -155,7 +161,7 @@ export default function ControlRoomPage() {
             </Button>
           </div>
 
-          <div className="text-xs text-muted-foreground">Realtime: {realtimeConnected ? "conectado" : "fallback polling 30s"}</div>
+          <div className="text-xs text-muted-foreground">{!online ? 'Sin conexión' : realtimeConnected ? 'Realtime conectado' : 'Realtime no disponible · consulta cada 5 s'}</div>
           {plansLoading ? <div className="text-sm text-muted-foreground">Cargando planes…</div> : null}
           {!plansLoading && plansError ? <div className="text-sm text-destructive">Error cargando planes.</div> : null}
         </div>
@@ -181,6 +187,8 @@ export default function ControlRoomPage() {
             itinerantTeams={itinerantTeams as any[]}
             nowTime={nowTime}
             nowSeconds={nowSeconds}
+            operationalNowMs={operationalNowMs}
+            executionClock={clockQuery.data?.clock}
             settings={settings}
             directorMode={directorMode}
           />

@@ -1,0 +1,55 @@
+name: Live day execution
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'server/liveExecution*'
+      - 'server/apiAuthorization*'
+      - 'server/routes.ts'
+      - 'server/storage.ts'
+      - 'shared/execution.ts'
+      - 'shared/routes.ts'
+      - 'client/src/pages/my-day.tsx'
+      - 'client/src/pages/dashboard.tsx'
+      - 'client/src/pages/control-room.tsx'
+      - 'client/src/hooks/use-plan-realtime.ts'
+      - 'client/src/hooks/use-execution-context.ts'
+      - 'client/src/hooks/usePlanOpsData.ts'
+      - 'client/src/components/production-control-panel.tsx'
+      - 'supabase/migrations/**'
+      - 'script/demo/smoke*Execution*'
+      - 'script/demo/smokeA2Integration.ts'
+      - '.github/workflows/live-day-execution-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-day-execution-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  live-day-execution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: node --import tsx --test server/liveExecution.spec.ts server/apiAuthorization.spec.ts server/assistedPlanningWorkflow.spec.ts
+      - run: npx --no-install playwright install --with-deps chromium
+      - name: Accepted snapshot, native ledger, real Auth/HTTP and two browsers
+        run: node --import tsx script/demo/smokeA2Integration.ts work/live-day-execution --historical-topology --live-execution-snapshot
+      - name: Public execution evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-day-execution
+          path: |
+            work/live-day-execution/integration.json
+            work/live-day-execution/mi-dia-*.png
