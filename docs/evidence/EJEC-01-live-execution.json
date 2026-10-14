@@ -1,89 +1,12 @@
 {
   "mode": "REAL_DISPOSABLE_EXECUTION_ACCEPTED_SNAPSHOT_REPLAY",
+  "status": "PASS",
   "nodeVersion": "v20.20.2",
   "v8Version": "11.3.244.8-node.38",
-  "remoteWrites": 0,
-  "images": {
-    "db": "postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24",
-    "auth": "supabase/gotrue:v2.177.0@sha256:6a916b47af0386b7e0152ca84f3d45d050bf056e449a75a5460b48742fd67822",
-    "rest": "postgrest/postgrest:v12.2.12@sha256:5f4ce744539bbba786b4e24dbbd95bdb2a956dcf568c5374995a0ff4a68f5bd2"
-  },
-  "requestedStages": 2,
-  "startedAt": "2026-10-14T16:28:54.488Z",
-  "runtimeHashes": {
-    "engine/planner-next/benchmarks/canonicalFullA2EngineInput.ts": "7c26ca4aea00f5fb7a2ccee803914d2344a923b2445e029e5ffd892f2e757f6a",
-    "engine/planner-next/benchmarks/focal-a2/full-day/manifest.ts": "566c9117038a6115b8c7ff0f53d961d320128bdf8889d5bbee4a014ac8d34c5a",
-    "engine/planner-next/integration/engineInputPreflight.ts": "3cb5fd66d00a0755abeaf30cfa1909f5480ae3af9adf2f1086f0d6e5ec801913",
-    "engine/planner-next/placement.ts": "ebc74f7c3414efb4b3bdccfe60b5b5c2ab392d6cac7646115850fdf4ddcd2f5a",
-    "engine/planner-next/validate.ts": "0043b141d94106c544ee98c9ba5b24ab4aedd142298677ac637123e53c5d23a3",
-    "script/demo/reconcileA2Topology.ts": "15061ba3ea40a1236b52088b8944b9b0a06bf78f8f2e8cdc26cd892ea54345e8",
-    "script/demo/a2HistoricalCatalog.ts": "2c7fcecc01479958f639fd9bbc4a857947698ef6aadcf265357024400a65cdb5",
-    "shared/anchoredOperationProjection.ts": "9cf39663ff52452c11958aaa7c2a65d858ed1796e092fc7867bda1d22f99c9a0",
-    "server/storage.ts": "b65ffe95c56854c4e37f404b6eb053f30760eb5eb2ff71d2b30b051f92d89818",
-    "server/assistedPlanningSnapshot.ts": "2184dc531787336e974359fe0e7b0772432dc0a78c9c139a0893f390d3ddab4b",
-    "server/assistedProposalService.ts": "9f75b996a505938141b831af8546160583f82e7a6a0c392bcae879316da8897b",
-    "server/assistedPlanningService.ts": "5a605bebfc7d8e9fb7a6d796b0c123f4af3c288830472318661dc5b82f41a357",
-    "server/routes.ts": "d462971ad8a93f5a65749207645fb603cd4d4a94400199c0a932ab8bd375ea44",
-    "engine/planner-next/jointCompletionWitness.ts": "eff19c666412542cc47a364687f46300982e8690b0a341a69d02c183616068a8",
-    "engine/planner-next/exactItinerantPlan.ts": "08953e00042eda5be4f4289180605485ec1010de67f7b6252bc7eb28df31583e",
-    "client/src/components/layout.tsx": "3be0f0b4501eecb52fe54547d3455d67867be651ead74df852a3562561669697",
-    "client/src/components/planning/assisted-planning-workspace.tsx": "db8609799c7890f58e13165ce9bcfd975f20aea981c14816224bf73cf2411428",
-    "script/demo/a2ImportRows.ts": "734bdba96a4aa242e72aa1b6a7fe283c90f79cc5d4cb70fe0413b3c1e5c306fd",
-    "script/demo/prepareA2Import.ts": "8c18275b2786bfccb4a023e07e5270310353e36765418ee7e443b10385247244",
-    "script/demo/prepareA2Schema.ts": "1b1b038c3b0b309e65124e347a37d1180efd2629815da2703ed3dbcc416daf48",
-    "script/demo/smokeA2Integration.ts": "20e6be635ea72a5fd2d484057074ff457939bd2fdbaa961ef2aeb21f5e4dd76a",
-    "script/demo/smokeA2Journey.ts": "7cb54358ea283c6bb44b3e846797ccb3bb846296e9931330961a3e24d07d0321",
-    "client/src/lib/assisted-planning-view.ts": "a0b688796d43afc3504f14012944780c80b4945606dd98815ce06500af82bb4d",
-    "client/src/lib/assisted-draft-warnings.ts": "7f1ac193a171378a7f1a5d65fe68dab5f208d40ba46d8cbfb0d6ac6d0780bb04",
-    "script/demo/smokeA2HistoricalScopeJourney.ts": "0b53ed8c31936d5ab783414502fc46ba8620ed8f998006290a9b2c345fdca46f",
-    "engine/planner-next/integration/engineInputAdapter.ts": "42cae398e60cfc521814c3bf62e492dd2121309b9b7a7a22abe8d4a28c2940ab",
-    "script/demo/seedA2HistoricalRehearsal.ts": "02997b41eac761bffdc295029918dd0cabc810370b62980428ece115f0ecedd1",
-    "script/demo/a2TopologyMetrics.ts": "e8438ceb57ef098b31b411e152b4fcefa27f9bc5220aafd29c890ad7e6aa1337",
-    "script/demo/fixtures/a2-legacy-import.json.gz": "7e71838142dcb8c6a43004058f14bad1be93f624005fcfc8c4fc5c4ad8863d72",
-    "script/demo/a2SpatialTopology.ts": "c225c09d0097ae66c1e59aaee2934b3dcd8150ee1f1b3a378df0b00242f2c31a",
-    "client/src/lib/planning-view-policy.ts": "d67a48b3db23a15c1fe42e86b88b1a0948285904431341f5c7ac2bfa17eed417",
-    "script/demo/smokeA2ManualSnapshotJourney.ts": "d5e68a8813951a8b44779ff4a62b8b8ed25d08cb1e5e9a374e20076eb101fb8d",
-    "script/demo/smokeA2ViewsHistoryJourney.ts": "af4c019fa79642c773dbe5b10bccded78e55f2e4fb89fe3bc087482acb9be713",
-    "shared/assistedStageTiming.ts": "f37982b96bc5fb32d168a9f6f6e7ba1219e7d5a1f5aa51321e43ff6d14e3610c",
-    "client/src/lib/contestant-lane-sort.ts": "8cee83173053fce313e8608b451c9d3e37d75174476321ea1434da70628f25c1",
-    "client/src/components/planning/stage-history-timing.tsx": "b12463f40bf067948e12ae919e5cd807d1fbd61bec671a338318e0b6b67b83a5",
-    "client/src/components/planning-timeline.tsx": "6e37ea57bb44b7a995b659fe5321c32e46885399d6ef935279819625d213582f",
-    "client/src/pages/plan-details.tsx": "22d95f27f126d07e4ab27bf2c7909919082a98a3f71355b99011b72d362e76c9",
-    "engine/planner-next/mainFlowPatterns.ts": "9dc382e2a75f41fe69900390d4c0a0e6bd92fcc3b62166b72aaf417a134f3700",
-    "script/demo/smokeMainFlowPreferenceJourney.ts": "9e3933e7eedf87e82b1c62e5fd757608536be798cb0dc8e1f9422d0726428ba4",
-    "shared/mainFlowPreference.ts": "dab5f13363162359b9111c25783049f79c1f767dbae9b46e5b1f98c20a4f3f9a",
-    "server/mainFlowPreference.ts": "730e2a9190e02ca2b332989652e605e8f30822c99a421738f581629e2cb59dda",
-    "server/dayConfigurationService.ts": "407c30774af0fa5c55b261e22e7a10f54df96041fb19f8a8c6335e4da8d8498c",
-    "server/effectiveConfigurationView.ts": "1c7dedef14d832b93ea893f00dd9e76983e8b1cb8098e1cc59a85104ffd3c1e8",
-    "client/src/components/effective-configuration.tsx": "f7e89a535f1d6ed1eed64f98b2afe32ae8739b33322664849a316a53b5398357",
-    "client/src/components/main-flow-preference-editor.tsx": "6401fe7514ffb0ba32b71caa628a04d6a9105fbf068ad09297334b8c88ba65b0",
-    "client/src/lib/main-flow-preference-result.ts": "9f27151434586783f8c0cc8f5b1c7cf48eb3523a0c835818bbada9f337b975da",
-    "engine/planner-next/mainFlowMeal.ts": "cacb654432e5db02ce8ad844332c4e4a5678deedfdb7d971dbd5d795b5f6835d",
-    "engine/planner-next/anonymousPipelineWitness.ts": "7ba27327fbd1b8d840e0054a055b69ebfdae04105e244c5ab9cc32a2eba38034",
-    "engine/planner-next/exactMainAndFeederCore.ts": "6b30027c55f86699e0beb59de0adbe69f77301d86f2672475681a63a25bb4b35"
-  },
-  "checks": [
-    "entire native application migration ledger",
-    "real password login for five Auth identities",
-    "historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import",
-    "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved",
-    "real storage/input adapter canon after GET day; no legacy breaks",
-    "real HTTP anonymous/no-role/viewer/unlinked aux denied before writes",
-    "aux scoped assignment accepted; unrelated task and other plan denied",
-    "real HTTP event and lock failures leave task/history/protections unchanged",
-    "native simultaneous Start/Finish each commit once; server clock and audited reset",
-    "admin HTTP enables the existing simulated clock; viewer cannot alter it",
-    "multiple simultaneous tasks are both visible; viewer has no execution actions",
-    "legacy task controls also disable execution and reset for viewer",
-    "two independent real browsers: mobile Start -> Control Room; Finish -> persisted reload; viewer/offline/direct RPC denied",
-    "other disposable days remain literal during accepted-snapshot execution"
-  ],
-  "pending": [
-    "Connected Supabase catalog/backup adoption and original-row preservation",
-    "Published Replit runtime and user browser",
-    "Supabase Realtime/WebSocket transport"
-  ],
   "postgresVersion": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "remoteWrites": 0,
+  "startedAt": "2026-10-14T16:28:54.488Z",
+  "finishedAt": "2026-10-14T16:30:28.437Z",
   "migrations": [
     {
       "file": "001_init.sql",
@@ -470,577 +393,22 @@
       "sha256": "7a6fc40f1a353a3b8e6d4a7f7adaceeb0afcadd266ed82c4728b2fbc6c3fb341"
     }
   ],
-  "transport": [
-    {
-      "path": "/rest/v1/rpc/execution_task_authorized",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_task_authorized",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_task_authorized",
-      "method": "POST",
-      "contentLength": "69",
-      "receivedBytes": 69,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_task_authorized",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execute_task_transition",
-      "method": "POST",
-      "contentLength": "123",
-      "receivedBytes": 123,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 400,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_task_authorized",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execute_task_transition",
-      "method": "POST",
-      "contentLength": "123",
-      "receivedBytes": 123,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 400,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_task_authorized",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execute_task_transition",
-      "method": "POST",
-      "contentLength": "123",
-      "receivedBytes": 123,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_task_authorized",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execute_task_transition",
-      "method": "POST",
-      "contentLength": "123",
-      "receivedBytes": 123,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 400,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_task_authorized",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_task_authorized",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execute_task_transition",
-      "method": "POST",
-      "contentLength": "120",
-      "receivedBytes": 120,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 400,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execute_task_transition",
-      "method": "POST",
-      "contentLength": "120",
-      "receivedBytes": 120,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_task_authorized",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execute_task_transition",
-      "method": "POST",
-      "contentLength": "123",
-      "receivedBytes": 123,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 400,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/reset_task_execution",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_task_authorized",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execute_task_transition",
-      "method": "POST",
-      "contentLength": "123",
-      "receivedBytes": 123,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 400,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_task_authorized",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execute_task_transition",
-      "method": "POST",
-      "contentLength": "123",
-      "receivedBytes": 123,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_task_authorized",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execute_task_transition",
-      "method": "POST",
-      "contentLength": "123",
-      "receivedBytes": 123,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_task_authorized",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execute_task_transition",
-      "method": "POST",
-      "contentLength": "120",
-      "receivedBytes": 120,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_task_authorized",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execute_task_transition",
-      "method": "POST",
-      "contentLength": "120",
-      "receivedBytes": 120,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "68",
-      "receivedBytes": 68,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execute_task_transition",
-      "method": "POST",
-      "contentLength": "95",
-      "receivedBytes": 95,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 403,
-      "error": null
-    },
-    {
-      "path": "/rest/v1/rpc/execute_task_transition",
-      "method": "POST",
-      "contentLength": "95",
-      "receivedBytes": 95,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 403,
-      "error": null
-    }
+  "checks": [
+    "entire native application migration ledger",
+    "real password login for five Auth identities",
+    "historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import",
+    "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved",
+    "real storage/input adapter canon after GET day; no legacy breaks",
+    "real HTTP anonymous/no-role/viewer/unlinked aux denied before writes",
+    "aux scoped assignment accepted; unrelated task and other plan denied",
+    "real HTTP event and lock failures leave task/history/protections unchanged",
+    "native simultaneous Start/Finish each commit once; server clock and audited reset",
+    "admin HTTP enables the existing simulated clock; viewer cannot alter it",
+    "multiple simultaneous tasks are both visible; viewer has no execution actions",
+    "legacy task controls also disable execution and reset for viewer",
+    "two independent real browsers: mobile Start -> Control Room; Finish -> persisted reload; viewer/offline/direct RPC denied",
+    "other disposable days remain literal during accepted-snapshot execution"
   ],
-  "preparedSchemaSha256": "4d84a725e8fea7db7df76236705a8d05dde991a2a77af5ee05c1b9157c528a7e",
-  "historicalPreservation": {
-    "oldPlanId": 27001,
-    "oldObligations": 266,
-    "oldStages": 11,
-    "otherObligations": 333,
-    "newDaySeedPlacements": 0
-  },
-  "diagnostics": {},
   "snapshotReplay": {
     "source": "script/demo/fixtures/a2-legacy-import.json.gz",
     "sourceSha256": "7e71838142dcb8c6a43004058f14bad1be93f624005fcfc8c4fc5c4ad8863d72",
@@ -1071,6 +439,69 @@
     ],
     "realtimeWebSocket": "NOT TESTED: disposable gateway has no Realtime service"
   },
-  "status": "PASS",
-  "finishedAt": "2026-10-14T16:30:28.437Z"
+  "baseCommit": "022a2db19245e406eb1774901e4dc55a331c4d0c",
+  "mainPlanningReferenceFingerprint": "c0cc8bf4e1c466a9640b7ce765e0dceeb5772204a8f387f50e1af12d844ec703",
+  "planningReferenceRegenerated": false,
+  "validation": {
+    "serverTests": {
+      "passed": 304,
+      "failed": 0
+    },
+    "focalTests": {
+      "passed": 24,
+      "failed": 0
+    },
+    "broaderProductRun": {
+      "passed": 449,
+      "failed": 2,
+      "baselineFailures": [
+        "shared/configurability.test.ts documentary Evidence count",
+        "shared/spatialAvailabilityRoutes.spec.ts old plan-create contract"
+      ]
+    },
+    "typescript": "PASS",
+    "build": "PASS",
+    "migrationSequence": "PASS"
+  },
+  "limits": [
+    "Supabase Realtime WebSocket transport not tested; actual two-browser proof uses 5-second HTTP polling.",
+    "Full cold planning replay timed out before S1 in Node 24 and Node 20; no solver change made.",
+    "Execution rehearsal replays a recorded accepted 266-task snapshot; it does not regenerate the main c0cc8bf4 planning witness.",
+    "Numbering collision resolved: main configuration migration 092 preserved, execution renumbered 093; joint native ledger PASS."
+  ],
+  "coldPlanningAttempts": [
+    {
+      "node": "v24.19.0",
+      "status": "FAIL",
+      "reason": "Timed out waiting 180000ms for first proposal apply button; run remained running.",
+      "remoteWrites": 0
+    },
+    {
+      "node": "v20.20.2",
+      "status": "FAIL",
+      "reason": "Timed out waiting 180000ms for first proposal apply button; run remained running.",
+      "remoteWrites": 0
+    }
+  ],
+  "screenshots": [
+    {
+      "file": "docs/evidence/EJEC-01-UI/mi-dia-mobile-pending.png",
+      "sha256": "a8f108f73a714fca7a72d62c0c741b1f5920aabc1f9c1490887ccad71b76f8a8"
+    },
+    {
+      "file": "docs/evidence/EJEC-01-UI/mi-dia-mobile-running.png",
+      "sha256": "c25c6e5bc62e25709d76ce6222a8054b1cb525a293d20db18283dabb67c2922a"
+    },
+    {
+      "file": "docs/evidence/EJEC-01-UI/mi-dia-desktop-running.png",
+      "sha256": "4378871319112087d9bc453951f42cd902fd244b5d891057f5c521893c264e29"
+    },
+    {
+      "file": "docs/evidence/EJEC-01-UI/mi-dia-desktop-dark.png",
+      "sha256": "73da7ef710d79481be7b3599804251a5a688c581e6953a9da578dd49f82cd7b4"
+    }
+  ],
+  "synchronizedMainCommit": "c7f85411ac13b62f4be34de09061124f7460b7e0",
+  "pullRequest": "https://github.com/angelvicen92/production-planner/pull/1124",
+  "migration": "093_live_task_execution.sql"
 }
