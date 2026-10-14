@@ -189,6 +189,8 @@ export interface PlannerNextProblem {
     continuity: "REQUIRED";
     maxBlocksByKey: number;
     minTasksPerBlock: number;
+    /** Internal SOFT search objective. Absent preserves AUTO; never a REQUIRED count. */
+    preferredBlockCount?: number;
   };
   participantTransitionMinutes: number;
   resourceTransitionMinutes: number;

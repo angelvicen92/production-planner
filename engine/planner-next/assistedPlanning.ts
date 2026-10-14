@@ -103,6 +103,7 @@ export interface AssistedPlanningEvidence {
   readonly ephemeralSupportingPlacements?:ExactItinerantPlanEvidence["ephemeralSupportingPlacements"];
   readonly acceptedSupportingPlacements?:ExactItinerantPlanEvidence["acceptedSupportingPlacements"];
   readonly futureStructuralWitnesses?:ExactItinerantPlanEvidence["futureStructuralWitnesses"];
+  readonly mainFlowSoftPreference?:ExactItinerantPlanEvidence["mainFlowSoftPreference"];
   readonly branchesBeforeCurrentContinuation?:number|null;
   readonly selectedPipelineWitnessDiagnostic?:ExactItinerantPlanEvidence["selectedPipelineWitnessDiagnostic"];
   readonly selectedPipelineWitnessAuthority?:ExactItinerantPlanEvidence["selectedPipelineWitnessAuthority"];
@@ -832,6 +833,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     ephemeralSupportingPlacements:structuredClone((evidenceRecord.ephemeralSupportingPlacements as ExactItinerantPlanEvidence["ephemeralSupportingPlacements"]|undefined)??[]),
     acceptedSupportingPlacements:structuredClone((evidenceRecord.acceptedSupportingPlacements as ScheduledTask[]|undefined)??[]),
     futureStructuralWitnesses:structuredClone((evidenceRecord.futureStructuralWitnesses as ExactItinerantPlanEvidence["futureStructuralWitnesses"]|undefined)??[]),
+    ...(evidenceRecord.mainFlowSoftPreference?{mainFlowSoftPreference:structuredClone(evidenceRecord.mainFlowSoftPreference as ExactItinerantPlanEvidence["mainFlowSoftPreference"])}:{}),
     branchesBeforeCurrentContinuation:(evidenceRecord.branchesBeforeCurrentContinuation as number|null|undefined)??null,
     selectedPipelineWitnessDiagnostic:structuredClone((evidenceRecord.selectedPipelineWitnessDiagnostic as ExactItinerantPlanEvidence["selectedPipelineWitnessDiagnostic"]|undefined)??null),
     selectedPipelineWitnessAuthority:structuredClone((evidenceRecord.selectedPipelineWitnessAuthority as ExactItinerantPlanEvidence["selectedPipelineWitnessAuthority"]|undefined)??null),

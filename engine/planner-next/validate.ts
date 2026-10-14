@@ -79,6 +79,9 @@ export function preflight(problem: PlannerNextProblem): string[] {
     reasons.add("INVALID_PROTECTED_MEAL");
   }
   const preferredEnd = problem.mainFlow?.preferredEnd;
+  const preferredBlockCount=problem.mainFlow?.preferredBlockCount;
+  if(preferredBlockCount!==undefined&&(!Number.isSafeInteger(preferredBlockCount)||preferredBlockCount<1))
+    reasons.add("INVALID_MAIN_FLOW_SOFT_BLOCK_COUNT");
   if (!usableDay
     || !Number.isFinite(preferredEnd)
     || preferredEnd < day.start

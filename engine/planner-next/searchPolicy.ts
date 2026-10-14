@@ -2,7 +2,7 @@ import type { PlannerNextProblem, PlannerSearchPolicy } from "./contracts";
 
 export type PlannerSearchPolicySelectionSource = "EXPLICIT" | "MIGRATION_DEFAULT";
 
-export type PlannerCapability = "ANCHORED_ACCOMPANIMENT" | "OPERATIONAL_MEAL_POLICY" | "TRANSPORT_GROUPING";
+export type PlannerCapability = "ANCHORED_ACCOMPANIMENT" | "OPERATIONAL_MEAL_POLICY" | "TRANSPORT_GROUPING" | "MAIN_FLOW_SOFT_BLOCK_COUNT";
 
 export interface PlannerCapabilityRequirement {
   capability: PlannerCapability;
@@ -29,6 +29,11 @@ export interface PlannerSearchPolicyResolution {
 export const PLANNER_CAPABILITY_REQUIREMENTS: Readonly<
   Record<PlannerCapability, Readonly<PlannerCapabilityRequirement>>
 > = Object.freeze({
+  MAIN_FLOW_SOFT_BLOCK_COUNT: defineCapabilityRequirement({
+    capability: "MAIN_FLOW_SOFT_BLOCK_COUNT",
+    supportedPolicies: ["EXACT_CONSTRUCTIVE"],
+    requiredPolicy: "EXACT_CONSTRUCTIVE",
+  }),
   ANCHORED_ACCOMPANIMENT: defineCapabilityRequirement({
     capability: "ANCHORED_ACCOMPANIMENT",
     supportedPolicies: ["EXACT_CONSTRUCTIVE"],
@@ -72,6 +77,7 @@ export function detectPlannerCapabilities(
   problem: Readonly<PlannerNextProblem>,
 ): readonly PlannerCapability[] {
   return canonical([
+    ...(problem.mainFlow?.preferredBlockCount!==undefined ? ["MAIN_FLOW_SOFT_BLOCK_COUNT" as const] : []),
     ...(problem.anchoredAccompaniments?.length ? ["ANCHORED_ACCOMPANIMENT" as const] : []),
     ...(problem.operationalMealPolicies?.length ? ["OPERATIONAL_MEAL_POLICY" as const] : []),
     ...(problem.transportPolicy ? ["TRANSPORT_GROUPING" as const] : []),
