@@ -38,6 +38,13 @@ export const plans = pgTable("plans", {
   participantTransitionConfigSource: text("participant_transition_config_source").notNull().default("LEGACY_BACKFILL"),
   participantTransitionOverrideBy: uuid("participant_transition_override_by"),
   participantTransitionOverrideAt: timestamp("participant_transition_override_at", { withTimezone: true }),
+  mainPreferredBlockCount: integer("main_preferred_block_count"),
+  mainBeforeMealBlocks: integer("main_before_meal_blocks"),
+  mainBaselinePreferredBlockCount: integer("main_baseline_preferred_block_count"),
+  mainBaselineBeforeMealBlocks: integer("main_baseline_before_meal_blocks"),
+  mainPreferenceSource: text("main_preference_source").notNull().default("LEGACY_BACKFILL"),
+  mainPreferenceOverrideBy: uuid("main_preference_override_by"),
+  mainPreferenceOverrideAt: timestamp("main_preference_override_at", {withTimezone:true}),
   currentConfigRevisionId: bigint("current_config_revision_id", { mode: "number" }),
 
   // ✅ Comida concursantes (por plan)
@@ -114,6 +121,8 @@ export const planningRuns = pgTable("planning_runs", {
 // 1.1 program_settings (defaults globales)
 export const programSettings = pgTable("program_settings", {
   id: integer("id").primaryKey(),
+  mainPreferredBlockCount: integer("main_preferred_block_count"),
+  mainBeforeMealBlocks: integer("main_before_meal_blocks"),
   defaultWorkStart: text("default_work_start").notNull().default("09:00"),
   defaultParticipantTransitionMinutes: integer("default_participant_transition_minutes").notNull().default(5),
   defaultWorkEnd: text("default_work_end").notNull().default("21:00"),

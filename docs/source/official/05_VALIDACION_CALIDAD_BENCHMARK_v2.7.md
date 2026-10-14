@@ -1,9 +1,17 @@
 # OPTIPLAN — VALIDACIÓN, CALIDAD Y BENCHMARK
 
-**Versión:** 2.6  
-**Fecha:** 30 de septiembre de 2026  
+**Versión:** 2.7<br>
+**Fecha:** 14 de octubre de 2026<br>
 **Estado:** Fuente oficial consolidada  
 **Sustituye:** SPEC-05 como Fuente separada y Objetivo Maestro de Calidad/Benchmark A2 v1.0.
+
+## Actualización v2.7 — gates de cantidad y reparto PREFERRED
+
+La activación requiere evidencia end-to-end en entorno descartable: configuración general/heredada y override diario → guardar → recargar → EngineInput/adapter → scope Assisted → búsqueda → Evidence → Draft → validar → aceptar Stage. Verificar autorizaciones positivas/negativas, snapshot inmutable, revisión/fingerprint/replay, restore, propuestas stale, Stages protegidos, locks, done/in_progress, rollback/redo y ausencia de cambios a otras jornadas. Un checkbox persistido no demuestra influencia en la selección.
+
+AUTO sin preferencia debe conservar baseline, producto y determinismo. SOFT N sin reparto debe conservar la prioridad N integrada. Fixtures genéricos deben demostrar selección del reparto solicitado, alternativa de reparto con N, alternativa de cantidad, comidas flexibles a distintas horas, bloque lógico que abarca el descanso sin doble contabilidad, ausencia/incompatibilidad de comida, cero representable y geometrías con distintas cargas/coaches. El A2 frío solicita 4 y 2+2 desde el contrato productivo, sin seed humano, y registra cobertura/validación/fingerprints, ramas y tiempo reales. No se cambian presupuestos ni assertions canónicas para obtener verde.
+
+Extender `mainFlowSoftPreference` reutilizando cantidad solicitada/lograda, cumplimiento, fases, stop reason, presupuesto/tiempo y fingerprints. Añadir reparto solicitado/logrado, comida efectiva, bloques completos anteriores/posteriores, bloque que abarca el descanso y tipo de fallback. La UI distingue cantidad y distribución: una desviación PREFERRED no es conflicto REQUIRED. Sin propuesta completa o sin objetivo conseguido dentro de límites, no declarar inviabilidad; un certificado concreto no refuta automáticamente toda la familia. Registrar truncamientos y limitaciones realmente observados.
 
 ## Actualización v2.6 — regresión de márgenes específicos y disponibilidad A2 corregida
 

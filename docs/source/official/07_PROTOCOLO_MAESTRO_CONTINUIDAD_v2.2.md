@@ -144,7 +144,7 @@ La misión no es producir más arquitectura, más Evidence ni más código.
 
 La misión es construir una aplicación robusta en la que un jefe de producción pueda completar una jornada audiovisual mediante planificación Assisted por scopes y Stages, con propuestas automáticas seguras, edición humana, checkpoints, rollback y validación explicable. Una vez completado el día, OptiPlan debe alcanzar calidad operativa comparable o superior a la referencia humana A2.
 
-El criterio rector de calidad se define en `05_VALIDACION_CALIDAD_BENCHMARK_v2.6`.
+El criterio rector de calidad se define en `05_VALIDACION_CALIDAD_BENCHMARK_v2.7`.
 
 El primer examen integral de producto es la progresión `A2-ASSIST`: representar el día, construirlo mediante scopes/stages hasta `ASSISTED_COMPLETION` y después medir `PARITY` / `PARETO_BETTER`. `Autopilot/Full A2 one-click` queda como benchmark avanzado posterior.
 
@@ -183,13 +183,13 @@ Cuando el objetivo activo esté en Assisted:
 
 Antes de decidir o implementar un cambio deberán consultarse de forma dirigida las fuentes oficiales relevantes:
 
-- `00_INDICE_Y_AUTORIDAD_FUENTES_OPTIPLAN_v2.11.md`;
+- `00_INDICE_Y_AUTORIDAD_FUENTES_OPTIPLAN_v2.12.md`;
 - `01_PRODUCTO_DOMINIO_OPERACION_v5.2.md`;
 - `02_ORC_CORE_CONSOLIDADO_v2.2.md`;
-- `03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.6.md`;
-- `04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.6.md`;
-- `05_VALIDACION_CALIDAD_BENCHMARK_v2.6.md`;
-- `06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.8.md`;
+- `03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.7.md`;
+- `04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.7.md`;
+- `05_VALIDACION_CALIDAD_BENCHMARK_v2.7.md`;
+- `06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.9.md`;
 - los dos PDFs A2 cuando proceda;
 - este Protocolo Maestro;
 - documentación y Evidence vigente del repositorio.
@@ -350,7 +350,7 @@ Detener expansión. Aislar la pregunta causal. Obtener Evidence. Simplificar o r
 
 ## 6. Método de planificación que debe protegerse
 
-`03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.6` define el método constructivo y de búsqueda.
+`03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.7` define el método constructivo y de búsqueda.
 
 > **Método oficial**  
 > Construir la estructura que condiciona el día → alimentar sus dependencias → colocar lo difícil y poco flexible → rellenar con lo corto y flexible → retroceder cuando una decisión cierre la solución.
@@ -366,7 +366,7 @@ Detener expansión. Aislar la pregunta causal. Obtener Evidence. Simplificar o r
 
 ## 7. Comparación con el objetivo real
 
-`05_VALIDACION_CALIDAD_BENCHMARK_v2.6` es la autoridad comparativa.
+`05_VALIDACION_CALIDAD_BENCHMARK_v2.7` es la autoridad comparativa.
 
 La evaluación mantiene dos capas:
 
@@ -960,7 +960,7 @@ Al recibir la referencia a este documento, ChatGPT deberá:
 
 ## Referencias normativas
 
-`00_INDICE_Y_AUTORIDAD_FUENTES_OPTIPLAN_v2.11.md` · `01_PRODUCTO_DOMINIO_OPERACION_v5.2.md` · `02_ORC_CORE_CONSOLIDADO_v2.2.md` · `03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.6.md` · `04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.6.md` · `05_VALIDACION_CALIDAD_BENCHMARK_v2.6.md` · `06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.8.md` · este Protocolo · los dos PDFs A2 originales.
+`00_INDICE_Y_AUTORIDAD_FUENTES_OPTIPLAN_v2.12.md` · `01_PRODUCTO_DOMINIO_OPERACION_v5.2.md` · `02_ORC_CORE_CONSOLIDADO_v2.2.md` · `03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.7.md` · `04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.7.md` · `05_VALIDACION_CALIDAD_BENCHMARK_v2.7.md` · `06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.9.md` · este Protocolo · los dos PDFs A2 originales.
 
 Puntos especialmente vinculantes: Fuentes 01, 03, 04, 05 y 06 del índice consolidado.
 
@@ -968,7 +968,7 @@ Puntos especialmente vinculantes: Fuentes 01, 03, 04, 05 y 06 del índice consol
 
 ## Anexo A — Texto mínimo para las instrucciones del proyecto
 
-> Aplica siempre el Protocolo Maestro de Continuidad vigente y el corpus consolidado definido por `00_INDICE_Y_AUTORIDAD_FUENTES_OPTIPLAN_v2.11.md`, en especial la Fuente 05 de validación/benchmark y la Fuente 06 del canon A2. ChatGPT es responsable de reconstruir el contexto, decidir el problema, el delta y los criterios de aceptación, pero no existe una jerarquía fija de ejecutores. Para cada unidad lógica elige entre ChatGPT/GitHub, Codex, Shell/Replit/Supabase operado por el usuario o una ruta híbrida según autoridad de la Evidence, necesidad de bucle edit-test, interdependencia, riesgo, tiempo, créditos, esfuerzo humano y retrabajo esperado. Codex puede ser la primera opción de implementación aunque ChatGPT pudiera editar el código si ofrece un bucle local más fiable. Antes de cada prompt de Codex, verifica dinámicamente en GitHub la rama remota exacta y muéstrala al usuario fuera del bloque como `Rama Codex: <rama>`. No reutilices una rama de memoria. Dentro del prompt usa contexto Git mínimo suficiente: rama/PR y sincronización con `main` cuando proceda; SHA/HEAD obligatorio sólo si funciona como salvaguarda real. Una comprobación corta en Shell/Replit puede pedirse tempranamente cuando sea la forma más rápida y autoritativa de resolver una incertidumbre. El usuario no actuará como mensajero ni hará tareas administrativas de GitHub que ChatGPT pueda resolver. Mantén prompts por delta, lectura dirigida y validación escalonada; reserva el merge gate completo para el head candidato. Nunca relajes viabilidad, hard constraints, determinismo, Evidence, benchmarks ni control de rumbo por ahorrar créditos o evitar intervención humana.
+> Aplica siempre el Protocolo Maestro de Continuidad vigente y el corpus consolidado definido por `00_INDICE_Y_AUTORIDAD_FUENTES_OPTIPLAN_v2.12.md`, en especial la Fuente 05 de validación/benchmark y la Fuente 06 del canon A2. ChatGPT es responsable de reconstruir el contexto, decidir el problema, el delta y los criterios de aceptación, pero no existe una jerarquía fija de ejecutores. Para cada unidad lógica elige entre ChatGPT/GitHub, Codex, Shell/Replit/Supabase operado por el usuario o una ruta híbrida según autoridad de la Evidence, necesidad de bucle edit-test, interdependencia, riesgo, tiempo, créditos, esfuerzo humano y retrabajo esperado. Codex puede ser la primera opción de implementación aunque ChatGPT pudiera editar el código si ofrece un bucle local más fiable. Antes de cada prompt de Codex, verifica dinámicamente en GitHub la rama remota exacta y muéstrala al usuario fuera del bloque como `Rama Codex: <rama>`. No reutilices una rama de memoria. Dentro del prompt usa contexto Git mínimo suficiente: rama/PR y sincronización con `main` cuando proceda; SHA/HEAD obligatorio sólo si funciona como salvaguarda real. Una comprobación corta en Shell/Replit puede pedirse tempranamente cuando sea la forma más rápida y autoritativa de resolver una incertidumbre. El usuario no actuará como mensajero ni hará tareas administrativas de GitHub que ChatGPT pueda resolver. Mantén prompts por delta, lectura dirigida y validación escalonada; reserva el merge gate completo para el head candidato. Nunca relajes viabilidad, hard constraints, determinismo, Evidence, benchmarks ni control de rumbo por ahorrar créditos o evitar intervención humana.
 
 ---
 

@@ -1,3 +1,5 @@
+import { mainFlowPreferenceFromRow } from "../shared/mainFlowPreference";
+import { withMainFlowPreference, validateMainFlowPreference } from "./mainFlowPreference";
 import { buildEngineInput } from "../engine/buildInput";
 import type { EngineInput } from "../engine/types";
 import type { DayConfigEdit, DayConfigRefresh, DayConfigRestore } from "../shared/dayConfig";
@@ -18,6 +20,7 @@ const mapPlan = (p: PlanRow) => ({
   revisionId: p.current_config_revision_id == null ? null : Number(p.current_config_revision_id),
   workday: { effective: { start: p.work_start, end: p.work_end }, baseline: { start: p.work_baseline_start, end: p.work_baseline_end }, source: p.work_config_source, override: { by: p.work_override_by, at: p.work_override_at } },
   meal: { effective: { start: p.meal_start, end: p.meal_end, mode: p.meal_mode }, baseline: { start: p.meal_baseline_start, end: p.meal_baseline_end, mode: p.meal_baseline_mode }, source: p.meal_config_source, override: { by: p.meal_override_by, at: p.meal_override_at } },
+  mainFlowPreference:{effective:mainFlowPreferenceFromRow(p),baseline:mainFlowPreferenceFromRow(p,"main_baseline_"),source:p.main_preference_source,override:{by:p.main_preference_override_by,at:p.main_preference_override_at}},
   participantTransition:{effective:Number(p.participant_transition_minutes),baseline:Number(p.participant_transition_baseline_minutes),source:p.participant_transition_config_source,override:{by:p.participant_transition_override_by,at:p.participant_transition_override_at}},
 });
 
@@ -57,15 +60,16 @@ export async function initializeDayConfigurationRevision(planId: number, actorId
 export async function previewDayConfigurationRefresh(planId: number) {
   const [{ data: p, error: pe }, { data: g, error: ge }] = await Promise.all([
     supabaseAdmin.from("plans").select("*").eq("id", planId).single(),
-    supabaseAdmin.from("program_settings").select("default_work_start,default_work_end,meal_start,meal_end,meal_mode,default_participant_transition_minutes").eq("id", 1).single(),
+    supabaseAdmin.from("program_settings").select("default_work_start,default_work_end,meal_start,meal_end,meal_mode,default_participant_transition_minutes,main_preferred_block_count,main_before_meal_blocks").eq("id", 1).single(),
   ]);
   if (pe || !p) throw Object.assign(new Error("PLAN_NOT_FOUND"), { status: 404, cause: pe });
   if (ge || !g) throw ge;
   const current = mapPlan(p);
-  return { ...current, generalCandidate: { workday: { start: g.default_work_start, end: g.default_work_end }, meal: { start: g.meal_start, end: g.meal_end, mode: g.meal_mode },participantTransitionMinutes:Number(g.default_participant_transition_minutes) }, effects: {
+  return { ...current, generalCandidate: { workday: { start: g.default_work_start, end: g.default_work_end }, meal: { start: g.meal_start, end: g.meal_end, mode: g.meal_mode },participantTransitionMinutes:Number(g.default_participant_transition_minutes),mainFlowPreference:mainFlowPreferenceFromRow(g) }, effects: {
     WORKDAY_WINDOW: p.work_config_source === "LEGACY_BACKFILL" ? "REQUIRES_EXPLICIT_ADOPTION" : p.work_config_source === "DAY_OVERRIDE" ? "UPDATE_BASELINE_KEEP_EFFECTIVE" : "UPDATE_BASELINE_AND_EFFECTIVE",
     GLOBAL_MEAL_BREAK: p.meal_config_source === "LEGACY_BACKFILL" ? "REQUIRES_EXPLICIT_ADOPTION" : p.meal_config_source === "DAY_OVERRIDE" ? "UPDATE_BASELINE_KEEP_EFFECTIVE" : "UPDATE_BASELINE_AND_EFFECTIVE",
     PARTICIPANT_TRANSITION:p.participant_transition_config_source==="LEGACY_BACKFILL"?"REQUIRES_EXPLICIT_ADOPTION":p.participant_transition_config_source==="DAY_OVERRIDE"?"UPDATE_BASELINE_KEEP_EFFECTIVE":"UPDATE_BASELINE_AND_EFFECTIVE",
+    BLOCK_COUNT_POLICY:p.main_preference_source==="LEGACY_BACKFILL"?"REQUIRES_EXPLICIT_ADOPTION":p.main_preference_source==="DAY_OVERRIDE"?"UPDATE_BASELINE_KEEP_EFFECTIVE":"UPDATE_BASELINE_AND_EFFECTIVE",
     OPTIMIZATION: "VALIDATED_BY_OPTIMIZER_PREVIEW",
   } };
 }
@@ -105,18 +109,24 @@ function candidateInput(input: EngineInput, plan: PlanRow, general: PlanRow, ope
     }
     if(selected.has("PARTICIPANT_TRANSITION")&&adoptParticipant&&plan.participant_transition_config_source!=="DAY_OVERRIDE")participantTransitionMinutes=Number(general.default_participant_transition_minutes);
   }
+  const requested=operation==="EDIT"?(payload as DayConfigEdit).mainFlowPreference
+    :operation==="RESTORE"&&(payload as DayConfigRestore).capability==="BLOCK_COUNT_POLICY"?mainFlowPreferenceFromRow(plan,"main_baseline_")
+    :operation==="REFRESH"&&(payload as DayConfigRefresh).capabilities.includes("BLOCK_COUNT_POLICY")&&plan.main_preference_source!=="DAY_OVERRIDE"&&(plan.main_preference_source!=="LEGACY_BACKFILL"||(payload as DayConfigRefresh).legacyTreatment==="ADOPT_GENERAL_AS_INHERITED")?mainFlowPreferenceFromRow(general):undefined;
+  if(requested){validateMainFlowPreference(input,requested);input=withMainFlowPreference(input,requested);}
   return { ...input, workDay: { start, end }, meal: { start: mealStart, end: mealEnd }, mealWindow: { start: mealStart, end: mealEnd }, mealMode,defaultParticipantTransitionMinutes:participantTransitionMinutes };
 }
 
 export async function applyDayConfigurationOperation(planId: number, actorId: string, operation: Operation, payload: OperationPayload, repository: IStorage = storage) {
   const [{ data: plan, error: planError }, { data: general, error: generalError }, { data: optimizerState, error: optimizerStateError }] = await Promise.all([
     supabaseAdmin.from("plans").select("*").eq("id", planId).single(),
-    supabaseAdmin.from("program_settings").select("default_work_start,default_work_end,meal_start,meal_end,meal_mode,default_participant_transition_minutes").eq("id", 1).single(),
+    supabaseAdmin.from("program_settings").select("default_work_start,default_work_end,meal_start,meal_end,meal_mode,default_participant_transition_minutes,main_preferred_block_count,main_before_meal_blocks").eq("id", 1).single(),
     supabaseAdmin.from("plan_optimizer_snapshots").select("baseline_snapshot").eq("plan_id", planId).single(),
   ]);
   if (planError || !plan) throw Object.assign(new Error("PLAN_NOT_FOUND"), { status: 404, cause: planError });
   if (generalError || !general) throw generalError;
   if (optimizerStateError || !optimizerState) throw optimizerStateError;
+  const mainPreferenceBaseline=operation==="REFRESH"&&(payload as DayConfigRefresh).capabilities.includes("BLOCK_COUNT_POLICY")
+    ?mainFlowPreferenceFromRow(general):undefined;
   const current = await buildCanonicalPlanConfig(planId, repository);
   let effectiveOptimizer = current.replay.optimizerSnapshot;
   let optimizerBaseline: PlanOptimizerSnapshotV1 | undefined;
@@ -141,12 +151,12 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
     }
   }
   const candidate = await buildCanonicalPlanConfig(planId, repository, candidateInput(current.input, plan, general, operation, payload), effectiveOptimizer);
-  const { data, error } = await supabaseAdmin.rpc("apply_day_config_operation_v2", {
-    p_plan_id: planId, p_actor: actorId, p_operation: operation, p_payload: {...payload,...(optimizerBaseline?{optimizerBaseline}: {})},
+  const { data, error } = await supabaseAdmin.rpc("apply_day_config_operation_v3", {
+    p_plan_id: planId, p_actor: actorId, p_operation: operation, p_payload: {...payload,...(optimizerBaseline?{optimizerBaseline}: {}),...(mainPreferenceBaseline?{mainPreferenceBaseline}: {})},
     p_expected_revision: plan.current_config_revision_id == null ? null : Number(plan.current_config_revision_id),
     p_expected_identity: current.identity, p_expected_replay: current.replay,
     p_candidate_identity: candidate.identity, p_candidate_replay: candidate.replay,
-    p_diff: { operation, payload },
+    p_diff: { operation, payload,...(mainPreferenceBaseline?{mainPreferenceBaseline}: {}) },
   });
   if (error) throw error;
   const { data: updated, error: updatedError } = await supabaseAdmin.from("plans").select("*").eq("id", planId).single();

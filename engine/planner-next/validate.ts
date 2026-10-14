@@ -82,6 +82,13 @@ export function preflight(problem: PlannerNextProblem): string[] {
   const preferredBlockCount=problem.mainFlow?.preferredBlockCount;
   if(preferredBlockCount!==undefined&&(!Number.isSafeInteger(preferredBlockCount)||preferredBlockCount<1))
     reasons.add("INVALID_MAIN_FLOW_SOFT_BLOCK_COUNT");
+  const split=problem.mainFlow?.mealSplitPreference;
+  if(split&&(!Number.isSafeInteger(split.beforeMealBlocks)||!Number.isSafeInteger(split.afterMealBlocks)
+    ||split.beforeMealBlocks<0||split.afterMealBlocks<0||split.beforeMealBlocks+split.afterMealBlocks!==preferredBlockCount))
+    reasons.add("INVALID_MAIN_FLOW_MEAL_SPLIT_PREFERENCE");
+  if(split&&!problem.spaces.some(s=>s.id===problem.mainFlow.spaceId&&s.mealPolicy)
+    &&!(problem.operationalMealPolicies??[]).some(m=>m.spaceIds.includes(problem.mainFlow.spaceId)))
+    reasons.add("MAIN_FLOW_MEAL_SPLIT_WITHOUT_MEAL");
   if (!usableDay
     || !Number.isFinite(preferredEnd)
     || preferredEnd < day.start

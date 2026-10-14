@@ -1,3 +1,6 @@
+import { MainFlowPreferenceEditor } from "./main-flow-preference-editor";
+import { autoMainFlowPreference, type MainFlowPreference } from "@shared/mainFlowPreference";
+import { useUserRole } from "@/hooks/use-user-role";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
@@ -14,6 +17,7 @@ import { useProductionClock } from "@/hooks/use-production-clock";
 
 type ProgramSettings = {
   id: number;
+  mainFlowPreference?:MainFlowPreference;
   defaultWorkStart: string;
   defaultWorkEnd: string;
   defaultParticipantTransitionMinutes: number;
@@ -30,7 +34,7 @@ type ProgramSettings = {
 };
 
 export function GeneralProgramSettings() {
-  const qc = useQueryClient();
+  const qc = useQueryClient();const {role}=useUserRole();
   const { toast } = useToast();
   const { nowTime } = useProductionClock();
 
@@ -112,6 +116,7 @@ export function GeneralProgramSettings() {
         <CardTitle>Ajustes generales del programa (defaults)</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="rounded border p-3"><p className="text-sm">Estructura habitual para días nuevos con un flujo principal Next configurado. El reparto requiere una comida aplicable al flujo principal del día; guardar aquí no cambia jornadas existentes.</p><MainFlowPreferenceEditor value={data.mainFlowPreference??autoMainFlowPreference} mealApplicable={true} disabled={role!=="admin"} saving={update.isPending} onSave={v=>update.mutate({mainFlowPreference:v})}/></div>
         <div className="grid grid-cols-2 gap-4">
           <fieldset className="col-span-2 rounded-lg border p-3" aria-describedby="default-work-help default-work-error">
             <legend className="px-1 text-sm font-medium">Horario habitual de la jornada</legend>

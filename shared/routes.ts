@@ -1,3 +1,4 @@
+import { mainFlowPreferenceSchema } from "./mainFlowPreference";
 import { z } from "zod";
 import { createDayConfigurationIntentSchema, dayConfigEditSchema, dayConfigRefreshSchema, dayConfigRestoreSchema } from "./dayConfig";
 import { optimizerHeuristicKeys } from "./optimizer";
@@ -964,6 +965,7 @@ export const api = {
       responses: {
         200: z.object({
           id: z.number(),
+          mainFlowPreference: mainFlowPreferenceSchema.optional(),
           defaultWorkStart: canonicalResourceAvailabilityTime,
           defaultWorkEnd: canonicalResourceAvailabilityTime,
           mealStart: z.string(),
@@ -990,6 +992,7 @@ export const api = {
       path: "/api/program-settings",
       input: z
         .object({
+          mainFlowPreference: mainFlowPreferenceSchema.optional(),
           ...defaultWorkdayFields,
           mealStart: z
             .string()

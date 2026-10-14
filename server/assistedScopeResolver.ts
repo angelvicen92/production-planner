@@ -1,3 +1,4 @@
+export { mainFlowPreferenceGeometry } from "../engine/planner-next/integration/engineInputAdapter";
 import type { EngineInput } from "../engine/types";
 import { buildAssistedProblem, createPlanningScope } from "../engine/planner-next/assistedPlanning";
 import type { EngineInputAdapterSupportedResult } from "../engine/planner-next/integration/engineInputAdapter";

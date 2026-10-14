@@ -1,3 +1,4 @@
+import { configureMainFlowPreferenceJourney, verifyMainFlowPreferenceResult, verifyMainFlowPreferenceAfterStages } from "./smokeMainFlowPreferenceJourney";
 import {buildCanonicalFullA2EngineInput} from "../../engine/planner-next/benchmarks/canonicalFullA2EngineInput";
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -76,6 +77,7 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
   pass('S0 creation from UI, all 19 contestant names, idempotence with admin, native persistence and reload');
   const daily=async()=>(await db.query('SELECT id,start_planned,end_planned,zone_id,space_id,location_label,duration_override,cameras_override,assigned_resource_ids FROM public.daily_tasks WHERE plan_id=$1 ORDER BY id',[planId])).rows.map(row=>({...row,id:Number(row.id),zone_id:row.zone_id==null?null:Number(row.zone_id),space_id:row.space_id==null?null:Number(row.space_id)}));
   const beforeS1=await daily();
+  const preferenceJourney=process.argv.includes("--main-flow-preference")?await configureMainFlowPreferenceJourney({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics},page):null;
   if(process.argv.includes('--historical-topology'))await runA2HistoricalScopeJourney({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics},page);
   if(process.argv.includes('--scope-selection'))diagnostics.scopeSelectionInitial=await runA2ScopeSelectionJourney({appUrl,users,db,planId,directory,pass},page,'initial');
   const action=async(name:string,suffix:string)=>{
@@ -96,6 +98,7 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
     page.getByText('No se pudo generar una propuesta con la selección actual. Revisa disponibilidad y conflictos.',{exact:true}).waitFor({timeout:180_000}).then(()=>{throw Error('Product UI reported a failed proposal run; inspect failedRuns SQL diagnostic');}),
    ]);
    const run=await api(path+`/proposals/${runId}`);assert.equal(run.status,200);assert.equal(run.data.status,'success');const result=run.data.assisted_result_json??run.data.assistedResultJson;assert.equal(result.outcome,'PROPOSAL');
+   if(preferenceJourney)await verifyMainFlowPreferenceResult({pass,directory,diagnostics},page,result,preferenceJourney);
    const generationMs=Math.round(performance.now()-start);
    const adapter=adaptEngineInputToPlannerNextProblem(await buildInput());assert.equal(adapter.status,'SUPPORTED');if(adapter.status!=='SUPPORTED')throw Error('Invalid persisted input');
    const witness=result.evidence.futureStructuralWitnesses.find((w:any)=>w.kind==='JOINT_COMPLETION');assert.ok(witness);
@@ -185,6 +188,7 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
   }
   assert.deepEqual(await daily(),material);const restored=await state();assert.equal(Number(restored.activeStage.id),Number(final.activeStage.id));assert.equal(restored.draftFingerprint,final.draftFingerprint);
   pass('admin atomic rollback to S0 and redo to final accepted Stage');
+  if(preferenceJourney)await verifyMainFlowPreferenceAfterStages({db,planId,pass},preferenceJourney);
   if(full)diagnostics.viewsHistory=await runA2ViewsHistoryJourney({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics},page);
   if(full)diagnostics.manualSnapshotFidelity=await runA2ManualSnapshotJourney({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics});
   return {roleMatrix,s0:'PASS',stages,completed:stages.at(-1)!.completed,pageErrors,secondBrowserSession:'PASS',rollbackRedo:'PASS',searchPoliciesUnchanged:true,persistedCanonical};

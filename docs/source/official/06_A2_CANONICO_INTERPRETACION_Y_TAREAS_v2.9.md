@@ -1,9 +1,15 @@
 # OPTIPLAN — BENCHMARK A2 CANÓNICO: INTERPRETACIÓN Y OBLIGACIONES
 
-**Versión:** 2.8<br>
-**Fecha:** 13 de octubre de 2026<br>
+**Versión:** 2.9<br>
+**Fecha:** 14 de octubre de 2026<br>
 **Estado:** Fuente oficial consolidada  
 **Absorbe:** Documento Maestro de Interpretación A2 v1.9, Cuadro de tareas A2 v1.3 y Addendum Reality/EVA/Alfombra/márgenes v1.0.
+
+## Actualización v2.9 — preferencia humana explícita de estructura
+
+El A2 mantiene exactamente sus 266 obligaciones, comidas, duración/ventanas, transiciones, recursos y topología vigentes. AUTO conserva la minimización por defecto de §7.1.2/§7.1.5. Una decisión explícita SOFT de Producción puede solicitar N y, opcionalmente, un reparto PREFERRED antes/después de la comida real de Estudio 7, conforme a 03/04. Se intenta N primero y el reparto dentro de N; una alternativa completa se explica sin confundir límites de búsqueda con inviabilidad.
+
+Solicitar cuatro bloques y 2+2 no crea una cota hard, una fórmula por coaches ni una hora fija de comida. El descanso nunca genera bloques lógicos; un bloque que abarca el descanso cuenta una vez e incumple el reparto exacto. Los horarios humanos permanecen referencia operativa y no son seeds, locks ni autoridad temporal nueva. Caracola conserva su semántica feeder y las comidas individuales de coaches; el reparto usa exclusivamente la comida efectiva aplicable al flujo principal.
 
 ## Actualización v2.8 — reconciliación física autorizada por producción
 
@@ -327,9 +333,9 @@ La planificación humana de referencia A2 produce cuatro bloques con dos Vocal C
 - encajar los descansos de comida obligatorios sin convertirlos en fronteras artificiales de bloque;
 - evitar una jornada innecesariamente larga.
 
-No existe una regla general `bloques = 2 × coaches`. Con tres coaches, otra carga o ventanas distintas podría producir, por ejemplo, cinco bloques en lugar de seis. El motor debe encontrar el **mínimo número de bloques factible** que mantenga la tubería y la completitud.
+No existe una regla general `bloques = 2 × coaches`. Con tres coaches, otra carga o ventanas distintas podría producir, por ejemplo, cinco bloques en lugar de seis. En AUTO, el motor debe encontrar el **mínimo número de bloques factible** que mantenga la tubería y la completitud.
 
-Los cuatro bloques humanos son **benchmark de calidad**, no una cota hard. Una solución con uno, dos, tres, cuatro o más bloques puede ser válida si es el mínimo número factible para ese estado y conserva completitud, continuidad, transiciones, alimentación feeder, comidas y viabilidad del resto de obligaciones. En un día con menor carga, un único bloque por coach puede ser perfectamente correcto.
+Los cuatro bloques humanos son **benchmark de calidad**, no una cota hard. Una solución con uno, dos, tres, cuatro o más bloques puede ser válida si respeta la prioridad AUTO o la preferencia SOFT explícita y conserva completitud, continuidad, transiciones, alimentación feeder, comidas y viabilidad del resto de obligaciones. En un día con menor carga, un único bloque por coach puede ser perfectamente correcto.
 
 #### 7.1.6 Cierre de bloque antes de trabajo secundario
 

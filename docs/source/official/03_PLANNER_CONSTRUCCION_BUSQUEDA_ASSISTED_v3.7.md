@@ -1,9 +1,17 @@
 # OPTIPLAN — CONSTRUCCIÓN, BÚSQUEDA Y PLANIFICACIÓN ASSISTED
 
-**Versión:** 3.6  
-**Fecha:** 30 de septiembre de 2026  
+**Versión:** 3.7<br>
+**Fecha:** 14 de octubre de 2026<br>
 **Estado:** Fuente oficial consolidada  
 **Absorbe:** SPEC-06, SPEC-07 v2.2, SPEC-08 v1.1 y SPEC-09 v1.1.
+
+## Actualización v3.7 — cantidad SOFT y reparto preferido del flujo principal
+
+La configuración humana explícita `SOFT_PREFER_N(count)` constituye la excepción a la minimización AUTO de §7 y SPEC-07. Reutiliza el método constructivo y sus exploradores: N es la primera familia, sin construir AUTO previamente. Dentro de N, un reparto opcional PREFERRED se intenta antes de otros repartos de N; las cantidades alternativas se ordenan por distancia a N y, a igual distancia, menor cantidad. Esta prioridad actúa antes de la primera terminación, tanto en el frontier estructural como en el residual. No es un filtro HARD ni autoriza relajar restricciones, duplicar ledgers, ampliar presupuestos o preservar supporting efímero como estado aceptado.
+
+`beforeMealBlocks + afterMealBlocks = N`. Los bloques anteriores terminan antes o al inicio de la comida efectiva; los posteriores comienzan después o al final. Ninguna hora fija define mañana/tarde. El descanso no crea un bloque: si interrumpe un bloque lógico de coach/key, éste cuenta una vez y el reparto exacto no se cumple. Cero a un lado sólo se ofrece cuando la autoridad de comida y geometría lo representan. Sin comida aplicable no hay preferencia efectiva de reparto.
+
+Una terminación completa ya revalidada puede servir de respaldo. La prioridad de cantidad prevalece sobre reparto; una alternativa completa de N no se sustituye deliberadamente por otra cantidad por su distribución. El agotamiento conserva un respaldo completo validado cuando existe, pero no promete obtenerlo en una petición fría. La primera terminación completa de la búsqueda ordenada sigue cerrando construcción. Evidence distingue preferencia conseguida, alternativa completa, ausencia de terminación y certificados reales; el truncamiento/agotamiento no demuestra inviabilidad.
 
 ## Actualización v3.6 — margen de participante configurable por frontera
 
@@ -154,7 +162,7 @@ Obligaciones:
 
 1. una cota de capacidad suficiente permite continuar, pero no construye por sí sola el eje;
 2. IN, Estilismo Entrada u otras tareas breves que alimentan estructuralmente el eje **no** pueden caer a un DFS standalone para “descubrir” tarde la geometría;
-3. las familias con menos bloques factibles se agotan antes de abrir familias con más bloques;
+3. en AUTO, las familias con menos bloques factibles se agotan antes de abrir familias con más bloques; SOFT explícito aplica la prioridad de v3.7;
 4. identidades operacionalmente equivalentes permanecen contraídas hasta que una autoridad hard las distinga;
 5. asignar una identidad a un spot asigna/rematerializa coherentemente su **bundle dependiente**; un cambio nominal exige rematching/rematerialización del bundle afectado, no una permutación nominal aislada;
 6. la primera solución completa hard-valid del scope termina la construcción interactiva; mejora/optimización secundaria requiere otra petición/fase;
@@ -2484,7 +2492,7 @@ Generará únicamente patrones compatibles con:
 
 Cuando un patrón alterna recursos que trabajan tanto en feeder como en main, la generación debe considerar el **pipeline completo**, no sólo la secuencia de etiquetas del flujo principal. Un patrón `A → B → A → B` no está demostrado por haber creado cuatro bloques main: debe existir una secuencia feeder compatible que prepare cada cohorte a tiempo y permita los desplazamientos de A y B.
 
-El planificador buscará el **mínimo número de bloques factible** compatible con la producción. No impondrá `2 × recursos`, ni copiará el número observado en un benchmark. En un día con dos coaches puede emerger `A → B → comida → A → B`; con tres coaches, otra distribución de carga y ventanas puede producir cinco bloques en vez de seis. La configuración y la viabilidad determinan el patrón.
+En AUTO, el planificador buscará el **mínimo número de bloques factible** compatible con la producción; SOFT aplica la prioridad explícita de v3.7. No impondrá `2 × recursos`, ni copiará el número observado en un benchmark. En un día con dos coaches puede emerger `A → B → comida → A → B`; con tres coaches, otra distribución de carga y ventanas puede producir cinco bloques en vez de seis. La configuración y la viabilidad determinan el patrón.
 
 `requiresBand` y `usesInstrument` son atributos independientes, pero no tienen la misma semántica.
 
@@ -2648,7 +2656,7 @@ Sin embargo, cuando la configuración efectiva y la carga de un día hacen neces
 
 El mínimo número de bloques factible se resolverá a nivel de **familias de arquitectura**, no mediante permutaciones de tareas.
 
-La búsqueda seguirá este orden lógico:
+Sin preferencia SOFT explícita, la búsqueda AUTO seguirá este orden lógico:
 
 ```text
 1. derivar el menor número de runs/bloques que no contradiga la configuración
@@ -2660,7 +2668,7 @@ La búsqueda seguirá este orden lógico:
 7. en cuanto una familia produce la primera solución completa hard-valid, aceptar esa construcción
 ```
 
-No se explorarán patrones con más bloques mientras quede una familia con menos bloques cuya inviabilidad estructural no haya sido resuelta, salvo que una autoridad hard permita demostrar directamente que dicha familia no puede completar la producción.
+En AUTO no se explorarán patrones con más bloques mientras quede una familia con menos bloques cuya inviabilidad estructural no haya sido resuelta, salvo que una autoridad hard permita demostrar directamente que dicha familia no puede completar la producción.
 
 Dentro del mismo número de bloques podrán ordenarse primero las arquitecturas más compactas, con menos desplazamientos o mejor concentración PREFERRED. Ese orden es de exploración; no convierte la preferencia en hard.
 
@@ -3652,7 +3660,7 @@ En una petición interactiva de planificación inicial o de propuesta Assisted, 
 
 La Fase B requiere una operación de `IMPROVEMENT`, una acción explícita equivalente o un proceso separado que ya disponga de incumbente hard-valid. Nunca debe retrasar la entrega de la primera propuesta utilizable.
 
-Esta regla no impide ordenar correctamente las alternativas antes de encontrar la primera solución: se prueban primero las arquitecturas con menor número de bloques y, dentro de ellas, las más compactas según las preferencias autorizadas.
+Esta regla no impide ordenar correctamente las alternativas antes de encontrar la primera solución: AUTO prueba primero las arquitecturas con menor número de bloques; SOFT prueba primero N y su reparto declarado conforme a v3.7. Dentro de esas prioridades se conservan las preferencias autorizadas.
 
 ### Presupuesto temporal de producto
 
@@ -3969,7 +3977,7 @@ Construye un tramo continuo terminado en la hora preferida cuando es viable.
 
 ## División por comida
 
-Divide mañana y tarde sólo cuando no existe construcción completa antes de la comida.
+Sin reparto explícito, mantiene la preferencia de construir antes de la comida. SOFT puede priorizar una separación de bloques respecto al descanso efectivo; los repartos alternativos siguen siendo candidatos válidos.
 
 ## Alimentación feeder
 
