@@ -5,8 +5,8 @@
   "v8Version": "11.3.244.8-node.38",
   "postgresVersion": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
   "remoteWrites": 0,
-  "startedAt": "2026-10-14T16:07:07.678Z",
-  "finishedAt": "2026-10-14T16:08:37.714Z",
+  "startedAt": "2026-10-14T16:12:53.503Z",
+  "finishedAt": "2026-10-14T16:14:48.508Z",
   "migrations": [
     {
       "file": "001_init.sql",
@@ -385,7 +385,11 @@
       "sha256": "f484b6fb65de88a17d50012001853d227488034d475c315ee12f7df7e322a8b8"
     },
     {
-      "file": "092_live_task_execution.sql",
+      "file": "092_main_flow_soft_preference.sql",
+      "sha256": "3d4f8193e0d7fccc0efc385e487edad5403d8c76d7d07ed1610385e93fc79f59"
+    },
+    {
+      "file": "093_live_task_execution.sql",
       "sha256": "7a6fc40f1a353a3b8e6d4a7f7adaceeb0afcadd266ed82c4728b2fbc6c3fb341"
     }
   ],
@@ -417,9 +421,9 @@
     "status": "PASS",
     "syncTransport": "HTTP polling fallback",
     "pollingIntervalMs": 5000,
-    "startLatencyMs": 6911,
-    "finishLatencyMs": 1581,
-    "durationSeconds": 8,
+    "startLatencyMs": 6563,
+    "finishLatencyMs": 2890,
+    "durationSeconds": 10,
     "eventCount": 5,
     "executionLockCount": 1,
     "preservedObligations": 266,
@@ -463,7 +467,7 @@
     "Supabase Realtime WebSocket transport not tested; actual two-browser proof uses 5-second HTTP polling.",
     "Full cold planning replay timed out before S1 in Node 24 and Node 20; no solver change made.",
     "Execution rehearsal replays a recorded accepted 266-task snapshot; it does not regenerate the main c0cc8bf4 planning witness.",
-    "Migration 092 overlaps the concurrent configuration branch numbering; renumber and revalidate after ordered integration."
+    "Numbering collision resolved: main configuration migration 092 preserved, execution renumbered 093; joint native ledger PASS."
   ],
   "coldPlanningAttempts": [
     {
@@ -482,19 +486,22 @@
   "screenshots": [
     {
       "file": "docs/evidence/EJEC-01-UI/mi-dia-mobile-pending.png",
-      "sha256": "2298d9d7dae6bd7b853e6aaced83d6561f8b5ad9feb4062cf39b7526575f6efc"
+      "sha256": "a8f108f73a714fca7a72d62c0c741b1f5920aabc1f9c1490887ccad71b76f8a8"
     },
     {
       "file": "docs/evidence/EJEC-01-UI/mi-dia-mobile-running.png",
-      "sha256": "d9da8a89ad4bdbe592fbb573f88efa7e05108c129e15cbac4d7e3db006caa62e"
+      "sha256": "c25c6e5bc62e25709d76ce6222a8054b1cb525a293d20db18283dabb67c2922a"
     },
     {
       "file": "docs/evidence/EJEC-01-UI/mi-dia-desktop-running.png",
-      "sha256": "088e79b816ac745ed99d7c7af89bd98aeb1513ff11b02fa7f6239f6f667e5e7a"
+      "sha256": "4378871319112087d9bc453951f42cd902fd244b5d891057f5c521893c264e29"
     },
     {
       "file": "docs/evidence/EJEC-01-UI/mi-dia-desktop-dark.png",
-      "sha256": "ca4ef63abfcc4f46259b71651545fbd36ad557b60099d8e6505feb0eb0684a50"
+      "sha256": "73da7ef710d79481be7b3599804251a5a688c581e6953a9da578dd49f82cd7b4"
     }
-  ]
+  ],
+  "synchronizedMainCommit": "c7f85411ac13b62f4be34de09061124f7460b7e0",
+  "pullRequest": "https://github.com/angelvicen92/production-planner/pull/1124",
+  "migration": "093_live_task_execution.sql"
 }
