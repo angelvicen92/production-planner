@@ -1,0 +1,54 @@
+name: Persistent War Room
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'server/incident*'
+      - 'server/apiAuthorization*'
+      - 'server/routes.ts'
+      - 'shared/incidents.ts'
+      - 'shared/routes.ts'
+      - 'shared/schema.ts'
+      - 'client/src/pages/war-room.tsx'
+      - 'client/src/pages/dashboard.tsx'
+      - 'client/src/pages/my-day.tsx'
+      - 'client/src/pages/call-sheet.tsx'
+      - 'client/src/lib/war-room-store.ts'
+      - 'client/src/hooks/use-war-room.ts'
+      - 'client/src/hooks/use-plan-realtime.ts'
+      - 'supabase/migrations/**'
+      - 'script/demo/smokeA2Integration.ts'
+      - 'script/demo/smokeWarRoomJourney.ts'
+      - '.github/workflows/war-room-ci.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: war-room-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  war-room:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build
+      - run: npm run check:migrations
+      - run: node --import tsx --test server/incidents.spec.ts server/apiAuthorization.spec.ts server/liveExecution.spec.ts
+      - run: npx --no-install playwright install --with-deps chromium
+      - name: Native ledger, real Auth/HTTP/RLS, accepted A2 and independent browsers
+        run: node --import tsx script/demo/smokeA2Integration.ts work/war-room-p3 --historical-topology --war-room-snapshot
+      - name: Public evidence (exclude private logs and credentials)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: war-room-p3
+          path: |
+            work/war-room-p3/integration.json
+            work/war-room-p3/war-room-*.png

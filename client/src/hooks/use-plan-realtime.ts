@@ -44,6 +44,13 @@ export function usePlanRealtime({ planId }: { planId: number | null }) {
       )
       .on(
         "postgres_changes",
+        { event: "*", schema: "public", table: "operational_incidents", filter: `plan_id=eq.${planId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: [`/api/plans/${planId}/incidents`] });
+        },
+      )
+      .on(
+        "postgres_changes",
         { event: "*", schema: "public", table: "locks", filter: `plan_id=eq.${planId}` },
         invalidateDebounced,
       )

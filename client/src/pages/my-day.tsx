@@ -48,7 +48,7 @@ export default function MyDayPage() {
   const plansQ = usePlans();
   const plans = plansQ.data ?? [];
   const [planId, setPlanId] = useState(() => new URLSearchParams(window.location.search).get('plan') ?? '');
-  const [onlyMine, setOnlyMine] = useState(true);
+  const [onlyMine, setOnlyMine] = useState(() => !/^#agenda-task-\d+$/.test(window.location.hash));
   const [search, setSearch] = useState('');
   const { defaultPlanId } = useDefaultPlanId(plans, planId);
   const selected = plans.find(plan => Number(plan.id) === Number(defaultPlanId));
@@ -85,6 +85,12 @@ export default function MyDayPage() {
     return ops.data.tasks.map(task => ({ task, at: moment(task) })).sort((a, b) => a.at - b.at || a.task.id - b.task.id).map(row => row.task);
   }, [ops.data.tasks, selectedDate]);
   const visible = onlyMine && context?.hasScope ? tasks.filter(task => permissions.get(task.id)?.inScope) : tasks;
+  useEffect(() => {
+    const target = window.location.hash.slice(1);
+    if (!/^agenda-task-\d+$/.test(target)) return;
+    const frame = requestAnimationFrame(() => document.getElementById(target)?.scrollIntoView({ block: 'center' }));
+    return () => cancelAnimationFrame(frame);
+  }, [tasks, onlyMine]);
   const running = visible.filter(task => task.status === 'in_progress');
   const waiting = visible.filter(task => task.status === 'pending');
   const next = waiting.find(task => permissions.get(task.id)?.canExecute) ?? waiting[0];
@@ -147,7 +153,7 @@ export default function MyDayPage() {
       <div className="grid gap-5">{running.length ? running.map(task => hero(task, 'ACTIVIDAD EN CURSO')) : next ? hero(next, 'PRÓXIMA ACTIVIDAD PENDIENTE') : <div className="rounded-3xl border border-dashed p-8 text-center"><CheckCircle2 className="mx-auto mb-3 h-8 w-8 text-primary" /><h2 className="text-xl font-semibold">{visible.length ? 'Sin actividades pendientes' : 'Sin obligaciones en este ámbito'}</h2><p className="mt-2 text-sm text-muted-foreground">{visible.length ? 'Puedes consultar los registros en tu agenda.' : 'La agenda se actualizará cuando Producción confirme asignaciones.'}</p></div>}</div>
       {upcoming && (running.length > 0 || upcoming.id !== next?.id) ? <section className="flex items-center gap-4 rounded-2xl border bg-card p-5"><ArrowRight className="h-5 w-5 shrink-0 text-primary" /><div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">DESPUÉS · {upcoming.startPlanned} · en {(hhmmToMinutes(upcoming.startPlanned) ?? 0) - (nowMinute ?? 0)} min</p><h2 className="mt-1 text-lg font-semibold">{getTaskName(upcoming)}</h2><p className="text-sm text-muted-foreground">{talent(upcoming)} · {location(upcoming)}</p></div></section> : null}
       <section className="space-y-4"><div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-2xl font-semibold tracking-tight">Agenda de la jornada</h2><p className="mt-1 text-sm text-muted-foreground">{visible.filter(task => task.status === 'done').length} completadas · {visible.length} actividades</p></div><input className="min-h-11 w-full rounded-xl border bg-background px-4 text-sm sm:w-64" aria-label="Buscar actividad" placeholder="Buscar actividad o persona" value={search} onChange={event => setSearch(event.target.value)} /></div>
-        <div className="space-y-3">{visible.filter(task => `${getTaskName(task)} ${talent(task)} ${location(task)}`.toLocaleLowerCase().includes(search.toLocaleLowerCase())).map(task => <article key={task.id} className="rounded-2xl border bg-card p-4 sm:p-5" data-testid={`agenda-task-${task.id}`}><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-medium text-muted-foreground">{task.startPlanned ? formatRange(task.startPlanned, task.endPlanned) : 'Horario por confirmar'}</p><h3 className="mt-1 text-lg font-semibold">{getTaskName(task)}</h3><p className="mt-1 text-sm text-muted-foreground">{talent(task)}</p><p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground"><MapPin className="h-4 w-4" />{location(task)}</p></div><Status status={task.status} /></div>{task.startReal ? <p className="mt-3 text-sm text-muted-foreground">Real {task.startReal}–{task.endReal ?? 'en curso'} · tiempo activo {formatExecutionDuration(executionDuration(task, nowMs, context?.clock))}</p> : null}{['pending', 'in_progress'].includes(task.status) ? <div className="mt-4">{actions(task)}</div> : null}</article>)}</div>
+        <div className="space-y-3">{visible.filter(task => `${getTaskName(task)} ${talent(task)} ${location(task)}`.toLocaleLowerCase().includes(search.toLocaleLowerCase())).map(task => <article id={`agenda-task-${task.id}`} key={task.id} className="rounded-2xl border bg-card p-4 sm:p-5" data-testid={`agenda-task-${task.id}`}><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-medium text-muted-foreground">{task.startPlanned ? formatRange(task.startPlanned, task.endPlanned) : 'Horario por confirmar'}</p><h3 className="mt-1 text-lg font-semibold">{getTaskName(task)}</h3><p className="mt-1 text-sm text-muted-foreground">{talent(task)}</p><p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground"><MapPin className="h-4 w-4" />{location(task)}</p></div><Status status={task.status} /></div>{task.startReal ? <p className="mt-3 text-sm text-muted-foreground">Real {task.startReal}–{task.endReal ?? 'en curso'} · tiempo activo {formatExecutionDuration(executionDuration(task, nowMs, context?.clock))}</p> : null}{['pending', 'in_progress'].includes(task.status) ? <div className="mt-4">{actions(task)}</div> : null}</article>)}</div>
         {search && !visible.some(task => `${getTaskName(task)} ${talent(task)} ${location(task)}`.toLocaleLowerCase().includes(search.toLocaleLowerCase())) ? <p className="rounded-2xl border border-dashed p-5 text-sm text-muted-foreground">No hay actividades que coincidan con la búsqueda.</p> : null}
       </section>
     </> : null}

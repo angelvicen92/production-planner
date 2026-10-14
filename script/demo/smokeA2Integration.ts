@@ -36,7 +36,8 @@ if(process.argv.includes('--app')){
  const historicalTopology=process.argv.includes('--historical-topology');
  const full=process.argv.includes('--full');
  const liveExecution=process.argv.includes('--live-execution');
- const liveSnapshot=process.argv.includes('--live-execution-snapshot');
+ const warRoom=process.argv.includes('--war-room-snapshot');
+ const liveSnapshot=process.argv.includes('--live-execution-snapshot')||warRoom;
  assert.ok(!liveSnapshot||historicalTopology,'accepted snapshot replay requires --historical-topology');
  assert.ok(!liveExecution||full,'--live-execution requires a complete accepted baseline (--full)');
  const stageOrder=process.argv.includes('--stage-order');
@@ -57,6 +58,7 @@ if(process.argv.includes('--app')){
  runtimeFiles.push('script/demo/smokeA2HistoricalScopeJourney.ts','engine/planner-next/integration/engineInputAdapter.ts','script/demo/seedA2HistoricalRehearsal.ts','script/demo/a2TopologyMetrics.ts','script/demo/fixtures/a2-legacy-import.json.gz','script/demo/a2SpatialTopology.ts','client/src/lib/planning-view-policy.ts','script/demo/smokeA2ManualSnapshotJourney.ts','script/demo/smokeA2ViewsHistoryJourney.ts','shared/assistedStageTiming.ts','client/src/lib/contestant-lane-sort.ts','client/src/components/planning/stage-history-timing.tsx','client/src/components/planning-timeline.tsx','client/src/pages/plan-details.tsx');
  runtimeFiles.push('engine/planner-next/mainFlowPatterns.ts','script/demo/smokeMainFlowPreferenceJourney.ts','shared/mainFlowPreference.ts','server/mainFlowPreference.ts','server/dayConfigurationService.ts','server/effectiveConfigurationView.ts','client/src/components/effective-configuration.tsx','client/src/components/main-flow-preference-editor.tsx','client/src/lib/main-flow-preference-result.ts','engine/planner-next/mainFlowMeal.ts','engine/planner-next/anonymousPipelineWitness.ts','engine/planner-next/exactMainAndFeederCore.ts');
  const hashes=()=>Object.fromEntries(runtimeFiles.map(file=>[file,createHash('sha256').update(readFileSync(file)).digest('hex')]));
+ if(warRoom)runtimeFiles.push('script/demo/smokeWarRoomJourney.ts','server/incidents.ts','server/incidentErrors.ts','shared/incidents.ts','client/src/pages/my-day.tsx','client/src/pages/war-room.tsx','client/src/hooks/use-war-room.ts','client/src/hooks/use-plan-realtime.ts','client/src/lib/war-room-store.ts','client/src/pages/dashboard.tsx','client/src/pages/call-sheet.tsx','server/apiAuthorization.ts','shared/routes.ts','shared/schema.ts','supabase/migrations/094_operational_incidents.sql');
  if(stageOrder)runtimeFiles.push('script/demo/probeA2StageOrder.ts','server/assistedScopeOrchestrator.ts');
  if(autopilot)runtimeFiles.push('shared/assistedAutopilot.ts','client/src/lib/assisted-autopilot.ts','script/demo/smokeA2AutopilotJourney.ts');
  const report:any={mode:liveSnapshot?'REAL_DISPOSABLE_EXECUTION_ACCEPTED_SNAPSHOT_REPLAY':'REAL_DISPOSABLE_PRODUCT_INTEGRATION',nodeVersion:process.version,v8Version:process.versions.v8,remoteWrites:0,images,requestedStages:full?11:2,startedAt:new Date().toISOString(),runtimeHashes:hashes(),checks:[],pending:['Connected Supabase catalog/backup adoption and original-row preservation','Published Replit runtime and user browser','Supabase Realtime/WebSocket transport']};
@@ -157,7 +159,8 @@ if(process.argv.includes('--app')){
    const untouched=await otherDays();
    const source=(await db.query("SELECT snapshot_fingerprint,ordinal FROM assisted_planning_stages WHERE id=(SELECT active_stage_id FROM assisted_planning_sessions WHERE plan_id=27001 AND status='ACTIVE')")).rows[0];
    report.snapshotReplay={source:'script/demo/fixtures/a2-legacy-import.json.gz',sourceSha256:createHash('sha256').update(readFileSync('script/demo/fixtures/a2-legacy-import.json.gz')).digest('hex'),planId:27001,acceptedStage:source.ordinal,fingerprint:source.snapshot_fingerprint,newSolverRun:false};
-   const {runLiveExecutionJourney}=await import('./smokeLiveExecutionJourney');report.liveExecution=await runLiveExecutionJourney({...options,planId:27001});
+   if(warRoom){const {runWarRoomJourney}=await import('./smokeWarRoomJourney');report.warRoom=await runWarRoomJourney({...options,planId:27001});}
+   else {const {runLiveExecutionJourney}=await import('./smokeLiveExecutionJourney');report.liveExecution=await runLiveExecutionJourney({...options,planId:27001});}
    assert.equal(await otherDays(),untouched);pass('other disposable days remain literal during accepted-snapshot execution');
   }else report.journey=await runA2BrowserJourney(options);
   if(stageOrder){const {probeA2StageOrder}=await import('./probeA2StageOrder');report.stageOrder=await probeA2StageOrder(options,report.journey,initialInput);}

@@ -1,4 +1,5 @@
 import { mainFlowPreferenceSchema } from "./mainFlowPreference";
+import { createIncidentSchema, updateIncidentSchema, transitionIncidentSchema, incidentSchema, incidentDetailSchema, incidentContextSchema } from './incidents';
 import { z } from "zod";
 import { createDayConfigurationIntentSchema, dayConfigEditSchema, dayConfigRefreshSchema, dayConfigRestoreSchema } from "./dayConfig";
 import { optimizerHeuristicKeys } from "./optimizer";
@@ -150,6 +151,16 @@ export const errorSchemas = {
 };
 
 export const api = {
+  incidents: {
+    list: { method: 'GET' as const, path: '/api/plans/:planId/incidents', responses: { 200: z.array(incidentSchema) } },
+    context: { method: 'GET' as const, path: '/api/plans/:planId/incidents/context', responses: { 200: incidentContextSchema } },
+    detail: { method: 'GET' as const, path: '/api/plans/:planId/incidents/:incidentId', responses: { 200: incidentDetailSchema } },
+    create: { method: 'POST' as const, path: '/api/plans/:planId/incidents', input: createIncidentSchema, responses: { 201: incidentSchema } },
+    update: { method: 'PATCH' as const, path: '/api/plans/:planId/incidents/:incidentId', input: updateIncidentSchema, responses: { 200: incidentSchema } },
+    resolve: { method: 'POST' as const, path: '/api/plans/:planId/incidents/:incidentId/resolve', input: transitionIncidentSchema, responses: { 200: incidentSchema } },
+    reopen: { method: 'POST' as const, path: '/api/plans/:planId/incidents/:incidentId/reopen', input: transitionIncidentSchema, responses: { 200: incidentSchema } },
+    escalate: { method: 'POST' as const, path: '/api/plans/:planId/incidents/:incidentId/escalate', input: transitionIncidentSchema, responses: { 200: incidentSchema } },
+  },
   controlRoomSettings: {
     get: {
       method: "GET" as const,
