@@ -239,7 +239,7 @@ export async function runWarRoomJourney({ appUrl, url, anon, users, db, planId, 
     await viewer.waitForURL(`**/my-day?plan=${planId}#agenda-task-${task.id}`);
     await viewer.getByTestId(`agenda-task-${task.id}`).waitFor();
     assert.equal(await viewer.getByTestId(`agenda-task-${task.id}`).isVisible(), true);
-    await desktop.goto(`${appUrl}/plans/${planId}/control-room`); await desktop.getByText('Realtime no disponible · consulta cada 5 s', { exact: true }).waitFor();
+    await desktop.goto(`${appUrl}/plans/${planId}/control-room`); await desktop.getByTestId('control-room-pro').waitFor();
     // Same browser, different authenticated actor: cached global facts must not
     // become the Aux list after signing in again.
     await desktop.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();

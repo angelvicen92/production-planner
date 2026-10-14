@@ -91,7 +91,7 @@ export async function runLiveExecutionJourney({ appUrl, url, anon, users, db, pl
     await operator.goto(`${appUrl}/my-day?plan=${planId}`);
     await operator.getByTestId(`agenda-task-${task.id}`).waitFor();
     await observer.goto(`${appUrl}/plans/${planId}/control-room`);
-    await observer.getByText('Realtime no disponible · consulta cada 5 s', { exact: true }).waitFor();
+    await observer.getByTestId('control-room-pro').waitFor();
     await viewer.goto(`${appUrl}/my-day?plan=${planId}`);
     await viewer.getByTestId(`agenda-task-${task.id}`).waitFor();
     assert.equal(await viewer.getByRole('button', { name: /^(Iniciar|Finalizar) / }).count(), 0);

@@ -1,0 +1,36 @@
+{
+  "fixture": "server/fixtures/assistedA2S10.json",
+  "obligations": 266,
+  "baseline": "eb1b9a04a8c8983479df299e1e40ba4349c9564a",
+  "node": "v20.20.2",
+  "oldEtaOnly": {
+    "coldMs": 1.456197000000003,
+    "iterations": 100,
+    "meanMs": 0.3694437700000009,
+    "p95Ms": 0.5805560000000014
+  },
+  "newFullReadProjection": {
+    "coldMs": 39.706717000000026,
+    "iterations": 100,
+    "meanMs": 1.2873943000000025,
+    "p95Ms": 1.66802899999999
+  },
+  "limit": "The old measurement covers only its ETA; new projection includes all counts, alerts and locations. This measures CPU, not network or calibrated prediction.",
+  "productionBuildBytes": {
+    "base": {
+      "javascriptBytes": 1501287,
+      "cssBytes": 90335
+    },
+    "head": {
+      "javascriptBytes": 1524467,
+      "cssBytes": 90587
+    },
+    "dependencies": "repository package-lock.json exact"
+  },
+  "browserDevelopmentLoad": {
+    "headFirstConfirmedMs": 1309.3700669999998,
+    "obligations": 266,
+    "baseFirstConfirmedMs": 1407.3843810000035,
+    "limit": "Single local development load per version; includes module compilation, not a calibrated SLA."
+  }
+}

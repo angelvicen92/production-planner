@@ -1,0 +1,48 @@
+name: Control Room PRO
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'client/src/components/control-room/**'
+      - 'client/src/components/production-control-panel.tsx'
+      - 'client/src/pages/control-room.tsx'
+      - 'client/src/pages/war-room.tsx'
+      - 'client/src/lib/control-room-metrics*'
+      - 'client/src/hooks/use-control-room-data.ts'
+      - 'client/src/hooks/use-execution-context.ts'
+      - 'client/src/hooks/use-war-room.ts'
+      - 'client/src/hooks/use-plan-realtime.ts'
+      - 'script/demo/smokeControlRoomJourney.ts'
+      - 'script/demo/smokeA2Integration.ts'
+      - '.github/workflows/control-room-pro-ci.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: control-room-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  control-room-pro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build
+      - run: node --import tsx --test client/src/lib/control-room-metrics.test.ts server/liveExecution.spec.ts server/incidents.spec.ts server/apiAuthorization.spec.ts
+      - run: npx --no-install playwright install --with-deps chromium
+      - name: Actual A2, Auth, HTTP and independent sessions on disposable services
+        run: node --import tsx script/demo/smokeA2Integration.ts work/control-room-p4 --historical-topology --control-room-snapshot
+      - name: Public evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: control-room-p4
+          path: |
+            work/control-room-p4/integration.json
+            work/control-room-p4/control-room-*.png

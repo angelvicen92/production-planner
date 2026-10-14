@@ -2,8 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { contestantsQueryKey, planQueryKey, planTasksQueryKey, planLocksQueryKey } from "@/lib/plan-query-keys";
+import { useAuth } from './use-auth';
 
 export function usePlanRealtime({ planId }: { planId: number | null }) {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [realtimeConnected, setRealtimeConnected] = useState(false);
   const [realtimeFailed, setRealtimeFailed] = useState(false);
@@ -13,7 +15,7 @@ export function usePlanRealtime({ planId }: { planId: number | null }) {
   const canSubscribe = useMemo(() => Number.isFinite(planId) && Number(planId) > 0, [planId]);
 
   useEffect(() => {
-    if (!canSubscribe || !planId) {
+    if (!canSubscribe || !planId || !user?.id) {
       setRealtimeConnected(false);
       setRealtimeFailed(false);
       return;
@@ -31,12 +33,18 @@ export function usePlanRealtime({ planId }: { planId: number | null }) {
         queryClient.invalidateQueries({ queryKey: planTasksQueryKey(planId) });
         queryClient.invalidateQueries({ queryKey: planLocksQueryKey(planId) });
         queryClient.invalidateQueries({ queryKey: [`/api/plans/${planId}/execution`] });
+        queryClient.invalidateQueries({ queryKey: ['planning-run', planId] });
         timeoutRef.current = null;
       }, 320);
     };
 
     const channel = supabase
       .channel(`control-room-plan-${planId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "plans", filter: `id=eq.${planId}` },
+        invalidateDebounced,
+      )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "daily_tasks", filter: `plan_id=eq.${planId}` },
@@ -106,7 +114,7 @@ export function usePlanRealtime({ planId }: { planId: number | null }) {
       }
       supabase.removeChannel(channel);
     };
-  }, [canSubscribe, planId, queryClient]);
+  }, [canSubscribe, planId, queryClient, user?.id]);
 
   return {
     realtimeConnected,

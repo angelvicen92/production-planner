@@ -1,203 +1,86 @@
-import { Layout } from "@/components/layout";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useMePreferences, useSetFavoritePlan } from "@/hooks/use-preferences";
-import { usePlan, usePlans } from "@/hooks/use-plans";
-import { useSpaces, useZones } from "@/hooks/use-spaces";
-import { useProductionClock } from "@/hooks/use-production-clock";
-import { useContestants, useTaskTemplates } from "@/hooks/use-tasks";
-import { useItinerantTeams } from "@/hooks/use-itinerant-teams";
-import { useExecutionContext } from "@/hooks/use-execution-context";
-import { usePlanRealtime } from "@/hooks/use-plan-realtime";
-import { usePlanningRun } from "@/hooks/use-planning-run";
-import { useControlRoomSettings } from "@/hooks/use-control-room-settings";
-import { planQueryKey } from "@/lib/plan-query-keys";
-import { pickDefaultPlan } from "@/lib/plan-default";
-import { ProductionControlPanel } from "@/components/production-control-panel";
-import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, Star } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { useRoute } from "wouter";
+import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useRoute, Link } from 'wouter';
+import { Layout } from '@/components/layout';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Loader2, RefreshCw, Monitor, Star } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
+import { useControlRoomData } from '@/hooks/use-control-room-data';
+import { useSetFavoritePlan, type MePreferences } from '@/hooks/use-preferences';
+import type { ControlRoomSettings } from '@/hooks/use-control-room-settings';
+import type { PlanningRun } from '@/hooks/use-planning-run';
+import { apiRequest } from '@/lib/api';
+import { pickDefaultPlan } from '@/lib/plan-default';
+import { contestantsQueryKey } from '@/lib/plan-query-keys';
+import { datedTime } from '@/components/control-room/presentation';
+import { ProductionControlPanel } from '@/components/production-control-panel';
+import type { LocationRead } from '@/lib/control-room-metrics';
+import type { PlanSummary } from '@shared/schema';
+import { api, buildUrl } from '@shared/routes';
+import { cn } from '@/lib/utils';
 
 export default function ControlRoomPage() {
-  const [isLegacyRoute, params] = useRoute<{ planId: string }>("/plans/:planId/control-room");
-  const routePlanId = isLegacyRoute ? Number(params?.planId) : null;
-
-  const queryClient = useQueryClient();
-  const { data: plans = [], isLoading: plansLoading, error: plansError } = usePlans();
-  const { data: preferences } = useMePreferences();
-  const setFavoritePlan = useSetFavoritePlan();
-  const { data: zones = [] } = useZones();
-  const { data: spaces = [] } = useSpaces();
-  const { effectiveNow } = useProductionClock();
-  const { data: settings } = useControlRoomSettings();
-
-  const [directorMode, setDirectorMode] = useState<boolean>(() => localStorage.getItem("control-room:director-mode") === "1");
-  const [autoScroll, setAutoScroll] = useState<boolean>(() => localStorage.getItem("control-room:auto-scroll") === "1");
-
-  const planIds = useMemo(() => new Set(plans.map((p: any) => Number(p?.id))), [plans]);
-  const favoritePlanId = Number(preferences?.favoritePlanId);
-
-  const initialPlanId = useMemo(() => {
-    if (Number.isFinite(routePlanId) && planIds.has(routePlanId as number)) return routePlanId as number;
-    if (Number.isFinite(favoritePlanId) && planIds.has(favoritePlanId)) return favoritePlanId;
-    return Number(pickDefaultPlan(plans)?.id ?? NaN);
-  }, [routePlanId, favoritePlanId, plans, planIds]);
-
-  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
-
+  const { user } = useAuth();
+  // Keep existing endpoint/cache prefixes and isolate responses by authenticated actor.
+  const actor = user?.id;
+  const plansQ = useQuery({ queryKey: [api.plans.list.path, 'control-room', actor], enabled: !!actor,
+    queryFn: ({ signal }) => apiRequest<PlanSummary[]>('GET', api.plans.list.path, undefined, { signal }), retry: false });
+  const preferencesQ = useQuery({ queryKey: ['/api/me/preferences', 'control-room', actor], enabled: !!actor,
+    queryFn: ({ signal }) => apiRequest<MePreferences>('GET', '/api/me/preferences', undefined, { signal }) });
+  const favorite = useSetFavoritePlan();
+  const zonesQ = useQuery({ queryKey: [api.zones.list.path, 'control-room', actor], enabled: !!actor,
+    queryFn: ({ signal }) => apiRequest<LocationRead[]>('GET', api.zones.list.path, undefined, { signal }), retry: false });
+  const spacesQ = useQuery({ queryKey: [api.spaces.list.path, 'control-room', actor], enabled: !!actor,
+    queryFn: ({ signal }) => apiRequest<LocationRead[]>('GET', api.spaces.list.path, undefined, { signal }), retry: false });
+  const settingsQ = useQuery({ queryKey: [api.controlRoomSettings.get.path, 'control-room', actor], enabled: !!actor,
+    queryFn: ({ signal }) => apiRequest<ControlRoomSettings>('GET', api.controlRoomSettings.get.path, undefined, { signal }), retry: false });
+  const [legacy, params] = useRoute<{ planId: string }>('/plans/:planId/control-room');
+  const routeId = legacy ? Number(params?.planId) : Number(new URLSearchParams(window.location.search).get('plan'));
+  const [selection, setSelection] = useState<{ actor: string | undefined; id: number; routeId: number } | null>(null);
+  const plans = plansQ.data ?? [];
+  const validId = (value: number | null | undefined) => plans.some(plan => plan.id === value);
+  const preferred = preferencesQ.data?.favoritePlanId;
+  const defaultId = validId(routeId) ? routeId : validId(preferred) ? preferred! : Number(pickDefaultPlan(plans)?.id);
+  const planId = selection && selection.actor === actor && selection.routeId === routeId && validId(selection.id) ? selection.id : validId(defaultId) ? defaultId : null;
+  const room = useControlRoomData(planId);
+  const peopleQ = useQuery({ queryKey: [...contestantsQueryKey(planId ?? 0), 'control-room', actor], enabled: !!actor && !!planId,
+    queryFn: ({ signal }) => apiRequest<{ id: number; name: string }[]>('GET', `/api/plans/${planId}/contestants`, undefined, { signal }), retry: false });
+  const runQ = useQuery({ queryKey: ['planning-run', planId, 'control-room', actor], enabled: !!actor && !!planId,
+    queryFn: ({ signal }) => apiRequest<PlanningRun | null>('GET', buildUrl(api.planningRuns.latestByPlan.path, { id: planId! }), undefined, { signal }), refetchInterval: room.interval, retry: false });
+  const [mode, setMode] = useState<'production' | 'director' | 'technical'>(() => localStorage.getItem('control-room:director-mode') === '1' ? 'director' : 'production');
+  const [autoScroll, setAutoScroll] = useState(false);
+  const [tick, setTick] = useState(Date.now());
+  useEffect(() => { const timer = window.setInterval(() => setTick(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
+  useEffect(() => { localStorage.setItem('control-room:director-mode', mode === 'director' ? '1' : '0'); }, [mode]);
   useEffect(() => {
-    if (!Number.isFinite(initialPlanId) || initialPlanId <= 0) return;
-    setSelectedPlanId((prev) => (prev && planIds.has(prev) ? prev : initialPlanId));
-  }, [initialPlanId, planIds]);
-
-  const effectivePlanId = selectedPlanId && planIds.has(selectedPlanId) ? selectedPlanId : null;
-
-  const { data: plan, isLoading: planLoading, error: planError } = usePlan(effectivePlanId ?? 0);
-  const { data: contestants = [] } = useContestants(effectivePlanId ?? 0);
-  const { data: templates = [] } = useTaskTemplates();
-  const { data: itinerantTeams = [] } = useItinerantTeams();
-  const planningRunQ = usePlanningRun(effectivePlanId);
-
-  const { realtimeConnected, realtimeFailed, online } = usePlanRealtime({ planId: effectivePlanId });
-  const clockQuery = useExecutionContext(effectivePlanId, 5000);
-  const operationalNowMs = clockQuery.data ? Date.parse(clockQuery.data.clock.operationalAt) + Math.max(0, Date.now() - clockQuery.dataUpdatedAt) : effectiveNow.getTime();
-  const nowTime = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(operationalNowMs));
-  const nowSeconds = new Date(operationalNowMs).getUTCSeconds();
-
-  useEffect(() => {
-    if (!effectivePlanId) return;
-    queryClient.invalidateQueries({ queryKey: planQueryKey(effectivePlanId) });
-    if (!realtimeConnected || realtimeFailed) {
-      if (!online) return;
-      const id = window.setInterval(() => {
-        queryClient.invalidateQueries({ queryKey: planQueryKey(effectivePlanId) });
-      }, 5000);
-      return () => window.clearInterval(id);
-    }
-  }, [effectivePlanId, queryClient, realtimeConnected, realtimeFailed, online]);
-
-  useEffect(() => {
-    localStorage.setItem("control-room:director-mode", directorMode ? "1" : "0");
-  }, [directorMode]);
-
-  useEffect(() => {
-    localStorage.setItem("control-room:auto-scroll", autoScroll ? "1" : "0");
-  }, [autoScroll]);
-
-  useEffect(() => {
-    if (!autoScroll || !directorMode) return;
-    const id = window.setInterval(() => {
-      window.scrollBy({ top: window.innerHeight * 0.8, behavior: "smooth" });
-      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 16) {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-    }, 5000);
-    return () => window.clearInterval(id);
-  }, [autoScroll, directorMode]);
-
-  const favoriteValid = Number.isFinite(favoritePlanId) && planIds.has(favoritePlanId);
-  const isFavoritePlan = Boolean(effectivePlanId && favoriteValid && effectivePlanId === favoritePlanId);
-  const run = planningRunQ.data;
-  const showPlanning = run?.status === "running";
-  const planningProgress = run ? Math.min(100, Math.max(0, Number(run.progressPct ?? (run.totalPending > 0 ? (run.plannedCount / run.totalPending) * 100 : 0)))) : 0;
-  const phaseLabel = run?.phase === "prevalidation" || run?.phase === "clearing_pending"
-    ? "Prevalidando"
-    : run?.phase === "build_input" || run?.phase === "building_input"
-      ? "Construyendo entrada"
-      : run?.phase === "solving_feasible" || run?.phase === "solving"
-        ? "Validando factibilidad"
-        : run?.phase === "optimizing"
-          ? "Optimizando"
-          : run?.phase === "persisting"
-            ? "Persistiendo"
-            : run?.phase === "done"
-              ? "Completado"
-              : run?.phase === "error"
-                ? "Error"
-                : "Procesando";
-
-  return (
-    <Layout>
-      <div className={directorMode ? "space-y-5 max-w-none" : "space-y-4"}>
-        <div className="space-y-2">
-          <h1 className={directorMode ? "text-4xl font-black tracking-tight" : "text-2xl font-bold"}>Control Room</h1>
-          <p className={directorMode ? "text-base text-muted-foreground" : "text-sm text-muted-foreground"}>Dirección operativa multi-plan.</p>
-        </div>
-
-        <div className="rounded-lg border p-4 space-y-3">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-2">
-              <Select value={effectivePlanId ? String(effectivePlanId) : undefined} onValueChange={(value) => setSelectedPlanId(Number(value))} disabled={plansLoading || plans.length === 0}>
-                <SelectTrigger className="w-full md:w-[320px]" aria-label="Seleccionar plan para Control Room"><SelectValue placeholder="Selecciona un plan" /></SelectTrigger>
-                <SelectContent>
-                  {plans.map((candidate: any) => {
-                    const candidateId = Number(candidate?.id);
-                    const isFavorite = favoriteValid && candidateId === favoritePlanId;
-                    return <SelectItem key={candidateId} value={String(candidateId)}><div className="flex items-center gap-2"><span>Plan #{candidateId}</span>{isFavorite ? <Badge variant="secondary">Plan favorito</Badge> : null}</div></SelectItem>;
-                  })}
-                </SelectContent>
-              </Select>
-              {isFavoritePlan ? <Badge variant="secondary">Plan favorito</Badge> : null}
-              <div className="flex items-center gap-2 pl-2">
-                <span className="text-sm">Modo director</span>
-                <Switch checked={directorMode} onCheckedChange={setDirectorMode} />
-              </div>
-              {directorMode ? <div className="flex items-center gap-2"><span className="text-sm">Auto-scroll</span><Switch checked={autoScroll} onCheckedChange={setAutoScroll} /></div> : null}
-            </div>
-
-            <Button type="button" variant="outline" disabled={!effectivePlanId || setFavoritePlan.isPending || isFavoritePlan} onClick={() => effectivePlanId && setFavoritePlan.mutate(effectivePlanId)}>
-              <Star className="mr-2 h-4 w-4" />
-              {isFavoritePlan ? "Favorito actual" : "Marcar como favorito"}
-            </Button>
-          </div>
-
-          <div className="text-xs text-muted-foreground">{!online ? 'Sin conexión' : realtimeConnected ? 'Realtime conectado' : 'Realtime no disponible · consulta cada 5 s'}</div>
-          {plansLoading ? <div className="text-sm text-muted-foreground">Cargando planes…</div> : null}
-          {!plansLoading && plansError ? <div className="text-sm text-destructive">Error cargando planes.</div> : null}
-        </div>
-
-        {showPlanning ? (
-          <div className="rounded-lg border p-4 bg-blue-500/5 border-blue-500/30 space-y-2">
-            <div className="text-sm font-medium">Planificando… {run?.plannedCount ?? 0} / {run?.totalPending ?? 0}</div>
-            <div className="text-xs text-muted-foreground">
-              {phaseLabel}{run?.lastTaskName ? ` · Última: ${run.lastTaskName}` : ""}
-            </div>
-            <Progress value={planningProgress} />
-          </div>
-        ) : null}
-
-        {effectivePlanId != null && !planLoading && !planError && plan ? (
-          <ProductionControlPanel
-            plan={plan}
-            tasks={plan?.dailyTasks ?? []}
-            zones={zones as any[]}
-            spaces={spaces as any[]}
-            contestants={contestants}
-            templates={templates}
-            itinerantTeams={itinerantTeams as any[]}
-            nowTime={nowTime}
-            nowSeconds={nowSeconds}
-            operationalNowMs={operationalNowMs}
-            executionClock={clockQuery.data?.clock}
-            settings={settings}
-            directorMode={directorMode}
-          />
-        ) : null}
-
-        {effectivePlanId == null && !plansLoading ? <div className="rounded-lg border p-6 text-sm text-muted-foreground">Selecciona un plan para abrir el panel.</div> : null}
-        {effectivePlanId != null && planLoading ? <div className="rounded-lg border p-6 text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Cargando datos del plan...</div> : null}
-        {effectivePlanId != null && !planLoading && planError ? <div className="rounded-lg border border-destructive/40 p-6 text-sm text-destructive">Error cargando datos del plan.</div> : null}
-      </div>
-    </Layout>
-  );
+    if (mode !== 'director' || !autoScroll || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const timer = window.setInterval(() => {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 16) window.scrollTo({ top: 0, behavior: 'smooth' });
+      else window.scrollBy({ top: window.innerHeight * 0.7, behavior: 'smooth' });
+    }, 30000);
+    return () => window.clearInterval(timer);
+  }, [mode, autoScroll]);
+  const execution = room.execution.isError ? null : room.execution.data;
+  const clockMs = execution ? Date.parse(execution.clock.operationalAt) + Math.max(0, tick - room.execution.dataUpdatedAt) : NaN;
+  const serverMs = execution ? Date.parse(execution.clock.serverAt) + Math.max(0, tick - room.execution.dataUpdatedAt) : tick;
+  const errors = [room.plan.isError && 'planning y tareas', room.execution.isError && 'contexto de ejecución', room.incidents.isError && 'incidencias', zonesQ.isError && 'catálogo de platós', spacesQ.isError && 'catálogo de espacios', peopleQ.isError && 'personas', runQ.isError && 'estado de planificación', settingsQ.isError && 'configuración de alertas'].filter(Boolean);
+  const stale = !room.sync.online || errors.length > 0 || (room.confirmedAt !== null && tick - room.confirmedAt > (Number(room.interval) || 30000) + 20000);
+  const director = mode === 'director';
+  const running = !!runQ.data && ['running', 'pending', 'queued', 'optimizing', 'cancelling'].includes(runQ.data.status);
+  const content = <div className={cn('space-y-5 pb-10 text-foreground', director && 'mx-auto max-w-[1920px] p-4 sm:p-8')}>
+    <header className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[.18em] text-primary">OptiPlan · Operaciones</p><h1 className={cn('mt-1 text-3xl font-bold tracking-tight', director && 'sm:text-4xl')}>Control Room <span className="text-primary">PRO</span></h1><p className="mt-2 text-sm text-foreground/75">Estado real de la jornada. Atención donde hace falta.</p></div><div className="flex items-center gap-2"><Monitor aria-hidden className="h-4 w-4 text-foreground/75" /><label className="sr-only" htmlFor="control-mode">Modo de Control Room</label><select id="control-mode" value={mode} onChange={e => setMode(e.target.value as typeof mode)} className="min-h-11 rounded-lg border bg-background px-3 text-sm"><option value="production">Producción</option><option value="director">Dirección</option><option value="technical">Técnico</option></select>{director && <Link href="/dashboard" className="rounded-lg border px-3 py-3 text-sm">Salir de dirección</Link>}</div></header>
+    <section aria-label="Seleccionar jornada" className="rounded-2xl border bg-card p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div className="flex min-w-0 flex-wrap items-center gap-3"><label htmlFor="control-plan" className="text-sm font-medium">Jornada</label><select id="control-plan" value={planId ?? ''} onChange={e => setSelection({ actor, id: Number(e.target.value), routeId })} disabled={plansQ.isLoading || !plans.length} className="min-h-11 max-w-full rounded-lg border bg-background px-3 text-sm"><option value="" disabled>Selecciona una jornada</option>{plans.map(plan => <option key={plan.id} value={plan.id}>{plan.date}{plan.id === preferred ? ' · Favorita' : ''}</option>)}</select>{director && <div className="flex items-center gap-2"><label htmlFor="control-scroll" className="text-sm">Desplazamiento cada 30 s</label><Switch id="control-scroll" checked={autoScroll} onCheckedChange={setAutoScroll} /></div>}</div><div className="flex gap-2">{!director && <Button variant="outline" disabled={!planId || favorite.isPending || planId === preferred} onClick={() => planId && favorite.mutate(planId, { onSuccess: () => { void preferencesQ.refetch(); } })}><Star aria-hidden className="mr-2 h-4 w-4" />{planId === preferred ? 'Favorita' : 'Favorita del día'}</Button>}<Button variant="outline" disabled={!planId || room.plan.isFetching || room.execution.isFetching || room.incidents.isFetching} onClick={() => { void room.refresh(); void runQ.refetch(); }}><RefreshCw aria-hidden className="mr-2 h-4 w-4" />Actualizar</Button></div></div>
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t pt-3 text-xs text-foreground/75" role="status"><Badge variant={stale ? 'destructive' : 'secondary'}>{!room.sync.online ? 'Sin conexión' : stale ? 'Datos posiblemente obsoletos' : 'Online'}</Badge><span>{director ? room.sync.realtimeConnected ? 'Canal conectado · verificación periódica' : 'Actualización por consulta' : room.sync.realtimeConnected ? 'Canal conectado; entrega no garantizada' : 'Canal no disponible'}</span><span>{room.interval ? `Reconciliación cada ${Number(room.interval) / 1000} s` : 'Consultas pausadas sin conexión'}</span><span>Última consulta confirmada: {datedTime(room.confirmedAt)}</span></div>
+    </section>
+    {errors.length > 0 && <div role="alert" className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm"><p className="font-semibold">No se pudo confirmar: {errors.join(', ')}.</p><p className="mt-1 text-foreground/75">Los datos previos pueden estar obsoletos. Actualiza para volver a consultar.</p></div>}
+    {plansQ.isError && <div role="alert" className="rounded-xl border border-destructive/40 p-5">No se pudieron consultar las jornadas autorizadas. <Button variant="outline" onClick={() => void plansQ.refetch()}>Reintentar</Button></div>}
+    {plansQ.isLoading || planId && room.plan.isLoading ? <div className="flex items-center gap-2 rounded-xl border p-6"><Loader2 aria-hidden className="h-4 w-4 animate-spin" />Consultando datos de la jornada…</div> : null}
+    {!planId && !plansQ.isLoading && !plansQ.isError && <div className="rounded-xl border p-6 text-foreground/75">Sin planning disponible. Selecciona una jornada cuando exista.</div>}
+    {room.plan.data && room.plan.data.id === planId && execution && <ProductionControlPanel key={`${actor}-${planId}`} plan={room.plan.data} zones={zonesQ.isError ? [] : zonesQ.data ?? []} spaces={spacesQ.isError ? [] : spacesQ.data ?? []} contestants={peopleQ.isError ? [] : peopleQ.data ?? []} execution={execution} incidents={room.incidents.isError ? null : room.incidents.data ?? null} operationalNowMs={clockMs} realNowMs={serverMs} settings={settingsQ.data} directorMode={director} planningRunning={running} />}
+    {planId && room.plan.data && !execution && <div role="status" className="rounded-xl border p-6 text-foreground/75">El resumen espera el contexto de ejecución y su ámbito autorizado. No se presentan contadores globales sin esa autoridad.</div>}
+    {mode === 'technical' && <section aria-label="Salud y sincronización" className="rounded-2xl border bg-card p-5"><h2 className="text-xl font-semibold">Salud y sincronización</h2><dl className="mt-4 grid gap-3 text-sm sm:grid-cols-3"><div><dt className="text-foreground/75">Planning y tareas</dt><dd>{datedTime(room.plan.dataUpdatedAt || null)}</dd></div><div><dt className="text-foreground/75">Autoridad y reloj</dt><dd>{datedTime(room.execution.dataUpdatedAt || null)}</dd></div><div><dt className="text-foreground/75">Registro de incidencias</dt><dd>{datedTime(room.incidents.dataUpdatedAt || null)}</dd></div></dl><p className="mt-4 text-sm text-foreground/75">Un canal conectado no confirma entrega de todos los eventos. Se conserva reconciliación HTTP, sin solver ni escritura del planning. Conteos limitados a los datos autorizados recibidos.</p></section>}
+  </div>;
+  return director ? <main className="min-h-screen bg-background text-foreground">{content}</main> : <Layout>{content}</Layout>;
 }
