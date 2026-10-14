@@ -37,6 +37,29 @@ export const preferredCandidateCuts=(pattern:string[])=>[pattern.length,...block
 export const fallbackCandidateCuts=(pattern:string[])=>{const preferred=new Set(preferredCandidateCuts(pattern));return pattern.map((_,i)=>i).filter(cut=>cut>0&&!preferred.has(cut))};
 export const candidateCuts=(pattern:string[])=>[...preferredCandidateCuts(pattern),...fallbackCandidateCuts(pattern)];
 export function buildTimeline(p:PlannerNextProblem,pattern:string[],duration:number,cut:number,mealStart=createMainFlowMeal(p).start):MainFlowTimeline{const mealAuthority=mainFlowMealPolicy(p)!;const meal=createScheduledSpaceMeal(p.mainFlow.spaceId,mealStart,mealAuthority.duration),slots:number[]=[];for(let i=0;i<cut;i++)slots.push(meal.start-cut*duration+i*duration);for(let i=cut;i<pattern.length;i++)slots.push(meal.end+(i-cut)*duration);const key=`${cut===pattern.length?"ALL_MORNING":"SPLIT"}|${cut}|MEAL:${mealStart}|${pattern.join("|")}|${slots.join("|")}`;return{key,slots,meal,mealAuthority,splitIndex:cut,morningTaskCount:cut,afternoonTaskCount:pattern.length-cut,strategyRank:cut===pattern.length?0:isBlockBoundary(pattern,cut)?1:2}}
+/** Logical runs are never split by an authorized meal interruption. */
+export function mainFlowMealBlockDistribution(tasks:readonly ScheduledTask[],meal:{start:number;end:number}|undefined) {
+  const mains=tasks.filter(t=>t.kind==="main").sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+  const blocks:Array<{key:string|undefined;start:number;end:number}>=[];
+  for(const task of mains){const key=task.blockKey??task.coachId,last=blocks.at(-1);
+    if(last&&last.key===key)last.end=Math.max(last.end,task.end);else blocks.push({key,start:task.start,end:task.end});}
+  return {total:blocks.length,mealStart:meal?.start??null,mealEnd:meal?.end??null,
+    blocksBeforeMeal:meal?blocks.filter(b=>b.end<=meal.start).length:null,
+    blocksAfterMeal:meal?blocks.filter(b=>b.start>=meal.end).length:null,
+    blockSpansMeal:meal?blocks.some(b=>b.start<meal.end&&b.end>meal.start):false};
+}
+export function preferredMealSplitCuts(p:Readonly<PlannerNextProblem>,pattern:readonly string[]):number[] {
+  const pref=p.mainFlow.mealSplitPreference;if(!pref)return [];
+  const runs=(xs:readonly string[])=>xs.reduce((n,k,i)=>n+(i===0||k!==xs[i-1]?1:0),0);
+  return [0,...candidateCuts([...pattern])].filter(cut=>(cut===0||cut===pattern.length||isBlockBoundary([...pattern],cut))
+    &&runs(pattern.slice(0,cut))===pref.beforeMealBlocks&&runs(pattern.slice(cut))===pref.afterMealBlocks);
+}
+const configuredMealCandidateCuts=(p:Readonly<PlannerNextProblem>,pattern:string[])=>
+  mainFlowMealPolicy(p)?.source==="OPERATIONAL_MEAL_POLICY"?[...candidateCuts(pattern),0]:candidateCuts(pattern);
+export const mainFlowMealCutTiers=(p:Readonly<PlannerNextProblem>)=>p.mainFlow.mealSplitPreference
+  ? [(pattern:string[])=>preferredMealSplitCuts(p,pattern),
+    (pattern:string[])=>configuredMealCandidateCuts(p,pattern).filter(cut=>!preferredMealSplitCuts(p,pattern).includes(cut))]
+  : [preferredCandidateCuts,fallbackCandidateCuts];
 export const timelineSignature=(x:MainFlowTimeline)=>x.key;
 export const orderTimelines=(xs:MainFlowTimeline[])=>[...xs].sort((a,b)=>a.strategyRank-b.strategyRank||b.splitIndex-a.splitIndex||a.key.localeCompare(b.key));
 export const combineMainFlowOccupations=(tasks:ScheduledTask[],meal:ScheduledSpaceMeal)=>[...tasks,meal].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));

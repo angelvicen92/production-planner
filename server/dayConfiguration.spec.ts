@@ -76,9 +76,9 @@ test("canonical day revisions are built from the complete existing EngineInput a
   assert.match(source,/p_candidate_identity: candidate\.identity/);
 });
 
-test("the 27-capability registry promotes only the two demonstrated capabilities",()=>{
+test("the registry includes the versioned SOFT operational capability",()=>{
   assert.equal(configurabilityRegistry.length,27);
-  assert.deepEqual(configurabilityRegistry.filter(x=>x.status==="PRODUCTIVE").map(x=>x.capabilityId),["WORKDAY_WINDOW","GLOBAL_MEAL_BREAK"]);
-  assert.equal(configurabilityCounts.PRODUCTIVE,2);
+  assert.deepEqual(configurabilityRegistry.filter(x=>x.status==="PRODUCTIVE").map(x=>x.capabilityId),["WORKDAY_WINDOW","GLOBAL_MEAL_BREAK","BLOCK_COUNT_POLICY"]);
+  assert.equal(configurabilityCounts.PRODUCTIVE,3);
   assert.equal(configurabilityRegistry.find(x=>x.capabilityId==="OPTIMIZATION")?.status,"PARTIAL");
 });

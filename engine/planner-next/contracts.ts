@@ -191,6 +191,7 @@ export interface PlannerNextProblem {
     minTasksPerBlock: number;
     /** Internal SOFT search objective. Absent preserves AUTO; never a REQUIRED count. */
     preferredBlockCount?: number;
+    mealSplitPreference?: import("../../shared/mainFlowPreference").PreferredMealSplit;
   };
   participantTransitionMinutes: number;
   resourceTransitionMinutes: number;

@@ -1,3 +1,4 @@
+import { mainFlowPreferenceFromRow } from "../shared/mainFlowPreference";
 import type { Express } from "express";
 import { pool } from "./db";
 import type { Server } from "http";
@@ -1714,6 +1715,7 @@ function mapDeleteError(err: any, fallback: string) {
 
       res.json({
         id: Number(data.id),
+        mainFlowPreference: mainFlowPreferenceFromRow(data),
         defaultWorkStart: data.default_work_start,
         defaultWorkEnd: data.default_work_end,
         mealStart: String(data.meal_start),

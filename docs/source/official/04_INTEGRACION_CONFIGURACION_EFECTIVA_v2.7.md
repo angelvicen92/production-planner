@@ -1,9 +1,17 @@
 # OPTIPLAN — INTEGRACIÓN Y CONFIGURACIÓN OPERATIVA EFECTIVA
 
-**Versión:** 2.6<br>
-**Fecha:** 13 de octubre de 2026<br>
+**Versión:** 2.7<br>
+**Fecha:** 14 de octubre de 2026<br>
 **Estado:** Fuente oficial consolidada  
 **Absorbe:** SPEC-10, SPEC-11 y Addenda oficiales consolidados de dominio/operación.
+
+## Actualización v2.7 — autoridad versionada para preferencias de bloques
+
+La configuración operativa distingue `blockCountPolicy = AUTO_MIN_FEASIBLE | SOFT_PREFER_N(count)` y `mealSplitPreference = OFF | PREFERRED(beforeMealBlocks, afterMealBlocks)`. El reparto exige SOFT y suma N; N se valida contra la geometría y límites efectivos, sin máximos universales ni identidades A2. `FIXED_COUNT(n)` conserva su naturaleza REQUIRED separada y no se ofrece como opción funcional de esta capacidad.
+
+La configuración general es el origen habitual de días nuevos. El día materializa un baseline independiente; cambios generales posteriores no lo modifican silenciosamente. EDIT crea un override diario; RESTORE recupera el baseline local; REFRESH explícito actualiza herencia y conserva overrides activos. Jornadas antiguas sin preferencias mantienen AUTO y provenance histórica. El snapshot original Next protegido por 088 no se reescribe: la autoridad efectiva se incorpora a EngineInput, revisión/fingerprint y replay mediante operación autenticada, restringida y atómica. Una edición directa sin revisión debe rechazarse.
+
+Cada propuesta/Stage conserva su revisión de origen. Cambiar preferencia invalida validaciones pendientes y vuelve stale una propuesta antigua para aplicación. No modifica Stages aceptados, tasks ejecutadas/en curso, locks ni decisiones protegidas. Rollback/redo de planning mantiene la configuración vigente. Configuración del día muestra valor, origen/revisión, resumen antes de guardar y restauración de herencia; la UI del resultado utiliza la Evidence del run seleccionado.
 
 ## Actualización v2.6 — proyección explícita de ocupación no física
 
@@ -3217,10 +3225,13 @@ Para número de bloques, el contrato mínimo de producto deberá distinguir:
 
 ```text
 AUTO_MIN_FEASIBLE
-FIXED_COUNT(n)
+SOFT_PREFER_N(count)
+FIXED_COUNT(n) — contrato REQUIRED separado, no disponible en esta capacidad
 ```
 
 `AUTO_MIN_FEASIBLE` es el default recomendado: el motor busca el mínimo número de bloques que permita completar hard-valid el alcance aplicable.
+
+`SOFT_PREFER_N(count)` intenta N primero y permite alternativas completas explicadas, con reparto PREFERRED opcional conforme a v2.7.
 
 `FIXED_COUNT(n)` expresa una decisión explícita de Producción y se considera REQUIRED para esa ejecución/configuración mientras permanezca activa. El motor no puede relajarla silenciosamente a `n+1` ni sustituirla por AUTO.
 
@@ -3511,7 +3522,7 @@ El registro permanente de configurabilidad debe cubrir, cuando la producción la
 ### Bloques, setups y coordinación
 
 - continuidad;
-- política de número de bloques (`AUTO_MIN_FEASIBLE` por defecto o `FIXED_COUNT(n)` cuando Producción fije exactamente un número);
+- política de número de bloques (`AUTO_MIN_FEASIBLE` por defecto, `SOFT_PREFER_N(count)` como preferencia y `FIXED_COUNT(n)` reservado al contrato REQUIRED separado);
 - tamaño mínimo cuando exista;
 - familia de setup;
 - orden explícito o automático;

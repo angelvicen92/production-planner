@@ -177,13 +177,17 @@ Disponibilidades efectivas se derivan en `effectivePlanSpatialAvailability.ts`. 
 
 El adapter es la frontera de wiring y `validatePlan` tiene contadores separados de bloques, continuidad, setup/preparación y round/preparación. Evidence: SPEC10-018 y SPEC10-020, sus benchmarks, `mainFlowPatterns.spec.ts`, `secondaryContinuity.spec.ts` y `roundSynchronization.spec.ts`. Assisted mantiene spaces y policies globales, pero al filtrar tasks puede convertir un contexto global en un problema local distinto; por eso setup y round son `PARTIAL` en esa dimensión.
 
-La preferencia SOFT por número total de bloques sigue sin superficie productiva.
-[MAIN-FLOW-SOFT-BLOCKS](../evidence/MAIN-FLOW-SOFT-BLOCKS.md) certifica witnesses
-A2 completos de 3/4 en un experimento aislado, pero reproduce pérdida de fallback
-frío por agotamiento del CORE antes de alcanzar la familia mínima. Su patch no
-es una capacidad ACTIVE ni cambia el contrato AUTO; la extensión queda bloqueada
-hasta un certificado estructural sound de las obligaciones futuras y protección
-verificada del fallback con el mismo presupuesto.
+La cantidad y el reparto PREFERRED del flujo principal tienen contrato productivo
+`MainFlowPreference`: configuración general → baseline/override diario versionado
+→ `buildEngineInput` → adapter → exploradores existentes → Evidence del run → UI,
+Draft y Stage. La autoridad aplica a flujos Next configurados; no fabrica una
+configuración Next para jornadas legacy. 088 sigue inmutable. La configuración
+y el replay se revisan por `apply_day_config_operation_v3`, con restore/refresh,
+freshness y protecciones existentes. El reparto usa bloques lógicos completos
+respecto a la comida materializada; los fallbacks no son pruebas de inviabilidad.
+`FIXED_COUNT` no está activado. Evidence y límites:
+[MAIN-FLOW-SOFT-MEAL-SPLIT-DAY-CONFIG](../evidence/MAIN-FLOW-SOFT-MEAL-SPLIT-DAY-CONFIG.md).
+Los diagnósticos #1119–#1122 permanecen como historia causal, sin otro scheduler.
 
 ### Transitions and resources (TRN-01…RES-05)
 

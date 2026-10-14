@@ -2,7 +2,7 @@ import type { PlannerNextProblem, ScheduledSetupPreparation, ScheduledSpaceMeal,
 import { anchoredTaskIds, firstParticipantObligationTask, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { fingerprint } from "./fingerprint";
 import { materializeScheduledItinerantUnitMeals } from "./itinerantUnitMeals";
-import { buildTimeline, createMainFlowMeal, fallbackCandidateCuts, hasMainFlowMeal, mainFlowMealPolicy, mainFlowMealStarts, materializeMainFlowOperationalMeals, orderTimelines,
+import { mainFlowMealCutTiers, buildTimeline, createMainFlowMeal, fallbackCandidateCuts, hasMainFlowMeal, mainFlowMealPolicy, mainFlowMealStarts, materializeMainFlowOperationalMeals, orderTimelines,
   preferredCandidateCuts, type MainFlowTimeline } from "./mainFlowMeal";
 import { generateMainFlowPatterns, optimisticPrerequisiteLeadInMinutes, proveMainFeederArchitectureImpossible,
   createMainFutureDependencyEvidence, recordMainFutureDependencyCertificate, type MainFutureDependencyEvidence, type MainFeederArchitecture, type MainFeederStructuralRejection } from "./mainFlowPatterns";
@@ -1448,12 +1448,17 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         search(pattern,slots,composite,meals,scheduled,used,depth,timelineKey,certificate,true));
       if (!consumeBranch("LEAF_VALIDATION_BUDGET_EXHAUSTED")) return "BUDGET_EXHAUSTED";
       evidence.completeLeafCount += 1;
-      const ordered=hardGateCoreLeaf(placed,meals,coreIds);
+      // A configured distribution uses the meal actually chosen by this
+      // residual timeline, as the structural path already does. AUTO keeps its
+      // historical closure; a preferred start is not a materialized meal.
+      const selectedMainMealStart=problem.mainFlow.mealSplitPreference
+        ?meals.find(meal=>meal.spaceId===problem.mainFlow.spaceId)?.start:undefined;
+      const ordered=hardGateCoreLeaf(placed,meals,coreIds,applicableContracts,false,selectedMainMealStart);
       if (ordered) {
         const orderedMeals = [...meals].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
         const continuation = options.onHardValidCoreLeaf?.({ tasks: ordered, meals: orderedMeals,
           remainingTaskIds: allTaskIds.filter((id) => !coreIds.has(id)), fingerprint: fingerprint(ordered, [], orderedMeals),
-          source:"ORDINARY_DFS" }) ?? "ACCEPT";
+          source:"ORDINARY_DFS",selectedMainMealStart }) ?? "ACCEPT";
         if (continuation === "BUDGET_EXHAUSTED") return "BUDGET_EXHAUSTED";
         if (typeof continuation === "object") return continuation;
         if (continuation === "ACCEPT") { selected = { tasks: ordered, meals, pattern }; return "FOUND"; }
@@ -2337,7 +2342,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   };
 
   const timelineCutTiers = hasMainFlowMeal(problem)
-    ? [preferredCandidateCuts, fallbackCandidateCuts] : [preferredCandidateCuts];
+    ? mainFlowMealCutTiers(problem) : [preferredCandidateCuts];
   const runCount=(pattern:readonly string[])=>pattern.reduce((count,key,index)=>count+(index===0||key!==pattern[index-1]?1:0),0);
   // AUTO retains its exact tier-first traversal. SOFT finishes all authorized
   // meal-cut tiers of a family before opening the next distance-ranked family.

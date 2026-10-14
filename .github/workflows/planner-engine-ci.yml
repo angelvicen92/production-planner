@@ -22,6 +22,11 @@ on:
       - "client/src/lib/assisted-autopilot*"
       - "client/src/lib/assisted-scope-selection*"
       - "client/src/components/planning/assisted-location-scope*"
+      - "shared/mainFlowPreference*"
+      - "client/src/components/effective-configuration.tsx"
+      - "client/src/components/general-program-settings.tsx"
+      - "client/src/components/main-flow-preference-editor.tsx"
+      - "client/src/lib/main-flow-preference-result.ts"
       - "shared/assistedAutopilot*"
       - "docs/source/**"
       - "docs/evidence/**"
@@ -75,6 +80,31 @@ jobs:
             work/a2-scope-integration/integration.json
             work/a2-scope-integration/scope-selection-*.json
             work/a2-integration/*-real-ui.png
+
+  main-flow-preference-integration:
+    name: main-flow-preference-integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
+      - name: Real settings, day configuration, Evidence, Draft and Stages
+        run: npm run demo:a2:smoke -- work/main-flow-preference-integration --historical-topology --full --main-flow-preference
+      - name: Preference evidence from disposable services
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: main-flow-preference-integration
+          path: |
+            work/main-flow-preference-integration/integration.json
+            work/main-flow-preference-integration/main-flow-preference-S1-result.json
+            work/main-flow-preference-integration/*-real-ui.png
 
   planner-engine-ci:
     name: planner-engine-ci
