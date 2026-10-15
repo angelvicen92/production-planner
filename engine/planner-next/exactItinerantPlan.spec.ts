@@ -14,6 +14,7 @@ import { futureStructuralWitnessV2FromAcceptedPipeline } from "./anonymousPipeli
 import { checkMacroPendingPrerequisites } from "./macroPendingPrerequisiteForwardCheck";
 import { PreparedOperationalMealAuthority } from "./preparedOperationalMealAuthority";
 import { itinerantAgendaStructuralFrontier } from "./itinerantAgendaAuthority";
+import { ExactSearchTimeLimitReached } from "./exactMainAndFeederCore";
 import type { FutureItinerantAgendaWitnessV1 } from "./anonymousPipelineWitness";
 
 function problem(auxiliaries: Task[]): PlannerNextProblem {
@@ -42,6 +43,31 @@ function problem(auxiliaries: Task[]): PlannerNextProblem {
 const auxiliary = (id: string, participantId: string, availability: Array<{ start: number; end: number }>,
   requiredResourceIds: string[] = []): Task => ({ id, kind: "auxiliary", participantId, duration: 10,
   spaceId: `space-${id}`, dependencies: [], availability, requiredResourceIds });
+
+test("runtime interruption retains only charged causal observations and preserves search",()=>{
+  for(const stopAt of [2,5,12]){
+    const input=problem([auxiliary("late","late",[{start:90,end:110}])]);
+    const saved=structuredClone(input);
+    const execute=(causalDiagnostic:boolean)=>{
+      let checkpoints=0;
+      const result=runExactItinerantPlanSearch(input,{causalDiagnostic,checkpoint:()=>{
+        if(++checkpoints===stopAt)throw new ExactSearchTimeLimitReached();
+      }});
+      return {result,checkpoints};
+    };
+    const enabled=execute(true),disabled=execute(false),again=execute(true);
+    assert.equal(enabled.result.status,"TIME_LIMIT_REACHED");
+    assert.equal(enabled.checkpoints,stopAt);
+    assert.deepEqual(again,enabled);
+    assert.deepEqual({...enabled,result:{...enabled.result,evidence:{...enabled.result.evidence,causalDiagnostic:null}}},disabled);
+    const evidence=enabled.result.evidence;
+    assert.ok(evidence.causalDiagnostic);
+    assert.equal(Object.values(evidence.causalDiagnostic.waterfallByDepth).reduce((sum,row)=>sum+row.total,0),evidence.branchesExplored);
+    assert.equal(evidence.branchesExplored,evidence.coreBranches+evidence.standaloneBranches);
+    assert.deepEqual(enabled.result.scheduledTasks,[]);
+    assert.deepEqual(input,saved);
+  }
+});
 
 function crossStagePipelineProblem():PlannerNextProblem{
   const availability=[{start:0,end:300}];const tasks:Task[]=[];

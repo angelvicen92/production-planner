@@ -1,0 +1,1723 @@
+{
+  "mode": "CONTROLLED_CHARGED_PREFIX",
+  "syntheticStop": true,
+  "interpretation": "Diagnostic AUTO S0 composition, stopped at historical charged count; not the historical trace or a real 300s measurement.",
+  "semanticResultHash": "de3032609437d1857b79fe95a99b9af879fb39f71c66f4f11f0ab6594a50984c",
+  "status": "TIME_LIMIT_REACHED",
+  "complete": false,
+  "branches": 38640,
+  "core": 6782,
+  "standalone": 31858,
+  "matchesHistoricalPhaseTotals": true,
+  "elapsedMs": 72589.361111,
+  "cpuMicroseconds": {
+    "user": 72442010,
+    "system": 496198
+  },
+  "samples": [
+    {
+      "branches": 0,
+      "core": 0,
+      "standalone": 0,
+      "elapsedMs": 13285.395328
+    },
+    {
+      "branches": 5000,
+      "core": 3154,
+      "standalone": 1846,
+      "elapsedMs": 18658.031104
+    },
+    {
+      "branches": 10000,
+      "core": 3364,
+      "standalone": 6636,
+      "elapsedMs": 19969.082168
+    },
+    {
+      "branches": 15000,
+      "core": 3643,
+      "standalone": 11357,
+      "elapsedMs": 24411.810326
+    },
+    {
+      "branches": 20000,
+      "core": 4201,
+      "standalone": 15799,
+      "elapsedMs": 30144.617956000002
+    },
+    {
+      "branches": 25000,
+      "core": 4768,
+      "standalone": 20232,
+      "elapsedMs": 44917.514309
+    },
+    {
+      "branches": 30000,
+      "core": 5643,
+      "standalone": 24357,
+      "elapsedMs": 63516.90898
+    },
+    {
+      "branches": 35000,
+      "core": 6494,
+      "standalone": 28506,
+      "elapsedMs": 71101.015809
+    }
+  ],
+  "causalDiagnostic": {
+    "waterfallByDepth": {
+      "0": {
+        "mainCandidate": 0,
+        "feederStart": 0,
+        "residualMatching": 0,
+        "continuation": 0,
+        "participantMeal": 0,
+        "standaloneForward": 0,
+        "other": 38640,
+        "total": 38640
+      }
+    },
+    "feederByDepth": {},
+    "feederRejections": [],
+    "feederCoachDomainEliminations": [],
+    "futureFeasibility": {
+      "totalEvaluations": 0,
+      "uniqueAuthorityStates": 0,
+      "repeatedEvaluations": 0,
+      "authorityResultCollisions": 0,
+      "negativeEvaluations": 0,
+      "repeatedNegativeEvaluations": 0,
+      "rejectsWithCertifiedBackjumpTarget": 0,
+      "evaluationsByDepth": {},
+      "repeatedByDepth": {},
+      "negativeByDepth": {},
+      "assessments": [],
+      "collisions": []
+    },
+    "bundleMaterializations": [
+      {
+        "attempt": 1,
+        "branchesBeforeMaterialization": 93,
+        "architectureFingerprint": "193b437db327abc8c10a300552eb980cc158ceefdeb72a83075dc6e239edcb2f",
+        "selectedEdges": [
+          {
+            "taskId": "task:110002",
+            "participantId": "participant:100201",
+            "position": 0
+          },
+          {
+            "taskId": "task:110017",
+            "participantId": "participant:100202",
+            "position": 16
+          },
+          {
+            "taskId": "task:110031",
+            "participantId": "participant:100203",
+            "position": 15
+          },
+          {
+            "taskId": "task:110043",
+            "participantId": "participant:100204",
+            "position": 14
+          },
+          {
+            "taskId": "task:110056",
+            "participantId": "participant:100205",
+            "position": 17
+          },
+          {
+            "taskId": "task:110072",
+            "participantId": "participant:100206",
+            "position": 9
+          },
+          {
+            "taskId": "task:110088",
+            "participantId": "participant:100207",
+            "position": 8
+          },
+          {
+            "taskId": "task:110102",
+            "participantId": "participant:100208",
+            "position": 18
+          },
+          {
+            "taskId": "task:110116",
+            "participantId": "participant:100209",
+            "position": 7
+          },
+          {
+            "taskId": "task:110131",
+            "participantId": "participant:100210",
+            "position": 6
+          },
+          {
+            "taskId": "task:110147",
+            "participantId": "participant:100211",
+            "position": 5
+          },
+          {
+            "taskId": "task:110161",
+            "participantId": "participant:100212",
+            "position": 13
+          },
+          {
+            "taskId": "task:110175",
+            "participantId": "participant:100213",
+            "position": 12
+          },
+          {
+            "taskId": "task:110190",
+            "participantId": "participant:100214",
+            "position": 11
+          },
+          {
+            "taskId": "task:110203",
+            "participantId": "participant:100215",
+            "position": 1
+          },
+          {
+            "taskId": "task:110218",
+            "participantId": "participant:100216",
+            "position": 10
+          },
+          {
+            "taskId": "task:110229",
+            "participantId": "participant:100217",
+            "position": 4
+          },
+          {
+            "taskId": "task:110243",
+            "participantId": "participant:100218",
+            "position": 3
+          },
+          {
+            "taskId": "task:110256",
+            "participantId": "participant:100219",
+            "position": 2
+          }
+        ],
+        "operationalFingerprint": "task:110002@0|task:110017@16|task:110031@15|task:110043@14|task:110056@17|task:110072@9|task:110088@8|task:110102@18|task:110116@7|task:110131@6|task:110147@5|task:110161@13|task:110175@12|task:110190@11|task:110203@1|task:110218@10|task:110229@4|task:110243@3|task:110256@2",
+        "hardValid": true,
+        "reasonCodes": [],
+        "violations": []
+      },
+      {
+        "attempt": 2,
+        "branchesBeforeMaterialization": 5026,
+        "architectureFingerprint": "e6a31a7301848028b5ea15e2cc0c770ccf7a8c3221b40cc50eda25ec5a60da65",
+        "selectedEdges": [
+          {
+            "taskId": "task:110002",
+            "participantId": "participant:100201",
+            "position": 0
+          },
+          {
+            "taskId": "task:110017",
+            "participantId": "participant:100202",
+            "position": 16
+          },
+          {
+            "taskId": "task:110031",
+            "participantId": "participant:100203",
+            "position": 15
+          },
+          {
+            "taskId": "task:110043",
+            "participantId": "participant:100204",
+            "position": 14
+          },
+          {
+            "taskId": "task:110056",
+            "participantId": "participant:100205",
+            "position": 17
+          },
+          {
+            "taskId": "task:110072",
+            "participantId": "participant:100206",
+            "position": 9
+          },
+          {
+            "taskId": "task:110088",
+            "participantId": "participant:100207",
+            "position": 8
+          },
+          {
+            "taskId": "task:110102",
+            "participantId": "participant:100208",
+            "position": 18
+          },
+          {
+            "taskId": "task:110116",
+            "participantId": "participant:100209",
+            "position": 7
+          },
+          {
+            "taskId": "task:110131",
+            "participantId": "participant:100210",
+            "position": 6
+          },
+          {
+            "taskId": "task:110147",
+            "participantId": "participant:100211",
+            "position": 5
+          },
+          {
+            "taskId": "task:110161",
+            "participantId": "participant:100212",
+            "position": 13
+          },
+          {
+            "taskId": "task:110175",
+            "participantId": "participant:100213",
+            "position": 12
+          },
+          {
+            "taskId": "task:110190",
+            "participantId": "participant:100214",
+            "position": 11
+          },
+          {
+            "taskId": "task:110203",
+            "participantId": "participant:100215",
+            "position": 1
+          },
+          {
+            "taskId": "task:110218",
+            "participantId": "participant:100216",
+            "position": 10
+          },
+          {
+            "taskId": "task:110229",
+            "participantId": "participant:100217",
+            "position": 4
+          },
+          {
+            "taskId": "task:110243",
+            "participantId": "participant:100218",
+            "position": 3
+          },
+          {
+            "taskId": "task:110256",
+            "participantId": "participant:100219",
+            "position": 2
+          }
+        ],
+        "operationalFingerprint": "task:110002@0|task:110017@16|task:110031@15|task:110043@14|task:110056@17|task:110072@9|task:110088@8|task:110102@18|task:110116@7|task:110131@6|task:110147@5|task:110161@13|task:110175@12|task:110190@11|task:110203@1|task:110218@10|task:110229@4|task:110243@3|task:110256@2",
+        "hardValid": true,
+        "reasonCodes": [],
+        "violations": []
+      },
+      {
+        "attempt": 3,
+        "branchesBeforeMaterialization": 10569,
+        "architectureFingerprint": "ebc71fbbada33c0272203d93cbbfbfe074bcf6572b3f8f6233a274f0867f85ea",
+        "selectedEdges": [
+          {
+            "taskId": "task:110002",
+            "participantId": "participant:100201",
+            "position": 0
+          },
+          {
+            "taskId": "task:110017",
+            "participantId": "participant:100202",
+            "position": 16
+          },
+          {
+            "taskId": "task:110031",
+            "participantId": "participant:100203",
+            "position": 15
+          },
+          {
+            "taskId": "task:110043",
+            "participantId": "participant:100204",
+            "position": 14
+          },
+          {
+            "taskId": "task:110056",
+            "participantId": "participant:100205",
+            "position": 17
+          },
+          {
+            "taskId": "task:110072",
+            "participantId": "participant:100206",
+            "position": 9
+          },
+          {
+            "taskId": "task:110088",
+            "participantId": "participant:100207",
+            "position": 8
+          },
+          {
+            "taskId": "task:110102",
+            "participantId": "participant:100208",
+            "position": 18
+          },
+          {
+            "taskId": "task:110116",
+            "participantId": "participant:100209",
+            "position": 7
+          },
+          {
+            "taskId": "task:110131",
+            "participantId": "participant:100210",
+            "position": 6
+          },
+          {
+            "taskId": "task:110147",
+            "participantId": "participant:100211",
+            "position": 5
+          },
+          {
+            "taskId": "task:110161",
+            "participantId": "participant:100212",
+            "position": 13
+          },
+          {
+            "taskId": "task:110175",
+            "participantId": "participant:100213",
+            "position": 12
+          },
+          {
+            "taskId": "task:110190",
+            "participantId": "participant:100214",
+            "position": 11
+          },
+          {
+            "taskId": "task:110203",
+            "participantId": "participant:100215",
+            "position": 1
+          },
+          {
+            "taskId": "task:110218",
+            "participantId": "participant:100216",
+            "position": 10
+          },
+          {
+            "taskId": "task:110229",
+            "participantId": "participant:100217",
+            "position": 4
+          },
+          {
+            "taskId": "task:110243",
+            "participantId": "participant:100218",
+            "position": 3
+          },
+          {
+            "taskId": "task:110256",
+            "participantId": "participant:100219",
+            "position": 2
+          }
+        ],
+        "operationalFingerprint": "task:110002@0|task:110017@16|task:110031@15|task:110043@14|task:110056@17|task:110072@9|task:110088@8|task:110102@18|task:110116@7|task:110131@6|task:110147@5|task:110161@13|task:110175@12|task:110190@11|task:110203@1|task:110218@10|task:110229@4|task:110243@3|task:110256@2",
+        "hardValid": true,
+        "reasonCodes": [],
+        "violations": []
+      },
+      {
+        "attempt": 4,
+        "branchesBeforeMaterialization": 16110,
+        "architectureFingerprint": "c9fc02597f670537cf1204fbd7d632b4bc74a9f3075b1adf742eed26fae8a56e",
+        "selectedEdges": [
+          {
+            "taskId": "task:110002",
+            "participantId": "participant:100201",
+            "position": 0
+          },
+          {
+            "taskId": "task:110017",
+            "participantId": "participant:100202",
+            "position": 16
+          },
+          {
+            "taskId": "task:110031",
+            "participantId": "participant:100203",
+            "position": 15
+          },
+          {
+            "taskId": "task:110043",
+            "participantId": "participant:100204",
+            "position": 14
+          },
+          {
+            "taskId": "task:110056",
+            "participantId": "participant:100205",
+            "position": 17
+          },
+          {
+            "taskId": "task:110072",
+            "participantId": "participant:100206",
+            "position": 9
+          },
+          {
+            "taskId": "task:110088",
+            "participantId": "participant:100207",
+            "position": 8
+          },
+          {
+            "taskId": "task:110102",
+            "participantId": "participant:100208",
+            "position": 18
+          },
+          {
+            "taskId": "task:110116",
+            "participantId": "participant:100209",
+            "position": 7
+          },
+          {
+            "taskId": "task:110131",
+            "participantId": "participant:100210",
+            "position": 6
+          },
+          {
+            "taskId": "task:110147",
+            "participantId": "participant:100211",
+            "position": 5
+          },
+          {
+            "taskId": "task:110161",
+            "participantId": "participant:100212",
+            "position": 13
+          },
+          {
+            "taskId": "task:110175",
+            "participantId": "participant:100213",
+            "position": 12
+          },
+          {
+            "taskId": "task:110190",
+            "participantId": "participant:100214",
+            "position": 11
+          },
+          {
+            "taskId": "task:110203",
+            "participantId": "participant:100215",
+            "position": 1
+          },
+          {
+            "taskId": "task:110218",
+            "participantId": "participant:100216",
+            "position": 10
+          },
+          {
+            "taskId": "task:110229",
+            "participantId": "participant:100217",
+            "position": 4
+          },
+          {
+            "taskId": "task:110243",
+            "participantId": "participant:100218",
+            "position": 3
+          },
+          {
+            "taskId": "task:110256",
+            "participantId": "participant:100219",
+            "position": 2
+          }
+        ],
+        "operationalFingerprint": "task:110002@0|task:110017@16|task:110031@15|task:110043@14|task:110056@17|task:110072@9|task:110088@8|task:110102@18|task:110116@7|task:110131@6|task:110147@5|task:110161@13|task:110175@12|task:110190@11|task:110203@1|task:110218@10|task:110229@4|task:110243@3|task:110256@2",
+        "hardValid": true,
+        "reasonCodes": [],
+        "violations": []
+      },
+      {
+        "attempt": 5,
+        "branchesBeforeMaterialization": 16793,
+        "architectureFingerprint": "3ca169f250a6b76e06c20a52b832d5bfd06858e81a15a26d34d4e79ad734f74b",
+        "selectedEdges": [
+          {
+            "taskId": "task:110002",
+            "participantId": "participant:100201",
+            "position": 0
+          },
+          {
+            "taskId": "task:110017",
+            "participantId": "participant:100202",
+            "position": 16
+          },
+          {
+            "taskId": "task:110031",
+            "participantId": "participant:100203",
+            "position": 15
+          },
+          {
+            "taskId": "task:110043",
+            "participantId": "participant:100204",
+            "position": 14
+          },
+          {
+            "taskId": "task:110056",
+            "participantId": "participant:100205",
+            "position": 17
+          },
+          {
+            "taskId": "task:110072",
+            "participantId": "participant:100206",
+            "position": 9
+          },
+          {
+            "taskId": "task:110088",
+            "participantId": "participant:100207",
+            "position": 8
+          },
+          {
+            "taskId": "task:110102",
+            "participantId": "participant:100208",
+            "position": 18
+          },
+          {
+            "taskId": "task:110116",
+            "participantId": "participant:100209",
+            "position": 7
+          },
+          {
+            "taskId": "task:110131",
+            "participantId": "participant:100210",
+            "position": 6
+          },
+          {
+            "taskId": "task:110147",
+            "participantId": "participant:100211",
+            "position": 5
+          },
+          {
+            "taskId": "task:110161",
+            "participantId": "participant:100212",
+            "position": 13
+          },
+          {
+            "taskId": "task:110175",
+            "participantId": "participant:100213",
+            "position": 12
+          },
+          {
+            "taskId": "task:110190",
+            "participantId": "participant:100214",
+            "position": 11
+          },
+          {
+            "taskId": "task:110203",
+            "participantId": "participant:100215",
+            "position": 1
+          },
+          {
+            "taskId": "task:110218",
+            "participantId": "participant:100216",
+            "position": 10
+          },
+          {
+            "taskId": "task:110229",
+            "participantId": "participant:100217",
+            "position": 4
+          },
+          {
+            "taskId": "task:110243",
+            "participantId": "participant:100218",
+            "position": 3
+          },
+          {
+            "taskId": "task:110256",
+            "participantId": "participant:100219",
+            "position": 2
+          }
+        ],
+        "operationalFingerprint": "task:110002@0|task:110017@16|task:110031@15|task:110043@14|task:110056@17|task:110072@9|task:110088@8|task:110102@18|task:110116@7|task:110131@6|task:110147@5|task:110161@13|task:110175@12|task:110190@11|task:110203@1|task:110218@10|task:110229@4|task:110243@3|task:110256@2",
+        "hardValid": true,
+        "reasonCodes": [],
+        "violations": []
+      },
+      {
+        "attempt": 6,
+        "branchesBeforeMaterialization": 22336,
+        "architectureFingerprint": "7bd030e36b4ecd7189cc2f6df25b87e32473f8309d2c6a8c1012575ecc335f8e",
+        "selectedEdges": [
+          {
+            "taskId": "task:110002",
+            "participantId": "participant:100201",
+            "position": 0
+          },
+          {
+            "taskId": "task:110017",
+            "participantId": "participant:100202",
+            "position": 16
+          },
+          {
+            "taskId": "task:110031",
+            "participantId": "participant:100203",
+            "position": 15
+          },
+          {
+            "taskId": "task:110043",
+            "participantId": "participant:100204",
+            "position": 14
+          },
+          {
+            "taskId": "task:110056",
+            "participantId": "participant:100205",
+            "position": 17
+          },
+          {
+            "taskId": "task:110072",
+            "participantId": "participant:100206",
+            "position": 9
+          },
+          {
+            "taskId": "task:110088",
+            "participantId": "participant:100207",
+            "position": 8
+          },
+          {
+            "taskId": "task:110102",
+            "participantId": "participant:100208",
+            "position": 18
+          },
+          {
+            "taskId": "task:110116",
+            "participantId": "participant:100209",
+            "position": 7
+          },
+          {
+            "taskId": "task:110131",
+            "participantId": "participant:100210",
+            "position": 6
+          },
+          {
+            "taskId": "task:110147",
+            "participantId": "participant:100211",
+            "position": 5
+          },
+          {
+            "taskId": "task:110161",
+            "participantId": "participant:100212",
+            "position": 13
+          },
+          {
+            "taskId": "task:110175",
+            "participantId": "participant:100213",
+            "position": 12
+          },
+          {
+            "taskId": "task:110190",
+            "participantId": "participant:100214",
+            "position": 11
+          },
+          {
+            "taskId": "task:110203",
+            "participantId": "participant:100215",
+            "position": 1
+          },
+          {
+            "taskId": "task:110218",
+            "participantId": "participant:100216",
+            "position": 10
+          },
+          {
+            "taskId": "task:110229",
+            "participantId": "participant:100217",
+            "position": 4
+          },
+          {
+            "taskId": "task:110243",
+            "participantId": "participant:100218",
+            "position": 3
+          },
+          {
+            "taskId": "task:110256",
+            "participantId": "participant:100219",
+            "position": 2
+          }
+        ],
+        "operationalFingerprint": "task:110002@0|task:110017@16|task:110031@15|task:110043@14|task:110056@17|task:110072@9|task:110088@8|task:110102@18|task:110116@7|task:110131@6|task:110147@5|task:110161@13|task:110175@12|task:110190@11|task:110203@1|task:110218@10|task:110229@4|task:110243@3|task:110256@2",
+        "hardValid": true,
+        "reasonCodes": [],
+        "violations": []
+      },
+      {
+        "attempt": 7,
+        "branchesBeforeMaterialization": 22982,
+        "architectureFingerprint": "f7d7afdcd5f14075281928dab5b15e2801ca06919ffbcbeb0d1ecd9bc840dc35",
+        "selectedEdges": [
+          {
+            "taskId": "task:110002",
+            "participantId": "participant:100201",
+            "position": 0
+          },
+          {
+            "taskId": "task:110017",
+            "participantId": "participant:100202",
+            "position": 16
+          },
+          {
+            "taskId": "task:110031",
+            "participantId": "participant:100203",
+            "position": 15
+          },
+          {
+            "taskId": "task:110043",
+            "participantId": "participant:100204",
+            "position": 14
+          },
+          {
+            "taskId": "task:110056",
+            "participantId": "participant:100205",
+            "position": 17
+          },
+          {
+            "taskId": "task:110072",
+            "participantId": "participant:100206",
+            "position": 10
+          },
+          {
+            "taskId": "task:110088",
+            "participantId": "participant:100207",
+            "position": 5
+          },
+          {
+            "taskId": "task:110102",
+            "participantId": "participant:100208",
+            "position": 18
+          },
+          {
+            "taskId": "task:110116",
+            "participantId": "participant:100209",
+            "position": 8
+          },
+          {
+            "taskId": "task:110131",
+            "participantId": "participant:100210",
+            "position": 7
+          },
+          {
+            "taskId": "task:110147",
+            "participantId": "participant:100211",
+            "position": 6
+          },
+          {
+            "taskId": "task:110161",
+            "participantId": "participant:100212",
+            "position": 13
+          },
+          {
+            "taskId": "task:110175",
+            "participantId": "participant:100213",
+            "position": 12
+          },
+          {
+            "taskId": "task:110190",
+            "participantId": "participant:100214",
+            "position": 11
+          },
+          {
+            "taskId": "task:110203",
+            "participantId": "participant:100215",
+            "position": 1
+          },
+          {
+            "taskId": "task:110218",
+            "participantId": "participant:100216",
+            "position": 9
+          },
+          {
+            "taskId": "task:110229",
+            "participantId": "participant:100217",
+            "position": 4
+          },
+          {
+            "taskId": "task:110243",
+            "participantId": "participant:100218",
+            "position": 3
+          },
+          {
+            "taskId": "task:110256",
+            "participantId": "participant:100219",
+            "position": 2
+          }
+        ],
+        "operationalFingerprint": "task:110002@0|task:110017@16|task:110031@15|task:110043@14|task:110056@17|task:110072@10|task:110088@5|task:110102@18|task:110116@8|task:110131@7|task:110147@6|task:110161@13|task:110175@12|task:110190@11|task:110203@1|task:110218@9|task:110229@4|task:110243@3|task:110256@2",
+        "hardValid": true,
+        "reasonCodes": [],
+        "violations": []
+      },
+      {
+        "attempt": 8,
+        "branchesBeforeMaterialization": 28525,
+        "architectureFingerprint": "4ee0f5faab84820766c714caf12c72f5e2ef3feb5fe32a93f79dcc647c891e2f",
+        "selectedEdges": [
+          {
+            "taskId": "task:110002",
+            "participantId": "participant:100201",
+            "position": 0
+          },
+          {
+            "taskId": "task:110017",
+            "participantId": "participant:100202",
+            "position": 16
+          },
+          {
+            "taskId": "task:110031",
+            "participantId": "participant:100203",
+            "position": 15
+          },
+          {
+            "taskId": "task:110043",
+            "participantId": "participant:100204",
+            "position": 14
+          },
+          {
+            "taskId": "task:110056",
+            "participantId": "participant:100205",
+            "position": 17
+          },
+          {
+            "taskId": "task:110072",
+            "participantId": "participant:100206",
+            "position": 9
+          },
+          {
+            "taskId": "task:110088",
+            "participantId": "participant:100207",
+            "position": 8
+          },
+          {
+            "taskId": "task:110102",
+            "participantId": "participant:100208",
+            "position": 18
+          },
+          {
+            "taskId": "task:110116",
+            "participantId": "participant:100209",
+            "position": 7
+          },
+          {
+            "taskId": "task:110131",
+            "participantId": "participant:100210",
+            "position": 6
+          },
+          {
+            "taskId": "task:110147",
+            "participantId": "participant:100211",
+            "position": 5
+          },
+          {
+            "taskId": "task:110161",
+            "participantId": "participant:100212",
+            "position": 13
+          },
+          {
+            "taskId": "task:110175",
+            "participantId": "participant:100213",
+            "position": 12
+          },
+          {
+            "taskId": "task:110190",
+            "participantId": "participant:100214",
+            "position": 11
+          },
+          {
+            "taskId": "task:110203",
+            "participantId": "participant:100215",
+            "position": 1
+          },
+          {
+            "taskId": "task:110218",
+            "participantId": "participant:100216",
+            "position": 10
+          },
+          {
+            "taskId": "task:110229",
+            "participantId": "participant:100217",
+            "position": 4
+          },
+          {
+            "taskId": "task:110243",
+            "participantId": "participant:100218",
+            "position": 3
+          },
+          {
+            "taskId": "task:110256",
+            "participantId": "participant:100219",
+            "position": 2
+          }
+        ],
+        "operationalFingerprint": "task:110002@0|task:110017@16|task:110031@15|task:110043@14|task:110056@17|task:110072@9|task:110088@8|task:110102@18|task:110116@7|task:110131@6|task:110147@5|task:110161@13|task:110175@12|task:110190@11|task:110203@1|task:110218@10|task:110229@4|task:110243@3|task:110256@2",
+        "hardValid": true,
+        "reasonCodes": [],
+        "violations": []
+      },
+      {
+        "attempt": 9,
+        "branchesBeforeMaterialization": 29116,
+        "architectureFingerprint": "f8b7005c84a544c527bddbc5aeeaef0815cde768f3e4a76b9bdb7c78a222ff51",
+        "selectedEdges": [
+          {
+            "taskId": "task:110002",
+            "participantId": "participant:100201",
+            "position": 0
+          },
+          {
+            "taskId": "task:110017",
+            "participantId": "participant:100202",
+            "position": 16
+          },
+          {
+            "taskId": "task:110031",
+            "participantId": "participant:100203",
+            "position": 15
+          },
+          {
+            "taskId": "task:110043",
+            "participantId": "participant:100204",
+            "position": 14
+          },
+          {
+            "taskId": "task:110056",
+            "participantId": "participant:100205",
+            "position": 17
+          },
+          {
+            "taskId": "task:110072",
+            "participantId": "participant:100206",
+            "position": 8
+          },
+          {
+            "taskId": "task:110088",
+            "participantId": "participant:100207",
+            "position": 5
+          },
+          {
+            "taskId": "task:110102",
+            "participantId": "participant:100208",
+            "position": 18
+          },
+          {
+            "taskId": "task:110116",
+            "participantId": "participant:100209",
+            "position": 9
+          },
+          {
+            "taskId": "task:110131",
+            "participantId": "participant:100210",
+            "position": 7
+          },
+          {
+            "taskId": "task:110147",
+            "participantId": "participant:100211",
+            "position": 6
+          },
+          {
+            "taskId": "task:110161",
+            "participantId": "participant:100212",
+            "position": 13
+          },
+          {
+            "taskId": "task:110175",
+            "participantId": "participant:100213",
+            "position": 12
+          },
+          {
+            "taskId": "task:110190",
+            "participantId": "participant:100214",
+            "position": 11
+          },
+          {
+            "taskId": "task:110203",
+            "participantId": "participant:100215",
+            "position": 1
+          },
+          {
+            "taskId": "task:110218",
+            "participantId": "participant:100216",
+            "position": 10
+          },
+          {
+            "taskId": "task:110229",
+            "participantId": "participant:100217",
+            "position": 4
+          },
+          {
+            "taskId": "task:110243",
+            "participantId": "participant:100218",
+            "position": 3
+          },
+          {
+            "taskId": "task:110256",
+            "participantId": "participant:100219",
+            "position": 2
+          }
+        ],
+        "operationalFingerprint": "task:110002@0|task:110017@16|task:110031@15|task:110043@14|task:110056@17|task:110072@8|task:110088@5|task:110102@18|task:110116@9|task:110131@7|task:110147@6|task:110161@13|task:110175@12|task:110190@11|task:110203@1|task:110218@10|task:110229@4|task:110243@3|task:110256@2",
+        "hardValid": true,
+        "reasonCodes": [],
+        "violations": []
+      },
+      {
+        "attempt": 10,
+        "branchesBeforeMaterialization": 29812,
+        "architectureFingerprint": "1ae786ee517504a3d0b0425a9832b25f25dc025141b85821cae2a82b2730af79",
+        "selectedEdges": [
+          {
+            "taskId": "task:110002",
+            "participantId": "participant:100201",
+            "position": 0
+          },
+          {
+            "taskId": "task:110017",
+            "participantId": "participant:100202",
+            "position": 16
+          },
+          {
+            "taskId": "task:110031",
+            "participantId": "participant:100203",
+            "position": 15
+          },
+          {
+            "taskId": "task:110043",
+            "participantId": "participant:100204",
+            "position": 14
+          },
+          {
+            "taskId": "task:110056",
+            "participantId": "participant:100205",
+            "position": 17
+          },
+          {
+            "taskId": "task:110072",
+            "participantId": "participant:100206",
+            "position": 9
+          },
+          {
+            "taskId": "task:110088",
+            "participantId": "participant:100207",
+            "position": 8
+          },
+          {
+            "taskId": "task:110102",
+            "participantId": "participant:100208",
+            "position": 18
+          },
+          {
+            "taskId": "task:110116",
+            "participantId": "participant:100209",
+            "position": 7
+          },
+          {
+            "taskId": "task:110131",
+            "participantId": "participant:100210",
+            "position": 6
+          },
+          {
+            "taskId": "task:110147",
+            "participantId": "participant:100211",
+            "position": 5
+          },
+          {
+            "taskId": "task:110161",
+            "participantId": "participant:100212",
+            "position": 13
+          },
+          {
+            "taskId": "task:110175",
+            "participantId": "participant:100213",
+            "position": 12
+          },
+          {
+            "taskId": "task:110190",
+            "participantId": "participant:100214",
+            "position": 11
+          },
+          {
+            "taskId": "task:110203",
+            "participantId": "participant:100215",
+            "position": 1
+          },
+          {
+            "taskId": "task:110218",
+            "participantId": "participant:100216",
+            "position": 10
+          },
+          {
+            "taskId": "task:110229",
+            "participantId": "participant:100217",
+            "position": 4
+          },
+          {
+            "taskId": "task:110243",
+            "participantId": "participant:100218",
+            "position": 3
+          },
+          {
+            "taskId": "task:110256",
+            "participantId": "participant:100219",
+            "position": 2
+          }
+        ],
+        "operationalFingerprint": "task:110002@0|task:110017@16|task:110031@15|task:110043@14|task:110056@17|task:110072@9|task:110088@8|task:110102@18|task:110116@7|task:110131@6|task:110147@5|task:110161@13|task:110175@12|task:110190@11|task:110203@1|task:110218@10|task:110229@4|task:110243@3|task:110256@2",
+        "hardValid": true,
+        "reasonCodes": [],
+        "violations": []
+      },
+      {
+        "attempt": 11,
+        "branchesBeforeMaterialization": 31683,
+        "architectureFingerprint": "057146085ecc1b80e6b46c1a502c33b0a5de32655f3dcbfb9026e2ae2107c31d",
+        "selectedEdges": [
+          {
+            "taskId": "task:110002",
+            "participantId": "participant:100201",
+            "position": 0
+          },
+          {
+            "taskId": "task:110017",
+            "participantId": "participant:100202",
+            "position": 16
+          },
+          {
+            "taskId": "task:110031",
+            "participantId": "participant:100203",
+            "position": 15
+          },
+          {
+            "taskId": "task:110043",
+            "participantId": "participant:100204",
+            "position": 14
+          },
+          {
+            "taskId": "task:110056",
+            "participantId": "participant:100205",
+            "position": 17
+          },
+          {
+            "taskId": "task:110072",
+            "participantId": "participant:100206",
+            "position": 9
+          },
+          {
+            "taskId": "task:110088",
+            "participantId": "participant:100207",
+            "position": 8
+          },
+          {
+            "taskId": "task:110102",
+            "participantId": "participant:100208",
+            "position": 18
+          },
+          {
+            "taskId": "task:110116",
+            "participantId": "participant:100209",
+            "position": 7
+          },
+          {
+            "taskId": "task:110131",
+            "participantId": "participant:100210",
+            "position": 6
+          },
+          {
+            "taskId": "task:110147",
+            "participantId": "participant:100211",
+            "position": 5
+          },
+          {
+            "taskId": "task:110161",
+            "participantId": "participant:100212",
+            "position": 13
+          },
+          {
+            "taskId": "task:110175",
+            "participantId": "participant:100213",
+            "position": 12
+          },
+          {
+            "taskId": "task:110190",
+            "participantId": "participant:100214",
+            "position": 11
+          },
+          {
+            "taskId": "task:110203",
+            "participantId": "participant:100215",
+            "position": 1
+          },
+          {
+            "taskId": "task:110218",
+            "participantId": "participant:100216",
+            "position": 10
+          },
+          {
+            "taskId": "task:110229",
+            "participantId": "participant:100217",
+            "position": 4
+          },
+          {
+            "taskId": "task:110243",
+            "participantId": "participant:100218",
+            "position": 3
+          },
+          {
+            "taskId": "task:110256",
+            "participantId": "participant:100219",
+            "position": 2
+          }
+        ],
+        "operationalFingerprint": "task:110002@0|task:110017@16|task:110031@15|task:110043@14|task:110056@17|task:110072@9|task:110088@8|task:110102@18|task:110116@7|task:110131@6|task:110147@5|task:110161@13|task:110175@12|task:110190@11|task:110203@1|task:110218@10|task:110229@4|task:110243@3|task:110256@2",
+        "hardValid": true,
+        "reasonCodes": [],
+        "violations": []
+      },
+      {
+        "attempt": 12,
+        "branchesBeforeMaterialization": 32271,
+        "architectureFingerprint": "b73c1b4e251e95b852536490990703d281349fb7f828f67923778d76b1861cfe",
+        "selectedEdges": [
+          {
+            "taskId": "task:110002",
+            "participantId": "participant:100201",
+            "position": 0
+          },
+          {
+            "taskId": "task:110017",
+            "participantId": "participant:100202",
+            "position": 16
+          },
+          {
+            "taskId": "task:110031",
+            "participantId": "participant:100203",
+            "position": 15
+          },
+          {
+            "taskId": "task:110043",
+            "participantId": "participant:100204",
+            "position": 14
+          },
+          {
+            "taskId": "task:110056",
+            "participantId": "participant:100205",
+            "position": 17
+          },
+          {
+            "taskId": "task:110072",
+            "participantId": "participant:100206",
+            "position": 9
+          },
+          {
+            "taskId": "task:110088",
+            "participantId": "participant:100207",
+            "position": 5
+          },
+          {
+            "taskId": "task:110102",
+            "participantId": "participant:100208",
+            "position": 18
+          },
+          {
+            "taskId": "task:110116",
+            "participantId": "participant:100209",
+            "position": 8
+          },
+          {
+            "taskId": "task:110131",
+            "participantId": "participant:100210",
+            "position": 7
+          },
+          {
+            "taskId": "task:110147",
+            "participantId": "participant:100211",
+            "position": 6
+          },
+          {
+            "taskId": "task:110161",
+            "participantId": "participant:100212",
+            "position": 13
+          },
+          {
+            "taskId": "task:110175",
+            "participantId": "participant:100213",
+            "position": 12
+          },
+          {
+            "taskId": "task:110190",
+            "participantId": "participant:100214",
+            "position": 11
+          },
+          {
+            "taskId": "task:110203",
+            "participantId": "participant:100215",
+            "position": 1
+          },
+          {
+            "taskId": "task:110218",
+            "participantId": "participant:100216",
+            "position": 10
+          },
+          {
+            "taskId": "task:110229",
+            "participantId": "participant:100217",
+            "position": 4
+          },
+          {
+            "taskId": "task:110243",
+            "participantId": "participant:100218",
+            "position": 3
+          },
+          {
+            "taskId": "task:110256",
+            "participantId": "participant:100219",
+            "position": 2
+          }
+        ],
+        "operationalFingerprint": "task:110002@0|task:110017@16|task:110031@15|task:110043@14|task:110056@17|task:110072@9|task:110088@5|task:110102@18|task:110116@8|task:110131@7|task:110147@6|task:110161@13|task:110175@12|task:110190@11|task:110203@1|task:110218@10|task:110229@4|task:110243@3|task:110256@2",
+        "hardValid": true,
+        "reasonCodes": [],
+        "violations": []
+      },
+      {
+        "attempt": 13,
+        "branchesBeforeMaterialization": 32600,
+        "architectureFingerprint": "b3f9dc18663943530dfe19f8860dda4a2204f85b86df5c16aa64a344b8f37258",
+        "selectedEdges": [
+          {
+            "taskId": "task:110002",
+            "participantId": "participant:100201",
+            "position": 0
+          },
+          {
+            "taskId": "task:110017",
+            "participantId": "participant:100202",
+            "position": 16
+          },
+          {
+            "taskId": "task:110031",
+            "participantId": "participant:100203",
+            "position": 15
+          },
+          {
+            "taskId": "task:110043",
+            "participantId": "participant:100204",
+            "position": 14
+          },
+          {
+            "taskId": "task:110056",
+            "participantId": "participant:100205",
+            "position": 17
+          },
+          {
+            "taskId": "task:110072",
+            "participantId": "participant:100206",
+            "position": 9
+          },
+          {
+            "taskId": "task:110088",
+            "participantId": "participant:100207",
+            "position": 8
+          },
+          {
+            "taskId": "task:110102",
+            "participantId": "participant:100208",
+            "position": 18
+          },
+          {
+            "taskId": "task:110116",
+            "participantId": "participant:100209",
+            "position": 7
+          },
+          {
+            "taskId": "task:110131",
+            "participantId": "participant:100210",
+            "position": 6
+          },
+          {
+            "taskId": "task:110147",
+            "participantId": "participant:100211",
+            "position": 5
+          },
+          {
+            "taskId": "task:110161",
+            "participantId": "participant:100212",
+            "position": 13
+          },
+          {
+            "taskId": "task:110175",
+            "participantId": "participant:100213",
+            "position": 12
+          },
+          {
+            "taskId": "task:110190",
+            "participantId": "participant:100214",
+            "position": 11
+          },
+          {
+            "taskId": "task:110203",
+            "participantId": "participant:100215",
+            "position": 1
+          },
+          {
+            "taskId": "task:110218",
+            "participantId": "participant:100216",
+            "position": 10
+          },
+          {
+            "taskId": "task:110229",
+            "participantId": "participant:100217",
+            "position": 4
+          },
+          {
+            "taskId": "task:110243",
+            "participantId": "participant:100218",
+            "position": 3
+          },
+          {
+            "taskId": "task:110256",
+            "participantId": "participant:100219",
+            "position": 2
+          }
+        ],
+        "operationalFingerprint": "task:110002@0|task:110017@16|task:110031@15|task:110043@14|task:110056@17|task:110072@9|task:110088@8|task:110102@18|task:110116@7|task:110131@6|task:110147@5|task:110161@13|task:110175@12|task:110190@11|task:110203@1|task:110218@10|task:110229@4|task:110243@3|task:110256@2",
+        "hardValid": true,
+        "reasonCodes": [],
+        "violations": []
+      },
+      {
+        "attempt": 14,
+        "branchesBeforeMaterialization": 38152,
+        "architectureFingerprint": "fbfcc72aad2ce3093f6c1bccdad4462cddc8f5493b8bb1ae9b1d3ea99f092974",
+        "selectedEdges": [
+          {
+            "taskId": "task:110002",
+            "participantId": "participant:100201",
+            "position": 0
+          },
+          {
+            "taskId": "task:110017",
+            "participantId": "participant:100202",
+            "position": 16
+          },
+          {
+            "taskId": "task:110031",
+            "participantId": "participant:100203",
+            "position": 15
+          },
+          {
+            "taskId": "task:110043",
+            "participantId": "participant:100204",
+            "position": 14
+          },
+          {
+            "taskId": "task:110056",
+            "participantId": "participant:100205",
+            "position": 17
+          },
+          {
+            "taskId": "task:110072",
+            "participantId": "participant:100206",
+            "position": 10
+          },
+          {
+            "taskId": "task:110088",
+            "participantId": "participant:100207",
+            "position": 5
+          },
+          {
+            "taskId": "task:110102",
+            "participantId": "participant:100208",
+            "position": 18
+          },
+          {
+            "taskId": "task:110116",
+            "participantId": "participant:100209",
+            "position": 8
+          },
+          {
+            "taskId": "task:110131",
+            "participantId": "participant:100210",
+            "position": 7
+          },
+          {
+            "taskId": "task:110147",
+            "participantId": "participant:100211",
+            "position": 6
+          },
+          {
+            "taskId": "task:110161",
+            "participantId": "participant:100212",
+            "position": 13
+          },
+          {
+            "taskId": "task:110175",
+            "participantId": "participant:100213",
+            "position": 12
+          },
+          {
+            "taskId": "task:110190",
+            "participantId": "participant:100214",
+            "position": 11
+          },
+          {
+            "taskId": "task:110203",
+            "participantId": "participant:100215",
+            "position": 1
+          },
+          {
+            "taskId": "task:110218",
+            "participantId": "participant:100216",
+            "position": 9
+          },
+          {
+            "taskId": "task:110229",
+            "participantId": "participant:100217",
+            "position": 4
+          },
+          {
+            "taskId": "task:110243",
+            "participantId": "participant:100218",
+            "position": 3
+          },
+          {
+            "taskId": "task:110256",
+            "participantId": "participant:100219",
+            "position": 2
+          }
+        ],
+        "operationalFingerprint": "task:110002@0|task:110017@16|task:110031@15|task:110043@14|task:110056@17|task:110072@10|task:110088@5|task:110102@18|task:110116@8|task:110131@7|task:110147@6|task:110161@13|task:110175@12|task:110190@11|task:110203@1|task:110218@9|task:110229@4|task:110243@3|task:110256@2",
+        "hardValid": true,
+        "reasonCodes": [],
+        "violations": []
+      }
+    ]
+  },
+  "architecture": {
+    "enumerated": 14,
+    "prepared": 14,
+    "hardGateRejects": {
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@710,725,740,755,770,785,800,815,830,920,935,950,965,980,995,1010,1025,1040,1055": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@715,730,745,760,775,790,805,820,835,925,940,955,970,985,1000,1015,1030,1045,1060": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@720,735,750,765,780,795,810,825,840,930,945,960,975,990,1005,1020,1035,1050,1065": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@710,725,740,755,770,785,800,815,830,845,935,950,965,980,995,1010,1025,1040,1055": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@725,740,755,770,785,800,815,830,845,935,950,965,980,995,1010,1025,1040,1055,1070": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@715,730,745,760,775,790,805,820,835,850,940,955,970,985,1000,1015,1030,1045,1060": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@730,745,760,775,790,805,820,835,850,940,955,970,985,1000,1015,1030,1045,1060,1075": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@720,735,750,765,780,795,810,825,840,855,945,960,975,990,1005,1020,1035,1050,1065": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@735,750,765,780,795,810,825,840,855,945,960,975,990,1005,1020,1035,1050,1065,1080": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@710,725,740,755,770,785,800,815,830,845,860,950,965,980,995,1010,1025,1040,1055": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@725,740,755,770,785,800,815,830,845,860,950,965,980,995,1010,1025,1040,1055,1070": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@740,755,770,785,800,815,830,845,860,950,965,980,995,1010,1025,1040,1055,1070,1085": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@715,730,745,760,775,790,805,820,835,850,865,955,970,985,1000,1015,1030,1045,1060": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@730,745,760,775,790,805,820,835,850,865,955,970,985,1000,1015,1030,1045,1060,1075": 0
+    },
+    "fullyVisited": 13
+  },
+  "firstHardValidCoreLeaf": {
+    "coreTaskCount": 82,
+    "pipelineMaterializedTaskCount": 82,
+    "immutableCoreTaskCount": 82,
+    "protectedTaskCount": 0,
+    "pipelineOnlySupportingExcludedCount": 0,
+    "coreTasksByKind": {
+      "auxiliary": 44,
+      "vocal": 19,
+      "main": 19
+    },
+    "pendingSupportingTotal": 38,
+    "pendingOrdinaryNoTransport": 19,
+    "pendingDynamicTransport": 19,
+    "pendingTasksByKind": {
+      "auxiliary": 38
+    }
+  },
+  "firstDeadEnd": null,
+  "terminalRejections": {
+    "SUBSTANTIVE_IDENTITY_INCOMPLETE": 0,
+    "PARTICIPANT_MEAL_WITNESS_INCOMPLETE": 0,
+    "OPERATIONAL_MEAL_WITNESS_INCOMPLETE": 0,
+    "TRANSPORT_MATERIALIZATION_FAILED": 0,
+    "CANDIDATE_IDENTITY_MISMATCH": 0,
+    "VALIDATION_REJECTED": 0
+  },
+  "closure": {
+    "checks": 1660,
+    "firstPrune": null,
+    "branches": 775,
+    "abstentions": {
+      "BUDGET_EXHAUSTED": 1
+    }
+  },
+  "standaloneByDepth": {
+    "90": 1,
+    "91": 1,
+    "92": 1,
+    "93": 1,
+    "94": 1,
+    "95": 1,
+    "96": 1,
+    "97": 1,
+    "98": 1,
+    "99": 1,
+    "100": 1,
+    "101": 1,
+    "102": 1,
+    "103": 1,
+    "104": 1,
+    "105": 1,
+    "106": 1,
+    "107": 1,
+    "108": 1,
+    "109": 1,
+    "110": 1,
+    "111": 1,
+    "112": 1,
+    "113": 1,
+    "114": 1,
+    "134": 1
+  },
+  "macroCandidateCausalTraces": [
+    {
+      "fingerprint": "1d75cbbf190c271836dc0894d85eec93cfd9dd19cf0bfd77db60bd2bf0ce6994",
+      "macroUnitId": "joint:joint-group:joint.totales-post.C06-C10",
+      "macroUnitKind": "JOINT",
+      "depth": 0,
+      "candidate": {
+        "starts": [
+          {
+            "taskId": "task:110085",
+            "start": 1115,
+            "end": 1120
+          },
+          {
+            "taskId": "task:110144",
+            "start": 1115,
+            "end": 1120
+          }
+        ],
+        "domainSize": 5,
+        "structuralCandidateCount": null,
+        "matchingFeasibleCandidateCount": null,
+        "roundMatchingResult": "NOT_APPLICABLE"
+      },
+      "pendingPrerequisiteReservation": {
+        "status": "PASS",
+        "cause": null,
+        "blockingTaskId": null,
+        "authorityId": null
+      },
+      "participantFuture": {
+        "status": "ABSTAIN",
+        "cause": "FUTURE_PARTICIPANT_RESERVATION_INCONCLUSIVE"
+      },
+      "participantMealFuture": {
+        "status": "PASS",
+        "cause": null
+      },
+      "operationalMealFuture": {
+        "status": "PASS",
+        "cause": null
+      },
+      "enteredRecurseAfterMacro": true,
+      "selectedAnotherMacroUnit": true,
+      "enteredOrdinarySearch": true,
+      "firstDescendantDeadEnd": null,
+      "firstOrdinaryRejection": null,
+      "reachedCompleteLeaf": true,
+      "terminalParticipantFuture": {
+        "status": "NOT_CHECKED",
+        "cause": null
+      },
+      "outcome": "ENTERED_RESIDUAL_OR_TERMINAL"
+    }
+  ]
+}

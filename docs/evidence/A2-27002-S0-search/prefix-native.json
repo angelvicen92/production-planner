@@ -1,0 +1,152 @@
+{
+  "mode": "CONTROLLED_CHARGED_PREFIX",
+  "syntheticStop": true,
+  "interpretation": "Diagnostic AUTO S0 composition, stopped at historical charged count; not the historical trace or a real 300s measurement.",
+  "semanticResultHash": "de3032609437d1857b79fe95a99b9af879fb39f71c66f4f11f0ab6594a50984c",
+  "status": "TIME_LIMIT_REACHED",
+  "complete": false,
+  "branches": 38640,
+  "core": 6782,
+  "standalone": 31858,
+  "matchesHistoricalPhaseTotals": true,
+  "elapsedMs": 73337.146196,
+  "cpuMicroseconds": {
+    "user": 73263711,
+    "system": 433838
+  },
+  "samples": [
+    {
+      "branches": 0,
+      "core": 0,
+      "standalone": 0,
+      "elapsedMs": 14689.725714
+    },
+    {
+      "branches": 5000,
+      "core": 3154,
+      "standalone": 1846,
+      "elapsedMs": 19489.785047999998
+    },
+    {
+      "branches": 10000,
+      "core": 3364,
+      "standalone": 6636,
+      "elapsedMs": 20684.954593
+    },
+    {
+      "branches": 15000,
+      "core": 3643,
+      "standalone": 11357,
+      "elapsedMs": 25168.343224999997
+    },
+    {
+      "branches": 20000,
+      "core": 4201,
+      "standalone": 15799,
+      "elapsedMs": 30934.866352999998
+    },
+    {
+      "branches": 25000,
+      "core": 4768,
+      "standalone": 20232,
+      "elapsedMs": 47494.114904
+    },
+    {
+      "branches": 30000,
+      "core": 5643,
+      "standalone": 24357,
+      "elapsedMs": 64265.314916
+    },
+    {
+      "branches": 35000,
+      "core": 6494,
+      "standalone": 28506,
+      "elapsedMs": 71687.671314
+    }
+  ],
+  "architecture": {
+    "enumerated": 14,
+    "prepared": 14,
+    "hardGateRejects": {
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@710,725,740,755,770,785,800,815,830,920,935,950,965,980,995,1010,1025,1040,1055": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@715,730,745,760,775,790,805,820,835,925,940,955,970,985,1000,1015,1030,1045,1060": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@720,735,750,765,780,795,810,825,840,930,945,960,975,990,1005,1020,1035,1050,1065": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@710,725,740,755,770,785,800,815,830,845,935,950,965,980,995,1010,1025,1040,1055": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@725,740,755,770,785,800,815,830,845,935,950,965,980,995,1010,1025,1040,1055,1070": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@715,730,745,760,775,790,805,820,835,850,940,955,970,985,1000,1015,1030,1045,1060": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@730,745,760,775,790,805,820,835,850,940,955,970,985,1000,1015,1030,1045,1060,1075": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@720,735,750,765,780,795,810,825,840,855,945,960,975,990,1005,1020,1035,1050,1065": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@735,750,765,780,795,810,825,840,855,945,960,975,990,1005,1020,1035,1050,1065,1080": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@710,725,740,755,770,785,800,815,830,845,860,950,965,980,995,1010,1025,1040,1055": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@725,740,755,770,785,800,815,830,845,860,950,965,980,995,1010,1025,1040,1055,1070": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@740,755,770,785,800,815,830,845,860,950,965,980,995,1010,1025,1040,1055,1070,1085": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@715,730,745,760,775,790,805,820,835,850,865,955,970,985,1000,1015,1030,1045,1060": 0,
+      "plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104006,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005,plan-resource:104005@730,745,760,775,790,805,820,835,850,865,955,970,985,1000,1015,1030,1045,1060,1075": 0
+    },
+    "fullyVisited": 13
+  },
+  "firstHardValidCoreLeaf": {
+    "coreTaskCount": 82,
+    "pipelineMaterializedTaskCount": 82,
+    "immutableCoreTaskCount": 82,
+    "protectedTaskCount": 0,
+    "pipelineOnlySupportingExcludedCount": 0,
+    "coreTasksByKind": {
+      "auxiliary": 44,
+      "vocal": 19,
+      "main": 19
+    },
+    "pendingSupportingTotal": 38,
+    "pendingOrdinaryNoTransport": 19,
+    "pendingDynamicTransport": 19,
+    "pendingTasksByKind": {
+      "auxiliary": 38
+    }
+  },
+  "firstDeadEnd": null,
+  "terminalRejections": {
+    "SUBSTANTIVE_IDENTITY_INCOMPLETE": 0,
+    "PARTICIPANT_MEAL_WITNESS_INCOMPLETE": 0,
+    "OPERATIONAL_MEAL_WITNESS_INCOMPLETE": 0,
+    "TRANSPORT_MATERIALIZATION_FAILED": 0,
+    "CANDIDATE_IDENTITY_MISMATCH": 0,
+    "VALIDATION_REJECTED": 0
+  },
+  "closure": {
+    "checks": 1660,
+    "firstPrune": null,
+    "branches": 775,
+    "abstentions": {
+      "BUDGET_EXHAUSTED": 1
+    }
+  },
+  "standaloneByDepth": {
+    "90": 1,
+    "91": 1,
+    "92": 1,
+    "93": 1,
+    "94": 1,
+    "95": 1,
+    "96": 1,
+    "97": 1,
+    "98": 1,
+    "99": 1,
+    "100": 1,
+    "101": 1,
+    "102": 1,
+    "103": 1,
+    "104": 1,
+    "105": 1,
+    "106": 1,
+    "107": 1,
+    "108": 1,
+    "109": 1,
+    "110": 1,
+    "111": 1,
+    "112": 1,
+    "113": 1,
+    "114": 1,
+    "134": 1
+  },
+  "causalTraceReference": "prefix-real.json; identical semanticResultHash, phase totals and diagnostic observations"
+}

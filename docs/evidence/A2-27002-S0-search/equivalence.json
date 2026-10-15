@@ -1,0 +1,8 @@
+{
+  "realNativeResultsDeepEqual": true,
+  "real1123ResultDeepEqual": true,
+  "completeResultHash": "682d6c0824f2d4388688a48f7ceb4c5a6a6e64edf82d018c59c4ef32d142aaa6",
+  "baseline1123CompleteResultHash": "682d6c0824f2d4388688a48f7ceb4c5a6a6e64edf82d018c59c4ef32d142aaa6",
+  "freshCaptureUnchanged": true,
+  "interpretation": "Current capture and offline generated counterpart; historical #1129 private capture has no published input hash. No CPU attribution for that historical run."
+}
