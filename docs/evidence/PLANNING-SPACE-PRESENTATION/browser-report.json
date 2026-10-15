@@ -1,0 +1,55 @@
+{
+  "source": "Versioned historical accepted A2 snapshot; controlled UI palette, not connected production configuration",
+  "checks": [
+    "timeline-normal: 266 identities, names, time, opaque headers with WCAG contrast >=4.5; baseline geometry unchanged",
+    "timeline-pdf: 266 identities, names, time, opaque headers with WCAG contrast >=4.5; baseline geometry unchanged",
+    "list-normal: 266 identities, names, time, opaque headers with WCAG contrast >=4.5; baseline geometry unchanged",
+    "list-pdf: 266 identities, names, time, opaque headers with WCAG contrast >=4.5; baseline geometry unchanged",
+    "hideEmpty retains all 266 identities",
+    "fullscreen, Y zoom, two-axis scroll and sticky header remain operational",
+    "long names, explicit joint pairs, five-minute cards, missing contestants, zone-only, itinerant and unlocated lanes",
+    "card menu still opens by clicking the content",
+    "without zone color, headings reuse the existing task secondary palette",
+    "390px mobile has no document overflow",
+    "manual contestant drag still stages a local movement"
+  ],
+  "screenshots": [
+    "before-timeline-normal.png",
+    "after-list-normal.png",
+    "before-list-normal.png",
+    "after-timeline-normal.png",
+    "after-edge-cases.png"
+  ],
+  "errors": [],
+  "status": "PASS",
+  "geometryComparison": {
+    "timeline-normal": {
+      "taskCount": 266,
+      "sha256": "840db55fc971bda86f8e18fe57b29e6ea58340d79fc91ce297becfa37acddcc4",
+      "candidateExactlyMatchesBaseline": true
+    },
+    "timeline-pdf": {
+      "taskCount": 266,
+      "sha256": "840db55fc971bda86f8e18fe57b29e6ea58340d79fc91ce297becfa37acddcc4",
+      "candidateExactlyMatchesBaseline": true
+    },
+    "list-normal": {
+      "taskCount": 266,
+      "sha256": "840db55fc971bda86f8e18fe57b29e6ea58340d79fc91ce297becfa37acddcc4",
+      "candidateExactlyMatchesBaseline": true
+    },
+    "list-pdf": {
+      "taskCount": 266,
+      "sha256": "840db55fc971bda86f8e18fe57b29e6ea58340d79fc91ce297becfa37acddcc4",
+      "candidateExactlyMatchesBaseline": true
+    }
+  },
+  "baseline": "6837459a0034c7b8c7e6c447e6dfff8a982f177e",
+  "databaseAndApiChanges": false,
+  "browser": "System Chromium / Playwright",
+  "gates": {
+    "check": "PASS (restored declared @electric-sql/pglite@0.5.8 in node_modules; no manifest or lock changes)",
+    "build": "PASS",
+    "focalTests": "PASS (5 test files)"
+  }
+}

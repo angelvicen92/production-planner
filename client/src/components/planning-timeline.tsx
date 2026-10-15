@@ -1,3 +1,5 @@
+import { SpaceTaskContent } from "@/components/planning/space-task-content";
+import { spaceParticipantNames, spaceHeadingColor, spaceForeground, type SpaceTaskOperation } from "@/lib/planning-space-presentation";
 import { planningGroupOrder, planningFilterIds, effectivePlanningResourceIds } from "@/lib/planning-view-policy";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type ReactNode, type Dispatch, type SetStateAction } from "react";
 import { assignedPlanningLocations, planningRange } from "@/lib/planning-workspace-geometry";
@@ -121,6 +123,7 @@ export interface PlanningTimelineProps {
     mealEnd: string | null;
     mealMode?: "global_hard_break" | "flexible_meal_window" | null;
     dailyTasks: Task[];
+    plannerNextConfiguration?: { taskOperations?: SpaceTaskOperation[] } | null;
     breaks?: Array<{
       id: number;
       kind: "space_meal" | "itinerant_meal" | string;
@@ -361,7 +364,7 @@ function TaskStatusMenuTrigger({
       type="button"
       data-planning-task-id={task.id}
       data-planning-start={task.startPlanned ?? ""}
-      title={`${task.manualTitle ?? task.template?.name ?? "Tarea"} · ${task.startPlanned ?? "—"}–${task.endPlanned ?? "—"}`}
+      title={`${contestantName && contestantName !== "—" ? `${contestantName} · ` : ""}${task.manualTitle ?? task.template?.name ?? "Tarea"} · ${task.startPlanned ?? "—"}–${task.endPlanned ?? "—"}`}
       className={cn(className, "group text-left")}
       style={style}
       onClick={handleCardClick}
@@ -1031,6 +1034,10 @@ function TaskStatusMenuTrigger({
     return mapped;
   }, [contestants]);
 
+  const spaceParticipantsByTaskId = useMemo(() => spaceParticipantNames(
+    dailyTasks, contestantNameById, plan.plannerNextConfiguration?.taskOperations ?? [],
+  ), [dailyTasks, contestantNameById, plan.plannerNextConfiguration?.taskOperations]);
+
   const selectedStageIdsSet = useMemo(
     () => new Set(planningFilterIds(stageFilterIds ?? [], zones.map(zone => Number(zone.id)), mode === "assisted-draft").map((id) => Number(id)).filter((id) => Number.isFinite(id))),
     [stageFilterIds, zones, mode],
@@ -1677,6 +1684,7 @@ function TaskStatusMenuTrigger({
                     zoneId: number;
                     zoneName: string;
                     zoneColor?: string | null;
+                    headingColor?: string;
                     spaces: SpaceCol[];
                   };
                   type ItinerantCol = {
@@ -1814,6 +1822,10 @@ function TaskStatusMenuTrigger({
                     if (extra && extra.tasks.length > 0) zc.spaces.push(extra);
                   });
 
+                  for (const zone of zoneCols) {
+                    zone.headingColor = spaceHeadingColor(zone.zoneColor, zone.spaces.flatMap(space => space.tasks));
+                  }
+
                   // Ordenar tasks por tiempo dentro de cada columna
                   const sortTasks = (arr: Task[]) =>
                     arr.sort((a, b) => {
@@ -1892,9 +1904,9 @@ function TaskStatusMenuTrigger({
                                   <div
                                     className={cn("planning-zone-heading font-semibold border", spaceVerticalMode === "list" ? "px-1.5 py-0.5 rounded-none text-xs" : "px-2 py-1 rounded-md")}
                             style={{
-                                      backgroundColor: hexToRgba(zc.zoneColor, 0.22) ?? undefined,
-                                      borderColor: zc.zoneColor ?? undefined,
-                                      color: textColorForBg(zc.zoneColor),
+                                      backgroundColor: zc.headingColor,
+                                      borderColor: zc.headingColor,
+                                      color: spaceForeground(zc.headingColor),
                                     }}
                                   >
                                     <div className="leading-5">{zc.zoneName}</div>
@@ -1918,11 +1930,11 @@ function TaskStatusMenuTrigger({
 
                                         return (
                                           <>
-                                            <div className="text-[10px] opacity-80 truncate">
+                                            <div className="text-[10px] truncate">
                                               <span className="font-semibold">Prod:</span>{" "}
                                               {prod.length ? prod.join(" · ") : "—"}
                                             </div>
-                                            <div className="text-[10px] opacity-80 truncate">
+                                            <div className="text-[10px] truncate">
                                               <span className="font-semibold">Red:</span>{" "}
                                               {edit.length ? edit.join(" · ") : "—"}
                                             </div>
@@ -1941,9 +1953,9 @@ function TaskStatusMenuTrigger({
                                         <div
                                           className={cn("planning-space-heading font-medium truncate border", spaceVerticalMode === "list" ? "text-[10px] px-1 py-0.5 rounded-none" : "text-xs px-2 py-1 rounded-md")}
                                           style={{
-                                            backgroundColor: hexToRgba(zc.zoneColor, 0.12) ?? undefined,
-                                            borderColor: zc.zoneColor ?? undefined,
-                                            color: zc.zoneColor ? textColorForBg(zc.zoneColor) : undefined,
+                                            backgroundColor: (spaceHeadingColor(zc.zoneColor, sp.tasks) ?? zc.headingColor),
+                                            borderColor: (spaceHeadingColor(zc.zoneColor, sp.tasks) ?? zc.headingColor),
+                                            color: spaceForeground((spaceHeadingColor(zc.zoneColor, sp.tasks) ?? zc.headingColor)),
                                           }}
                                         >
                                           <div className="leading-4">{sp.name}</div>
@@ -1991,11 +2003,11 @@ function TaskStatusMenuTrigger({
 
                                               return (
                                                 <>
-                                                  <div className="text-[10px] opacity-75 truncate">
+                                                  <div className="text-[10px] truncate">
                                                     <span className="font-semibold">Prod:</span>{" "}
                                                     {prod.length ? prod.join(" · ") : "—"}
                                                   </div>
-                                                  <div className="text-[10px] opacity-75 truncate">
+                                                  <div className="text-[10px] truncate">
                                                     <span className="font-semibold">Red:</span>{" "}
                                                     {edit.length ? edit.join(" · ") : "—"}
                                                   </div>
@@ -2073,11 +2085,7 @@ function TaskStatusMenuTrigger({
                                               <TaskStatusMenuTrigger
                                                 key={task.id}
                                                 task={task}
-                                                contestantName={
-                                                  contestantNameById[
-                                                    Number(task.contestantId)
-                                                  ] ?? "—"
-                                                }
+                                                contestantName={spaceParticipantsByTaskId.get(Number(task.id))?.join(" + ") || "—"}
                                                 locationLabel={getTaskLocationLabel(task)}
                                                 onTaskStatusChange={onTaskStatusChange}
                                                 canExecuteTask={canExecuteTask}
@@ -2109,6 +2117,9 @@ function TaskStatusMenuTrigger({
                                                 style={{
                                                   top,
                                                   height,
+                                                  paddingTop: height < 32 ? 0 : undefined,
+                                                  paddingBottom: height < 32 ? 0 : undefined,
+                                                  color: spaceForeground(taskBaseColor(task)),
                                                   backgroundColor:
                                                     taskBaseColor(task),
                                                   borderColor:
@@ -2117,12 +2128,15 @@ function TaskStatusMenuTrigger({
                                                       : taskBaseColor(task),
                                                 }}
                                               >
-                                                <div className={cn("font-bold truncate", spaceVerticalMode === "list" ? "text-[10px]" : "text-[12px]")}>
-                                                  {taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}{dependencyWarnings[Number(task.id)] ? <span className="ml-1">⚠</span> : null}
-                                                </div>
-                                                <div className="text-[10px] opacity-70">
-                                                  {isPdf ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
-                                                </div>
+                                                <SpaceTaskContent
+                                                  participants={spaceParticipantsByTaskId.get(Number(task.id))}
+                                                  activity={isPdf || spaceVerticalMode === "list" ? compactTaskLabel(task) : taskDisplayName(task)}
+                                                  time={`${task.startPlanned ?? "—"}–${task.endPlanned ?? "—"}`}
+                                                  height={height}
+                                                  compact={spaceVerticalMode === "list"}
+                                                  icon={taskPrefixIcon(task)}
+                                                  warning={Boolean(dependencyWarnings[Number(task.id)])}
+                                                />
                                               {task.comment1Text ? (<div className="text-[10px] truncate" style={{ color: task.comment1Color || undefined }}>{task.comment1Text}</div>) : null}
                                                 {task.comment2Text ? (<div className="text-[10px] truncate" style={{ color: task.comment2Color || undefined }}>{task.comment2Text}</div>) : null}
                                               </TaskStatusMenuTrigger>
@@ -2167,7 +2181,7 @@ function TaskStatusMenuTrigger({
                                               const height = (tEnd - tStart) * pxPerMin;
                                               return (
                                                 <TaskStatusMenuTrigger key={task.id} task={task}
-                                                  contestantName={contestantNameById[Number(task.contestantId)] ?? "—"}
+                                                  contestantName={spaceParticipantsByTaskId.get(Number(task.id))?.join(" + ") || "—"}
                                                   locationLabel={getTaskLocationLabel(task)}
                                                   onTaskStatusChange={onTaskStatusChange}
                                                   canExecuteTask={canExecuteTask}
@@ -2185,10 +2199,17 @@ function TaskStatusMenuTrigger({
                                                   onEditManualBlock={(task) => setManualBlockEditor({ task, title: task.manualTitle ?? task.template?.name ?? "Bloqueo", color: task.manualColor ?? "#38BDF8", durationMinutes: Math.max(5, timeToMinutes(task.endPlanned ?? "00:30") - timeToMinutes(task.startPlanned ?? "00:00") || 30) })}
                                                   onClick={(event) => handleTaskCardClick(event, task)}
                                                   className={cn("absolute border overflow-hidden cursor-pointer z-10", spaceVerticalMode === "list" ? "left-1 right-1 rounded-none shadow-none px-1 py-0.5" : "left-2 right-2 rounded-lg shadow-sm px-2 py-1", task.isManualBlock ? "border-dashed border-sky-500/80" : "", assistedVisualClass(task), manualDrag?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "", task.status === "in_progress" ? "ring-2 ring-green-500" : "", task.status === "done" ? "opacity-80" : "", isApplying ? "pointer-events-none opacity-85" : "")}
-                                                  style={{ top, height, backgroundColor: taskBaseColor(task), borderColor: task.status === "in_progress" ? "rgb(34 197 94)" : taskBaseColor(task) }}
+                                                  style={{ top, height, paddingTop: height < 32 ? 0 : undefined, paddingBottom: height < 32 ? 0 : undefined, color: spaceForeground(taskBaseColor(task)), backgroundColor: taskBaseColor(task), borderColor: task.status === "in_progress" ? "rgb(34 197 94)" : taskBaseColor(task) }}
                                                 >
-                                                  <div className={cn("font-bold truncate", spaceVerticalMode === "list" ? "text-[10px]" : "text-[12px]")}>{taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}</div>
-                                                  <div className="text-[10px] opacity-70">{isPdf || spaceVerticalMode === "list" ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}</div>
+                                                  <SpaceTaskContent
+                                                    participants={spaceParticipantsByTaskId.get(Number(task.id))}
+                                                    activity={isPdf || spaceVerticalMode === "list" ? compactTaskLabel(task) : taskDisplayName(task)}
+                                                    time={`${task.startPlanned ?? "—"}–${task.endPlanned ?? "—"}`}
+                                                    height={height}
+                                                    compact={spaceVerticalMode === "list"}
+                                                    icon={taskPrefixIcon(task)}
+                                                    warning={Boolean(dependencyWarnings[Number(task.id)])}
+                                                  />
                                                 </TaskStatusMenuTrigger>
                                               );
                                             })}
@@ -2235,11 +2256,7 @@ function TaskStatusMenuTrigger({
                                           <TaskStatusMenuTrigger
                                             key={task.id}
                                             task={task}
-                                            contestantName={
-                                              contestantNameById[
-                                                Number(task.contestantId)
-                                              ] ?? "—"
-                                            }
+                                            contestantName={spaceParticipantsByTaskId.get(Number(task.id))?.join(" + ") || "—"}
                                             locationLabel={getTaskLocationLabel(task)}
                                             onTaskStatusChange={onTaskStatusChange}
                                             canExecuteTask={canExecuteTask}
@@ -2271,6 +2288,9 @@ function TaskStatusMenuTrigger({
                                             style={{
                                               top,
                                               height,
+                                              paddingTop: height < 32 ? 0 : undefined,
+                                              paddingBottom: height < 32 ? 0 : undefined,
+                                              color: spaceForeground(taskBaseColor(task)),
                                               backgroundColor:
                                                 taskBaseColor(task),
                                               borderColor:
@@ -2279,12 +2299,15 @@ function TaskStatusMenuTrigger({
                                                   : taskBaseColor(task),
                                             }}
                                           >
-                                            <div className={cn("font-bold truncate", spaceVerticalMode === "list" ? "text-[10px]" : "text-[12px]")}>
-                                              {taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}
-                                            </div>
-                                            <div className="text-[10px] opacity-70">
-                                              {isPdf || spaceVerticalMode === "list" ? compactSpaceLabel(task) : `${task.startPlanned}-${task.endPlanned}`}
-                                            </div>
+                                            <SpaceTaskContent
+                                              participants={spaceParticipantsByTaskId.get(Number(task.id))}
+                                              activity={isPdf || spaceVerticalMode === "list" ? compactTaskLabel(task) : taskDisplayName(task)}
+                                              time={`${task.startPlanned ?? "—"}–${task.endPlanned ?? "—"}`}
+                                              height={height}
+                                              compact={spaceVerticalMode === "list"}
+                                              icon={taskPrefixIcon(task)}
+                                              warning={Boolean(dependencyWarnings[Number(task.id)])}
+                                            />
                                           </TaskStatusMenuTrigger>
                                         );
                                       })}
