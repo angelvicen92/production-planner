@@ -1,3 +1,4 @@
+import { SettingsSection } from "@/components/settings/settings-section";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,8 +23,8 @@ export function ControlRoomSettingsCard() {
   const clamp = (value: number, max: number) => Math.max(0, Math.min(max, Number.isFinite(value) ? value : 0));
 
   return (
-    <Card>
-      <CardHeader><CardTitle>Control Room</CardTitle></CardHeader>
+    <SettingsSection section="control-room" title="Control Room" busy={update.isPending} error={update.error}>
+
       <CardContent className="space-y-4">
         <div className="grid md:grid-cols-3 gap-3">
           <div><Label>Idle inesperado (min)</Label><Input type="number" min={0} max={180} value={draft.idleUnexpectedThresholdMin} onChange={(e) => setDraft((p) => p ? { ...p, idleUnexpectedThresholdMin: clamp(Number(e.target.value), 180) } : p)} /></div>
@@ -37,6 +38,6 @@ export function ControlRoomSettingsCard() {
         </div>
         <Button onClick={() => update.mutate(draft)} disabled={update.isPending}>Guardar Control Room</Button>
       </CardContent>
-    </Card>
+    </SettingsSection>
   );
 }

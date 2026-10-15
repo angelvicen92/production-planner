@@ -1,8 +1,9 @@
+import { SettingsSection } from "@/components/settings/settings-section";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { api } from "@shared/routes";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -26,6 +27,7 @@ export function TransportSettingsCard() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const [draft, setDraft] = useState<TransportSettings | null>(null);
 
   const debounceTimerRef = useRef<number | null>(null);
@@ -72,6 +74,7 @@ export function TransportSettingsCard() {
     }
 
     setIsSaving(true);
+    setSaveError(false);
     isSavingRef.current = true;
 
     try {
@@ -79,6 +82,7 @@ export function TransportSettingsCard() {
       qc.invalidateQueries({ queryKey: [api.optimizerSettings.get.path] });
       toast({ title: "Transporte guardado" });
     } catch (err: any) {
+      setSaveError(true);
       toast({ title: "No se pudo guardar", description: err?.message || "Error desconocido", variant: "destructive" });
     } finally {
       setIsSaving(false);
@@ -120,11 +124,8 @@ export function TransportSettingsCard() {
   const templates = (templatesQ.data ?? []) as any[];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Transporte</CardTitle>
-        {isSaving ? <p className="text-xs text-muted-foreground">Guardando…</p> : null}
-      </CardHeader>
+    <SettingsSection section="transport" title="Transporte" busy={isSaving} error={settingsQ.error || saveError}>
+
       <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label>Plantilla Llegada</Label>
@@ -261,6 +262,6 @@ export function TransportSettingsCard() {
           />
         </div>
       </CardContent>
-    </Card>
+    </SettingsSection>
   );
 }
