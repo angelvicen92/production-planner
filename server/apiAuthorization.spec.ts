@@ -53,9 +53,10 @@ test('template aliases and Express casing use the catalog admin authority before
  try{
   const realPath=buildUrl(api.taskTemplates.update.path,{id:1});
   assert.equal(realPath,'/api/ta/1');
+  const paths:readonly string[]=[realPath,realPath+'/', '/api/TA/1','/API/tA/1/','/api/task-templates/1','/api/TASK-TEMPLATES/1'];
   for(const role of [undefined,'norole','viewer','aux','production','admin']){
-   for(const path of [realPath,realPath+'/', '/api/TA/1','/API/tA/1/','/api/task-templates/1','/api/TASK-TEMPLATES/1']){
-    const before=writes,response=await fetch(url+path,{method:api.taskTemplates.update.method,headers:role?{'x-test-user':role}:{}});
+   for(const path of paths){
+    const before:number=writes,response:Response=await fetch(url+path,{method:api.taskTemplates.update.method,headers:role?{'x-test-user':role}:{}});
     assert.equal(response.status,role==null?401:role==='admin'?200:403,`${role} ${path}`);
     assert.equal(writes,before+(role==='admin'?1:0),'denials never reach a write handler');
    }
