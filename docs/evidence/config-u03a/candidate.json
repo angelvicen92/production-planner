@@ -1,0 +1,793 @@
+{
+  "baseCommit": "977dbb3ef6244de022410e4d00036cd186c15aad",
+  "nativeResult": "PASS",
+  "expectedResult": "PASS",
+  "mode": "REAL_DISPOSABLE_PRODUCT_INTEGRATION",
+  "nodeVersion": "v24.19.0",
+  "postgresVersion": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "images": {
+    "db": "postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24",
+    "auth": "supabase/gotrue:v2.177.0@sha256:6a916b47af0386b7e0152ca84f3d45d050bf056e449a75a5460b48742fd67822",
+    "rest": "postgrest/postgrest:v12.2.12@sha256:5f4ce744539bbba786b4e24dbbd95bdb2a956dcf568c5374995a0ff4a68f5bd2"
+  },
+  "remoteWrites": 0,
+  "startedAt": "2026-10-15T07:14:11.317Z",
+  "checks": [
+    "entire native application migration ledger",
+    "real password login for five Auth identities",
+    "historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import",
+    "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved",
+    "baseline bypass reproduced and candidate PATCH matrix certified with native Auth, HTTP, storage and SQL",
+    "catalog reads preserved; create/delete denials and invalid admin payload leave all observed tables unchanged",
+    "real admin UI payload and existing U02 failure identical to baseline; valid admin PATCH persists and reloads without changing snapshots",
+    "old day, 11 prior Stages, 333 other tasks and historical catalog remain literal after real UI/Autopilot/execution"
+  ],
+  "migrationCount": 97,
+  "migrationLedgerSha256": "fc313c66f57a1fe5e7132eef9238c94a843ad6f4ecc3b7eac254f86087dc66c5",
+  "runtimeSha256": {
+    "server/apiAuthorization.ts": "6da79ebebb68a0e7d79e435cdfc165a9439617425912bbc7d941f87c0633fd51",
+    "server/middleware/requireAuth.ts": "3b12e1b2e385707e66a7c4587ed13bdc9ee309f35756ebff8efd56a61fd237f6",
+    "server/authz.ts": "c424fda12b752164c8e54478976c29a8710bcaf734089f055914d73d5a6b5c7e",
+    "server/routes.ts": "1401a27c169a7d6cd02f2ce4db12f297ece495f1256864d188bac23280a9f794",
+    "server/storage.ts": "b65ffe95c56854c4e37f404b6eb053f30760eb5eb2ff71d2b30b051f92d89818",
+    "shared/routes.ts": "4fda6f275793a76713441ea49be9e894b58226c807582af01e016e3724321cd0",
+    "client/src/hooks/use-tasks.ts": "e7b16366826ac528d5a58bd01d48a45096a4ae2b86c60b4e5426542b51839531",
+    "client/src/pages/settings.tsx": "8452a6bdaeb227ed576e57705272736554a406da17a529220468aedc6e73150f",
+    "script/demo/smokeA2Integration.ts": "bfac452fa948ebbae559984702c4e7ede29f55ba665d4cb9bec6479fbd16ebad",
+    "script/demo/smokeTemplateAuthorization.ts": "3a157809e942a9dc32432bcae8a8740f96c66beecdcc85ecd64785bada08b765"
+  },
+  "httpSql": {
+    "baseline": [
+      {
+        "role": "admin",
+        "path": "/api/ta/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "0d299347d87bb6735ade697ca56861dd815f012c8608fafde1a7c974da21cb58"
+      },
+      {
+        "role": "production",
+        "path": "/api/ta/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "f072f22ba7b7a463078e474a70c38b326aec9542aabf06746b7789ec87a8e545"
+      },
+      {
+        "role": "aux",
+        "path": "/api/ta/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "87fc87904763119c4de4ed41bfddd91705132fd633cacaa8f05c338d00fd574a"
+      },
+      {
+        "role": "viewer",
+        "path": "/api/ta/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "fec14ec0a1727e412d9d22f3029d967b4b2c00333e8c7c9ffd78ed9cfee6a957"
+      },
+      {
+        "role": "norole",
+        "path": "/api/ta/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "e0962d0a843efffbd4d0c221526ecda454acac4bc4fc2c5771722eefbca97fa5"
+      },
+      {
+        "role": "anonymous",
+        "path": "/api/ta/20032",
+        "status": 401,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "invalid-token",
+        "path": "/api/ta/20032",
+        "status": 401,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "admin",
+        "path": "/api/TA/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "0d299347d87bb6735ade697ca56861dd815f012c8608fafde1a7c974da21cb58"
+      },
+      {
+        "role": "production",
+        "path": "/api/TA/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "f072f22ba7b7a463078e474a70c38b326aec9542aabf06746b7789ec87a8e545"
+      },
+      {
+        "role": "aux",
+        "path": "/api/TA/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "87fc87904763119c4de4ed41bfddd91705132fd633cacaa8f05c338d00fd574a"
+      },
+      {
+        "role": "viewer",
+        "path": "/api/TA/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "fec14ec0a1727e412d9d22f3029d967b4b2c00333e8c7c9ffd78ed9cfee6a957"
+      },
+      {
+        "role": "norole",
+        "path": "/api/TA/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "e0962d0a843efffbd4d0c221526ecda454acac4bc4fc2c5771722eefbca97fa5"
+      },
+      {
+        "role": "anonymous",
+        "path": "/api/TA/20032",
+        "status": 401,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "invalid-token",
+        "path": "/api/TA/20032",
+        "status": 401,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "admin",
+        "path": "/API/tA/20032/",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "0d299347d87bb6735ade697ca56861dd815f012c8608fafde1a7c974da21cb58"
+      },
+      {
+        "role": "production",
+        "path": "/API/tA/20032/",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "f072f22ba7b7a463078e474a70c38b326aec9542aabf06746b7789ec87a8e545"
+      },
+      {
+        "role": "aux",
+        "path": "/API/tA/20032/",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "87fc87904763119c4de4ed41bfddd91705132fd633cacaa8f05c338d00fd574a"
+      },
+      {
+        "role": "viewer",
+        "path": "/API/tA/20032/",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "fec14ec0a1727e412d9d22f3029d967b4b2c00333e8c7c9ffd78ed9cfee6a957"
+      },
+      {
+        "role": "norole",
+        "path": "/API/tA/20032/",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "e0962d0a843efffbd4d0c221526ecda454acac4bc4fc2c5771722eefbca97fa5"
+      },
+      {
+        "role": "anonymous",
+        "path": "/API/tA/20032/",
+        "status": 401,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "invalid-token",
+        "path": "/API/tA/20032/",
+        "status": 401,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      }
+    ],
+    "candidate": [
+      {
+        "role": "admin",
+        "path": "/api/ta/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "0d299347d87bb6735ade697ca56861dd815f012c8608fafde1a7c974da21cb58"
+      },
+      {
+        "role": "production",
+        "path": "/api/ta/20032",
+        "status": 403,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "aux",
+        "path": "/api/ta/20032",
+        "status": 403,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "viewer",
+        "path": "/api/ta/20032",
+        "status": 403,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "norole",
+        "path": "/api/ta/20032",
+        "status": 403,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "anonymous",
+        "path": "/api/ta/20032",
+        "status": 401,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "invalid-token",
+        "path": "/api/ta/20032",
+        "status": 401,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "admin",
+        "path": "/api/TA/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "0d299347d87bb6735ade697ca56861dd815f012c8608fafde1a7c974da21cb58"
+      },
+      {
+        "role": "production",
+        "path": "/api/TA/20032",
+        "status": 403,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "aux",
+        "path": "/api/TA/20032",
+        "status": 403,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "viewer",
+        "path": "/api/TA/20032",
+        "status": 403,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "norole",
+        "path": "/api/TA/20032",
+        "status": 403,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "anonymous",
+        "path": "/api/TA/20032",
+        "status": 401,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "invalid-token",
+        "path": "/api/TA/20032",
+        "status": 401,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "admin",
+        "path": "/API/tA/20032/",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "0d299347d87bb6735ade697ca56861dd815f012c8608fafde1a7c974da21cb58"
+      },
+      {
+        "role": "production",
+        "path": "/API/tA/20032/",
+        "status": 403,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "aux",
+        "path": "/API/tA/20032/",
+        "status": 403,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "viewer",
+        "path": "/API/tA/20032/",
+        "status": 403,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "norole",
+        "path": "/API/tA/20032/",
+        "status": 403,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "anonymous",
+        "path": "/API/tA/20032/",
+        "status": 401,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      },
+      {
+        "role": "invalid-token",
+        "path": "/API/tA/20032/",
+        "status": 401,
+        "changedTables": [],
+        "beforeState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb",
+        "afterState": "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb"
+      }
+    ],
+    "snapshotCount": 62,
+    "reads": [
+      {
+        "role": "admin",
+        "status": 200
+      },
+      {
+        "role": "production",
+        "status": 200
+      },
+      {
+        "role": "aux",
+        "status": 200
+      },
+      {
+        "role": "viewer",
+        "status": 200
+      },
+      {
+        "role": "norole",
+        "status": 403
+      },
+      {
+        "role": "anonymous",
+        "status": 401
+      }
+    ],
+    "otherWrites": [
+      {
+        "role": "production",
+        "method": "POST",
+        "path": "/api/task-templates",
+        "status": 403
+      },
+      {
+        "role": "production",
+        "method": "DELETE",
+        "path": "/api/task-templates/20032",
+        "status": 403
+      },
+      {
+        "role": "production",
+        "method": "POST",
+        "path": "/API/TASK-TEMPLATES",
+        "status": 403
+      },
+      {
+        "role": "production",
+        "method": "DELETE",
+        "path": "/API/TASK-TEMPLATES/20032",
+        "status": 403
+      },
+      {
+        "role": "aux",
+        "method": "POST",
+        "path": "/api/task-templates",
+        "status": 403
+      },
+      {
+        "role": "aux",
+        "method": "DELETE",
+        "path": "/api/task-templates/20032",
+        "status": 403
+      },
+      {
+        "role": "aux",
+        "method": "POST",
+        "path": "/API/TASK-TEMPLATES",
+        "status": 403
+      },
+      {
+        "role": "aux",
+        "method": "DELETE",
+        "path": "/API/TASK-TEMPLATES/20032",
+        "status": 403
+      },
+      {
+        "role": "viewer",
+        "method": "POST",
+        "path": "/api/task-templates",
+        "status": 403
+      },
+      {
+        "role": "viewer",
+        "method": "DELETE",
+        "path": "/api/task-templates/20032",
+        "status": 403
+      },
+      {
+        "role": "viewer",
+        "method": "POST",
+        "path": "/API/TASK-TEMPLATES",
+        "status": 403
+      },
+      {
+        "role": "viewer",
+        "method": "DELETE",
+        "path": "/API/TASK-TEMPLATES/20032",
+        "status": 403
+      },
+      {
+        "role": "norole",
+        "method": "POST",
+        "path": "/api/task-templates",
+        "status": 403
+      },
+      {
+        "role": "norole",
+        "method": "DELETE",
+        "path": "/api/task-templates/20032",
+        "status": 403
+      },
+      {
+        "role": "norole",
+        "method": "POST",
+        "path": "/API/TASK-TEMPLATES",
+        "status": 403
+      },
+      {
+        "role": "norole",
+        "method": "DELETE",
+        "path": "/API/TASK-TEMPLATES/20032",
+        "status": 403
+      },
+      {
+        "role": "anonymous",
+        "method": "POST",
+        "path": "/api/task-templates",
+        "status": 401
+      },
+      {
+        "role": "anonymous",
+        "method": "DELETE",
+        "path": "/api/task-templates/20032",
+        "status": 401
+      },
+      {
+        "role": "anonymous",
+        "method": "POST",
+        "path": "/API/TASK-TEMPLATES",
+        "status": 401
+      },
+      {
+        "role": "anonymous",
+        "method": "DELETE",
+        "path": "/API/TASK-TEMPLATES/20032",
+        "status": 401
+      }
+    ],
+    "ui": {
+      "baseline": {
+        "status": 400,
+        "path": "/api/ta/20032",
+        "method": "PATCH",
+        "payloadKeys": [
+          "abbrev",
+          "autoCreateOnContestantCreate",
+          "defaultCameras",
+          "defaultDuration",
+          "dependsOnTemplateId",
+          "dependsOnTemplateIds",
+          "exclusiveAuxiliar",
+          "hasDependency",
+          "itinerantTeamId",
+          "itinerantTeamRequirement",
+          "name",
+          "requiresAuxiliar",
+          "requiresCoach",
+          "resourceRequirements",
+          "rulesJson",
+          "spaceId",
+          "uiColor",
+          "uiColorSecondary",
+          "zoneId"
+        ],
+        "schemaAccepted": true,
+        "error": "Could not find the 'location_label' column of 'task_templates' in the schema cache",
+        "reloadUnchanged": true
+      },
+      "candidate": {
+        "status": 400,
+        "path": "/api/ta/20032",
+        "method": "PATCH",
+        "payloadKeys": [
+          "abbrev",
+          "autoCreateOnContestantCreate",
+          "defaultCameras",
+          "defaultDuration",
+          "dependsOnTemplateId",
+          "dependsOnTemplateIds",
+          "exclusiveAuxiliar",
+          "hasDependency",
+          "itinerantTeamId",
+          "itinerantTeamRequirement",
+          "name",
+          "requiresAuxiliar",
+          "requiresCoach",
+          "resourceRequirements",
+          "rulesJson",
+          "spaceId",
+          "uiColor",
+          "uiColorSecondary",
+          "zoneId"
+        ],
+        "schemaAccepted": true,
+        "error": "Could not find the 'location_label' column of 'task_templates' in the schema cache",
+        "reloadUnchanged": true
+      },
+      "validAdminPatch": {
+        "status": 200,
+        "patch": {
+          "abbrev": "UI-U03A",
+          "defaultDuration": 17
+        },
+        "reload": true
+      },
+      "fullFormGap": "U02: location_label write against native template schema"
+    },
+    "sqlStates": {
+      "2b578ba75fbd15fd288136e61a5bf9aa0e1c8b4212273385694185794bbf2bcb": {
+        "task_templates": {
+          "count": 32,
+          "hash": "0e70698a2be8cdab865d5b3f07242213"
+        },
+        "plan_task_template_snapshots": {
+          "count": 62,
+          "hash": "9e5d2d192f6b4580b81df59ac2bd8e5f"
+        },
+        "plans": {
+          "count": 3,
+          "hash": "79e58f0e5f4ae756aa6783f554bf9ffe"
+        },
+        "daily_tasks": {
+          "count": 865,
+          "hash": "b295d35bbd4ba9d7ecfaf34a653840e9"
+        },
+        "assisted_planning_stages": {
+          "count": 11,
+          "hash": "687b89ba5a79fba7c2f2723b93b9e712"
+        },
+        "plan_config_revisions": {
+          "count": 1,
+          "hash": "60bb53d1c283d0755d0676f30e0c1463"
+        }
+      },
+      "0d299347d87bb6735ade697ca56861dd815f012c8608fafde1a7c974da21cb58": {
+        "task_templates": {
+          "count": 32,
+          "hash": "ede2bb760f38920bc1110b49bd1180ee"
+        },
+        "plan_task_template_snapshots": {
+          "count": 62,
+          "hash": "9e5d2d192f6b4580b81df59ac2bd8e5f"
+        },
+        "plans": {
+          "count": 3,
+          "hash": "79e58f0e5f4ae756aa6783f554bf9ffe"
+        },
+        "daily_tasks": {
+          "count": 865,
+          "hash": "b295d35bbd4ba9d7ecfaf34a653840e9"
+        },
+        "assisted_planning_stages": {
+          "count": 11,
+          "hash": "687b89ba5a79fba7c2f2723b93b9e712"
+        },
+        "plan_config_revisions": {
+          "count": 1,
+          "hash": "60bb53d1c283d0755d0676f30e0c1463"
+        }
+      },
+      "f072f22ba7b7a463078e474a70c38b326aec9542aabf06746b7789ec87a8e545": {
+        "task_templates": {
+          "count": 32,
+          "hash": "3c197849da17a3c162a6b303334f7306"
+        },
+        "plan_task_template_snapshots": {
+          "count": 62,
+          "hash": "9e5d2d192f6b4580b81df59ac2bd8e5f"
+        },
+        "plans": {
+          "count": 3,
+          "hash": "79e58f0e5f4ae756aa6783f554bf9ffe"
+        },
+        "daily_tasks": {
+          "count": 865,
+          "hash": "b295d35bbd4ba9d7ecfaf34a653840e9"
+        },
+        "assisted_planning_stages": {
+          "count": 11,
+          "hash": "687b89ba5a79fba7c2f2723b93b9e712"
+        },
+        "plan_config_revisions": {
+          "count": 1,
+          "hash": "60bb53d1c283d0755d0676f30e0c1463"
+        }
+      },
+      "87fc87904763119c4de4ed41bfddd91705132fd633cacaa8f05c338d00fd574a": {
+        "task_templates": {
+          "count": 32,
+          "hash": "d705d3cae7d55a7c9c6c3848e2655c47"
+        },
+        "plan_task_template_snapshots": {
+          "count": 62,
+          "hash": "9e5d2d192f6b4580b81df59ac2bd8e5f"
+        },
+        "plans": {
+          "count": 3,
+          "hash": "79e58f0e5f4ae756aa6783f554bf9ffe"
+        },
+        "daily_tasks": {
+          "count": 865,
+          "hash": "b295d35bbd4ba9d7ecfaf34a653840e9"
+        },
+        "assisted_planning_stages": {
+          "count": 11,
+          "hash": "687b89ba5a79fba7c2f2723b93b9e712"
+        },
+        "plan_config_revisions": {
+          "count": 1,
+          "hash": "60bb53d1c283d0755d0676f30e0c1463"
+        }
+      },
+      "fec14ec0a1727e412d9d22f3029d967b4b2c00333e8c7c9ffd78ed9cfee6a957": {
+        "task_templates": {
+          "count": 32,
+          "hash": "4427e92df75c18ad078762864f3ef125"
+        },
+        "plan_task_template_snapshots": {
+          "count": 62,
+          "hash": "9e5d2d192f6b4580b81df59ac2bd8e5f"
+        },
+        "plans": {
+          "count": 3,
+          "hash": "79e58f0e5f4ae756aa6783f554bf9ffe"
+        },
+        "daily_tasks": {
+          "count": 865,
+          "hash": "b295d35bbd4ba9d7ecfaf34a653840e9"
+        },
+        "assisted_planning_stages": {
+          "count": 11,
+          "hash": "687b89ba5a79fba7c2f2723b93b9e712"
+        },
+        "plan_config_revisions": {
+          "count": 1,
+          "hash": "60bb53d1c283d0755d0676f30e0c1463"
+        }
+      },
+      "e0962d0a843efffbd4d0c221526ecda454acac4bc4fc2c5771722eefbca97fa5": {
+        "task_templates": {
+          "count": 32,
+          "hash": "82f55d33b388863a0eda930acf8355af"
+        },
+        "plan_task_template_snapshots": {
+          "count": 62,
+          "hash": "9e5d2d192f6b4580b81df59ac2bd8e5f"
+        },
+        "plans": {
+          "count": 3,
+          "hash": "79e58f0e5f4ae756aa6783f554bf9ffe"
+        },
+        "daily_tasks": {
+          "count": 865,
+          "hash": "b295d35bbd4ba9d7ecfaf34a653840e9"
+        },
+        "assisted_planning_stages": {
+          "count": 11,
+          "hash": "687b89ba5a79fba7c2f2723b93b9e712"
+        },
+        "plan_config_revisions": {
+          "count": 1,
+          "hash": "60bb53d1c283d0755d0676f30e0c1463"
+        }
+      }
+    }
+  }
+}

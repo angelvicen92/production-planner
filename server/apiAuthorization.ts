@@ -9,7 +9,8 @@ export function apiRequiredRoles(method:string,path:string):readonly AppRole[]|n
  if(/^\/tasks\/[^/]+\/status\/?$/.test(path))return ['admin','production','aux'];
  if(/^\/tasks\/[^/]+\/reset\/?$/.test(path))return ['admin','production'];
  const catalogs=['/settings','/program-settings','/optimizer-settings','/task-templates','/zones','/spaces','/resource-types','/resource-items','/resource-pools','/staff-people','/staff-defaults','/itinerant-teams'];
- if(catalogs.some(within))return method==='GET'?['admin','production','aux','viewer']:['admin'];
+ // Template updates use /ta; match both template paths with Express's default casing semantics.
+ if(catalogs.some(within)||/^\/(?:ta|task-templates)(?:\/|$)/i.test(path))return method==='GET'?['admin','production','aux','viewer']:['admin'];
  if(['/plans','/locks','/daily-tasks'].some(within))return method==='GET'?['admin','production','aux','viewer']:['admin','production'];
  return null;
 }
