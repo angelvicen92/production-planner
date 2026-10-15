@@ -1,0 +1,56 @@
+{
+  "base": "621303a3b3e1e3a2d745e35de9db0a0cbd28c7c9",
+  "localOnly": true,
+  "productWrites": 0,
+  "batches": [
+    {
+      "log": "tests.log",
+      "reported": {
+        "tests": 14,
+        "pass": 13,
+        "fail": 1
+      },
+      "unit": "files",
+      "preexistingFailures": true
+    },
+    {
+      "log": "additional-tests.log",
+      "reported": {
+        "tests": 11,
+        "pass": 11,
+        "fail": 0
+      },
+      "unit": "files",
+      "preexistingFailures": false
+    },
+    {
+      "log": "registry-tests.log",
+      "reported": {
+        "tests": 4,
+        "pass": 2,
+        "fail": 2
+      },
+      "unit": "test cases",
+      "preexistingFailures": true
+    }
+  ],
+  "typecheck": {
+    "project": "PASS after installing already-declared missing local devDependency @electric-sql/pglite@0.5.8 without manifest/lock changes",
+    "auditScript": "PASS focal tsconfig",
+    "dependencyManifestChanged": false
+  },
+  "artifactVerification": "PASS; see artifact-verification.json",
+  "notExecuted": [
+    "browser mutating journey",
+    "live SQL RLS certification",
+    "historical JSON extraction",
+    "Full A2",
+    "parallel S0/HTTP500 diagnosis"
+  ],
+  "sqlSyntaxLocal": {
+    "status": "PASS",
+    "statements": 6,
+    "database": "PGlite in-memory fixture",
+    "remoteCalls": 0
+  }
+}
