@@ -1,0 +1,175 @@
+{
+  "mode": "OFFLINE_PRODUCT_SCOPE_REPLAY",
+  "node": "v24.19.0",
+  "v8": "13.6.233.17-node.51",
+  "elapsedMs": 115263.261958,
+  "inputImmutable": true,
+  "semanticResultHash": "70febee7ce882d9b1f9cf0bec0104212af0ecc86f75ce2903915e935f43cb583",
+  "proposalCount": 19,
+  "reasonCodes": [
+    "ASSISTED_SCOPE_COMPLETE"
+  ],
+  "completeForScope": true,
+  "hardValid": true,
+  "requiredValid": true,
+  "protectedPlacementsPreserved": true,
+  "fingerprint": "46493eb89823f8498ba931b9c1e2094dc8eee666fc20df5e8b733fc3bd2814fe",
+  "work": {
+    "branchesExplored": 55625,
+    "coreBranches": 9343,
+    "standaloneBranches": 46282,
+    "coreMaximumDepth": 0,
+    "patternCandidatesExplored": 0,
+    "timelineCandidatesExplored": 0,
+    "mainCandidatesEvaluated": 0,
+    "feederCandidatesEvaluated": 0,
+    "architecturesChecked": 0,
+    "feederOrderBranches": 0,
+    "feederSlotMatchingChecks": 0,
+    "feederSlotMatchingEdgeChecks": 0,
+    "feederSlotMatchingAugmentTraversals": 0,
+    "feederSlotMatchingBranchesExplored": 0,
+    "residualMatchingInvocations": 0,
+    "residualMatchingFullBuilds": 0,
+    "residualMatchingIncrementalUpdates": 0,
+    "residualMatchingEdgeCacheHits": 0,
+    "residualMatchingEdgeCacheMisses": 0,
+    "residualMatchingPositionChecks": 0,
+    "residualMatchingAugmentTraversals": 0,
+    "residualMatchingBranchesExplored": 0,
+    "mainRunWitnessAttempts": 0,
+    "mainRunWitnessRepairs": 0,
+    "mainRunEquivalentOrdersCollapsed": 0,
+    "bundleMatchingAttempts": 21,
+    "bundleMatchingRepairs": 0,
+    "bundleMatchingMaterializations": 21,
+    "bundleHardValidationRejects": 0,
+    "bundleCertifiedRepairs": 0,
+    "bundleNogoodsCreated": 0,
+    "bundleNogoodBranches": 0,
+    "bundleNogoodDeduplications": 0,
+    "bundleNogoodRepairsSucceeded": 0,
+    "conflictBackjumps": 0,
+    "suffixDepthsSkipped": 0,
+    "deepestCoreDepthReached": 0,
+    "standaloneForwardChecks": 0,
+    "standaloneForwardStartChecks": 0,
+    "standaloneForwardWitnessCacheHits": 0,
+    "standaloneForwardWitnessCacheMisses": 0,
+    "coreLeafTransportPrunes": 0,
+    "transportContiguousStates": 732,
+    "membershipFallbackEntered": 0,
+    "participantMealFutureFeasibilityChecks": 288,
+    "participantMealFutureInfeasibleBranches": 0,
+    "participantMealAffectedObligationsChecked": 398,
+    "participantMealZeroDomainPrunes": 0,
+    "participantMealAnalyticCollectivePrunes": 0,
+    "participantMealExactMaterializations": 4,
+    "futureRoundWitnessSearchInvocations": 0,
+    "futureRoundWitnessStructuralCandidates": 0,
+    "futureRoundWitnessCompleteMatchings": 0,
+    "futureRoundWitnessParticipantFutureChecks": 0,
+    "futureRoundWitnessPrerequisiteChecks": 0,
+    "futureRoundWitnessBranchesConsumed": 0,
+    "branchBudgetLimit": 100000
+  },
+  "bundleMatching": {
+    "bundleForbiddenEdges": [],
+    "bundleRepairSequence": [],
+    "bundleTerminalCause": "ACCEPT",
+    "bundleNogoodsCreated": 0,
+    "bundleNogoodBranches": 0,
+    "bundleNogoodDeduplications": 0,
+    "bundleNogoodRepairsSucceeded": 0,
+    "conflictEdges": []
+  },
+  "supporting": {
+    "ephemeral": 38,
+    "accepted": 0
+  },
+  "witnesses": [
+    {
+      "kind": "JOINT_COMPLETION",
+      "fingerprint": "0f3bcac7a1a447203edbb6c41307291968a7be731f09ae8353560e8427b04bf8",
+      "productive": 247,
+      "participantMeals": 19
+    },
+    {
+      "kind": "FIXED_SUPPORTING_PIPELINE",
+      "fingerprint": "9335c278dbdeb7f32595e3881197a84a679b69e2e308c2661fe5404b2e1d2b4a"
+    }
+  ],
+  "fullTraceReference": "../MAIN-FLOW-SOFT-MEAL-SPLIT-DAY-CONFIG-A2-AUTO.json.gz (complete result deep-equal; see equivalence.json)",
+  "waterfallByDepth": {
+    "0": {
+      "mainCandidate": 0,
+      "feederStart": 0,
+      "residualMatching": 0,
+      "continuation": 0,
+      "participantMeal": 0,
+      "standaloneForward": 0,
+      "other": 55625,
+      "total": 55625
+    }
+  },
+  "rejectionSummary": {
+    "firstDeadEnd": null,
+    "firstDominantBlocker": null,
+    "terminalRejections": {
+      "SUBSTANTIVE_IDENTITY_INCOMPLETE": 0,
+      "PARTICIPANT_MEAL_WITNESS_INCOMPLETE": 0,
+      "OPERATIONAL_MEAL_WITNESS_INCOMPLETE": 0,
+      "TRANSPORT_MATERIALIZATION_FAILED": 0,
+      "CANDIDATE_IDENTITY_MISMATCH": 0,
+      "VALIDATION_REJECTED": 0
+    },
+    "firstTerminalRejection": null,
+    "closureFirstPrune": {
+      "beforeMatchingCardinality": 19,
+      "afterMatchingCardinality": 18,
+      "affectedParticipantIds": [
+        "participant:100219"
+      ],
+      "causingTaskIds": [
+        "task:110254",
+        "task:110255",
+        "task:110266"
+      ],
+      "blockingClosureTaskIds": [
+        "task:110258"
+      ]
+    },
+    "closureChecks": 4213,
+    "closureBranches": 1877,
+    "closureAbstentions": {
+      "BUDGET_EXHAUSTED": 2
+    }
+  },
+  "firstHardValidCoreLeaf": {
+    "coreTaskCount": 82,
+    "pipelineMaterializedTaskCount": 82,
+    "immutableCoreTaskCount": 82,
+    "protectedTaskCount": 0,
+    "pipelineOnlySupportingExcludedCount": 0,
+    "coreTasksByKind": {
+      "auxiliary": 44,
+      "vocal": 19,
+      "main": 19
+    },
+    "pendingSupportingTotal": 38,
+    "pendingOrdinaryNoTransport": 19,
+    "pendingDynamicTransport": 19,
+    "pendingTasksByKind": {
+      "auxiliary": 38
+    }
+  },
+  "preferredResourceUnit": {
+    "memberTaskCount": 36,
+    "resourceTaskCount": 19,
+    "setupTaskCount": 17,
+    "geometryCount": 1,
+    "matchingAttempts": 1,
+    "matchingSuccesses": 1,
+    "terminalFutureResult": "PASS"
+  }
+}

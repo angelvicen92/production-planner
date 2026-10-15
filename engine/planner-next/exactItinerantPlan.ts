@@ -2495,7 +2495,9 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const constructiveRepair=hasFuture?undefined:options.repairPreferredBundleCandidate;
   if(!hasFuture&&!constructiveBundle){evidence.structuralSearchExhausted=true;evidence.residualDfsEntered=true;evidence.branchesBeforeResidualDfs=ledger.branchesExplored;}
   let core:ReturnType<typeof runExactMainAndFeederSearch>;
+  let liveCoreEvidence:Readonly<ReturnType<typeof runExactMainAndFeederSearch>["evidence"]>|undefined;
   try {core = runExactMainAndFeederSearch(problem, { ledger, ...options.coreOrderer,
+    onDiagnosticEvidence:current=>{liveCoreEvidence=current;},
     futureEdgeIntrusion:options.coreOrderer?.futureEdgeIntrusion??(operation=>futureTechnicalChains.intrusion(operation)),
     futureEdgePressure:operation=>futureTechnicalChains.pressure(operation), acceptsValidation:options.acceptsValidation,
     fixedPlacements:options.fixedPlacements, fixedPlacementsAsContext:options.fixedPlacementsAsContext,
@@ -2940,6 +2942,22 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     return repaired==="BUDGET_EXHAUSTED"?repaired:"REJECT";
   }});}catch(error){
     if(!(error instanceof ExactSearchTimeLimitReached))throw error;
+    // A checkpoint unwinds before the normal core result exists. Keep only
+    // observations already made; never rerun a candidate or consume a branch.
+    evidence.causalDiagnostic=structuredClone(liveCoreEvidence?.causalDiagnostic??null);
+    if(evidence.causalDiagnostic){
+      for(const [depth,extra] of Object.entries(supplementalByDepth)){
+        const row=evidence.causalDiagnostic.waterfallByDepth[depth]??={mainCandidate:0,feederStart:0,residualMatching:0,continuation:0,participantMeal:0,standaloneForward:0,other:0,total:0};
+        row.participantMeal+=extra.participantMeal;row.standaloneForward+=extra.standaloneForward;
+        row.total+=extra.participantMeal+extra.standaloneForward;
+      }
+      const accounted=Object.values(evidence.causalDiagnostic.waterfallByDepth).reduce((sum,row)=>sum+row.total,0);
+      const unclassified=Math.max(0,ledger.branchesExplored-invocationBranches-accounted);
+      if(unclassified){
+        const row=evidence.causalDiagnostic.waterfallByDepth["0"]??={mainCandidate:0,feederStart:0,residualMatching:0,continuation:0,participantMeal:0,standaloneForward:0,other:0,total:0};
+        row.other+=unclassified;row.total+=unclassified;
+      }
+    }
     evidence.branchesExplored=ledger.branchesExplored;evidence.coreBranches=ledger.coreBranches;
     evidence.standaloneBranches=ledger.standaloneBranches;evidence.coreStatus="TIME_LIMIT_REACHED";
     evidence.coreReasonCodes=["SEARCH_TIME_LIMIT_REACHED"];evidence.reasonCodes=["SEARCH_TIME_LIMIT_REACHED"];

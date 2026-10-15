@@ -1,0 +1,96 @@
+{
+  "base": "977dbb3ef6244de022410e4d00036cd186c15aad",
+  "branch": "codex/a2-s0-real-input-search-diagnostic",
+  "node": "v24.19.0",
+  "checks": {
+    "applicationTypeScript": {
+      "command": "npm run check",
+      "exitCode": 0
+    },
+    "integrationTypeScript": {
+      "command": "npx --no-install tsc -p script/demo/tsconfig.integration.json",
+      "exitCode": 0
+    },
+    "build": {
+      "command": "node --import tsx script/build.ts",
+      "exitCode": 0,
+      "wrapperLimitation": "npm run build / tsx CLI IPC socket denied in sandbox; same build entry point passed via Node loader."
+    },
+    "focalNode24": {
+      "command": "node --import tsx --test --test-concurrency=1 engine/planner-next/exactMainAndFeederCore.spec.ts engine/planner-next/exactItinerantPlan.spec.ts engine/planner-next/assistedCollectiveCore.spec.ts script/demo/auditA2S0Search.spec.ts script/demo/a2ConfigurationReadRecovery.spec.ts script/demo/a2RealTopology.spec.ts",
+      "exitCode": 0,
+      "filesPassed": 6
+    },
+    "focalNode20": {
+      "node": "v20.19.5",
+      "filesPassed": 3,
+      "files": [
+        "engine/planner-next/exactItinerantPlan.spec.ts",
+        "engine/planner-next/assistedCollectiveCore.spec.ts",
+        "script/demo/auditA2S0Search.spec.ts"
+      ],
+      "exitCode": 0
+    },
+    "finalAuditTests": {
+      "node24": {
+        "tests": 4,
+        "passed": 4
+      },
+      "node20": {
+        "tests": 4,
+        "passed": 4
+      }
+    },
+    "migrationSequence": {
+      "command": "npm run check:migrations",
+      "exitCode": 0,
+      "migrationDiff": false
+    },
+    "officialChecksums": {
+      "command": "(cd docs/source/official && sha256sum -c SHA256SUMS)",
+      "exitCode": 0,
+      "files": 10
+    },
+    "diffHygiene": {
+      "command": "git diff --check",
+      "exitCode": 0
+    },
+    "privacy": {
+      "rawRowsPublished": false,
+      "privateParticipantNamesPublished": false,
+      "canonicalC06C10CodesRetained": true,
+      "credentialHeaderEmailPatternMatches": 0
+    }
+  },
+  "runtimeHashes": {
+    "engine/planner-next/exactMainAndFeederCore.ts": "267e233736e6a847f130d45a96f74b15976d7b729244b73f418fcb22a7fc9933",
+    "engine/planner-next/exactItinerantPlan.ts": "027287c5470bd5559f71fa7d9d354ec0cec2e6ceb4ccd8186da8396d4710b69f",
+    "engine/planner-next/exactItinerantPlan.spec.ts": "df136e91bb23b1bb900fe76d81885ea2f13ba781babd53a8102e7e1acf9cdfe8",
+    "script/demo/auditA2S0Search.ts": "06d480bfa05ce352707a47757c88900584c805f8388615838e372e90ed9823ec",
+    "script/demo/auditA2S0Search.spec.ts": "ee35fa8f10a702cc94f59577340bc58ea4ddaea784867e62a810d62bf756e212",
+    "script/demo/tsconfig.integration.json": "7ce95fb1e1d6a641336378516ef374b327eb21d3456d11ffc5bccbd9ea0004fb"
+  },
+  "artifactHashes": {
+    "equivalence.json": "26b9b5c5d6f2abcafdfeea6ee2b59599f468b26d15bd5e6bbc54a0843d46b82b",
+    "inputs.json": "ac7a45b2db517cbfba466361638461d0cde892c824c396ac3a00c7b098c71b79",
+    "native.json": "391dba9a64766c3be96bea5f5b567db396f2dae428e95cc876c48ccf67462b7d",
+    "prefix-native.json": "417f320c58791abc9d5f32fb88e2fdbc517eead18936911c89606a8d82c9a2c6",
+    "prefix-real.json": "c59be42e24c4a5dc90fa94e4793150323328251ed80e412706241e6502b39221",
+    "real.json": "050d60c16d923157d4dcc80caa27217d163564371beeaa1bb75099db742b4eea"
+  },
+  "searchChanges": {
+    "ordering": false,
+    "domains": false,
+    "matching": false,
+    "pruning": false,
+    "budgets": false,
+    "timeout": false,
+    "diagnosticRetentionOnly": true
+  },
+  "remoteDatabaseWrites": 0,
+  "fullNativeIntegrationRerun": false,
+  "fullNativeIntegrationAuthority": "PR #1129 Evidence; no new acceptance asserted",
+  "globalSuiteRerun": false,
+  "remoteCI": "PENDING_PR",
+  "remainingDiagnostic": "Historical 300-second execution has no published input hash or CPU/wall/profile capture; repeat unchanged capture/runtime in that environment before any solver delta."
+}

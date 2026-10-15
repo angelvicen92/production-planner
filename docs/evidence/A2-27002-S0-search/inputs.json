@@ -1,0 +1,606 @@
+{
+  "sourceObligations": [
+    266,
+    266
+  ],
+  "inputHashes": [
+    "1554c13319e7c8cef42bfa1809fce6dc1390a3756a8a992238d0c959d7b0e69a",
+    "5b0af657f18a1c5cee7430db22ac4189089e7416751130dc558d4270d33760f1"
+  ],
+  "differingInputFields": [
+    "mealTaskTemplateId",
+    "mealTaskTemplateName",
+    "planResourceItems",
+    "planSpaceSettings",
+    "planZoneSettings",
+    "taskTemplateNameById",
+    "taskTemplateSnapshotFingerprint",
+    "tasks",
+    "transportSettings"
+  ],
+  "problemHashes": [
+    "62ec852dd1172d8460f00f1dcadf71318c5affdb95c1c053559f4c9ba464f18a",
+    "62ec852dd1172d8460f00f1dcadf71318c5affdb95c1c053559f4c9ba464f18a"
+  ],
+  "adapterProblemFingerprints": [
+    "7037e830fab579355c08b67c3f71a094a0e5ba27f56c33dddba0a35e8c5fa6c8",
+    "7037e830fab579355c08b67c3f71a094a0e5ba27f56c33dddba0a35e8c5fa6c8"
+  ],
+  "identityMapEqual": false,
+  "sections": [
+    {
+      "key": "anchoredAccompaniments",
+      "equal": true,
+      "realHash": "014015f912065166c302b503e8d477822e6bb4dd85937538d71f641a61e5b287",
+      "nativeHash": "014015f912065166c302b503e8d477822e6bb4dd85937538d71f641a61e5b287"
+    },
+    {
+      "key": "auxiliaryPolicy",
+      "equal": true,
+      "realHash": "4f7be9e95bbd1226fbd093228b01aecfcf70f9ad2f346bf8c529f08aa27f6b66",
+      "nativeHash": "4f7be9e95bbd1226fbd093228b01aecfcf70f9ad2f346bf8c529f08aa27f6b66"
+    },
+    {
+      "key": "budget",
+      "equal": true,
+      "realHash": "31d1cc64df156e303dc8aaf704de5e22dede52300db1d392ed2f200185e36a03",
+      "nativeHash": "31d1cc64df156e303dc8aaf704de5e22dede52300db1d392ed2f200185e36a03"
+    },
+    {
+      "key": "coachRouteTransitions",
+      "equal": true,
+      "realHash": "1c70e80b992842e31fcc8b5646d943840920ab4f79311aadfd8a6d1c54c0cae7",
+      "nativeHash": "1c70e80b992842e31fcc8b5646d943840920ab4f79311aadfd8a6d1c54c0cae7"
+    },
+    {
+      "key": "coaches",
+      "equal": true,
+      "realHash": "2dacb56bec45ad46a094aac719582e246fdd67adb520687517b1c9d4a8ebb3ca",
+      "nativeHash": "2dacb56bec45ad46a094aac719582e246fdd67adb520687517b1c9d4a8ebb3ca"
+    },
+    {
+      "key": "day",
+      "equal": true,
+      "realHash": "9f4b5fc57fc9b2568ab0c901afc6625cc3762bf25b6934fda5066f339451fde8",
+      "nativeHash": "9f4b5fc57fc9b2568ab0c901afc6625cc3762bf25b6934fda5066f339451fde8"
+    },
+    {
+      "key": "itinerantUnits",
+      "equal": true,
+      "realHash": "dde44fff7435efbe3425c20a3a7432a1f0c55b2f9c6a97a00ecb33d7508875f1",
+      "nativeHash": "dde44fff7435efbe3425c20a3a7432a1f0c55b2f9c6a97a00ecb33d7508875f1"
+    },
+    {
+      "key": "mainFlow",
+      "equal": true,
+      "realHash": "e306016e72b96284556b1e5b159c423d60cb68a2523c009ef5e2ae7fbb975a0b",
+      "nativeHash": "e306016e72b96284556b1e5b159c423d60cb68a2523c009ef5e2ae7fbb975a0b"
+    },
+    {
+      "key": "operationalMealPolicies",
+      "equal": true,
+      "realHash": "4e9ef9954922bfb67f5578335059f7a8254706489bd9aed48c6c6ce07b3e4b7c",
+      "nativeHash": "4e9ef9954922bfb67f5578335059f7a8254706489bd9aed48c6c6ce07b3e4b7c"
+    },
+    {
+      "key": "participantMealCapacity",
+      "equal": true,
+      "realHash": "771011a16032229805998d75d11a109478c8c14a30ee329032d4e64e399cb488",
+      "nativeHash": "771011a16032229805998d75d11a109478c8c14a30ee329032d4e64e399cb488"
+    },
+    {
+      "key": "participantMeals",
+      "equal": true,
+      "realHash": "9998fa7a3abe238b3039a652a7a30f9a9433c7975452297dc174f58995680984",
+      "nativeHash": "9998fa7a3abe238b3039a652a7a30f9a9433c7975452297dc174f58995680984"
+    },
+    {
+      "key": "participantTransitionMinutes",
+      "equal": true,
+      "realHash": "ef2d127de37b942baad06145e54b0c619a1f22327b2ebbcfbec78f5564afe39d",
+      "nativeHash": "ef2d127de37b942baad06145e54b0c619a1f22327b2ebbcfbec78f5564afe39d"
+    },
+    {
+      "key": "participants",
+      "equal": true,
+      "realHash": "f63f9a5d77c29bc944a2a31d785179f4036a8f2466bb8598dc90bd46c4218316",
+      "nativeHash": "f63f9a5d77c29bc944a2a31d785179f4036a8f2466bb8598dc90bd46c4218316"
+    },
+    {
+      "key": "resourceTransitionMinutes",
+      "equal": true,
+      "realHash": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+      "nativeHash": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    {
+      "key": "resources",
+      "equal": true,
+      "realHash": "30efeac618610e5dd7b516f9c5451aeb8f0dfecc8df1e35cf4bb43afcf3a2797",
+      "nativeHash": "30efeac618610e5dd7b516f9c5451aeb8f0dfecc8df1e35cf4bb43afcf3a2797"
+    },
+    {
+      "key": "roundSynchronizations",
+      "equal": true,
+      "realHash": "12f42ff0666bdbe6c3be6d889b72deaad0d8491b658533806910c743a957b720",
+      "nativeHash": "12f42ff0666bdbe6c3be6d889b72deaad0d8491b658533806910c743a957b720"
+    },
+    {
+      "key": "searchPolicy",
+      "equal": true,
+      "realHash": "9846b6f75f03e0333bbc30f07ffc833a8c06dc07ebf7ac8f16410f99512d0829",
+      "nativeHash": "9846b6f75f03e0333bbc30f07ffc833a8c06dc07ebf7ac8f16410f99512d0829"
+    },
+    {
+      "key": "spaces",
+      "equal": true,
+      "realHash": "b957fb34a2ffe42ee6b284deea01fddd9a60a502bb173e26f3e6d88165df500b",
+      "nativeHash": "b957fb34a2ffe42ee6b284deea01fddd9a60a502bb173e26f3e6d88165df500b"
+    },
+    {
+      "key": "tasks",
+      "equal": true,
+      "realHash": "704d2e54599dc0b9eeb0e08c0e4c044007a8aa38d937979decdc84455b83f5fc",
+      "nativeHash": "704d2e54599dc0b9eeb0e08c0e4c044007a8aa38d937979decdc84455b83f5fc"
+    },
+    {
+      "key": "technicalChains",
+      "equal": true,
+      "realHash": "2f075d51b62b29ab2736bc71fb10ceca4f680f31638b877827a774d936a0b806",
+      "nativeHash": "2f075d51b62b29ab2736bc71fb10ceca4f680f31638b877827a774d936a0b806"
+    },
+    {
+      "key": "transportPolicy",
+      "equal": true,
+      "realHash": "4752288bdd642244006ffa43b8ab7de236d9d5f27d89508cacf273232395435b",
+      "nativeHash": "4752288bdd642244006ffa43b8ab7de236d9d5f27d89508cacf273232395435b"
+    }
+  ],
+  "problemEqual": true,
+  "recommendationEqual": true,
+  "futureEligibleEqual": true,
+  "assistedEqual": true,
+  "assistedHashes": [
+    "f0b70806b840ae2bc7e3f626228ffb281ba647419ba739fa2145eae011213de4",
+    "f0b70806b840ae2bc7e3f626228ffb281ba647419ba739fa2145eae011213de4"
+  ],
+  "scope": {
+    "selector": {
+      "kind": "SPACE",
+      "spaceId": 48
+    },
+    "count": 19,
+    "priority": {
+      "structuralClass": 3,
+      "requiredCoupling": 38,
+      "downstreamImpact": 22,
+      "effectiveDeadline": null,
+      "pendingDurationMinutes": 285,
+      "pendingTaskCount": 19,
+      "sharedResourcePressure": 19,
+      "structuralMinimumOccupiedMinutes": 0,
+      "structuralAvailableSpanMinutes": 720,
+      "effectivePressureClass": 0,
+      "effectiveWindowLoadMinutes": 165,
+      "effectiveWindowCapacityMinutes": 720,
+      "effectiveWindowSlackMinutes": 555,
+      "sharedResourceDemandCount": 6
+    }
+  },
+  "projection": {
+    "executableTasks": 82,
+    "supporting": 63,
+    "protected": 0,
+    "analyticalMeals": 19,
+    "futureCollectiveTasks": 247
+  },
+  "capture": {
+    "mode": "REST_GET_HEAD_ONLY",
+    "planId": 27002,
+    "stageOrdinal": 0,
+    "obligations": 266,
+    "observedAt": "2026-10-15T07:16:49.784Z",
+    "inputHash": "1554c13319e7c8cef42bfa1809fce6dc1390a3756a8a992238d0c959d7b0e69a",
+    "remoteWrites": 0,
+    "persistedRevisionMatches": true,
+    "configurationFingerprint": "ad5cbd8dbc08e59031891832a4dbdb8c7792d3deec523ec1e6a8e7a90bbb360a",
+    "requests": [
+      {
+        "method": "GET",
+        "table": "plan_optimizer_snapshots",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "plans",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "plan_task_template_snapshots",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "plan_optimizer_snapshot_grouping_zones",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "program_settings",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "plan_optimizer_snapshot_heuristics",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "locks",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "plan_breaks",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "daily_tasks",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "resource_availability",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "contestants",
+        "status": 200
+      },
+      {
+        "method": "HEAD",
+        "table": "plan_resource_items",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "plan_resource_items",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "plan_space_settings",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "plan_zone_settings",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "plan_resource_bundle_snapshots",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "plan_zone_resource_assignments",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "plan_space_resource_assignments",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "plan_zone_resource_type_requirements",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "plan_space_resource_type_requirements",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "plan_resource_items",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "resource_item_components",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "assisted_planning_sessions",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "assisted_planning_stages",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "plan_task_template_snapshots",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "plan_optimizer_snapshots",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "plan_config_revisions",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "plan_optimizer_snapshot_grouping_zones",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "table": "plan_optimizer_snapshot_heuristics",
+        "status": 200
+      }
+    ]
+  },
+  "canonical": {
+    "mapping": "a2RealSpatialManifest v2 + benchmark namespace offset 100000",
+    "problemHash": "212d0683a0ef5f2230bc3dca78b3137b5974bfe4e9c58ab4c9298ad79f197e5d",
+    "facts": {
+      "productiveTasks": 247,
+      "participantMeals": 19,
+      "participants": 19,
+      "resources": 9,
+      "spaces": 21,
+      "itinerantUnits": 3,
+      "day": {
+        "start": 540,
+        "end": 1260
+      },
+      "main": {
+        "spaceId": "space:3004",
+        "preferredEnd": 780,
+        "continuity": "REQUIRED",
+        "maxBlocksByKey": 19,
+        "minTasksPerBlock": 1
+      },
+      "transport": {
+        "taskIds": [
+          "task:10006",
+          "task:10021",
+          "task:10034",
+          "task:10047",
+          "task:10060",
+          "task:10077",
+          "task:10092",
+          "task:10105",
+          "task:10120",
+          "task:10135",
+          "task:10150",
+          "task:10165",
+          "task:10180",
+          "task:10194",
+          "task:10207",
+          "task:10221",
+          "task:10233",
+          "task:10246",
+          "task:10259"
+        ],
+        "targetGroupSize": 3,
+        "minimumGroupSize": 1,
+        "maximumGroupSize": 3,
+        "minGapMinutes": 30,
+        "groupingWeight": 3
+      },
+      "operationalMeals": [
+        {
+          "id": "break:coach-jose-maria",
+          "duration": 45,
+          "window": {
+            "start": 780,
+            "end": 990
+          }
+        },
+        {
+          "id": "break:coach-lucia",
+          "duration": 45,
+          "window": {
+            "start": 780,
+            "end": 990
+          }
+        },
+        {
+          "id": "break:main-flow",
+          "duration": 75,
+          "window": {
+            "start": 780,
+            "end": 990
+          }
+        },
+        {
+          "id": "break:p14-operations",
+          "duration": 75,
+          "window": {
+            "start": 780,
+            "end": 990
+          }
+        },
+        {
+          "id": "break:p15-operations",
+          "duration": 75,
+          "window": {
+            "start": 780,
+            "end": 990
+          }
+        },
+        {
+          "id": "break:reality-a",
+          "duration": 75,
+          "window": {
+            "start": 780,
+            "end": 990
+          }
+        },
+        {
+          "id": "break:reality-b",
+          "duration": 75,
+          "window": {
+            "start": 780,
+            "end": 990
+          }
+        },
+        {
+          "id": "break:totales-operations",
+          "duration": 75,
+          "window": {
+            "start": 780,
+            "end": 990
+          }
+        }
+      ],
+      "roundLaneSizes": [
+        10,
+        9
+      ]
+    },
+    "nativeFacts": {
+      "productiveTasks": 247,
+      "participantMeals": 19,
+      "participants": 19,
+      "resources": 9,
+      "spaces": 20,
+      "itinerantUnits": 3,
+      "day": {
+        "start": 540,
+        "end": 1260
+      },
+      "main": {
+        "spaceId": "space:48",
+        "preferredEnd": 780,
+        "continuity": "REQUIRED",
+        "maxBlocksByKey": 19,
+        "minTasksPerBlock": 1
+      },
+      "transport": {
+        "taskIds": [
+          "task:110006",
+          "task:110021",
+          "task:110034",
+          "task:110047",
+          "task:110060",
+          "task:110077",
+          "task:110092",
+          "task:110105",
+          "task:110120",
+          "task:110135",
+          "task:110150",
+          "task:110165",
+          "task:110180",
+          "task:110194",
+          "task:110207",
+          "task:110221",
+          "task:110233",
+          "task:110246",
+          "task:110259"
+        ],
+        "targetGroupSize": 3,
+        "minimumGroupSize": 1,
+        "maximumGroupSize": 3,
+        "minGapMinutes": 30,
+        "groupingWeight": 3
+      },
+      "operationalMeals": [
+        {
+          "id": "break:coach-jose-maria",
+          "duration": 45,
+          "window": {
+            "start": 780,
+            "end": 990
+          }
+        },
+        {
+          "id": "break:coach-lucia",
+          "duration": 45,
+          "window": {
+            "start": 780,
+            "end": 990
+          }
+        },
+        {
+          "id": "break:main-flow",
+          "duration": 75,
+          "window": {
+            "start": 780,
+            "end": 990
+          }
+        },
+        {
+          "id": "break:p14-operations",
+          "duration": 75,
+          "window": {
+            "start": 780,
+            "end": 990
+          }
+        },
+        {
+          "id": "break:p15-operations",
+          "duration": 75,
+          "window": {
+            "start": 780,
+            "end": 990
+          }
+        },
+        {
+          "id": "break:reality-a",
+          "duration": 75,
+          "window": {
+            "start": 780,
+            "end": 990
+          }
+        },
+        {
+          "id": "break:reality-b",
+          "duration": 75,
+          "window": {
+            "start": 780,
+            "end": 990
+          }
+        },
+        {
+          "id": "break:totales-operations",
+          "duration": 75,
+          "window": {
+            "start": 780,
+            "end": 990
+          }
+        }
+      ],
+      "roundLaneSizes": [
+        10,
+        9
+      ]
+    },
+    "mappedSectionsEqual": {
+      "resources": true,
+      "participants": true,
+      "coaches": true,
+      "itinerantUnits": true,
+      "tasks": true,
+      "mainFlow": true,
+      "coachRouteTransitions": true,
+      "technicalChains": true,
+      "anchoredAccompaniments": true,
+      "transportPolicy": true,
+      "participantMeals": true
+    },
+    "exactSearchInputEqual": false
+  }
+}

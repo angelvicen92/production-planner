@@ -474,6 +474,8 @@ export interface ExactMainAndFeederSearchOptions {
     augmentTraversals: number;
   }>) => void;
   causalDiagnostic?: boolean;
+  /** Retain the existing diagnostic if a runtime checkpoint interrupts the core. */
+  onDiagnosticEvidence?: (evidence: Readonly<ExactMainAndFeederCoreEvidence>) => void;
   onBranchConsumed?: (category:ExactBranchCategory,depth:number,count:number)=>void;
   /** Test oracle: evaluates the unchanged complete grid instead of the coach-derived domain. */
   feederStartDomainMode?: "COACH_DOMAIN" | "FULL_GRID";
@@ -926,6 +928,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     diagnoseTaskPlacement(problem,task,start,placementContext(task,placed),meals);
   const fixedPlacements=[...protectedPlacements];
   evidence.causalDiagnostic=diagnostic;
+  if(diagnostic)options.onDiagnosticEvidence?.(evidence);
   const waterfall=(depth:number):ExactDepthWaterfall=>diagnostic!.waterfallByDepth[String(depth)]??=( {mainCandidate:0,feederStart:0,residualMatching:0,continuation:0,participantMeal:0,standaloneForward:0,other:0,total:0});
   const recordBranch=(category:ExactBranchCategory,depth:number,count=1):void=>{if(diagnostic){const row=waterfall(depth);const key={MAIN_CANDIDATE:"mainCandidate",FEEDER_START:"feederStart",RESIDUAL_MATCHING:"residualMatching",CONTINUATION:"continuation",PARTICIPANT_MEAL:"participantMeal",STANDALONE_FORWARD:"standaloneForward",OTHER:"other"}[category] as keyof ExactDepthWaterfall;row[key]+=count;row.total+=count;}options.onBranchConsumed?.(category,depth,count);};
   const allTaskIds = canonical(Array.isArray(problem.tasks) ? problem.tasks : []).map(({ id }) => id);
