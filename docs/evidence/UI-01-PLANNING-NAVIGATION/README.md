@@ -46,6 +46,10 @@ El recorrido reutiliza el harness descartable: PostgreSQL, GoTrue, PostgREST, mi
 - Usuario viewer: zoom y pan táctil en ambos ejes, sin capacidad de edición ni preferencias heredadas de otro usuario.
 - Cero peticiones mutantes de los controles visuales; igualdad SQL literal de tareas, locks, sesiones, Stages/snapshots, validaciones, runs, revisiones y excepciones antes/después. Las otras jornadas permanecen intactas. El informe registra por separado el bootstrap de autenticación al recargar y la única creación de S0 al abrir 27002 por primera vez; la comparación de esa jornada empieza inmediatamente después de su inicialización, antes de tocar los filtros. Cualquier otra petición mutante hace fallar la prueba.
 
+## Resultado
+
+TypeScript, build, cinco archivos de tests focales y `git diff --check`: PASS. El harness completo registra 15 comprobaciones, de las cuales 9 corresponden al recorrido UI-01, y 8 capturas. Todos los hashes del código ejecutado coinciden con el candidato. `validation.json` registra comandos, resultados y commit de producto. No se ejecutó una nueva búsqueda Full A2 ni se certifica un despliegue remoto.
+
 ## Evidencia visual
 
 - `navigation-1440.png` y `navigation-1920.png`: dos paneles.
