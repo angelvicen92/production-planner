@@ -1,3 +1,4 @@
+import { SettingsSection } from "@/components/settings/settings-section";
 import { Layout } from "@/components/layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -194,10 +195,8 @@ function StaffPeopleSettings() {
   const rows = (data ?? []) as any[];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("settings.staffPeople.title")}</CardTitle>
-      </CardHeader>
+    <SettingsSection section="people" title={t("settings.staffPeople.title")} busy={create.isPending || update.isPending || remove.isPending} error={error || create.error || update.error || remove.error}>
+
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="space-y-1">
@@ -404,7 +403,7 @@ function StaffPeopleSettings() {
           )}
         </QueryGuard>
       </CardContent>
-    </Card>
+    </SettingsSection>
   );
 }
 
@@ -442,11 +441,7 @@ function ItinerantTeamsSettings() {
   const rows = (teams ?? []) as any[];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("settings.itinerantTeams.title")}</CardTitle>
-      </CardHeader>
-
+    <SettingsSection section="teams" title={t("settings.itinerantTeams.title")} busy={createTeam.isPending || deleteTeam.isPending} error={error || createTeam.error || deleteTeam.error}>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="space-y-1">
@@ -536,7 +531,7 @@ function ItinerantTeamsSettings() {
           )}
         </QueryGuard>
       </CardContent>
-    </Card>
+    </SettingsSection>
   );
 }
 
@@ -549,12 +544,12 @@ function StaffDefaultsSettings() {
 
   const activePeople = (people ?? []).filter((p: any) => !!p?.isActive);
 
-  const { data: modes = [], isLoading: modesLoading } = useQuery({
+  const { data: modes = [], isLoading: modesLoading, error: modesError } = useQuery({
     queryKey: [api.staffDefaults.zoneModes.list.path],
     queryFn: () => apiRequest("GET", api.staffDefaults.zoneModes.list.path),
   });
 
-  const { data: asg = [], isLoading: asgLoading } = useQuery({
+  const { data: asg = [], isLoading: asgLoading, error: asgError } = useQuery({
     queryKey: [api.staffDefaults.assignments.list.path],
     queryFn: () => apiRequest("GET", api.staffDefaults.assignments.list.path),
   });
@@ -830,23 +825,18 @@ function StaffDefaultsSettings() {
     modesLoading || asgLoading || saveModes.isPending || saveAsg.isPending;
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between">
-        <div>
-          <CardTitle>Defaults (se heredan al crear un plan)</CardTitle>
-          <div className="text-sm text-muted-foreground mt-1">
-            Por plató decides: asignar por <b>Plató</b> o por <b>Espacios</b>.
-            Reality 1/2 se asigna aparte.
-          </div>
-        </div>
-
+    <SettingsSection section="staff-defaults" title="Defaults (se heredan al crear un plan)" busy={saveModes.isPending || saveAsg.isPending} error={modesError || asgError || saveModes.error || saveAsg.error} actions={<>
         <Button onClick={handleSave} disabled={busy}>
           {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
           Guardar defaults
         </Button>
-      </CardHeader>
-
+      </>}>
       <CardContent className="space-y-6">
+        <div className="text-sm text-muted-foreground mt-1">
+          Por plató decides: asignar por <b>Plató</b> o por <b>Espacios</b>.
+          Reality 1/2 se asigna aparte.
+        </div>
+
         {(zones as any[]).length === 0 ? (
           <div className="text-sm text-muted-foreground">
             No hay platós/zones.
@@ -983,7 +973,7 @@ function StaffDefaultsSettings() {
           </CardContent>
         </Card>
       </CardContent>
-    </Card>
+    </SettingsSection>
   );
 }
 
@@ -1646,11 +1636,8 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
 
   return (
     <>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle>Platós & Espacios</CardTitle>
-
-          <div className="flex items-center gap-2">
+      <SettingsSection section="spaces" title="Platós & Espacios" busy={createZone.isPending || updateZone.isPending || createSpace.isPending || updateSpace.isPending || deleteZone.isPending || deleteSpace.isPending} error={zonesError || spacesError || createZone.error || updateZone.error || createSpace.error || updateSpace.error || deleteZone.error || deleteSpace.error} actions={<>
+        <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
               variant={showCreateZone ? "secondary" : "outline"}
@@ -1683,8 +1670,7 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
               Contraer
             </Button>
           </div>
-        </CardHeader>
-
+      </>}>
         <CardContent className="space-y-6">
           {showCreateZone && (
             <div className="border rounded-lg p-4 bg-muted/30">
@@ -1939,12 +1925,10 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
             )}
           </div>
         </CardContent>
-      </Card>
+      </SettingsSection>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Orden columnas planning (vista por espacios)</CardTitle>
-        </CardHeader>
+      <SettingsSection section="column-order" title="Orden columnas planning (vista por espacios)" busy={updateZone.isPending || saveProgramUiOrder.isPending} error={programSettingsQ.error || updateZone.error || saveProgramUiOrder.error}>
+
         <CardContent className="space-y-4">
           <Table>
             <TableHeader>
@@ -2009,7 +1993,7 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
             </Button>
           </div>
         </CardContent>
-      </Card>
+      </SettingsSection>
 
 
       {/* Dialog Recursos del espacio (pegar aquí el bloque entero) */}
@@ -2448,7 +2432,7 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
 
 function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
   const { t } = useTranslation();
-  const { data: templates, isLoading } = useTaskTemplates();
+  const { data: templates, isLoading, error: templatesError } = useTaskTemplates();
   const { data: zones = [] } = useZones();
   const { data: spaces = [] } = useSpaces();
   const { data: itinerantTeams = [] } = useItinerantTeams();
@@ -3069,9 +3053,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
     );
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Global Task Templates</CardTitle>
+    <SettingsSection section="templates" title="Global Task Templates" busy={createTask.isPending || updateTask.isPending || deleteTask.isPending || isSavingEdit} error={templatesError || createTask.error || updateTask.error || deleteTask.error} actions={<>
         <div className="flex gap-2">
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>
@@ -3146,7 +3128,8 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
             </DialogContent>
           </Dialog>
         </div>
-      </CardHeader>
+      </>}>
+
       <CardContent className="space-y-3">
         <div className="flex items-center gap-2">
           <Label className="text-sm">Ordenar por:</Label>
@@ -3661,6 +3644,6 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
           );
         })}
       </CardContent>
-    </Card>
+    </SettingsSection>
   );
 }

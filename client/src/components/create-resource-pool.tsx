@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -12,11 +12,15 @@ export type ResourceTypeLite = {
   name: string;
 };
 
-export function CreateResourceType({ onCreated }: { onCreated: () => void }) {
+type CreationStatus = { busy: boolean; error: string | null };
+
+export function CreateResourceType({ onCreated, onStatusChange }: { onCreated: () => void; onStatusChange?: (status: CreationStatus) => void }) {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => { onStatusChange?.({ busy: loading, error }); }, [loading, error, onStatusChange]);
 
   async function submit() {
     try {
@@ -63,14 +67,18 @@ export function CreateResourceType({ onCreated }: { onCreated: () => void }) {
 export function CreateResourceItem({
   types,
   onCreated,
+  onStatusChange,
 }: {
   types: ResourceTypeLite[];
   onCreated: () => void;
+  onStatusChange?: (status: CreationStatus) => void;
 }) {
   const [typeId, setTypeId] = useState<string>("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => { onStatusChange?.({ busy: loading, error }); }, [loading, error, onStatusChange]);
 
   async function submit() {
     try {

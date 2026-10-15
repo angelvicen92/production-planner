@@ -1,0 +1,101 @@
+{
+  "unit": "UI-03C",
+  "base": "6353a2a2845610ee0f6bdc1bec6ee91a70af652d",
+  "check": {
+    "command": "npm run check",
+    "status": "PASS"
+  },
+  "integrationTypes": {
+    "command": "node_modules/.bin/tsc --noEmit --incremental false -p script/demo/tsconfig.integration.json",
+    "status": "PASS"
+  },
+  "build": {
+    "command": "npm run build",
+    "status": "PASS",
+    "notes": [
+      "Existing bundle-size warning"
+    ]
+  },
+  "focalTests": {
+    "command": "node --import tsx --test client/src/lib/settings-section-preferences.test.ts client/src/lib/day-section-preferences.test.ts client/src/components/general-program-settings.test.ts server/apiAuthorization.spec.ts server/taskTemplateContract.spec.ts server/taskTemplateSnapshot.spec.ts server/resourceAvailabilityWindow.spec.ts",
+    "passed": 32,
+    "failed": 0
+  },
+  "chromium": {
+    "status": "PASS",
+    "sections": 12,
+    "tabs": 6,
+    "viewportDesktop": [
+      1440,
+      1000
+    ],
+    "viewportMobile": [
+      390,
+      844
+    ],
+    "operationalWritesFromVisualActions": 0,
+    "allPublicTableFingerprintsUnchangedAfterVisualActions": true,
+    "baselineProgramPayloadUnchanged": true,
+    "operations": [
+      {
+        "surface": "people",
+        "create": 201,
+        "edit": 200,
+        "delete": 200,
+        "cancel": true,
+        "draftRetained": true
+      },
+      {
+        "surface": "teams",
+        "create": 201,
+        "delete": 200,
+        "draftRetained": true
+      },
+      {
+        "surface": "templates",
+        "create": 201,
+        "edit": 200,
+        "delete": 200,
+        "cancel": true,
+        "draftRetained": true
+      },
+      {
+        "surface": "resources",
+        "typeCreate": 200,
+        "itemCreate": 200,
+        "rename": 200,
+        "itemDelete": 200,
+        "typeDelete": 200,
+        "componentsDialog": true,
+        "draftRetained": true
+      },
+      {
+        "surface": "zones-spaces",
+        "create": true,
+        "edit": true,
+        "delete": true,
+        "cancel": true,
+        "draftRetained": true
+      },
+      {
+        "surface": "users",
+        "roleSave": true,
+        "delete": true,
+        "deleteCancel": true,
+        "draftRetained": true
+      }
+    ],
+    "protectedHistoricalDataUnchanged": true,
+    "sourceHashesUnchangedDuringRun": true,
+    "startedAt": "2026-10-15T16:53:43.141Z",
+    "finishedAt": "2026-10-15T16:54:51.811Z"
+  },
+  "remoteWrites": 0,
+  "deployment": false,
+  "merge": false,
+  "limitations": [
+    "Browser-local preferences only",
+    "Inactive-tab lifecycle unchanged; no draft persistence across reload",
+    "No Full A2 solver recertification or deployed-runtime test"
+  ]
+}

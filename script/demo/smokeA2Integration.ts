@@ -35,6 +35,7 @@ if(process.argv.includes('--app')){
  await import('../../server/index');
 }else{
  const templateAuthorization=process.argv.includes('--template-authorization');
+ const settingsSections=process.argv.includes('--settings-sections');
  const templateCreation=process.argv.includes('--template-creation');
  const historicalTopology=process.argv.includes('--historical-topology');
  assert.ok(!templateCreation||historicalTopology,'template creation requires the protected historical catalog');
@@ -73,6 +74,7 @@ if(process.argv.includes('--app')){
  runtimeFiles.push('client/src/hooks/use-execution-context.ts','client/src/hooks/use-tasks.ts','client/src/hooks/use-production-clock.ts','shared/execution.ts','script/demo/smokeLiveExecutionJourney.ts');
  if(stageOrder)runtimeFiles.push('script/demo/probeA2StageOrder.ts','server/assistedScopeOrchestrator.ts');
  if(autopilot)runtimeFiles.push('shared/assistedAutopilot.ts','client/src/lib/assisted-autopilot.ts','script/demo/smokeA2AutopilotJourney.ts');
+ if(settingsSections)runtimeFiles.push('script/demo/smokeSettingsSections.ts','script/demo/smokeSettingsOperations.ts','client/src/pages/settings.tsx','client/src/components/settings/settings-section.tsx','client/src/hooks/use-settings-section.ts','client/src/lib/settings-section-preferences.ts','client/src/components/general-program-settings.tsx','client/src/components/general-optimizer-settings.tsx','client/src/components/control-room-settings.tsx','client/src/components/transport-settings-card.tsx','client/src/components/resources-list.tsx','client/src/components/create-resource-pool.tsx','client/src/components/settings/users-admin.tsx');
  if(templateCreation)runtimeFiles.push('script/demo/smokeTemplateCreation.ts','server/apiAuthorization.ts','server/middleware/requireAuth.ts','server/authz.ts','shared/routes.ts','shared/schema.ts','client/src/pages/settings.tsx');
  if(templateAuthorization)runtimeFiles.push('script/demo/smokeTemplateAuthorization.ts','server/apiAuthorization.ts','server/middleware/requireAuth.ts','server/authz.ts','shared/routes.ts','client/src/hooks/use-tasks.ts','client/src/pages/settings.tsx');
  if(configurationReadRecovery)runtimeFiles.push('script/demo/smokeA2ConfigurationReadRecovery.ts','script/demo/fixtures/a2-27002-legacy-breaks.json','server/planPlannerNextConfiguration.ts','shared/assistedAutopilot.ts');
@@ -118,7 +120,7 @@ if(process.argv.includes('--app')){
   const restPort=start('rest',images.rest,3000,{PGRST_DB_URI:`postgres://authenticator:${password}@db:5432/postgres`,PGRST_DB_SCHEMAS:'public',PGRST_DB_ANON_ROLE:'anon',PGRST_JWT_SECRET:secret,PGRST_SERVER_PORT:'3000'});
   const transport:any[]=[];report.transport=transport;
   gateway=http.createServer((req,res)=>{
-   res.setHeader('Access-Control-Allow-Origin',(controlRoom||templateAuthorization||templateCreation||collapsibleSections)&&baselineUrl&&req.headers.origin===baselineUrl?baselineUrl:appUrl);res.setHeader('Access-Control-Allow-Headers',req.headers['access-control-request-headers']??'authorization,apikey,content-type');res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,PATCH,DELETE,OPTIONS');
+   res.setHeader('Access-Control-Allow-Origin',(controlRoom||templateAuthorization||templateCreation||collapsibleSections||settingsSections)&&baselineUrl&&req.headers.origin===baselineUrl?baselineUrl:appUrl);res.setHeader('Access-Control-Allow-Headers',req.headers['access-control-request-headers']??'authorization,apikey,content-type');res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,PATCH,DELETE,OPTIONS');
    if(req.method==='OPTIONS'){res.writeHead(204);res.end();return;}
    const path=req.url??'/',isAuth=path.startsWith('/auth/v1/'),isRest=path.startsWith('/rest/v1/');
    if(!isAuth&&!isRest){res.writeHead(404);res.end();return;}
@@ -163,7 +165,7 @@ if(process.argv.includes('--app')){
   const appLog=createWriteStream(`${directory}/app-private.log`,{mode:0o600});
   app=spawn(process.execPath,['--import','tsx',resolve('script/demo/smokeA2Integration.ts'),'--app'],{env:localEnv,stdio:['ignore','pipe','pipe']});app.stdout!.pipe(appLog);app.stderr!.pipe(appLog);
   await eventually(async()=>{assert.equal(app!.exitCode,null,'product server exited');const r=await fetch(`${appUrl}/api/plans/${dataset.input.planId}`,{headers:{Authorization:`Bearer ${users.production.token}`}});assert.equal(r.status,200);});
-  const requestedBaseline=collapsibleSections?process.env.SECTIONS_BASELINE_ROOT:templateCreation?process.env.TEMPLATE_CREATION_BASELINE_ROOT:templateAuthorization?process.env.TEMPLATE_AUTHORIZATION_BASELINE_ROOT:configurationReadRecovery?process.env.CONFIG_READ_BASELINE_ROOT:controlRoom?process.env.CONTROL_ROOM_BASELINE_ROOT:undefined;
+  const requestedBaseline=settingsSections?process.env.SETTINGS_SECTIONS_BASELINE_ROOT:collapsibleSections?process.env.SECTIONS_BASELINE_ROOT:templateCreation?process.env.TEMPLATE_CREATION_BASELINE_ROOT:templateAuthorization?process.env.TEMPLATE_AUTHORIZATION_BASELINE_ROOT:configurationReadRecovery?process.env.CONFIG_READ_BASELINE_ROOT:controlRoom?process.env.CONTROL_ROOM_BASELINE_ROOT:undefined;
   if(requestedBaseline){
    const baselineRoot=resolve(requestedBaseline),baselinePort=await freePort();baselineUrl=`http://127.0.0.1:${baselinePort}`;
    const baselineLog=createWriteStream(`${directory}/baseline-private.log`,{mode:0o600});
@@ -172,7 +174,10 @@ if(process.argv.includes('--app')){
   }
   Object.assign(process.env,{SUPABASE_URL:url,SUPABASE_ANON_KEY:anon,SUPABASE_SERVICE_ROLE_KEY:service});
   const {storage}=await import('../../server/storage');const {buildEngineInput}=await import('../../engine/buildInput');const {adaptEngineInputToPlannerNextProblem}=await import('../../engine/planner-next/integration/engineInputAdapter');
-  if(templateCreation){
+  if(settingsSections){
+   const {runSettingsSections}=await import('./smokeSettingsSections');
+   report.settingsSections=await runSettingsSections({appUrl,baselineUrl,db,users,directory,pass});
+  }else if(templateCreation){
    const {runTemplateCreation}=await import('./smokeTemplateCreation');
    report.templateCreation=await runTemplateCreation({appUrl,baselineUrl,db,users,directory,pass,storage,buildEngineInput});
   }else if(templateAuthorization){

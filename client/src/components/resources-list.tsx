@@ -1,3 +1,4 @@
+import { SettingsSection } from "@/components/settings/settings-section";
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateResourceItem, CreateResourceType, ResourceTypeLite } from "@/components/create-resource-pool";
@@ -39,6 +40,9 @@ export function ResourcesList() {
   const confirm = useConfirm();
   const [types, setTypes] = useState<ResourceType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingWrites, setPendingWrites] = useState(0);
+  const [typeStatus, setTypeStatus] = useState<{ busy: boolean; error: string | null }>({ busy: false, error: null });
+  const [itemStatus, setItemStatus] = useState<{ busy: boolean; error: string | null }>({ busy: false, error: null });
   const [error, setError] = useState<string | null>(null);
   const [draftNames, setDraftNames] = useState<Record<number, string>>({});
   const [showCreateType, setShowCreateType] = useState(false);
@@ -164,11 +168,14 @@ export function ResourcesList() {
     const name = newName.trim();
     if (!name) return;
 
+    setPendingWrites((n) => n + 1);
     try {
       await apiRequest("PATCH", `/api/resource-items/${itemId}`, { name });
     } catch (e: any) {
       alert(e?.message || "Error guardando nombre");
       return;
+    } finally {
+      setPendingWrites((n) => n - 1);
     }
 
     setTypes((prev) =>
@@ -193,6 +200,7 @@ export function ResourcesList() {
     });
     if (!ok) return;
 
+    setPendingWrites((n) => n + 1);
     try {
       await apiRequest("DELETE", `/api/resource-items/${itemId}`);
     } catch (e: any) {
@@ -202,6 +210,8 @@ export function ResourcesList() {
         variant: "destructive",
       });
       return;
+    } finally {
+      setPendingWrites((n) => n - 1);
     }
 
     setTypes((prev) =>
@@ -223,6 +233,7 @@ export function ResourcesList() {
     });
     if (!ok) return;
 
+    setPendingWrites((n) => n + 1);
     try {
       await apiRequest("DELETE", `/api/resource-types/${typeId}`);
     } catch (e: any) {
@@ -232,6 +243,8 @@ export function ResourcesList() {
         variant: "destructive",
       });
       return;
+    } finally {
+      setPendingWrites((n) => n - 1);
     }
 
     setTypes((prev) => prev.filter((t) => t.id !== typeId));
@@ -282,11 +295,8 @@ export function ResourcesList() {
 
   return (
     <div className="space-y-4">
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <CardTitle>Recursos</CardTitle>
-
-        <div className="flex items-center gap-2">
+    <SettingsSection section="resources" title="Recursos" busy={pendingWrites > 0 || (showCreateType && typeStatus.busy) || (showCreateItem && itemStatus.busy)} error={error || (showCreateType && typeStatus.error) || (showCreateItem && itemStatus.error)} actions={<>
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
             variant={showCreateType ? "secondary" : "outline"}
@@ -329,8 +339,7 @@ export function ResourcesList() {
             Contraer
           </Button>
         </div>
-      </CardHeader>
-
+      </>}>
       <CardContent className="space-y-4">
         {loading && (
           <p className="text-sm text-muted-foreground">Cargando recursos…</p>
@@ -346,6 +355,7 @@ export function ResourcesList() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {showCreateType ? (
                   <CreateResourceType
+                    onStatusChange={setTypeStatus}
                     onCreated={() => {
                       load();
                       setShowCreateType(false);
@@ -357,6 +367,7 @@ export function ResourcesList() {
 
                 {showCreateItem ? (
                   <CreateResourceItem
+                    onStatusChange={setItemStatus}
                     types={typeOptions}
                     onCreated={() => {
                       load();
@@ -490,7 +501,7 @@ export function ResourcesList() {
         allItems={allItemsFlat}
         onSaved={load}
       />
-        </Card>
+        </SettingsSection>
 
         <Card>
           <CardHeader className="py-3">
