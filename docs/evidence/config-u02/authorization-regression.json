@@ -1,0 +1,94 @@
+{
+  "status": "PASS",
+  "nodeVersion": "v24.19.0",
+  "remoteWrites": 0,
+  "baselinePatchCount": 21,
+  "candidatePatchCount": 21,
+  "otherDeniedWrites": 20,
+  "reads": [
+    {
+      "role": "admin",
+      "status": 200
+    },
+    {
+      "role": "production",
+      "status": 200
+    },
+    {
+      "role": "aux",
+      "status": 200
+    },
+    {
+      "role": "viewer",
+      "status": 200
+    },
+    {
+      "role": "norole",
+      "status": 403
+    },
+    {
+      "role": "anonymous",
+      "status": 401
+    }
+  ],
+  "ui": {
+    "baseline": {
+      "status": 400,
+      "path": "/api/ta/20032",
+      "method": "PATCH",
+      "payloadKeys": [
+        "abbrev",
+        "autoCreateOnContestantCreate",
+        "defaultCameras",
+        "defaultDuration",
+        "dependsOnTemplateId",
+        "dependsOnTemplateIds",
+        "exclusiveAuxiliar",
+        "hasDependency",
+        "itinerantTeamId",
+        "itinerantTeamRequirement",
+        "name",
+        "requiresAuxiliar",
+        "requiresCoach",
+        "resourceRequirements",
+        "rulesJson",
+        "spaceId",
+        "uiColor",
+        "uiColorSecondary",
+        "zoneId"
+      ],
+      "schemaAccepted": true,
+      "error": "Could not find the 'location_label' column of 'task_templates' in the schema cache",
+      "reloadVerified": true
+    },
+    "candidate": {
+      "status": 200,
+      "path": "/api/ta/20032",
+      "method": "PATCH",
+      "payloadKeys": [
+        "abbrev",
+        "autoCreateOnContestantCreate",
+        "defaultCameras",
+        "defaultDuration",
+        "exclusiveAuxiliar",
+        "name",
+        "participantMarginAfterMinutes",
+        "participantMarginBeforeMinutes",
+        "requiresAuxiliar",
+        "spaceId",
+        "zoneId"
+      ],
+      "schemaAccepted": true,
+      "reloadVerified": true
+    },
+    "validAdminPatch": {
+      "status": 200,
+      "patch": {
+        "abbrev": "UI-U03A",
+        "defaultDuration": 17
+      },
+      "reload": true
+    },
+    "fullFormGap": null
+  }
+}

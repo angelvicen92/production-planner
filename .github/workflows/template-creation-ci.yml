@@ -1,0 +1,57 @@
+name: Template creation and margins
+
+on:
+  push:
+    branches: [codex/config-u02-template-creation-margins]
+  pull_request:
+    branches: [main]
+    paths:
+      - server/storage.ts
+      - server/taskTemplateContract.spec.ts
+      - shared/routes.ts
+      - client/src/hooks/use-tasks.ts
+      - client/src/pages/settings.tsx
+      - script/demo/smokeTemplateCreation.ts
+      - script/demo/smokeA2Integration.ts
+      - .github/workflows/template-creation-ci.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: template-creation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  template-creation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
+      - name: Unchanged U02 baseline after U03a and S0 diagnostics
+        run: |
+          git fetch --no-tags --depth=1 origin 12a5d2d4e4592c8660d43c2ccebb609d4f8faa80
+          git worktree add --detach work/u02-baseline 12a5d2d4e4592c8660d43c2ccebb609d4f8faa80
+          ln -s "$PWD/node_modules" work/u02-baseline/node_modules
+      - name: Real UI, HTTP, SQL, roles and future snapshots versus baseline
+        env:
+          TEMPLATE_CREATION_BASELINE_ROOT: work/u02-baseline
+        run: npm run demo:a2:smoke -- work/template-creation --historical-topology --template-creation
+      - name: Contract, authorization, snapshot and boundary regression
+        run: npx --no-install tsx --test server/taskTemplateContract.spec.ts server/apiAuthorization.spec.ts server/taskTemplateSnapshot.spec.ts engine/buildInput.taskTemplateSnapshot.spec.ts engine/planner-next/participantTransition.spec.ts
+      - name: Sanitized evidence from disposable services
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: template-creation
+          path: |
+            work/template-creation/integration.json
+            work/template-creation/template-creation.json
+            work/template-creation/template-creation-*.png

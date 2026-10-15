@@ -1,3 +1,4 @@
+import type { CreateTaskTemplateInput, UpdateTaskTemplateInput } from "@shared/routes";
 import { supabaseAdmin } from "./supabase";
 import { executeTask } from "./liveExecution";
 import { planPlannerNextConfigurationSchema } from "./planPlannerNextConfiguration";
@@ -187,8 +188,8 @@ export interface IStorage {
 
   // Templates
   getTaskTemplates(): Promise<TaskTemplate[]>;
-  createTaskTemplate(template: any): Promise<TaskTemplate>;
-  updateTaskTemplate(templateId: number, patch: any): Promise<TaskTemplate>;
+  createTaskTemplate(template: CreateTaskTemplateInput): Promise<TaskTemplate>;
+  updateTaskTemplate(templateId: number, patch: UpdateTaskTemplateInput): Promise<TaskTemplate>;
   deleteTaskTemplate(templateId: number): Promise<void>;
 
   // Zones (Platós)
@@ -2843,6 +2844,10 @@ export class SupabaseStorage implements IStorage {
       id: t.id,
       name: t.name,
       abbrev: t.abbrev ?? null,
+      defaultComment1Color: t.default_comment1_color ?? null,
+      defaultComment2Color: t.default_comment2_color ?? null,
+      participantMarginBeforeMinutes: t.participant_margin_before_minutes ?? null,
+      participantMarginAfterMinutes: t.participant_margin_after_minutes ?? null,
 
       defaultDuration: t.default_duration ?? t.defaultDuration ?? null,
       defaultCameras: t.default_cameras ?? t.defaultCameras ?? 0,
@@ -2880,7 +2885,6 @@ export class SupabaseStorage implements IStorage {
       // ✅ ubicación por defecto (nuevo)
       zoneId: t.zone_id ?? t.zoneId ?? null,
       spaceId: t.space_id ?? t.spaceId ?? null,
-      locationLabel: t.location_label ?? t.locationLabel ?? null,
 
       requiresAuxiliar: t.requires_auxiliar ?? t.requiresAuxiliar ?? false,
 
@@ -2910,7 +2914,7 @@ export class SupabaseStorage implements IStorage {
     })) as any;
   }
 
-  async createTaskTemplate(template: any): Promise<TaskTemplate> {
+  async createTaskTemplate(template: CreateTaskTemplateInput): Promise<TaskTemplate> {
     // El cliente manda camelCase (por contrato shared). En BD es snake_case.
     const insert: any = {
       name: template.name,
@@ -2922,6 +2926,8 @@ export class SupabaseStorage implements IStorage {
         ? template.resourceRequirements
         : null,
       default_cameras: template.defaultCameras ?? 0,
+      participant_margin_before_minutes: template.participantMarginBeforeMinutes ?? null,
+      participant_margin_after_minutes: template.participantMarginAfterMinutes ?? null,
       auto_create_on_contestant_create:
         template.autoCreateOnContestantCreate ?? false,
       abbrev: template.abbrev ?? null,
@@ -2981,6 +2987,8 @@ export class SupabaseStorage implements IStorage {
       name: data.name,
       defaultDuration: data.default_duration ?? null,
       defaultCameras: data.default_cameras ?? 0,
+      participantMarginBeforeMinutes: data.participant_margin_before_minutes ?? null,
+      participantMarginAfterMinutes: data.participant_margin_after_minutes ?? null,
       autoCreateOnContestantCreate:
         (data as any).auto_create_on_contestant_create ?? false,
       abbrev: (data as any).abbrev ?? null,
@@ -3012,7 +3020,6 @@ export class SupabaseStorage implements IStorage {
             .map((x) => Number(x))
             .filter((n) => Number.isFinite(n))
         : [],
-      locationLabel: data.location_label ?? null,
       hasDependency: (data as any).has_dependency ?? false,
       dependsOnTemplateId: (data as any).depends_on_template_id ?? null,
     } as any;
@@ -3020,9 +3027,13 @@ export class SupabaseStorage implements IStorage {
 
   async updateTaskTemplate(
     templateId: number,
-    patch: any,
+    patch: UpdateTaskTemplateInput,
   ): Promise<TaskTemplate> {
     const safe: any = {};
+    if (patch.participantMarginBeforeMinutes === null || typeof patch.participantMarginBeforeMinutes === "number")
+      safe.participant_margin_before_minutes = patch.participantMarginBeforeMinutes;
+    if (patch.participantMarginAfterMinutes === null || typeof patch.participantMarginAfterMinutes === "number")
+      safe.participant_margin_after_minutes = patch.participantMarginAfterMinutes;
     if (typeof patch.name === "string") safe.name = patch.name;
 
     if (typeof patch.requiresAuxiliar === "boolean")
@@ -3111,8 +3122,6 @@ export class SupabaseStorage implements IStorage {
     ) {
       safe.depends_on_template_id = null;
     }
-    const hasZoneId = Object.prototype.hasOwnProperty.call(patch, "zoneId");
-    const hasSpaceId = Object.prototype.hasOwnProperty.call(patch, "spaceId");
 
     // ✅ NUEVO: equipo itinerante requerido (none | any | specific)
     const hasTeamReq = Object.prototype.hasOwnProperty.call(
@@ -3152,8 +3161,7 @@ export class SupabaseStorage implements IStorage {
     if (patch.spaceId === null || typeof patch.spaceId === "number")
       safe.space_id = patch.spaceId;
 
-    // Si el usuario toca la ubicación, quitamos la etiqueta de "Espacio borrado"
-    if (hasZoneId || hasSpaceId) safe.location_label = null;
+    // Template location is zone_id/space_id. location_label belongs to daily_tasks.
 
     const { data, error } = await supabaseAdmin
       .from("task_templates")
@@ -3169,6 +3177,8 @@ export class SupabaseStorage implements IStorage {
       name: data.name,
       defaultDuration: data.default_duration ?? null,
       defaultCameras: data.default_cameras ?? 0,
+      participantMarginBeforeMinutes: data.participant_margin_before_minutes ?? null,
+      participantMarginAfterMinutes: data.participant_margin_after_minutes ?? null,
       autoCreateOnContestantCreate:
         (data as any).auto_create_on_contestant_create ?? false,
       abbrev: (data as any).abbrev ?? null,
@@ -3194,7 +3204,6 @@ export class SupabaseStorage implements IStorage {
 
       zoneId: data.zone_id ?? null,
       spaceId: data.space_id ?? null,
-      locationLabel: data.location_label ?? null,
       // ✅ NUEVO: múltiples dependencias devueltas
       dependsOnTemplateIds: Array.isArray((data as any).depends_on_template_ids)
         ? ((data as any).depends_on_template_ids as any[])

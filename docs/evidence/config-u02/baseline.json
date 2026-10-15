@@ -1,0 +1,130 @@
+{
+  "base": "12a5d2d4e4592c8660d43c2ccebb609d4f8faa80",
+  "baseTree": "a70d4d416207fb176dd3d205d502d354c59aed58",
+  "observations": [
+    {
+      "operation": "real UI create",
+      "status": 400,
+      "payload": {
+        "name": "U02 baseline create",
+        "abbrev": "U02-UI",
+        "defaultDuration": 30,
+        "defaultCameras": 0,
+        "zoneId": null,
+        "spaceId": null,
+        "uiColor": "#94a3b8",
+        "uiColorSecondary": null,
+        "hasDependency": false,
+        "dependsOnTemplateIds": [],
+        "itinerantTeamRequirement": "none",
+        "itinerantTeamId": null,
+        "autoCreateOnContestantCreate": false,
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 10
+      },
+      "data": {
+        "message": "Unrecognized key(s) in object: 'participantMarginBeforeMinutes', 'participantMarginAfterMinutes'"
+      }
+    },
+    {
+      "operation": "real UI full PATCH",
+      "status": 400,
+      "payload": {
+        "name": "U02 edit probe",
+        "abbrev": "U02",
+        "defaultDuration": 17,
+        "defaultCameras": 0,
+        "autoCreateOnContestantCreate": false,
+        "zoneId": null,
+        "spaceId": null,
+        "uiColor": null,
+        "uiColorSecondary": null,
+        "requiresAuxiliar": false,
+        "requiresCoach": false,
+        "exclusiveAuxiliar": false,
+        "hasDependency": false,
+        "dependsOnTemplateIds": [],
+        "dependsOnTemplateId": null,
+        "itinerantTeamRequirement": "none",
+        "itinerantTeamId": null,
+        "rulesJson": {
+          "itinerantTeamAllowedIds": []
+        },
+        "resourceRequirements": {
+          "byType": {},
+          "byItem": {}
+        }
+      },
+      "error": {
+        "message": "Could not find the 'location_label' column of 'task_templates' in the schema cache"
+      }
+    },
+    {
+      "operation": "HTTP margin PATCH",
+      "status": 400,
+      "data": {
+        "message": "Unrecognized key(s) in object: 'participantMarginBeforeMinutes', 'participantMarginAfterMinutes'"
+      }
+    }
+  ],
+  "protectedBefore": {
+    "task_templates": {
+      "count": 31,
+      "hash": "5002cab84d8cc5df2c78c17a372050dc"
+    },
+    "plan_task_template_snapshots": {
+      "count": 62,
+      "hash": "6a5d9470811f668e880612af7fcfd03e"
+    },
+    "plans": {
+      "count": 3,
+      "hash": "33bdbf1856f04d6cd0b1bc8443da6799"
+    },
+    "daily_tasks": {
+      "count": 865,
+      "hash": "b6981d3df512a31d7363482a461d0350"
+    },
+    "locks": {
+      "count": 1,
+      "hash": "6a0eb663a3bc73b8502d67cc175d8ab2"
+    },
+    "assisted_planning_stages": {
+      "count": 11,
+      "hash": "574d1f2e05feb71a18f28fa85281c5d0"
+    },
+    "plan_config_revisions": {
+      "count": 1,
+      "hash": "062696712a2cd43ba78ed98bdfdb7431"
+    }
+  },
+  "protectedAfter": {
+    "task_templates": {
+      "count": 31,
+      "hash": "5002cab84d8cc5df2c78c17a372050dc"
+    },
+    "plan_task_template_snapshots": {
+      "count": 62,
+      "hash": "6a5d9470811f668e880612af7fcfd03e"
+    },
+    "plans": {
+      "count": 3,
+      "hash": "33bdbf1856f04d6cd0b1bc8443da6799"
+    },
+    "daily_tasks": {
+      "count": 865,
+      "hash": "b6981d3df512a31d7363482a461d0350"
+    },
+    "locks": {
+      "count": 1,
+      "hash": "6a0eb663a3bc73b8502d67cc175d8ab2"
+    },
+    "assisted_planning_stages": {
+      "count": 11,
+      "hash": "574d1f2e05feb71a18f28fa85281c5d0"
+    },
+    "plan_config_revisions": {
+      "count": 1,
+      "hash": "062696712a2cd43ba78ed98bdfdb7431"
+    }
+  }
+}

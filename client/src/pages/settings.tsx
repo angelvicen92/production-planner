@@ -2464,7 +2464,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [sortBy, setSortBy] = useState<"alphabetical" | "duration" | "zone">("alphabetical");
-  const [formData, setFormData] = useState<any>({
+  const [formData, setFormData] = useState<import("@shared/routes").CreateTaskTemplateInput>({
     name: "",
     abbrev: "",
     defaultDuration: 30,
@@ -2600,7 +2600,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
         .toUpperCase()}`;
     }
 
-    const fullHex = raw.match(/^#([\da-fA-F]{6})$/);
+    const fullHex = raw.match(/^#([\da-fA-F]{6}|[\da-fA-F]{8})$/);
     if (fullHex) {
       return `#${fullHex[1].toUpperCase()}`;
     }
@@ -2623,11 +2623,11 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
   };
 
   const getColorPickerValue = (value: unknown): string =>
-    normalizeColorToHex(value) ?? "#94A3B8";
+    (normalizeColorToHex(value) ?? "#94A3B8").slice(0, 7);
 
   const startEdit = (tpl: any) => {
     setEditingId(Number(tpl.id));
-    setEditData({
+    const draft = {
       id: Number(tpl.id),
       name: String(tpl.name ?? ""),
       abbrev: String(tpl.abbrev ?? ""),
@@ -2729,7 +2729,8 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
         const first = Number(vocalCoachItems?.[0]?.id ?? NaN);
         return Number.isFinite(first) && first > 0 ? first : null;
       })(),
-    });
+    };
+    setEditData({ ...draft, initial: draft });
   };
 
   const cancelEdit = () => {
@@ -2740,6 +2741,11 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
   const validateDraft = (d: any) => {
     if (!String(d?.name ?? "").trim()) return "Name is required";
     if (String(d?.abbrev ?? "").trim().length > 32) return "La abreviatura no puede superar 32 caracteres.";
+    const margins = api.taskTemplates.update.input.pick({participantMarginBeforeMinutes: true, participantMarginAfterMinutes: true}).safeParse({
+      participantMarginBeforeMinutes: d?.participantMarginBeforeMinutes,
+      participantMarginAfterMinutes: d?.participantMarginAfterMinutes,
+    });
+    if (!margins.success) return "Los márgenes deben ser minutos enteros no negativos o quedar vacíos para heredar.";
     if (
       Boolean(d?.hasDependency) &&
       (d?.dependsOnTemplateIds?.length ?? 0) === 0
@@ -2754,6 +2760,10 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
     if (!editData || editingId == null || isSavingEdit) return;
     const err = validateDraft(editData);
     if (err) return toast({ title: err, variant: "destructive" });
+    const changed = (...keys: string[]) => keys.some(key => JSON.stringify(editData[key]) !== JSON.stringify(editData.initial[key]));
+    const coachChanged = changed("requiresCoach", "coachMode", "coachResourceItemId");
+    const itinerantChanged = changed("requiresItinerantTeam", "allowedItinerantTeamIds");
+    const dependenciesChanged = changed("hasDependency", "dependsOnTemplateIds");
 
     const rawColorInput = String(editData.uiColorInput ?? "").trim();
     const rawSecondaryColorInput = String(
@@ -2778,7 +2788,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
 
     const normalizedAllowedTeamIds = Boolean(editData.requiresItinerantTeam)
       ? Array.from(
-          new Set(
+          new Set<number>(
             (editData.allowedItinerantTeamIds ?? [])
               .map((id: unknown) => Number(id))
               .filter((id: number) => Number.isFinite(id) && id > 0),
@@ -2795,7 +2805,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
     const itinerantTeamId =
       normalizedAllowedTeamIds.length === 1 ? normalizedAllowedTeamIds[0] : null;
 
-    if (normalizedAllowedTeamIds.length > 1) {
+    if (itinerantChanged && normalizedAllowedTeamIds.length > 1) {
       toast({
         title: "Restricción parcial en espera",
         description:
@@ -2809,7 +2819,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
         : {};
 
     const normalizedDirectDependencies = Array.from(
-      new Set(
+      new Set<number>(
         (editData.dependsOnTemplateIds ?? [])
           .map((id: unknown) => Number(id))
           .filter((id: number) => Number.isFinite(id) && id > 0 && id !== Number(editData.id)),
@@ -2862,7 +2872,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
       delete (rrByItemRaw as any)[coachItemId as any];
     }
 
-    if (Boolean(editData.requiresCoach)) {
+    if (coachChanged && Boolean(editData.requiresCoach)) {
       if (editData.coachMode === "specific") {
         const selectedCoachId = Number(editData.coachResourceItemId ?? NaN);
         const selectedCoachIsValid =
@@ -2915,34 +2925,39 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
       await updateTask.mutateAsync({
         id: editingId,
         patch: {
-          name: String(editData.name ?? "").trim(),
-          abbrev: String(editData.abbrev ?? "").trim() || null,
+          name: editData.name === editData.initial.name ? editData.name : String(editData.name ?? "").trim(),
+          ...(editData.abbrev !== editData.initial.abbrev ? { abbrev: String(editData.abbrev ?? "").trim() || null } : {}),
           defaultDuration: Number(editData.defaultDuration ?? 30),
           defaultCameras: Number(editData.defaultCameras ?? 0),
+          participantMarginBeforeMinutes: editData.participantMarginBeforeMinutes,
+          participantMarginAfterMinutes: editData.participantMarginAfterMinutes,
           autoCreateOnContestantCreate: Boolean(
             editData.autoCreateOnContestantCreate,
           ),
           zoneId: editData.zoneId ?? null,
           spaceId: editData.spaceId ?? null,
-          uiColor: normalizedUiColor,
-          uiColorSecondary: normalizedSecondaryColor,
+          ...(editData.uiColorInput !== editData.initial.uiColorInput ? { uiColor: normalizedUiColor } : {}),
+          ...(editData.uiColorSecondaryInput !== editData.initial.uiColorSecondaryInput ? { uiColorSecondary: normalizedSecondaryColor } : {}),
           requiresAuxiliar: Boolean(editData.requiresAuxiliar),
-          requiresCoach: hasCoachRR,
+          ...(coachChanged ? { requiresCoach: hasCoachRR, resourceRequirements: nextResourceRequirements } : {}),
           exclusiveAuxiliar: Boolean(editData.exclusiveAuxiliar),
+          ...(dependenciesChanged ? {
           hasDependency: Boolean(editData.hasDependency),
           dependsOnTemplateIds: editData.hasDependency ? normalizedDirectDependencies : [],
           dependsOnTemplateId: editData.hasDependency
             ? (normalizedDirectDependencies?.[0] ?? null)
             : null,
+          } : {}),
+          ...(itinerantChanged ? {
           itinerantTeamRequirement,
           itinerantTeamId,
           rulesJson: {
             ...previousRules,
             itinerantTeamAllowedIds: normalizedAllowedTeamIds,
           },
-          resourceRequirements: nextResourceRequirements,
+          } : {}),
         },
-      } as any);
+      });
 
       if (canEditDependencies) {
         for (const dependentId of [...addedInverse, ...removedInverse]) {
@@ -3117,11 +3132,13 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                   </Label>
                 </div>
                 <Button
-                  onClick={() =>
-                    createTask.mutate({ ...formData, abbrev: String(formData.abbrev ?? "").trim() || null } as any, {
+                  onClick={() => {
+                    const error = validateDraft(formData);
+                    if (error) return toast({title: error, variant: "destructive"});
+                    createTask.mutate({ ...formData, abbrev: String(formData.abbrev ?? "").trim() || null }, {
                       onSuccess: () => setIsAddOpen(false),
-                    })
-                  }
+                    });
+                  }}
                 >
                   Guardar
                 </Button>
@@ -3269,12 +3286,12 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                       </div>
                       <div className="space-y-1">
                         <Label>Margen antes (vacío = heredado)</Label>
-                        <Input className="h-9" type="number" min={0} value={editData?.participantMarginBeforeMinutes ?? ""}
+                        <Input aria-label="Margen antes (vacío = heredado)" className="h-9" type="number" min={0} step={1} value={editData?.participantMarginBeforeMinutes ?? ""}
                           onChange={(e)=>setEditData((p:any)=>({...p,participantMarginBeforeMinutes:e.target.value===""?null:Number(e.target.value)}))}/>
                       </div>
                       <div className="space-y-1">
                         <Label>Margen después (vacío = heredado)</Label>
-                        <Input className="h-9" type="number" min={0} value={editData?.participantMarginAfterMinutes ?? ""}
+                        <Input aria-label="Margen después (vacío = heredado)" className="h-9" type="number" min={0} step={1} value={editData?.participantMarginAfterMinutes ?? ""}
                           onChange={(e)=>setEditData((p:any)=>({...p,participantMarginAfterMinutes:e.target.value===""?null:Number(e.target.value)}))}/>
                       </div>
                       <div className="space-y-1">

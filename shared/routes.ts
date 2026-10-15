@@ -1493,6 +1493,9 @@ export const api = {
           abbrev: z.string().max(32).nullable().optional(),
           defaultComment1Color: z.string().nullable().optional(),
           defaultComment2Color: z.string().nullable().optional(),
+          // PostgreSQL integer minutes; null inherits, zero is explicit.
+          participantMarginBeforeMinutes: z.number().int().min(0).max(2147483647).nullable().optional(),
+          participantMarginAfterMinutes: z.number().int().min(0).max(2147483647).nullable().optional(),
 
           requiresAuxiliar: z.boolean().optional(),
           requiresCoach: z.boolean().optional(),
@@ -1549,6 +1552,9 @@ export const api = {
           abbrev: z.string().max(32).nullable().optional(),
           defaultComment1Color: z.string().nullable().optional(),
           defaultComment2Color: z.string().nullable().optional(),
+          // PostgreSQL integer minutes; null inherits, zero is explicit.
+          participantMarginBeforeMinutes: z.number().int().min(0).max(2147483647).nullable().optional(),
+          participantMarginAfterMinutes: z.number().int().min(0).max(2147483647).nullable().optional(),
 
           requiresAuxiliar: z.boolean().optional(),
           requiresCoach: z.boolean().optional(),
@@ -1776,3 +1782,6 @@ export function buildUrl(
   }
   return url;
 }
+
+export type CreateTaskTemplateInput = z.input<typeof api.taskTemplates.create.input>;
+export type UpdateTaskTemplateInput = z.input<typeof api.taskTemplates.update.input>;

@@ -102,7 +102,6 @@ export async function runTemplateAuthorization(options:{
 
   const browser=await chromium.launch({headless:true});
   const uiResults:Record<string,unknown>={};
-  let baselinePayload:unknown;
   try{
    for(const [label,url] of [['baseline',baselineUrl],['candidate',appUrl]] as const){
     const before=await fingerprints(),page=await browser.newPage();
@@ -123,17 +122,21 @@ export async function runTemplateAuthorization(options:{
     const response=await saved,payload=response.request().postDataJSON();
     api.taskTemplates.update.input.parse(payload);
     assert.equal(payload.defaultDuration,17);assert.equal(payload.abbrev,'UI-U03A');
-    if(label==='baseline')baselinePayload=payload;else assert.deepEqual(payload,baselinePayload,'the real UI payload is unchanged');
-    // U02: storage writes location_label whenever the full UI sends location.
-    // The native migration ledger has no such template column. Do not invent it
-    // in the fixture or hide this pre-existing failure with an unrelated patch.
     const returned=await response.json();
-    assert.equal(response.status(),400);
-    assert.match(returned.message,/Could not find the 'location_label' column/);
-    assert.deepEqual(await fingerprints(),before,'the rejected full UI payload is atomic');
+    if(label==='baseline'){
+     assert.equal(response.status(),400);
+     assert.match(returned.message,/Could not find the 'location_label' column/);
+     assert.deepEqual(await fingerprints(),before,'the rejected full UI payload is atomic');
+    }else{
+     // U02 repairs the full save; U03a's admin authority must still permit it.
+     assert.equal(response.status(),200);
+     assert.equal(returned.defaultDuration,17);assert.equal(returned.abbrev,'UI-U03A');
+     assert.equal(payload.participantMarginBeforeMinutes,null);assert.equal(payload.participantMarginAfterMinutes,null);
+     const after=await fingerprints();for(const table of tables.filter(t=>t!=='task_templates'))assert.deepEqual(after[table],before[table]);
+    }
     await page.reload();await templatesTab().click();
-    assert.match(await card().innerText(),/Duración: 10 min · Abrv: U03A/);
-    uiResults[label]={status:response.status(),path,method:'PATCH',payloadKeys:Object.keys(payload).sort(),schemaAccepted:true,error:returned.message,reloadUnchanged:true};
+    assert.match(await card().innerText(),label==='baseline'?/Duración: 10 min · Abrv: U03A/:/Duración: 17 min · Abrv: UI-U03A/);
+    uiResults[label]={status:response.status(),path,method:'PATCH',payloadKeys:Object.keys(payload).sort(),schemaAccepted:true,error:returned.message,reloadVerified:true};
     await page.screenshot({path:directory+'/template-admin-ui-'+label+'.png',fullPage:true});
     await page.close();
    }
@@ -146,8 +149,8 @@ export async function runTemplateAuthorization(options:{
   assert.deepEqual((await db.query('SELECT abbrev,default_duration FROM public.task_templates WHERE id=$1',[id])).rows[0],{abbrev:'UI-U03A',default_duration:17});
   const after=await fingerprints();
   for(const table of tables.filter(t=>t!=='task_templates'))assert.deepEqual(after[table],before[table]);
-  report.ui={...uiResults,validAdminPatch:{status:saved.status,patch:validPatch,reload:true},fullFormGap:'U02: location_label write against native template schema'};
-  pass('real admin UI payload and existing U02 failure identical to baseline; valid admin PATCH persists and reloads without changing snapshots');
+  report.ui={...uiResults,validAdminPatch:{status:saved.status,patch:validPatch,reload:true},fullFormGap:null};
+  pass('baseline UI failure reproduced; repaired admin UI and partial PATCH persist and reload without changing snapshots');
  }finally{
   await db.query('DELETE FROM public.task_templates WHERE id=$1',[id]);
   save();
