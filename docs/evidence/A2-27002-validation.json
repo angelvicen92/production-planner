@@ -1,0 +1,271 @@
+{
+  "codeHead": "5f1d6a21ac68d36c2a54970940f64c35edceced1",
+  "base": "621303a3b3e1e3a2d745e35de9db0a0cbd28c7c9",
+  "branch": "codex/a2-27002-config-read-diagnostic",
+  "sharedDatabaseWrites": 0,
+  "checks": {
+    "typescriptApplication": "PASS",
+    "typescriptDisposableIntegration": "PASS",
+    "productionBuild": "PASS",
+    "migrationSequence": "PASS_NO_MIGRATION_DIFF",
+    "focalTests": "PASS",
+    "completeProductSuite": "PASS_IN_CI",
+    "canonicalTemplateBenchmarkTwice": "PASS_IDENTICAL_OUTPUT_AND_ARTIFACTS",
+    "historicalEvidenceDiff": "NONE",
+    "nativeRecoveryNode24": "PASS",
+    "nativeRecoveryNode20": "PASS",
+    "nativeRecoveryFreshConnectionsNode20": "PASS",
+    "nativeRecoveryCI": "PASS",
+    "mainFlowPreferenceFullIntegrationCI": "PASS",
+    "fullA2NativeCI": "PASS"
+  },
+  "baselineCI": "https://github.com/angelvicen92/production-planner/actions/runs/38681374887",
+  "plannerDispatchCI": "https://github.com/angelvicen92/production-planner/actions/runs/38681375856",
+  "historicalASST010": {
+    "candidate": "FAIL",
+    "candidateReasonCodes": [
+      "ASSISTED_SCOPE_INCOMPLETE",
+      "SEARCH_TIME_LIMIT_REACHED"
+    ],
+    "base": "FAIL",
+    "baseExitCode": 1,
+    "baseRunnerReason": "ERR_TEST_FAILURE",
+    "baseDurationMs": 501819.527538,
+    "baseDetailedException": "Not exposed by the local test runner; no claim that its exact exception was identical.",
+    "callPath": "Injects a canonical EngineInput via dependencies.buildInput; does not call the modified production buildEngineInput/configuration HTTP/Autopilot reader path.",
+    "solverChange": "NONE",
+    "assertionsOrBudgetChanged": "NONE",
+    "workflowCondition": "workflow_dispatch only; not executed on pull_request"
+  },
+  "nativeRecoveryCI": {
+    "status": "PASS",
+    "nodeVersion": "v20.20.2",
+    "remoteWrites": 0,
+    "historicalPreservation": {
+      "oldPlanId": 27001,
+      "oldObligations": 266,
+      "oldStages": 11,
+      "otherObligations": 333,
+      "newDaySeedPlacements": 0
+    },
+    "requests": [
+      {
+        "runtime": "candidate",
+        "method": "POST",
+        "path": "/api/plans/27002/assisted/session",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/effective-configuration",
+        "status": 200,
+        "readiness": "INCOMPATIBLE"
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted/next-scope",
+        "status": 200,
+        "selector": {
+          "kind": "SPACE",
+          "spaceId": 48
+        },
+        "taskCount": 19
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/effective-configuration",
+        "status": 500,
+        "code": "PLANNING_CONFIGURATION_CONFLICT"
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted/next-scope",
+        "status": 500,
+        "code": "PLANNING_CONFIGURATION_CONFLICT"
+      },
+      {
+        "runtime": "candidate",
+        "method": "POST",
+        "path": "/api/plans/27002/assisted/restart",
+        "status": 403
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted/next-scope",
+        "status": 200,
+        "selector": {
+          "kind": "SPACE",
+          "spaceId": 48
+        },
+        "taskCount": 19
+      },
+      {
+        "runtime": "candidate",
+        "method": "POST",
+        "path": "/api/plans/27002/assisted/proposals",
+        "status": 202,
+        "runId": 1
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted/proposals/1",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted/proposals/1",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted/proposals/1",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "POST",
+        "path": "/api/plans/27002/assisted/proposals/1/apply",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "POST",
+        "path": "/api/plans/27002/assisted/validate",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "POST",
+        "path": "/api/plans/27002/assisted/accept-stage",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "POST",
+        "path": "/api/plans/27002/assisted/restart",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted/next-scope",
+        "status": 200,
+        "selector": {
+          "kind": "SPACE",
+          "spaceId": 48
+        },
+        "taskCount": 19
+      }
+    ],
+    "autopilot": {
+      "phase": "STOPPED",
+      "code": null,
+      "stage": 1,
+      "completed": 19,
+      "total": 266,
+      "runId": 1,
+      "outcome": "PROPOSAL",
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ]
+    },
+    "restart": {
+      "historyPreserved": true,
+      "configurationPreserved": true,
+      "legacyRowsPreserved": 52,
+      "obligationsPreserved": 266
+    }
+  }
+}

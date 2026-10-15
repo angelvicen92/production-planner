@@ -92,6 +92,7 @@ export function autopilotErrorMessage(error: unknown): string {
   const e = error as { status?: number; code?: string; message?: string };
   const code = String(e?.code ?? e?.message ?? error);
   if (e?.status === 401 || e?.status === 403 || code === "UNAUTHORIZED") return "La ejecución se detuvo: necesitas permisos vigentes para aceptar etapas.";
+  if (code === "PLANNING_CONFIGURATION_CONFLICT") return "La ejecución se detuvo porque la configuración del día requiere revisión. Se conservan el borrador y las etapas aceptadas. Revisa la configuración de esta jornada antes de continuar.";
   if (/STALE_|CONCURRENT|PERSISTENCE_CHANGED|TASK_SET_MISMATCH/.test(code)) return "La ejecución se detuvo porque el borrador, la etapa, las tareas o la configuración cambiaron. Revisa el estado actual antes de continuar.";
   if (code === "DIRTY_DRAFT") return "Acepta o revisa los cambios del borrador antes de iniciar la ejecución automática.";
   if (code === "EMPTY_SCOPE") return "El selector no encontró un alcance, pero quedan obligaciones pendientes. Se conservan las etapas y la Evidence para revisar el motivo.";

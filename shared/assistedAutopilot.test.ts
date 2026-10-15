@@ -65,6 +65,15 @@ test("continues the active checkpoint through real operation order and retains r
 test("starts at S0 and confirms persisted completion, rather than exhaustion", async () => {
   const h = harness({ ordinal: 0, placed: 0 }); assert.equal((await h.controller.start()).phase, "COMPLETE"); assert.equal(h.calls.filter(c => c.operation === "accept").length, 3);
 });
+test('configuration read conflicts stop before proposing and explain the operational cause',async()=>{
+ const h=harness({ordinal:0,placed:0});
+ h.api.nextScope=async()=>{throw {status:500,code:'PLANNING_CONFIGURATION_CONFLICT',message:'private internals'};};
+ const result=await h.controller.start();
+ assert.equal(result.phase,'FAILED');assert.equal(result.code,'PLANNING_CONFIGURATION_CONFLICT');
+ assert.match(result.message,/configuración del día requiere revisión/);
+ assert.doesNotMatch(result.message,/private internals/);
+ assert.equal(h.calls.filter(c=>c.operation==='propose').length,0);
+});
 test("a safe stop finishes only the current stage; a new delegation resumes the checkpoint", async () => {
   const h = harness(); h.onProgress = p => { if (p.phase === "GENERATING" && p.runId && !p.stopRequested) h.controller.requestStop(); };
   const result = await h.controller.start(); assert.equal(result.phase, "STOPPED"); assert.equal(result.stage, 6); assert.equal(h.calls.filter(c => c.operation === "accept").length, 1);

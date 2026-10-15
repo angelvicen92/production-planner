@@ -1,6 +1,32 @@
 import { z } from 'zod';
 import type { EngineInput } from '../engine/types';
 
+/** Safe operational boundary: never expose persisted JSON, IDs or Zod values. */
+export class PlanPlannerNextConfigurationError extends Error {
+ readonly code='PLANNING_CONFIGURATION_CONFLICT';
+ constructor(readonly reasonCode:'INVALID_CONTRACT'|'TASK_OPERATIONS_MISMATCH'|'LOCKED_LEGACY_BREAK',readonly counts:Readonly<Record<string,number>>={}){
+  super(reasonCode==='TASK_OPERATIONS_MISMATCH'?'INVALID_PLANNER_NEXT_CONFIGURATION: incomplete task operations':`INVALID_PLANNER_NEXT_CONFIGURATION: ${reasonCode}`);
+  this.name='PlanPlannerNextConfigurationError';
+ }
+}
+export function planningConfigurationFailure(error:unknown){
+ if(!(error instanceof PlanPlannerNextConfigurationError))return null;
+ // Only fixed categories and aggregate counts are logged, never the raw cause.
+ console.error('[planning-configuration]',{code:error.code,reasonCode:error.reasonCode,...error.counts});
+ return {status:500 as const,body:{code:error.code,message:error.reasonCode==='LOCKED_LEGACY_BREAK'
+  ?'La configuración del día y una pausa con horario bloqueado requieren revisión. Se conservan el borrador y las etapas aceptadas.'
+  :'La configuración del día no coincide con las obligaciones leídas. Solicita revisar la configuración de esta jornada. Se conservan el borrador y las etapas aceptadas.'}};
+}
+
+/** Structured day meal policies supersede unprotected legacy catalogue breaks.
+ * Match syncPlanMealBreaks without deleting rows or dropping explicit locks. */
+export function legacyBreaksForEngineInput(rawConfiguration:unknown,breaks:readonly any[]){
+ if(rawConfiguration==null)return breaks;
+ if(breaks.some(b=>b.locked_start!=null||b.locked_end!=null||b.lockedStart!=null||b.lockedEnd!=null))
+  throw new PlanPlannerNextConfigurationError('LOCKED_LEGACY_BREAK',{legacyBreakCount:breaks.length});
+ return [];
+}
+
 const id=z.number().int().positive(), minutes=z.number().int().nonnegative();
 const ids=z.array(id), text=z.string().min(1), hhmm=z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
 const window=z.object({start:hhmm,end:hhmm}).strict().refine(w=>w.start<w.end);
@@ -32,12 +58,14 @@ export type PlanPlannerNextConfiguration=z.infer<typeof planPlannerNextConfigura
 
 export function applyPlanPlannerNextConfiguration(input:EngineInput,raw:unknown):EngineInput {
  if(raw==null)return input;
- const config=planPlannerNextConfigurationSchema.parse(raw);
+ const parsed=planPlannerNextConfigurationSchema.safeParse(raw);
+ if(!parsed.success)throw new PlanPlannerNextConfigurationError('INVALID_CONTRACT');
+ const config=parsed.data;
  const taskIds=new Set(input.tasks.map(t=>t.id)),spaces=new Set(input.planSpaceSettings?.map(s=>s.spaceId)),resources=new Set(input.planResourceItems.map(r=>r.id));
  const requireIds=(values:number[],catalog:Set<number>,kind:string)=>{for(const value of values)if(!catalog.has(value))throw Error(`INVALID_PLANNER_NEXT_CONFIGURATION: unknown ${kind} ${value}`);};
  const seen=new Set<number>();
  for(const op of config.taskOperations){if(seen.has(op.taskId))throw Error('INVALID_PLANNER_NEXT_CONFIGURATION: duplicate task operation');seen.add(op.taskId);requireIds([op.taskId,...op.dependsOnTaskIds],taskIds,'task');}
- if(seen.size!==taskIds.size)throw Error('INVALID_PLANNER_NEXT_CONFIGURATION: incomplete task operations');
+ if(seen.size!==taskIds.size)throw new PlanPlannerNextConfigurationError('TASK_OPERATIONS_MISMATCH',{operationCount:seen.size,inputTaskCount:taskIds.size});
  requireIds([config.plannerNext.mainFlow.spaceId,...config.setupPolicies.map(p=>p.spaceId),...config.roundSynchronizations.flatMap(p=>p.lanes.map(l=>l.spaceId)),...config.coachRouteTransitions.flatMap(p=>[p.fromSpaceId,p.toSpaceId]),...config.operationalMealPolicies.flatMap(p=>p.spaceIds??[])],spaces,'space');
  requireIds([...config.technicalChains.flatMap(c=>c.requiredResourceIds),...config.coachRouteTransitions.map(c=>c.coachPlanResourceItemId),...config.operationalMealPolicies.flatMap(p=>p.planResourceItemIds),...config.itinerantTeamAvailability.flatMap(p=>p.planResourceItemIds??[]),...Object.keys(config.resourcePresenceConcentrationPolicies).map(Number)],resources,'resource');
  requireIds([...config.anchoredAccompaniments.flatMap(p=>[p.anchorTaskId,...p.beforeTaskIds,...p.afterTaskIds]),...config.technicalChains.flatMap(c=>[...c.orderedTaskIds,...(c.phases??[]).flat()]),...config.roundSynchronizations.flatMap(r=>r.lanes.flatMap(l=>l.taskIds))],taskIds,'task');

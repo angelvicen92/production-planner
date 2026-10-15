@@ -1,0 +1,244 @@
+{
+  "status": "PASS",
+  "nodeVersion": "v20.20.2",
+  "remoteWrites": 0,
+  "runtimeHashes": {
+    "engine/planner-next/benchmarks/canonicalFullA2EngineInput.ts": "7c26ca4aea00f5fb7a2ccee803914d2344a923b2445e029e5ffd892f2e757f6a",
+    "engine/planner-next/benchmarks/focal-a2/full-day/manifest.ts": "566c9117038a6115b8c7ff0f53d961d320128bdf8889d5bbee4a014ac8d34c5a",
+    "engine/planner-next/integration/engineInputPreflight.ts": "3cb5fd66d00a0755abeaf30cfa1909f5480ae3af9adf2f1086f0d6e5ec801913",
+    "engine/planner-next/placement.ts": "ebc74f7c3414efb4b3bdccfe60b5b5c2ab392d6cac7646115850fdf4ddcd2f5a",
+    "engine/planner-next/validate.ts": "0043b141d94106c544ee98c9ba5b24ab4aedd142298677ac637123e53c5d23a3",
+    "script/demo/reconcileA2Topology.ts": "15061ba3ea40a1236b52088b8944b9b0a06bf78f8f2e8cdc26cd892ea54345e8",
+    "script/demo/a2HistoricalCatalog.ts": "2c7fcecc01479958f639fd9bbc4a857947698ef6aadcf265357024400a65cdb5",
+    "shared/anchoredOperationProjection.ts": "9cf39663ff52452c11958aaa7c2a65d858ed1796e092fc7867bda1d22f99c9a0",
+    "server/storage.ts": "b65ffe95c56854c4e37f404b6eb053f30760eb5eb2ff71d2b30b051f92d89818",
+    "server/assistedPlanningSnapshot.ts": "2184dc531787336e974359fe0e7b0772432dc0a78c9c139a0893f390d3ddab4b",
+    "server/assistedProposalService.ts": "9f75b996a505938141b831af8546160583f82e7a6a0c392bcae879316da8897b",
+    "server/assistedPlanningService.ts": "5a605bebfc7d8e9fb7a6d796b0c123f4af3c288830472318661dc5b82f41a357",
+    "server/routes.ts": "1401a27c169a7d6cd02f2ce4db12f297ece495f1256864d188bac23280a9f794",
+    "engine/planner-next/jointCompletionWitness.ts": "eff19c666412542cc47a364687f46300982e8690b0a341a69d02c183616068a8",
+    "engine/planner-next/exactItinerantPlan.ts": "08953e00042eda5be4f4289180605485ec1010de67f7b6252bc7eb28df31583e",
+    "client/src/components/layout.tsx": "3be0f0b4501eecb52fe54547d3455d67867be651ead74df852a3562561669697",
+    "client/src/components/planning/assisted-planning-workspace.tsx": "fcff2402313351b560cd8219814fb447836db3cd5d6765c61243232c7f7a500e",
+    "script/demo/a2ImportRows.ts": "734bdba96a4aa242e72aa1b6a7fe283c90f79cc5d4cb70fe0413b3c1e5c306fd",
+    "script/demo/prepareA2Import.ts": "8c18275b2786bfccb4a023e07e5270310353e36765418ee7e443b10385247244",
+    "script/demo/prepareA2Schema.ts": "1b1b038c3b0b309e65124e347a37d1180efd2629815da2703ed3dbcc416daf48",
+    "script/demo/smokeA2Integration.ts": "bee30b177d5027a09894de4c44b0042811c15ada9df697476b078c0f14f4e517",
+    "script/demo/smokeA2Journey.ts": "4e126c194f9bc6a3a47e46f04469c5f9034232c64a231da58b5db341cc9d80c8",
+    "client/src/lib/assisted-planning-view.ts": "a0b688796d43afc3504f14012944780c80b4945606dd98815ce06500af82bb4d",
+    "client/src/lib/assisted-draft-warnings.ts": "7f1ac193a171378a7f1a5d65fe68dab5f208d40ba46d8cbfb0d6ac6d0780bb04",
+    "script/demo/smokeA2HistoricalScopeJourney.ts": "0b53ed8c31936d5ab783414502fc46ba8620ed8f998006290a9b2c345fdca46f",
+    "engine/planner-next/integration/engineInputAdapter.ts": "42cae398e60cfc521814c3bf62e492dd2121309b9b7a7a22abe8d4a28c2940ab",
+    "script/demo/seedA2HistoricalRehearsal.ts": "02997b41eac761bffdc295029918dd0cabc810370b62980428ece115f0ecedd1",
+    "script/demo/a2TopologyMetrics.ts": "e8438ceb57ef098b31b411e152b4fcefa27f9bc5220aafd29c890ad7e6aa1337",
+    "script/demo/fixtures/a2-legacy-import.json.gz": "7e71838142dcb8c6a43004058f14bad1be93f624005fcfc8c4fc5c4ad8863d72",
+    "script/demo/a2SpatialTopology.ts": "c225c09d0097ae66c1e59aaee2934b3dcd8150ee1f1b3a378df0b00242f2c31a",
+    "client/src/lib/planning-view-policy.ts": "d67a48b3db23a15c1fe42e86b88b1a0948285904431341f5c7ac2bfa17eed417",
+    "script/demo/smokeA2ManualSnapshotJourney.ts": "d5e68a8813951a8b44779ff4a62b8b8ed25d08cb1e5e9a374e20076eb101fb8d",
+    "script/demo/smokeA2ViewsHistoryJourney.ts": "af4c019fa79642c773dbe5b10bccded78e55f2e4fb89fe3bc087482acb9be713",
+    "shared/assistedStageTiming.ts": "f37982b96bc5fb32d168a9f6f6e7ba1219e7d5a1f5aa51321e43ff6d14e3610c",
+    "client/src/lib/contestant-lane-sort.ts": "a2ac47ded69db5e74f4aaf67ee31666bb9b48be812e967cce826d1427bf81c97",
+    "client/src/components/planning/stage-history-timing.tsx": "b12463f40bf067948e12ae919e5cd807d1fbd61bec671a338318e0b6b67b83a5",
+    "client/src/components/planning-timeline.tsx": "5ac2953635d95a6716036d77c1b8c42f3e264339575b10a200af3fab0c7ad640",
+    "client/src/pages/plan-details.tsx": "0a5ff0e56eeef8e38936fc5430bdff8a6d35ee7655fd578e8f58dfe71ad87333",
+    "engine/planner-next/mainFlowPatterns.ts": "9dc382e2a75f41fe69900390d4c0a0e6bd92fcc3b62166b72aaf417a134f3700",
+    "script/demo/smokeMainFlowPreferenceJourney.ts": "040c3d37d9d43c7fc913822bb586263cb6fc9b650c94db747971c7f76f3c7543",
+    "shared/mainFlowPreference.ts": "dab5f13363162359b9111c25783049f79c1f767dbae9b46e5b1f98c20a4f3f9a",
+    "server/mainFlowPreference.ts": "730e2a9190e02ca2b332989652e605e8f30822c99a421738f581629e2cb59dda",
+    "server/dayConfigurationService.ts": "407c30774af0fa5c55b261e22e7a10f54df96041fb19f8a8c6335e4da8d8498c",
+    "server/effectiveConfigurationView.ts": "d58e7e0636fc67752d85eea7e77c26cbacd67d8d7baac86cdf4bf375eec08ae6",
+    "client/src/components/effective-configuration.tsx": "f2573c4b13083d8b5ad65d8ab97e6043d257ad1e568dd0627d3643c90b3d49a7",
+    "client/src/components/main-flow-preference-editor.tsx": "6401fe7514ffb0ba32b71caa628a04d6a9105fbf068ad09297334b8c88ba65b0",
+    "client/src/lib/main-flow-preference-result.ts": "9f27151434586783f8c0cc8f5b1c7cf48eb3523a0c835818bbada9f337b975da",
+    "engine/planner-next/mainFlowMeal.ts": "cacb654432e5db02ce8ad844332c4e4a5678deedfdb7d971dbd5d795b5f6835d",
+    "engine/planner-next/anonymousPipelineWitness.ts": "7ba27327fbd1b8d840e0054a055b69ebfdae04105e244c5ab9cc32a2eba38034",
+    "engine/planner-next/exactMainAndFeederCore.ts": "6b30027c55f86699e0beb59de0adbe69f77301d86f2672475681a63a25bb4b35",
+    "client/index.html": "78d320cec1e1d400e55ce1cf2282139ffefd94a5080b8063f22255f8b9f5aac4",
+    "client/src/index.css": "d58e0eda6818b202d10b3d0c4671a6fd2669fe6c0e9c341dcc5f1dffba867d5a",
+    "server/effectiveConfigurationHttp.ts": "eed69ad213d8a18e430bad746a030e74a251dfe8bd82d510d023bc24d8c0c9f5",
+    "client/src/hooks/use-plan-staff.ts": "593853326b4327d1ce58a74dfa4934731d7302a60ce301b7b145e6b61697e461",
+    "client/src/components/planning/planning-workspace-layout.tsx": "78a963ae4b8519ae32290ac6b5ae5ec0ffcf7b7c8a48edf56d7241f7d6c9ba8d",
+    "client/src/components/planning/planning-stage-toolbar.tsx": "cb1d9d38aebcd8a4e362c3f0d62aead4eaaa9c40e3c2fe25de5522ff9f9e4e22",
+    "client/src/lib/day-execution-view.ts": "690032797bd0ce8a81328b38c2190bf43bde09494e529baaccd4b59a0a9009e9",
+    "client/src/lib/planning-workspace-preferences.ts": "3607a738184e0aae24f2b588d9d7d7359ff2af5982caf1c6b26e7b4599e064e3",
+    "script/demo/smokeDayWorkspaceJourney.ts": "fdbdda3f9e1fb5a08d42f90a3c0c4f3f21f7c7a0455877c355af77c6b150b33e",
+    "script/demo/smokeDayWorkspaceSetup.ts": "b75115b0f620bacb6d140f5f09c23c957b1ca0b3f0ddfe4e11b95e3f6a3cf5e7",
+    "client/src/components/day-workspace/contestant-day-roster.tsx": "7424c04dde5f93f383a848202d993b49d7d02d8fecfb1dc9174e2892b3e22105",
+    "client/src/components/day-workspace/contestant-identity.tsx": "27a7815092cc1a2ccf3f65301cf704cab70caae275dc6db412052a511a1fb719",
+    "client/src/components/day-workspace/day-capability-editor.tsx": "d7b951f83fbadfd2b8b7b5037db767a4509c67f30094f0096cf27e66b4202ae8",
+    "client/src/components/day-workspace/day-execution-workspace.tsx": "1c92e0d6c7efbd0cce0d35a8904c8ea0e77cef09a57e380a9f92c88f82b9f37b",
+    "client/src/components/day-workspace/day-resources-workspace.tsx": "baa29c33ae4fb88ae513399e46f587b42d1b1c6cbc4b11efd4d8e188adc863b6",
+    "client/src/components/day-workspace/day-staff-workspace.tsx": "6ba3a7c684aa40a3b58fe3f65b5e474ee9b7d48d179729153c3d6a95c2cbff60",
+    "client/src/components/day-workspace/day-workspace-shell.tsx": "4b8670d6aa9d0e58c3a3c5f4baddfeab9c93cfc5889b324aff5e05509cd6d1d0",
+    "client/src/components/day-workspace/effective-configuration-fields.tsx": "c8bc5b0e91c3cdb70e1487e1f9b255a59ce94d30803d990137918b6f93d4a02c",
+    "client/src/components/day-workspace/legacy-planning-diagnosis.tsx": "80a8d383c75580a40dc36a98689a7d4c4380d295dac3af56c5bbb5093a381d05",
+    "client/src/hooks/use-execution-context.ts": "4912b2048abcff5a33a1439a3076fb15c3b43b9837dd9e15effb8bb2abe9556c",
+    "client/src/hooks/use-tasks.ts": "e7b16366826ac528d5a58bd01d48a45096a4ae2b86c60b4e5426542b51839531",
+    "client/src/hooks/use-production-clock.ts": "e8781e9bc663750ae721b54b064b7d1bed2e024bb6e0cf3befe3a42e4c5581fc",
+    "shared/execution.ts": "047cf61f8114b2397ad3a3516a1f5d2d01055603dd1d28c95f788c1d73185006",
+    "script/demo/smokeLiveExecutionJourney.ts": "ceccddb3445683bb04b29a5c7ad9d7db96e2195ea5b76c3581676fa6c738f6d2",
+    "script/demo/smokeA2ConfigurationReadRecovery.ts": "18e759624fcfac77258c7af7674eecaeef32e3aad9bdc3a94a6171447dbd66db",
+    "script/demo/fixtures/a2-27002-legacy-breaks.json": "35a33488afdca752f52b774180d68963f8fae34262a8d2b571684bfde43e693c",
+    "server/planPlannerNextConfiguration.ts": "d82fa241b1ccaabb4d282b6c237835b47548b2a321aec55cec669e2ee47a4a67",
+    "shared/assistedAutopilot.ts": "513472d814be70e4f7d5c504c79bd316152752907646033be81e2a01cb3f2ed6"
+  },
+  "checks": [
+    "entire native application migration ledger",
+    "real password login for five Auth identities",
+    "historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import",
+    "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved",
+    "52 observed legacy breaks: configuration reads, S0/266 recommendation and SUPPORTED native input without row changes",
+    "locked break conflicts remain blocked with a safe operational error; existing HTTP permissions remain enforced",
+    "Autopilot reaches the real engine from S0/266 and returns proposal/search Evidence without the initial infrastructure error",
+    "restart after recovery preserves configuration, history, 52 legacy rows and all 266 obligations",
+    "old day, 11 prior Stages, 333 other tasks and historical catalog remain literal after real UI/Autopilot/execution"
+  ],
+  "historicalPreservation": {
+    "oldPlanId": 27001,
+    "oldObligations": 266,
+    "oldStages": 11,
+    "otherObligations": 333,
+    "newDaySeedPlacements": 0
+  },
+  "controller": {
+    "phase": "FAILED",
+    "code": "RUN_NO_PROPOSAL",
+    "requests": [
+      {
+        "runtime": "candidate",
+        "method": "POST",
+        "path": "/api/plans/27002/assisted/session",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/effective-configuration",
+        "status": 200,
+        "readiness": "INCOMPATIBLE"
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted/next-scope",
+        "status": 200,
+        "selector": {
+          "kind": "SPACE",
+          "spaceId": 48
+        },
+        "taskCount": 19
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/effective-configuration",
+        "status": 500,
+        "code": "PLANNING_CONFIGURATION_CONFLICT"
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted/next-scope",
+        "status": 500,
+        "code": "PLANNING_CONFIGURATION_CONFLICT"
+      },
+      {
+        "runtime": "candidate",
+        "method": "POST",
+        "path": "/api/plans/27002/assisted/restart",
+        "status": 403
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted/next-scope",
+        "status": 200,
+        "selector": {
+          "kind": "SPACE",
+          "spaceId": 48
+        },
+        "taskCount": 19
+      },
+      {
+        "runtime": "candidate",
+        "method": "POST",
+        "path": "/api/plans/27002/assisted/proposals",
+        "status": 202,
+        "runId": 1
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted/proposals/1",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/plans/27002/assisted/proposals/1",
+        "networkError": {
+          "name": "TimeoutError"
+        }
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted/proposals/1",
+        "status": 200
+      },
+      {
+        "runtime": "candidate",
+        "method": "GET",
+        "path": "/api/plans/27002/assisted/proposals/1",
+        "status": 200
+      }
+    ],
+    "storedRun": {
+      "status": "success",
+      "hasResult": true,
+      "message": ""
+    }
+  },
+  "autopilot": {
+    "phase": "FAILED",
+    "code": "RUN_NO_PROPOSAL",
+    "stage": 0,
+    "completed": 0,
+    "total": 266,
+    "runId": 1,
+    "outcome": "NO_PROPOSAL",
+    "reasonCodes": [
+      "ASSISTED_SCOPE_INCOMPLETE",
+      "SEARCH_TIME_LIMIT_REACHED"
+    ]
+  },
+  "restart": {
+    "historyPreserved": true,
+    "configurationPreserved": true,
+    "legacyRowsPreserved": 52,
+    "obligationsPreserved": 266
+  }
+}
