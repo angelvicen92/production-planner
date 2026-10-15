@@ -1,3 +1,4 @@
+import { useSettingsSection } from "@/hooks/use-settings-section";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { Layout } from "@/components/layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -978,6 +979,7 @@ function StaffDefaultsSettings() {
 }
 
 function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
+  const [, setSpacesOpen] = useSettingsSection("spaces");
   const { t } = useTranslation();
   const {
     data: zones,
@@ -1641,7 +1643,7 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
             <Button
               size="sm"
               variant={showCreateZone ? "secondary" : "outline"}
-              onClick={() => setShowCreateZone((v) => !v)}
+              onClick={() => { setSpacesOpen(true); setShowCreateZone((v) => !v); }}
               title={showCreateZone ? "Cerrar" : "Crear nuevo plató"}
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -1652,7 +1654,7 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
               size="sm"
               variant="outline"
               disabled={allZones.length === 0}
-              onClick={expandAllZones}
+              onClick={() => { setSpacesOpen(true); expandAllZones(); }}
               title="Expandir todos"
             >
               <ChevronsDown className="h-4 w-4 mr-2" />

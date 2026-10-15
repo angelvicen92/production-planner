@@ -1,3 +1,4 @@
+import { useSettingsSection } from "@/hooks/use-settings-section";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,6 +37,7 @@ type ResourceType = {
 };
 
 export function ResourcesList() {
+  const [, setCatalogOpen] = useSettingsSection("resources");
   const { toast } = useToast();
   const confirm = useConfirm();
   const [types, setTypes] = useState<ResourceType[]>([]);
@@ -300,7 +302,7 @@ export function ResourcesList() {
           <Button
             size="sm"
             variant={showCreateType ? "secondary" : "outline"}
-            onClick={() => setShowCreateType((v) => !v)}
+            onClick={() => { setCatalogOpen(true); setShowCreateType((v) => !v); }}
             title={showCreateType ? "Cerrar" : "Añadir tipo"}
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -310,7 +312,7 @@ export function ResourcesList() {
           <Button
             size="sm"
             variant={showCreateItem ? "secondary" : "outline"}
-            onClick={() => setShowCreateItem((v) => !v)}
+            onClick={() => { setCatalogOpen(true); setShowCreateItem((v) => !v); }}
             title={showCreateItem ? "Cerrar" : "Añadir unidad"}
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -321,7 +323,7 @@ export function ResourcesList() {
             size="sm"
             variant="outline"
             disabled={types.length === 0}
-            onClick={expandAllTypes}
+            onClick={() => { setCatalogOpen(true); expandAllTypes(); }}
             title="Expandir todos"
           >
             <ChevronsDown className="h-4 w-4 mr-2" />

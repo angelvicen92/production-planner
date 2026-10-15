@@ -93,10 +93,34 @@ export async function runSettingsSections({ appUrl, baselineUrl, db, users, dire
                 assert.equal(await button.locator('button').count(), 0);
             }
         }
+        await tab(page,/platós|spaces/i);
+        await setOpen(page,'spaces',false);
+        await section(page,'spaces').getByRole('button',{name:'Crear nuevo plató',exact:true}).click();
+        assert.equal(await trigger(page,'spaces').getAttribute('aria-expanded'),'true');
+        await section(page,'spaces').getByPlaceholder('Ej. Plató 7',{exact:true}).waitFor();
+        await section(page,'spaces').getByRole('button',{name:'Cancelar',exact:true}).click();
+        await setOpen(page,'spaces',false);
+        await section(page,'spaces').getByRole('button',{name:'Expandir',exact:true}).click();
+        assert.equal(await trigger(page,'spaces').getAttribute('aria-expanded'),'true');
+        await tab(page,/recursos|resources/i);
+        await setOpen(page,'resources',false);
+        await section(page,'resources').getByRole('button',{name:'Añadir tipo',exact:true}).click();
+        assert.equal(await trigger(page,'resources').getAttribute('aria-expanded'),'true');
+        await section(page,'resources').getByText('Añadir tipo (grupo)',{exact:true}).waitFor();
+        await section(page,'resources').getByRole('button',{name:'Cerrar tipo',exact:true}).click();
+        await setOpen(page,'resources',false);
+        await section(page,'resources').getByRole('button',{name:'Añadir unidad',exact:true}).click();
+        assert.equal(await trigger(page,'resources').getAttribute('aria-expanded'),'true');
+        await section(page,'resources').getByText('Añadir unidad (1 a 1)',{exact:true}).waitFor();
+        await section(page,'resources').getByRole('button',{name:'Cerrar unidad',exact:true}).click();
+        await setOpen(page,'resources',false);
+        await section(page,'resources').getByTitle('Expandir todos',{exact:true}).click();
+        assert.equal(await trigger(page,'resources').getAttribute('aria-expanded'),'true');
         assert.deepEqual(writes, []);
         const afterVisual = await fingerprint();
         assert.deepEqual(afterVisual, before);
         report.visualSql = { before, after: afterVisual };
+        ok('closed catalog actions reveal their forms or expanded content without operational writes');
         ok('six tabs / twelve sections: native keyboard, aria, hidden content, default open and zero operational writes; every public table unchanged');
         // Unsaved explicit-save forms and inner expansion state survive folding.
         await tab(page, /general/i);

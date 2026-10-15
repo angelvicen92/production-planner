@@ -5,7 +5,7 @@ Rama remota: `codex/global-settings-collapsible-top-level`. Destino: `main`.
 
 ## Implementación
 
-Doce apartados en las seis pestañas existentes: programa, optimización, Control Room, catálogo de plantillas, platós/espacios, orden de columnas, transporte, catálogo de recursos, personas, equipos itinerantes, defaults de responsables y usuarios. El catálogo de reglas Vocal Coach conserva su panel actual. Se conservan los desplegables interiores por plató, recurso y editor, y las acciones de creación, componentes y confirmación.
+Doce apartados en las seis pestañas existentes: programa, optimización, Control Room, catálogo de plantillas, platós/espacios, orden de columnas, transporte, catálogo de recursos, personas, equipos itinerantes, defaults de responsables y usuarios. El catálogo de reglas Vocal Coach conserva su panel actual. Se conservan los desplegables interiores por plató, recurso y editor, y las acciones de creación, componentes y confirmación. Crear plató, añadir tipo/unidad y expandir todos abren el catálogo si estaba cerrado, para mostrar inmediatamente el formulario o contenido solicitado; no producen escrituras operativas.
 
 `SettingsSection` reutiliza `DayCollapsibleSection` sin modificarla. La primitiva coincide literalmente con la base UI-03A. `main` y la rama autorizada coincidían con esa base al preparar esta unidad; UI-03B no estaba integrada ni se ha copiado. No se modifican hooks/preferencias de jornadas, módulos de planificación, motor, endpoints, esquema, migraciones ni RLS.
 
@@ -46,6 +46,7 @@ No se realiza merge ni publicación.
 - `npm run build`: **PASS**, con el aviso existente de tamaño de bundle.
 - Preferencias nuevas/de jornada, ajustes generales, permisos, contratos y snapshots de plantillas y disponibilidad de recursos: **32 PASS, 0 FAIL**.
 - Chromium real: **PASS**, doce apartados y seis pestañas; Enter/Espacio, ARIA, foco, contenido oculto, recarga, sincronización entre ventanas, borrado de preferencias y aislamiento entre administradores.
+- Acciones exteriores sobre catálogos cerrados: **PASS**, abrir alta de plató/tipo/unidad o expandir todos revela el contenido solicitado sin writers operativos.
 - Navegación/plegado: **0 writers operativos**, con huellas de **todas las tablas públicas iguales** antes/después. El bootstrap de autenticación al recargar/abrir otra ventana se registra aparte; no lo causa el plegado.
 - Borradores: los seis campos `onBlur` de transporte, nombre de recurso, creación/edición de plantilla, personas, equipos, responsables, platós/espacios y rol de usuario conservan su estado al plegar. Se conserva la ordenación de plantillas y la expansión interior de platós/recursos. Un horario inválido mantiene aviso exterior.
 - CRUD real en registros descartables: personas, equipos, plantillas, tipos/unidades de recurso, platós/espacios y rol/eliminación de usuario. Se prueban cancelaciones de edición y confirmaciones. El diálogo de componentes sigue accesible. Los recursos se archivan por la operación productiva existente; sólo los probes recién creados se retiran por SQL al limpiar el ensayo.
