@@ -1,0 +1,60 @@
+{
+  "status": "PASS",
+  "remoteWrites": 0,
+  "source": "historical accepted A2 snapshot",
+  "checks": [
+    "independent X/Y and proportional linked zoom change real dimensions; reload/reset preserve identities",
+    "reduced contestant Y zoom scales entire rows; fit contains every lane and obligation",
+    "two panels resize by pointer and keyboard, swap and persist without losing tasks",
+    "spaces: single two-axis viewport, accessible horizontal scroll, aligned sticky headings, real zoom and fit",
+    "zoomed drag moves exactly five minutes; shared local edit survives reorder and discards without SQL writes",
+    "scheduled hideEmpty and resource agenda retain identities across zoom, three panels and accepted/draft navigation",
+    "desktop 1440/1920 and mobile 390: no document overflow; all SQL authorities unchanged",
+    "27002: all 266 unscheduled obligations retain assigned spaces; empty catalog choices and stale selection disappear",
+    "viewer can zoom and pan both axes by real touch; isolated preferences and unchanged SQL authorities"
+  ],
+  "screenshots": [
+    "navigation-1440-initial.png",
+    "navigation-spaces-fullscreen-sticky.png",
+    "navigation-three-panels.png",
+    "navigation-1440.png",
+    "navigation-1920.png",
+    "navigation-390.png",
+    "navigation-unscheduled-hide-empty.png",
+    "navigation-viewer-touch.png"
+  ],
+  "requests": {
+    "visualMutations": [],
+    "authBootstrap": [
+      "POST /api/bootstrap-role",
+      "POST /api/bootstrap-role",
+      "POST /api/bootstrap-role",
+      "POST /api/bootstrap-role",
+      "POST /api/bootstrap-role",
+      "POST /api/bootstrap-role"
+    ],
+    "dayInitialization": [
+      "POST /api/plans/27002/assisted/session"
+    ]
+  },
+  "contestantFit": {
+    "width": 1394,
+    "content": 1394,
+    "height": 714,
+    "contentHeight": 714
+  },
+  "geometry": {
+    "bottom": 883,
+    "height": 708,
+    "width": 1394,
+    "scrollHeight": 1751,
+    "scrollWidth": 11549,
+    "nested": 0
+  },
+  "fit": {
+    "width": 1394,
+    "content": 1394,
+    "height": 720,
+    "contentHeight": 720
+  }
+}

@@ -126,11 +126,7 @@
   }
 
 
-  .planning-panel[data-planning-zoom-enabled="true"] [data-planning-zoom-target] {
-    transform: scale(var(--planning-zoom, 1));
-    transform-origin: top left;
-    width: calc(100% / var(--planning-zoom, 1));
-  }
+
 }
 
 @media print {
@@ -198,3 +194,41 @@ body[data-planning-fullscreen="true"] .fixed.inset-0[data-state="open"] {
 body[data-planning-fullscreen="true"] [data-radix-popper-content-wrapper] {
   z-index: 140 !important;
 }
+
+/* One native bidirectional viewport per planning panel. No transformed grids. */
+.planning-panel { height: calc(100dvh - 48px); min-height: 440px; }
+.planning-panel[data-fullscreen="true"] { height: 100dvh; min-height: 0; }
+.planning-panel-content { overflow: hidden; }
+.planning-scroll-viewport { flex: 1 1 0%; min-height: 0; min-width: 0; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.planning-panel-content > :not(.planning-timeline-shell):not(.planning-scroll-viewport):not(.flex-1) { flex-shrink: 0; }
+.planning-zone-heading, .planning-space-heading { position: sticky; z-index: 25; height: 76px; margin-bottom: 0; background-color: hsl(var(--card)); overflow: hidden; }
+.planning-zone-heading { top: 0; }
+.planning-space-heading { top: 76px; }
+.planning-panes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+[data-testid="planning-multiview"] { container-type: inline-size; }
+.planning-retained[hidden] { display: none; }
+.planning-divider { display: none; }
+@container (min-width: 960px) {
+  .planning-panes[data-layout="horizontal"][data-count="2"] { grid-template-columns: minmax(0, var(--planning-ratio)) 12px minmax(0, var(--planning-remainder)); gap: 0; }
+  .planning-panes[data-layout="horizontal"][data-count="2"] .planning-divider { display: flex; order: 1; align-items: center; justify-content: center; cursor: col-resize; touch-action: none; border-radius: 6px; }
+  .planning-divider span { width: 4px; height: 48px; border-radius: 4px; background: hsl(var(--border)); }
+  .planning-divider:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: -2px; }
+  .planning-divider:hover span { background: hsl(var(--primary)); }
+  .planning-panes[data-layout="grid"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .planning-panes[data-layout="grid"] .planning-wide { grid-column: span 2; }
+}
+@container (min-width: 1320px) {
+  .planning-panes[data-layout="horizontal"][data-count="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media print {
+  .planning-panel, .planning-panel[data-fullscreen="true"] { height: auto; }
+  .planning-panel-content, .planning-scroll-viewport { overflow: visible; }
+}
+
+.planning-scroll-viewport::-webkit-scrollbar { width: 12px; height: 12px; }
+.planning-scroll-viewport::-webkit-scrollbar-track { background: hsl(var(--muted)); }
+.planning-scroll-viewport::-webkit-scrollbar-thumb { border: 3px solid hsl(var(--muted)); border-radius: 8px; background: hsl(var(--muted-foreground) / .45); }
+.planning-scroll-viewport::-webkit-scrollbar-corner { background: hsl(var(--muted)); }
+
+.planning-row-label { width: var(--planning-label-width, 192px); }
+@media (max-width: 640px) { .planning-panel { --planning-label-width: 112px; } }

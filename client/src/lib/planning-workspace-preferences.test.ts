@@ -19,3 +19,8 @@ test("all seven nonempty view combinations are representable and the final pane 
   for (const invalid of [null, [], ["legacy"], {}, "resources"])
     assert.deepEqual(normalizedPlanningViews(invalid), ["contestants"]);
 });
+test("operator order survives normalization, toggles and stale storage", () => {
+  assert.deepEqual(normalizedPlanningViews(["resources", "spaces", "resources", "unknown", "contestants"]), ["resources", "spaces", "contestants"]);
+  assert.deepEqual(toggledPlanningViews(["spaces", "contestants"], "resources"), ["spaces", "contestants", "resources"]);
+  assert.deepEqual(toggledPlanningViews(["spaces", "contestants", "resources"], "contestants"), ["spaces", "resources"]);
+});
