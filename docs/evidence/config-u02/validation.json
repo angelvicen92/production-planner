@@ -38,7 +38,14 @@
       "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts",
       "server/benchmarks/runA2Assist7Evidence.spec.ts"
     ],
-    "resultAuthority": "Final local suite result and hosted CI are recorded in the pull request description; live head checks are authoritative."
+    "resultAuthority": "Final local suite result and hosted CI are recorded in the pull request description; live head checks are authoritative.",
+    "status": "PASS",
+    "files": 381,
+    "tests": 2938,
+    "passed": 2938,
+    "failed": 0,
+    "skipped": 0,
+    "durationMs": 458027.043294
   },
   "hostedCI": {
     "authority": "Live checks on the pull request head; reported in the PR description after completion."
