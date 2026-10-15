@@ -34,6 +34,7 @@ if(process.argv.includes('--app')){
  assert.equal(process.env.SUPABASE_URL,process.env.VITE_SUPABASE_URL);
  await import('../../server/index');
 }else{
+ const templateAuthorization=process.argv.includes('--template-authorization');
  const historicalTopology=process.argv.includes('--historical-topology');
  const configurationReadRecovery=process.argv.includes('--configuration-read-recovery');
  assert.ok(!configurationReadRecovery||historicalTopology,'configuration recovery requires the historical catalog');
@@ -68,6 +69,7 @@ if(process.argv.includes('--app')){
  runtimeFiles.push('client/src/hooks/use-execution-context.ts','client/src/hooks/use-tasks.ts','client/src/hooks/use-production-clock.ts','shared/execution.ts','script/demo/smokeLiveExecutionJourney.ts');
  if(stageOrder)runtimeFiles.push('script/demo/probeA2StageOrder.ts','server/assistedScopeOrchestrator.ts');
  if(autopilot)runtimeFiles.push('shared/assistedAutopilot.ts','client/src/lib/assisted-autopilot.ts','script/demo/smokeA2AutopilotJourney.ts');
+ if(templateAuthorization)runtimeFiles.push('script/demo/smokeTemplateAuthorization.ts','server/apiAuthorization.ts','server/middleware/requireAuth.ts','server/authz.ts','shared/routes.ts','client/src/hooks/use-tasks.ts','client/src/pages/settings.tsx');
  if(configurationReadRecovery)runtimeFiles.push('script/demo/smokeA2ConfigurationReadRecovery.ts','script/demo/fixtures/a2-27002-legacy-breaks.json','server/planPlannerNextConfiguration.ts','shared/assistedAutopilot.ts');
  if(controlRoom)runtimeFiles.push('script/demo/smokeControlRoomJourney.ts','client/src/pages/control-room.tsx','client/src/lib/control-room-metrics.ts','client/src/hooks/use-control-room-data.ts','client/src/hooks/use-execution-context.ts','client/src/hooks/use-war-room.ts','client/src/hooks/use-plan-realtime.ts','client/src/components/production-control-panel.tsx','client/src/pages/dashboard.tsx',...readdirSync('client/src/components/control-room').map(file=>`client/src/components/control-room/${file}`));
  const report:any={mode:liveSnapshot?'REAL_DISPOSABLE_EXECUTION_ACCEPTED_SNAPSHOT_REPLAY':'REAL_DISPOSABLE_PRODUCT_INTEGRATION',nodeVersion:process.version,v8Version:process.versions.v8,remoteWrites:0,images,requestedStages:full?11:2,startedAt:new Date().toISOString(),runtimeHashes:hashes(),checks:[],pending:controlRoom?['Supabase Realtime/WebSocket delivery (HTTP polling certified)']:['Connected Supabase catalog/backup adoption and original-row preservation','Published Replit runtime and user browser','Supabase Realtime/WebSocket transport']};
@@ -111,7 +113,7 @@ if(process.argv.includes('--app')){
   const restPort=start('rest',images.rest,3000,{PGRST_DB_URI:`postgres://authenticator:${password}@db:5432/postgres`,PGRST_DB_SCHEMAS:'public',PGRST_DB_ANON_ROLE:'anon',PGRST_JWT_SECRET:secret,PGRST_SERVER_PORT:'3000'});
   const transport:any[]=[];report.transport=transport;
   gateway=http.createServer((req,res)=>{
-   res.setHeader('Access-Control-Allow-Origin',controlRoom&&baselineUrl&&req.headers.origin===baselineUrl?baselineUrl:appUrl);res.setHeader('Access-Control-Allow-Headers',req.headers['access-control-request-headers']??'authorization,apikey,content-type');res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,PATCH,DELETE,OPTIONS');
+   res.setHeader('Access-Control-Allow-Origin',(controlRoom||templateAuthorization)&&baselineUrl&&req.headers.origin===baselineUrl?baselineUrl:appUrl);res.setHeader('Access-Control-Allow-Headers',req.headers['access-control-request-headers']??'authorization,apikey,content-type');res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,PATCH,DELETE,OPTIONS');
    if(req.method==='OPTIONS'){res.writeHead(204);res.end();return;}
    const path=req.url??'/',isAuth=path.startsWith('/auth/v1/'),isRest=path.startsWith('/rest/v1/');
    if(!isAuth&&!isRest){res.writeHead(404);res.end();return;}
@@ -156,7 +158,7 @@ if(process.argv.includes('--app')){
   const appLog=createWriteStream(`${directory}/app-private.log`,{mode:0o600});
   app=spawn(process.execPath,['--import','tsx',resolve('script/demo/smokeA2Integration.ts'),'--app'],{env:localEnv,stdio:['ignore','pipe','pipe']});app.stdout!.pipe(appLog);app.stderr!.pipe(appLog);
   await eventually(async()=>{assert.equal(app!.exitCode,null,'product server exited');const r=await fetch(`${appUrl}/api/plans/${dataset.input.planId}`,{headers:{Authorization:`Bearer ${users.production.token}`}});assert.equal(r.status,200);});
-  const requestedBaseline=configurationReadRecovery?process.env.CONFIG_READ_BASELINE_ROOT:controlRoom?process.env.CONTROL_ROOM_BASELINE_ROOT:undefined;
+  const requestedBaseline=templateAuthorization?process.env.TEMPLATE_AUTHORIZATION_BASELINE_ROOT:configurationReadRecovery?process.env.CONFIG_READ_BASELINE_ROOT:controlRoom?process.env.CONTROL_ROOM_BASELINE_ROOT:undefined;
   if(requestedBaseline){
    const baselineRoot=resolve(requestedBaseline),baselinePort=await freePort();baselineUrl=`http://127.0.0.1:${baselinePort}`;
    const baselineLog=createWriteStream(`${directory}/baseline-private.log`,{mode:0o600});
@@ -165,7 +167,10 @@ if(process.argv.includes('--app')){
   }
   Object.assign(process.env,{SUPABASE_URL:url,SUPABASE_ANON_KEY:anon,SUPABASE_SERVICE_ROLE_KEY:service});
   const {storage}=await import('../../server/storage');const {buildEngineInput}=await import('../../engine/buildInput');const {adaptEngineInputToPlannerNextProblem}=await import('../../engine/planner-next/integration/engineInputAdapter');
-  if(configurationReadRecovery){
+  if(templateAuthorization){
+   const {runTemplateAuthorization}=await import('./smokeTemplateAuthorization');
+   report.templateAuthorization=await runTemplateAuthorization({appUrl,baselineUrl,db,users,directory,pass});
+  }else if(configurationReadRecovery){
    const {runA2ConfigurationReadRecovery}=await import('./smokeA2ConfigurationReadRecovery');
    report.configurationReadRecovery=await runA2ConfigurationReadRecovery({appUrl,baselineUrl,db,users,planId:dataset.input.planId,directory,buildInput:()=>buildEngineInput(dataset.input.planId,storage),pass});
   }else{

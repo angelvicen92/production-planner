@@ -1,0 +1,61 @@
+name: Template Authorization CI
+
+on:
+  push:
+    branches:
+      - codex/config-u03a-authorize-template-writes
+  pull_request:
+    branches: [main]
+    paths:
+      - server/apiAuthorization*
+      - server/authz.ts
+      - server/middleware/requireAuth.ts
+      - server/routes.ts
+      - server/storage.ts
+      - shared/routes.ts
+      - client/src/hooks/use-tasks.ts
+      - client/src/pages/settings.tsx
+      - script/demo/smokeTemplateAuthorization.ts
+      - script/demo/smokeA2Integration.ts
+      - .github/workflows/template-authorization-ci.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: template-authorization-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  template-authorization:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
+      - name: Unchanged U03a baseline
+        run: |
+          git fetch --no-tags --depth=1 origin 977dbb3ef6244de022410e4d00036cd186c15aad
+          git worktree add --detach work/u03a-baseline 977dbb3ef6244de022410e4d00036cd186c15aad
+          ln -s "$PWD/node_modules" work/u03a-baseline/node_modules
+      - name: Baseline versus candidate; native Auth, HTTP, PostgreSQL and admin UI
+        env:
+          TEMPLATE_AUTHORIZATION_BASELINE_ROOT: work/u03a-baseline
+        run: npm run demo:a2:smoke -- work/template-authorization --historical-topology --template-authorization
+      - name: HTTP authorization regression tests
+        run: npx --no-install tsx --test server/apiAuthorization.spec.ts
+      - name: Evidence from disposable services
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: template-authorization
+          path: |
+            work/template-authorization/integration.json
+            work/template-authorization/template-authorization.json
+            work/template-authorization/template-admin-ui-*.png

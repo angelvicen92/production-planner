@@ -1,0 +1,197 @@
+{
+  "baseCommit": "977dbb3ef6244de022410e4d00036cd186c15aad",
+  "nativeResult": "FAIL",
+  "expectedResult": "security regression fails before patch",
+  "mode": "REAL_DISPOSABLE_PRODUCT_INTEGRATION",
+  "nodeVersion": "v24.19.0",
+  "postgresVersion": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "images": {
+    "db": "postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24",
+    "auth": "supabase/gotrue:v2.177.0@sha256:6a916b47af0386b7e0152ca84f3d45d050bf056e449a75a5460b48742fd67822",
+    "rest": "postgrest/postgrest:v12.2.12@sha256:5f4ce744539bbba786b4e24dbbd95bdb2a956dcf568c5374995a0ff4a68f5bd2"
+  },
+  "remoteWrites": 0,
+  "startedAt": "2026-10-15T07:06:12.861Z",
+  "checks": [
+    "entire native application migration ledger",
+    "real password login for five Auth identities",
+    "historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import",
+    "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved"
+  ],
+  "migrationCount": 97,
+  "migrationLedgerSha256": "fc313c66f57a1fe5e7132eef9238c94a843ad6f4ecc3b7eac254f86087dc66c5",
+  "runtimeSha256": {
+    "server/apiAuthorization.ts": "b0e51c2ca4fcb366ac61530dc447d0fd47d3e8b1be07416bcf1b9d4026db34c7",
+    "server/middleware/requireAuth.ts": "3b12e1b2e385707e66a7c4587ed13bdc9ee309f35756ebff8efd56a61fd237f6",
+    "server/authz.ts": "c424fda12b752164c8e54478976c29a8710bcaf734089f055914d73d5a6b5c7e",
+    "server/routes.ts": "1401a27c169a7d6cd02f2ce4db12f297ece495f1256864d188bac23280a9f794",
+    "server/storage.ts": "b65ffe95c56854c4e37f404b6eb053f30760eb5eb2ff71d2b30b051f92d89818",
+    "shared/routes.ts": "4fda6f275793a76713441ea49be9e894b58226c807582af01e016e3724321cd0",
+    "client/src/hooks/use-tasks.ts": "e7b16366826ac528d5a58bd01d48a45096a4ae2b86c60b4e5426542b51839531",
+    "client/src/pages/settings.tsx": "8452a6bdaeb227ed576e57705272736554a406da17a529220468aedc6e73150f",
+    "script/demo/smokeA2Integration.ts": "64f70b64dfc3d6581c03f55b6d141fbb15fffa6a965394747eb068e08ed4e5ab",
+    "script/demo/smokeTemplateAuthorization.ts": "3c1cb01029d8a24cd10af9c4bd649eda645c603ca1a3477c792e8e4b4f5c2150"
+  },
+  "httpSql": {
+    "baseline": [
+      {
+        "role": "admin",
+        "path": "/api/ta/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ]
+      },
+      {
+        "role": "production",
+        "path": "/api/ta/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ]
+      },
+      {
+        "role": "aux",
+        "path": "/api/ta/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ]
+      },
+      {
+        "role": "viewer",
+        "path": "/api/ta/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ]
+      },
+      {
+        "role": "norole",
+        "path": "/api/ta/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ]
+      },
+      {
+        "role": "anonymous",
+        "path": "/api/ta/20032",
+        "status": 401,
+        "changedTables": []
+      },
+      {
+        "role": "invalid-token",
+        "path": "/api/ta/20032",
+        "status": 401,
+        "changedTables": []
+      },
+      {
+        "role": "admin",
+        "path": "/api/TA/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ]
+      },
+      {
+        "role": "production",
+        "path": "/api/TA/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ]
+      },
+      {
+        "role": "aux",
+        "path": "/api/TA/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ]
+      },
+      {
+        "role": "viewer",
+        "path": "/api/TA/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ]
+      },
+      {
+        "role": "norole",
+        "path": "/api/TA/20032",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ]
+      },
+      {
+        "role": "anonymous",
+        "path": "/api/TA/20032",
+        "status": 401,
+        "changedTables": []
+      },
+      {
+        "role": "invalid-token",
+        "path": "/api/TA/20032",
+        "status": 401,
+        "changedTables": []
+      },
+      {
+        "role": "admin",
+        "path": "/API/tA/20032/",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ]
+      },
+      {
+        "role": "production",
+        "path": "/API/tA/20032/",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ]
+      },
+      {
+        "role": "aux",
+        "path": "/API/tA/20032/",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ]
+      },
+      {
+        "role": "viewer",
+        "path": "/API/tA/20032/",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ]
+      },
+      {
+        "role": "norole",
+        "path": "/API/tA/20032/",
+        "status": 200,
+        "changedTables": [
+          "task_templates"
+        ]
+      },
+      {
+        "role": "anonymous",
+        "path": "/API/tA/20032/",
+        "status": 401,
+        "changedTables": []
+      },
+      {
+        "role": "invalid-token",
+        "path": "/API/tA/20032/",
+        "status": 401,
+        "changedTables": []
+      }
+    ],
+    "snapshotCount": 62
+  },
+  "expectedFailure": "AssertionError [ERR_ASSERTION]: candidate role matrix for production /api/ta/20032\n\n200 !== 403\n\n    at runTemplateAuthorization (/workspace/production-planner/script/demo/smokeTemplateAuthorization.ts:72:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async <anonymous> (/workspace/production-planner/script/demo/smokeA2Integration.ts:172:33)"
+}
