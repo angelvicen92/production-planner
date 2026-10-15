@@ -40,5 +40,23 @@
   "protectedUi01FilesChanged": [],
   "fullSolverRun": false,
   "merged": false,
-  "deployed": false
+  "deployed": false,
+  "integrationTypecheck": {
+    "command": "node node_modules/typescript/bin/tsc -p script/demo/tsconfig.integration.json",
+    "exitCode": 0
+  },
+  "componentTests": {
+    "command": "node --import tsx --test client/src/components/effective-configuration.test.tsx",
+    "passed": 4,
+    "failed": 0
+  },
+  "compatibility": {
+    "workspaceSetup": "PASS",
+    "liveExecutionAcceptedSnapshot": "PASS",
+    "productSourcesUnchangedSinceUiGate": true,
+    "selectorOnlyAdapters": [
+      "script/demo/smokeDayWorkspaceSetup.ts",
+      "script/demo/smokeLiveExecutionJourney.ts"
+    ]
+  }
 }

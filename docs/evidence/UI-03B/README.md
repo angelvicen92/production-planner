@@ -20,12 +20,14 @@ Defaults: alta adicional, complementaria, capacidades y filtros avanzados cerrad
 
 - `npm run check`: **PASS**.
 - `npm run build`: **PASS** (aviso existente de bundle >500 kB).
-- Tests focales de preferencias, ejecución y configuración: **16 PASS**.
+- Tests focales de preferencias, ejecución y configuración: **16 PASS**; componente de configuración: **4 PASS** (20 en total).
 - Chromium real, cuatro pestañas desktop y cuatro móviles (390 px): **PASS**.
 - Teclado/ARIA, filtros, selectores, botones hermanos, borradores de recursos/configuración/responsables y equipo Reality activo: **PASS**.
 - Preferencias tras pestañas/recarga, anclas de readiness repetidas, aislamiento de usuario/jornada y permisos admin/production/viewer: **PASS**.
 - **59 tablas públicas idénticas**, cero writers operativos durante plegado/pestañas/recarga.
 - EDIT/RESTORE/REFRESH explícitos: **HTTP 200**; avisos de revalidación, conexión y guardado fallido visibles con apartados cerrados.
+- TypeScript de integración (`tsc -p script/demo/tsconfig.integration.json`): **PASS**.
+- Recorridos existentes `--workspace-setup` y `--historical-topology --live-execution-snapshot`: **PASS**, incluidas altas/asignaciones/guardados, las cuatro transiciones explícitas de ejecución y reset confirmado. Ver `setup-compatibility.json` y `execution-compatibility.json`. Los fuentes productivos coinciden por SHA-256 con el gate UI-03B anterior a estos ajustes de tests.
 - Quince capturas, cero errores JavaScript de página y cero escrituras remotas. Ver `validation.json`, `remaining-day-sections.json` e `integration.json`.
 
 El ensayo usa PostgreSQL 17, GoTrue, PostgREST, servidor de producto y Chromium reales, todos locales y descartables. No hay interceptación de peticiones, cambios de RPC ni acceso a Supabase remoto. La jornada histórica 27001 mantiene 266 tareas y su Stage aceptado como fixture visual; no se presenta como una nueva solución del motor. La jornada 27002 se usa para las operaciones explícitas de configuración, separadas de las acciones visuales sin escritura.
@@ -59,15 +61,15 @@ Requiere Docker local y las dependencias ya declaradas. El runner crea/elimina s
 
 Cliente: `day-collapsible-section.tsx`, `day-resources-workspace.tsx`, `day-staff-workspace.tsx`, `day-execution-workspace.tsx`, `effective-configuration.tsx`, `use-day-section.ts` y `day-section-preferences.ts`.
 
-Pruebas: `day-section-preferences.test.ts`, `script/demo/smokeRemainingDaySections.ts` y el dispatch aditivo en `script/demo/smokeA2Integration.ts`. Evidence en esta carpeta.
+Pruebas: `day-section-preferences.test.ts`, `script/demo/smokeRemainingDaySections.ts` y el dispatch aditivo en `script/demo/smokeA2Integration.ts`. Se adaptan además los selectores de plató en `smokeDayWorkspaceSetup.ts`/`smokeLiveExecutionJourney.ts` y se abre el alta de recursos en el setup existente antes de usarla. Sus aserciones, operaciones y recorridos de Planning permanecen iguales. El nuevo smoke sigue siendo independiente; estos ajustes mínimos evitan que la CI anterior falle por buscar la cabecera sin cantidades o un formulario ahora cerrado. Evidence en esta carpeta.
 
 No se modifica ninguno de los siete archivos protegidos de UI-01: `planning-workspace-layout.tsx`, `fullscreen-planning-panel.tsx`, `planning-timeline.tsx`, `planning-workspace-preferences.ts`, `plan-details.tsx`, `assisted-planning-workspace.tsx`, `index.css`. Sin cambios de APIs, SQL, migraciones, RLS, EngineInput, Planner, validadores o contratos.
 
-Riesgo de integración limitado a posibles conflictos textuales si UI-01 amplía también el runner compartido. No se hace rebase/merge con UI-01; no hay un detalle funcional pendiente que requiera sus archivos protegidos.
+Riesgo de integración limitado a posibles conflictos textuales si UI-01 amplía el runner compartido o los mismos selectores de setup/ejecución. No se introducen escenarios nuevos en los recorridos compartidos. No se hace rebase/merge con UI-01; no hay un detalle funcional pendiente que requiera sus archivos protegidos.
 
 ## Límites
 
-No se ejecuta Full A2 del solver: las autoridades operativas permanecen idénticas durante el recorrido visual. La prueba no certifica Supabase Realtime/WebSocket ni el navegador de producción. Los borradores sobreviven al plegado y cambio de pestaña dentro de la sesión; la recarga conserva las preferencias visuales, sin añadir persistencia de borradores que no existía en el producto.
+El gate local de esta unidad no ejecuta Full A2 del solver: las autoridades operativas permanecen idénticas durante el recorrido visual. La prueba no certifica Supabase Realtime/WebSocket ni el navegador de producción. Los borradores sobreviven al plegado y cambio de pestaña dentro de la sesión; la recarga conserva las preferencias visuales, sin añadir persistencia de borradores que no existía en el producto.
 
 El error de guardado se provoca desconectando únicamente el endpoint PUT de configuración mediante condiciones de red CDP de Chromium. No se interceptan respuestas ni se falsea el servidor; las lecturas siguen disponibles y `navigator.onLine` permanece verdadero. Así se prueba un fallo real de transporte en lugar de la pausa offline normal de React Query.
 

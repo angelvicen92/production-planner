@@ -57,6 +57,8 @@ export async function runDayWorkspaceSetup({appUrl,planId,users,db,directory,pas
     assert.deepEqual((await api(`${base}/contestants`)).data,initialContestants);assert.deepEqual((await api(base)).data.dailyTasks.map((task:any)=>Number(task.id)).sort((a:number,b:number)=>a-b),initialTaskIds);report.operations.push("Concursante: crear, abrir ficha, editar canción, recargar y retirar por UI; canon preservado");pass(report.operations.at(-1));
     await page.getByRole("tab",{name:"Recursos",exact:true}).click();
     const resources=page.getByTestId("day-resources");await resources.waitFor();
+    const addResource=resources.getByRole("button",{name:"Añadir recurso solo para este plan",exact:true});
+    if(await addResource.getAttribute("aria-expanded")==="false")await addResource.click();
     await resources.getByRole("combobox",{name:"Tipo de recurso del día",exact:true}).click();await page.getByRole("option").first().click();
     const resourceName="QA recurso de jornada";await resources.getByLabel("Nombre del recurso del día",{exact:true}).fill(resourceName);
     const resourceCreated=page.waitForResponse(response=>response.url().endsWith(`${base}/resource-items`)&&response.request().method()==="POST");await resources.getByRole("button",{name:"Añadir",exact:true}).click();assert.equal((await resourceCreated).status(),200);
@@ -66,7 +68,7 @@ export async function runDayWorkspaceSetup({appUrl,planId,users,db,directory,pas
     const dayTasks=(await api(base)).data.dailyTasks;
     const space=spaces.find((space:any)=>space.zoneId!=null&&dayTasks.some((task:any)=>Number(task.spaceId)===Number(space.id)));assert.ok(space);const zone=zones.find((zone:any)=>Number(zone.id)===Number(space.zoneId));assert.ok(zone);
     const zoneAssignments=(await api(`${base}/zone-resource-assignments`)).data;
-    const zoneRow=resources.getByText(zone.name,{exact:true}).locator("..").locator("..");await zoneRow.getByRole("button",{name:"Recursos",exact:true}).click();
+    const zoneRow=resources.getByTestId(`section-resources-zone-${zone.id}`).locator(":scope > div").first();await zoneRow.getByRole("button",{name:"Recursos",exact:true}).click();
     await page.getByRole("dialog").getByRole("checkbox",{name:resourceName,exact:true}).check();
     const zoneSaved=page.waitForResponse(response=>response.request().method()==="PATCH"&&response.url().includes("zone-resource-assignments"));await page.getByRole("dialog").getByRole("button",{name:"Guardar",exact:true}).click();assert.equal((await zoneSaved).status(),200);
     await page.reload();await resources.waitFor();
@@ -80,7 +82,7 @@ export async function runDayWorkspaceSetup({appUrl,planId,users,db,directory,pas
     const staffPeople=(await api("/staff-people")).data;const producer=staffPeople.find((person:any)=>person.roleType==="production"&&person.isActive!==false);const editor=staffPeople.find((person:any)=>person.roleType==="editorial"&&person.isActive!==false);
     if(producer){
       await page.getByRole("tab",{name:"Roles",exact:true}).click();const staff=page.getByTestId("day-staff");await staff.waitFor();
-      const card=staff.getByText(zone.name,{exact:true}).locator("..").locator("..").locator("..");
+      const card=staff.getByTestId(`section-staff-zone-${zone.id}`);
       await card.getByRole("combobox").click();await page.getByRole("option",{name:"Plató",exact:true}).click();
       const picker=card.getByText("Producción",{exact:true}).locator("..").locator("..");await picker.getByRole("button",{name:"Editar",exact:true}).click();
       await page.getByRole("dialog").getByRole("checkbox",{name:producer.name,exact:true}).check();await page.getByRole("dialog").getByRole("button",{name:"Guardar",exact:true}).click();
