@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import breaks from '../script/demo/fixtures/a2-27002-legacy-breaks.json';
-import {buildA2ImportRows} from '../script/demo/a2ImportRows';
-import {a2HistoricalCatalog} from '../script/demo/a2HistoricalCatalog';
-import {a2ImportStorageFixture} from '../script/demo/a2ImportStorageFixture';
-import {buildEngineInput} from '../engine/buildInput';
-import {adaptEngineInputToPlannerNextProblem} from '../engine/planner-next/integration/engineInputAdapter';
-import {applyPlanPlannerNextConfiguration,PlanPlannerNextConfigurationError} from './planPlannerNextConfiguration';
+import breaks from './fixtures/a2-27002-legacy-breaks.json';
+import {buildA2ImportRows} from './a2ImportRows';
+import {a2HistoricalCatalog} from './a2HistoricalCatalog';
+import {a2ImportStorageFixture} from './a2ImportStorageFixture';
+import {buildEngineInput} from '../../engine/buildInput';
+import {adaptEngineInputToPlannerNextProblem} from '../../engine/planner-next/integration/engineInputAdapter';
+import {applyPlanPlannerNextConfiguration,PlanPlannerNextConfigurationError} from '../../server/planPlannerNextConfiguration';
 
 test('persisted 27002 break shape coexists with the complete structured day without changing the problem',async()=>{
  const dataset=buildA2ImportRows('2026-10-31',100000,{historicalCatalog:a2HistoricalCatalog,planId:27002});

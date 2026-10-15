@@ -69,7 +69,7 @@ jobs:
       - run: npx --no-install playwright install --with-deps chromium
       - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
       - run: npm run test:demo:a2-import
-      - run: node --import tsx --test server/planPlannerNextConfiguration.spec.ts server/effectiveConfigurationHttp.spec.ts
+      - run: node --import tsx --test script/demo/a2ConfigurationReadRecovery.spec.ts server/effectiveConfigurationHttp.spec.ts
       - run: node --import tsx --test script/demo/a2RealTopology.spec.ts script/demo/a2RealImportSQL.spec.ts shared/anchoredOperationProjection.test.ts
       - run: node --import tsx --test script/demo/a2DraftPreparationRecovery.spec.ts
       - run: npx --no-install tsx --test shared/assistedAutopilot.test.ts shared/assistedStageTiming.test.ts client/src/components/planning/assisted-planning-workspace.test.ts client/src/components/planning/stage-history-timing.test.ts client/src/lib/assisted-draft-warnings.test.ts client/src/lib/assisted-planning-view.test.ts client/src/lib/contestant-lane-sort.test.ts client/src/lib/planning-view-policy.test.ts server/assistedHistoryTimings.spec.ts client/src/lib/assisted-scope-selection.test.ts client/src/components/planning/assisted-location-scope.test.tsx
@@ -103,6 +103,7 @@ jobs:
             work/a2-scope-integration/scope-selection-*.json
             work/a2-config-read-recovery/integration.json
             work/a2-config-read-recovery/configuration-read-run.json
+            work/a2-config-read-recovery/configuration-read-controller.json
             work/a2-integration/*-real-ui.png
 
   main-flow-preference-integration:

@@ -143,3 +143,26 @@ coexistence, which is now a native regression case.
 No shared database writes, migrations, A2 regeneration or obligation changes.
 No merge. GitHub currently has the specified branch at the base without an
 associated PR; work remains on that branch and no parallel PR is created.
+
+## CI follow-up (test boundary / diagnostic only)
+
+The first [Planner Engine CI](https://github.com/angelvicen92/production-planner/actions/runs/38678378337)
+passed 2,932 product tests but rejected the new server-side test's direct adapter
+import through the existing isolation gate. The entire new test is moved to
+`script/demo/a2ConfigurationReadRecovery.spec.ts`, retaining its assertions and
+explicit CI execution. The isolation gate now passes; its allowlist is unchanged.
+The complete preference/configuration/Stage integration and Baseline CI passed.
+
+That run's new HTTP regression also stopped before observing a run result; its
+original failure artifact did not include the controller stop code. No
+production/search repair is inferred from that incomplete trace. Focused test
+instrumentation now records only the controller code, request statuses/transport
+error categories, and the disposable persisted run's status/result presence,
+with URLs and bearer/JWT values redacted.
+
+[The same regression on CI's Node 20.20.2](A2-27002-node20-http-recovery.json)
+passes locally: a timed-out GET is retried by the existing Autopilot authority,
+the run is persisted successfully with `SEARCH_TIME_LIMIT_REACHED`, and restart
+and historical preservation pass. The remote failure has not reproduced, so
+only diagnostic instrumentation is added for it. The productive correction is
+unchanged from `ad5c1ed`; remote CI is rerun on the updated test/diagnostic head.

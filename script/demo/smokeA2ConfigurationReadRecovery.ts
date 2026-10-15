@@ -14,6 +14,7 @@ export async function runA2ConfigurationReadRecovery(o:Options){
  const requests:any[]=[],report:any={mode:'NATIVE_DISPOSABLE_CONFIG_READ_RECOVERY',remoteWrites:0,requests};
  const request=async<T>(method:string,path:string,body?:unknown,base=o.appUrl,role='production'):Promise<T>=>{
   const response=await fetch(`${base}${path}`,{method,headers:{Authorization:`Bearer ${o.users[role].token}`,'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(180_000)}).catch(error=>{
+   requests.push({method,path,networkError:{name:error?.name,code:error?.cause?.code}});
    // Match apiRequest's AbortController error for the existing read-poll retry
    // in AssistedAutopilot. A timed-out read does not cancel a persisted run.
    if(error?.name==='TimeoutError')throw Object.assign(new Error('Request aborted'),{name:'AbortError'});
@@ -78,6 +79,9 @@ export async function runA2ConfigurationReadRecovery(o:Options){
   phases.push(p.phase);if(p.phase==='GENERATING'&&p.runId&&!p.stopRequested)controller.requestStop();
  }});
  const result=await controller.start();
+ const stored= result.runId?(await o.db.query('SELECT status,message,assisted_result_json IS NOT NULL AS has_result FROM planning_runs WHERE id=$1',[result.runId])).rows[0]:null;
+ const safeMessage=(v:unknown)=>String(v??'').replace(/https?:\/\/\S+|Bearer\s+\S+|eyJ[\w-]+\.[\w-]+\.[\w-]+/g,'[redacted]').slice(0,240);
+ writeFileSync(`${o.directory}/configuration-read-controller.json`,JSON.stringify({phase:result.phase,code:safeMessage(result.code),requests,storedRun:stored?{status:stored.status,hasResult:stored.has_result,message:safeMessage(stored.message)}:null},null,2));
  assert.ok(phases.includes('GENERATING'));assert.ok(result.runId,'initial run must exist');assert.ok(result.result,'engine must return its result');
  assert.ok(['STOPPED','FAILED'].includes(result.phase));
  if(result.phase==='FAILED'){
