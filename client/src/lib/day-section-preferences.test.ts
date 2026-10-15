@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { daySectionDefaults, daySectionKey, readDaySection, writeDaySection, clearDaySectionMemory } from "./day-section-preferences";
+import { daySectionDefaults, daySectionDefault, daySectionKey, readDaySection, writeDaySection, clearDaySectionMemory, type DaySection } from "./day-section-preferences";
 
 test("preferences isolate user, day and section, tolerate bad storage and retain useful defaults", () => {
   const storage = new Map<string, string>();
@@ -31,4 +31,32 @@ test("preferences isolate user, day and section, tolerate bad storage and retain
   for (const section of ["assisted-editing", "assisted-history", "assisted-maintenance", "task-administration"] as const)
     assert.equal(daySectionDefaults[section], false);
   Reflect.deleteProperty(globalThis, "window");
+});
+
+test("remaining tabs and stable dynamic identities preserve independent preferences after reload", () => {
+  const storage = new Map<string, string>();
+  Object.assign(globalThis, { window: Object.assign(new EventTarget(), { localStorage: {
+    getItem: (key: string) => storage.get(key) ?? null,
+    setItem: (key: string, value: string) => { storage.set(key, value); },
+  } }) });
+  try {
+    const sections: DaySection[] = ["resources-add", "resources-zones", "resources-zone-8", "resources-zone-9", "resources-type-8", "staff-zones", "staff-zone-8", "staff-reality", "staff-team-8", "configuration-workday", "configuration-flow", "configuration-rules", "configuration-optimization", "configuration-complementary", "configuration-capabilities", "execution-filters", "execution-tasks"];
+    assert.equal(daySectionDefault("execution-tasks"), true);
+    for (const section of ["resources-add", "configuration-complementary", "configuration-capabilities", "execution-filters"] as const) assert.equal(daySectionDefault(section), false);
+    assert.equal(daySectionDefault("resources-zone-8"), true);
+    const keys = sections.map(section => daySectionKey("operator:name/ñ", 27001, section));
+    assert.equal(new Set(keys).size, sections.length);
+    for (const [index, key] of keys.entries()) {
+      writeDaySection(key, index % 2 === 0);
+      clearDaySectionMemory(key);
+    }
+    // Reordering or renaming a dynamic group cannot change its ID-based key.
+    for (const section of [...sections].reverse()) {
+      const index = sections.indexOf(section);
+      const key = daySectionKey("operator:name/ñ", 27001, section);
+      assert.equal(readDaySection(key, !Boolean(index % 2 === 0)), index % 2 === 0);
+      assert.equal(readDaySection(daySectionKey("viewer", 27001, section), daySectionDefault(section)), daySectionDefault(section));
+      assert.equal(readDaySection(daySectionKey("operator:name/ñ", 27002, section), daySectionDefault(section)), daySectionDefault(section));
+    }
+  } finally { Reflect.deleteProperty(globalThis, "window"); }
 });

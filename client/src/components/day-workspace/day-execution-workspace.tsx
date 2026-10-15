@@ -1,3 +1,4 @@
+import { PersistedDaySection } from "./day-collapsible-section";
 import { memo, useEffect, useMemo, useState } from "react";
 import { Check, Pause, Play, RotateCcw, Search, Columns3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -233,6 +234,7 @@ export const DayExecutionWorkspace = memo(function DayExecutionWorkspace({
             Limpiar filtros
           </Button>
         </div>
+        <PersistedDaySection planId={planId} section="execution-filters" title="Filtros avanzados de ejecución">
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
           {selector("contestant", "Concursante", contestants)}
           {selector("template", "Tipo de tarea", templates)}
@@ -289,6 +291,7 @@ export const DayExecutionWorkspace = memo(function DayExecutionWorkspace({
             />
           </label>
         </div>
+        </PersistedDaySection>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
@@ -354,7 +357,8 @@ export const DayExecutionWorkspace = memo(function DayExecutionWorkspace({
       <p className="rounded-lg border p-3 text-sm text-muted-foreground" role="status">
         {!online ? "Sin conexión. Los registros se conservan; espera a recuperar la conexión para actuar." : contextQ.error ? "No se pudo verificar la autoridad de ejecución. Actualiza la jornada antes de actuar." : !context ? "Comprobando autoridad de ejecución…" : context.role === "viewer" ? "Tu perfil permite consultar la ejecución." : !context.planningReady ? "Es necesario aceptar el planning completo antes de iniciar tareas pendientes. Las actividades en curso conservan sus acciones autorizadas." : "Las acciones disponibles corresponden a tu autoridad sobre cada tarea. El servidor confirma cada registro."}
       </p>
-      <div className="overflow-x-auto rounded-xl border bg-card">
+      <PersistedDaySection planId={planId} section="execution-tasks" title={`Tareas de ejecución · ${visible.length} de ${tasks.length}`}>
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -508,6 +512,7 @@ export const DayExecutionWorkspace = memo(function DayExecutionWorkspace({
           </TableBody>
         </Table>
       </div>
+      </PersistedDaySection>
     </section>
   );
 });
