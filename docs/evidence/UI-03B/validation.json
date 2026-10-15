@@ -1,0 +1,62 @@
+{
+  "status": "PASS",
+  "base": "6353a2a2845610ee0f6bdc1bec6ee91a70af652d",
+  "branch": "codex/day-workspace-collapsible-remaining-tabs",
+  "typecheck": {
+    "command": "npm run check",
+    "exitCode": 0
+  },
+  "build": {
+    "command": "npm run build",
+    "exitCode": 0,
+    "warnings": [
+      "existing bundle size warning"
+    ]
+  },
+  "focal": {
+    "command": "node --import tsx --test client/src/lib/day-section-preferences.test.ts client/src/lib/day-execution-view.test.ts server/dayConfiguration.spec.ts server/effectiveConfigurationView.spec.ts",
+    "passed": 16,
+    "failed": 0
+  },
+  "chromium": {
+    "status": "PASS",
+    "canonicalTasks": 266,
+    "publicTablesCompared": 59,
+    "identicalAuthorities": true,
+    "operationalVisualWrites": 0,
+    "remoteWrites": 0,
+    "screenshots": 15,
+    "explicitConfiguration": {
+      "edit": 200,
+      "restore": 200,
+      "refresh": 200
+    },
+    "checks": [
+      "keyboard/ARIA, selectors, pending resource/config/staff drafts, filters, reload, no operational HTTP writes and all SQL authorities identical",
+      "mobile four tabs, day/user isolation with copied localStorage and admin/production/viewer permissions",
+      "explicit EDIT/RESTORE/REFRESH and revalidation/save errors remain visible outside collapsed editors"
+    ]
+  },
+  "protectedUi01FilesChanged": [],
+  "fullSolverRun": false,
+  "merged": false,
+  "deployed": false,
+  "integrationTypecheck": {
+    "command": "node node_modules/typescript/bin/tsc -p script/demo/tsconfig.integration.json",
+    "exitCode": 0
+  },
+  "componentTests": {
+    "command": "node --import tsx --test client/src/components/effective-configuration.test.tsx",
+    "passed": 4,
+    "failed": 0
+  },
+  "compatibility": {
+    "workspaceSetup": "PASS",
+    "liveExecutionAcceptedSnapshot": "PASS",
+    "productSourcesUnchangedSinceUiGate": true,
+    "selectorOnlyAdapters": [
+      "script/demo/smokeDayWorkspaceSetup.ts",
+      "script/demo/smokeLiveExecutionJourney.ts"
+    ]
+  }
+}

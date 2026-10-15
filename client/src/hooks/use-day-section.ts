@@ -1,12 +1,12 @@
 import { useCallback, useSyncExternalStore } from "react";
 import { useAuth } from "@/hooks/use-auth";
 
-import { daySectionDefaults, daySectionKey, daySectionChanged, readDaySection, writeDaySection, clearDaySectionMemory, type DaySection } from "@/lib/day-section-preferences";
+import { daySectionDefault, daySectionKey, daySectionChanged, readDaySection, writeDaySection, clearDaySectionMemory, type DaySection } from "@/lib/day-section-preferences";
 
 export function useDaySection(planId: number, section: DaySection): [boolean, (open: boolean) => void] {
   const { user } = useAuth();
   const key = user?.id ? daySectionKey(user.id, planId, section) : null;
-  const fallback = daySectionDefaults[section];
+  const fallback = daySectionDefault(section);
   const subscribe = useCallback((notify: () => void) => {
     const storage = (event: StorageEvent) => {
       if (event.key === key || event.key === null) {

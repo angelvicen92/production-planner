@@ -200,8 +200,7 @@ export async function runLiveExecutionJourney({ appUrl, url, anon, users, db, pl
     await db.query("INSERT INTO staff_people(name,role_type,is_active) VALUES('Redacción de ensayo','editorial',true)");
     await observer.reload();await observer.getByRole('tab',{name:'Roles',exact:true}).click();
     const staffWorkspace=observer.getByTestId('day-staff');await staffWorkspace.waitFor();
-    const zoneName=(await db.query('SELECT name FROM zones WHERE id=$1',[task.zone_id])).rows[0].name;
-    const staffCard=staffWorkspace.getByText(zoneName,{exact:true}).locator('..').locator('..').locator('..');
+    const staffCard=staffWorkspace.getByTestId(`section-staff-zone-${task.zone_id}`);
     await staffCard.getByRole('combobox').click();await observer.getByRole('option',{name:'Plató',exact:true}).click();
     for(const [role,name] of [['Producción','Operador de ensayo'],['Redacción','Redacción de ensayo']]){
       await staffCard.getByText(role,{exact:true}).locator('..').locator('..').getByRole('button',{name:'Editar',exact:true}).click();

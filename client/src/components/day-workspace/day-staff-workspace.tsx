@@ -19,6 +19,7 @@ import {
   RotateCcw,
   Settings2,
 } from "lucide-react";
+import { PersistedDaySection } from "./day-collapsible-section";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -401,23 +402,18 @@ export function PlanStaffRolesTab({
           cargar los datos antes de reintentar.
         </p>
       ) : null}
-      <Card className="border-border">
-        <CardHeader className="flex-row items-center justify-between">
-          <div>
-            <CardTitle>Roles por plató / espacio</CardTitle>
-            <div className="text-sm text-muted-foreground mt-1">
-              Regla: por cada plató decides si asignas por <b>Plató</b> o por{" "}
-              <b>Espacios</b>. En modo espacios no hay herencia.
-            </div>
-          </div>
-
-          <Button onClick={handleSave} disabled={busy || !canEdit}>
-            {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Guardar
-          </Button>
-        </CardHeader>
-
-        <CardContent className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground" role="status">
+          {busy ? "Cargando o guardando asignaciones…" : saveModes.isSuccess && saveAssignments.isSuccess ? "Asignaciones guardadas. Los cambios posteriores requieren Guardar." : "Los cambios locales requieren Guardar."}
+        </p>
+        <Button onClick={handleSave} disabled={busy || !canEdit}>
+          {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+          Guardar
+        </Button>
+      </div>
+      <PersistedDaySection planId={planId} section="staff-zones" title={`Roles por plató / espacio · ${zones.length} platós`}>
+        <div className="space-y-6">
+          <p className="text-sm text-muted-foreground">Regla: por cada plató decides si asignas por <b>Plató</b> o por <b>Espacios</b>. En modo espacios no hay herencia.</p>
           {zones.length === 0 ? (
             <div className="text-sm text-muted-foreground">
               No hay platós/zones.
@@ -438,10 +434,8 @@ export function PlanStaffRolesTab({
                   });
 
                 return (
-                  <Card key={String(zid)} className="border-muted">
-                    <CardHeader className="pb-3">
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                        <div className="font-semibold">{zoneName}</div>
+                  <PersistedDaySection key={String(zid)} planId={planId} section={`staff-zone-${zid}`} title={`${zoneName} · ${zoneSpaces.length} espacios`}>
+                      <div className="mb-3 flex flex-wrap items-center gap-3">
 
                         <div className="flex items-center gap-2">
                           <Label className="text-sm text-muted-foreground">
@@ -463,9 +457,7 @@ export function PlanStaffRolesTab({
                           </Select>
                         </div>
                       </div>
-                    </CardHeader>
-
-                    <CardContent className="space-y-6">
+                    <div className="space-y-6">
                       {mode === "zone" ? (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                           <AssignmentPicker
@@ -542,23 +534,17 @@ export function PlanStaffRolesTab({
                           />
                         </div>
                       )}
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </PersistedDaySection>
                 );
               })}
             </>
           )}
-          {/* ✅ Reality: equipos itinerantes (siempre aparte, NO es modo del plató) */}
-          <Card className="border-border/60">
-            <CardHeader className="pb-3">
-              <div className="font-semibold">Reality (equipos itinerantes)</div>
-              <div className="text-sm text-muted-foreground">
-                Aparecen en “Por espacios” como columnas lógicas, pero hacen
-                tareas en otros sitios.
-              </div>
-            </CardHeader>
-
-            <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        </div>
+      </PersistedDaySection>
+      <PersistedDaySection planId={planId} section="staff-reality" title={`Reality (equipos itinerantes) · ${(itinerantTeams as any[]).filter(t => !!t?.isActive).length} equipos activos`}>
+        <p className="mb-3 text-sm text-muted-foreground">Aparecen en “Por espacios” como columnas lógicas, pero hacen tareas en otros sitios.</p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {(itinerantTeams as any[]).filter((t: any) => !!t?.isActive)
                 .length === 0 ? (
                 <div className="text-sm text-muted-foreground">
@@ -580,11 +566,8 @@ export function PlanStaffRolesTab({
                     );
 
                     return (
-                      <Card key={String(tid)} className="border-border/60">
-                        <CardHeader className="pb-3">
-                          <div className="font-medium">{teamName}</div>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
+                      <PersistedDaySection key={String(tid)} planId={planId} section={`staff-team-${tid}`} title={teamName}>
+                        <div className="space-y-4">
                           <AssignmentPicker
                             title="Producción"
                             staffRole="production"
@@ -597,15 +580,13 @@ export function PlanStaffRolesTab({
                             scopeType="itinerant_team"
                             itinerantTeamId={tid}
                           />
-                        </CardContent>
-                      </Card>
+                        </div>
+                      </PersistedDaySection>
                     );
                   })
               )}
-            </CardContent>
-          </Card>
-        </CardContent>
-      </Card>
+        </div>
+      </PersistedDaySection>
 
       <Alert>
         <AlertTitle>Importante</AlertTitle>

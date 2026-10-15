@@ -1,5 +1,5 @@
 import { Label } from "@/components/ui/label";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { PersistedDaySection } from "./day-collapsible-section";
 import { useToast } from "@/hooks/use-toast";
 import { api, buildUrl } from "@shared/routes";
 import { apiRequest } from "@/lib/api";
@@ -442,13 +442,8 @@ export function PlanResourcesTab({
         </p>
       ) : null}
       {/* Añadir recurso adhoc */}
-      <Card className="border-border">
-        <CardHeader className="py-3">
-          <CardTitle className="text-base">
-            Añadir recurso solo para este plan
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0 space-y-3">
+      <PersistedDaySection planId={planId} section="resources-add" title="Añadir recurso solo para este plan">
+        <div className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
               <Label>Tipo</Label>
@@ -509,18 +504,12 @@ export function PlanResourcesTab({
           >
             Añadir
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </PersistedDaySection>
 
       {/* Recursos por plató (override dentro del plan) */}
-      <Card className="border-border">
-        <CardHeader className="py-3">
-          <CardTitle className="text-base">
-            Recursos por plató (este plan)
-          </CardTitle>
-        </CardHeader>
-
-        <CardContent className="pt-0 space-y-3">
+      <PersistedDaySection planId={planId} section="resources-zones" title={`Recursos por plató (este plan) · ${(zones as any[]).length} platós`}>
+        <div className="space-y-3">
           {(zonesLoading || spacesLoading) && (
             <p className="text-sm text-muted-foreground">
               Cargando zonas/espacios…
@@ -562,15 +551,9 @@ export function PlanResourcesTab({
                   const list = spacesByZone.get(zid) ?? [];
 
                   return (
-                    <div key={zid} className="border rounded-lg p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="font-medium truncate">{z?.name}</div>
-                          <div className="text-xs text-muted-foreground">
-                            Asignados: {assigned} · Espacios: {list.length}
-                          </div>
-                        </div>
-
+                    <PersistedDaySection key={zid} planId={planId} section={`resources-zone-${zid}`}
+                      title={`${z?.name ?? "Plató sin nombre"} · ${assigned} asignados · ${(zoneAssignments[zid] ?? []).filter(id => rows.some(row => row.id === id && row.isAvailable)).length} disponibles · ${list.length} espacios`}
+                      actions={
                         <div className="flex items-center gap-2">
                           <Button
                             variant="outline"
@@ -591,8 +574,7 @@ export function PlanResourcesTab({
                             Requisitos
                           </Button>
                         </div>
-                      </div>
-
+                      }>
                       {list.length > 0 && (
                         <div className="mt-3 space-y-2">
                           {spaceAssignError && (
@@ -729,13 +711,13 @@ export function PlanResourcesTab({
                           })}
                         </div>
                       )}
-                    </div>
+                    </PersistedDaySection>
                   );
                 })}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </PersistedDaySection>
 
       {/* Dialog: editar recursos del PLATÓ dentro del plan */}
       <Dialog
@@ -1321,17 +1303,8 @@ export function PlanResourcesTab({
         const available = list.filter((x) => x.isAvailable).length;
 
         return (
-          <Card key={t.id}>
-            <CardHeader className="py-3">
-              <CardTitle className="text-base flex justify-between items-center">
-                <span>{t.name}</span>
-                <span className="text-sm text-muted-foreground">
-                  {available}/{list.length}
-                </span>
-              </CardTitle>
-            </CardHeader>
-
-            <CardContent className="pt-0 space-y-2">
+          <PersistedDaySection key={t.id} planId={planId} section={`resources-type-${t.id}`} title={`${t.name} · ${available}/${list.length} disponibles`}>
+            <div className="space-y-2">
               {list.map((r) => (
                 <div
                   key={r.id}
@@ -1382,6 +1355,7 @@ export function PlanResourcesTab({
                     <Input disabled={!canEdit}
                       defaultValue={r.name}
                       onBlur={async (e) => {
+                        if (e.relatedTarget instanceof Element && e.relatedTarget.closest("[data-day-section-trigger]")) return;
                         const name = e.currentTarget.value.trim();
                         if (!name || name === r.name) return;
 
@@ -1451,8 +1425,8 @@ export function PlanResourcesTab({
                   ) : null}
                 </div>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </PersistedDaySection>
         );
       })}
     </div>
