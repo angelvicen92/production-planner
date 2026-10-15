@@ -177,3 +177,32 @@ the identical experiment with `Connection: close` passes. The native regression'
 Node-only request helper therefore uses fresh connections. It does not retry
 mutations, alter browser/product polling or change any search limit. The
 expected observable is a received persisted result followed by restart checks.
+
+## Final validation / known dispatch blocker
+
+[Final validation](A2-27002-validation.json), code head `5f1d6a2`:
+
+- Baseline CI: **PASS** (TypeScript/build/migration sequence).
+- Complete product suite and the new focal tests: **PASS**.
+- Native 52-break recovery: **PASS in CI**, including receiving a real proposal,
+  accepting S1 and returning to S0 while preserving history/configuration/rows.
+- Full native A2 HTTP/Auth/UI, two deterministic orders, Autopilot and historical
+  preservation: **PASS**; complete preferences/configuration/Stages job: **PASS**.
+- Canonical template benchmark run twice locally: identical stdout and generated
+  JSON/Markdown; no historical Evidence diff; diff hygiene: **PASS**.
+
+The [manual Planner Engine dispatch](https://github.com/angelvicen92/production-planner/actions/runs/38681375856)
+is **not globally green**: its workflow-dispatch-only historical ASST-010 step
+expects `PROPOSAL` on its second single-task scope and receives
+`ASSISTED_SCOPE_INCOMPLETE / SEARCH_TIME_LIMIT_REACHED`. Its injected canonical
+input bypasses the modified production reader. The exact unchanged test also
+fails on base `621303a` under Node 20.20.2 (exit 1 / `ERR_TEST_FAILURE`,
+501,819.5 ms); the local runner does not expose that base failure's inner
+exception, so identical inner causes are not asserted. This diagnostic and its
+assertions/budgets are left intact. Its failure stops later steps in that manual
+job; the skipped non-diagnostic template/determinism checks were run locally.
+This historical step is not run on the PR event. No solver fix or green-CI
+exception is introduced for it.
+
+The final documentation commit records these results without changing the
+validated runtime sources. No shared database writes or merge were performed.
