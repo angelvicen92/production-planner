@@ -1,0 +1,46 @@
+{
+  "base": "12a5d2d4e4592c8660d43c2ccebb609d4f8faa80",
+  "localNode": "v24.19.0",
+  "focal": {
+    "status": "PASS",
+    "tests": 23,
+    "command": "tsx --test server/taskTemplateContract.spec.ts server/apiAuthorization.spec.ts server/taskTemplateSnapshot.spec.ts engine/buildInput.taskTemplateSnapshot.spec.ts engine/planner-next/participantTransition.spec.ts"
+  },
+  "typescript": "PASS",
+  "integrationTypescript": "PASS",
+  "build": "PASS",
+  "migrationSequence": "PASS",
+  "officialChecksums": "PASS",
+  "diffHygiene": "PASS",
+  "nativeU02": {
+    "status": "PASS",
+    "migrations": 97,
+    "remoteWrites": 0,
+    "snapshotDays": 3
+  },
+  "nativeU03aRegression": {
+    "status": "PASS",
+    "patchRequests": 42,
+    "otherDeniedWrites": 20,
+    "remoteWrites": 0
+  },
+  "canonicalA2": {
+    "status": "PASS",
+    "runs": 2,
+    "obligations": 266,
+    "deterministicStdout": true,
+    "deterministicArtifacts": true,
+    "trackedArtifactsUnchanged": true
+  },
+  "productSuite": {
+    "selection": "Same 381 files as Planner Engine CI",
+    "excludedHistoricalDiagnostics": [
+      "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts",
+      "server/benchmarks/runA2Assist7Evidence.spec.ts"
+    ],
+    "resultAuthority": "Final local suite result and hosted CI are recorded in the pull request description; live head checks are authoritative."
+  },
+  "hostedCI": {
+    "authority": "Live checks on the pull request head; reported in the PR description after completion."
+  }
+}

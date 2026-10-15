@@ -135,6 +135,33 @@ test("missing daily snapshot is a hard error and never falls back to the global 
   assert.equal(fixture.getGlobalTemplateReadCount(), 0);
 });
 
+test("participant margins project null inheritance and explicit zero independently from snapshot and instance", async () => {
+  for (const [before, after] of [[null, null], [0, null], [null, 0], [0, 15], [20, 0], [5, 15]] as const) {
+    const snapshot = normalizeTaskTemplateCatalogEntry({
+      id: 4, name: "Margin snapshot", defaultDuration: 10, defaultCameras: 0,
+      participantMarginBeforeMinutes: before, participantMarginAfterMinutes: after,
+    }, "inherited");
+    for (const [instanceBefore, instanceAfter] of [[null, null], [0, null], [null, 0], [0, 20], [5, 0]] as const) {
+      const fixture = fakeStorage({ snapshots: [snapshot] });
+      const details = fixture.storage.getPlanEngineInputDetails;
+      fixture.storage.getPlanEngineInputDetails = async () => {
+        const original = await details();
+        return {...original, tasks: original.tasks.map((task: object) => Object.freeze({...task,
+          participant_margin_before_minutes: instanceBefore,
+          participant_margin_after_minutes: instanceAfter,
+        }))};
+      };
+      const input = await buildEngineInput(1, fixture.storage);
+      const task = input.tasks.find(entry => entry.id === 40)!;
+      assert.equal(task.participantMarginBeforeMinutes, instanceBefore ?? before);
+      assert.equal(task.participantMarginAfterMinutes, instanceAfter ?? after);
+      assert.equal(fixture.getGlobalTemplateReadCount(), 0);
+      assert.equal(snapshot.participantMarginBeforeMinutes, before);
+      assert.equal(snapshot.participantMarginAfterMinutes, after);
+    }
+  }
+});
+
 test("snapshot order does not change metadata or task semantics", async () => {
   const first = normalizeTaskTemplateCatalogEntry({ id: 1, name: "Unused", defaultDuration: 10, defaultCameras: 0 }, "legacy_backfill");
   const base = fakeStorage();

@@ -1,0 +1,691 @@
+{
+  "status": "PASS",
+  "mode": "REAL_DISPOSABLE_PRODUCT_INTEGRATION",
+  "nodeVersion": "v24.19.0",
+  "remoteWrites": 0,
+  "base": "12a5d2d4e4592c8660d43c2ccebb609d4f8faa80",
+  "startedAt": "2026-10-15T09:18:22.468Z",
+  "finishedAt": "2026-10-15T09:19:32.212Z",
+  "sourceHashes": {
+    "server/storage.ts": "5e8683660da088429cb599a18bbd5c8e5836249a231ec379bb6b893e9ec80d31",
+    "server/apiAuthorization.ts": "6da79ebebb68a0e7d79e435cdfc165a9439617425912bbc7d941f87c0633fd51",
+    "shared/routes.ts": "4266188e5cbbfb4d5637d62a345b6d655f75f3a76bc6cb2d17de11d9bc3eca04",
+    "shared/schema.ts": "4e74d36dd7a17859c26aca090bc5c470d40d4bb712b2256bc7416cc30af1316d",
+    "client/src/pages/settings.tsx": "2d0e6a46dc55b152ec7807ae56574e9aa04c983f042f47df83a61f45c8145404",
+    "client/src/hooks/use-tasks.ts": "f4083dbbbdcab46a602abf511e34f9b846197a04be0fda366f033a0a6d8118ab",
+    "script/demo/smokeA2Integration.ts": "e3b740b8fa44dfe4321273d0dfc5269222df769748fab02db39378794c7274e8",
+    "script/demo/smokeTemplateCreation.ts": "4189e6f6a17bc3add6625f08bda5e21a0e7a35522d4488a1f2b9304a0f886aa7"
+  },
+  "migrationCount": 97,
+  "historicalPreservation": {
+    "oldPlanId": 27001,
+    "oldObligations": 266,
+    "oldStages": 11,
+    "otherObligations": 333,
+    "newDaySeedPlacements": 0
+  },
+  "checks": [
+    "entire native application migration ledger",
+    "real password login for five Auth identities",
+    "historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import",
+    "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved",
+    "unchanged baseline reproduces real UI create rejection, omitted margins and native location_label failure without writes",
+    "real admin create/edit/reload preserves all supported fields, null, zero and positive margins",
+    "invalid values and unauthorized HTTP/browser writes preserve every observed table",
+    "real future plan snapshot and EngineInput preserve zero/null/positive overrides; previous day snapshot unchanged; existing max boundary reused",
+    "old day, 11 prior Stages, 333 other tasks and historical catalog remain literal after real UI/Autopilot/execution"
+  ],
+  "candidate": [
+    {
+      "operation": "real UI create",
+      "status": 201,
+      "payload": {
+        "name": "U02 candidate create",
+        "defaultDuration": 30,
+        "defaultCameras": 0,
+        "abbrev": "U02-UI",
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 10,
+        "uiColor": "#94a3b8",
+        "uiColorSecondary": null,
+        "dependsOnTemplateIds": [],
+        "hasDependency": false,
+        "itinerantTeamRequirement": "none",
+        "itinerantTeamId": null,
+        "zoneId": null,
+        "spaceId": null,
+        "autoCreateOnContestantCreate": false
+      },
+      "data": {
+        "id": 20033,
+        "name": "U02 candidate create",
+        "defaultDuration": 30,
+        "defaultCameras": 0,
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 10,
+        "autoCreateOnContestantCreate": false,
+        "abbrev": "U02-UI",
+        "defaultComment1Color": null,
+        "defaultComment2Color": null,
+        "zoneId": null,
+        "spaceId": null,
+        "requiresAuxiliar": false,
+        "requiresCoach": false,
+        "requiresPresenter": false,
+        "exclusiveAuxiliar": false,
+        "setupId": null,
+        "rulesJson": null,
+        "resourceRequirements": null,
+        "uiColor": "#94a3b8",
+        "uiColorSecondary": null,
+        "itinerantTeamRequirement": "none",
+        "itinerantTeamId": null,
+        "dependsOnTemplateIds": [],
+        "hasDependency": false,
+        "dependsOnTemplateId": null
+      }
+    },
+    {
+      "operation": "HTTP full PATCH",
+      "value": {
+        "id": 20032,
+        "name": "U02 edit probe",
+        "abbrev": "U02",
+        "defaultComment1Color": "#123456",
+        "defaultComment2Color": "#abcdef",
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 15,
+        "defaultDuration": 10,
+        "defaultCameras": 0,
+        "autoCreateOnContestantCreate": false,
+        "dependsOnTemplateIds": [
+          20033
+        ],
+        "zoneId": null,
+        "spaceId": null,
+        "requiresAuxiliar": false,
+        "requiresCoach": true,
+        "requiresPresenter": true,
+        "exclusiveAuxiliar": true,
+        "setupId": 7,
+        "rulesJson": {
+          "retained": {
+            "value": 0
+          }
+        },
+        "resourceRequirements": {
+          "anyOf": [],
+          "byItem": {
+            "4": 1
+          },
+          "byType": {
+            "3": 2
+          }
+        },
+        "uiColor": "#aabbcc88",
+        "uiColorSecondary": "#11223344",
+        "itinerantTeamRequirement": "any",
+        "itinerantTeamId": null,
+        "hasDependency": true,
+        "dependsOnTemplateId": 20033
+      }
+    },
+    {
+      "operation": "HTTP complete create and GET",
+      "beforeMargin": null,
+      "afterMargin": null,
+      "status": 201
+    },
+    {
+      "operation": "HTTP complete create and GET",
+      "beforeMargin": null,
+      "afterMargin": 0,
+      "status": 201
+    },
+    {
+      "operation": "HTTP complete create and GET",
+      "beforeMargin": null,
+      "afterMargin": 15,
+      "status": 201
+    },
+    {
+      "operation": "HTTP complete create and GET",
+      "beforeMargin": 0,
+      "afterMargin": null,
+      "status": 201
+    },
+    {
+      "operation": "HTTP complete create and GET",
+      "beforeMargin": 0,
+      "afterMargin": 0,
+      "status": 201
+    },
+    {
+      "operation": "HTTP complete create and GET",
+      "beforeMargin": 0,
+      "afterMargin": 15,
+      "status": 201
+    },
+    {
+      "operation": "HTTP complete create and GET",
+      "beforeMargin": 5,
+      "afterMargin": null,
+      "status": 201
+    },
+    {
+      "operation": "HTTP complete create and GET",
+      "beforeMargin": 5,
+      "afterMargin": 0,
+      "status": 201
+    },
+    {
+      "operation": "HTTP complete create and GET",
+      "beforeMargin": 5,
+      "afterMargin": 15,
+      "status": 201
+    }
+  ],
+  "denials": [
+    {
+      "role": "production",
+      "method": "POST",
+      "path": "/api/task-templates",
+      "status": 403
+    },
+    {
+      "role": "production",
+      "method": "PATCH",
+      "path": "/api/ta/20032",
+      "status": 403
+    },
+    {
+      "role": "production",
+      "method": "PATCH",
+      "path": "/API/tA/20032/",
+      "status": 403
+    },
+    {
+      "role": "production",
+      "method": "DELETE",
+      "path": "/api/task-templates/20032",
+      "status": 403
+    },
+    {
+      "role": "aux",
+      "method": "POST",
+      "path": "/api/task-templates",
+      "status": 403
+    },
+    {
+      "role": "aux",
+      "method": "PATCH",
+      "path": "/api/ta/20032",
+      "status": 403
+    },
+    {
+      "role": "aux",
+      "method": "PATCH",
+      "path": "/API/tA/20032/",
+      "status": 403
+    },
+    {
+      "role": "aux",
+      "method": "DELETE",
+      "path": "/api/task-templates/20032",
+      "status": 403
+    },
+    {
+      "role": "viewer",
+      "method": "POST",
+      "path": "/api/task-templates",
+      "status": 403
+    },
+    {
+      "role": "viewer",
+      "method": "PATCH",
+      "path": "/api/ta/20032",
+      "status": 403
+    },
+    {
+      "role": "viewer",
+      "method": "PATCH",
+      "path": "/API/tA/20032/",
+      "status": 403
+    },
+    {
+      "role": "viewer",
+      "method": "DELETE",
+      "path": "/api/task-templates/20032",
+      "status": 403
+    },
+    {
+      "role": "norole",
+      "method": "POST",
+      "path": "/api/task-templates",
+      "status": 403
+    },
+    {
+      "role": "norole",
+      "method": "PATCH",
+      "path": "/api/ta/20032",
+      "status": 403
+    },
+    {
+      "role": "norole",
+      "method": "PATCH",
+      "path": "/API/tA/20032/",
+      "status": 403
+    },
+    {
+      "role": "norole",
+      "method": "DELETE",
+      "path": "/api/task-templates/20032",
+      "status": 403
+    },
+    {
+      "role": "anonymous",
+      "method": "POST",
+      "path": "/api/task-templates",
+      "status": 401
+    },
+    {
+      "role": "anonymous",
+      "method": "PATCH",
+      "path": "/api/ta/20032",
+      "status": 401
+    },
+    {
+      "role": "anonymous",
+      "method": "PATCH",
+      "path": "/API/tA/20032/",
+      "status": 401
+    },
+    {
+      "role": "anonymous",
+      "method": "DELETE",
+      "path": "/api/task-templates/20032",
+      "status": 401
+    },
+    {
+      "role": "invalid-token",
+      "method": "POST",
+      "path": "/api/task-templates",
+      "status": 401
+    },
+    {
+      "role": "invalid-token",
+      "method": "PATCH",
+      "path": "/api/ta/20032",
+      "status": 401
+    },
+    {
+      "role": "invalid-token",
+      "method": "PATCH",
+      "path": "/API/tA/20032/",
+      "status": 401
+    },
+    {
+      "role": "invalid-token",
+      "method": "DELETE",
+      "path": "/api/task-templates/20032",
+      "status": 401
+    },
+    {
+      "role": "production",
+      "operation": "real UI settings route denied",
+      "writes": 0
+    },
+    {
+      "role": "aux",
+      "operation": "real UI settings route denied",
+      "writes": 0
+    },
+    {
+      "role": "viewer",
+      "operation": "real UI settings route denied",
+      "writes": 0
+    }
+  ],
+  "invalid": [
+    {
+      "operation": "real UI invalid edit",
+      "cases": 6,
+      "writes": 0
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginBeforeMinutes",
+      "value": -1,
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginBeforeMinutes",
+      "value": -1,
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginBeforeMinutes",
+      "value": 1.5,
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginBeforeMinutes",
+      "value": 1.5,
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginBeforeMinutes",
+      "value": "5",
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginBeforeMinutes",
+      "value": "5",
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginBeforeMinutes",
+      "value": "",
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginBeforeMinutes",
+      "value": "",
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginBeforeMinutes",
+      "value": true,
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginBeforeMinutes",
+      "value": true,
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginBeforeMinutes",
+      "value": {},
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginBeforeMinutes",
+      "value": {},
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginBeforeMinutes",
+      "value": 2147483648,
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginBeforeMinutes",
+      "value": 2147483648,
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginAfterMinutes",
+      "value": -1,
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginAfterMinutes",
+      "value": -1,
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginAfterMinutes",
+      "value": 1.5,
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginAfterMinutes",
+      "value": 1.5,
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginAfterMinutes",
+      "value": "5",
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginAfterMinutes",
+      "value": "5",
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginAfterMinutes",
+      "value": "",
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginAfterMinutes",
+      "value": "",
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginAfterMinutes",
+      "value": true,
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginAfterMinutes",
+      "value": true,
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginAfterMinutes",
+      "value": {},
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginAfterMinutes",
+      "value": {},
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginAfterMinutes",
+      "value": 2147483648,
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginAfterMinutes",
+      "value": 2147483648,
+      "status": 400
+    }
+  ],
+  "snapshots": [
+    {
+      "planId": 27003,
+      "snapshot": {
+        "id": "109074",
+        "plan_id": 27003,
+        "source_template_id": 20043,
+        "contract_version": 2,
+        "source": "inherited",
+        "template_name": "U02 snapshot probe",
+        "default_duration": 10,
+        "default_cameras": 0,
+        "default_zone_id": null,
+        "default_space_id": null,
+        "auto_create_on_contestant_create": false,
+        "requires_auxiliar": false,
+        "requires_coach": false,
+        "requires_presenter": false,
+        "exclusive_auxiliar": false,
+        "has_dependency": false,
+        "dependency_template_ids": [],
+        "resource_requirements": null,
+        "itinerant_team_requirement": "none",
+        "itinerant_team_id": null,
+        "allowed_itinerant_team_ids": [],
+        "setup_id": null,
+        "created_at": "2026-10-15T09:19:25.127Z",
+        "updated_at": "2026-10-15T09:19:25.127Z",
+        "participant_margin_before_minutes": 0,
+        "participant_margin_after_minutes": 15
+      },
+      "projected": {
+        "before": 0,
+        "after": 15
+      }
+    },
+    {
+      "planId": 27004,
+      "snapshot": {
+        "id": "109117",
+        "plan_id": 27004,
+        "source_template_id": 20043,
+        "contract_version": 2,
+        "source": "inherited",
+        "template_name": "U02 snapshot probe",
+        "default_duration": 10,
+        "default_cameras": 0,
+        "default_zone_id": null,
+        "default_space_id": null,
+        "auto_create_on_contestant_create": false,
+        "requires_auxiliar": false,
+        "requires_coach": false,
+        "requires_presenter": false,
+        "exclusive_auxiliar": false,
+        "has_dependency": false,
+        "dependency_template_ids": [],
+        "resource_requirements": null,
+        "itinerant_team_requirement": "none",
+        "itinerant_team_id": null,
+        "allowed_itinerant_team_ids": [],
+        "setup_id": null,
+        "created_at": "2026-10-15T09:19:26.826Z",
+        "updated_at": "2026-10-15T09:19:26.826Z",
+        "participant_margin_before_minutes": 20,
+        "participant_margin_after_minutes": 0
+      },
+      "projected": {
+        "before": 20,
+        "after": 0
+      }
+    },
+    {
+      "planId": 27005,
+      "snapshot": {
+        "id": "109160",
+        "plan_id": 27005,
+        "source_template_id": 20043,
+        "contract_version": 2,
+        "source": "inherited",
+        "template_name": "U02 snapshot probe",
+        "default_duration": 10,
+        "default_cameras": 0,
+        "default_zone_id": null,
+        "default_space_id": null,
+        "auto_create_on_contestant_create": false,
+        "requires_auxiliar": false,
+        "requires_coach": false,
+        "requires_presenter": false,
+        "exclusive_auxiliar": false,
+        "has_dependency": false,
+        "dependency_template_ids": [],
+        "resource_requirements": null,
+        "itinerant_team_requirement": "none",
+        "itinerant_team_id": null,
+        "allowed_itinerant_team_ids": [],
+        "setup_id": null,
+        "created_at": "2026-10-15T09:19:27.712Z",
+        "updated_at": "2026-10-15T09:19:27.712Z",
+        "participant_margin_before_minutes": null,
+        "participant_margin_after_minutes": null
+      },
+      "projected": {
+        "before": null,
+        "after": null
+      }
+    }
+  ],
+  "original": {
+    "task_templates": {
+      "count": 31,
+      "hash": "5002cab84d8cc5df2c78c17a372050dc"
+    },
+    "plan_task_template_snapshots": {
+      "count": 62,
+      "hash": "6a5d9470811f668e880612af7fcfd03e"
+    },
+    "plans": {
+      "count": 3,
+      "hash": "33bdbf1856f04d6cd0b1bc8443da6799"
+    },
+    "daily_tasks": {
+      "count": 865,
+      "hash": "b6981d3df512a31d7363482a461d0350"
+    },
+    "locks": {
+      "count": 1,
+      "hash": "6a0eb663a3bc73b8502d67cc175d8ab2"
+    },
+    "assisted_planning_stages": {
+      "count": 11,
+      "hash": "574d1f2e05feb71a18f28fa85281c5d0"
+    },
+    "plan_config_revisions": {
+      "count": 1,
+      "hash": "062696712a2cd43ba78ed98bdfdb7431"
+    }
+  },
+  "final": {
+    "task_templates": {
+      "count": 31,
+      "hash": "5002cab84d8cc5df2c78c17a372050dc"
+    },
+    "plan_task_template_snapshots": {
+      "count": 62,
+      "hash": "6a5d9470811f668e880612af7fcfd03e"
+    },
+    "plans": {
+      "count": 3,
+      "hash": "33bdbf1856f04d6cd0b1bc8443da6799"
+    },
+    "daily_tasks": {
+      "count": 865,
+      "hash": "b6981d3df512a31d7363482a461d0350"
+    },
+    "locks": {
+      "count": 1,
+      "hash": "6a0eb663a3bc73b8502d67cc175d8ab2"
+    },
+    "assisted_planning_stages": {
+      "count": 11,
+      "hash": "574d1f2e05feb71a18f28fa85281c5d0"
+    },
+    "plan_config_revisions": {
+      "count": 1,
+      "hash": "062696712a2cd43ba78ed98bdfdb7431"
+    }
+  }
+}

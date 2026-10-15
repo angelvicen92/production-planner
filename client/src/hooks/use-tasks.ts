@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
-import { DailyTask, Lock, TaskTemplate, InsertDailyTask, InsertTaskTemplate } from "@shared/schema";
+import { DailyTask, Lock, TaskTemplate, InsertDailyTask } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { api, buildUrl } from "@shared/routes";
+import { api, buildUrl, type CreateTaskTemplateInput, type UpdateTaskTemplateInput } from "@shared/routes";
 import { contestantsQueryKey, planLocksQueryKey, planQueryKey, planTasksQueryKey } from "@/lib/plan-query-keys";
 
 export function useTaskTemplates() {
@@ -42,11 +42,11 @@ export function useUpdateTaskTemplate() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (args: { id: number; patch: Partial<InsertTaskTemplate> }) =>
+    mutationFn: (args: { id: number; patch: UpdateTaskTemplateInput }) =>
       apiRequest<TaskTemplate>(
         "PATCH",
         buildUrl(api.taskTemplates.update.path, { id: args.id }),
-        args.patch,
+        api.taskTemplates.update.input.parse(args.patch),
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.taskTemplates.list.path] });
@@ -67,8 +67,8 @@ export function useCreateTaskTemplate() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (data: InsertTaskTemplate) => 
-      apiRequest<TaskTemplate>("POST", api.taskTemplates.create.path, data),
+    mutationFn: (data: CreateTaskTemplateInput) =>
+      apiRequest<TaskTemplate>("POST", api.taskTemplates.create.path, api.taskTemplates.create.input.parse(data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.taskTemplates.list.path] });
       toast({
@@ -76,6 +76,7 @@ export function useCreateTaskTemplate() {
         description: "Template created successfully",
       });
     },
+    onError: (err: Error) => toast({title: "No se pudo crear la plantilla", description: err.message, variant: "destructive"}),
   });
 }
 
