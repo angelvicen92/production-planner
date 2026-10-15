@@ -44,7 +44,8 @@ if(process.argv.includes('--app')){
  const liveExecution=process.argv.includes('--live-execution');
  const warRoom=process.argv.includes('--war-room-snapshot');
  const controlRoom=process.argv.includes('--control-room-snapshot');
- const liveSnapshot=process.argv.includes('--live-execution-snapshot')||warRoom||controlRoom;
+ const collapsibleSections=process.argv.includes('--collapsible-sections');
+ const liveSnapshot=process.argv.includes('--live-execution-snapshot')||warRoom||controlRoom||collapsibleSections;
  assert.ok(!liveSnapshot||historicalTopology,'accepted snapshot replay requires --historical-topology');
  assert.ok(!liveExecution||full,'--live-execution requires a complete accepted baseline (--full)');
  const workspaceSetup=process.argv.includes("--workspace-setup");
@@ -66,6 +67,7 @@ if(process.argv.includes('--app')){
  runtimeFiles.push('script/demo/smokeA2HistoricalScopeJourney.ts','engine/planner-next/integration/engineInputAdapter.ts','script/demo/seedA2HistoricalRehearsal.ts','script/demo/a2TopologyMetrics.ts','script/demo/fixtures/a2-legacy-import.json.gz','script/demo/a2SpatialTopology.ts','client/src/lib/planning-view-policy.ts','script/demo/smokeA2ManualSnapshotJourney.ts','script/demo/smokeA2ViewsHistoryJourney.ts','shared/assistedStageTiming.ts','client/src/lib/contestant-lane-sort.ts','client/src/components/planning/stage-history-timing.tsx','client/src/components/planning-timeline.tsx','client/src/pages/plan-details.tsx');
  runtimeFiles.push('engine/planner-next/mainFlowPatterns.ts','script/demo/smokeMainFlowPreferenceJourney.ts','shared/mainFlowPreference.ts','server/mainFlowPreference.ts','server/dayConfigurationService.ts','server/effectiveConfigurationView.ts','client/src/components/effective-configuration.tsx','client/src/components/main-flow-preference-editor.tsx','client/src/lib/main-flow-preference-result.ts','engine/planner-next/mainFlowMeal.ts','engine/planner-next/anonymousPipelineWitness.ts','engine/planner-next/exactMainAndFeederCore.ts');
  runtimeFiles.push('client/index.html','client/src/index.css','server/effectiveConfigurationHttp.ts','client/src/hooks/use-plan-staff.ts','client/src/components/planning/planning-workspace-layout.tsx','client/src/components/planning/planning-stage-toolbar.tsx','client/src/lib/day-execution-view.ts','client/src/lib/planning-workspace-preferences.ts','script/demo/smokeDayWorkspaceJourney.ts','script/demo/smokeDayWorkspaceSetup.ts',...readdirSync('client/src/components/day-workspace').filter(name=>name.endsWith('.tsx')).map(name=>`client/src/components/day-workspace/${name}`));
+ if(collapsibleSections)runtimeFiles.push('script/demo/smokeCollapsibleSections.ts','client/src/hooks/use-day-section.ts','client/src/lib/day-section-preferences.ts','client/src/components/day-workspace/day-collapsible-section.tsx');
  const hashes=()=>Object.fromEntries(runtimeFiles.map(file=>[file,createHash('sha256').update(readFileSync(file)).digest('hex')]));
  if(warRoom)runtimeFiles.push('script/demo/smokeWarRoomJourney.ts','server/incidents.ts','server/incidentErrors.ts','shared/incidents.ts','client/src/pages/my-day.tsx','client/src/pages/war-room.tsx','client/src/hooks/use-war-room.ts','client/src/hooks/use-plan-realtime.ts','client/src/lib/war-room-store.ts','client/src/pages/dashboard.tsx','client/src/pages/call-sheet.tsx','server/apiAuthorization.ts','shared/routes.ts','shared/schema.ts','supabase/migrations/094_operational_incidents.sql');
  runtimeFiles.push('client/src/hooks/use-execution-context.ts','client/src/hooks/use-tasks.ts','client/src/hooks/use-production-clock.ts','shared/execution.ts','script/demo/smokeLiveExecutionJourney.ts');
@@ -116,7 +118,7 @@ if(process.argv.includes('--app')){
   const restPort=start('rest',images.rest,3000,{PGRST_DB_URI:`postgres://authenticator:${password}@db:5432/postgres`,PGRST_DB_SCHEMAS:'public',PGRST_DB_ANON_ROLE:'anon',PGRST_JWT_SECRET:secret,PGRST_SERVER_PORT:'3000'});
   const transport:any[]=[];report.transport=transport;
   gateway=http.createServer((req,res)=>{
-   res.setHeader('Access-Control-Allow-Origin',(controlRoom||templateAuthorization||templateCreation)&&baselineUrl&&req.headers.origin===baselineUrl?baselineUrl:appUrl);res.setHeader('Access-Control-Allow-Headers',req.headers['access-control-request-headers']??'authorization,apikey,content-type');res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,PATCH,DELETE,OPTIONS');
+   res.setHeader('Access-Control-Allow-Origin',(controlRoom||templateAuthorization||templateCreation||collapsibleSections)&&baselineUrl&&req.headers.origin===baselineUrl?baselineUrl:appUrl);res.setHeader('Access-Control-Allow-Headers',req.headers['access-control-request-headers']??'authorization,apikey,content-type');res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,PATCH,DELETE,OPTIONS');
    if(req.method==='OPTIONS'){res.writeHead(204);res.end();return;}
    const path=req.url??'/',isAuth=path.startsWith('/auth/v1/'),isRest=path.startsWith('/rest/v1/');
    if(!isAuth&&!isRest){res.writeHead(404);res.end();return;}
@@ -161,7 +163,7 @@ if(process.argv.includes('--app')){
   const appLog=createWriteStream(`${directory}/app-private.log`,{mode:0o600});
   app=spawn(process.execPath,['--import','tsx',resolve('script/demo/smokeA2Integration.ts'),'--app'],{env:localEnv,stdio:['ignore','pipe','pipe']});app.stdout!.pipe(appLog);app.stderr!.pipe(appLog);
   await eventually(async()=>{assert.equal(app!.exitCode,null,'product server exited');const r=await fetch(`${appUrl}/api/plans/${dataset.input.planId}`,{headers:{Authorization:`Bearer ${users.production.token}`}});assert.equal(r.status,200);});
-  const requestedBaseline=templateCreation?process.env.TEMPLATE_CREATION_BASELINE_ROOT:templateAuthorization?process.env.TEMPLATE_AUTHORIZATION_BASELINE_ROOT:configurationReadRecovery?process.env.CONFIG_READ_BASELINE_ROOT:controlRoom?process.env.CONTROL_ROOM_BASELINE_ROOT:undefined;
+  const requestedBaseline=collapsibleSections?process.env.SECTIONS_BASELINE_ROOT:templateCreation?process.env.TEMPLATE_CREATION_BASELINE_ROOT:templateAuthorization?process.env.TEMPLATE_AUTHORIZATION_BASELINE_ROOT:configurationReadRecovery?process.env.CONFIG_READ_BASELINE_ROOT:controlRoom?process.env.CONTROL_ROOM_BASELINE_ROOT:undefined;
   if(requestedBaseline){
    const baselineRoot=resolve(requestedBaseline),baselinePort=await freePort();baselineUrl=`http://127.0.0.1:${baselinePort}`;
    const baselineLog=createWriteStream(`${directory}/baseline-private.log`,{mode:0o600});
@@ -187,12 +189,16 @@ if(process.argv.includes('--app')){
   pass('real storage/input adapter canon after GET day; no legacy breaks');
   report.diagnostics={};const options={appUrl,url,anon,users,db,planId:dataset.input.planId,directory,full,pass,diagnostics:report.diagnostics,buildInput:()=>buildEngineInput(dataset.input.planId,storage)};
   if(liveSnapshot){
-   const otherDays=async()=>JSON.stringify((await db!.query("SELECT to_jsonb(t) row FROM daily_tasks t WHERE plan_id<>27001 ORDER BY id")).rows);
+   // The sections journey edits a disposable Draft without accepting a Stage
+   // and creates an independent technical-task day. Preserve prior task rows.
+   const protectedDays=collapsibleSections?(await db.query("SELECT id FROM plans WHERE id<>27002")).rows.map(row=>Number(row.id)):null;
+   const otherDays=async()=>JSON.stringify((await db!.query(protectedDays?"SELECT to_jsonb(t) row FROM daily_tasks t WHERE plan_id=ANY($1::int[]) ORDER BY id":"SELECT to_jsonb(t) row FROM daily_tasks t WHERE plan_id<>27001 ORDER BY id",protectedDays?[protectedDays]:[])).rows);
    const untouched=await otherDays();
    const source=(await db.query("SELECT snapshot_fingerprint,ordinal FROM assisted_planning_stages WHERE id=(SELECT active_stage_id FROM assisted_planning_sessions WHERE plan_id=27001 AND status='ACTIVE')")).rows[0];
    report.snapshotReplay={source:'script/demo/fixtures/a2-legacy-import.json.gz',sourceSha256:createHash('sha256').update(readFileSync('script/demo/fixtures/a2-legacy-import.json.gz')).digest('hex'),planId:27001,acceptedStage:source.ordinal,fingerprint:source.snapshot_fingerprint,newSolverRun:false};
    if(process.argv.includes("--day-workspace")){const {runDayWorkspaceSnapshot}=await import("./smokeDayWorkspaceJourney");report.dayWorkspace=await runDayWorkspaceSnapshot(options);}
-   if(controlRoom){const {runControlRoomJourney}=await import('./smokeControlRoomJourney');report.controlRoom=await runControlRoomJourney({...options,planId:27001,baselineUrl});}
+   if(collapsibleSections){const {runCollapsibleSections}=await import('./smokeCollapsibleSections');report.collapsibleSections=await runCollapsibleSections({...options,planId:27001,baselineUrl});}
+   else if(controlRoom){const {runControlRoomJourney}=await import('./smokeControlRoomJourney');report.controlRoom=await runControlRoomJourney({...options,planId:27001,baselineUrl});}
    else if(warRoom){const {runWarRoomJourney}=await import('./smokeWarRoomJourney');report.warRoom=await runWarRoomJourney({...options,planId:27001});}
    else {const {runLiveExecutionJourney}=await import('./smokeLiveExecutionJourney');report.liveExecution=await runLiveExecutionJourney({...options,planId:27001});}
    assert.equal(await otherDays(),untouched);pass('other disposable days remain literal during accepted-snapshot execution');

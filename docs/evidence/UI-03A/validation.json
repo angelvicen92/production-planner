@@ -1,0 +1,55 @@
+{
+  "base": "c19a9c661124da7a291dff543b0ed4386f251228",
+  "branch": "codex/day-workspace-collapsible-sections",
+  "readiness": "DRAFT_WITH_DOCUMENTED_BACKEND_LIMITATIONS",
+  "typescript": {
+    "command": "npm run check",
+    "status": "PASS"
+  },
+  "build": {
+    "command": "npm run build",
+    "status": "PASS",
+    "warning": "Existing bundle-size warning"
+  },
+  "focal": {
+    "command": [
+      "node",
+      "--import",
+      "tsx",
+      "--test",
+      "client/src/lib/day-section-preferences.test.ts",
+      "client/src/components/planning/assisted-planning-workspace.test.ts",
+      "client/src/components/planning/assisted-location-scope.test.tsx",
+      "client/src/lib/assisted-scope-selection.test.ts",
+      "client/src/lib/assisted-draft-editing.test.ts",
+      "client/src/lib/assisted-planning-view.test.ts"
+    ],
+    "tests": 26,
+    "passed": 26,
+    "failed": 0
+  },
+  "chromiumUI": {
+    "status": "PASS",
+    "report": "collapsible-sections.json",
+    "productIntegration": "integration.json",
+    "manualValidation": {
+      "status": 422,
+      "code": "ASSISTED_DELTA_VALIDATION_UNSUPPORTED"
+    }
+  },
+  "excludedFilesUnchanged": [
+    "planning-workspace-layout.tsx",
+    "fullscreen-planning-panel.tsx",
+    "planning-timeline.tsx",
+    "planning-workspace-preferences.ts",
+    "index.css"
+  ],
+  "limits": [
+    "No new complete solver run",
+    "Manual structured validation is not certified: existing ASSISTED_DELTA_VALIDATION_UNSUPPORTED guard remains active",
+    "Existing refresh RPC could not run on disposable PostgreSQL 17: jsonb_object_length(jsonb) is absent"
+  ],
+  "remoteWrites": 0,
+  "merge": false,
+  "deployment": false
+}

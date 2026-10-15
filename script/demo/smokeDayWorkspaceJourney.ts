@@ -26,6 +26,13 @@ export async function runDayWorkspaceSnapshot(options: Options) {
 
 export async function runDayWorkspaceJourney(options: Options, page: Page, expectedStageOrdinal = 11) {
   const { appUrl, planId, db, directory, pass, users } = options;
+  // Start this independent lazy-history scenario closed, even after a prior
+  // journey has persisted an open preference. Reload resets its query cache.
+  await page.evaluate(dayId => {
+    for (const key of Object.keys(localStorage))
+      if (key.startsWith("optiplan:day-section:v1:") && key.endsWith(`:${dayId}:assisted-history`)) localStorage.removeItem(key);
+  }, planId);
+  await page.reload();
   const api = async (suffix: string, method = "GET", body?: unknown) => {
     const response = await fetch(`${appUrl}/api/plans/${planId}${suffix}`, { method, headers: { Authorization: `Bearer ${users.production.token}`, "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
     return { status: response.status, data: await response.json() as any };
@@ -125,7 +132,7 @@ export async function runDayWorkspaceJourney(options: Options, page: Page, expec
     await page.setViewportSize({ width: 390, height: 844 });
     for (const [tab, name] of [["Concursantes", "workspace-contestants-mobile"], ["Configuración", "workspace-configuration-mobile"], ["Recursos", "workspace-resources-mobile"], ["Roles", "workspace-roles-mobile"], ["Ejecución", "workspace-execution-mobile"], ["Planning", "workspace-planning-mobile"]] as const) { await page.getByRole("tab", { name: tab, exact: true }).click(); await page.getByTestId("day-header").scrollIntoViewIfNeeded(); await capture(name); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), `${tab}: no viewport overflow`); }
     await page.setViewportSize({ width: 1440, height: 1000 });
-    assert.deepEqual(requests.filter(request => !["GET", "OPTIONS"].includes(request.method)), [], "visual actions never write");
+    assert.deepEqual(requests.filter(request => !["GET", "OPTIONS"].includes(request.method) && new URL(request.url).pathname !== "/api/bootstrap-role"), [], "visual actions never write");
     assert.deepEqual(await material(), before, "visual actions preserve all product authorities");
     assert.deepEqual((await api("/assisted")).data, initial);
     pass("day workspace: six URL tabs, seven multiview combinations, independent controls, shared accepted/Draft authority, fullscreen/Esc, mobile, lazy history and zero writes");

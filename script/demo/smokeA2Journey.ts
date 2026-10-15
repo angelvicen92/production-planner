@@ -145,7 +145,7 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
     assert.deepEqual(await databaseMaterial(),frozen);pass('all client identities denied direct Stage/Draft writes; validation UPDATE privileges unchanged');
    }
    await page.reload();await page.getByTestId('assisted-workspace').waitFor();const reloaded=await state();assert.deepEqual(reloaded,after);
-   await page.getByText('Historial',{exact:true}).click();await page.getByText(new RegExp(`Etapa ${ordinal} ·`)).waitFor();
+   if(await page.getByRole('button',{name:'Historial',exact:true}).getAttribute('aria-expanded')==='false')await page.getByRole('button',{name:'Historial',exact:true}).click();await page.getByText(new RegExp(`Etapa ${ordinal} ·`)).waitFor();
    if(ordinal===1||ordinal===11){await page.getByTestId('assisted-workspace').scrollIntoViewIfNeeded();await page.screenshot({path:`${directory}/S${ordinal}-real-ui.png`,fullPage:false});}
    const completed=after.draft.tasks.filter((t:any)=>t.startPlanned&&t.endPlanned).length;
    const operationalMealConsolidation=auditOperationalMealConsolidation(stageBefore.snapshot_json,witness,adapter.problem);

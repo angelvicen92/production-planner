@@ -1,3 +1,5 @@
+import { DayCollapsibleSection } from "@/components/day-workspace/day-collapsible-section";
+import { useDaySection } from "@/hooks/use-day-section";
 import { usePlanRealtime } from "@/hooks/use-plan-realtime";
 import { useExecutionContext } from "@/hooks/use-execution-context";
 import { executionClockCurrent, executionNextStates } from "@shared/execution";
@@ -31,8 +33,6 @@ import {
   AlertCircle,
   LayoutList,
   GanttChartSquare,
-  ChevronDown,
-  ChevronUp,
   Users,
   Check,
   ChevronsUpDown,
@@ -117,11 +117,6 @@ import {
   type StaffRoleType,
   type StaffScopeType,
 } from "@/hooks/use-plan-staff";
-import {
-  Collapsible,
-  CollapsibleTrigger,
-  CollapsibleContent,
-} from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Command,
@@ -138,7 +133,6 @@ import {
   type DraftTask,
 } from "@/components/contestant-daily-task-editor";
 import { useElapsedSince } from "@/hooks/use-elapsed-since";
-import { useProductionClock } from "@/hooks/use-production-clock";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { estimatedPlanningProgress, planningPhaseSteps } from "@shared/planning-progress";
@@ -236,7 +230,6 @@ export default function PlanDetailsPage() {
   });
 
   const updatePlan = useUpdatePlan();
-  const { nowTime, nowSeconds } = useProductionClock();
   const { toast } = useToast();
   const confirmDialog = useConfirm();
   const queryClient = useQueryClient();
@@ -438,7 +431,8 @@ export default function PlanDetailsPage() {
   const [newSong, setNewSong] = useState("");
   const [newCoachPriId, setNewCoachPriId] = useState<string>("none");
 
-  const [showAdminTasks, setShowAdminTasks] = useState(false);
+  const [showAdminTasks, setShowAdminTasks] = useDaySection(id, "task-administration");
+  const [contestantsOpen, setContestantsOpen] = useDaySection(id, "task-contestants");
   const [planningMode, setPlanningMode] = useState<"assisted" | "legacy">("assisted");
   const [timelineView, setTimelineView] = useState<"contestants" | "spaces" | "resources">(
     "contestants",
@@ -1900,9 +1894,7 @@ ${reasonMessage}` : message,
           <DayTabNavigation />
 
           <TabsContent forceMount hidden={activeTab !== "tasks"} value="tasks" className="space-y-6 mt-0">
-            <Card className="border-border">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Concursantes</CardTitle>
+            <DayCollapsibleSection title="Concursantes" open={contestantsOpen} onOpenChange={setContestantsOpen} testId="section-task-contestants" actions={
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1923,8 +1915,8 @@ ${reasonMessage}` : message,
                     </>
                   )}
                 </Button>
-              </CardHeader>
-              <CardContent className="space-y-4">
+              }>
+              <div className="space-y-4">
                 {contestants.length === 0 && (
                   <p className="text-sm text-muted-foreground">
                     No hay concursantes creados todavía.
@@ -2026,8 +2018,8 @@ ${reasonMessage}` : message,
                     </>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </DayCollapsibleSection>
 
             <Dialog
               open={!!selectedContestant}
@@ -2543,34 +2535,8 @@ ${reasonMessage}` : message,
 
             <UnassignedDayTasks planId={id} tasks={plan.dailyTasks as any[]} spaces={spaces as any[]} zones={zones as any[]} canEdit={role==="admin"||role==="production"} onPlanning={()=>setActiveTab("planning")} onEdit={task=>{setShowAdminTasks(true);setUnplannedFocusTaskId(Number(task.id));setTimeout(()=>document.querySelector(`[data-day-task="${task.id}"]`)?.scrollIntoView({block:"center",behavior:"smooth"}),50);}} />
             {/* Tasks Section */}
-            <Collapsible open={showAdminTasks} onOpenChange={setShowAdminTasks}>
-              <div className="space-y-2">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 className="text-xl font-semibold">
-                      Detalle de todas las tareas
-                    </h2>
-                    <p className="text-sm text-muted-foreground">
-                      Recomendado: asigna y gestiona tareas desde la ficha de
-                      cada concursante.
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <CollapsibleTrigger asChild>
-                      <Button variant="outline" size="sm" className="gap-2">
-                        {showAdminTasks ? "Ocultar tabla" : "Mostrar tabla"}
-                        {showAdminTasks ? (
-                          <ChevronUp className="h-4 w-4" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </CollapsibleTrigger>
-                  </div>
-                </div>
-
-                <CollapsibleContent className="pt-2">
+            <DayCollapsibleSection title="Detalle de todas las tareas" open={showAdminTasks} onOpenChange={setShowAdminTasks} testId="section-task-administration">
+                  <p className="pb-2 text-sm text-muted-foreground">Recomendado: asigna y gestiona tareas desde la ficha de cada concursante.</p>
                   <div className="flex items-center justify-between gap-3 pb-2">
                     <p className="text-sm text-muted-foreground">
                       (Opcional) Crear una tarea global sin pasar por la ficha.
@@ -2671,8 +2637,6 @@ ${reasonMessage}` : message,
                                       taskId: task.id,
                                       planId: id,
                                       status: next as "pending" | "in_progress" | "done" | "interrupted" | "cancelled",
-                                      effectiveTimeHHMM: nowTime,
-      effectiveSeconds: nowSeconds,
                                     });
                                   }}
                                 >
@@ -3029,9 +2993,7 @@ ${reasonMessage}` : message,
                       </TableBody>
                     </Table>
                   </div>
-                </CollapsibleContent>
-              </div>
-            </Collapsible>
+            </DayCollapsibleSection>
 
             <Dialog open={locksDialogOpen} onOpenChange={setLocksDialogOpen}>
               <DialogContent className="sm:max-w-2xl">
