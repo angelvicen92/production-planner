@@ -35,6 +35,8 @@ if(process.argv.includes('--app')){
  await import('../../server/index');
 }else{
  const historicalTopology=process.argv.includes('--historical-topology');
+ const configurationReadRecovery=process.argv.includes('--configuration-read-recovery');
+ assert.ok(!configurationReadRecovery||historicalTopology,'configuration recovery requires the historical catalog');
  const full=process.argv.includes('--full');
  const liveExecution=process.argv.includes('--live-execution');
  const warRoom=process.argv.includes('--war-room-snapshot');
@@ -66,6 +68,7 @@ if(process.argv.includes('--app')){
  runtimeFiles.push('client/src/hooks/use-execution-context.ts','client/src/hooks/use-tasks.ts','client/src/hooks/use-production-clock.ts','shared/execution.ts','script/demo/smokeLiveExecutionJourney.ts');
  if(stageOrder)runtimeFiles.push('script/demo/probeA2StageOrder.ts','server/assistedScopeOrchestrator.ts');
  if(autopilot)runtimeFiles.push('shared/assistedAutopilot.ts','client/src/lib/assisted-autopilot.ts','script/demo/smokeA2AutopilotJourney.ts');
+ if(configurationReadRecovery)runtimeFiles.push('script/demo/smokeA2ConfigurationReadRecovery.ts','script/demo/fixtures/a2-27002-legacy-breaks.json','server/planPlannerNextConfiguration.ts','shared/assistedAutopilot.ts');
  if(controlRoom)runtimeFiles.push('script/demo/smokeControlRoomJourney.ts','client/src/pages/control-room.tsx','client/src/lib/control-room-metrics.ts','client/src/hooks/use-control-room-data.ts','client/src/hooks/use-execution-context.ts','client/src/hooks/use-war-room.ts','client/src/hooks/use-plan-realtime.ts','client/src/components/production-control-panel.tsx','client/src/pages/dashboard.tsx',...readdirSync('client/src/components/control-room').map(file=>`client/src/components/control-room/${file}`));
  const report:any={mode:liveSnapshot?'REAL_DISPOSABLE_EXECUTION_ACCEPTED_SNAPSHOT_REPLAY':'REAL_DISPOSABLE_PRODUCT_INTEGRATION',nodeVersion:process.version,v8Version:process.versions.v8,remoteWrites:0,images,requestedStages:full?11:2,startedAt:new Date().toISOString(),runtimeHashes:hashes(),checks:[],pending:controlRoom?['Supabase Realtime/WebSocket delivery (HTTP polling certified)']:['Connected Supabase catalog/backup adoption and original-row preservation','Published Replit runtime and user browser','Supabase Realtime/WebSocket transport']};
  const pass=(name:string)=>{report.checks.push(name);console.log(`PASS ${name}`);};
@@ -140,7 +143,7 @@ if(process.argv.includes('--app')){
   // in an existing database; its independent restoration tests remain required.
   await db.query(readFileSync('script/demo/sql/security.sql','utf8'));
   const preservation=historicalTopology?await seedA2HistoricalRehearsal(db,users.production.id):null;
-  const {dataset,sql}=buildA2ImportSQL('2026-10-30',historicalTopology?100000:0,'dyqusivzgxebkxkwohwn',historicalTopology?{historicalCatalog:a2HistoricalCatalog,planId:27002}:undefined);await db.query(sql);
+  const {dataset,sql}=buildA2ImportSQL(configurationReadRecovery?'2026-10-31':'2026-10-30',historicalTopology?100000:0,'dyqusivzgxebkxkwohwn',historicalTopology?{historicalCatalog:a2HistoricalCatalog,planId:27002}:undefined);await db.query(sql);
   if(preservation){await preservation.assertPreserved();report.historicalPreservation=preservation.summary;pass('historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import');}assert.equal(await defaults(),beforeDefaults);
   if(process.argv.includes('--scope-selection'))await seedA2ScopeCatalog(db,dataset);
   const results:any=await db.query(readFileSync('script/demo/sql/catalog-audit.sql','utf8'));
@@ -153,14 +156,19 @@ if(process.argv.includes('--app')){
   const appLog=createWriteStream(`${directory}/app-private.log`,{mode:0o600});
   app=spawn(process.execPath,['--import','tsx',resolve('script/demo/smokeA2Integration.ts'),'--app'],{env:localEnv,stdio:['ignore','pipe','pipe']});app.stdout!.pipe(appLog);app.stderr!.pipe(appLog);
   await eventually(async()=>{assert.equal(app!.exitCode,null,'product server exited');const r=await fetch(`${appUrl}/api/plans/${dataset.input.planId}`,{headers:{Authorization:`Bearer ${users.production.token}`}});assert.equal(r.status,200);});
-  if(controlRoom&&process.env.CONTROL_ROOM_BASELINE_ROOT){
-   const baselineRoot=resolve(process.env.CONTROL_ROOM_BASELINE_ROOT),baselinePort=await freePort();baselineUrl=`http://127.0.0.1:${baselinePort}`;
+  const requestedBaseline=configurationReadRecovery?process.env.CONFIG_READ_BASELINE_ROOT:controlRoom?process.env.CONTROL_ROOM_BASELINE_ROOT:undefined;
+  if(requestedBaseline){
+   const baselineRoot=resolve(requestedBaseline),baselinePort=await freePort();baselineUrl=`http://127.0.0.1:${baselinePort}`;
    const baselineLog=createWriteStream(`${directory}/baseline-private.log`,{mode:0o600});
    baselineApp=spawn(process.execPath,['--import','tsx',resolve(baselineRoot,'script/demo/smokeA2Integration.ts'),'--app'],{cwd:baselineRoot,env:{...localEnv,PORT:String(baselinePort)},stdio:['ignore','pipe','pipe']});baselineApp.stdout!.pipe(baselineLog);baselineApp.stderr!.pipe(baselineLog);
    await eventually(async()=>{assert.equal(baselineApp!.exitCode,null);assert.equal((await fetch(`${baselineUrl}/api/plans/27001`,{headers:{Authorization:`Bearer ${users.production.token}`}})).status,200);});
   }
   Object.assign(process.env,{SUPABASE_URL:url,SUPABASE_ANON_KEY:anon,SUPABASE_SERVICE_ROLE_KEY:service});
   const {storage}=await import('../../server/storage');const {buildEngineInput}=await import('../../engine/buildInput');const {adaptEngineInputToPlannerNextProblem}=await import('../../engine/planner-next/integration/engineInputAdapter');
+  if(configurationReadRecovery){
+   const {runA2ConfigurationReadRecovery}=await import('./smokeA2ConfigurationReadRecovery');
+   report.configurationReadRecovery=await runA2ConfigurationReadRecovery({appUrl,baselineUrl,db,users,planId:dataset.input.planId,directory,buildInput:()=>buildEngineInput(dataset.input.planId,storage),pass});
+  }else{
   const initialInput=await buildEngineInput(dataset.input.planId,storage);
   const actual=adaptEngineInputToPlannerNextProblem(initialInput),expected=adaptEngineInputToPlannerNextProblem(dataset.input);
   assert.equal(actual.status,'SUPPORTED');assert.equal(expected.status,'SUPPORTED');if(actual.status==='SUPPORTED'&&expected.status==='SUPPORTED')assert.deepEqual(actual.problem,expected.problem);
@@ -180,7 +188,6 @@ if(process.argv.includes('--app')){
   }else report.journey=workspaceSetup?await runDayWorkspaceSetup(options):await runA2BrowserJourney(options);
   if(stageOrder){const {probeA2StageOrder}=await import('./probeA2StageOrder');report.stageOrder=await probeA2StageOrder(options,report.journey,initialInput);}
   if(autopilot){const {runA2AutopilotJourney}=await import('./smokeA2AutopilotJourney');report.autopilot=await runA2AutopilotJourney(options,report.journey);}
-  assert.deepEqual(hashes(),report.runtimeHashes,'runtime sources changed during integration rehearsal');
   if(historicalTopology&&!liveSnapshot){
    const metricInput=await buildEngineInput(dataset.input.planId,storage),projected=adaptEngineInputToPlannerNextProblem(metricInput);
    assert.equal(projected.status,'SUPPORTED');if(projected.status!=='SUPPORTED')throw Error('Final metric input is unsupported');
@@ -193,6 +200,8 @@ if(process.argv.includes('--app')){
    pass('persisted physical topology, styling capacity and final SQL KPI projection');
   }
   if(liveExecution){const {runLiveExecutionJourney}=await import('./smokeLiveExecutionJourney');report.liveExecution=await runLiveExecutionJourney(options);}
+  }
+  assert.deepEqual(hashes(),report.runtimeHashes,'runtime sources changed during integration rehearsal');
   if(preservation&&!liveSnapshot){await preservation.assertPreserved();pass('old day, 11 prior Stages, 333 other tasks and historical catalog remain literal after real UI/Autopilot/execution');}
   report.status='PASS';report.finishedAt=new Date().toISOString();
  }catch(error){report.status='FAIL';report.error=(error instanceof Error?error.stack??error.message:String(error)).replaceAll(password,'[local secret]').replaceAll(secret,'[local secret]');process.exitCode=1;console.error(report.error);}

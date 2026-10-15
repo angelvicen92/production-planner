@@ -1,0 +1,51 @@
+{
+  "mode": "OFFLINE_REAL_REST_CAPTURE_REPLAY",
+  "remoteWrites": 0,
+  "requestsDuringReplay": 0,
+  "planId": 27002,
+  "tasks": 266,
+  "configurationRead": true,
+  "readiness": "INCOMPATIBLE",
+  "readinessIssues": [
+    {
+      "capabilityId": "OPTIMIZATION",
+      "status": "INCOMPATIBLE"
+    }
+  ],
+  "scope": {
+    "selector": {
+      "kind": "SPACE",
+      "spaceId": 48
+    },
+    "count": 19
+  },
+  "adapter": "SUPPORTED",
+  "persistedRevisionMatches": true,
+  "baseline27001Equal": true,
+  "engine": {
+    "elapsedMs": 300011,
+    "proposalCount": 0,
+    "reasonCodes": [
+      "ASSISTED_SCOPE_INCOMPLETE",
+      "SEARCH_TIME_LIMIT_REACHED"
+    ],
+    "work": {
+      "branchesExplored": 38640,
+      "coreBranches": 6782,
+      "standaloneBranches": 31858,
+      "branchBudgetLimit": 100000
+    },
+    "completeForScope": false,
+    "protectedPlacementsPreserved": true,
+    "interpretation": "TIME_LIMIT, not an infeasibility certificate"
+  },
+  "capture": {
+    "restRequests": 150,
+    "failedRestRequests": 0,
+    "remoteWrites": 0,
+    "baselineError": "INVALID_PLANNER_NEXT_CONFIGURATION: incomplete task operations",
+    "legacyBreaks": 52,
+    "lockedLegacyBreaks": 0,
+    "captureContainsPrivateData": "Private responses retained only under /tmp; this summary contains no names, credentials, headers or raw rows."
+  }
+}

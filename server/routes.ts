@@ -11,6 +11,7 @@ import { requireAuth } from "./middleware/requireAuth";
 import { canExecuteTask, executionContext, executionError } from "./liveExecution";
 import { createApiAuthorization } from './apiAuthorization';
 import { buildEngineInput } from "../engine/buildInput";
+import { planningConfigurationFailure } from "./planPlannerNextConfiguration";
 import { generatePlanV3 } from "../engine/v3";
 import { runORCActivePlanner } from "../engine/orc/active/orcActivePlanner";
 import { buildRunDiagnostics } from "../engine/v3/runDiagnostics";
@@ -61,6 +62,8 @@ export async function registerRoutes(
   const assistedAction = async (res: any, action: () => Promise<unknown>) => {
     try { return res.json(await action()); }
     catch (error) {
+      const configurationFailure=planningConfigurationFailure(error);
+      if(configurationFailure)return res.status(configurationFailure.status).json(configurationFailure.body);
       if (error instanceof AssistedPlanningError) return res.status(error.status).json({ code: error.code, message: error.code });
       if (error instanceof AssistedProposalError) return res.status(error.status).json({ code: error.code, message: error.code });
       if (error instanceof AssistedConfigRefreshError) return res.status(error.status).json({ code: error.code, message: error.code });

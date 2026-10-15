@@ -3,7 +3,7 @@ import type { IStorage } from "../server/storage";
 import type { EngineInput, PlanResourceItemInput, PlanSpaceAvailabilityInput, PlanZoneAvailabilityInput, ResourceRequirementsInput } from "./types";
 import { adaptPlanOptimizerSnapshotToLegacyEngineV1 } from "./planOptimizerSnapshotLegacyAdapter";
 import { immutableMapView } from "@shared/immutableMapView";
-import { applyPlanPlannerNextConfiguration } from '../server/planPlannerNextConfiguration';
+import { applyPlanPlannerNextConfiguration, legacyBreaksForEngineInput } from '../server/planPlannerNextConfiguration';
 import {
   TaskTemplateSnapshotError,
   deriveTaskTemplateSnapshotCatalogFingerprint,
@@ -931,7 +931,7 @@ export async function buildEngineInput(
           (t.assignedResources ?? t.assigned_resource_ids ?? null) as any,
         };
     }),
-            ...(((details as any).breaks ?? []) as any[]).map((b: any) => ({
+            ...legacyBreaksForEngineInput(p.planner_next_configuration??p.plannerNextConfiguration,(details as any).breaks??[]).map((b: any) => ({
               id: -Number(b.id),
               planId,
               templateId: -1,
