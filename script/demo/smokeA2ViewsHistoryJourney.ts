@@ -8,6 +8,14 @@ import type { runA2BrowserJourney } from "./smokeA2Journey";
 type Options = Parameters<typeof runA2BrowserJourney>[0];
 export async function runA2ViewsHistoryJourney(options: Options, page: Page) {
   const { appUrl, users, planId, db, directory, pass } = options;
+  // Start this independent lazy-history scenario closed, even after a prior
+  // journey has persisted an open preference. Reload resets its query cache.
+  await page.evaluate(dayId => {
+    for (const key of Object.keys(localStorage))
+      if (key.startsWith("optiplan:day-section:v1:") && key.endsWith(`:${dayId}:assisted-history`)) localStorage.removeItem(key);
+  }, planId);
+  await page.reload();
+  await page.getByTestId("assisted-workspace").waitFor();
   const path = `/api/plans/${planId}/assisted`;
   const api = async (suffix: string, role = "production") => {
     const response = await fetch(`${appUrl}${suffix}`, { headers: role === "anon" ? {} : { Authorization: `Bearer ${users[role].token}` } });
@@ -126,7 +134,7 @@ export async function runA2ViewsHistoryJourney(options: Options, page: Page) {
     await workspace.getByRole("button", { name: "Por concursante", exact: true }).click(); await assertAll("contestants restored");
     const opened = page.waitForResponse(response => response.url().endsWith("/history/timings") && response.status() === 200);
     await page.getByText("Historial", { exact: true }).click(); await opened;
-    const history = workspace.locator("details").filter({has:page.getByText("Historial",{exact:true})});
+    const history = workspace.getByTestId("section-assisted-history");
     await history.getByText("Generación", { exact: true }).first().waitFor();
     await history.getByText("Solicitud a aceptación", { exact: true }).first().waitFor();
     await history.getByText("No disponible", { exact: true }).first().waitFor();
@@ -153,10 +161,9 @@ export async function runA2ViewsHistoryJourney(options: Options, page: Page) {
     assert.equal((await api("/api/plans/2147483647/assisted/history/timings")).status, 404);
     assert.equal((await api("/api/plans/invalid/assisted/history/timings")).status, 400);
     await page.getByText("Historial", { exact: true }).click();
-    const reopened = page.waitForResponse(response => response.url().endsWith("/history/timings"));
-    await page.getByText("Historial", { exact: true }).click(); await reopened;
-    assert.equal(requests.filter(r => r.url.endsWith("/history/timings")).length, 2, "reopen refreshes independently of polling");
-    assert.deepEqual(requests.filter(r => !["GET", "OPTIONS"].includes(r.method)), [], "all view, template and history actions are read-only");
+    await page.getByText("Historial", { exact: true }).click();
+    assert.equal(requests.filter(r => r.url.endsWith("/history/timings")).length, 1, "reopen reuses timings without requests");
+    assert.deepEqual(requests.filter(r => !["GET", "OPTIONS"].includes(r.method) && new URL(r.url).pathname !== "/api/bootstrap-role"), [], "all view, template and history actions are read-only");
     assert.deepEqual(await material(), before, "Draft, Stage, resources, locks, validation and run material are literal after visual actions");
     assert.deepEqual((await api(path)).data, initial);
     await history.screenshot({ path: `${directory}/views-history-real-ui.png` });

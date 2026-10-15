@@ -1,0 +1,32 @@
+{
+  "status": "PASS",
+  "screenshots": [
+    "before-assisted.png",
+    "before-tasks.png",
+    "after-assisted.png",
+    "after-tasks.png",
+    "after-critical-validation.png"
+  ],
+  "checks": [
+    "keyboard, sibling scope buttons, persistent mounting and lazy cached history",
+    "266-task table controls, forms across collapse/tabs, reload persistence and literal SQL authorities",
+    "day isolation, external storage synchronization, live scope/edit/config controls",
+    "real guarded Draft conflict, validation outcome and primary actions stay visible with every section closed",
+    "native technical-task creation and automatic administrative table expansion from another section",
+    "user isolation and viewer permission boundary"
+  ],
+  "remoteWrites": 0,
+  "snapshotReplay": true,
+  "visualToggleRequests": [],
+  "authenticationReloadRequests": 2,
+  "manualSetup": {
+    "planId": 27002,
+    "canonicalTasks": 266,
+    "manuallyTimedTasks": 2,
+    "automaticProposals": 0
+  },
+  "manualValidation": {
+    "status": 422,
+    "code": "ASSISTED_DELTA_VALIDATION_UNSUPPORTED"
+  }
+}
