@@ -3404,7 +3404,7 @@ ${reasonMessage}` : message,
                 supportsZoom
                 hydrationBlocked={planningInProgress}
               >
-                <div className="relative">
+                <div className="relative flex min-h-0 flex-1 flex-col">
                 {(planningInProgress || generatePlan.isPending) ? (<div data-testid="planning-hydration-overlay" className="absolute inset-0 z-30 bg-background/60 backdrop-blur-[1px] pointer-events-auto flex items-start justify-end p-3"><span className="text-xs rounded bg-background border px-2 py-1">{waitingForTransportOutTasks ? "Actualizando salidas OUT…" : planningStatus === "generating_diagnostics" ? "Generando JSON…" : planningStatus === "rendering_schedule" || planningStatus === "refetching_tasks" ? "Pintando tiras…" : "Aplicando planificación…"}</span></div>) : null}
                 <PlanningTimeline
                   isHydratingPlanningResult={planningInProgress && hydratingPlanningRunId !== null}

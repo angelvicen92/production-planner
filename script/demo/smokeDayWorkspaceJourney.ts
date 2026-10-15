@@ -123,7 +123,7 @@ export async function runDayWorkspaceJourney(options: Options, page: Page, expec
     }
     await page.getByLabel("Buscar tareas de ejecución", { exact: true }).fill("C01"); assert.ok((await page.getByTestId("day-execution").locator("tbody tr").count()) < 266); await page.getByRole("button", { name: "Limpiar filtros", exact: true }).click();
     await page.getByRole("tab", { name: "Configuración", exact: true }).click(); await page.getByTestId("day-editor-WORKDAY_WINDOW").waitFor(); await capture("workspace-configuration-desktop");
-    await page.getByRole("tab", { name: "Planning", exact: true }).click(); assert.match(page.url(), /tab=planning/); assert.equal(await contestants.getByRole("button", { name: "110%", exact: true }).isVisible(), true);
+    await page.getByRole("tab", { name: "Planning", exact: true }).click(); assert.match(page.url(), /tab=planning/); assert.equal(Math.round(Number(await contestants.locator(".planning-panel").getAttribute("data-zoom-x"))), 110); assert.equal(Math.round(Number(await contestants.locator(".planning-panel").getAttribute("data-zoom-y"))), 110);
     await page.getByRole("button", { name: "Planning aceptado · ejecución", exact: true }).click(); await page.getByText("Sin arrastre · acciones según autoridad", { exact: true }).waitFor();
     await page.getByRole("button", { name: "Edición del borrador", exact: true }).click();
     await setViews(["contestants"]); await page.getByRole("button", { name: "Mostrar Concursantes", exact: true }).click(); assert.equal(await contestants.isVisible(), true, "last pane cannot disappear");

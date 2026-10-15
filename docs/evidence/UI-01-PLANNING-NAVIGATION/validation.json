@@ -1,0 +1,46 @@
+{
+  "productAndJourneyCommit": "f3a54865c4e2bc95e1a3b668dd6b4731b73b4b25",
+  "initialAuthorizedBase": "c19a9c661124da7a291dff543b0ed4386f251228",
+  "integratedMain": "6353a2a2845610ee0f6bdc1bec6ee91a70af652d",
+  "checks": [
+    {
+      "command": "npm run check",
+      "status": "PASS",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run build",
+      "status": "PASS",
+      "exitCode": 0,
+      "warnings": [
+        "Existing bundle size warning",
+        "Existing outdated caniuse-lite data warning"
+      ]
+    },
+    {
+      "command": "node --import tsx --test client/src/lib/planning-workspace-preferences.test.ts client/src/lib/planning-workspace-geometry.test.ts client/src/lib/planning-view-policy.test.ts client/src/lib/assisted-planning-view.test.ts client/src/components/planning-timeline-assisted-drag.test.ts",
+      "status": "PASS",
+      "exitCode": 0,
+      "testFilesPassed": 5,
+      "testFilesFailed": 0
+    },
+    {
+      "command": "git diff --check",
+      "status": "PASS",
+      "exitCode": 0
+    },
+    {
+      "command": "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium node --import tsx script/demo/smokeA2Integration.ts work/ui01-navigation-final-verified --historical-topology --planning-navigation",
+      "status": "PASS",
+      "exitCode": 0,
+      "integrationChecksPassed": 15,
+      "navigationChecksPassed": 9,
+      "screenshots": 8
+    }
+  ],
+  "browserEvidence": "integration.json and planning-navigation.json",
+  "limits": [
+    "Historical accepted snapshot replay; no new solver certification",
+    "Disposable local environment; no remote deployment validation"
+  ]
+}
