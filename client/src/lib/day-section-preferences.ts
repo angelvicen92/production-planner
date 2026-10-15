@@ -1,12 +1,28 @@
-export type DaySection = "assisted-scope" | "assisted-editing" | "assisted-history" | "assisted-maintenance" | "task-contestants" | "task-administration";
-export const daySectionDefaults: Record<DaySection, boolean> = {
+type DynamicDaySection = `resources-zone-${number}` | `resources-type-${number}` | `staff-zone-${number}` | `staff-team-${number}`;
+export type DaySection = keyof typeof daySectionDefaults | DynamicDaySection;
+export const daySectionDefaults = {
   "assisted-scope": true,
   "assisted-editing": false,
   "assisted-history": false,
   "assisted-maintenance": false,
   "task-contestants": true,
   "task-administration": false,
+  "resources-add": false,
+  "resources-zones": true,
+  "configuration-workday": true,
+  "configuration-flow": true,
+  "configuration-rules": true,
+  "configuration-optimization": true,
+  "configuration-complementary": false,
+  "configuration-capabilities": false,
+  "staff-zones": true,
+  "staff-reality": true,
+  "execution-filters": false,
+  "execution-tasks": true,
 };
+export function daySectionDefault(section: DaySection): boolean {
+  return section in daySectionDefaults ? daySectionDefaults[section as keyof typeof daySectionDefaults] : true;
+}
 export const daySectionKey = (userId: string, planId: number, section: DaySection) =>
   `optiplan:day-section:v1:${encodeURIComponent(userId)}:${planId}:${section}`;
 

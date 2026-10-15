@@ -3,7 +3,7 @@ export type PlanningView = (typeof planningViews)[number];
 export type PlanningLayout = "horizontal" | "vertical" | "grid";
 export function normalizedPlanningViews(value: unknown): PlanningView[] {
   const views = Array.isArray(value)
-    ? planningViews.filter((view) => value.includes(view))
+    ? [...new Set(value.filter((view): view is PlanningView => planningViews.includes(view)))]
     : [];
   return views.length ? views : ["contestants"];
 }

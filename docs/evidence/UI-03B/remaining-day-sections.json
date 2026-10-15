@@ -1,0 +1,576 @@
+{
+  "status": "PASS",
+  "checks": [
+    "keyboard/ARIA, selectors, pending resource/config/staff drafts, filters, reload, no operational HTTP writes and all SQL authorities identical",
+    "mobile four tabs, day/user isolation with copied localStorage and admin/production/viewer permissions",
+    "explicit EDIT/RESTORE/REFRESH and revalidation/save errors remain visible outside collapsed editors"
+  ],
+  "screenshots": [
+    "before-resources.png",
+    "before-configuration.png",
+    "before-staff.png",
+    "before-execution.png",
+    "after-resources.png",
+    "after-configuration.png",
+    "after-staff.png",
+    "after-execution.png",
+    "after-execution-offline.png",
+    "after-mobile-resources.png",
+    "after-mobile-configuration.png",
+    "after-mobile-staff.png",
+    "after-mobile-execution.png",
+    "after-mobile-execution-sections.png",
+    "after-configuration-save-error.png"
+  ],
+  "remoteWrites": 0,
+  "canonicalTasks": 266,
+  "solverRun": false,
+  "setup": {
+    "additionalResource": 104012,
+    "staffPerson": "UI03B responsable",
+    "realityTeamId": 1,
+    "target": "disposable localhost only"
+  },
+  "visualAuthorities": {
+    "before": "fefabc3daf2d5b69e36cc6443cba89647bc4e83cd8813047d8431afaceedee6d",
+    "after": "fefabc3daf2d5b69e36cc6443cba89647bc4e83cd8813047d8431afaceedee6d",
+    "tables": [
+      "assisted_planning_sessions",
+      "assisted_planning_stages",
+      "contestants",
+      "control_room_settings",
+      "daily_tasks",
+      "engine_plan_results",
+      "itinerant_teams",
+      "locks",
+      "operational_incident_events",
+      "operational_incidents",
+      "optimizer_settings",
+      "plan_breaks",
+      "plan_config_revisions",
+      "plan_optimizer_snapshot_grouping_zones",
+      "plan_optimizer_snapshot_heuristics",
+      "plan_optimizer_snapshots",
+      "plan_resource_bundle_snapshots",
+      "plan_resource_items",
+      "plan_resource_pools",
+      "plan_space_resource_assignments",
+      "plan_space_resource_type_requirements",
+      "plan_space_settings",
+      "plan_staff_assignments",
+      "plan_task_template_snapshots",
+      "plan_vocal_coach_rules",
+      "plan_zone_resource_assignments",
+      "plan_zone_resource_type_requirements",
+      "plan_zone_settings",
+      "plan_zone_staff_mode",
+      "planning_accepted_exceptions",
+      "planning_runs",
+      "planning_stage_validations",
+      "plans",
+      "program_settings",
+      "resource_availability",
+      "resource_bundle_components",
+      "resource_bundle_space_affinities",
+      "resource_bundles",
+      "resource_item_components",
+      "resource_items",
+      "resource_pools",
+      "resource_types",
+      "resources",
+      "roles",
+      "space_resource_defaults",
+      "space_resource_type_defaults",
+      "spaces",
+      "staff_assignment_defaults",
+      "staff_people",
+      "staff_zone_mode_defaults",
+      "task_status_events",
+      "task_templates",
+      "user_entity_links",
+      "user_preferences",
+      "user_roles",
+      "vocal_coach_rules",
+      "zone_resource_defaults",
+      "zone_resource_type_defaults",
+      "zones"
+    ],
+    "identical": true
+  },
+  "visualRequests": [
+    {
+      "method": "GET",
+      "path": "/api/plans/27001"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/execution"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/execution"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/execution"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/planning-runs/latest"
+    },
+    {
+      "method": "GET",
+      "path": "/api/zones"
+    },
+    {
+      "method": "GET",
+      "path": "/api/spaces"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/assisted"
+    },
+    {
+      "method": "GET",
+      "path": "/api/resource-types"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/contestants"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/execution"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/planning-runs/latest"
+    },
+    {
+      "method": "GET",
+      "path": "/api/resource-types"
+    },
+    {
+      "method": "POST",
+      "path": "/api/bootstrap-role"
+    },
+    {
+      "method": "GET",
+      "path": "/api/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/preferences"
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/role"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/planning-runs/latest"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/contestants"
+    },
+    {
+      "method": "GET",
+      "path": "/api/zones"
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff-people"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/zone-staff-modes"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/staff-assignments"
+    },
+    {
+      "method": "GET",
+      "path": "/api/itinerant-teams"
+    },
+    {
+      "method": "GET",
+      "path": "/api/spaces"
+    },
+    {
+      "method": "GET",
+      "path": "/api/task-templates"
+    },
+    {
+      "method": "GET",
+      "path": "/api/program-settings"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/execution"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/resource-items"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/resource-items"
+    },
+    {
+      "method": "POST",
+      "path": "/api/bootstrap-role"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/zone-resource-assignments"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/assisted"
+    },
+    {
+      "method": "GET",
+      "path": "/api/resource-types"
+    },
+    {
+      "method": "GET",
+      "path": "/api/zones"
+    },
+    {
+      "method": "GET",
+      "path": "/api/spaces"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/resource-items"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/zone-resource-assignments"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/zone-resource-type-requirements"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/space-resource-assignments"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/space-resource-type-requirements"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/effective-configuration"
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/role"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/planning-runs/latest"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/contestants"
+    },
+    {
+      "method": "GET",
+      "path": "/api/zones"
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff-people"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/zone-staff-modes"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/staff-assignments"
+    },
+    {
+      "method": "GET",
+      "path": "/api/itinerant-teams"
+    },
+    {
+      "method": "GET",
+      "path": "/api/spaces"
+    },
+    {
+      "method": "GET",
+      "path": "/api/task-templates"
+    },
+    {
+      "method": "GET",
+      "path": "/api/program-settings"
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/preferences"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001/space-resource-assignments"
+    },
+    {
+      "method": "GET",
+      "path": "/api/resource-types"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27001"
+    },
+    {
+      "method": "POST",
+      "path": "/api/bootstrap-role"
+    },
+    {
+      "method": "GET",
+      "path": "/api/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/preferences"
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/role"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/planning-runs/latest"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/contestants"
+    },
+    {
+      "method": "GET",
+      "path": "/api/zones"
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff-people"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/zone-staff-modes"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/staff-assignments"
+    },
+    {
+      "method": "GET",
+      "path": "/api/itinerant-teams"
+    },
+    {
+      "method": "GET",
+      "path": "/api/spaces"
+    },
+    {
+      "method": "GET",
+      "path": "/api/task-templates"
+    },
+    {
+      "method": "GET",
+      "path": "/api/program-settings"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/execution"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/resource-items"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/resource-items"
+    },
+    {
+      "method": "POST",
+      "path": "/api/bootstrap-role"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/zone-resource-assignments"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/assisted"
+    },
+    {
+      "method": "GET",
+      "path": "/api/resource-types"
+    },
+    {
+      "method": "GET",
+      "path": "/api/zones"
+    },
+    {
+      "method": "GET",
+      "path": "/api/spaces"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/resource-items"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/zone-resource-assignments"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/zone-resource-type-requirements"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/space-resource-assignments"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/space-resource-type-requirements"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/effective-configuration"
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/role"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/planning-runs/latest"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/contestants"
+    },
+    {
+      "method": "GET",
+      "path": "/api/zones"
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff-people"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/zone-staff-modes"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/staff-assignments"
+    },
+    {
+      "method": "GET",
+      "path": "/api/itinerant-teams"
+    },
+    {
+      "method": "GET",
+      "path": "/api/spaces"
+    },
+    {
+      "method": "GET",
+      "path": "/api/task-templates"
+    },
+    {
+      "method": "GET",
+      "path": "/api/program-settings"
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/preferences"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/space-resource-assignments"
+    },
+    {
+      "method": "GET",
+      "path": "/api/resource-types"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/execution"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/execution"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002/execution"
+    },
+    {
+      "method": "GET",
+      "path": "/api/plans/27002"
+    }
+  ],
+  "explicitConfiguration": {
+    "edit": 200,
+    "restore": 200,
+    "refresh": 200
+  },
+  "pageErrors": []
+}

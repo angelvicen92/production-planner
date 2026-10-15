@@ -15,6 +15,8 @@ import {
   Grid2X2,
   X,
   Filter,
+  ArrowLeft,
+  ArrowRight,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -30,6 +32,7 @@ import {
   type PlanningView,
   type PlanningLayout,
 } from "@/lib/planning-workspace-preferences";
+import { assignedPlanningLocations, clampPanelRatio } from "@/lib/planning-workspace-geometry";
 import type { ContestantLaneOrder } from "@/lib/contestant-lane-sort";
 
 type TimelineProps = ComponentProps<typeof PlanningTimeline>;
@@ -48,7 +51,7 @@ function readPreference<T>(key: string, fallback: T): T {
 }
 const SharedTimeline = memo(PlanningTimeline);
 
-export function PlanningWorkspaceLayout({
+function ScopedPlanningWorkspaceLayout({
   planId,
   timelineProps,
   onPendingEditsChange,
@@ -67,6 +70,15 @@ export function PlanningWorkspaceLayout({
   const [layout, setLayout] = useState<PlanningLayout>(() => {
     const stored = readPreference(preferenceKey, { layout: "vertical" }).layout;
     return stored === "horizontal" || stored === "grid" ? stored : "vertical";
+  });
+  const [ratio, setRatio] = useState(() => clampPanelRatio(readPreference(preferenceKey, { ratio: 50 }).ratio));
+  const panesRef = useRef<HTMLDivElement>(null);
+  const panelOrder = [...visible, ...planningViews.filter(view => !visible.includes(view))];
+  const moveView = (view: PlanningView, direction: number) => setVisible(old => {
+    const next = [...old], index = next.indexOf(view), target = index + direction;
+    if (target < 0 || target >= next.length) return old;
+    [next[index], next[target]] = [next[target], next[index]];
+    return next;
   });
   const [manualEdits, setManualEdits] = useState<
     Record<number, { start: string; end: string }>
@@ -98,11 +110,11 @@ export function PlanningWorkspaceLayout({
   }, []);
   useEffect(() => {
     try {
-      localStorage.setItem(preferenceKey, JSON.stringify({ visible, layout }));
+      localStorage.setItem(preferenceKey, JSON.stringify({ visible, layout, ratio }));
     } catch {
       /* Visual preferences do not block production. */
     }
-  }, [preferenceKey, visible, layout]);
+  }, [preferenceKey, visible, layout, ratio]);
   return (
     <section
       className="space-y-3"
@@ -210,17 +222,21 @@ export function PlanningWorkspaceLayout({
         </div>
       ) : null}
       <div
-        className={`grid min-w-0 gap-4 ${layout === "horizontal" && visible.length > 1 ? "xl:grid-cols-2 2xl:grid-cols-3" : layout === "grid" && visible.length > 1 ? "xl:grid-cols-2" : "grid-cols-1"}`}
+        ref={panesRef}
+        className="planning-panes"
+        data-count={visible.length}
+        style={{ "--planning-ratio": `${ratio}fr`, "--planning-remainder": `${100 - ratio}fr` } as React.CSSProperties}
         data-layout={layout}
       >
-        {planningViews.map((view) => (
+        {panelOrder.map((view) => (
           <RetainedView
             key={view}
             visible={visible.includes(view)}
+            order={visible.indexOf(view) * 2}
             wide={
               layout === "grid" &&
               visible.length === 3 &&
-              view === "contestants"
+              view === visible[0]
             }
           >
             <PlanningViewPanel
@@ -228,12 +244,23 @@ export function PlanningWorkspaceLayout({
               preferenceKey={`${preferenceKey}:${view}`}
               timelineProps={sharedProps}
               hideDisabled={visible.length === 1}
+              onMove={(direction) => moveView(view, direction)}
+              moveBeforeDisabled={visible.indexOf(view) === 0}
+              moveAfterDisabled={visible.indexOf(view) === visible.length - 1}
               onHide={() =>
                 setVisible((old) => toggledPlanningViews(old, view))
               }
             />
           </RetainedView>
         ))}
+        {layout === "horizontal" && visible.length === 2 ? <div
+          className="planning-divider" role="separator" aria-label="Redimensionar paneles" aria-orientation="vertical"
+          aria-valuemin={30} aria-valuemax={70} aria-valuenow={Math.round(ratio)} tabIndex={0}
+          onPointerDown={event => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); }}
+          onPointerMove={event => { if (!event.currentTarget.hasPointerCapture(event.pointerId)) return; const rect = panesRef.current?.getBoundingClientRect(); if (rect) setRatio(clampPanelRatio((event.clientX - rect.left) / rect.width * 100)); }}
+          onPointerUp={event => event.currentTarget.releasePointerCapture(event.pointerId)}
+          onKeyDown={event => { if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return; event.preventDefault(); setRatio(old => event.key === "Home" ? 30 : event.key === "End" ? 70 : clampPanelRatio(old + (event.key === "ArrowLeft" ? -2 : 2))); }}
+        ><span /></div> : null}
       </div>
     </section>
   );
@@ -242,16 +269,18 @@ export function PlanningWorkspaceLayout({
 function RetainedView({
   visible,
   wide,
+  order,
   children,
 }: {
   visible: boolean;
   wide: boolean;
+  order: number;
   children: React.ReactNode;
 }) {
   const opened = useRef(visible);
   if (visible) opened.current = true;
   return (
-    <div hidden={!visible} className={`min-w-0 ${wide ? "xl:col-span-2" : ""}`}>
+    <div hidden={!visible} style={{ order }} className={`planning-retained min-w-0 ${wide ? "planning-wide" : ""}`}>
       {opened.current ? children : null}
     </div>
   );
@@ -263,12 +292,18 @@ function PlanningViewPanel({
   timelineProps,
   onHide,
   hideDisabled,
+  onMove,
+  moveBeforeDisabled,
+  moveAfterDisabled,
 }: {
   view: PlanningView;
   preferenceKey: string;
   timelineProps: TimelineProps;
   onHide: () => void;
   hideDisabled: boolean;
+  onMove: (direction: number) => void;
+  moveBeforeDisabled: boolean;
+  moveAfterDisabled: boolean;
 }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -306,6 +341,7 @@ function PlanningViewPanel({
       );
     } catch {}
   }, [preferenceKey, selection]);
+  const assigned = useMemo(() => assignedPlanningLocations(timelineProps.plan.dailyTasks, timelineProps.spaces ?? []), [timelineProps.plan.dailyTasks, timelineProps.spaces]);
   const options = useMemo(
     () =>
       view === "contestants"
@@ -315,11 +351,11 @@ function PlanningViewPanel({
           }))
         : view === "spaces"
           ? [
-              ...(timelineProps.zones ?? []).map((item) => ({
+              ...(timelineProps.zones ?? []).filter(item => !hideEmpty || assigned.zoneIds.has(Number(item.id))).map((item) => ({
                 id: `z:${item.id}`,
                 name: item.name,
               })),
-              ...(timelineProps.spaces ?? []).map((item) => ({
+              ...(timelineProps.spaces ?? []).filter(item => !hideEmpty || assigned.spaceIds.has(Number(item.id))).map((item) => ({
                 id: `s:${item.id}`,
                 name: `${timelineProps.zones?.find((z) => Number(z.id) === Number(item.zoneId))?.name ?? "Sin plató"} / ${item.name}`,
               })),
@@ -334,8 +370,13 @@ function PlanningViewPanel({
       timelineProps.zones,
       timelineProps.spaces,
       timelineProps.resourceSelectables,
+      hideEmpty, assigned,
     ],
   );
+  const effectiveSelection = view === "spaces" && hideEmpty ? selection.filter(id => options.some(option => option.id === id)) : selection;
+  useEffect(() => {
+    if (view === "spaces" && hideEmpty) setSelection(old => { const next = old.filter(id => options.some(option => option.id === id)); return next.length === old.length ? old : next; });
+  }, [view, hideEmpty, options]);
   const templates = useMemo(
     () =>
       [
@@ -370,6 +411,8 @@ function PlanningViewPanel({
   );
   const controls = (
     <div className="flex items-center gap-1">
+      <Button size="icon" className="h-8 w-8" variant="ghost" aria-label={`Mover ${labels[view]} antes`} disabled={moveBeforeDisabled} onClick={() => onMove(-1)}><ArrowLeft className="h-3 w-3" /></Button>
+      <Button size="icon" className="h-8 w-8" variant="ghost" aria-label={`Mover ${labels[view]} después`} disabled={moveAfterDisabled} onClick={() => onMove(1)}><ArrowRight className="h-3 w-3" /></Button>
       <Button
         size="sm"
         variant="ghost"
@@ -393,7 +436,7 @@ function PlanningViewPanel({
   );
   return (
     <div
-      className="rounded-xl border bg-card p-3 shadow-sm"
+      className="rounded-xl border bg-card p-2 shadow-sm"
       data-testid={`planning-panel-${view}`}
     >
       <FullscreenPlanningPanel
@@ -403,7 +446,7 @@ function PlanningViewPanel({
         toolbarRight={controls}
       >
         {filtersOpen ? (
-          <div className="mb-3 space-y-3 rounded-lg border bg-muted/20 p-3">
+          <div className="planning-filters absolute inset-x-0 top-0 z-40 space-y-3 rounded-lg border bg-card p-3 shadow-lg">
             <div className="flex flex-wrap items-center gap-2">
               <Input
                 aria-label={`Buscar en ${labels[view]}`}
@@ -526,26 +569,31 @@ function PlanningViewPanel({
           spaceVerticalMode={spaceMode}
           contestantOrder={contestantOrder}
           contestantFilterIds={
-            view === "contestants" ? selection.map(Number) : []
+            view === "contestants" ? effectiveSelection.map(Number) : []
           }
           stageFilterIds={
             view === "spaces"
-              ? selection
+              ? effectiveSelection
                   .filter((id) => id.startsWith("z:"))
                   .map((id) => Number(id.slice(2)))
               : []
           }
           spaceFilterIds={
             view === "spaces"
-              ? selection
+              ? effectiveSelection
                   .filter((id) => id.startsWith("s:"))
                   .map((id) => Number(id.slice(2)))
               : []
           }
-          resourceFilterIds={view === "resources" ? selection : []}
+          resourceFilterIds={view === "resources" ? effectiveSelection : []}
           hideEmptyLanes={hideEmpty}
         />
       </FullscreenPlanningPanel>
     </div>
   );
+}
+
+export function PlanningWorkspaceLayout(props: Parameters<typeof ScopedPlanningWorkspaceLayout>[0]) {
+  const { user } = useAuth();
+  return <ScopedPlanningWorkspaceLayout key={`${user?.id ?? "session"}:${props.planId}`} {...props} />;
 }
