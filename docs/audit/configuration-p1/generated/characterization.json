@@ -1,0 +1,847 @@
+{
+  "contract": "CONFIGURATION-P1-CHARACTERIZATION-V1",
+  "base": "621303a3b3e1e3a2d745e35de9db0a0cbd28c7c9",
+  "networkCalls": 0,
+  "writesToApplication": 0,
+  "scales": [
+    {
+      "advanced": 0,
+      "basic": 0,
+      "basicRoundTrip": 0
+    },
+    {
+      "advanced": 1,
+      "basic": 0,
+      "basicRoundTrip": 0
+    },
+    {
+      "advanced": 5,
+      "basic": 2,
+      "basicRoundTrip": 6
+    },
+    {
+      "advanced": 10,
+      "basic": 3,
+      "basicRoundTrip": 9
+    }
+  ],
+  "basicAnchors": [
+    {
+      "basic": 0,
+      "advanced": 0
+    },
+    {
+      "basic": 1,
+      "advanced": 3
+    },
+    {
+      "basic": 2,
+      "advanced": 6
+    },
+    {
+      "basic": 3,
+      "advanced": 9
+    }
+  ],
+  "sweeps": [
+    {
+      "key": "mainZoneFinishEarly",
+      "conclusion": "Identical adapted problem for this fixture; no Next weight projection",
+      "results": [
+        {
+          "value": 0,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba",
+          "sourceFingerprint": "f6865ea9e1a4b84820644ddc264cdf4728e7b8d6c40ab81824d6a53983208924"
+        },
+        {
+          "value": 1,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba",
+          "sourceFingerprint": "f6865ea9e1a4b84820644ddc264cdf4728e7b8d6c40ab81824d6a53983208924"
+        },
+        {
+          "value": 5,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba",
+          "sourceFingerprint": "f6865ea9e1a4b84820644ddc264cdf4728e7b8d6c40ab81824d6a53983208924"
+        },
+        {
+          "value": 10,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba",
+          "sourceFingerprint": "f6865ea9e1a4b84820644ddc264cdf4728e7b8d6c40ab81824d6a53983208924"
+        }
+      ]
+    },
+    {
+      "key": "mainZoneKeepBusy",
+      "conclusion": "Identical adapted problem for this fixture; no Next weight projection",
+      "results": [
+        {
+          "value": 0,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba",
+          "sourceFingerprint": "f6865ea9e1a4b84820644ddc264cdf4728e7b8d6c40ab81824d6a53983208924"
+        },
+        {
+          "value": 1,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba",
+          "sourceFingerprint": "f6865ea9e1a4b84820644ddc264cdf4728e7b8d6c40ab81824d6a53983208924"
+        },
+        {
+          "value": 5,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba",
+          "sourceFingerprint": "f6865ea9e1a4b84820644ddc264cdf4728e7b8d6c40ab81824d6a53983208924"
+        },
+        {
+          "value": 10,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba",
+          "sourceFingerprint": "f6865ea9e1a4b84820644ddc264cdf4728e7b8d6c40ab81824d6a53983208924"
+        }
+      ]
+    },
+    {
+      "key": "contestantCompact",
+      "conclusion": "Identical adapted problem for this fixture; no Next weight projection",
+      "results": [
+        {
+          "value": 0,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba",
+          "sourceFingerprint": "f6865ea9e1a4b84820644ddc264cdf4728e7b8d6c40ab81824d6a53983208924"
+        },
+        {
+          "value": 1,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba",
+          "sourceFingerprint": "f6865ea9e1a4b84820644ddc264cdf4728e7b8d6c40ab81824d6a53983208924"
+        },
+        {
+          "value": 5,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba",
+          "sourceFingerprint": "f6865ea9e1a4b84820644ddc264cdf4728e7b8d6c40ab81824d6a53983208924"
+        },
+        {
+          "value": 10,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba",
+          "sourceFingerprint": "f6865ea9e1a4b84820644ddc264cdf4728e7b8d6c40ab81824d6a53983208924"
+        }
+      ]
+    },
+    {
+      "key": "contestantStayInZone",
+      "conclusion": "Identical adapted problem for this fixture; no Next weight projection",
+      "results": [
+        {
+          "value": 0,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba",
+          "sourceFingerprint": "f6865ea9e1a4b84820644ddc264cdf4728e7b8d6c40ab81824d6a53983208924"
+        },
+        {
+          "value": 1,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba",
+          "sourceFingerprint": "f6865ea9e1a4b84820644ddc264cdf4728e7b8d6c40ab81824d6a53983208924"
+        },
+        {
+          "value": 5,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba",
+          "sourceFingerprint": "f6865ea9e1a4b84820644ddc264cdf4728e7b8d6c40ab81824d6a53983208924"
+        },
+        {
+          "value": 10,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba",
+          "sourceFingerprint": "f6865ea9e1a4b84820644ddc264cdf4728e7b8d6c40ab81824d6a53983208924"
+        }
+      ]
+    },
+    {
+      "key": "contestantTotalSpan",
+      "conclusion": "Identical adapted problem for this fixture; no Next weight projection",
+      "results": [
+        {
+          "value": 0,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba",
+          "sourceFingerprint": "f6865ea9e1a4b84820644ddc264cdf4728e7b8d6c40ab81824d6a53983208924"
+        },
+        {
+          "value": 1,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba",
+          "sourceFingerprint": "f6865ea9e1a4b84820644ddc264cdf4728e7b8d6c40ab81824d6a53983208924"
+        },
+        {
+          "value": 5,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba",
+          "sourceFingerprint": "f6865ea9e1a4b84820644ddc264cdf4728e7b8d6c40ab81824d6a53983208924"
+        },
+        {
+          "value": 10,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba",
+          "sourceFingerprint": "f6865ea9e1a4b84820644ddc264cdf4728e7b8d6c40ab81824d6a53983208924"
+        }
+      ]
+    }
+  ],
+  "neutralized": [
+    {
+      "key": "groupBySpaceTemplateMatch",
+      "results": [
+        {
+          "value": 0,
+          "rawStatus": "SUPPORTED",
+          "rawReasonCodes": [],
+          "effectiveWeight": 0,
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        },
+        {
+          "value": 1,
+          "rawStatus": "UNSUPPORTED",
+          "rawReasonCodes": [
+            "UNSUPPORTED_SETUP_MAPPING"
+          ],
+          "effectiveWeight": 0,
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        },
+        {
+          "value": 5,
+          "rawStatus": "UNSUPPORTED",
+          "rawReasonCodes": [
+            "UNSUPPORTED_SETUP_MAPPING"
+          ],
+          "effectiveWeight": 0,
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        },
+        {
+          "value": 10,
+          "rawStatus": "UNSUPPORTED",
+          "rawReasonCodes": [
+            "UNSUPPORTED_SETUP_MAPPING"
+          ],
+          "effectiveWeight": 0,
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        }
+      ]
+    },
+    {
+      "key": "groupBySpaceActive",
+      "results": [
+        {
+          "value": 0,
+          "rawStatus": "SUPPORTED",
+          "rawReasonCodes": [],
+          "effectiveWeight": 0,
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        },
+        {
+          "value": 1,
+          "rawStatus": "UNSUPPORTED",
+          "rawReasonCodes": [
+            "UNSUPPORTED_SETUP_MAPPING"
+          ],
+          "effectiveWeight": 0,
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        },
+        {
+          "value": 5,
+          "rawStatus": "UNSUPPORTED",
+          "rawReasonCodes": [
+            "UNSUPPORTED_SETUP_MAPPING"
+          ],
+          "effectiveWeight": 0,
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        },
+        {
+          "value": 10,
+          "rawStatus": "UNSUPPORTED",
+          "rawReasonCodes": [
+            "UNSUPPORTED_SETUP_MAPPING"
+          ],
+          "effectiveWeight": 0,
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        }
+      ]
+    }
+  ],
+  "aliasSweeps": [
+    {
+      "key": "optimizerMainZonePriorityLevel",
+      "results": [
+        {
+          "value": 0,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        },
+        {
+          "value": 1,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        },
+        {
+          "value": 5,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        },
+        {
+          "value": 10,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        }
+      ]
+    },
+    {
+      "key": "optimizerContestantCompactLevel",
+      "results": [
+        {
+          "value": 0,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        },
+        {
+          "value": 1,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        },
+        {
+          "value": 5,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        },
+        {
+          "value": 10,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        }
+      ]
+    },
+    {
+      "key": "optimizerContestantStayInZoneLevel",
+      "results": [
+        {
+          "value": 0,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        },
+        {
+          "value": 1,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        },
+        {
+          "value": 5,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        },
+        {
+          "value": 10,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        }
+      ]
+    },
+    {
+      "key": "optimizerNearHardBreaksMax",
+      "results": [
+        {
+          "value": 0,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        },
+        {
+          "value": 1,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        },
+        {
+          "value": 5,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        },
+        {
+          "value": 10,
+          "status": "SUPPORTED",
+          "problemFingerprint": "c1bf5bd9b7c10a459e6a88d4f5574c7fde094e58f9cf600956d254ef397d5bba"
+        }
+      ]
+    }
+  ],
+  "groupingAlias": [
+    {
+      "value": 0,
+      "status": "SUPPORTED",
+      "reasonCodes": []
+    },
+    {
+      "value": 1,
+      "status": "UNSUPPORTED",
+      "reasonCodes": [
+        "UNSUPPORTED_SETUP_MAPPING"
+      ]
+    },
+    {
+      "value": 5,
+      "status": "UNSUPPORTED",
+      "reasonCodes": [
+        "UNSUPPORTED_SETUP_MAPPING"
+      ]
+    },
+    {
+      "value": 10,
+      "status": "UNSUPPORTED",
+      "reasonCodes": [
+        "UNSUPPORTED_SETUP_MAPPING"
+      ]
+    }
+  ],
+  "transportSweep": [
+    {
+      "groupingWeight": 0,
+      "candidateTaskIds": [
+        [
+          101,
+          102
+        ],
+        [
+          101,
+          103
+        ],
+        [
+          101,
+          104
+        ],
+        [
+          101
+        ],
+        [
+          101,
+          102,
+          103
+        ],
+        [
+          101,
+          102,
+          104
+        ],
+        [
+          101,
+          103,
+          104
+        ]
+      ]
+    },
+    {
+      "groupingWeight": 1,
+      "candidateTaskIds": [
+        [
+          101,
+          102
+        ],
+        [
+          101,
+          103
+        ],
+        [
+          101,
+          104
+        ],
+        [
+          101
+        ],
+        [
+          101,
+          102,
+          103
+        ],
+        [
+          101,
+          102,
+          104
+        ],
+        [
+          101,
+          103,
+          104
+        ]
+      ]
+    },
+    {
+      "groupingWeight": 5,
+      "candidateTaskIds": [
+        [
+          101,
+          102
+        ],
+        [
+          101,
+          103
+        ],
+        [
+          101,
+          104
+        ],
+        [
+          101
+        ],
+        [
+          101,
+          102,
+          103
+        ],
+        [
+          101,
+          102,
+          104
+        ],
+        [
+          101,
+          103,
+          104
+        ]
+      ]
+    },
+    {
+      "groupingWeight": 10,
+      "candidateTaskIds": [
+        [
+          101,
+          102
+        ],
+        [
+          101,
+          103
+        ],
+        [
+          101,
+          104
+        ],
+        [
+          101
+        ],
+        [
+          101,
+          102,
+          103
+        ],
+        [
+          101,
+          102,
+          104
+        ],
+        [
+          101,
+          103,
+          104
+        ]
+      ]
+    }
+  ],
+  "templateEditPatches": [
+    {
+      "line": 2915,
+      "keys": [
+        "name",
+        "abbrev",
+        "defaultDuration",
+        "defaultCameras",
+        "autoCreateOnContestantCreate",
+        "zoneId",
+        "spaceId",
+        "uiColor",
+        "uiColorSecondary",
+        "requiresAuxiliar",
+        "requiresCoach",
+        "exclusiveAuxiliar",
+        "hasDependency",
+        "dependsOnTemplateIds",
+        "dependsOnTemplateId",
+        "itinerantTeamRequirement",
+        "itinerantTeamId",
+        "rulesJson",
+        "resourceRequirements"
+      ],
+      "missingMarginFields": [
+        "participantMarginBeforeMinutes",
+        "participantMarginAfterMinutes"
+      ]
+    }
+  ],
+  "templateApiCharacterization": {
+    "createPayloadKeys": [
+      "name",
+      "abbrev",
+      "defaultDuration",
+      "defaultCameras",
+      "zoneId",
+      "spaceId",
+      "uiColor",
+      "uiColorSecondary",
+      "hasDependency",
+      "dependsOnTemplateIds",
+      "itinerantTeamRequirement",
+      "itinerantTeamId",
+      "autoCreateOnContestantCreate",
+      "participantMarginBeforeMinutes",
+      "participantMarginAfterMinutes"
+    ],
+    "createAccepted": false,
+    "createIssues": [
+      {
+        "code": "unrecognized_keys",
+        "keys": [
+          "participantMarginBeforeMinutes",
+          "participantMarginAfterMinutes"
+        ],
+        "path": [],
+        "message": "Unrecognized key(s) in object: 'participantMarginBeforeMinutes', 'participantMarginAfterMinutes'"
+      }
+    ],
+    "marginPatchAccepted": false,
+    "marginPatchIssues": [
+      {
+        "code": "unrecognized_keys",
+        "keys": [
+          "participantMarginBeforeMinutes",
+          "participantMarginAfterMinutes"
+        ],
+        "path": [],
+        "message": "Unrecognized key(s) in object: 'participantMarginBeforeMinutes', 'participantMarginAfterMinutes'"
+      }
+    ],
+    "storageContainsMarginNames": false
+  },
+  "authorizationRouteCharacterization": [
+    {
+      "method": "PATCH",
+      "path": "/task-templates/1",
+      "requiredRoles": [
+        "admin"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/ta/1",
+      "requiredRoles": null
+    },
+    {
+      "method": "PATCH",
+      "path": "/control-room-settings",
+      "requiredRoles": null
+    },
+    {
+      "method": "PUT",
+      "path": "/vocal-coach-rules",
+      "requiredRoles": null
+    }
+  ],
+  "registry": {
+    "counts": {
+      "PRODUCTIVE": 3,
+      "PARTIAL": 15,
+      "MISSING": 3,
+      "BLOCKED": 5,
+      "NOT_APPLICABLE": 1
+    },
+    "capabilities": [
+      {
+        "id": "WORKDAY_WINDOW",
+        "status": "PRODUCTIVE",
+        "blockers": []
+      },
+      {
+        "id": "TIME_GRID",
+        "status": "PARTIAL",
+        "blockers": [
+          "El intervalo de jornada existe, pero no hay contrato productivo end-to-end para una granularidad de grid independiente."
+        ]
+      },
+      {
+        "id": "GLOBAL_MEAL_BREAK",
+        "status": "PRODUCTIVE",
+        "blockers": []
+      },
+      {
+        "id": "OPERATIONAL_MEAL_POLICIES",
+        "status": "PARTIAL",
+        "blockers": [
+          "operationalMealPolicies no tiene recorrido productivo completo ni provenance diaria demostrable."
+        ]
+      },
+      {
+        "id": "PARTICIPANTS",
+        "status": "BLOCKED",
+        "blockers": [
+          "daily_tasks participa en la proyección y tiene RLS desactivada."
+        ]
+      },
+      {
+        "id": "TASKS_DEPENDENCIES",
+        "status": "BLOCKED",
+        "blockers": [
+          "daily_tasks tiene RLS desactivada."
+        ]
+      },
+      {
+        "id": "SPATIAL_AVAILABILITY",
+        "status": "BLOCKED",
+        "blockers": [
+          "spaces tiene RLS desactivada."
+        ]
+      },
+      {
+        "id": "SPACE_CAPACITY",
+        "status": "MISSING",
+        "blockers": [
+          "La base de datos productiva no persiste capacidad espacial."
+        ]
+      },
+      {
+        "id": "RESOURCE_CATALOG",
+        "status": "BLOCKED",
+        "blockers": [
+          "resource_items tiene RLS desactivada."
+        ]
+      },
+      {
+        "id": "PLAN_RESOURCE_ASSIGNMENTS",
+        "status": "BLOCKED",
+        "blockers": [
+          "plan_resource_items tiene RLS desactivada."
+        ]
+      },
+      {
+        "id": "ITINERANT_UNITS",
+        "status": "PARTIAL",
+        "blockers": [
+          "buildEngineInput no proyecta itinerantTeamAvailability desde autoridades productivas."
+        ]
+      },
+      {
+        "id": "TRANSPORT_TARGET_GROUP_SIZE",
+        "status": "PARTIAL",
+        "blockers": [
+          "targetGroupSize se normaliza como mínimo, pero falta recorrido de producto completo."
+        ]
+      },
+      {
+        "id": "TRANSPORT_MAXIMUM_GROUP_SIZE",
+        "status": "PARTIAL",
+        "blockers": [
+          "maximumGroupSize procede del límite diario, pero el soporte consumidor no es universal."
+        ]
+      },
+      {
+        "id": "TRANSPORT_VEHICLE_CAPACITY",
+        "status": "MISSING",
+        "blockers": [
+          "No existe autoridad productiva independiente para vehicleCapacity."
+        ]
+      },
+      {
+        "id": "TRANSITIONS",
+        "status": "PARTIAL",
+        "blockers": [
+          "El margen general y overrides de participante tienen recorrido productivo; la transición de recursos sigue pendiente."
+        ]
+      },
+      {
+        "id": "MAIN_FLOW",
+        "status": "PARTIAL",
+        "blockers": [
+          "No hay una superficie diaria lossless para todas las reglas de flujo."
+        ]
+      },
+      {
+        "id": "BLOCK_COUNT_POLICY",
+        "status": "PRODUCTIVE",
+        "blockers": []
+      },
+      {
+        "id": "SETUPS",
+        "status": "PARTIAL",
+        "blockers": [
+          "Existe capacidad de motor sin edición diaria productiva completa."
+        ]
+      },
+      {
+        "id": "ANCHORED_OPERATIONS",
+        "status": "PARTIAL",
+        "blockers": [
+          "Falta configuración productiva end-to-end."
+        ]
+      },
+      {
+        "id": "JOINT_OPERATIONS",
+        "status": "PARTIAL",
+        "blockers": [
+          "Falta configuración productiva end-to-end."
+        ]
+      },
+      {
+        "id": "SYNCHRONIZED_ROUNDS",
+        "status": "PARTIAL",
+        "blockers": [
+          "Falta configuración productiva end-to-end."
+        ]
+      },
+      {
+        "id": "TECHNICAL_CHAINS",
+        "status": "PARTIAL",
+        "blockers": [
+          "Falta configuración productiva end-to-end."
+        ]
+      },
+      {
+        "id": "OPTIMIZATION",
+        "status": "PARTIAL",
+        "blockers": [
+          "Restore inherited ya es lossless y auditable en backend, pero falta una superficie diaria para crear/editar DAY_OVERRIDE y una comparación/confirmación de refresh General→día antes de declarar el recorrido UI end-to-end."
+        ]
+      },
+      {
+        "id": "SEARCH_POLICY_BUDGET",
+        "status": "PARTIAL",
+        "blockers": [
+          "Falta contrato de producto general/día completo."
+        ]
+      },
+      {
+        "id": "ASSISTED_PROPOSAL_TIME_LIMIT",
+        "status": "MISSING",
+        "blockers": [
+          "No existe persistencia general/día ni RUN_OVERRIDE."
+        ]
+      },
+      {
+        "id": "EFFECTIVE_CONFIG_REVIEW",
+        "status": "PARTIAL",
+        "blockers": [
+          "La revisión efectiva sólo tiene revision cuando existe sesión Assisted."
+        ]
+      },
+      {
+        "id": "PROTECTED_STATE_LOCKS",
+        "status": "NOT_APPLICABLE",
+        "blockers": [
+          "Es un invariante hard, no una opción configurable."
+        ]
+      }
+    ]
+  },
+  "limitations": [
+    "Synthetic differential adapter evidence does not certify every UI or every production day.",
+    "Transport experiment characterizes candidate generation, not an end-to-end transport UI journey.",
+    "No global capability status is changed."
+  ]
+}
