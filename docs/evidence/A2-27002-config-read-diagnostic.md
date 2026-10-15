@@ -166,3 +166,14 @@ the run is persisted successfully with `SEARCH_TIME_LIMIT_REACHED`, and restart
 and historical preservation pass. The remote failure has not reproduced, so
 only diagnostic instrumentation is added for it. The productive correction is
 unchanged from `ad5c1ed`; remote CI is rerun on the updated test/diagnostic head.
+
+The second CI run provides the missing trace: configuration and next-scope 200,
+proposal 202, initial run GET 200, then a subsequent GET fails with
+`TypeError / ECONNRESET`, while the persisted run is still running. This is a
+transport failure in the Node HTTP harness, not the original configuration error.
+An isolated Node 20.20.2 HTTP experiment reproduces it: default 5-second server
+keep-alive plus a 7-second synchronous server section resets a reused connection;
+the identical experiment with `Connection: close` passes. The native regression's
+Node-only request helper therefore uses fresh connections. It does not retry
+mutations, alter browser/product polling or change any search limit. The
+expected observable is a received persisted result followed by restart checks.

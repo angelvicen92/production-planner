@@ -13,7 +13,10 @@ export async function runA2ConfigurationReadRecovery(o:Options){
  assert.equal(new URL(o.appUrl).hostname,'127.0.0.1');assert.equal(o.planId,27002);
  const requests:any[]=[],report:any={mode:'NATIVE_DISPOSABLE_CONFIG_READ_RECOVERY',remoteWrites:0,requests};
  const request=async<T>(method:string,path:string,body?:unknown,base=o.appUrl,role='production'):Promise<T>=>{
-  const response=await fetch(`${base}${path}`,{method,headers:{Authorization:`Bearer ${o.users[role].token}`,'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(180_000)}).catch(error=>{
+  // Node 20 can reset a reused idle socket when synchronous search outlives
+  // the server's keep-alive timer. Fresh connections keep this HTTP harness
+  // independent of that client-pool race; product polling/retries are unchanged.
+  const response=await fetch(`${base}${path}`,{method,headers:{Authorization:`Bearer ${o.users[role].token}`,'Content-Type':'application/json',Connection:'close'},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(180_000)}).catch(error=>{
    requests.push({method,path,networkError:{name:error?.name,code:error?.cause?.code}});
    // Match apiRequest's AbortController error for the existing read-poll retry
    // in AssistedAutopilot. A timed-out read does not cancel a persisted run.
