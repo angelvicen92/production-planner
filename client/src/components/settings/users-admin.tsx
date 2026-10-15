@@ -1,6 +1,7 @@
+import { SettingsSection } from "@/components/settings/settings-section";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -157,10 +158,8 @@ export function UsersAdminSettings({ currentUserId }: { currentUserId?: string |
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Usuarios</CardTitle>
-      </CardHeader>
+    <SettingsSection section="users" title="Usuarios" busy={saveRow.isPending || deleteUser.isPending} error={usersQ.error || saveRow.error || deleteUser.error}>
+
       <CardContent className="space-y-4">
         <div className="flex flex-wrap gap-2">
           <Input placeholder="Buscar por email" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
@@ -282,6 +281,6 @@ export function UsersAdminSettings({ currentUserId }: { currentUserId?: string |
           <Button variant="outline" disabled={!usersQ.data?.nextPage} onClick={() => setPage((p) => p + 1)}>Siguiente</Button>
         </div>
       </CardContent>
-    </Card>
+    </SettingsSection>
   );
 }

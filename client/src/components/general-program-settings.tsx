@@ -1,3 +1,4 @@
+import { SettingsSection } from "@/components/settings/settings-section";
 import { MainFlowPreferenceEditor } from "./main-flow-preference-editor";
 import { autoMainFlowPreference, type MainFlowPreference } from "@shared/mainFlowPreference";
 import { useUserRole } from "@/hooks/use-user-role";
@@ -5,7 +6,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { api } from "@shared/routes";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -111,10 +112,8 @@ export function GeneralProgramSettings() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Ajustes generales del programa (defaults)</CardTitle>
-      </CardHeader>
+    <SettingsSection section="program" title="Ajustes generales del programa (defaults)" busy={update.isPending} error={update.error || workdayInvalid}>
+
       <CardContent className="space-y-4">
         <div className="rounded border p-3"><p className="text-sm">Estructura habitual para días nuevos con un flujo principal Next configurado. El reparto requiere una comida aplicable al flujo principal del día; guardar aquí no cambia jornadas existentes.</p><MainFlowPreferenceEditor value={data.mainFlowPreference??autoMainFlowPreference} mealApplicable={true} disabled={role!=="admin"} saving={update.isPending} onSave={v=>update.mutate({mainFlowPreference:v})}/></div>
         <div className="grid grid-cols-2 gap-4">
@@ -349,6 +348,6 @@ export function GeneralProgramSettings() {
           plan puedes ajustar sus valores en “Edit plan”.
         </p>
       </CardContent>
-    </Card>
+    </SettingsSection>
   );
 }

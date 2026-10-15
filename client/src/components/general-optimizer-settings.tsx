@@ -1,3 +1,4 @@
+import { SettingsSection } from "@/components/settings/settings-section";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
@@ -9,7 +10,7 @@ import {
   mapBasicToAdvanced,
   type OptimizerHeuristicKey,
 } from "@shared/optimizer";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -116,6 +117,7 @@ export function GeneralOptimizerSettings() {
   const [localMode, setLocalMode] = useState<"basic" | "advanced">("basic");
   const [localHeuristics, setLocalHeuristics] = useState<OptimizerHeuristics | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const [pendingSave, setPendingSave] = useState(false);
 
   const isSavingRef = useRef(false);
@@ -140,6 +142,7 @@ export function GeneralOptimizerSettings() {
 
   const patchSettings = async (patch: Partial<OptimizerSettings>) => {
     setIsSaving(true);
+    setSaveError(false);
     isSavingRef.current = true;
     try {
       await apiRequest("PATCH", api.optimizerSettings.update.path, patch);
@@ -147,6 +150,7 @@ export function GeneralOptimizerSettings() {
       toast({ title: "Ajustes de optimización guardados" });
       return true;
     } catch (err: any) {
+      setSaveError(true);
       toast({
         title: "No se pudieron guardar",
         description: err?.message || "Error desconocido",
@@ -273,18 +277,8 @@ export function GeneralOptimizerSettings() {
   const zones = zonesQ.data ?? [];
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between gap-3">
-          <CardTitle>Optimización (global)</CardTitle>
-          {(isSaving || pendingSave) && (
-            <div className="text-xs text-muted-foreground flex items-center gap-1">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Guardando…
-            </div>
-          )}
-        </div>
-      </CardHeader>
+    <SettingsSection section="optimizer" title="Optimización (global)" busy={isSaving || pendingSave} error={saveError}>
+
 
       <CardContent className="space-y-4">
         <div className="space-y-2">
@@ -576,6 +570,6 @@ export function GeneralOptimizerSettings() {
         </div>
 
       </CardContent>
-    </Card>
+    </SettingsSection>
   );
 }
