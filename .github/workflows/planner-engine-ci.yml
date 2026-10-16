@@ -70,7 +70,7 @@ jobs:
       - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
       - run: npm run test:demo:a2-import
       - run: node --import tsx --test script/demo/a2ConfigurationReadRecovery.spec.ts server/effectiveConfigurationHttp.spec.ts
-      - run: node --import tsx --test script/demo/a2RealTopology.spec.ts script/demo/a2RealImportSQL.spec.ts shared/anchoredOperationProjection.test.ts
+      - run: node --import tsx --test script/demo/a2RealTopology.spec.ts script/demo/a2RealImportSQL.spec.ts script/demo/a2OperationScope.spec.ts shared/anchoredOperationProjection.test.ts shared/taskOperationScope.test.ts
       - run: node --import tsx --test script/demo/a2DraftPreparationRecovery.spec.ts
       - run: npx --no-install tsx --test shared/assistedAutopilot.test.ts shared/assistedStageTiming.test.ts client/src/components/planning/assisted-planning-workspace.test.ts client/src/components/planning/stage-history-timing.test.ts client/src/lib/assisted-draft-warnings.test.ts client/src/lib/assisted-planning-view.test.ts client/src/lib/contestant-lane-sort.test.ts client/src/lib/planning-view-policy.test.ts server/assistedHistoryTimings.spec.ts client/src/lib/assisted-scope-selection.test.ts client/src/components/planning/assisted-location-scope.test.tsx
       - run: node --import tsx --test client/src/lib/day-execution-view.test.ts client/src/lib/planning-workspace-preferences.test.ts client/src/components/effective-configuration.test.tsx
@@ -81,7 +81,7 @@ jobs:
       - name: Configuration read with the observed 52 legacy breaks and S0 Autopilot
         run: npm run demo:a2:smoke -- work/a2-config-read-recovery --historical-topology --configuration-read-recovery
       - name: Native SQL, Auth, HTTP and UI; canonical baseline and two deterministic orders
-        run: npm run demo:a2:smoke -- work/a2-integration --historical-topology --full --day-workspace --stage-order --autopilot
+        run: npm run demo:a2:smoke -- work/a2-integration --historical-topology --full --day-workspace --stage-order --autopilot --reality-scope
       - name: Integration evidence (no private app logs or credentials)
         if: always()
         uses: actions/upload-artifact@v4
@@ -105,6 +105,8 @@ jobs:
             work/a2-config-read-recovery/configuration-read-run.json
             work/a2-config-read-recovery/configuration-read-controller.json
             work/a2-integration/*-real-ui.png
+            work/a2-integration/reality-scope.json
+            work/a2-integration/reality-*.png
 
   main-flow-preference-integration:
     name: main-flow-preference-integration

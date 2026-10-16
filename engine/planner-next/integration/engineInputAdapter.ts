@@ -176,6 +176,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
       ...(source.blocksSpace === false ? { blocksSpace: false } : {}),
       dependencies: [...new Set(source.dependsOnTaskIds ?? (source.dependsOnTaskId != null ? [source.dependsOnTaskId] : []))].sort((a, b) => a - b).map((id) => canonical("task", id)),
       ...(resources.length ? { requiredResourceIds: resources.map((id) => canonical("plan-resource", id)) } : {}),
+      ...(source.resourceInheritance === "OPERATION_ONLY" ? { nonSubstitutableResourceIds: [...new Set([...(source.declaredResourceIds ?? source.assignedResourceIds ?? []), ...projection.lockedResourceIds])].sort((a,b)=>a-b).map(id=>canonical("plan-resource",id)) } : {}),
       ...(fixed ? { availability: [window(fixed)] } : {}),
       ...(source.itinerantTeamId != null ? { itinerantUnitId: canonical("itinerant-team",source.itinerantTeamId) } : {}),
       ...(source.allowedItinerantTeamIds?.length ? { allowedItinerantUnitIds: [...new Set(source.allowedItinerantTeamIds)]

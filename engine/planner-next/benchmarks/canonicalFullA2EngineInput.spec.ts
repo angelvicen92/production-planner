@@ -25,10 +25,10 @@ function capacityTask(problem: PlannerNextProblem, fixture: ReturnType<typeof bu
   return { ...task, dependencies: [] };
 }
 
-test("canonical P14 projects exclusive CAM1 to every Recursos/Pasillo task and never to Giratuto", () => {
+test("canonical P14 projects CAM1 to ordinary Recursos/Pasillo, while itinerant operations retain physical occupancy without inheritance", () => {
   const fixture = buildCanonicalFullA2EngineInput();
   const cam1 = fixture.input.planResourceItems.find(resource => resource.name === "cam-1");
-  assert.ok(cam1, "Fuente 06 v2.8 §7.5 requires CAM1 in the canonical resource graph");
+  assert.ok(cam1, "Fuente 06 v2.10 §7.5 requires CAM1 in the canonical resource graph");
   const problem = adaptedProblem(fixture.input);
   const cam1Id = `plan-resource:${cam1.id}`;
   assert.ok(problem.resources.some(resource => resource.id === cam1Id));
@@ -37,7 +37,11 @@ test("canonical P14 projects exclusive CAM1 to every Recursos/Pasillo task and n
     assert.deepEqual(fixture.input.spaceResourceAssignments[spaceId], [cam1.id]);
     const tasks = problem.tasks.filter(task => task.spaceId === `space:${spaceId}`);
     assert.ok(tasks.length > 0);
-    assert.ok(tasks.every(task => task.requiredResourceIds?.includes(cam1Id)));
+    for (const task of tasks) {
+      const source = fixture.input.tasks.find(source => `task:${source.id}` === task.id)!;
+      assert.equal(Boolean(task.requiredResourceIds?.includes(cam1Id)), source.resourceInheritance !== "OPERATION_ONLY");
+      assert.notEqual(task.blocksSpace, false);
+    }
   }
   const otherTasks = problem.tasks.filter(task => !["p14-recursos", "p14-pasillo"]
     .some(space => task.spaceId === `space:${sourceSpaceId(fixture, space)}`));

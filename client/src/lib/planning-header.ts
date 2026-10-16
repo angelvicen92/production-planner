@@ -1,7 +1,8 @@
+import { usesItinerantAgenda, type TaskOperationScope } from "../../../shared/taskOperationScope";
 import type { HeaderScope } from "@shared/planningHeaderNotes";
 import { effectivePlanningResourceIds } from "./planning-view-policy";
 
-export type HeaderTask = { id: number; spaceId?: number | null; zoneId?: number | null; itinerantTeamId?: number | null; assignedResources?: number[] | null; assigned_resource_ids?: number[] | null; isManualBlock?: boolean; breakKind?: string };
+export type HeaderTask = TaskOperationScope & { id: number; spaceId?: number | null; zoneId?: number | null; itinerantTeamId?: number | null; assignedResources?: number[] | null; assigned_resource_ids?: number[] | null; isManualBlock?: boolean; breakKind?: string };
 export type HeaderStaff = { staffRole: "production" | "editorial"; staffPersonId?: number; staffPersonName: string; scopeType: string; zoneId: number | null; spaceId: number | null; itinerantTeamId: number | null };
 export type HeaderData = {
   tasks: readonly HeaderTask[];
@@ -26,7 +27,7 @@ const positiveIds = (value: unknown): number[] => Array.isArray(value) ? [...new
 export function projectPlanningHeader(scope: HeaderScope, data: HeaderData): PlanningHeader {
   const spaces = new Map(data.spaces.map(s => [s.id, s]));
   const zoneId = scope.scopeType === "zone" ? scope.scopeId : scope.scopeType === "space" ? spaces.get(scope.scopeId)?.zoneId ?? null : null;
-  const tasks = data.tasks.filter(t => !t.isManualBlock && !t.breakKind && (scope.scopeType === "space" ? t.spaceId === scope.scopeId : scope.scopeType === "itinerant_team" ? t.itinerantTeamId === scope.scopeId :
+  const tasks = data.tasks.filter(t => !t.isManualBlock && !t.breakKind && (scope.scopeType === "itinerant_team" || !usesItinerantAgenda(t)) && (scope.scopeType === "space" ? t.spaceId === scope.scopeId : scope.scopeType === "itinerant_team" ? t.itinerantTeamId === scope.scopeId :
     t.spaceId != null ? spaces.get(t.spaceId)?.zoneId === zoneId && (t.zoneId == null || t.zoneId === zoneId) : t.zoneId === zoneId));
   const resources = new Map<number, PlanningHeader["resources"][number]>();
   const add = (ids: unknown, label: string, taskId?: number) => {
@@ -46,7 +47,7 @@ export function projectPlanningHeader(scope: HeaderScope, data: HeaderData): Pla
   }
   for (const task of tasks) {
     // Reuse the existing effective union, keeping direct task participation distinct.
-    const effective = effectivePlanningResourceIds(task, spaces, data.spaceAssignments, data.zoneAssignments);
+    const effective = effectivePlanningResourceIds(task, spaces, data.spaceAssignments, data.zoneAssignments, data.teamMemberships);
     const direct = positiveIds(task.assignedResources ?? task.assigned_resource_ids);
     add(scope.scopeType === "itinerant_team" ? effective : effective.filter(id => direct.includes(id)), "Por tarea", task.id);
   }

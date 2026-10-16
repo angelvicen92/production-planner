@@ -40,6 +40,7 @@ if(process.argv.includes('--app')){
  const historicalTopology=process.argv.includes('--historical-topology');
  assert.ok(!templateCreation||historicalTopology,'template creation requires the protected historical catalog');
  const configurationReadRecovery=process.argv.includes('--configuration-read-recovery');
+ const realityScope=process.argv.includes('--reality-scope');
  const operationalMeals=process.argv.includes('--operational-meals');
  const headerNotes=process.argv.includes('--header-notes');
  const replayOperationalSnapshot=operationalMeals||headerNotes;
@@ -57,6 +58,7 @@ if(process.argv.includes('--app')){
  const workspaceSetup=process.argv.includes("--workspace-setup");
  const stageOrder=process.argv.includes('--stage-order');
  const autopilot=process.argv.includes('--autopilot');
+ assert.ok(!realityScope||(full&&historicalTopology),'--reality-scope requires a complete disposable historical A2');
  assert.ok(!stageOrder||full,'--stage-order requires the complete real baseline (--full)');
  assert.ok(!autopilot||full,'--autopilot requires the complete real baseline (--full)');
  const directory=resolve(process.argv.slice(2).find(a=>!a.startsWith('--'))??'work/a2-integration-smoke');
@@ -88,6 +90,7 @@ if(process.argv.includes('--app')){
  if(configurationReadRecovery)runtimeFiles.push('script/demo/smokeA2ConfigurationReadRecovery.ts','script/demo/fixtures/a2-27002-legacy-breaks.json','server/planPlannerNextConfiguration.ts','shared/assistedAutopilot.ts');
  if(operationalMeals)runtimeFiles.push('script/demo/seedOperationalMealRehearsal.ts','script/demo/smokeOperationalMealJourney.ts','script/demo/fixtures/ui05-a2-s22.json.gz','script/demo/fixtures/a2-27002-legacy-breaks.json','client/src/lib/planning-operational-meals.ts');
  if(controlRoom)runtimeFiles.push('script/demo/smokeControlRoomJourney.ts','client/src/pages/control-room.tsx','client/src/lib/control-room-metrics.ts','client/src/hooks/use-control-room-data.ts','client/src/hooks/use-execution-context.ts','client/src/hooks/use-war-room.ts','client/src/hooks/use-plan-realtime.ts','client/src/components/production-control-panel.tsx','client/src/pages/dashboard.tsx',...readdirSync('client/src/components/control-room').map(file=>`client/src/components/control-room/${file}`));
+ if(realityScope)runtimeFiles.push('script/demo/smokeRealityScopeJourney.ts','shared/taskOperationScope.ts','client/src/lib/planning-header.ts','engine/planner-next/integration/effectiveTaskResourceAssignments.ts','engine/planner-next/itinerantUnitAssignment.ts');
  const report:any={mode:operationalMeals?'REAL_DISPOSABLE_OPERATIONAL_MEAL_S22_REPLAY':liveSnapshot?'REAL_DISPOSABLE_EXECUTION_ACCEPTED_SNAPSHOT_REPLAY':'REAL_DISPOSABLE_PRODUCT_INTEGRATION',nodeVersion:process.version,v8Version:process.versions.v8,remoteWrites:0,images,requestedStages:operationalMeals?0:full?11:2,startedAt:new Date().toISOString(),runtimeHashes:hashes(),checks:[],pending:controlRoom?['Supabase Realtime/WebSocket delivery (HTTP polling certified)']:['Connected Supabase catalog/backup adoption and original-row preservation','Published Replit runtime and user browser','Supabase Realtime/WebSocket transport']};
  const pass=(name:string)=>{report.checks.push(name);console.log(`PASS ${name}`);};
  const cleanup=async()=>{
@@ -195,7 +198,7 @@ if(process.argv.includes('--app')){
   const appLog=createWriteStream(`${directory}/app-private.log`,{mode:0o600});
   app=spawn(process.execPath,['--import','tsx',resolve('script/demo/smokeA2Integration.ts'),'--app'],{env:localEnv,stdio:['ignore','pipe','pipe']});app.stdout!.pipe(appLog);app.stderr!.pipe(appLog);
   await eventually(async()=>{assert.equal(app!.exitCode,null,'product server exited');const r=await fetch(`${appUrl}/api/plans/${dataset.input.planId}`,{headers:{Authorization:`Bearer ${users.production.token}`}});assert.equal(r.status,200);});
-  const requestedBaseline=headerNotes?process.env.UI06_BASELINE_ROOT:operationalMeals?process.env.UI05_BASELINE_ROOT:settingsSections?process.env.SETTINGS_SECTIONS_BASELINE_ROOT:collapsibleSections?process.env.SECTIONS_BASELINE_ROOT:templateCreation?process.env.TEMPLATE_CREATION_BASELINE_ROOT:templateAuthorization?process.env.TEMPLATE_AUTHORIZATION_BASELINE_ROOT:configurationReadRecovery?process.env.CONFIG_READ_BASELINE_ROOT:controlRoom?process.env.CONTROL_ROOM_BASELINE_ROOT:undefined;
+  const requestedBaseline=realityScope?process.env.REALITY_BASELINE_ROOT:headerNotes?process.env.UI06_BASELINE_ROOT:operationalMeals?process.env.UI05_BASELINE_ROOT:settingsSections?process.env.SETTINGS_SECTIONS_BASELINE_ROOT:collapsibleSections?process.env.SECTIONS_BASELINE_ROOT:templateCreation?process.env.TEMPLATE_CREATION_BASELINE_ROOT:templateAuthorization?process.env.TEMPLATE_AUTHORIZATION_BASELINE_ROOT:configurationReadRecovery?process.env.CONFIG_READ_BASELINE_ROOT:controlRoom?process.env.CONTROL_ROOM_BASELINE_ROOT:undefined;
   if(requestedBaseline){
    const baselineRoot=resolve(requestedBaseline),baselinePort=await freePort();baselineUrl=`http://127.0.0.1:${baselinePort}`;
    const baselineLog=createWriteStream(`${directory}/baseline-private.log`,{mode:0o600});
@@ -259,6 +262,7 @@ if(process.argv.includes('--app')){
    assert.equal(report.topologyMetrics.placedObligations,266);assert.deepEqual(report.topologyMetrics.styling.overlapPairs,[]);
    pass('persisted physical topology, styling capacity and final SQL KPI projection');
   }
+  if(realityScope){const {runRealityScopeJourney}=await import('./smokeRealityScopeJourney');report.realityScope=await runRealityScopeJourney({...options,baselineUrl,planId:dataset.input.planId});}
   if(liveExecution){const {runLiveExecutionJourney}=await import('./smokeLiveExecutionJourney');report.liveExecution=await runLiveExecutionJourney(options);}
   }
   assert.deepEqual(hashes(),report.runtimeHashes,'runtime sources changed during integration rehearsal');

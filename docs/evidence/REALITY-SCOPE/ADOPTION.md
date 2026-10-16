@@ -1,0 +1,20 @@
+# Adopción controlada; no ejecutada en producción
+
+## Estado de la jornada 27002
+
+El despliegue de código **no convierte** la configuración histórica en la nueva semántica. La proyección transporta la selección del snapshot, pero la ausencia de `agendaScope` mantiene agenda física y la ausencia de `resourceInheritance` mantiene herencia normal. No se retiran recursos persistidos explícitos. Las decisiones antiguas siguen consultables/restaurables; no se modifican sus fingerprints, revisiones, sesiones ni horarios.
+
+`088_plan_planner_next_configuration.sql` rechaza cualquier cambio del JSON congelado con `PLANNER_NEXT_CONFIGURATION_IMMUTABLE`. Los endpoints actuales de refresh no son un editor de `taskOperations`. No desactivar el trigger, alterar revisiones antiguas, escribir directamente el JSON ni copiar los snapshots a una revisión diferente para simular una migración.
+
+## Vía disponible: jornada de sustitución explícita
+
+1. Conservar backup restaurable y manifiesto read-only del día original: configuración, revisiones/replay, 23 Stages observados según diagnóstico de entrada (verificar nuevamente el conteo), selección efectiva, tareas, recursos, locks, notas y fingerprints. Mantener 27002 intacta.
+2. Preparar offline una **nueva jornada** con identidad/fecha aprobadas y namespace sin colisiones. Usar el importador de jornada y su preflight/backup/drift ya existentes, inicialmente en un entorno descartable. No utilizar horarios humanos como seed ni copiar aceptaciones como si el solver las hubiera certificado bajo el contrato nuevo.
+3. Revisar el diff tipado de las 266 `taskOperations`: standalone y segmentos acompañantes `ITINERANT_UNIT` + `OPERATION_ONLY`; anclas `PHYSICAL_SPACE` + `LOCATION`; `blocksSpace` y espacios permanecen iguales. La configuración se basa en identidades de operaciones, acompañamientos y composición explícita, nunca nombres. Revisar individualmente recursos directos/locks y materializar `declaredResourceIds` desde sus declaraciones originales, separadas de los miembros de una selección aceptada. No deducirlo restando equipos de un array histórico sin provenance. Una composición de referencia elegible no es una declaración adicional de sus miembros; los recursos directos humanos sí lo son y se preservan.
+4. Materializar configuración nueva al crear esa jornada, con revisión/fingerprint nuevos y S0 propio. Mantener dominios A/B y asignaciones fijas declaradas; no elegir equipos para tareas aún pendientes.
+5. Ejecutar `buildEngineInput`/preflight/adapter y generar propuestas, validar y aceptar con la autoridad humana habitual. Certificar 266 obligaciones, física, recursos, EVA, equipos/transiciones, acompañamientos, comidas, dependencias y determinismo. Cada aceptación nueva referencia la configuración nueva; ninguna aceptación antigua cambia de revisión. Revalidar cualquier horario que Producción decida introducir manualmente.
+6. Comparar Timeline/Lista/PDF y cabeceras con el histórico y los PDFs. Guardar Evidence y decidir explícitamente cuál jornada se utilizará operativamente. El rollback consiste en volver a consultar/utilizar el día original intacto, sin reescribir su historia. Las notas siguen su persistencia UI-06; no copiarlas silenciosamente entre identidades.
+
+**Para conservar exactamente el ID 27002** hace falta primero un writer autenticado y versionado de overrides operativos, con revisión nueva, stale proposals/validations, replay por revisión y restauración histórica demostrados. Esa ampliación no está implementada en esta unidad y no se sustituye por SQL administrativo. No existe una orden segura actual de migración in-place. La vía de nueva jornada permite adoptar el contrato sin ampliar ahora esa arquitectura.
+
+No se ha ejecutado ningún paso conectado, ni se ha publicado Replit. La creación/importación productiva y cualquier ampliación del writer quedan pendientes de la unidad y autorización correspondientes.

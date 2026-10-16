@@ -35,3 +35,10 @@ test("zone conflicts and incomplete hierarchy do not invent inherited consumptio
   assert.deepEqual(effectivePlanningResourceIds({assignedResources:"7" as any},spaces,{},{}),[]);
   assert.deepEqual(effectivePlanningResourceIds({assignedResources:[7,"8",null,1.5] as any},spaces,{},{}),[7]);
 });
+
+test("own resources include only a fixed or selected team, never all eligible compositions",()=>{
+ const teams=[{itinerantTeamId:50,planResourceItemIds:[7,8]}];
+ const source={resourceInheritance:"OPERATION_ONLY" as const,spaceId:3,zoneId:1,assignedResources:[9]};
+ assert.deepEqual(effectivePlanningResourceIds({...source,itinerantTeamId:50},new Map([[3,{zoneId:1}]]),{3:[10]},{1:[11]},teams),[7,8,9]);
+ assert.deepEqual(effectivePlanningResourceIds(source,new Map([[3,{zoneId:1}]]),{3:[10]},{1:[11]},teams),[9]);
+});

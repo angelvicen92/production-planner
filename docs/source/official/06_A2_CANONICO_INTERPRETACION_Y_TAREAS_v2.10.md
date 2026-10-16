@@ -1,9 +1,25 @@
 # OPTIPLAN — BENCHMARK A2 CANÓNICO: INTERPRETACIÓN Y OBLIGACIONES
 
-**Versión:** 2.9<br>
-**Fecha:** 14 de octubre de 2026<br>
+**Versión:** 2.10<br>
+**Fecha:** 16 de octubre de 2026<br>
 **Estado:** Fuente oficial consolidada  
 **Absorbe:** Documento Maestro de Interpretación A2 v1.9, Cuadro de tareas A2 v1.3 y Addendum Reality/EVA/Alfombra/márgenes v1.0.
+
+## Actualización v2.10 — agenda, ocupación y recursos efectivos de Reality
+
+Aclaración expresa de producción: Reality tiene una agenda propia de equipo/unidad itinerante. La propiedad visual de agenda, la ocupación física y el consumo de recursos son tres autoridades independientes; ninguna se deduce de nombres, IDs, colores o de la mera existencia de un equipo asignado.
+
+- Reality standalone en Corner, Hall, Manzano, Buggy, Control u otra ubicación real conserva su espacio y su exclusividad física durante el intervalo efectivo, aunque la tarjeta principal se presente una sola vez en la agenda itinerante.
+- Estas operaciones consumen sus recursos directos explícitos, locks aplicables y la composición del equipo efectivo. **No heredan automáticamente recursos permanentes del espacio ni de su zona.** En particular, Reality Corner no consume CAM1 por utilizar Corner. Una declaración directa o lock de CAM1 se conserva.
+- Las actividades ordinarias de Corner/Pasillo mantienen la herencia normal de CAM1. Compartir espacio con Reality mantiene la incompatibilidad física; los recursos itinerantes no pasan a ser asignaciones fijas del plató.
+- Reality anclado mantiene 15 antes → Ensayo 15 → 15 después. Participante y equipo están ocupados 45 minutos. Los segmentos virtuales `blocksSpace=false` no reservan Estudio 7; el Ensayo permanece en su agenda física y sólo ocupa sus 15 minutos, incluso cuando consume equipo Reality.
+- La selección A/B/C materializada en propuesta, Draft o Stage pertenece a ese estado. Un dominio de equipos elegibles sin selección se muestra pendiente; no se elige un equipo por orden de catálogo. Un equipo fijo explícito es una autoridad distinta de un dominio elegible.
+
+El contrato genérico efectivo por operación declara `agendaScope = PHYSICAL_SPACE | ITINERANT_UNIT` y `resourceInheritance = LOCATION | OPERATION_ONLY`. Ambos campos son independientes de `blocksSpace`. `declaredResourceIds` conserva las declaraciones directas autoritativas de la operación separadas de la composición materializada por el solver. Su omisión conserva como explícitos los recursos directos de la fila; una lista explícita, incluso vacía, identifica la procedencia y evita reclasificar los miembros seleccionados al recargar desde SQL. Las declaraciones y locks se conservan al sustituir equipo; nunca se obtiene esa lista eliminando miembros por una heurística sobre datos históricos. Omisión conserva agenda física y herencia normal para jornadas legacy. `OPERATION_ONLY` mantiene recursos directos y locks, además de los miembros del equipo efectivamente asignado; no elimina obligaciones, dependencias, comidas, transiciones ni ventanas. El ancla conserva `PHYSICAL_SPACE` y herencia habitual; sus segmentos y las operaciones standalone itinerantes declaran el ámbito itinerante y los recursos propios.
+
+Esta corrección sustituye la interpretación anterior que atribuía CAM1 a Reality Corner por ubicación, incluida su descripción histórica en A2-REAL-TOPOLOGY. No cambia los PDFs, las 266 obligaciones, duraciones, topología o capacidades. Las cabeceras distinguen asignación de equipo de ocupación física consultable; Timeline, Lista y PDF usan la misma autoridad visual.
+
+Los Stages existentes no se reescriben. La configuración Next protegida por 088 no se actualiza por script ni por despliegue. La adopción completa en una jornada existente requiere un procedimiento controlado con configuración/revisión nueva y validación humana; el historial original permanece consultable y restaurable bajo su semántica histórica.
 
 ## Actualización v2.9 — preferencia humana explícita de estructura
 
@@ -20,7 +36,7 @@ Esta versión consolida las correcciones operativas expresas del responsable de 
 | Estilismo entrada y salida | zona 14, espacio 40 Vestu | Una capacidad compartida HARD=1, con huecos permitidos, sin continuidad obligatoria ni penalización de hueco no configurada; sin descanso de plató 75 min. |
 | Redes | zona 14 Otros, espacio 39 Maqui/Pelu | Independiente de Corner/Pasillo, capacidad 1, sin CAM1 ni recurso añadido automáticamente. Se preservan requisitos explícitos distintos, disponibilidad, dependencias, transporte y márgenes. |
 | P14 Pasillo | zona 3, espacio 3 | Capacidad 1; CAM1 explícita. |
-| P14 Corner/Recursos | zona 3, espacio 31 Corner | Corner Influencer/Music/combinado comparten capacidad 1; CAM1 explícita. |
+| P14 Corner/Recursos | zona 3, espacio 31 Corner | Corner Influencer/Music/combinado comparten capacidad 1; CAM1 para actividades ordinarias con herencia normal, sin herencia automática para Reality. |
 | P14 Giratutto | zona 3, espacio 32 | Capacidad 1 propia; sin CAM1 por defecto. |
 | Reality Hall | zona 3, espacio 4 Hall | Identidad catalogada explícita. No se equipara a Pasillo por nombre. Mantiene los equipos itinerantes efectivos por instancia. |
 | P15 Croma | zona 2, espacio 43, padre 42 | CAM2 explícita, independiente de la capacidad del set combinado. |
@@ -33,7 +49,7 @@ Esta versión consolida las correcciones operativas expresas del responsable de 
 | Transporte IN / OUT | zona 14, espacio 49 | Capacidad gobernada por las reglas propias de agrupación IN/OUT; no exclusividad serial artificial del espacio. |
 | Reality Plató / Sodexo | proyección virtual no física cuando corresponda | No se crea un plató Reality permanente ni una comida espacial ficticia. Ubicación del equipo y decorado físico son conceptos diferentes. |
 
-La unidad operativa de construcción/descanso P14 sigue siendo Corner/Recursos + Pasillo + Giratutto. Redes queda fuera de su scope y de su corte; las comidas de los participantes permanecen independientes. CAM1 limita Corner/Pasillo incluso con espacios distintos. CAM2 limita todo el trabajo A2 de Croma y Estrellas/Sillón incluso con capacidades espaciales distintas. CAM5 de Totales 1 y CAM6 de Totales Coreo se conservan como requisitos efectivos conforme al catálogo original; no se omiten del modelo ni se crean cámaras ficticias. Estas exclusividades proceden de identidades concretas y asignaciones explícitas, nunca de nombres ni herencia indiscriminada de zona.
+La unidad operativa de construcción/descanso P14 sigue siendo Corner/Recursos + Pasillo + Giratutto. Redes queda fuera de su scope y de su corte; las comidas de los participantes permanecen independientes. CAM1 limita las actividades que la declaran o heredan en Corner/Pasillo, incluso con espacios distintos; Reality con recursos propios no la hereda por ubicación. CAM2 limita todo el trabajo A2 de Croma y Estrellas/Sillón incluso con capacidades espaciales distintas. CAM5 de Totales 1 y CAM6 de Totales Coreo se conservan como requisitos efectivos conforme al catálogo original; no se omiten del modelo ni se crean cámaras ficticias. Estas exclusividades proceden de identidades concretas y asignaciones explícitas, nunca de nombres ni herencia indiscriminada de zona.
 
 Reality standalone en Corner Influencer o Corner Music utiliza el mismo espacio físico 31 que las otras operaciones de Corner, conservando además los recursos itinerantes A/B/C efectivos. No se duplica capacidad por un alias. Los padres históricos se conservan como jerarquía explícita; no se inventan equivalencias físicas adicionales.
 
@@ -431,7 +447,7 @@ Reglas adicionales:
 ### 7.5 Plató 14 — CAM1, Recursos, Pasillo y Giratuto
 
 - CAM1 está asignada de forma efectiva a `Plató 14 - Recursos` y `Plató 14 - Pasillo`.
-- Por compartir CAM1, cualquier tarea de Recursos y cualquier tarea de Pasillo **no pueden ejecutarse simultáneamente** entre sí.
+- Las tareas ordinarias que consumen CAM1 en Recursos/Pasillo **no pueden ejecutarse simultáneamente** entre sí. Reality mantiene exclusividad física del espacio pero, con recursos propios, no hereda CAM1 por ubicación; puede coexistir con trabajo de otro espacio si las restantes autoridades lo permiten.
 - `Plató 14 - Giratuto` no consume CAM1 y puede operar simultáneamente con Recursos o Pasillo si el resto de restricciones lo permite.
 - Corner Influencer, Corner Music y Corner Influencer + Music se realizan en `Plató 14 - Recursos/Corner` (zona 3, espacio 31).
 - Redes se realiza exclusivamente en Otros / Maqui/Pelu (zona 14, espacio 39), fuera de P14 y sin CAM1. Puede coincidir con Corner o Pasillo cuando participantes, recursos explícitos y demás autoridades lo permitan.

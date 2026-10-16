@@ -33,6 +33,7 @@ const window=z.object({start:hhmm,end:hhmm}).strict().refine(w=>w.start<w.end);
 const task=z.object({taskId:id,plannerNextKind:z.enum(['technical','main','vocal','auxiliary']),
  operationalRole:z.enum(['productive_task','meal_break_placeholder','transport_arrival','transport_departure']),
  breakKind:z.literal('participant_meal').optional(),mealOccupiesSpace:z.boolean().optional(),blocksSpace:z.boolean().optional(),
+ agendaScope:z.enum(['PHYSICAL_SPACE','ITINERANT_UNIT']).optional(),resourceInheritance:z.enum(['LOCATION','OPERATION_ONLY']).optional(),declaredResourceIds:ids.optional(),
  dependsOnTaskIds:ids,jointGroupId:text.optional(),setupFamilyId:text.optional(),
  itinerantTeamId:id.optional(),itinerantTeamRequirement:z.enum(['none','any','specific']).optional(),allowedItinerantTeamIds:ids.optional()}).strict();
 
@@ -67,7 +68,7 @@ export function applyPlanPlannerNextConfiguration(input:EngineInput,raw:unknown)
  for(const op of config.taskOperations){if(seen.has(op.taskId))throw Error('INVALID_PLANNER_NEXT_CONFIGURATION: duplicate task operation');seen.add(op.taskId);requireIds([op.taskId,...op.dependsOnTaskIds],taskIds,'task');}
  if(seen.size!==taskIds.size)throw new PlanPlannerNextConfigurationError('TASK_OPERATIONS_MISMATCH',{operationCount:seen.size,inputTaskCount:taskIds.size});
  requireIds([config.plannerNext.mainFlow.spaceId,...config.setupPolicies.map(p=>p.spaceId),...config.roundSynchronizations.flatMap(p=>p.lanes.map(l=>l.spaceId)),...config.coachRouteTransitions.flatMap(p=>[p.fromSpaceId,p.toSpaceId]),...config.operationalMealPolicies.flatMap(p=>p.spaceIds??[])],spaces,'space');
- requireIds([...config.technicalChains.flatMap(c=>c.requiredResourceIds),...config.coachRouteTransitions.map(c=>c.coachPlanResourceItemId),...config.operationalMealPolicies.flatMap(p=>p.planResourceItemIds),...config.itinerantTeamAvailability.flatMap(p=>p.planResourceItemIds??[]),...Object.keys(config.resourcePresenceConcentrationPolicies).map(Number)],resources,'resource');
+ requireIds([...config.taskOperations.flatMap(op=>op.declaredResourceIds??[]),...config.technicalChains.flatMap(c=>c.requiredResourceIds),...config.coachRouteTransitions.map(c=>c.coachPlanResourceItemId),...config.operationalMealPolicies.flatMap(p=>p.planResourceItemIds),...config.itinerantTeamAvailability.flatMap(p=>p.planResourceItemIds??[]),...Object.keys(config.resourcePresenceConcentrationPolicies).map(Number)],resources,'resource');
  requireIds([...config.anchoredAccompaniments.flatMap(p=>[p.anchorTaskId,...p.beforeTaskIds,...p.afterTaskIds]),...config.technicalChains.flatMap(c=>[...c.orderedTaskIds,...(c.phases??[]).flat()]),...config.roundSynchronizations.flatMap(r=>r.lanes.flatMap(l=>l.taskIds))],taskIds,'task');
  const units=new Set(config.itinerantTeamAvailability.map(u=>u.itinerantTeamId));
  for(const op of config.taskOperations)requireIds([...(op.itinerantTeamId?[op.itinerantTeamId]:[]),...(op.allowedItinerantTeamIds??[])],units,'itinerant unit');

@@ -14,3 +14,16 @@ test("draft placement overlays immutable live execution metadata and preserves u
 test("classification prioritizes preview and selected over accepted/draft/unplanned",()=>{const base=structuredClone(draft);const changed=structuredClone(draft);changed.tasks[0].startPlanned="09:30";assert.deepEqual(classifyAssistedTasks(changed,base,[],[]),{1:"DRAFT_CHANGED",2:"UNPLANNED"});assert.equal(classifyAssistedTasks(draft,base,[2],[1])[1],"PROPOSAL_PREVIEW");assert.equal(classifyAssistedTasks(draft,base,[2],[])[2],"SCOPE_SELECTED");assert.equal(classifyAssistedTasks(draft,base,[],[])[1],"ACCEPTED");});
 test("dirty authority is order invariant and independent from visual selection/preview",()=>{const base=structuredClone(draft);const changed=structuredClone(draft);changed.tasks[0].startPlanned="09:30";const before=structuredClone({base,changed});assert.equal(isAssistedDraftModified(changed,base),true);assert.equal(classifyAssistedTasks(changed,base,[1],[])[1],"SCOPE_SELECTED");assert.equal(isAssistedDraftModified(changed,base),true);assert.equal(classifyAssistedTasks(changed,base,[],[1])[1],"PROPOSAL_PREVIEW");assert.equal(isAssistedDraftModified(changed,base),true);assert.equal(isAssistedDraftModified({...draft,tasks:[...draft.tasks].reverse()},base),false);assert.deepEqual({base,changed},before);});
 test("block-only create, metadata split and reorder are dirty and count affected tasks",()=>{const base=structuredClone(draft);const block={blockId:"a",memberTaskIds:[1,2],scopeProvenance:{scope:"A"},spaceId:3,activityTemplateId:1,order:0};const created={...base,planningBlocks:[block]};assert.equal(isAssistedDraftModified(created,base),true);assert.deepEqual(assistedDraftTouchedTaskIds(created,base),[1,2]);assert.equal(isAssistedDraftModified(structuredClone(created),created),false);assert.equal(isAssistedDraftModified({...created,planningBlocks:[{...block,blockId:"split"}]},created),true);assert.equal(isAssistedDraftModified({...created,planningBlocks:[{...block,memberTaskIds:[2,1]}]},created),true);classifyAssistedTasks(created,base,[1],[2]);assert.equal(isAssistedDraftModified(created,base),true);});
+
+test("accepted, draft and preview snapshots own selected teams; absent selection never leaks from live",()=>{
+  const live=[{id:1,itinerantTeamId:71,assignedResources:[8]}, {id:2,itinerantTeamId:72}];
+  const accepted={...draft,tasks:[{...draft.tasks[0],itinerantTeamId:81,assignedResourceIds:[9]},draft.tasks[1]]};
+  const edited={...accepted,tasks:[{...accepted.tasks[0],itinerantTeamId:82,assignedResourceIds:[10]},accepted.tasks[1]]};
+  assert.equal(buildAssistedPlanningView(live,accepted)[0].itinerantTeamId,81);
+  assert.equal(buildAssistedPlanningView(live,edited)[0].itinerantTeamId,82);
+  assert.equal(buildAssistedPlanningView(live,accepted)[1].itinerantTeamId,null);
+  assert.equal(buildAssistedPlanningView([{id:3,itinerantTeamId:73}],accepted)[0].itinerantTeamId,null);
+  assert.equal(isAssistedDraftModified(edited,accepted),true);
+  assert.deepEqual(assistedDraftTouchedTaskIds(edited,accepted),[1]);
+  assert.equal(isAssistedDraftModified({...accepted,tasks:[{...accepted.tasks[0],assignedResourceIds:[10]},accepted.tasks[1]]},accepted),true);
+});
