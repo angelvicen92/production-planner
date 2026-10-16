@@ -1,3 +1,8 @@
+import { OperationalHeader, HeaderNotesEditor } from "@/components/planning/operational-header";
+import { projectPlanningHeader, type HeaderData } from "@/lib/planning-header";
+import { usePlanningHeaderNotes } from "@/hooks/use-planning-header-notes";
+import { usePlanningHeaderHeights } from "@/hooks/use-planning-header-heights";
+import { headerScopeKey, type HeaderScope } from "@shared/planningHeaderNotes";
 import { SpaceTaskContent } from "@/components/planning/space-task-content";
 import { spaceParticipantNames, spaceHeadingColor, spaceForeground, type SpaceTaskOperation } from "@/lib/planning-space-presentation";
 import { planningGroupOrder, planningFilterIds, effectivePlanningResourceIds } from "@/lib/planning-view-policy";
@@ -100,6 +105,9 @@ function PlanningMinuteClock({planId,date,onChange}:{planId?:number;date?:string
 }
 
 export interface PlanningTimelineProps {
+  canEditHeaders?: boolean;
+  headerLocationScopes?: { zone: number[]; space: number[] };
+  assignmentsStatus?: "ready" | "loading" | "error";
   operationalMeals?: PlanningOperationalMeals;
   manualEdits?: Record<number, { start: string; end: string }>;
   onManualEditsChange?: Dispatch<SetStateAction<Record<number, { start: string; end: string }>>>;
@@ -173,6 +181,7 @@ export interface PlanningTimelineProps {
   staffAssignments?: {
     staffRole: "production" | "editorial";
     staffPersonName: string;
+    staffPersonId?: number;
     scopeType: "zone" | "space" | "reality_team" | "itinerant_team";
     zoneId: number | null;
     spaceId: number | null;
@@ -582,6 +591,9 @@ function TaskStatusMenuTrigger({
 }
 
   export function PlanningTimeline({
+    canEditHeaders = false,
+    headerLocationScopes,
+    assignmentsStatus = "ready",
     operationalMeals: suppliedOperationalMeals,
     manualEdits,
     onManualEditsChange,
@@ -648,6 +660,16 @@ function TaskStatusMenuTrigger({
   const zoomX = geometry.zoomX / 100, zoomY = geometry.zoomY / 100;
   const scrollRef = useRef<HTMLDivElement>(null);
   const isPdf = density === "pdf";
+  const { query: headerNotesQuery, save: saveHeaderNotes } = usePlanningHeaderNotes(plan.id);
+  const [editingHeader, setEditingHeader] = useState<{ scope: HeaderScope; title: string } | null>(null);
+  const headerData = useMemo<HeaderData>(() => ({ tasks: dailyTasks, spaces, zoneAssignments: zoneResourceAssignments, spaceAssignments: spaceResourceAssignments, resourceNames: planResourceItemNameById, staff: staffAssignments, staffModes: zoneStaffModes, teams: itinerantTeams, teamMemberships: plan.plannerNextConfiguration?.itinerantTeamAvailability }), [dailyTasks, spaces, zoneResourceAssignments, spaceResourceAssignments, planResourceItemNameById, staffAssignments, zoneStaffModes, itinerantTeams, plan.plannerNextConfiguration]);
+  const headerRevision = useMemo(() => ({}), [headerData, headerNotesQuery.data, headerNotesQuery.status, assignmentsStatus, spaceVerticalMode, viewMode, stageFilterIds, spaceFilterIds, hideEmptyLanes, density]);
+  const headerHeights = usePlanningHeaderHeights(scrollRef, headerRevision);
+  const headerHeight = headerHeights.zone + headerHeights.space;
+  const notesFor = (scope: HeaderScope) => headerNotesQuery.data?.find(note => headerScopeKey(note) === headerScopeKey(scope));
+  const renderHeader = (scope: HeaderScope, title: string) => <OperationalHeader scope={scope} title={title} header={projectPlanningHeader(scope, headerData)} status={assignmentsStatus} notes={notesFor(scope)} notesStatus={headerNotesQuery.isError ? "error" : headerNotesQuery.isPending ? "loading" : "ready"} canEdit={canEditHeaders && assignmentsStatus === "ready" && !!plan.id && (scope.scopeType === "itinerant_team" ? headerData.teamMemberships?.some(team => team.itinerantTeamId === scope.scopeId) || breaks.some(pause => pause.itinerantTeamId === scope.scopeId) || staffAssignments.some(a => a.scopeType === "itinerant_team" && a.itinerantTeamId === scope.scopeId) : !!headerLocationScopes?.[scope.scopeType].includes(scope.scopeId))} onEdit={(scope, title) => setEditingHeader({ scope, title })} />;
+  const headerEditor = editingHeader ? <HeaderNotesEditor key={headerScopeKey(editingHeader.scope)} title={editingHeader.title} notes={notesFor(editingHeader.scope)} saving={saveHeaderNotes.isPending} onSave={(lines, expectedVersion) => saveHeaderNotes.mutateAsync({ scope: editingHeader.scope, lines, expectedVersion })} onClose={() => setEditingHeader(null)} /> : null;
+
   useEffect(() => {
     if (!isHydratingPlanningResult || !planningRunId || !taskDatasetVersion) return;
     const frame = window.requestAnimationFrame(() => onScheduleRendered?.(
@@ -1636,7 +1658,7 @@ function TaskStatusMenuTrigger({
 
     // helper: min->px (2px por minuto)
     const pxPerMin = 2 * zoomY;
-    const spaceColumnWidth = (spaceVerticalMode === "list" ? 160 : 200) * zoomX;
+    const spaceColumnWidth = Math.max(140, (spaceVerticalMode === "list" ? 160 : 200) * zoomX);
     const spaceColumnGap = 8 * zoomX;
     const totalHeightPx = duration * pxPerMin;
 
@@ -1729,9 +1751,10 @@ function TaskStatusMenuTrigger({
     return (
               <TooltipProvider>
                 {mealNotice}
-                <div className="planning-timeline-shell min-h-0 flex flex-1 flex-col border rounded-xl bg-card shadow-sm">
+                {headerEditor}
+                <div className="planning-timeline-shell min-h-0 flex flex-1 flex-col border rounded-xl bg-card shadow-sm" data-tall-headers={headerHeights.tall} style={{ "--planning-zone-header-height": `${headerHeights.zone}px`, "--planning-space-header-height": `${headerHeights.space}px` } as CSSProperties}>
                       <div ref={scrollRef} className="planning-scroll-viewport" tabIndex={0} role="region" aria-label="Timeline de espacios">
-                        <div className="w-max min-w-full" data-planning-canvas data-fixed-width="96" data-fixed-height="152">
+                        <div className="w-max min-w-full" data-planning-canvas data-fixed-width="96" data-fixed-height={headerHeight}>
               {lanesToShow.length === 0 ? (
                 <Card className="planning-scroll-viewport p-4 text-center bg-muted/50">
                   <p className="text-muted-foreground">
@@ -1945,11 +1968,11 @@ function TaskStatusMenuTrigger({
                             + itinerantColsToShow.length * (spaceVerticalMode === "list" ? 160 : 200) + Math.max(0, itinerantColsToShow.length - 1) * 8
                             + (showUnlocated ? 220 : 0)
                             + Math.max(0, zoneColsToShow.length + (itinerantColsToShow.length ? 1 : 0) + (showUnlocated ? 1 : 0) - 1) * 8}
-                          data-fit-height={duration * 2} data-fit-fixed-width="96" data-fit-fixed-height="168">
+                          data-fit-height={duration * 2} data-fit-fixed-width="96" data-fit-fixed-height={headerHeight + 16}>
                           {/* columna horas (una sola vez) */}
                           <div
                             className="planning-time-ruler sticky left-0 z-30 w-16 shrink-0 bg-card text-[10px] text-muted-foreground"
-                            style={{ paddingTop: 152 }}
+                            style={{ paddingTop: headerHeight }}
                             
                           >
                             {timeLabels.map((tl) => (
@@ -1981,39 +2004,8 @@ function TaskStatusMenuTrigger({
                                       color: spaceForeground(zc.headingColor),
                                     }}
                                   >
-                                    <div className="leading-5">{zc.zoneName}</div>
-
-                                    {/* Prod/Red del PLATÓ (scope zone) */}
-                                    <div className="mt-1 space-y-0.5">
-                                      {(() => {
-                                        const getNames = (role: "production" | "editorial") =>
-                                          (staffAssignments ?? [])
-                                            .filter(
-                                              (a) =>
-                                                a.scopeType === "zone" &&
-                                                Number(a.zoneId) === Number(zc.zoneId) &&
-                                                a.staffRole === role,
-                                            )
-                                            .map((a) => a.staffPersonName)
-                                            .filter(Boolean);
-
-                                        const prod = getNames("production");
-                                        const edit = getNames("editorial");
-
-                                        return (
-                                          <>
-                                            <div className="text-[10px] truncate">
-                                              <span className="font-semibold">Prod:</span>{" "}
-                                              {prod.length ? prod.join(" · ") : "—"}
-                                            </div>
-                                            <div className="text-[10px] truncate">
-                                              <span className="font-semibold">Red:</span>{" "}
-                                              {edit.length ? edit.join(" · ") : "—"}
-                                            </div>
-                                          </>
-                                        );
-                                      })()}
-                                    </div>
+                                    <div className="planning-heading-content"><div className="leading-5 break-words">{zc.zoneName}</div>
+                                    {renderHeader({scopeType: "zone", scopeId: zc.zoneId}, zc.zoneName)}</div>
                                   </div>
 
                                   <div className="flex" style={{ gap: spaceColumnGap }}>
@@ -2023,70 +2015,15 @@ function TaskStatusMenuTrigger({
                                         data-planning-column style={{ width: spaceColumnWidth }}
                                       >
                                         <div
-                                          className={cn("planning-space-heading font-medium truncate border", spaceVerticalMode === "list" ? "text-[10px] px-1 py-0.5 rounded-none" : "text-xs px-2 py-1 rounded-md")}
+                                          className={cn("planning-space-heading font-medium border", spaceVerticalMode === "list" ? "text-[10px] px-1 py-0.5 rounded-none" : "text-xs px-2 py-1 rounded-md")}
                                           style={{
                                             backgroundColor: (spaceHeadingColor(zc.zoneColor, sp.tasks) ?? zc.headingColor),
                                             borderColor: (spaceHeadingColor(zc.zoneColor, sp.tasks) ?? zc.headingColor),
                                             color: spaceForeground((spaceHeadingColor(zc.zoneColor, sp.tasks) ?? zc.headingColor)),
                                           }}
                                         >
-                                          <div className="leading-4">{sp.name}</div>
-
-                                          {/* Prod/Red según modo del plató: zone o space (sin herencia) */}
-                                          <div className="mt-1 space-y-0.5">
-                                            {(() => {
-                                              const zoneMode =
-                                                (zoneStaffModes ?? []).find(
-                                                  (zm) => Number(zm.zoneId) === Number(zc.zoneId),
-                                                )?.mode ?? "zone";
-
-                                              const getNames = (role: "production" | "editorial") => {
-                                                if (zoneMode === "zone") {
-                                                  return (staffAssignments ?? [])
-                                                    .filter(
-                                                      (a) =>
-                                                        a.scopeType === "zone" &&
-                                                        Number(a.zoneId) === Number(zc.zoneId) &&
-                                                        a.staffRole === role,
-                                                    )
-                                                    .map((a) => a.staffPersonName)
-                                                    .filter(Boolean);
-                                                }
-
-                                                // mode === "space" (sin herencia)
-                                                const spaceId = (filteredSpaces ?? []).find(
-                                                  (s: any) =>
-                                                    Number(s.zoneId) === Number(zc.zoneId) && String(s.name) === String(sp.name),
-                                                )?.id;
-
-                                                return (staffAssignments ?? [])
-                                                  .filter(
-                                                    (a) =>
-                                                      a.scopeType === "space" &&
-                                                      Number(a.spaceId) === Number(spaceId) &&
-                                                      a.staffRole === role,
-                                                  )
-                                                  .map((a) => a.staffPersonName)
-                                                  .filter(Boolean);
-                                              };
-
-                                              const prod = getNames("production");
-                                              const edit = getNames("editorial");
-
-                                              return (
-                                                <>
-                                                  <div className="text-[10px] truncate">
-                                                    <span className="font-semibold">Prod:</span>{" "}
-                                                    {prod.length ? prod.join(" · ") : "—"}
-                                                  </div>
-                                                  <div className="text-[10px] truncate">
-                                                    <span className="font-semibold">Red:</span>{" "}
-                                                    {edit.length ? edit.join(" · ") : "—"}
-                                                  </div>
-                                                </>
-                                              );
-                                            })()}
-                                          </div>
+                                          <div className="planning-heading-content"><div className="leading-4 break-words">{sp.name}</div>
+                                          {sp.id != null ? renderHeader({scopeType: "space", scopeId: sp.id}, sp.name) : null}</div>
                                         </div>
 
                                         <div
@@ -2224,26 +2161,15 @@ function TaskStatusMenuTrigger({
                               {itinerantColsToShow.length > 0 ? (
                                 <div className="shrink-0 w-max" style={{ order: planningGroupOrder(uiItinerantGroupOrderIndex, mode === "assisted-draft") ?? 0, width: itinerantColsToShow.length * spaceColumnWidth + Math.max(0, itinerantColsToShow.length - 1) * spaceColumnGap }}>
                                   <div className={cn("planning-zone-heading font-semibold border", spaceVerticalMode === "list" ? "px-1.5 py-0.5 rounded-none text-xs" : "px-2 py-1 rounded-md")}>
-                                    <div className="leading-5">Itinerantes</div>
+                                    <div className="planning-heading-content leading-5">Itinerantes</div>
                                   </div>
                                   <div className="flex" style={{ gap: spaceColumnGap }}>
                                     {itinerantColsToShow.map((team) => {
-                                      const prod = (staffAssignments ?? [])
-                                        .filter((a) => a.scopeType === "itinerant_team" && Number((a as any).itinerantTeamId) === Number(team.teamId) && a.staffRole === "production")
-                                        .map((a) => a.staffPersonName)
-                                        .filter(Boolean);
-                                      const edit = (staffAssignments ?? [])
-                                        .filter((a) => a.scopeType === "itinerant_team" && Number((a as any).itinerantTeamId) === Number(team.teamId) && a.staffRole === "editorial")
-                                        .map((a) => a.staffPersonName)
-                                        .filter(Boolean);
                                       return (
                                         <div key={`it-timeline-${team.teamId}`} data-planning-column style={{ width: spaceColumnWidth }}>
-                                          <div className={cn("planning-space-heading font-medium truncate border", spaceVerticalMode === "list" ? "text-[10px] px-1 py-0.5 rounded-none" : "text-xs px-2 py-1 rounded-md") }>
-                                            <div className="leading-4">{team.teamName}</div>
-                                            <div className="mt-1 space-y-0.5">
-                                              <div className="text-[10px] opacity-75 truncate"><span className="font-semibold">Prod:</span> {prod.length ? prod.join(" · ") : "—"}</div>
-                                              <div className="text-[10px] opacity-75 truncate"><span className="font-semibold">Red:</span> {edit.length ? edit.join(" · ") : "—"}</div>
-                                            </div>
+                                          <div className={cn("planning-space-heading font-medium border", spaceVerticalMode === "list" ? "text-[10px] px-1 py-0.5 rounded-none" : "text-xs px-2 py-1 rounded-md") }>
+                                            <div className="planning-heading-content"><div className="leading-4 break-words">{team.teamName}</div>
+                                            {renderHeader({scopeType: "itinerant_team", scopeId: team.teamId}, team.teamName)}</div>
                                           </div>
                                           <div className={cn("relative border overflow-hidden", spaceVerticalMode === "list" ? "rounded-none bg-background" : "rounded-lg bg-muted/5")} style={{ height: totalHeightPx }}>
                                             {team.tasks.map((task) => {
@@ -2475,6 +2401,7 @@ function TaskStatusMenuTrigger({
     return (
       <TooltipProvider>
         {mealNotice}
+        {headerEditor}
         <div className="planning-timeline-shell min-h-0 flex flex-1 flex-col border rounded-xl bg-card shadow-sm">
           <div ref={scrollRef} className="planning-scroll-viewport" tabIndex={0} role="region" aria-label="Agenda de recursos">
             <div className="p-2 w-full min-w-0" data-planning-canvas>
@@ -2487,12 +2414,12 @@ function TaskStatusMenuTrigger({
 
                 return (
                   <Card key={resourceKey} data-planning-resource={resourceKey} className="min-w-0 w-full max-w-[400px] p-3">
-                    <div className="sticky top-0 z-20 mb-3 border-b bg-card pb-2 space-y-1">
+                    <div className="relative z-20 mb-3 border-b bg-card pb-2 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="min-w-0 break-words font-semibold">{resourceName}</h3>
                         <Badge variant="outline" className="text-[10px]">{kindLabel(option?.kind ?? "resource_item")}</Badge>
                       </div>
-                      {option ? (
+                      {option?.kind === "itinerant_team" ? renderHeader({ scopeType: "itinerant_team", scopeId: Number(resourceKey.split(":")[1]) }, resourceName) : option ? (
                         <p className="text-xs text-muted-foreground">{scopeText(resourceKey, option.kind) || "Sin ámbito asignado"}</p>
                       ) : null}
                     </div>

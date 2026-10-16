@@ -41,6 +41,8 @@ if(process.argv.includes('--app')){
  assert.ok(!templateCreation||historicalTopology,'template creation requires the protected historical catalog');
  const configurationReadRecovery=process.argv.includes('--configuration-read-recovery');
  const operationalMeals=process.argv.includes('--operational-meals');
+ const headerNotes=process.argv.includes('--header-notes');
+ const replayOperationalSnapshot=operationalMeals||headerNotes;
  assert.ok(!configurationReadRecovery||historicalTopology,'configuration recovery requires the historical catalog');
  const full=process.argv.includes('--full');
  const liveExecution=process.argv.includes('--live-execution');
@@ -74,6 +76,7 @@ if(process.argv.includes('--app')){
  if(collapsibleSections)runtimeFiles.push('script/demo/smokeCollapsibleSections.ts','client/src/hooks/use-day-section.ts','client/src/lib/day-section-preferences.ts','client/src/components/day-workspace/day-collapsible-section.tsx');
  if(remainingDaySections)runtimeFiles.push('script/demo/smokeRemainingDaySections.ts');
  if(planningNavigation)runtimeFiles.push('script/demo/smokePlanningNavigation.ts','script/demo/smokePlanningViewport.ts','client/src/components/planning/planning-fullscreen.tsx','client/src/components/planning/fullscreen-planning-panel.tsx','client/src/lib/planning-workspace-geometry.ts');
+ if(headerNotes)runtimeFiles.push('server/apiAuthorization.ts','script/demo/smokePlanningHeaderJourney.ts','client/src/lib/planning-header.ts','client/src/components/planning/operational-header.tsx','client/src/hooks/use-planning-header-notes.ts','client/src/hooks/use-planning-header-heights.ts','server/planningHeaderNotes.ts','shared/planningHeaderNotes.ts','supabase/migrations/095_planning_header_notes.sql');
  const hashes=()=>Object.fromEntries(runtimeFiles.map(file=>[file,createHash('sha256').update(readFileSync(file)).digest('hex')]));
  if(warRoom)runtimeFiles.push('script/demo/smokeWarRoomJourney.ts','server/incidents.ts','server/incidentErrors.ts','shared/incidents.ts','client/src/pages/my-day.tsx','client/src/pages/war-room.tsx','client/src/hooks/use-war-room.ts','client/src/hooks/use-plan-realtime.ts','client/src/lib/war-room-store.ts','client/src/pages/dashboard.tsx','client/src/pages/call-sheet.tsx','server/apiAuthorization.ts','shared/routes.ts','shared/schema.ts','supabase/migrations/094_operational_incidents.sql');
  runtimeFiles.push('client/src/hooks/use-execution-context.ts','client/src/hooks/use-tasks.ts','client/src/hooks/use-production-clock.ts','shared/execution.ts','script/demo/smokeLiveExecutionJourney.ts');
@@ -126,7 +129,7 @@ if(process.argv.includes('--app')){
   const restPort=start('rest',images.rest,3000,{PGRST_DB_URI:`postgres://authenticator:${password}@db:5432/postgres`,PGRST_DB_SCHEMAS:'public',PGRST_DB_ANON_ROLE:'anon',PGRST_JWT_SECRET:secret,PGRST_SERVER_PORT:'3000'});
   const transport:any[]=[];report.transport=transport;
   gateway=http.createServer((req,res)=>{
-   res.setHeader('Access-Control-Allow-Origin',(operationalMeals||controlRoom||templateAuthorization||templateCreation||collapsibleSections||settingsSections)&&baselineUrl&&req.headers.origin===baselineUrl?baselineUrl:appUrl);res.setHeader('Access-Control-Allow-Headers',req.headers['access-control-request-headers']??'authorization,apikey,content-type');res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,PATCH,DELETE,OPTIONS');
+   res.setHeader('Access-Control-Allow-Origin',(headerNotes||operationalMeals||controlRoom||templateAuthorization||templateCreation||collapsibleSections||settingsSections)&&baselineUrl&&req.headers.origin===baselineUrl?baselineUrl:appUrl);res.setHeader('Access-Control-Allow-Headers',req.headers['access-control-request-headers']??'authorization,apikey,content-type');res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,PATCH,DELETE,OPTIONS');
    if(req.method==='OPTIONS'){res.writeHead(204);res.end();return;}
    const path=req.url??'/',isAuth=path.startsWith('/auth/v1/'),isRest=path.startsWith('/rest/v1/');
    if(!isAuth&&!isRest){res.writeHead(404);res.end();return;}
@@ -158,17 +161,28 @@ if(process.argv.includes('--app')){
   // in an existing database; its independent restoration tests remain required.
   await db.query(readFileSync('script/demo/sql/security.sql','utf8'));
   const preservation=historicalTopology?await seedA2HistoricalRehearsal(db,users.production.id):null;
-  const {dataset,sql}=buildA2ImportSQL(configurationReadRecovery||operationalMeals?'2026-10-31':'2026-10-30',historicalTopology?100000:0,'dyqusivzgxebkxkwohwn',historicalTopology?{historicalCatalog:a2HistoricalCatalog,planId:27002}:undefined);
-  if(operationalMeals){
+  const {dataset,sql}=buildA2ImportSQL(configurationReadRecovery||replayOperationalSnapshot?'2026-10-31':'2026-10-30',historicalTopology?100000:0,'dyqusivzgxebkxkwohwn',historicalTopology?{historicalCatalog:a2HistoricalCatalog,planId:27002}:undefined);
+  if(replayOperationalSnapshot){
    const {operationalMealRehearsalFixture}=await import('./seedOperationalMealRehearsal');
    dataset.tables.plans[0].planner_next_configuration=operationalMealRehearsalFixture().configuration;
   }
-  await db.query(operationalMeals?buildA2ImportSQLFromDataset(dataset).sql:sql);
+  await db.query(replayOperationalSnapshot?buildA2ImportSQLFromDataset(dataset).sql:sql);
   if(preservation){await preservation.assertPreserved();report.historicalPreservation=preservation.summary;pass('historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import');}assert.equal(await defaults(),beforeDefaults);
-  if(operationalMeals){
+  if(replayOperationalSnapshot){
    assert.ok(historicalTopology,'UI-05 replay requires the historical catalogs');
    const {seedOperationalMealRehearsal}=await import('./seedOperationalMealRehearsal');
    report.operationalMealSource=await seedOperationalMealRehearsal(db,users.production.id);
+   if(headerNotes){
+    // The replay's remapped team IDs need their canonical catalog identities.
+    // Fixture initialization only, before any preservation snapshot or UI action.
+    const {buildCanonicalFullA2EngineInput}=await import('../../engine/planner-next/benchmarks/canonicalFullA2EngineInput');
+    const canonical=buildCanonicalFullA2EngineInput({planId:27001,branchBudget:100_000});
+    for(const team of canonical.expansion.itinerantUnits){
+     const teamId=100000+canonical.itinerantUnitId.get(team.id)!;
+     assert.ok(dataset.tables.plans[0].planner_next_configuration.itinerantTeamAvailability.some((t:any)=>t.itinerantTeamId===teamId));
+     await db.query('INSERT INTO itinerant_teams(id,code,name) OVERRIDING SYSTEM VALUE VALUES($1,$2,$3) ON CONFLICT(id) DO NOTHING',[teamId,team.id,team.label]);
+    }
+   }
   }
   if(process.argv.includes('--scope-selection'))await seedA2ScopeCatalog(db,dataset);
   const results:any=await db.query(readFileSync('script/demo/sql/catalog-audit.sql','utf8'));
@@ -181,7 +195,7 @@ if(process.argv.includes('--app')){
   const appLog=createWriteStream(`${directory}/app-private.log`,{mode:0o600});
   app=spawn(process.execPath,['--import','tsx',resolve('script/demo/smokeA2Integration.ts'),'--app'],{env:localEnv,stdio:['ignore','pipe','pipe']});app.stdout!.pipe(appLog);app.stderr!.pipe(appLog);
   await eventually(async()=>{assert.equal(app!.exitCode,null,'product server exited');const r=await fetch(`${appUrl}/api/plans/${dataset.input.planId}`,{headers:{Authorization:`Bearer ${users.production.token}`}});assert.equal(r.status,200);});
-  const requestedBaseline=operationalMeals?process.env.UI05_BASELINE_ROOT:settingsSections?process.env.SETTINGS_SECTIONS_BASELINE_ROOT:collapsibleSections?process.env.SECTIONS_BASELINE_ROOT:templateCreation?process.env.TEMPLATE_CREATION_BASELINE_ROOT:templateAuthorization?process.env.TEMPLATE_AUTHORIZATION_BASELINE_ROOT:configurationReadRecovery?process.env.CONFIG_READ_BASELINE_ROOT:controlRoom?process.env.CONTROL_ROOM_BASELINE_ROOT:undefined;
+  const requestedBaseline=headerNotes?process.env.UI06_BASELINE_ROOT:operationalMeals?process.env.UI05_BASELINE_ROOT:settingsSections?process.env.SETTINGS_SECTIONS_BASELINE_ROOT:collapsibleSections?process.env.SECTIONS_BASELINE_ROOT:templateCreation?process.env.TEMPLATE_CREATION_BASELINE_ROOT:templateAuthorization?process.env.TEMPLATE_AUTHORIZATION_BASELINE_ROOT:configurationReadRecovery?process.env.CONFIG_READ_BASELINE_ROOT:controlRoom?process.env.CONTROL_ROOM_BASELINE_ROOT:undefined;
   if(requestedBaseline){
    const baselineRoot=resolve(requestedBaseline),baselinePort=await freePort();baselineUrl=`http://127.0.0.1:${baselinePort}`;
    const baselineLog=createWriteStream(`${directory}/baseline-private.log`,{mode:0o600});
@@ -190,7 +204,10 @@ if(process.argv.includes('--app')){
   }
   Object.assign(process.env,{SUPABASE_URL:url,SUPABASE_ANON_KEY:anon,SUPABASE_SERVICE_ROLE_KEY:service});
   const {storage}=await import('../../server/storage');const {buildEngineInput}=await import('../../engine/buildInput');const {adaptEngineInputToPlannerNextProblem}=await import('../../engine/planner-next/integration/engineInputAdapter');
-  if(operationalMeals){
+  if(headerNotes){
+   const {runPlanningHeaderJourney}=await import('./smokePlanningHeaderJourney');
+   report.headerNotes=await runPlanningHeaderJourney({appUrl,baselineUrl,db,users,directory,planId:27002,pass,restUrl:url,anon});
+  }else if(operationalMeals){
    const {runOperationalMealJourney}=await import('./smokeOperationalMealJourney');
    report.operationalMeals=await runOperationalMealJourney({appUrl,baselineUrl,db,users,directory,planId:27002,pass});
   }else if(settingsSections){

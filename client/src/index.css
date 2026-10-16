@@ -201,9 +201,11 @@ body[data-planning-fullscreen="true"] [data-radix-popper-content-wrapper] {
 .planning-panel-content { overflow: hidden; }
 .planning-scroll-viewport { flex: 1 1 0%; min-height: 0; min-width: 0; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
 .planning-panel-content > :not(.planning-timeline-shell):not(.planning-scroll-viewport):not(.flex-1) { flex-shrink: 0; }
-.planning-zone-heading, .planning-space-heading { position: sticky; z-index: 25; height: 76px; margin-bottom: 0; background-color: hsl(var(--card)); overflow: hidden; }
-.planning-zone-heading { top: 0; }
-.planning-space-heading { top: 76px; }
+.planning-zone-heading, .planning-space-heading { position: sticky; z-index: 25; margin-bottom: 0; background-color: hsl(var(--card)); overflow: visible; overflow-wrap: anywhere; }
+.planning-zone-heading { top: 0; height: var(--planning-zone-header-height, auto); }
+.planning-space-heading { top: var(--planning-zone-header-height, 0px); height: var(--planning-space-header-height, auto); }
+.planning-timeline-shell[data-tall-headers="true"] .planning-zone-heading, .planning-timeline-shell[data-tall-headers="true"] .planning-space-heading { position: relative; top: auto; }
+.operational-header { overflow-wrap: anywhere; white-space: normal; }
 .planning-panes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
 [data-testid="planning-multiview"] { container-type: inline-size; }
 .planning-retained[hidden] { display: none; }
