@@ -14,7 +14,7 @@ export async function runPlanningNavigation({ appUrl, users, db, directory, pass
   const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
   const report: any = { status: "RUNNING", remoteWrites: 0, source: "historical accepted A2 snapshot", checks: [], screenshots: [] };
   const record = (name: string) => { report.checks.push(name); pass(name); };
-  const tables = ["daily_tasks", "locks", "assisted_planning_sessions", "assisted_planning_stages", "planning_stage_validations", "planning_runs", "plan_config_revisions", "planning_accepted_exceptions"];
+  const tables = ["task_templates", "daily_tasks", "locks", "assisted_planning_sessions", "assisted_planning_stages", "planning_stage_validations", "planning_runs", "plan_config_revisions", "planning_accepted_exceptions"];
   const material = async () => Promise.all(tables.map(async table => (await db.query(`SELECT to_jsonb(x) AS row FROM public.${table} x ORDER BY id`)).rows));
   const panel = (view: string) => page.getByTestId(`planning-panel-${view}`);
   const ids = (view: string) => panel(view).locator("[data-planning-task-id]").evaluateAll(elements => [...new Set(elements.map(el => Number(el.getAttribute("data-planning-task-id"))))].sort((a, b) => a - b));
@@ -35,8 +35,19 @@ export async function runPlanningNavigation({ appUrl, users, db, directory, pass
     await page.waitForURL("**/dashboard");
   };
   try {
+    if (process.argv.includes("--planning-viewport") || process.argv.includes("--viewport-baseline")) {
+      const { seedPlanningViewportPresentation } = await import("./smokePlanningViewport");
+      await seedPlanningViewportPresentation(db, planId);
+      report.presentationFixture = "Three configured colors and a long PASILLO title; task IDs/times and accepted snapshots unchanged";
+    }
     await login("production"); await open();
     const before = await material();
+    if (process.argv.includes("--viewport-baseline")) {
+      const { runPlanningViewport } = await import("./smokePlanningViewport");
+      report.viewport = await runPlanningViewport(page, directory, true);
+      assert.deepEqual(await material(), before);
+      report.status = "PASS"; return report;
+    }
     const writes: string[] = [];
     const authBootstrapRequests: string[] = [], dayInitializationRequests: string[] = [];
     let initializingImportedDay = false;
@@ -53,6 +64,12 @@ export async function runPlanningNavigation({ appUrl, users, db, directory, pass
     });
     audit(page);
     report.requests = { visualMutations: writes, authBootstrap: authBootstrapRequests, dayInitialization: dayInitializationRequests };
+    if (process.argv.includes("--viewport-only")) {
+      const { verifyPlanningViewport } = await import("./smokePlanningViewport");
+      report.viewport = await verifyPlanningViewport(page, directory, planId);
+      assert.deepEqual(await material(), before); assert.deepEqual(writes, []);
+      report.status = "PASS"; return report;
+    }
     const expected = (await db.query("SELECT id FROM daily_tasks WHERE plan_id=$1 ORDER BY id", [planId])).rows.map(row => Number(row.id));
     assert.equal(expected.length, 266);
     assert.deepEqual(await ids("contestants"), expected);
@@ -170,6 +187,13 @@ export async function runPlanningNavigation({ appUrl, users, db, directory, pass
     const moved = await card.getAttribute("data-planning-start"); assert.notEqual(moved, original);
     const mins = (time: string) => Number(time.slice(0,2))*60+Number(time.slice(3,5)); near(mins(moved!), mins(original!) + 5, "drag snaps to five real minutes", .01);
     await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Maximizar conjunto", exact: true }).click();
+    assert.equal(await card.getAttribute("data-planning-start"), moved);
+    await spaces.getByRole("button", { name: "Maximizar", exact: true }).click();
+    await page.keyboard.press("Escape");
+    assert.equal(await page.getByTestId("planning-multiview").getAttribute("data-workspace-fullscreen"), "true");
+    await page.keyboard.press("Escape");
+    assert.equal(await card.getAttribute("data-planning-start"), moved);
     await spaces.getByRole("button", { name: "Mover Platós y espacios después", exact: true }).click();
     assert.equal(await card.getAttribute("data-planning-start"), moved);
     assert.equal(await spaces.locator(`[data-planning-task-id="${candidate.id}"]`).first().getAttribute("data-planning-start"), moved);
@@ -272,6 +296,13 @@ export async function runPlanningNavigation({ appUrl, users, db, directory, pass
     assert.deepEqual(await material(), readonlyBefore);
     assert.deepEqual(writes, [], "production and viewer visual controls send no mutating product requests");
     record("viewer can zoom and pan both axes by real touch; isolated preferences and unchanged SQL authorities");
+    if (process.argv.includes("--planning-viewport")) {
+      const { verifyPlanningViewport } = await import("./smokePlanningViewport");
+      report.viewport = await verifyPlanningViewport(page, directory, planId);
+      assert.deepEqual(await material(), readonlyBefore);
+      assert.deepEqual(writes, []);
+      record("UI-01B: stable fit, readable resource columns, workspace fullscreen and SQL invariance");
+    }
     assert.deepEqual(errors, []);
     report.status = "PASS"; return report;
   } catch (error) { report.status = "FAIL"; report.error = error instanceof Error ? error.stack : String(error); await capture("navigation-failure").catch(() => {}); throw error; }

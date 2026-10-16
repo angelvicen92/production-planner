@@ -1,0 +1,2256 @@
+{
+  "fits": [
+    {
+      "view": "contestants",
+      "context": "small/start-25",
+      "results": [
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ]
+      ],
+      "dimensions": {
+        "width": 1041,
+        "height": 698,
+        "contentWidth": 1041,
+        "contentHeight": 698
+      }
+    },
+    {
+      "view": "contestants",
+      "context": "two-horizontal/start-25",
+      "results": [
+        [
+          27.56,
+          57.89
+        ],
+        [
+          27.56,
+          57.89
+        ],
+        [
+          27.56,
+          57.89
+        ],
+        [
+          27.56,
+          57.89
+        ],
+        [
+          27.56,
+          57.89
+        ]
+      ],
+      "dimensions": {
+        "width": 605,
+        "height": 698,
+        "contentWidth": 605,
+        "contentHeight": 698
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "two-horizontal/start-25",
+      "results": [
+        [
+          10,
+          32.08
+        ],
+        [
+          10,
+          32.08
+        ],
+        [
+          10,
+          32.08
+        ],
+        [
+          10,
+          32.08
+        ],
+        [
+          10,
+          32.08
+        ]
+      ],
+      "dimensions": {
+        "width": 392,
+        "height": 632,
+        "contentWidth": 576,
+        "contentHeight": 632
+      }
+    },
+    {
+      "view": "contestants",
+      "context": "three/start-25",
+      "results": [
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ]
+      ],
+      "dimensions": {
+        "width": 1041,
+        "height": 698,
+        "contentWidth": 1041,
+        "contentHeight": 698
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "three/start-25",
+      "results": [
+        [
+          19.37,
+          36.25
+        ],
+        [
+          19.37,
+          36.25
+        ],
+        [
+          19.37,
+          36.25
+        ],
+        [
+          19.37,
+          36.25
+        ],
+        [
+          19.37,
+          36.25
+        ]
+      ],
+      "dimensions": {
+        "width": 1041,
+        "height": 704,
+        "contentWidth": 1041,
+        "contentHeight": 704
+      }
+    },
+    {
+      "view": "resources",
+      "context": "three/start-25",
+      "results": [
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ]
+      ],
+      "dimensions": {
+        "width": 1041,
+        "height": 748,
+        "contentWidth": 1041,
+        "contentHeight": 9933
+      }
+    },
+    {
+      "view": "contestants",
+      "context": "workspace/start-25",
+      "results": [
+        [
+          15.34,
+          30.92
+        ],
+        [
+          15.34,
+          30.92
+        ],
+        [
+          15.34,
+          30.92
+        ],
+        [
+          15.34,
+          30.92
+        ],
+        [
+          15.34,
+          30.92
+        ]
+      ],
+      "dimensions": {
+        "width": 429,
+        "height": 492,
+        "contentWidth": 430,
+        "contentHeight": 492
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "workspace/start-25",
+      "results": [
+        [
+          10,
+          20.27
+        ],
+        [
+          10,
+          20.27
+        ],
+        [
+          10,
+          20.27
+        ],
+        [
+          10,
+          20.27
+        ],
+        [
+          10,
+          20.27
+        ]
+      ],
+      "dimensions": {
+        "width": 429,
+        "height": 462,
+        "contentWidth": 576,
+        "contentHeight": 462
+      }
+    },
+    {
+      "view": "resources",
+      "context": "workspace/start-25",
+      "results": [
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ]
+      ],
+      "dimensions": {
+        "width": 429,
+        "height": 542,
+        "contentWidth": 429,
+        "contentHeight": 18105
+      }
+    },
+    {
+      "view": "contestants",
+      "context": "small/start-100",
+      "results": [
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ]
+      ],
+      "dimensions": {
+        "width": 1041,
+        "height": 698,
+        "contentWidth": 1041,
+        "contentHeight": 698
+      }
+    },
+    {
+      "view": "contestants",
+      "context": "two-horizontal/start-100",
+      "results": [
+        [
+          27.56,
+          57.89
+        ],
+        [
+          27.56,
+          57.89
+        ],
+        [
+          27.56,
+          57.89
+        ],
+        [
+          27.56,
+          57.89
+        ],
+        [
+          27.56,
+          57.89
+        ]
+      ],
+      "dimensions": {
+        "width": 605,
+        "height": 698,
+        "contentWidth": 605,
+        "contentHeight": 698
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "two-horizontal/start-100",
+      "results": [
+        [
+          10,
+          32.08
+        ],
+        [
+          10,
+          32.08
+        ],
+        [
+          10,
+          32.08
+        ],
+        [
+          10,
+          32.08
+        ],
+        [
+          10,
+          32.08
+        ]
+      ],
+      "dimensions": {
+        "width": 392,
+        "height": 632,
+        "contentWidth": 576,
+        "contentHeight": 632
+      }
+    },
+    {
+      "view": "contestants",
+      "context": "three/start-100",
+      "results": [
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ]
+      ],
+      "dimensions": {
+        "width": 1041,
+        "height": 698,
+        "contentWidth": 1041,
+        "contentHeight": 698
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "three/start-100",
+      "results": [
+        [
+          19.37,
+          36.25
+        ],
+        [
+          19.37,
+          36.25
+        ],
+        [
+          19.37,
+          36.25
+        ],
+        [
+          19.37,
+          36.25
+        ],
+        [
+          19.37,
+          36.25
+        ]
+      ],
+      "dimensions": {
+        "width": 1041,
+        "height": 704,
+        "contentWidth": 1041,
+        "contentHeight": 704
+      }
+    },
+    {
+      "view": "resources",
+      "context": "three/start-100",
+      "results": [
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ]
+      ],
+      "dimensions": {
+        "width": 1041,
+        "height": 748,
+        "contentWidth": 1041,
+        "contentHeight": 9933
+      }
+    },
+    {
+      "view": "contestants",
+      "context": "workspace/start-100",
+      "results": [
+        [
+          15.34,
+          30.92
+        ],
+        [
+          15.34,
+          30.92
+        ],
+        [
+          15.34,
+          30.92
+        ],
+        [
+          15.34,
+          30.92
+        ],
+        [
+          15.34,
+          30.92
+        ]
+      ],
+      "dimensions": {
+        "width": 429,
+        "height": 492,
+        "contentWidth": 430,
+        "contentHeight": 492
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "workspace/start-100",
+      "results": [
+        [
+          10,
+          20.27
+        ],
+        [
+          10,
+          20.27
+        ],
+        [
+          10,
+          20.27
+        ],
+        [
+          10,
+          20.27
+        ],
+        [
+          10,
+          20.27
+        ]
+      ],
+      "dimensions": {
+        "width": 429,
+        "height": 462,
+        "contentWidth": 576,
+        "contentHeight": 462
+      }
+    },
+    {
+      "view": "resources",
+      "context": "workspace/start-100",
+      "results": [
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ]
+      ],
+      "dimensions": {
+        "width": 429,
+        "height": 542,
+        "contentWidth": 429,
+        "contentHeight": 18105
+      }
+    },
+    {
+      "view": "contestants",
+      "context": "small/start-250",
+      "results": [
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ]
+      ],
+      "dimensions": {
+        "width": 1041,
+        "height": 698,
+        "contentWidth": 1041,
+        "contentHeight": 698
+      }
+    },
+    {
+      "view": "contestants",
+      "context": "two-horizontal/start-250",
+      "results": [
+        [
+          27.56,
+          57.89
+        ],
+        [
+          27.56,
+          57.89
+        ],
+        [
+          27.56,
+          57.89
+        ],
+        [
+          27.56,
+          57.89
+        ],
+        [
+          27.56,
+          57.89
+        ]
+      ],
+      "dimensions": {
+        "width": 605,
+        "height": 698,
+        "contentWidth": 605,
+        "contentHeight": 698
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "two-horizontal/start-250",
+      "results": [
+        [
+          10,
+          32.08
+        ],
+        [
+          10,
+          32.08
+        ],
+        [
+          10,
+          32.08
+        ],
+        [
+          10,
+          32.08
+        ],
+        [
+          10,
+          32.08
+        ]
+      ],
+      "dimensions": {
+        "width": 392,
+        "height": 632,
+        "contentWidth": 576,
+        "contentHeight": 632
+      }
+    },
+    {
+      "view": "contestants",
+      "context": "three/start-250",
+      "results": [
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ],
+        [
+          57.84,
+          60.52
+        ]
+      ],
+      "dimensions": {
+        "width": 1041,
+        "height": 698,
+        "contentWidth": 1041,
+        "contentHeight": 698
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "three/start-250",
+      "results": [
+        [
+          19.37,
+          36.25
+        ],
+        [
+          19.37,
+          36.25
+        ],
+        [
+          19.37,
+          36.25
+        ],
+        [
+          19.37,
+          36.25
+        ],
+        [
+          19.37,
+          36.25
+        ]
+      ],
+      "dimensions": {
+        "width": 1041,
+        "height": 704,
+        "contentWidth": 1041,
+        "contentHeight": 704
+      }
+    },
+    {
+      "view": "resources",
+      "context": "three/start-250",
+      "results": [
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ]
+      ],
+      "dimensions": {
+        "width": 1041,
+        "height": 748,
+        "contentWidth": 1041,
+        "contentHeight": 9933
+      }
+    },
+    {
+      "view": "contestants",
+      "context": "workspace/start-250",
+      "results": [
+        [
+          15.34,
+          30.92
+        ],
+        [
+          15.34,
+          30.92
+        ],
+        [
+          15.34,
+          30.92
+        ],
+        [
+          15.34,
+          30.92
+        ],
+        [
+          15.34,
+          30.92
+        ]
+      ],
+      "dimensions": {
+        "width": 429,
+        "height": 492,
+        "contentWidth": 430,
+        "contentHeight": 492
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "workspace/start-250",
+      "results": [
+        [
+          10,
+          20.27
+        ],
+        [
+          10,
+          20.27
+        ],
+        [
+          10,
+          20.27
+        ],
+        [
+          10,
+          20.27
+        ],
+        [
+          10,
+          20.27
+        ]
+      ],
+      "dimensions": {
+        "width": 429,
+        "height": 462,
+        "contentWidth": 576,
+        "contentHeight": 462
+      }
+    },
+    {
+      "view": "resources",
+      "context": "workspace/start-250",
+      "results": [
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ]
+      ],
+      "dimensions": {
+        "width": 429,
+        "height": 542,
+        "contentWidth": 429,
+        "contentHeight": 18105
+      }
+    },
+    {
+      "view": "contestants",
+      "context": "1365/horizontal/workspace",
+      "results": [
+        [
+          13.61,
+          28.28
+        ],
+        [
+          13.61,
+          28.28
+        ],
+        [
+          13.61,
+          28.28
+        ],
+        [
+          13.61,
+          28.28
+        ],
+        [
+          13.61,
+          28.28
+        ]
+      ],
+      "dimensions": {
+        "width": 404,
+        "height": 468,
+        "contentWidth": 407,
+        "contentHeight": 468
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "1365/horizontal/workspace",
+      "results": [
+        [
+          10,
+          20.27
+        ],
+        [
+          10,
+          20.27
+        ],
+        [
+          10,
+          20.27
+        ],
+        [
+          10,
+          20.27
+        ],
+        [
+          10,
+          20.27
+        ]
+      ],
+      "dimensions": {
+        "width": 404,
+        "height": 462,
+        "contentWidth": 576,
+        "contentHeight": 462
+      }
+    },
+    {
+      "view": "resources",
+      "context": "1365/horizontal/workspace",
+      "results": [
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ]
+      ],
+      "dimensions": {
+        "width": 404,
+        "height": 542,
+        "contentWidth": 404,
+        "contentHeight": 18105
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "1365/horizontal/individual",
+      "results": [
+        [
+          25.16,
+          37.36
+        ],
+        [
+          25.16,
+          37.36
+        ],
+        [
+          25.16,
+          37.36
+        ],
+        [
+          25.16,
+          37.36
+        ],
+        [
+          25.16,
+          37.36
+        ]
+      ],
+      "dimensions": {
+        "width": 1319,
+        "height": 720,
+        "contentWidth": 1319,
+        "contentHeight": 720
+      }
+    },
+    {
+      "view": "contestants",
+      "context": "1365/vertical/workspace",
+      "results": [
+        [
+          75.9,
+          10
+        ],
+        [
+          75.9,
+          10
+        ],
+        [
+          75.9,
+          10
+        ],
+        [
+          75.9,
+          10
+        ],
+        [
+          75.9,
+          10
+        ]
+      ],
+      "dimensions": {
+        "width": 1301,
+        "height": 53,
+        "contentWidth": 1301,
+        "contentHeight": 223
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "1365/vertical/workspace",
+      "results": [
+        [
+          24.79,
+          10
+        ],
+        [
+          24.79,
+          10
+        ],
+        [
+          24.79,
+          10
+        ],
+        [
+          24.79,
+          10
+        ],
+        [
+          24.79,
+          10
+        ]
+      ],
+      "dimensions": {
+        "width": 1301,
+        "height": 59,
+        "contentWidth": 1301,
+        "contentHeight": 311
+      }
+    },
+    {
+      "view": "resources",
+      "context": "1365/vertical/workspace",
+      "results": [
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ]
+      ],
+      "dimensions": {
+        "width": 1301,
+        "height": 103,
+        "contentWidth": 1301,
+        "contentHeight": 9185
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "1365/vertical/individual",
+      "results": [
+        [
+          25.16,
+          37.36
+        ],
+        [
+          25.16,
+          37.36
+        ],
+        [
+          25.16,
+          37.36
+        ],
+        [
+          25.16,
+          37.36
+        ],
+        [
+          25.16,
+          37.36
+        ]
+      ],
+      "dimensions": {
+        "width": 1319,
+        "height": 720,
+        "contentWidth": 1319,
+        "contentHeight": 720
+      }
+    },
+    {
+      "view": "contestants",
+      "context": "1365/rejilla/workspace",
+      "results": [
+        [
+          75.9,
+          10
+        ],
+        [
+          75.9,
+          10
+        ],
+        [
+          75.9,
+          10
+        ],
+        [
+          75.9,
+          10
+        ],
+        [
+          75.9,
+          10
+        ]
+      ],
+      "dimensions": {
+        "width": 1301,
+        "height": 172,
+        "contentWidth": 1301,
+        "contentHeight": 223
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "1365/rejilla/workspace",
+      "results": [
+        [
+          10.77,
+          10
+        ],
+        [
+          10.77,
+          10
+        ],
+        [
+          10.77,
+          10
+        ],
+        [
+          10.77,
+          10
+        ],
+        [
+          10.77,
+          10
+        ]
+      ],
+      "dimensions": {
+        "width": 629,
+        "height": 178,
+        "contentWidth": 629,
+        "contentHeight": 311
+      }
+    },
+    {
+      "view": "resources",
+      "context": "1365/rejilla/workspace",
+      "results": [
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ]
+      ],
+      "dimensions": {
+        "width": 629,
+        "height": 222,
+        "contentWidth": 629,
+        "contentHeight": 11891
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "1365/rejilla/individual",
+      "results": [
+        [
+          25.16,
+          37.36
+        ],
+        [
+          25.16,
+          37.36
+        ],
+        [
+          25.16,
+          37.36
+        ],
+        [
+          25.16,
+          37.36
+        ],
+        [
+          25.16,
+          37.36
+        ]
+      ],
+      "dimensions": {
+        "width": 1319,
+        "height": 720,
+        "contentWidth": 1319,
+        "contentHeight": 720
+      }
+    },
+    {
+      "view": "contestants",
+      "context": "1920/horizontal/workspace",
+      "results": [
+        [
+          26.45,
+          58.99
+        ],
+        [
+          26.45,
+          58.99
+        ],
+        [
+          26.45,
+          58.99
+        ],
+        [
+          26.45,
+          58.99
+        ],
+        [
+          26.45,
+          58.99
+        ]
+      ],
+      "dimensions": {
+        "width": 589,
+        "height": 708,
+        "contentWidth": 589,
+        "contentHeight": 708
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "1920/horizontal/workspace",
+      "results": [
+        [
+          10,
+          36.94
+        ],
+        [
+          10,
+          36.94
+        ],
+        [
+          10,
+          36.94
+        ],
+        [
+          10,
+          36.94
+        ],
+        [
+          10,
+          36.94
+        ]
+      ],
+      "dimensions": {
+        "width": 589,
+        "height": 714,
+        "contentWidth": 589,
+        "contentHeight": 714
+      }
+    },
+    {
+      "view": "resources",
+      "context": "1920/horizontal/workspace",
+      "results": [
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ]
+      ],
+      "dimensions": {
+        "width": 589,
+        "height": 758,
+        "contentWidth": 589,
+        "contentHeight": 18105
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "1920/horizontal/individual",
+      "results": [
+        [
+          36.73,
+          49.86
+        ],
+        [
+          36.73,
+          49.86
+        ],
+        [
+          36.73,
+          49.86
+        ],
+        [
+          36.73,
+          49.86
+        ],
+        [
+          36.73,
+          49.86
+        ]
+      ],
+      "dimensions": {
+        "width": 1874,
+        "height": 900,
+        "contentWidth": 1874,
+        "contentHeight": 900
+      }
+    },
+    {
+      "view": "contestants",
+      "context": "1920/vertical/workspace",
+      "results": [
+        [
+          114.44,
+          10
+        ],
+        [
+          114.44,
+          10
+        ],
+        [
+          114.44,
+          10
+        ],
+        [
+          114.44,
+          10
+        ],
+        [
+          114.44,
+          10
+        ]
+      ],
+      "dimensions": {
+        "width": 1856,
+        "height": 113,
+        "contentWidth": 1856,
+        "contentHeight": 223
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "1920/vertical/workspace",
+      "results": [
+        [
+          36.36,
+          10
+        ],
+        [
+          36.36,
+          10
+        ],
+        [
+          36.36,
+          10
+        ],
+        [
+          36.36,
+          10
+        ],
+        [
+          36.36,
+          10
+        ]
+      ],
+      "dimensions": {
+        "width": 1856,
+        "height": 119,
+        "contentWidth": 1856,
+        "contentHeight": 311
+      }
+    },
+    {
+      "view": "resources",
+      "context": "1920/vertical/workspace",
+      "results": [
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ]
+      ],
+      "dimensions": {
+        "width": 1856,
+        "height": 163,
+        "contentWidth": 1856,
+        "contentHeight": 7950
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "1920/vertical/individual",
+      "results": [
+        [
+          36.73,
+          49.86
+        ],
+        [
+          36.73,
+          49.86
+        ],
+        [
+          36.73,
+          49.86
+        ],
+        [
+          36.73,
+          49.86
+        ],
+        [
+          36.73,
+          49.86
+        ]
+      ],
+      "dimensions": {
+        "width": 1874,
+        "height": 900,
+        "contentWidth": 1874,
+        "contentHeight": 900
+      }
+    },
+    {
+      "view": "contestants",
+      "context": "1920/rejilla/workspace",
+      "results": [
+        [
+          114.44,
+          12.71
+        ],
+        [
+          114.44,
+          12.71
+        ],
+        [
+          114.44,
+          12.71
+        ],
+        [
+          114.44,
+          12.71
+        ],
+        [
+          114.44,
+          12.71
+        ]
+      ],
+      "dimensions": {
+        "width": 1856,
+        "height": 262,
+        "contentWidth": 1856,
+        "contentHeight": 262
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "1920/rejilla/workspace",
+      "results": [
+        [
+          16.55,
+          10
+        ],
+        [
+          16.55,
+          10
+        ],
+        [
+          16.55,
+          10
+        ],
+        [
+          16.55,
+          10
+        ],
+        [
+          16.55,
+          10
+        ]
+      ],
+      "dimensions": {
+        "width": 906,
+        "height": 268,
+        "contentWidth": 906,
+        "contentHeight": 311
+      }
+    },
+    {
+      "view": "resources",
+      "context": "1920/rejilla/workspace",
+      "results": [
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ]
+      ],
+      "dimensions": {
+        "width": 906,
+        "height": 312,
+        "contentWidth": 906,
+        "contentHeight": 10639
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "1920/rejilla/individual",
+      "results": [
+        [
+          36.73,
+          49.86
+        ],
+        [
+          36.73,
+          49.86
+        ],
+        [
+          36.73,
+          49.86
+        ],
+        [
+          36.73,
+          49.86
+        ],
+        [
+          36.73,
+          49.86
+        ]
+      ],
+      "dimensions": {
+        "width": 1874,
+        "height": 900,
+        "contentWidth": 1874,
+        "contentHeight": 900
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "tasks-frame",
+      "results": [
+        [
+          12.55,
+          55.71
+        ],
+        [
+          12.55,
+          55.71
+        ],
+        [
+          12.55,
+          55.71
+        ],
+        [
+          12.55,
+          55.71
+        ],
+        [
+          12.55,
+          55.71
+        ]
+      ],
+      "dimensions": {
+        "width": 714,
+        "height": 884,
+        "contentWidth": 714,
+        "contentHeight": 884
+      }
+    },
+    {
+      "view": "spaces",
+      "context": "pdf-list",
+      "results": [
+        [
+          15.37,
+          56.5
+        ],
+        [
+          15.37,
+          56.5
+        ],
+        [
+          15.37,
+          56.5
+        ],
+        [
+          15.37,
+          56.5
+        ],
+        [
+          15.37,
+          56.5
+        ]
+      ],
+      "dimensions": {
+        "width": 714,
+        "height": 894,
+        "contentWidth": 714,
+        "contentHeight": 894
+      }
+    },
+    {
+      "view": "resources",
+      "context": "1365/1-resources",
+      "results": [
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ]
+      ],
+      "dimensions": {
+        "width": 1319,
+        "height": 764,
+        "contentWidth": 1319,
+        "contentHeight": 6177
+      }
+    },
+    {
+      "view": "resources",
+      "context": "1365/2-resources",
+      "results": [
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ]
+      ],
+      "dimensions": {
+        "width": 1319,
+        "height": 764,
+        "contentWidth": 1319,
+        "contentHeight": 6177
+      }
+    },
+    {
+      "view": "resources",
+      "context": "1365/3-resources",
+      "results": [
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ]
+      ],
+      "dimensions": {
+        "width": 1319,
+        "height": 764,
+        "contentWidth": 1319,
+        "contentHeight": 6177
+      }
+    },
+    {
+      "view": "resources",
+      "context": "1365/8-resources",
+      "results": [
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ]
+      ],
+      "dimensions": {
+        "width": 1319,
+        "height": 764,
+        "contentWidth": 1319,
+        "contentHeight": 8586
+      }
+    },
+    {
+      "view": "resources",
+      "context": "1920/1-resources",
+      "results": [
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ]
+      ],
+      "dimensions": {
+        "width": 1874,
+        "height": 764,
+        "contentWidth": 1874,
+        "contentHeight": 6177
+      }
+    },
+    {
+      "view": "resources",
+      "context": "1920/2-resources",
+      "results": [
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ]
+      ],
+      "dimensions": {
+        "width": 1874,
+        "height": 764,
+        "contentWidth": 1874,
+        "contentHeight": 6177
+      }
+    },
+    {
+      "view": "resources",
+      "context": "1920/3-resources",
+      "results": [
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ]
+      ],
+      "dimensions": {
+        "width": 1874,
+        "height": 764,
+        "contentWidth": 1874,
+        "contentHeight": 6177
+      }
+    },
+    {
+      "view": "resources",
+      "context": "1920/8-resources",
+      "results": [
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ],
+        [
+          100,
+          100
+        ]
+      ],
+      "dimensions": {
+        "width": 1874,
+        "height": 764,
+        "contentWidth": 1874,
+        "contentHeight": 7534
+      }
+    }
+  ],
+  "resources": [
+    {
+      "width": 1365,
+      "count": 1,
+      "columns": [
+        {
+          "width": 313.75,
+          "overflow": false
+        }
+      ],
+      "text": {
+        "font": 14,
+        "height": 90,
+        "text": "CORNER_INFLUENCER_MUSIC10:10-10:25Plató 14 · p14-recursos · C08Pendiente"
+      },
+      "colors": [
+        "rgb(253, 230, 138)",
+        "rgb(91, 33, 182)",
+        "rgb(22, 78, 99)"
+      ],
+      "longTitlePresent": true
+    },
+    {
+      "width": 1365,
+      "count": 2,
+      "columns": [
+        {
+          "width": 313.75,
+          "overflow": false
+        },
+        {
+          "width": 313.75,
+          "overflow": false
+        }
+      ],
+      "text": {
+        "font": 14,
+        "height": 90,
+        "text": "CORNER_INFLUENCER_MUSIC10:10-10:25Plató 14 · p14-recursos · C08Pendiente"
+      },
+      "colors": [
+        "rgb(253, 230, 138)",
+        "rgb(91, 33, 182)",
+        "rgb(22, 78, 99)"
+      ],
+      "longTitlePresent": true
+    },
+    {
+      "width": 1365,
+      "count": 3,
+      "columns": [
+        {
+          "width": 313.75,
+          "overflow": false
+        },
+        {
+          "width": 313.75,
+          "overflow": false
+        },
+        {
+          "width": 313.75,
+          "overflow": false
+        }
+      ],
+      "text": {
+        "font": 14,
+        "height": 90,
+        "text": "CORNER_INFLUENCER_MUSIC10:10-10:25Plató 14 · p14-recursos · C08Pendiente"
+      },
+      "colors": [
+        "rgb(253, 230, 138)",
+        "rgb(91, 33, 182)",
+        "rgb(22, 78, 99)"
+      ],
+      "longTitlePresent": true
+    },
+    {
+      "width": 1365,
+      "count": 8,
+      "columns": [
+        {
+          "width": 313.75,
+          "overflow": false
+        },
+        {
+          "width": 313.75,
+          "overflow": false
+        },
+        {
+          "width": 313.75,
+          "overflow": false
+        },
+        {
+          "width": 313.75,
+          "overflow": false
+        },
+        {
+          "width": 313.75,
+          "overflow": false
+        },
+        {
+          "width": 313.75,
+          "overflow": false
+        },
+        {
+          "width": 313.75,
+          "overflow": false
+        },
+        {
+          "width": 313.75,
+          "overflow": false
+        }
+      ],
+      "text": {
+        "font": 14,
+        "height": 90,
+        "text": "CORNER_INFLUENCER_MUSIC10:10-10:25Plató 14 · p14-recursos · C08Pendiente"
+      },
+      "colors": [
+        "rgb(253, 230, 138)",
+        "rgb(91, 33, 182)",
+        "rgb(22, 78, 99)"
+      ],
+      "longTitlePresent": true
+    },
+    {
+      "width": 1920,
+      "count": 1,
+      "columns": [
+        {
+          "width": 296.328125,
+          "overflow": false
+        }
+      ],
+      "text": {
+        "font": 14,
+        "height": 90,
+        "text": "CORNER_INFLUENCER_MUSIC10:10-10:25Plató 14 · p14-recursos · C08Pendiente"
+      },
+      "colors": [
+        "rgb(253, 230, 138)",
+        "rgb(91, 33, 182)",
+        "rgb(22, 78, 99)"
+      ],
+      "longTitlePresent": true
+    },
+    {
+      "width": 1920,
+      "count": 2,
+      "columns": [
+        {
+          "width": 296.328125,
+          "overflow": false
+        },
+        {
+          "width": 296.328125,
+          "overflow": false
+        }
+      ],
+      "text": {
+        "font": 14,
+        "height": 90,
+        "text": "CORNER_INFLUENCER_MUSIC10:10-10:25Plató 14 · p14-recursos · C08Pendiente"
+      },
+      "colors": [
+        "rgb(253, 230, 138)",
+        "rgb(91, 33, 182)",
+        "rgb(22, 78, 99)"
+      ],
+      "longTitlePresent": true
+    },
+    {
+      "width": 1920,
+      "count": 3,
+      "columns": [
+        {
+          "width": 296.328125,
+          "overflow": false
+        },
+        {
+          "width": 296.328125,
+          "overflow": false
+        },
+        {
+          "width": 296.34375,
+          "overflow": false
+        }
+      ],
+      "text": {
+        "font": 14,
+        "height": 90,
+        "text": "CORNER_INFLUENCER_MUSIC10:10-10:25Plató 14 · p14-recursos · C08Pendiente"
+      },
+      "colors": [
+        "rgb(253, 230, 138)",
+        "rgb(91, 33, 182)",
+        "rgb(22, 78, 99)"
+      ],
+      "longTitlePresent": true
+    },
+    {
+      "width": 1920,
+      "count": 8,
+      "columns": [
+        {
+          "width": 296.328125,
+          "overflow": false
+        },
+        {
+          "width": 296.328125,
+          "overflow": false
+        },
+        {
+          "width": 296.34375,
+          "overflow": false
+        },
+        {
+          "width": 296.328125,
+          "overflow": false
+        },
+        {
+          "width": 296.328125,
+          "overflow": false
+        },
+        {
+          "width": 296.34375,
+          "overflow": false
+        },
+        {
+          "width": 296.328125,
+          "overflow": false
+        },
+        {
+          "width": 296.328125,
+          "overflow": false
+        }
+      ],
+      "text": {
+        "font": 14,
+        "height": 90,
+        "text": "CORNER_INFLUENCER_MUSIC10:10-10:25Plató 14 · p14-recursos · C08Pendiente"
+      },
+      "colors": [
+        "rgb(253, 230, 138)",
+        "rgb(91, 33, 182)",
+        "rgb(22, 78, 99)"
+      ],
+      "longTitlePresent": true
+    }
+  ],
+  "layouts": [
+    {
+      "width": 1365,
+      "layout": "horizontal",
+      "restored": true
+    },
+    {
+      "width": 1365,
+      "layout": "vertical",
+      "restored": true
+    },
+    {
+      "width": 1365,
+      "layout": "rejilla",
+      "restored": true
+    },
+    {
+      "width": 1920,
+      "layout": "horizontal",
+      "restored": true
+    },
+    {
+      "width": 1920,
+      "layout": "vertical",
+      "restored": true
+    },
+    {
+      "width": 1920,
+      "layout": "rejilla",
+      "restored": true
+    }
+  ],
+  "screenshots": [
+    "after-workspace-1365-horizontal.png",
+    "after-workspace-1365-vertical.png",
+    "after-workspace-1365-rejilla.png",
+    "after-workspace-1920-horizontal.png",
+    "after-workspace-1920-vertical.png",
+    "after-workspace-1920-rejilla.png",
+    "after-resources-1365-1.png",
+    "after-resources-1365-2.png",
+    "after-resources-1365-3.png",
+    "after-resources-1365-8.png",
+    "after-resources-1920-1.png",
+    "after-resources-1920-2.png",
+    "after-resources-1920-3.png",
+    "after-resources-1920-8.png"
+  ],
+  "dialogEscape": "PASS",
+  "status": "PASS"
+}

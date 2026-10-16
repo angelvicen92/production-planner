@@ -1,8 +1,10 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, Minimize2, Maximize2, Scan } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clampZoom, zoomAxes } from "@/lib/planning-workspace-geometry";
+
+import { PlanningFullscreenContext, usePlanningFullscreen } from "./planning-fullscreen";
 
 type DensityMode = "normal" | "pdf";
 type Geometry = { zoomX: number; zoomY: number; frame: "day" | "tasks"; fitRequest: number; setZoom: (x: number, y: number) => void };
@@ -22,7 +24,11 @@ function readSettings(viewKey: string) {
 export function FullscreenPlanningPanel({ title, viewKey, supportsZoom = false, children, toolbarRight, hydrationBlocked = false }: {
   title?: string; viewKey: string; supportsZoom?: boolean; children: ReactNode; toolbarRight?: ReactNode; hydrationBlocked?: boolean;
 }) {
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [localFullscreen, setLocalFullscreen] = useState(false);
+  const fullscreen = useContext(PlanningFullscreenContext);
+  const isFullscreen = fullscreen ? fullscreen.activePanel === viewKey : localFullscreen;
+  const exitFullscreen = useCallback(() => setLocalFullscreen(false), []);
+  usePlanningFullscreen(!fullscreen && localFullscreen, exitFullscreen);
   const [density, setDensity] = useState<DensityMode>(() => {
     try { return localStorage.getItem(`${viewKey}:density`) === "pdf" ? "pdf" : "normal"; } catch { return "normal"; }
   });
@@ -34,33 +40,17 @@ export function FullscreenPlanningPanel({ title, viewKey, supportsZoom = false, 
       localStorage.setItem(`${viewKey}:geometry`, JSON.stringify(settings));
     } catch { /* Local preferences must not block planning. */ }
   }, [viewKey, density, settings]);
-  useEffect(() => {
-    if (!isFullscreen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.body.dataset.planningFullscreen = "true";
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]')) return;
-      event.preventDefault(); setIsFullscreen(false);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = previousOverflow;
-      delete document.body.dataset.planningFullscreen;
-    };
-  }, [isFullscreen]);
-  const changeZoom = (factor: number) => setSettings(old => ({ ...old, ...zoomAxes(old.zoomX, old.zoomY, old.axis, factor) }));
+  const changeZoom = (factor: number) => { setFitRequest(0); setSettings(old => ({ ...old, ...zoomAxes(old.zoomX, old.zoomY, old.axis, factor) })); };
   return (
     <PlanningDensityContext.Provider value={density}>
-      <PlanningGeometryContext.Provider value={{ ...settings, fitRequest, setZoom: (x, y) => setSettings(old => ({ ...old, zoomX: clampZoom(x), zoomY: clampZoom(y) })) }}>
+      <PlanningGeometryContext.Provider value={{ ...settings, fitRequest, setZoom: (x, y) => setSettings(old => Math.abs(old.zoomX - clampZoom(x)) < .01 && Math.abs(old.zoomY - clampZoom(y)) < .01 ? old : ({ ...old, zoomX: clampZoom(x), zoomY: clampZoom(y) })) }}>
         <div className={cn("planning-panel flex min-h-0 min-w-0 flex-col", isFullscreen && "fixed inset-0 z-[100] bg-background p-2 sm:p-4")}
           data-density={density} data-fullscreen={isFullscreen} data-zoom-x={settings.zoomX} data-zoom-y={settings.zoomY}>
           <div className="planning-panel-toolbar mb-2 flex shrink-0 flex-col gap-2 rounded-lg border bg-card px-2 py-2">
             <div className="flex flex-wrap items-center justify-between gap-1">
               {title ? <p className="text-sm font-semibold">{title}</p> : null}
               <div className="flex flex-wrap items-center gap-1">{toolbarRight}
-                <Button variant="ghost" size="sm" onClick={() => setIsFullscreen(old => !old)}>
+                <Button variant="ghost" size="sm" onClick={() => fullscreen ? fullscreen.setActivePanel(isFullscreen ? null : viewKey) : setLocalFullscreen(old => !old)}>
                   {isFullscreen ? <Minimize2 className="mr-1 h-4 w-4" /> : <Maximize2 className="mr-1 h-4 w-4" />}
                   {isFullscreen ? "Salir (Esc)" : "Maximizar"}
                 </Button>
@@ -78,7 +68,7 @@ export function FullscreenPlanningPanel({ title, viewKey, supportsZoom = false, 
                   <option value="linked">Vinculado</option><option value="x">Zoom X</option><option value="y">Zoom Y</option>
                 </select>
                 <Button size="icon" className="h-8 w-8" variant="ghost" aria-label="Reducir zoom" onClick={() => changeZoom(1 / 1.1)}><Minus className="h-3 w-3" /></Button>
-                <Button size="sm" className="h-8 px-1 text-xs tabular-nums" variant="ghost" aria-label="Restaurar zoom al 100%" onClick={() => setSettings(old => ({ ...old, zoomX: 100, zoomY: 100 }))}>
+                <Button size="sm" className="h-8 px-1 text-xs tabular-nums" variant="ghost" aria-label="Restaurar zoom al 100%" onClick={() => { setFitRequest(0); setSettings(old => ({ ...old, zoomX: 100, zoomY: 100 })); }}>
                   {Math.round(settings.zoomX)}% × {Math.round(settings.zoomY)}%
                 </Button>
                 <Button size="icon" className="h-8 w-8" variant="ghost" aria-label="Ampliar zoom" onClick={() => changeZoom(1.1)}><Plus className="h-3 w-3" /></Button>

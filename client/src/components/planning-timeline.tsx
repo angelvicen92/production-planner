@@ -2,7 +2,7 @@ import { SpaceTaskContent } from "@/components/planning/space-task-content";
 import { spaceParticipantNames, spaceHeadingColor, spaceForeground, type SpaceTaskOperation } from "@/lib/planning-space-presentation";
 import { planningGroupOrder, planningFilterIds, effectivePlanningResourceIds } from "@/lib/planning-view-policy";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type ReactNode, type Dispatch, type SetStateAction } from "react";
-import { assignedPlanningLocations, planningRange } from "@/lib/planning-workspace-geometry";
+import { assignedPlanningLocations, fitPlanningZoom, planningRange, resourceColumnWidth } from "@/lib/planning-workspace-geometry";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -622,19 +622,6 @@ function TaskStatusMenuTrigger({
   const geometry = usePlanningGeometry();
   const zoomX = geometry.zoomX / 100, zoomY = geometry.zoomY / 100;
   const scrollRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!geometry.fitRequest) return;
-    const viewport = scrollRef.current;
-    const canvas = viewport?.querySelector<HTMLElement>("[data-planning-canvas]");
-    if (!viewport || !canvas) return;
-    const fixedWidth = canvas.querySelector(".planning-row-label")?.getBoundingClientRect().width ?? Number(canvas.dataset.fixedWidth ?? 0);
-    const fixedHeight = Number(canvas.dataset.fixedHeight ?? 0);
-    geometry.setZoom(
-      (viewport.clientWidth - fixedWidth - 16) / ((canvas.scrollWidth - fixedWidth) / zoomX) * 100,
-      (viewport.clientHeight - fixedHeight - 16) / ((canvas.scrollHeight - fixedHeight) / zoomY) * 100,
-    );
-    viewport.scrollTo(0, 0);
-  }, [geometry.fitRequest]);
   const isPdf = density === "pdf";
   useEffect(() => {
     if (!isHydratingPlanningResult || !planningRunId || !taskDatasetVersion) return;
@@ -1444,6 +1431,47 @@ function TaskStatusMenuTrigger({
     return sortContestantLanes(entries, contestantOrder ?? (contestantSort.mode === "task" ? Number(contestantSort.templateId) : undefined));
   }, [filteredDailyTasksByStage, contestants, viewMode, filteredZones, filteredSpaces, contestantSort, contestantOrder, contestantFilterIds, hideEmptyLanes]);
 
+  // Fit reads renderer-owned dimensions at 100%. The only DOM measurements
+  // are fixed chrome and the available viewport, never a scaled scroll extent.
+  useEffect(() => {
+    if (!geometry.fitRequest) return;
+    const viewport = scrollRef.current;
+    if (!viewport) return;
+    let frame = 0;
+    const fit = () => {
+      if (!viewport.clientWidth || !viewport.clientHeight) return;
+      const canvas = viewport.querySelector<HTMLElement>("[data-planning-canvas]");
+      if (!canvas) return;
+      const intrinsic = canvas.querySelector<HTMLElement>("[data-fit-width]") ?? canvas;
+      // Reserve a horizontal scrollbar even if it was absent at the old zoom.
+      // This prevents a scrollbar appearing/disappearing from changing the fit.
+      const css = getComputedStyle(viewport);
+      const available = { width: viewport.clientWidth - 16, height: viewport.offsetHeight - parseFloat(css.borderTopWidth || "0") - parseFloat(css.borderBottomWidth || "0") - 14 };
+      const fixedControls = canvas.querySelector<HTMLElement>("[data-planning-fixed-controls]");
+      if (fixedControls) fixedControls.style.width = `${available.width}px`;
+      let fitted;
+      if (viewMode === "resources") {
+        // An agenda wraps columns and scrolls vertically; never shrink a long
+        // list to the height of the panel or scale its typography.
+        fitted = { zoomX: Math.min(100, Math.max(10, (available.width - 16) / 280 * 100)), zoomY: 100 };
+      } else {
+        const rows = [...canvas.querySelectorAll<HTMLElement>("[data-planning-lane]")];
+        const fixedWidth = canvas.querySelector<HTMLElement>(".planning-row-label")?.getBoundingClientRect().width ?? Number(intrinsic.dataset.fitFixedWidth ?? 0);
+        const fixedHeight = rows.length
+          ? canvas.getBoundingClientRect().height - rows.reduce((sum, row) => sum + row.getBoundingClientRect().height - 1, 0)
+          : Number(intrinsic.dataset.fitFixedHeight ?? 0);
+        fitted = fitPlanningZoom(available, { width: Number(intrinsic.dataset.fitWidth), height: Number(intrinsic.dataset.fitHeight), fixedWidth, fixedHeight });
+      }
+      geometry.setZoom(fitted.zoomX, fitted.zoomY);
+    };
+    const schedule = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(fit); };
+    const observer = new ResizeObserver(schedule);
+    observer.observe(viewport);
+    schedule();
+    viewport.scrollTo(0, 0);
+    return () => { cancelAnimationFrame(frame); observer.disconnect(); };
+  }, [geometry.fitRequest, geometry.frame, density, viewMode, duration, lanes, selectedResourceKeys, filteredSpaces, hideEmptyLanes, spaceVerticalMode, readOnly]);
+
   const taskSortControls = viewMode === "contestants" && !contestantOrder ? (
     <div className="flex items-center gap-2 rounded-md border px-3 py-1.5 bg-muted/20">
       <Button
@@ -1873,7 +1901,12 @@ function TaskStatusMenuTrigger({
                     <div className="space-y-6">
                       {(
                         // ✅ TIMELINE vertical: columna horas + bloques por plató con espacios en columnas
-                        <div className="flex gap-4" >
+                        <div className="flex gap-4"
+                          data-fit-width={zoneColsToShow.reduce((sum, zone) => sum + zone.spaces.length * (spaceVerticalMode === "list" ? 160 : 200) + Math.max(0, zone.spaces.length - 1) * 8, 0)
+                            + itinerantColsToShow.length * (spaceVerticalMode === "list" ? 160 : 200) + Math.max(0, itinerantColsToShow.length - 1) * 8
+                            + (showUnlocated ? 220 : 0)
+                            + Math.max(0, zoneColsToShow.length + (itinerantColsToShow.length ? 1 : 0) + (showUnlocated ? 1 : 0) - 1) * 8}
+                          data-fit-height={duration * 2} data-fit-fixed-width="96" data-fit-fixed-height="168">
                           {/* columna horas (una sola vez) */}
                           <div
                             className="planning-time-ruler sticky left-0 z-30 w-16 shrink-0 bg-card text-[10px] text-muted-foreground"
@@ -2403,8 +2436,8 @@ function TaskStatusMenuTrigger({
       <TooltipProvider>
         <div className="planning-timeline-shell min-h-0 flex flex-1 flex-col border rounded-xl bg-card shadow-sm">
           <div ref={scrollRef} className="planning-scroll-viewport" tabIndex={0} role="region" aria-label="Agenda de recursos">
-            <div className="p-2 w-max min-w-full" data-planning-canvas>
-              <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${Math.max(1, selectedResourceKeys.length)}, minmax(${280 * zoomX}px, 1fr))` }}>
+            <div className="p-2 w-full min-w-0" data-planning-canvas>
+              <div className="planning-resource-grid grid items-start gap-4" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${resourceColumnWidth(geometry.zoomX)}px), 1fr))` }}>
               {selectedResourceKeys.map((resourceKey) => {
                 const option = resourceSelectableById.get(resourceKey);
                 const resourceName = option?.label ?? resourceKey;
@@ -2412,10 +2445,10 @@ function TaskStatusMenuTrigger({
                 if(hideEmptyLanes && tasksForResource.length===0)return null;
 
                 return (
-                  <Card key={resourceKey} className="p-3">
+                  <Card key={resourceKey} data-planning-resource={resourceKey} className="min-w-0 w-full max-w-[400px] p-3">
                     <div className="sticky top-0 z-20 mb-3 border-b bg-card pb-2 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{resourceName}</h3>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="min-w-0 break-words font-semibold">{resourceName}</h3>
                         <Badge variant="outline" className="text-[10px]">{kindLabel(option?.kind ?? "resource_item")}</Badge>
                       </div>
                       {option ? (
@@ -2451,14 +2484,14 @@ function TaskStatusMenuTrigger({
                             onEditManualBlock={(task) => setManualBlockEditor({ task, title: task.manualTitle ?? task.template?.name ?? "Bloqueo", color: task.manualColor ?? "#38BDF8", durationMinutes: Math.max(5, timeToMinutes(task.endPlanned ?? "00:30") - timeToMinutes(task.startPlanned ?? "00:00") || 30) })}
                             onClick={(event) => handleTaskCardClick(event, task)}
                             className={cn(
-                              "w-full rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
+                              "planning-resource-task w-full min-w-0 rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
                               task.isManualBlock ? "border-dashed border-sky-500/80" : "",
                                                   manualDrag?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
                               task.status === "in_progress" ? "ring-2 ring-green-500" : "",
                               task.status === "done" ? "opacity-80" : "",
                             )}
                             style={{
-                              minHeight: 88 * zoomY,
+                              minHeight: Math.max(88, 88 * zoomY),
                               backgroundColor: taskBaseColor(task),
                               borderColor:
                                 task.status === "in_progress"
@@ -2468,19 +2501,19 @@ function TaskStatusMenuTrigger({
                               pointerEvents: "auto",
                             }}
                           >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <div className="text-sm font-bold truncate">
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1 basis-40">
+                                <div className="break-words text-sm font-bold">
                                   {taskPrefixIcon(task) ? <span className="mr-1">{taskPrefixIcon(task)}</span> : null}{taskDisplayName(task)}
                                 </div>
                                 <div className="text-xs opacity-70">
                                   {task.startPlanned ?? "—"}-{task.endPlanned ?? "—"}
                                 </div>
-                                <div className="text-xs opacity-70 truncate">
+                                <div className="break-words text-xs opacity-70">
                                   {getTaskLocationLabel(task)} · {contestantNameById[Number(task.contestantId)] ?? "Sin concursante"}
                                 </div>
                               </div>
-                              <Badge variant="outline" className="text-[10px]">
+                              <Badge variant="outline" className="shrink-0 text-[10px]">
                                 {operationalStatusLabels[task.status] ?? "Estado por revisar"}
                               </Badge>
                             </div>
@@ -2505,7 +2538,7 @@ function TaskStatusMenuTrigger({
       <div className="planning-timeline-shell min-h-0 flex flex-1 flex-col border rounded-xl bg-card shadow-sm">
         <div ref={scrollRef} className="planning-scroll-viewport" tabIndex={0} role="region" aria-label="Timeline de concursantes">
           <div>
-            <div className="relative pb-4" style={{ width: `calc(var(--planning-label-width, 192px) + ${duration * 2 * zoomX}px)` }} data-planning-canvas data-fixed-width="192" data-fixed-height="100">
+            <div className="relative pb-4" style={{ width: `calc(var(--planning-label-width, 192px) + ${duration * 2 * zoomX}px)` }} data-planning-canvas data-fit-width={duration * 2} data-fit-height={lanes.length * (isPdf ? 36 : 48)}>
               {/* Timeline Header */}
               <div className="flex border-b sticky top-0 bg-card z-40">
                 <div className="planning-row-label shrink-0 sticky left-0 z-30 p-3 border-r font-semibold text-sm bg-card planning-density-row">
@@ -2517,7 +2550,8 @@ function TaskStatusMenuTrigger({
                       key={tl.min}
                       className="absolute top-0 bottom-0 border-l text-[10px] text-muted-foreground pl-1 pt-2"
                       style={{
-                        left: `${((tl.min - startMin) / duration) * 100}%`,
+                        left: tl.min === endMin ? undefined : `${((tl.min - startMin) / duration) * 100}%`,
+                        right: tl.min === endMin ? 0 : undefined,
                       }}
                     >
                       {tl.label}
@@ -2526,6 +2560,7 @@ function TaskStatusMenuTrigger({
                 </div>
               </div>
 
+              <div data-planning-fixed-controls className="flow-root">
               {readOnly ? <div className="mb-3 p-2 text-sm text-muted-foreground">Consulta de la planificación · edición deshabilitada</div> : !assistedDraftMode ? <div className="mb-3 flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2">
                   <Switch
@@ -2839,6 +2874,7 @@ function TaskStatusMenuTrigger({
               </Dialog>
 
 
+              </div>
               {/* Lanes */}
               {lanes.map(([id, lane]) => (
                 <div

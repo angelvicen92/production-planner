@@ -36,3 +36,17 @@ export function assignedPlanningLocations(tasks: {spaceId?: number | null; zoneI
 export function clampPanelRatio(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? Math.max(30, Math.min(70, value)) : 50;
 }
+
+/** Intrinsic extents are defined by the renderer at 100%, never by scrollWidth. */
+export function fitPlanningZoom(available: { width: number; height: number }, intrinsic: {
+  width: number; height: number; fixedWidth: number; fixedHeight: number;
+}) {
+  const fit = (space: number, fixed: number, content: number) =>
+    clampZoom(content > 0 ? Math.floor(Math.max(0, space - fixed) / content * 10000) / 100 : 100);
+  return { zoomX: fit(available.width, intrinsic.fixedWidth, intrinsic.width), zoomY: fit(available.height, intrinsic.fixedHeight, intrinsic.height) };
+}
+
+/** Agenda cards wrap and keep readable type; Y changes spacing, not text size. */
+export function resourceColumnWidth(zoom: number) {
+  return Math.max(240, Math.min(400, 280 * clampZoom(zoom) / 100));
+}
