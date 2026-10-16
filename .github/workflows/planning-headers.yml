@@ -1,0 +1,59 @@
+name: Planning operational headers
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'client/src/components/planning-timeline.tsx'
+      - 'client/src/components/planning/operational-header.tsx'
+      - 'client/src/hooks/use-planning-header*'
+      - 'client/src/lib/planning-header*'
+      - 'client/src/pages/plan-details.tsx'
+      - 'client/src/index.css'
+      - 'server/planningHeaderNotes*'
+      - 'shared/planningHeaderNotes.ts'
+      - 'supabase/migrations/095_planning_header_notes.sql'
+      - 'script/demo/smokePlanningHeaderJourney.ts'
+      - 'script/demo/smokeA2Integration.ts'
+      - '.github/workflows/planning-headers.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: planning-headers-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  planning-headers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run check && npm run check:migrations && npm run build
+      - run: node --import tsx --test client/src/lib/planning-header.test.ts server/planningHeaderNotes.spec.ts server/planningHeaderNotesSql.spec.ts client/src/lib/planning-view-policy.test.ts client/src/lib/planning-operational-meals.test.ts client/src/lib/planning-workspace-geometry.test.ts
+      - run: npx --no-install playwright install --with-deps chromium
+      - name: Compare base and candidate on disposable A2
+        env:
+          UI06_BASELINE_ROOT: ${{ runner.temp }}/ui06-base
+          BASELINE_REF: ${{ github.event.pull_request.base.sha || 'main' }}
+        run: |
+          git worktree add --detach "$UI06_BASELINE_ROOT" "$BASELINE_REF"
+          mkdir "$UI06_BASELINE_ROOT/node_modules"
+          for dependency in "$PWD"/node_modules/* "$PWD"/node_modules/.bin; do
+            ln -s "$dependency" "$UI06_BASELINE_ROOT/node_modules/$(basename "$dependency")"
+          done
+          node --import tsx script/demo/smokeA2Integration.ts work/ui06-ci --historical-topology --header-notes
+      - name: Public evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: planning-headers
+          path: |
+            work/ui06-ci/integration.json
+            work/ui06-ci/header-notes.json
+            work/ui06-ci/headers-*.png

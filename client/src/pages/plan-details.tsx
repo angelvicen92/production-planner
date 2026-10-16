@@ -237,9 +237,9 @@ export default function PlanDetailsPage() {
   const { data: contestants = [] } = useContestants(id);
   const { data: zones = [], isLoading: zonesLoading } = useZones();
   const { data: staffPeople = [] } = useStaffPeople();
-  const { data: planZoneStaffModes = [] } = usePlanZoneStaffModes(id);
-  const { data: planStaffAssignments = [] } = usePlanStaffAssignments(id);
-  const { data: itinerantTeams = [] } = useItinerantTeams();
+  const { data: planZoneStaffModes = [], ...staffModesQuery } = usePlanZoneStaffModes(id);
+  const { data: planStaffAssignments = [], ...staffAssignmentsQuery } = usePlanStaffAssignments(id);
+  const { data: itinerantTeams = [], ...headerTeamsQuery } = useItinerantTeams();
   const { data: spaces = [], isLoading: spacesLoading } = useSpaces();
   const { data: taskTemplates = [] } = useTaskTemplates();
   const { data: programSettings } = useQuery({
@@ -539,61 +539,29 @@ export default function PlanDetailsPage() {
     window.localStorage.setItem("timeline.resourceFilterIds", JSON.stringify(resourceFilterIds));
   }, [resourceFilterIds]);
 
-  useEffect(() => {
-    if (!Number.isFinite(id) || id <= 0) return;
-
-    (async () => {
-      try {
-        setPlanningStatus("generating");
-        // 1) nombres de plan_resource_items (id -> name)
-        const items = await apiRequest<any[]>(
-          "GET",
-          buildUrl(api.plans.resourceItems.list.path, { id }),
-        );
-
-        const nameMap: Record<number, string> = {};
-        for (const r of items ?? []) {
-          const priId = Number(r?.id);
-          const nm = String(r?.name ?? "").trim();
-          if (Number.isFinite(priId) && nm) nameMap[priId] = nm;
-        }
-        setPlanResourceItemNameById(nameMap);
-
-        // 2) asignaciones por zona (zoneId -> planResourceItemIds)
-        const zRows = await apiRequest<any[]>(
-          "GET",
-          buildUrl(api.plans.zoneResourceAssignments.list.path, { id }),
-        );
-
-        const zMap: Record<number, number[]> = {};
-        for (const r of zRows ?? []) {
-          const zid = Number(r?.zoneId);
-          const ids = Array.isArray(r?.planResourceItemIds)
-            ? r.planResourceItemIds
-            : [];
-          const clean = ids
-            .map((n: any) => Number(n))
-            .filter((n: number) => Number.isFinite(n) && n > 0);
-
-          if (Number.isFinite(zid)) zMap[zid] = clean;
-        }
-        setZoneAssignmentsForTooltip(zMap);
-        const spaceRows = await apiRequest<any[]>("GET", buildUrl(api.plans.spaceResourceAssignments.list.path, { id }));
-        setSpaceAssignmentsForPlanning(Object.fromEntries((spaceRows ?? []).map(row => [Number(row.spaceId), row.planResourceItemIds ?? []])));
-      } catch {
-        // Silencioso: esto es "nice to have" para tooltip, no debe romper nada
-      }
-    })();
-  }, [id, resourceVersion]);
-
-  // NEW: para tooltip de planning (explicabilidad)
-  const [zoneAssignmentsForTooltip, setZoneAssignmentsForTooltip] = useState<
-    Record<number, number[]>
-  >({});
-  const [spaceAssignmentsForPlanning, setSpaceAssignmentsForPlanning] = useState<Record<number, number[]>>({});
-  const [planResourceItemNameById, setPlanResourceItemNameById] = useState<
-    Record<number, string>
-  >({});
+  const headerResourcesQuery = useQuery({
+    queryKey: ["planning-header-assignments", id, resourceVersion],
+    enabled: Number.isFinite(id) && id > 0,
+    queryFn: async () => {
+      const [items, zones, spaces, dayZones, daySpaces] = await Promise.all([
+        apiRequest<any[]>("GET", buildUrl(api.plans.resourceItems.list.path, { id })),
+        apiRequest<any[]>("GET", buildUrl(api.plans.zoneResourceAssignments.list.path, { id })),
+        apiRequest<any[]>("GET", buildUrl(api.plans.spaceResourceAssignments.list.path, { id })),
+        apiRequest<any[]>("GET", buildUrl(api.plans.spatialAvailability.listZones.path, { id })),
+        apiRequest<any[]>("GET", buildUrl(api.plans.spatialAvailability.listSpaces.path, { id })),
+      ]);
+      if (![items, zones, spaces, dayZones, daySpaces].every(Array.isArray)) throw new Error("Asignaciones no disponibles");
+      return { scopes: { zone: dayZones.map(row => Number(row.zoneId)), space: daySpaces.map(row => Number(row.spaceId)) }, names: Object.fromEntries(items.map(row => [Number(row.id), String(row.name ?? "").trim()])),
+        zones: Object.fromEntries(zones.map(row => [Number(row.zoneId), row.planResourceItemIds ?? []])),
+        spaces: Object.fromEntries(spaces.map(row => [Number(row.spaceId), row.planResourceItemIds ?? []])) };
+    },
+    refetchInterval: 15000,
+  });
+  const zoneAssignmentsForTooltip: Record<number, number[]> = headerResourcesQuery.data?.zones ?? {};
+  const spaceAssignmentsForPlanning: Record<number, number[]> = headerResourcesQuery.data?.spaces ?? {};
+  const planResourceItemNameById: Record<number, string> = headerResourcesQuery.data?.names ?? {};
+  const headerAssignmentsStatus = headerResourcesQuery.isError || staffModesQuery.isError || staffAssignmentsQuery.isError || headerTeamsQuery.isError ? "error" : headerResourcesQuery.isPending || staffModesQuery.isPending || staffAssignmentsQuery.isPending || headerTeamsQuery.isPending || zonesLoading || spacesLoading ? "loading" : "ready";
+  const canEditHeaders = role === "admin" || role === "production";
 
   const [coachOptions, setCoachOptions] = useState<
     { id: number; name: string }[]
@@ -1296,7 +1264,7 @@ ${reasonMessage}` : message,
 
   const openExecution = useCallback(() => setActiveTab("execution"), [setActiveTab]);
   const openContestantFromExecution = useCallback((contestantId:number) => {setSelectedContestant(contestants.find(contestant=>Number(contestant.id)===contestantId));setActiveTab("tasks");}, [contestants,setActiveTab]);
-  const assistedTimelineProps = useMemo(() => ({contestants,onTaskStatusChange:handlePlanningTaskStatusChange,canExecuteTask:canOperateTask,taskStatusPending:updateTaskStatus.isPending,viewMode:timelineView,spaceVerticalMode,stageFilterIds,resourceFilterIds,resourceSelectables:resourceFilterOptions,zones,spaces,zoneResourceAssignments:zoneAssignmentsForTooltip,spaceResourceAssignments:spaceAssignmentsForPlanning,planResourceItemNameById,zoneStaffModes:planZoneStaffModes,itinerantTeams,staffAssignments:planStaffAssignments,uiItinerantGroupOrderIndex:(programSettings as any)?.uiItinerantGroupOrderIndex??(programSettings as any)?.ui_itinerant_group_order_index??null,uiUnlocatedGroupOrderIndex:(programSettings as any)?.uiUnlocatedGroupOrderIndex??(programSettings as any)?.ui_unlocated_group_order_index??null}),[contestants,handlePlanningTaskStatusChange,canOperateTask,updateTaskStatus.isPending,timelineView,spaceVerticalMode,stageFilterIds,resourceFilterIds,resourceFilterOptions,zones,spaces,zoneAssignmentsForTooltip,spaceAssignmentsForPlanning,planResourceItemNameById,planZoneStaffModes,itinerantTeams,planStaffAssignments,programSettings]);
+  const assistedTimelineProps = useMemo(() => ({canEditHeaders,headerLocationScopes:headerResourcesQuery.data?.scopes,assignmentsStatus:headerAssignmentsStatus,contestants,onTaskStatusChange:handlePlanningTaskStatusChange,canExecuteTask:canOperateTask,taskStatusPending:updateTaskStatus.isPending,viewMode:timelineView,spaceVerticalMode,stageFilterIds,resourceFilterIds,resourceSelectables:resourceFilterOptions,zones,spaces,zoneResourceAssignments:zoneAssignmentsForTooltip,spaceResourceAssignments:spaceAssignmentsForPlanning,planResourceItemNameById,zoneStaffModes:planZoneStaffModes,itinerantTeams,staffAssignments:planStaffAssignments,uiItinerantGroupOrderIndex:(programSettings as any)?.uiItinerantGroupOrderIndex??(programSettings as any)?.ui_itinerant_group_order_index??null,uiUnlocatedGroupOrderIndex:(programSettings as any)?.uiUnlocatedGroupOrderIndex??(programSettings as any)?.ui_unlocated_group_order_index??null}),[headerResourcesQuery.data?.scopes,canEditHeaders,headerAssignmentsStatus,contestants,handlePlanningTaskStatusChange,canOperateTask,updateTaskStatus.isPending,timelineView,spaceVerticalMode,stageFilterIds,resourceFilterIds,resourceFilterOptions,zones,spaces,zoneAssignmentsForTooltip,spaceAssignmentsForPlanning,planResourceItemNameById,planZoneStaffModes,itinerantTeams,planStaffAssignments,programSettings]);
 
   const resourceOptionById = useMemo(
     () => new Map(resourceFilterOptions.map((opt) => [String(opt.id), opt])),
@@ -3447,6 +3415,9 @@ ${reasonMessage}` : message,
                   resourceSelectables={resourceFilterOptions as any}
                   zones={zones as any}
                   spaces={spaces as any}
+                  headerLocationScopes={headerResourcesQuery.data?.scopes}
+                  canEditHeaders={canEditHeaders}
+                  assignmentsStatus={headerAssignmentsStatus}
                   zoneResourceAssignments={zoneAssignmentsForTooltip}
                   spaceResourceAssignments={spaceAssignmentsForPlanning}
                   planResourceItemNameById={planResourceItemNameById}

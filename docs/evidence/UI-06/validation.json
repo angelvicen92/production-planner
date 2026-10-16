@@ -1,0 +1,39 @@
+{
+  "status": "PASS",
+  "base": "4f7f3cb4afe8e58ad5d81faa1e99c79d4bfc0a04",
+  "check": "PASS",
+  "build": "PASS",
+  "migrationGate": "PASS",
+  "nativeMigrationLedger": "PASS",
+  "focalTests": 41,
+  "focalFailures": 0,
+  "chromium": "PASS",
+  "sourceCharacteristics": {
+    "resources": 11,
+    "staff": 0,
+    "taskswithdirectresources": 72
+  },
+  "explicitSpaceAssignments": 6,
+  "scheduledTasks": 266,
+  "equalIncludingXmin": true,
+  "operationalSha256": "6b3dd5335bf2690eb629327e41b17d0e9824567ec616886bd6015f6b54b6fd33",
+  "protectedTables": [
+    "plans",
+    "daily_tasks",
+    "plan_breaks",
+    "locks",
+    "assisted_planning_sessions",
+    "assisted_planning_stages",
+    "planning_stage_validations",
+    "planning_runs",
+    "plan_config_revisions",
+    "planning_accepted_exceptions",
+    "plan_resource_items",
+    "plan_zone_resource_assignments",
+    "plan_space_resource_assignments",
+    "plan_staff_assignments",
+    "plan_zone_staff_mode"
+  ],
+  "operationalApiWrites": 0,
+  "remoteWrites": 0
+}

@@ -1,0 +1,81 @@
+{
+  "status": "PASS",
+  "remoteWrites": 0,
+  "checks": [
+    "API 401/403, four authorized read roles, invalid daily scope and text length",
+    "six actual A2 space cameras, no spurious Giratuto camera, Prod/Red empty and baseline/candidate captures",
+    "zone/space notes: add, long multiline plain text, scroll past tall headers, reorder, edit, delete, save, reload, reopen and accepted/draft without scope leakage",
+    "viewer has no editor; shared polling synchronizes another authenticated session; CAS admits one of two concurrent saves",
+    "native RLS: four authorized roles read, no-role sees no rows, anon denied; all authenticated direct writes and forged RPC actors denied",
+    "Timeline/List, filters, PDF density, independent X/Y zoom, fit, individual/joint maximization, aligned task origins and persisted itinerant headers",
+    "266/266 preserved; full rows and xmin unchanged in 15 operational tables, no operational API writes"
+  ],
+  "screenshots": [
+    "headers-before-p14.png",
+    "headers-before-totales.png",
+    "headers-after-p14.png",
+    "headers-after-totales.png",
+    "headers-notes-long.png",
+    "headers-notes-maximized.png",
+    "headers-notes-pdf.png",
+    "headers-notes-joint-maximized.png"
+  ],
+  "operationalWrites": [],
+  "operationalBeforeSha256": "6b3dd5335bf2690eb629327e41b17d0e9824567ec616886bd6015f6b54b6fd33",
+  "explicitAssignments": [
+    {
+      "space_id": "3",
+      "plan_resource_item_id": "104001"
+    },
+    {
+      "space_id": "31",
+      "plan_resource_item_id": "104001"
+    },
+    {
+      "space_id": "33",
+      "plan_resource_item_id": "104011"
+    },
+    {
+      "space_id": "34",
+      "plan_resource_item_id": "104010"
+    },
+    {
+      "space_id": "43",
+      "plan_resource_item_id": "104002"
+    },
+    {
+      "space_id": "103030",
+      "plan_resource_item_id": "104002"
+    }
+  ],
+  "sourceCharacteristics": {
+    "resources": 11,
+    "staff": 0,
+    "taskswithdirectresources": 72
+  },
+  "scopes": {
+    "p14": 3,
+    "totals": 12
+  },
+  "operationalAfterSha256": "6b3dd5335bf2690eb629327e41b17d0e9824567ec616886bd6015f6b54b6fd33",
+  "scheduledTasks": 266,
+  "equalIncludingXmin": true,
+  "protectedTables": [
+    "plans",
+    "daily_tasks",
+    "plan_breaks",
+    "locks",
+    "assisted_planning_sessions",
+    "assisted_planning_stages",
+    "planning_stage_validations",
+    "planning_runs",
+    "plan_config_revisions",
+    "planning_accepted_exceptions",
+    "plan_resource_items",
+    "plan_zone_resource_assignments",
+    "plan_space_resource_assignments",
+    "plan_staff_assignments",
+    "plan_zone_staff_mode"
+  ],
+  "pageErrors": []
+}
