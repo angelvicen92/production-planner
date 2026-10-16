@@ -7,7 +7,7 @@ export type AssistedStageTiming = {
 export type ProposalRunTimes = { createdAt: string | null; startedAt: string | null; finishedAt: string | null };
 
 // Require a real timestamp with timezone, not a date interpreted in browser time.
-function timestamp(value: string | null | undefined): number | null {
+export function stageTimestamp(value: string | null | undefined): number | null {
   if (typeof value !== "string") return null;
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/);
   if (!match) return null;
@@ -22,11 +22,11 @@ export function stageTiming(stage: { id: number; ordinal: number; acceptedAt: st
   const unavailable: AssistedStageTiming = { stageId: Number(stage.id), generation: null, requestToAcceptance: null };
   if (Number(stage.ordinal) === 0 || !run) return unavailable;
   const values = [run.createdAt, run.startedAt, run.finishedAt, stage.acceptedAt];
-  const known = values.map(timestamp).filter((ms): ms is number => ms !== null);
+  const known = values.map(stageTimestamp).filter((ms): ms is number => ms !== null);
   // Reject inconsistent chronology, even when the individual interval is positive.
   if (known.some((ms, index) => index > 0 && ms < known[index - 1])) return unavailable;
   const interval = (start: string | null, end: string | null): StageTimeInterval | null => {
-    const from = timestamp(start), to = timestamp(end);
+    const from = stageTimestamp(start), to = stageTimestamp(end);
     return from === null || to === null || to < from ? null : { start: start!, end: end!, durationMs: to - from };
   };
   return { stageId: Number(stage.id), generation: interval(run.startedAt, run.finishedAt), requestToAcceptance: interval(run.createdAt, stage.acceptedAt) };

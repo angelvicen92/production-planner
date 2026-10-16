@@ -1,0 +1,23 @@
+{
+  "base": "c1cf4359fe721c60f30244f90a73989e37018282",
+  "checks": {
+    "npm run check": "PASS",
+    "npm run build": "PASS (existing bundle size warning)",
+    "focalTests": {
+      "passed": 27,
+      "failed": 0,
+      "command": "node --import tsx --test shared/assistedHistory.test.ts shared/assistedStageTiming.test.ts server/assistedAcceptedBaseline.spec.ts server/assistedHistoryTimings.spec.ts server/assistedRestart.spec.ts server/assistedManualSnapshotFidelity.spec.ts client/src/components/planning/stage-history-timing.test.ts"
+    },
+    "integrationHarnessTypecheck": "PASS",
+    "chromiumA2": "PASS",
+    "baselineSourceHashMatchesVerifiedBase": true,
+    "visualWrites": [],
+    "obligationsPreserved": 266,
+    "originalStagesPreserved": 3
+  },
+  "remoteWrites": 0,
+  "merged": false,
+  "publishedToReplit": false,
+  "reservedUI01BFilesUnchanged": true,
+  "sharedSmokeA2IntegrationUnchanged": true
+}

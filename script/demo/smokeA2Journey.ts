@@ -145,7 +145,7 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
     assert.deepEqual(await databaseMaterial(),frozen);pass('all client identities denied direct Stage/Draft writes; validation UPDATE privileges unchanged');
    }
    await page.reload();await page.getByTestId('assisted-workspace').waitFor();const reloaded=await state();assert.deepEqual(reloaded,after);
-   if(await page.getByRole('button',{name:'Historial',exact:true}).getAttribute('aria-expanded')==='false')await page.getByRole('button',{name:'Historial',exact:true}).click();await page.getByText(new RegExp(`Etapa ${ordinal} ·`)).waitFor();
+   if(await page.getByRole('button',{name:'Historial',exact:true}).getAttribute('aria-expanded')==='false')await page.getByRole('button',{name:'Historial',exact:true}).click();await page.getByText(new RegExp(`Etapa S${ordinal} ·`)).waitFor();
    if(ordinal===1||ordinal===11){await page.getByTestId('assisted-workspace').scrollIntoViewIfNeeded();await page.screenshot({path:`${directory}/S${ordinal}-real-ui.png`,fullPage:false});}
    const completed=after.draft.tasks.filter((t:any)=>t.startPlanned&&t.endPlanned).length;
    const operationalMealConsolidation=auditOperationalMealConsolidation(stageBefore.snapshot_json,witness,adapter.problem);
@@ -179,7 +179,7 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
    const loaded=reader.waitForResponse(r=>r.url().endsWith(path)&&r.request().method()==='GET');
    await reader.goto(`${appUrl}/plans/${planId}?tab=planning`);const r=await loaded;assert.equal(r.status(),200);
    const independent=await r.json();const expected=await state();assert.deepEqual(independent.activeStage,expected.activeStage);assert.deepEqual(independent.draft,expected.draft);
-   await reader.getByText('Historial',{exact:true}).click();await reader.getByText(new RegExp(`Etapa ${stages.length} ·`)).waitFor();
+   await reader.getByText('Historial',{exact:true}).click();await reader.getByText(new RegExp(`Etapa S${stages.length} ·`)).waitFor();
    pass('independent viewer browser session reopens the same persisted Stage and Draft');
   }finally{await reader.close();}
   if(process.argv.includes('--scope-selection'))diagnostics.scopeSelectionAccepted=await runA2ScopeSelectionJourney({appUrl,users,db,planId,directory,pass},page,'accepted');
@@ -191,6 +191,7 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
   assert.deepEqual(await daily(),material);const restored=await state();assert.equal(Number(restored.activeStage.id),Number(final.activeStage.id));assert.equal(restored.draftFingerprint,final.draftFingerprint);
   pass('admin atomic rollback to S0 and redo to final accepted Stage');
   if(preferenceJourney)await verifyMainFlowPreferenceAfterStages({db,planId,pass},preferenceJourney);
+  if(process.argv.includes("--assisted-history")){const {runAssistedActiveHistory}=await import("./smokeAssistedActiveHistory");diagnostics.activeHistory=await runAssistedActiveHistory({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics},page);}
   if(full)diagnostics.viewsHistory=await (process.argv.includes("--day-workspace")?runDayWorkspaceJourney:runA2ViewsHistoryJourney)({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics},page);
   if(full)diagnostics.manualSnapshotFidelity=await runA2ManualSnapshotJourney({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics});
   return {roleMatrix,s0:'PASS',stages,completed:stages.at(-1)!.completed,pageErrors,secondBrowserSession:'PASS',rollbackRedo:'PASS',searchPoliciesUnchanged:true,persistedCanonical};
