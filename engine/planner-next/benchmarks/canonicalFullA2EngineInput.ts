@@ -63,7 +63,7 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
       ...(task.dependencies.length ? { dependsOnTaskIds: task.dependencies.map((id) => taskId.get(id)!) } : {}),
       ...(task.jointGroupId ? { jointGroupId: task.jointGroupId } : {}),
       ...(task.setupFamilyId ? { setupFamilyId: task.setupFamilyId } : {}),
-      ...(task.itinerantUnitId ? { agendaScope: anchorIds.has(task.id) ? "PHYSICAL_SPACE" as const : "ITINERANT_UNIT" as const, resourceInheritance: anchorIds.has(task.id) ? "LOCATION" as const : "OPERATION_ONLY" as const } : {}),
+      ...(task.itinerantUnitId ? { agendaScope: template.taskTypes[task.type].agendaScope ?? "PHYSICAL_SPACE" as const, resourceInheritance: anchorIds.has(task.id) ? "LOCATION" as const : "OPERATION_ONLY" as const } : {}),
       ...(task.itinerantUnitId ? { itinerantTeamId: itinerantUnitId.get(task.itinerantUnitId)! } : {}),
       ...(task.participantMarginBeforeMinutes == null ? {} : { participantMarginBeforeMinutes: task.participantMarginBeforeMinutes }),
       ...(task.participantMarginAfterMinutes == null ? {} : { participantMarginAfterMinutes: task.participantMarginAfterMinutes }),

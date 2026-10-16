@@ -21,7 +21,8 @@ test('A2 effective configuration crosses real builder and revision; all 266 obli
  const anchors=new Set(d.input.anchoredAccompaniments!.map(op=>op.anchorTaskId));
  const view=projectTaskOperationScopes(d.input.tasks.map(t=>({...t,id:t.id})),d.configuration.taskOperations);
  for(const task of view){if(anchors.has(task.id))assert.equal(usesItinerantAgenda(task),false);
-  if(task.resourceInheritance==='OPERATION_ONLY')assert.equal(usesItinerantAgenda(task),true);}
+  if(task.templateName==='ALFOMBRA_ROJA_EVA')assert.equal(usesItinerantAgenda(task),false);}
+ assert.equal(view.filter(usesItinerantAgenda).length,13);
  for(const op of d.input.anchoredAccompaniments!){assert.ok(op.beforeTaskIds.every(id=>rebuilt.tasks.find(t=>t.id===id)?.blocksSpace===false));assert.ok(op.afterTaskIds.every(id=>rebuilt.tasks.find(t=>t.id===id)?.blocksSpace===false));}
  const old=structuredClone(rebuilt);delete old.tasks[0].agendaScope;
  rebuilt.tasks[0].agendaScope='ITINERANT_UNIT';
