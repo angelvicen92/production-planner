@@ -48,3 +48,12 @@ test("projection is pure, defensively filters invalid IDs and preserves unknown 
   assert.equal(result.resources.find(r=>r.id===999)?.name,"Recurso con nombre no disponible");
   assert.ok(result.resources.every(r=>r.id>0&&Number.isInteger(r.id)));
 });
+
+test("itinerant agenda resources never become physical header task assignments; fixed location resources remain",()=>{
+  const data:any={tasks:[{id:1,spaceId:3,zoneId:1,itinerantTeamId:20,agendaScope:"ITINERANT_UNIT",resourceInheritance:"OPERATION_ONLY",assignedResources:[9,10]},
+    {id:2,spaceId:3,zoneId:1,agendaScope:"PHYSICAL_SPACE",assignedResources:[7]}],
+    spaces:[{id:3,name:"Set",zoneId:1}],zoneAssignments:{},spaceAssignments:{3:[7]},resourceNames:{7:"Fixed",9:"Mobile",10:"Sound"},staff:[],staffModes:[],teams:[{id:20,name:"Unit"}],teamMemberships:[{itinerantTeamId:20,planResourceItemIds:[9,10]}]};
+  assert.deepEqual(projectPlanningHeader({scopeType:"space",scopeId:3},data).resources.map(r=>r.id),[7]);
+  assert.deepEqual(projectPlanningHeader({scopeType:"zone",scopeId:1},data).resources.map(r=>r.id),[7]);
+  assert.deepEqual(projectPlanningHeader({scopeType:"itinerant_team",scopeId:20},data).resources.map(r=>r.id),[9,10]);
+});

@@ -1,9 +1,13 @@
 # OPTIPLAN — ÍNDICE Y AUTORIDAD DE FUENTES
 
-**Versión:** 2.12<br>
-**Fecha:** 14 de octubre de 2026<br>
+**Versión:** 2.13<br>
+**Fecha:** 16 de octubre de 2026<br>
 **Estado:** Fuente oficial de gobierno documental  
 **Principio rector:** La producción tiene que salir.
+
+## Actualización v2.13 — Reality: tres ámbitos independientes
+
+Eleva únicamente Fuente 06 a v2.10 para incorporar la aclaración expresa de producción: agenda itinerante, ocupación física y herencia de recursos se configuran independientemente. Reality standalone mantiene la exclusividad de su ubicación sin heredar automáticamente equipamiento fijo; Ensayo conserva agenda física y 15 minutos de ocupación. La selección efectiva de equipo pertenece a cada snapshot. Se preservan 266 obligaciones y Stages históricos; la adopción de configuración existente requiere procedimiento controlado. Las autoridades materiales de 01–05 y 07 se mantienen.
 
 ## Actualización v2.12 — configuración productiva SOFT de bloques y reparto respecto a comida
 
@@ -40,7 +44,7 @@ Actualiza el corpus para incorporar el contrato genérico de márgenes específi
 3. `03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.7.md`
 4. `04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.7.md`
 5. `05_VALIDACION_CALIDAD_BENCHMARK_v2.7.md`
-6. `06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.9.md`
+6. `06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.10.md`
 7. `07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.2.md`
 8. `ENSAYO_A2_LV.pdf`
 9. `ENSAYO_A2_LV 15 JUNIO 2025 -  DESGLOSE A2.pdf`
@@ -59,7 +63,7 @@ No existe una única escalera documental capaz de resolver correctamente todos l
 | Construcción, scopes, método de bloques y búsqueda | `03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.7` | En Assisted prevalece sobre contratos legacy del ORC sobre “estado oficial”, completitud global o mejora-only. SPEC-07 v2.2 es la autoridad del método constructivo dentro de este documento. |
 | EffectiveConfig, snapshots, adaptación, persistencia Assisted, AcceptedException y publicación | `04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.7` | Gobierna configuración efectiva, provenance, Stage/Draft, grandfathering, rollback y frontera EngineInput/producto. |
 | Gates, regresión, Evidence, KPIs y benchmark | `05_VALIDACION_CALIDAD_BENCHMARK_v2.7` | Define qué debe demostrarse; no crea reglas de dominio nuevas. |
-| Hechos y parámetros **específicos del A2 canónico** | `06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.9` | Prevalece sobre defaults, ejemplos y valores genéricos de 01–05. Los PDFs sólo prevalecen cuando 06 no contiene una corrección/interpretación expresa. |
+| Hechos y parámetros **específicos del A2 canónico** | `06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.10` | Prevalece sobre defaults, ejemplos y valores genéricos de 01–05. Los PDFs sólo prevalecen cuando 06 no contiene una corrección/interpretación expresa. |
 | Método de trabajo y continuidad de desarrollo | `07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.2` | Gobierna cómo trabajar; nunca redefine producto, dominio ni A2. |
 | Evidencia humana primaria A2 | dos PDFs A2 | Sirven de evidencia, no de seed; sus errores/correcciones se resuelven por 06. |
 

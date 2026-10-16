@@ -1,10 +1,11 @@
 import type { AssistedPlanningSnapshotV1, AssistedPlanningTaskSnapshotV1 } from "@shared/assistedPlanningSnapshotContracts";
 
 export type AssistedVisualState = "ACCEPTED" | "DRAFT_CHANGED" | "PROPOSAL_PREVIEW" | "SCOPE_SELECTED" | "UNPLANNED";
-const placementKeys = ["startPlanned", "endPlanned", "zoneId", "spaceId", "locationLabel", "durationOverride", "camerasOverride"] as const;
+const placementKeys = ["startPlanned", "endPlanned", "zoneId", "spaceId", "locationLabel", "durationOverride", "camerasOverride", "itinerantTeamId"] as const;
 
 export function sameAssistedPlacement(a?: AssistedPlanningTaskSnapshotV1, b?: AssistedPlanningTaskSnapshotV1) {
-  return Boolean(a && b && placementKeys.every(key => a[key] === b[key]));
+  return Boolean(a && b && placementKeys.every(key => a[key] === b[key])
+    && JSON.stringify(a.assignedResourceIds === undefined ? undefined : [...a.assignedResourceIds].sort((x,y)=>x-y)) === JSON.stringify(b.assignedResourceIds === undefined ? undefined : [...b.assignedResourceIds].sort((x,y)=>x-y)));
 }
 
 const canonicalJson = (value: unknown): unknown => Array.isArray(value) ? value.map(canonicalJson) : value && typeof value === "object"
@@ -41,8 +42,8 @@ export function buildAssistedPlanningView<T extends Record<string, any>>(liveTas
   const placement = new Map(draft.tasks.map(task => [task.taskId, task]));
   return liveTasks.map(task => {
     const row = placement.get(Number(task.id));
-    if (!row) return { ...task, startPlanned: null, endPlanned: null, zoneId: null, spaceId: null, locationLabel: null, durationOverride: null, camerasOverride: null };
-    return { ...task, startPlanned: row.startPlanned, endPlanned: row.endPlanned, zoneId: row.zoneId,
+    if (!row) return { ...task, startPlanned: null, endPlanned: null, zoneId: null, spaceId: null, locationLabel: null, durationOverride: null, camerasOverride: null, itinerantTeamId: null };
+    return { ...task, itinerantTeamId: row.itinerantTeamId ?? null, startPlanned: row.startPlanned, endPlanned: row.endPlanned, zoneId: row.zoneId,
       spaceId: row.spaceId, locationLabel: row.locationLabel, durationOverride: row.durationOverride,
       durationOverrideMin: row.durationOverride, camerasOverride: row.camerasOverride,
       ...(row.assignedResourceIds===undefined?{}:{assignedResources:[...row.assignedResourceIds],assignedResourceIds:[...row.assignedResourceIds]}) };

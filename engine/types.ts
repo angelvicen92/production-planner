@@ -1,3 +1,4 @@
+import type { TaskOperationScope } from "../shared/taskOperationScope";
 // Engine Inputs (DB-agnostic)
 export type TaskStatus = 'pending' | 'in_progress' | 'done' | 'interrupted' | 'cancelled';
 export type PlannerNextTaskKindInput = "main" | "vocal" | "auxiliary" | "technical";
@@ -33,7 +34,7 @@ export interface ResourceRequirementsInput {
   }>;
 }
 
-export interface TaskInput {
+export interface TaskInput extends TaskOperationScope {
     id: number;
     planId: number;
     templateId: number;

@@ -1,5 +1,5 @@
 export interface AnchoredProjectionContract { id:string;anchorTaskId:number;beforeTaskIds:readonly number[];afterTaskIds:readonly number[] }
-export interface AnchoredProjectionTask { id:number;startPlanned?:string|null;endPlanned?:string|null;spaceId?:number|null;assignedResources?:readonly number[];contestantId?:number|null }
+export interface AnchoredProjectionTask { id:number;startPlanned?:string|null;endPlanned?:string|null;spaceId?:number|null;assignedResources?:readonly number[];contestantId?:number|null;itinerantTeamId?:number|null }
 const minute=(value:string)=>/^([01]\d|2[0-3]):[0-5]\d$/.test(value)?Number(value.slice(0,2))*60+Number(value.slice(3)):null;
 /** A projection, never an additional task/occupancy. Retains every technical ID. */
 export function projectAnchoredOperations(contracts:readonly AnchoredProjectionContract[],tasks:readonly AnchoredProjectionTask[]){
@@ -12,7 +12,8 @@ export function projectAnchoredOperations(contracts:readonly AnchoredProjectionC
   const continuous=complete&&intervals.slice(1).every((interval,index)=>interval!.start===intervals[index]!.end);
   const anchorIndex=contract.beforeTaskIds.length,anchor=members[anchorIndex];
   const duration=continuous?intervals.at(-1)!.end-intervals[0]!.start:null;
-  return {id:contract.id,logicalOperationCount:1 as const,technicalTaskIds:ids,anchorTaskId:contract.anchorTaskId,
+  const teams=[...new Set(members.flatMap(task=>task?.itinerantTeamId==null?[]:[task.itinerantTeamId]))];
+  return {...(teams.length===1?{itinerantTeamId:teams[0]}:{}),id:contract.id,logicalOperationCount:1 as const,technicalTaskIds:ids,anchorTaskId:contract.anchorTaskId,
    status:continuous?'CONTINUOUS' as const:complete?'INVALID_ADJACENCY' as const:'INCOMPLETE' as const,
    start:continuous?members[0]!.startPlanned:null,end:continuous?members.at(-1)!.endPlanned:null,durationMinutes:duration,
    participantId:anchor?.contestantId??null,resourceIds:[...new Set(members.flatMap(task=>task?.assignedResources??[]))].sort((a,b)=>a-b),

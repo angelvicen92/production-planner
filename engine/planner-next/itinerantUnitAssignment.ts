@@ -15,5 +15,5 @@ export function materializeItinerantUnitAssignment(
   if(!selected)return null;
   const domainResources=new Set(units.flatMap(unit=>unit.resourceIds??[]));
   return {...task,itinerantUnitId:selectedUnitId,
-    requiredResourceIds:[...new Set([...(task.requiredResourceIds??[]).filter(id=>!domainResources.has(id)),...(selected.resourceIds??[])])].sort()};
+    requiredResourceIds:[...new Set([...(task.requiredResourceIds??[]).filter(id=>!domainResources.has(id) || task.nonSubstitutableResourceIds?.includes(id)),...(selected.resourceIds??[])])].sort()};
 }

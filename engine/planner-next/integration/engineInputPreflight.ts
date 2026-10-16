@@ -207,7 +207,7 @@ const DISPLAY_KEYS = new Set([
 ]);
 
 const SET_ARRAY_KEYS = new Set([
-  "allowedItinerantTeamIds", "anyOf", "assignedResourceIds", "coachResourceIds", "globalHardBreaks",
+  "allowedItinerantTeamIds", "anyOf", "assignedResourceIds", "declaredResourceIds", "coachResourceIds", "globalHardBreaks",
   "planResourceItems", "protectedBreaks", "resourceItemIds", "tasks", "locks", "dependsOnTaskIds",
   "groupingZoneIds", "resourceItemComponents", "spaceIdsByZoneId", "spaceResourceAssignments",
   "zoneResourceAssignments",
@@ -297,6 +297,7 @@ function sourceProjection(input: EngineInput): unknown {
       startReal: task.startReal, endReal: task.endReal, breakId: task.breakId, breakKind: task.breakKind,
       mealOccupiesSpace: task.mealOccupiesSpace, operationalRole: task.operationalRole,
       ...(task.status !== "cancelled" ? { plannerNextKind: task.plannerNextKind } : {}),
+      agendaScope: task.agendaScope, resourceInheritance: task.resourceInheritance, declaredResourceIds: task.declaredResourceIds,
       blocksSpace: task.blocksSpace, allowsSpaceOverlap: task.allowsSpaceOverlap, spaceOccupancyMode: task.spaceOccupancyMode,
       transportGroupCapacityPresent: task.transportGroupCapacity != null,
       transportGroupingTargetPresent: task.transportGroupingTarget != null,
@@ -536,7 +537,10 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
     (task.dependsOnTemplateIds ?? (task.dependsOnTemplateId != null ? [task.dependsOnTemplateId] : []))
       .forEach((id) => addIdentity("template", id, `${path}.templateDependencies`));
     task.allowedItinerantTeamIds?.forEach((id) => addIdentity("itinerant-team", id, `${path}.allowedItinerantTeamIds`));
-    if (task.status !== "cancelled") task.assignedResourceIds?.forEach((id) => addIdentity("plan-resource", id, `${path}.assignedResourceIds`));
+    if (task.status !== "cancelled") {
+      task.assignedResourceIds?.forEach((id) => addIdentity("plan-resource", id, `${path}.assignedResourceIds`));
+      task.declaredResourceIds?.forEach((id) => addIdentity("plan-resource", id, `${path}.declaredResourceIds`));
+    }
     mapKeys(task.resourceRequirements?.byItem).forEach((id) => addIdentity("resource-item", id, `${path}.resourceRequirements.byItem`));
     mapKeys(task.resourceRequirements?.byType).forEach((id) => addIdentity("resource-type", id, `${path}.resourceRequirements.byType`));
     task.resourceRequirements?.anyOf?.flatMap((group) => group.resourceItemIds)
@@ -1111,6 +1115,10 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
         if (!planResourceIds.has(String(id))) missingResource("task", task.id, `${path}.assignedResourceIds`, id, "plan-resource");
       }
     }
+    if (task.status !== "cancelled") for (const id of task.declaredResourceIds ?? []) {
+      resourceAssignmentReferenceCount++;
+      if (!planResourceIds.has(String(id))) missingResource("task", task.id, `${path}.declaredResourceIds`, id, "plan-resource");
+    }
     const requirements = task.resourceRequirements;
     for (const [id, quantity] of Object.entries(requirements?.byItem ?? {})) {
       if (!resourceItemIds.has(id)) missingResource("task", task.id, `${path}.resourceRequirements.byItem.${id}`, id, "resource-item");
@@ -1132,6 +1140,10 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       } else if (task.camerasOverride > 0) {
         addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT", "task", task.id, `${path}.camerasOverride`, "Camera quantity has no explicit fixed resource identities.", { quantity: task.camerasOverride });
       }
+    }
+    if ((task.agendaScope != null && !["PHYSICAL_SPACE", "ITINERANT_UNIT"].includes(task.agendaScope))
+      || (task.resourceInheritance != null && !["LOCATION", "OPERATION_ONLY"].includes(task.resourceInheritance))) {
+      addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT", "task", task.id, `${path}.operationScope`, "Invalid explicit operation scope.");
     }
     const unsupportedOccupancy = task.allowsSpaceOverlap === true
       || task.spaceOccupancyMode === "shared" || task.spaceOccupancyMode === "non_blocking";

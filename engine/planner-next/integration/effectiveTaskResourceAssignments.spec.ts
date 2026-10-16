@@ -99,3 +99,22 @@ test("SPEC10-009: snapshot ausente o duplicado nunca usa relación global", () =
   const duplicate = input({ ...base, planZoneSettings: [{ zoneId: 40, availabilityStart: null, availabilityEnd: null }], planSpaceSettings: [{ spaceId: 20, zoneId: 40, availabilityStart: null, availabilityEnd: null }, { spaceId: 20, zoneId: 40, availabilityStart: "09:00", availabilityEnd: "17:00" }] });
   assert.deepEqual(resolveOne(duplicate).zoneResourceIds, []);
 });
+
+test("operation-only resources retain explicit declarations and spatial identity without automatic location inheritance",()=>{
+  const source=input({tasks:[task(1,{spaceId:20,zoneId:30,assignedResourceIds:[1,2],resourceInheritance:"OPERATION_ONLY"})],
+    planZoneSettings:[{zoneId:30,availabilityStart:null,availabilityEnd:null}],planSpaceSettings:[{spaceId:20,zoneId:30,availabilityStart:null,availabilityEnd:null}],spaceResourceAssignments:{20:[2,3]},zoneResourceAssignments:{30:[4]}});
+  const before=structuredClone(source);const value=resolveOne(source);
+  assert.equal(value.spaceId,20);assert.equal(value.effectiveZoneId,30);
+  assert.deepEqual(value.directResourceIds,[1,2]);assert.deepEqual(value.spaceResourceIds,[]);assert.deepEqual(value.zoneResourceIds,[]);
+  assert.deepEqual(value.effectiveResourceIds,[1,2]);assert.deepEqual(source,before);
+  const ordinary=resolveOne({...source,tasks:[{...source.tasks[0],resourceInheritance:"LOCATION"}]});
+  assert.deepEqual(ordinary.effectiveResourceIds,[1,2,3,4]);
+});
+
+test("operation-only fixed team consumes its explicit composition even without persisted direct members; eligible teams are not selected",()=>{
+ const source=input({tasks:[task(1,{resourceInheritance:"OPERATION_ONLY",itinerantTeamId:50,assignedResourceIds:[9]})],
+   itinerantTeamAvailability:[{itinerantTeamId:50,windows:[{start:"08:00",end:"18:00"}],planResourceItemIds:[7,8]}]});
+ assert.deepEqual(resolveOne(source).effectiveResourceIds,[7,8,9]);
+ source.tasks[0].itinerantTeamId=undefined;source.tasks[0].allowedItinerantTeamIds=[50];
+ assert.deepEqual(resolveOne(source).effectiveResourceIds,[9]);
+});

@@ -32,6 +32,7 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
   const templateId = new Map([...new Set(expansion.tasks.map((task) => task.type))].sort().map((type, index) => [type, 20001 + index] as const));
   const zoneId = new Map([...spaceId].map(([id, numeric]) => [id, numeric + 3000]));
   
+  const anchorIds = new Set(expansion.anchoredOperations.map(operation => operation.anchorTaskId));
   const tasks: TaskInput[] = expansion.tasks.map((task) => {
     const participant = task.participantId ? participantId.get(task.participantId)! : null;
     const isMeal = task.type === "SODEXO";
@@ -62,6 +63,7 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
       ...(task.dependencies.length ? { dependsOnTaskIds: task.dependencies.map((id) => taskId.get(id)!) } : {}),
       ...(task.jointGroupId ? { jointGroupId: task.jointGroupId } : {}),
       ...(task.setupFamilyId ? { setupFamilyId: task.setupFamilyId } : {}),
+      ...(task.itinerantUnitId ? { agendaScope: template.taskTypes[task.type].agendaScope ?? "PHYSICAL_SPACE" as const, resourceInheritance: anchorIds.has(task.id) ? "LOCATION" as const : "OPERATION_ONLY" as const } : {}),
       ...(task.itinerantUnitId ? { itinerantTeamId: itinerantUnitId.get(task.itinerantUnitId)! } : {}),
       ...(task.participantMarginBeforeMinutes == null ? {} : { participantMarginBeforeMinutes: task.participantMarginBeforeMinutes }),
       ...(task.participantMarginAfterMinutes == null ? {} : { participantMarginAfterMinutes: task.participantMarginAfterMinutes }),
@@ -79,11 +81,16 @@ export function buildCanonicalFullA2EngineInput(options: CanonicalFullA2EngineIn
     if (expanded.itinerantUnitId !== "reality-unit-a" && expanded.itinerantUnitId !== "reality-unit-b") continue;
     if (anchoredTaskIds.has(expanded.id)) continue;
     const task = tasks[index]!;
+    // The expansion's reference composition is eligibility, not a direct user assignment.
+    const referenceMembers = new Set(expansion.itinerantUnits.find(unit => unit.id === expanded.itinerantUnitId)!.memberResourceIds.map(id => resourceId.get(id)!));
+    task.assignedResourceIds = (task.assignedResourceIds ?? []).filter(id => !referenceMembers.has(id));
     delete task.itinerantTeamId;
     task.itinerantTeamRequirement = "any";
     task.allowedItinerantTeamIds = [...realityPool];
   }
   
+  for (const task of tasks) if (task.resourceInheritance === "OPERATION_ONLY") task.declaredResourceIds = [...(task.assignedResourceIds ?? [])];
+
   const input: EngineInput = createSupportedEngineInputAdapterFixture();
   input.planId = planId;
   input.workDay = { start: config.effectiveDayWindow.start, end: config.effectiveDayWindow.end };

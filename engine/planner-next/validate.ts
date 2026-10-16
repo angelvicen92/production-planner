@@ -431,7 +431,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     const units=(problem.itinerantUnits??[]).filter(unit=>expected.allowedItinerantUnitIds!.includes(unit.id));
     const allMembers=new Set(units.flatMap(unit=>unit.resourceIds??[]));
     const selected=units.find(unit=>unit.id===actual.itinerantUnitId);
-    const wanted=[...new Set([...(expected.requiredResourceIds??[]).filter(id=>!allMembers.has(id)),...(selected?.resourceIds??[])])].sort();
+    const wanted=[...new Set([...(expected.requiredResourceIds??[]).filter(id=>!allMembers.has(id) || expected.nonSubstitutableResourceIds?.includes(id)),...(selected?.resourceIds??[])])].sort();
     return JSON.stringify([...(actual.requiredResourceIds??[])].sort())===JSON.stringify(wanted);
   };
 

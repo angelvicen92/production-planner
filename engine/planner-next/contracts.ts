@@ -89,6 +89,8 @@ interface BaseTask {
   /** Explicit non-physical/transport occupancy; availability still applies. */
   blocksSpace?: boolean;
   requiredResourceIds?: string[];
+  /** Explicit operation-only assignments/locks cannot be substituted by unit choice. */
+  nonSubstitutableResourceIds?: string[];
   availability?: Window[];
   itinerantUnitId?: string;
   /** Solver-owned assignment domain. A singleton remains a specific unit. */

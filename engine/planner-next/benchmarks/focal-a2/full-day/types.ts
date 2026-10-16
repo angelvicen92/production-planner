@@ -1,3 +1,4 @@
+import type { TaskAgendaScope } from "../../../../../shared/taskOperationScope";
 import type { EngineInput, TaskInput } from "../../../../types";
 import type { PlannerNextProblem } from "../../../contracts";
 
@@ -51,6 +52,7 @@ export type TaskType =
   | "OUT";
 
 export interface CanonicalTaskTypeDefinition {
+  readonly agendaScope?: TaskAgendaScope;
   readonly label: string;
   readonly duration: number;
   readonly spaceId: string;
