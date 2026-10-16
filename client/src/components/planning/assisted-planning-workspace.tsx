@@ -17,6 +17,7 @@ import { locationScopeTaskIds, pendingScopeTasks, taskIdsScopeSelector, type Sco
 import { FullscreenPlanningPanel } from "./fullscreen-planning-panel";
 import { PlanningTimeline } from "../planning-timeline";
 import { assistedDraftTouchedTaskIds, buildAssistedPlanningView, classifyAssistedTasks, isAssistedDraftModified } from "@/lib/assisted-planning-view";
+import { resolvePlanningOperationalMeals } from "@/lib/planning-operational-meals";
 import { cascadeTasks, reorderTasks, resetTasksToBase, shiftTasks, swapTasks, type AssistedDraftPatch } from "@/lib/assisted-draft-editing";
 import { collectAssistedDraftWarnings } from "@/lib/assisted-draft-warnings";
 import { summarizeConfigRefreshChange } from "@/lib/config-refresh-summary";
@@ -66,7 +67,8 @@ export const AssistedPlanningWorkspace = memo(function AssistedPlanningWorkspace
   useEffect(()=>{if(stateQ.isError&&isMissingAssistedSession(stateQ.error))bootstrap();},[planId,stateQ.isError,role]);
   const pollQ=useQuery({queryKey:["assisted-proposal",planId,runId],queryFn:()=>apiRequest<any>("GET",`/api/plans/${planId}/assisted/proposals/${runId}`),enabled:runId!=null,refetchInterval:q=>{const s=(q.state.data as any)?.status;return s==="running"||s==="queued"?1000:false;}});
   useEffect(()=>{const run=pollQ.data;if(!run||autopilot.current)return;const status=run.status;if(status==="success"){setPreview(run.assisted_result_json??run.assistedResultJson);setBusy(null);}else if(status==="error"){setMessage("No se pudo generar una propuesta con la selección actual. Revisa disponibilidad y conflictos.");setBusy(null);}},[pollQ.data]);
-  const state=stateQ.data; const draft=state?.draft; const active=state?.activeStage;
+  const state=stateQ.data; const draft=state?.draft??state?.session?.draftSnapshotJson; const active=state?.activeStage;
+  const operationalMeals=useMemo(()=>resolvePlanningOperationalMeals(plan.plannerNextConfiguration,viewAuthority==="accepted"?active?.snapshotJson:draft,viewAuthority),[plan.plannerNextConfiguration,active,draft,viewAuthority]);
   const base=useMemo(()=>state?.history?.find((stage:any)=>Number(stage.id)===Number(state?.draftBaseStageId))?.snapshotJson??active?.snapshotJson??null,[state,active]);
   const scopeSpaces:ScopeSpace[]=spaces.map(space=>({id:Number(space.id),name:space.name,zoneId:space.zoneId==null?null:Number(space.zoneId)}));
   const scopeZones:ScopeZone[]=Array.isArray(timelineProps.zones)?timelineProps.zones as ScopeZone[]:[];
@@ -215,6 +217,6 @@ export const AssistedPlanningWorkspace = memo(function AssistedPlanningWorkspace
     {viewControls}
     {composedOperations.length>0&&<details data-testid="anchored-operations"><summary>Operaciones acompañadas · {composedOperations.length}</summary><ul>{composedOperations.map(operation=><li key={operation.id} data-testid="anchored-operation">Acompañamiento · {operation.status==='CONTINUOUS'?`${operation.start}–${operation.end} · ${operation.durationMinutes} min · Ensayo incluido ${operation.anchorOccupation?.durationMinutes} min`:'Pendiente de completar'} · 1 operación</li>)}</ul></details>}
     <div className="flex flex-wrap items-center gap-2"><span className="text-sm font-medium">Planificación consultada</span><Button size="sm" variant={viewAuthority==="draft"?"default":"outline"} onClick={()=>setViewAuthority("draft")}>Edición del borrador</Button><Button size="sm" variant={viewAuthority==="accepted"?"default":"outline"} disabled={pendingTimelineEdits>0} onClick={()=>setViewAuthority("accepted")}>Planning aceptado · ejecución</Button>{viewAuthority==="accepted"?<><Badge variant="outline">Sin arrastre · acciones según autoridad</Badge><Button size="sm" variant="outline" onClick={onOpenExecution}>Abrir ejecución</Button></>:null}</div>
-    <PlanningWorkspaceLayout planId={planId} onPendingEditsChange={setPendingTimelineEdits} timelineProps={{...timelineProps as any,onTaskStatusChange:viewAuthority==="accepted"?timelineProps.onTaskStatusChange:undefined,plan:viewAuthority==="accepted"?{...plan,dailyTasks:buildAssistedPlanningView(plan.dailyTasks??[],active?.snapshotJson)}:assistedPlan,mode:viewAuthority==="accepted"?"accepted":"assisted-draft",readOnly:viewAuthority==="accepted"||preview?.outcome==="PROPOSAL"||!authorized.current,taskVisualStates:viewAuthority==="draft"?visual:{},onApplyManualEdits:viewAuthority==="draft"&&authorized.current?applyTimelineEdits:undefined}} />
+    <PlanningWorkspaceLayout planId={planId} onPendingEditsChange={setPendingTimelineEdits} timelineProps={{...timelineProps as any,operationalMeals,onTaskStatusChange:viewAuthority==="accepted"?timelineProps.onTaskStatusChange:undefined,plan:viewAuthority==="accepted"?{...plan,dailyTasks:buildAssistedPlanningView(plan.dailyTasks??[],active?.snapshotJson)}:assistedPlan,mode:viewAuthority==="accepted"?"accepted":"assisted-draft",readOnly:viewAuthority==="accepted"||preview?.outcome==="PROPOSAL"||!authorized.current,taskVisualStates:viewAuthority==="draft"?visual:{},onApplyManualEdits:viewAuthority==="draft"&&authorized.current?applyTimelineEdits:undefined}} />
   </div>;
 });

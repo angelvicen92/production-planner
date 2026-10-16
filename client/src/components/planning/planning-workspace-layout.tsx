@@ -37,6 +37,7 @@ import {
   type PlanningLayout,
 } from "@/lib/planning-workspace-preferences";
 import { assignedPlanningLocations, clampPanelRatio } from "@/lib/planning-workspace-geometry";
+import { operationalMealVisualTasks } from "@/lib/planning-operational-meals";
 import type { ContestantLaneOrder } from "@/lib/contestant-lane-sort";
 
 type TimelineProps = ComponentProps<typeof PlanningTimeline>;
@@ -360,7 +361,7 @@ function PlanningViewPanel({
       );
     } catch {}
   }, [preferenceKey, selection]);
-  const assigned = useMemo(() => assignedPlanningLocations(timelineProps.plan.dailyTasks, timelineProps.spaces ?? []), [timelineProps.plan.dailyTasks, timelineProps.spaces]);
+  const assigned = useMemo(() => assignedPlanningLocations([...timelineProps.plan.dailyTasks, ...(timelineProps.operationalMeals ? operationalMealVisualTasks(timelineProps.operationalMeals) : [])], timelineProps.spaces ?? []), [timelineProps.plan.dailyTasks, timelineProps.spaces, timelineProps.operationalMeals]);
   const options = useMemo(
     () =>
       view === "contestants"

@@ -1,0 +1,74 @@
+{
+  "status": "PASS",
+  "source": "read-only A2 27002 S22 replay",
+  "remoteWrites": 0,
+  "visualWrites": [],
+  "checks": [
+    "S22 draft, accepted and reload: all eight actual policy intervals",
+    "Timeline/List, zoom, maximize, empty lanes and explicit space filter",
+    "Resources and recomposed teams use explicit policy memberships; meals have no actions or drag",
+    "verified base reproduces the legacy 13:00–14:15 placeholder on the same SQL",
+    "restored S12 suppresses unmaterialized meals and legacy placeholders",
+    "redo S22 restores actual Totales interval",
+    "restart S0 has pending meals, never legacy intervals",
+    "legacy day without structured configuration retains its materialized plan_breaks in Timeline/List"
+  ],
+  "screenshots": [
+    "meals-after-draft-desktop.png",
+    "meals-after-totales.png",
+    "meals-before-totales.png"
+  ],
+  "sql": [
+    {
+      "scenario": "S22 draft, accepted and reload: all eight actual policy intervals",
+      "before": "83a059dbdb5a8a59b81763b1627348f96ed9ec5f780b96ec8ea36937d0cd3a44",
+      "after": "83a059dbdb5a8a59b81763b1627348f96ed9ec5f780b96ec8ea36937d0cd3a44",
+      "equalIncludingXmin": true
+    },
+    {
+      "scenario": "Timeline/List, zoom, maximize, empty lanes and explicit space filter",
+      "before": "83a059dbdb5a8a59b81763b1627348f96ed9ec5f780b96ec8ea36937d0cd3a44",
+      "after": "83a059dbdb5a8a59b81763b1627348f96ed9ec5f780b96ec8ea36937d0cd3a44",
+      "equalIncludingXmin": true
+    },
+    {
+      "scenario": "Resources and recomposed teams use explicit policy memberships; meals have no actions or drag",
+      "before": "83a059dbdb5a8a59b81763b1627348f96ed9ec5f780b96ec8ea36937d0cd3a44",
+      "after": "83a059dbdb5a8a59b81763b1627348f96ed9ec5f780b96ec8ea36937d0cd3a44",
+      "equalIncludingXmin": true
+    },
+    {
+      "scenario": "restored S12 suppresses unmaterialized meals and legacy placeholders",
+      "before": "5566347122b2511697438daf1637103cd41bfdd951a2988ff7c291ca38e60f07",
+      "after": "5566347122b2511697438daf1637103cd41bfdd951a2988ff7c291ca38e60f07",
+      "equalIncludingXmin": true
+    },
+    {
+      "scenario": "redo S22 restores actual Totales interval",
+      "before": "f6aab99ff10de3ae7e7ad176aaf4348223f7a7bd4152977aea2c1ced58da36f2",
+      "after": "f6aab99ff10de3ae7e7ad176aaf4348223f7a7bd4152977aea2c1ced58da36f2",
+      "equalIncludingXmin": true
+    },
+    {
+      "scenario": "restart S0 has pending meals, never legacy intervals",
+      "before": "9dbe21dfae1628d96b37dfa636a47f05e80a1ecac8b3a953b39ea2b1f7ffff68",
+      "after": "9dbe21dfae1628d96b37dfa636a47f05e80a1ecac8b3a953b39ea2b1f7ffff68",
+      "equalIncludingXmin": true
+    }
+  ],
+  "redoOrdinals": [
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22
+  ],
+  "acceptedSnapshotsPreserved": true,
+  "taskIdentities": 266,
+  "pageErrors": []
+}

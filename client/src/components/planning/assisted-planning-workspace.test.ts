@@ -6,6 +6,13 @@ test("scope requests use the pending selection and delegate prerequisite closure
 test("preview is consent based and apply sends only guards",()=>{assert.match(source,/preview\?\.outcome!=="PROPOSAL"/);assert.match(source,/Aplicar al borrador/);assert.match(source,/proposals\/\$\{runId\}\/apply`,guard\(\)/);assert.match(source,/Descartar propuesta/);assert.doesNotMatch(source,/daily-tasks/);});
 test("assisted timeline edits only the draft while accept and rollback alone refresh product state",()=>{assert.match(source,/accept-stage`,\{\.\.\.guard\(\),confirmation\}\),true/);assert.match(source,/assisted\/rollback.*targetStageId/s);assert.match(source,/mode:viewAuthority==="accepted"\?"accepted":"assisted-draft"/);assert.match(source,/onApplyManualEdits:viewAuthority==="draft"&&authorized.current\?applyTimelineEdits/);assert.match(source,/assisted\/draft/);assert.doesNotMatch(source,/onGeneratePlan|onPinTask|daily-tasks/);});
 test("bootstrap uses structured API authority and remains explicitly retryable",()=>{assert.match(source,/error\?\.status===404\|\|error\?\.code==="SESSION_NOT_FOUND"/);assert.doesNotMatch(source,/message.*includes\("404"\)/);assert.match(source,/bootstrapped\.current=false/);assert.match(source,/>Reintentar</);});
+test("meal authority uses the accepted Stage or stored draft, independently from proposal preview",()=>{
+  assert.match(source,/resolvePlanningOperationalMeals\(plan.plannerNextConfiguration,viewAuthority==="accepted"\?active\?\.snapshotJson:draft,viewAuthority\)/);
+  assert.match(source,/draft=state\?\.draft\?\?state\?\.session\?\.draftSnapshotJson/);
+  assert.match(source,/timelineProps=\{\{\.\.\.timelineProps as any,operationalMeals,/);
+  const preview=source.slice(source.indexOf("const displayDraft="),source.indexOf("const assistedPlan="));
+  assert.doesNotMatch(preview,/operationalMeals/);
+});
 test("every authoritative 409 clears stale preview and run before refresh",()=>{assert.match(source,/isAssistedConflict=\(error:any\)=>error\?\.status===409/);assert.match(source,/if\(isAssistedConflict\(e\)\)\{clearProposal\(\);await refresh\(\);\}/);});
 test("manual and location scopes share live eligibility and the accepted base",()=>{assert.match(source,/pendingScopeTasks\(plan.dailyTasks\?\?\[\],base\)/);assert.match(source,/eligibleTasks.map/);assert.match(source,/tasks=\{eligibleTasks\}/);assert.match(source,/assisted-scope-count/);});
 test("the complete Assisted operator surface renders human context rather than internal identifiers or codes",()=>{
