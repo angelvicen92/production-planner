@@ -1,0 +1,49 @@
+{
+  "source": "connected A2 27002; GET only",
+  "remoteWrites": 0,
+  "comparison": "canonical JSON values, rows ordered by id",
+  "tables": {
+    "assisted_planning_stages": {
+      "rows": 23,
+      "beforeSha256": "0f1d45f0788e7af4a2e323b535c5882e4cf940358be3ac7492d7e7a358983a1e",
+      "afterSha256": "0f1d45f0788e7af4a2e323b535c5882e4cf940358be3ac7492d7e7a358983a1e",
+      "equal": true
+    },
+    "daily_tasks": {
+      "rows": 266,
+      "beforeSha256": "bb90f560a465f2681b3e09299ff79e83de699e1ac29f06e6e6d113de7e1c43aa",
+      "afterSha256": "bb90f560a465f2681b3e09299ff79e83de699e1ac29f06e6e6d113de7e1c43aa",
+      "equal": true
+    },
+    "plans": {
+      "rows": 1,
+      "beforeSha256": "6fd0cfaf042997e7a757387f8caaec78726d86313352f342641fd1fca7d01611",
+      "afterSha256": "6fd0cfaf042997e7a757387f8caaec78726d86313352f342641fd1fca7d01611",
+      "equal": true
+    },
+    "assisted_planning_sessions": {
+      "rows": 1,
+      "beforeSha256": "17d2ee6875f7248cab1a688e78a498c6c6a1023475e7cc6814dadc09d80ad292",
+      "afterSha256": "17d2ee6875f7248cab1a688e78a498c6c6a1023475e7cc6814dadc09d80ad292",
+      "equal": true
+    },
+    "plan_resource_items": {
+      "rows": 11,
+      "beforeSha256": "7fa51fc132f4a6e0129be2653226ffd656e651db7d4baaf1fbbaea849fd89e10",
+      "afterSha256": "7fa51fc132f4a6e0129be2653226ffd656e651db7d4baaf1fbbaea849fd89e10",
+      "equal": true
+    },
+    "plan_space_settings": {
+      "rows": 21,
+      "beforeSha256": "553847a1a5b2abee82c035ec3a03efab527e5c025c694e7c8940c5669fd9f9f9",
+      "afterSha256": "553847a1a5b2abee82c035ec3a03efab527e5c025c694e7c8940c5669fd9f9f9",
+      "equal": true
+    },
+    "plan_breaks": {
+      "rows": 52,
+      "beforeSha256": "24b63561daacacd71ee81c21c4749601aa47e3dc7c7705ff7afe0ea69e468447",
+      "afterSha256": "24b63561daacacd71ee81c21c4749601aa47e3dc7c7705ff7afe0ea69e468447",
+      "equal": true
+    }
+  }
+}

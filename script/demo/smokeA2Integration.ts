@@ -13,7 +13,7 @@ import pg from 'pg';
 import {collectA2TopologyMetrics} from './a2TopologyMetrics';
 import {a2HistoricalCatalog} from './a2HistoricalCatalog';
 import {seedA2HistoricalRehearsal} from './seedA2HistoricalRehearsal';
-import {buildA2ImportSQL} from './prepareA2Import';
+import {buildA2ImportSQL,buildA2ImportSQLFromDataset} from './prepareA2Import';
 import {buildA2SchemaSQL} from './prepareA2Schema';
 import {inspectA2Catalog} from './a2Preflight';
 import {runA2BrowserJourney} from './smokeA2Journey';
@@ -40,6 +40,7 @@ if(process.argv.includes('--app')){
  const historicalTopology=process.argv.includes('--historical-topology');
  assert.ok(!templateCreation||historicalTopology,'template creation requires the protected historical catalog');
  const configurationReadRecovery=process.argv.includes('--configuration-read-recovery');
+ const operationalMeals=process.argv.includes('--operational-meals');
  assert.ok(!configurationReadRecovery||historicalTopology,'configuration recovery requires the historical catalog');
  const full=process.argv.includes('--full');
  const liveExecution=process.argv.includes('--live-execution');
@@ -82,8 +83,9 @@ if(process.argv.includes('--app')){
  if(templateCreation)runtimeFiles.push('script/demo/smokeTemplateCreation.ts','server/apiAuthorization.ts','server/middleware/requireAuth.ts','server/authz.ts','shared/routes.ts','shared/schema.ts','client/src/pages/settings.tsx');
  if(templateAuthorization)runtimeFiles.push('script/demo/smokeTemplateAuthorization.ts','server/apiAuthorization.ts','server/middleware/requireAuth.ts','server/authz.ts','shared/routes.ts','client/src/hooks/use-tasks.ts','client/src/pages/settings.tsx');
  if(configurationReadRecovery)runtimeFiles.push('script/demo/smokeA2ConfigurationReadRecovery.ts','script/demo/fixtures/a2-27002-legacy-breaks.json','server/planPlannerNextConfiguration.ts','shared/assistedAutopilot.ts');
+ if(operationalMeals)runtimeFiles.push('script/demo/seedOperationalMealRehearsal.ts','script/demo/smokeOperationalMealJourney.ts','script/demo/fixtures/ui05-a2-s22.json.gz','script/demo/fixtures/a2-27002-legacy-breaks.json','client/src/lib/planning-operational-meals.ts');
  if(controlRoom)runtimeFiles.push('script/demo/smokeControlRoomJourney.ts','client/src/pages/control-room.tsx','client/src/lib/control-room-metrics.ts','client/src/hooks/use-control-room-data.ts','client/src/hooks/use-execution-context.ts','client/src/hooks/use-war-room.ts','client/src/hooks/use-plan-realtime.ts','client/src/components/production-control-panel.tsx','client/src/pages/dashboard.tsx',...readdirSync('client/src/components/control-room').map(file=>`client/src/components/control-room/${file}`));
- const report:any={mode:liveSnapshot?'REAL_DISPOSABLE_EXECUTION_ACCEPTED_SNAPSHOT_REPLAY':'REAL_DISPOSABLE_PRODUCT_INTEGRATION',nodeVersion:process.version,v8Version:process.versions.v8,remoteWrites:0,images,requestedStages:full?11:2,startedAt:new Date().toISOString(),runtimeHashes:hashes(),checks:[],pending:controlRoom?['Supabase Realtime/WebSocket delivery (HTTP polling certified)']:['Connected Supabase catalog/backup adoption and original-row preservation','Published Replit runtime and user browser','Supabase Realtime/WebSocket transport']};
+ const report:any={mode:operationalMeals?'REAL_DISPOSABLE_OPERATIONAL_MEAL_S22_REPLAY':liveSnapshot?'REAL_DISPOSABLE_EXECUTION_ACCEPTED_SNAPSHOT_REPLAY':'REAL_DISPOSABLE_PRODUCT_INTEGRATION',nodeVersion:process.version,v8Version:process.versions.v8,remoteWrites:0,images,requestedStages:operationalMeals?0:full?11:2,startedAt:new Date().toISOString(),runtimeHashes:hashes(),checks:[],pending:controlRoom?['Supabase Realtime/WebSocket delivery (HTTP polling certified)']:['Connected Supabase catalog/backup adoption and original-row preservation','Published Replit runtime and user browser','Supabase Realtime/WebSocket transport']};
  const pass=(name:string)=>{report.checks.push(name);console.log(`PASS ${name}`);};
  const cleanup=async()=>{
   if(app&&app.exitCode===null){app.kill('SIGTERM');await Promise.race([new Promise(r=>app!.once('exit',r)),delay(3000)]);if(app.exitCode===null)app.kill('SIGKILL');}
@@ -124,7 +126,7 @@ if(process.argv.includes('--app')){
   const restPort=start('rest',images.rest,3000,{PGRST_DB_URI:`postgres://authenticator:${password}@db:5432/postgres`,PGRST_DB_SCHEMAS:'public',PGRST_DB_ANON_ROLE:'anon',PGRST_JWT_SECRET:secret,PGRST_SERVER_PORT:'3000'});
   const transport:any[]=[];report.transport=transport;
   gateway=http.createServer((req,res)=>{
-   res.setHeader('Access-Control-Allow-Origin',(controlRoom||templateAuthorization||templateCreation||collapsibleSections||settingsSections)&&baselineUrl&&req.headers.origin===baselineUrl?baselineUrl:appUrl);res.setHeader('Access-Control-Allow-Headers',req.headers['access-control-request-headers']??'authorization,apikey,content-type');res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,PATCH,DELETE,OPTIONS');
+   res.setHeader('Access-Control-Allow-Origin',(operationalMeals||controlRoom||templateAuthorization||templateCreation||collapsibleSections||settingsSections)&&baselineUrl&&req.headers.origin===baselineUrl?baselineUrl:appUrl);res.setHeader('Access-Control-Allow-Headers',req.headers['access-control-request-headers']??'authorization,apikey,content-type');res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,PATCH,DELETE,OPTIONS');
    if(req.method==='OPTIONS'){res.writeHead(204);res.end();return;}
    const path=req.url??'/',isAuth=path.startsWith('/auth/v1/'),isRest=path.startsWith('/rest/v1/');
    if(!isAuth&&!isRest){res.writeHead(404);res.end();return;}
@@ -156,8 +158,18 @@ if(process.argv.includes('--app')){
   // in an existing database; its independent restoration tests remain required.
   await db.query(readFileSync('script/demo/sql/security.sql','utf8'));
   const preservation=historicalTopology?await seedA2HistoricalRehearsal(db,users.production.id):null;
-  const {dataset,sql}=buildA2ImportSQL(configurationReadRecovery?'2026-10-31':'2026-10-30',historicalTopology?100000:0,'dyqusivzgxebkxkwohwn',historicalTopology?{historicalCatalog:a2HistoricalCatalog,planId:27002}:undefined);await db.query(sql);
+  const {dataset,sql}=buildA2ImportSQL(configurationReadRecovery||operationalMeals?'2026-10-31':'2026-10-30',historicalTopology?100000:0,'dyqusivzgxebkxkwohwn',historicalTopology?{historicalCatalog:a2HistoricalCatalog,planId:27002}:undefined);
+  if(operationalMeals){
+   const {operationalMealRehearsalFixture}=await import('./seedOperationalMealRehearsal');
+   dataset.tables.plans[0].planner_next_configuration=operationalMealRehearsalFixture().configuration;
+  }
+  await db.query(operationalMeals?buildA2ImportSQLFromDataset(dataset).sql:sql);
   if(preservation){await preservation.assertPreserved();report.historicalPreservation=preservation.summary;pass('historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import');}assert.equal(await defaults(),beforeDefaults);
+  if(operationalMeals){
+   assert.ok(historicalTopology,'UI-05 replay requires the historical catalogs');
+   const {seedOperationalMealRehearsal}=await import('./seedOperationalMealRehearsal');
+   report.operationalMealSource=await seedOperationalMealRehearsal(db,users.production.id);
+  }
   if(process.argv.includes('--scope-selection'))await seedA2ScopeCatalog(db,dataset);
   const results:any=await db.query(readFileSync('script/demo/sql/catalog-audit.sql','utf8'));
   const catalog=results.find((r:any)=>r.rows?.[0]?.audit)?.rows[0].audit;
@@ -169,7 +181,7 @@ if(process.argv.includes('--app')){
   const appLog=createWriteStream(`${directory}/app-private.log`,{mode:0o600});
   app=spawn(process.execPath,['--import','tsx',resolve('script/demo/smokeA2Integration.ts'),'--app'],{env:localEnv,stdio:['ignore','pipe','pipe']});app.stdout!.pipe(appLog);app.stderr!.pipe(appLog);
   await eventually(async()=>{assert.equal(app!.exitCode,null,'product server exited');const r=await fetch(`${appUrl}/api/plans/${dataset.input.planId}`,{headers:{Authorization:`Bearer ${users.production.token}`}});assert.equal(r.status,200);});
-  const requestedBaseline=settingsSections?process.env.SETTINGS_SECTIONS_BASELINE_ROOT:collapsibleSections?process.env.SECTIONS_BASELINE_ROOT:templateCreation?process.env.TEMPLATE_CREATION_BASELINE_ROOT:templateAuthorization?process.env.TEMPLATE_AUTHORIZATION_BASELINE_ROOT:configurationReadRecovery?process.env.CONFIG_READ_BASELINE_ROOT:controlRoom?process.env.CONTROL_ROOM_BASELINE_ROOT:undefined;
+  const requestedBaseline=operationalMeals?process.env.UI05_BASELINE_ROOT:settingsSections?process.env.SETTINGS_SECTIONS_BASELINE_ROOT:collapsibleSections?process.env.SECTIONS_BASELINE_ROOT:templateCreation?process.env.TEMPLATE_CREATION_BASELINE_ROOT:templateAuthorization?process.env.TEMPLATE_AUTHORIZATION_BASELINE_ROOT:configurationReadRecovery?process.env.CONFIG_READ_BASELINE_ROOT:controlRoom?process.env.CONTROL_ROOM_BASELINE_ROOT:undefined;
   if(requestedBaseline){
    const baselineRoot=resolve(requestedBaseline),baselinePort=await freePort();baselineUrl=`http://127.0.0.1:${baselinePort}`;
    const baselineLog=createWriteStream(`${directory}/baseline-private.log`,{mode:0o600});
@@ -178,7 +190,10 @@ if(process.argv.includes('--app')){
   }
   Object.assign(process.env,{SUPABASE_URL:url,SUPABASE_ANON_KEY:anon,SUPABASE_SERVICE_ROLE_KEY:service});
   const {storage}=await import('../../server/storage');const {buildEngineInput}=await import('../../engine/buildInput');const {adaptEngineInputToPlannerNextProblem}=await import('../../engine/planner-next/integration/engineInputAdapter');
-  if(settingsSections){
+  if(operationalMeals){
+   const {runOperationalMealJourney}=await import('./smokeOperationalMealJourney');
+   report.operationalMeals=await runOperationalMealJourney({appUrl,baselineUrl,db,users,directory,planId:27002,pass});
+  }else if(settingsSections){
    const {runSettingsSections}=await import('./smokeSettingsSections');
    report.settingsSections=await runSettingsSections({appUrl,baselineUrl,db,users,directory,pass});
   }else if(templateCreation){

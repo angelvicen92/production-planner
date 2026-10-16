@@ -1,0 +1,21 @@
+{
+  "base": "7765e3cf02cfeadbad728aecc1d64397dbb2e6ed",
+  "check": "PASS",
+  "build": "PASS",
+  "focalTests": {
+    "passed": 43,
+    "failed": 0
+  },
+  "chromium": "PASS",
+  "visualWrites": 0,
+  "remoteWrites": 0,
+  "acceptedSnapshotsPreserved": true,
+  "taskIdentities": 266,
+  "sqlComparisonsIncludingXmin": 6,
+  "sourceValueComparisons": 7,
+  "limits": [
+    "S22 accepted-snapshot replay, not new solver generation",
+    "Proposal meal exclusion covered by focal wiring test",
+    "Remote deployment and Realtime not certified"
+  ]
+}

@@ -1,6 +1,7 @@
 import { SpaceTaskContent } from "@/components/planning/space-task-content";
 import { spaceParticipantNames, spaceHeadingColor, spaceForeground, type SpaceTaskOperation } from "@/lib/planning-space-presentation";
 import { planningGroupOrder, planningFilterIds, effectivePlanningResourceIds } from "@/lib/planning-view-policy";
+import { operationalMealVisualTasks, resolvePlanningOperationalMeals, type PlanningOperationalMeals, type OperationalMealConfiguration } from "@/lib/planning-operational-meals";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent, type ReactNode, type Dispatch, type SetStateAction } from "react";
 import { assignedPlanningLocations, fitPlanningZoom, planningRange, resourceColumnWidth } from "@/lib/planning-workspace-geometry";
 import { Card } from "@/components/ui/card";
@@ -58,6 +59,8 @@ interface Task {
   comment2Text?: string | null;
   comment2Color?: string | null;
   breakKind?: "space_meal" | "itinerant_meal" | string;
+  operationalMealPolicyId?: string;
+  operationalMealScope?: "space" | "resource" | "team";
   itinerantTeamId?: number | null;
   isManualBlock?: boolean;
   manualTitle?: string | null;
@@ -97,6 +100,7 @@ function PlanningMinuteClock({planId,date,onChange}:{planId?:number;date?:string
 }
 
 export interface PlanningTimelineProps {
+  operationalMeals?: PlanningOperationalMeals;
   manualEdits?: Record<number, { start: string; end: string }>;
   onManualEditsChange?: Dispatch<SetStateAction<Record<number, { start: string; end: string }>>>;
   readOnly?: boolean;
@@ -123,7 +127,7 @@ export interface PlanningTimelineProps {
     mealEnd: string | null;
     mealMode?: "global_hard_break" | "flexible_meal_window" | null;
     dailyTasks: Task[];
-    plannerNextConfiguration?: { taskOperations?: SpaceTaskOperation[] } | null;
+    plannerNextConfiguration?: OperationalMealConfiguration & { taskOperations?: SpaceTaskOperation[] } | null;
     breaks?: Array<{
       id: number;
       kind: "space_meal" | "itinerant_meal" | string;
@@ -339,7 +343,7 @@ function TaskStatusMenuTrigger({
   const { toast } = useToast();
   const confirm = useConfirm();
   const suppressNextClickRef = useRef(false);
-  const actions = onTaskStatusChange && (!canExecuteTask || canExecuteTask(task)) ? taskActionsForStatus(task.status ?? "pending") : [];
+  const actions = !task.operationalMealPolicyId && onTaskStatusChange && (!canExecuteTask || canExecuteTask(task)) ? taskActionsForStatus(task.status ?? "pending") : [];
 
   useEffect(() => {
     if (manualMode && open) setOpen(false);
@@ -394,6 +398,21 @@ function TaskStatusMenuTrigger({
     await onTaskStatusChange(task, status);
     setOpen(false);
   };
+
+  if (task.operationalMealPolicyId) return <div
+    role="note"
+    data-operational-meal-policy-id={task.operationalMealPolicyId}
+    data-operational-meal-authority={task.status}
+    data-operational-meal-scope={task.operationalMealScope}
+    data-operational-meal-space-id={task.spaceId ?? ""}
+    data-operational-meal-team-id={task.itinerantTeamId ?? ""}
+    data-operational-meal-resource-ids={task.assignedResources?.join(",") ?? ""}
+    data-planning-start={task.startPlanned ?? ""}
+    data-planning-end={task.endPlanned ?? ""}
+    title={`${task.template?.name} · ${task.startPlanned}–${task.endPlanned}`}
+    className={cn(className, "cursor-default text-left")}
+    style={style}
+  >{children}</div>;
 
   return (
     <Popover
@@ -563,6 +582,7 @@ function TaskStatusMenuTrigger({
 }
 
   export function PlanningTimeline({
+    operationalMeals: suppliedOperationalMeals,
     manualEdits,
     onManualEditsChange,
     readOnly = false,
@@ -614,6 +634,11 @@ function TaskStatusMenuTrigger({
     onScheduleRendered,
     }: PlanningTimelineProps) {
   const { workStart, workEnd, mealStart, mealEnd, mealMode, dailyTasks, breaks = [] } = plan;
+  const operationalMeals = useMemo(() => suppliedOperationalMeals ?? resolvePlanningOperationalMeals(plan.plannerNextConfiguration, null, "accepted"), [suppliedOperationalMeals, plan.plannerNextConfiguration]);
+  const mealTasks = useMemo(() => operationalMealVisualTasks(operationalMeals), [operationalMeals]);
+  const pendingMeals = operationalMeals.meals.filter(meal => !meal.interval).length;
+  const mealNotice = viewMode !== "contestants" && operationalMeals.authority !== "legacy" && (operationalMeals.unavailable || pendingMeals > 0)
+    ? <p role="status" data-testid="operational-meals-pending" className="p-3 text-sm text-muted-foreground">Comidas operativas · {operationalMeals.authority === "accepted" ? "planning aceptado" : "borrador"}: {operationalMeals.unavailable ? "información no disponible" : `${pendingMeals} pendiente(s) de materializar`}. Sin horario disponible.</p> : null;
   const isFlexibleMealWindow = mealMode === "flexible_meal_window";
   const [nowTime,setNowTime] = useState("");
   const { toast } = useToast();
@@ -1030,7 +1055,8 @@ function TaskStatusMenuTrigger({
     [stageFilterIds, zones, mode],
   );
 
-  const assignedLocations = useMemo(() => assignedPlanningLocations(dailyTasks, spaces), [dailyTasks, spaces]);
+  const assignedLocations = useMemo(() => assignedPlanningLocations([...dailyTasks, ...mealTasks], spaces), [dailyTasks, mealTasks, spaces]);
+  const mealLocations = useMemo(() => assignedPlanningLocations(mealTasks, spaces), [mealTasks, spaces]);
   const filteredZones = useMemo(() => {
     const candidates = zones.filter(zone => !hideEmptyLanes || assignedLocations.zoneIds.has(Number(zone.id)));
     if (!selectedStageIdsSet.size && !spaceFilterIds.length) return candidates;
@@ -1043,8 +1069,8 @@ function TaskStatusMenuTrigger({
     return candidates.filter(space => selectedStageIdsSet.has(Number(space.zoneId)) || spaceFilterIds.includes(Number(space.id)));
   }, [spaces, selectedStageIdsSet, spaceFilterIds, hideEmptyLanes, assignedLocations]);
 
-  const timelineTasks = useMemo(() => {
-    const breakTasks = (viewMode === "contestants" ? [] : breaks)
+  const timelineTasks = useMemo<Task[]>(() => {
+    const breakTasks = (viewMode === "contestants" || operationalMeals.authority !== "legacy" ? [] : breaks)
       .filter((b: any) => (b.plannedStart ?? b.lockedStart) && (b.plannedEnd ?? b.lockedEnd))
       .map((b) => ({
         id: -Number(b.id),
@@ -1061,17 +1087,21 @@ function TaskStatusMenuTrigger({
         breakKind: b.kind,
         itinerantTeamId: b.itinerantTeamId,
       })) as Task[];
-    return [...(dailyTasks ?? []), ...breakTasks].map((t) => {
+    const scopedMeals = mealTasks.filter(task => viewMode === "spaces" ? task.operationalMealScope !== "resource" : viewMode === "resources" ? task.operationalMealScope !== "space" : false);
+    const visibleTasks: Task[] = [...(dailyTasks ?? []), ...breakTasks, ...scopedMeals];
+    return visibleTasks.map((t) => {
+      if (t.operationalMealPolicyId) return t;
       const edit = pendingManualEdits[Number(t.id)];
       if (!edit) return t;
       return { ...t, startPlanned: edit.start, endPlanned: edit.end };
     });
-  }, [breaks, dailyTasks, pendingManualEdits, viewMode]);
+  }, [breaks, dailyTasks, pendingManualEdits, viewMode, operationalMeals, mealTasks]);
 
   const filteredDailyTasksByStage = useMemo(() => {
     if (viewMode === "contestants") return contestantFilterIds.length ? timelineTasks.filter(task => task.contestantId == null || contestantFilterIds.includes(Number(task.contestantId))) : timelineTasks ?? [];
     if (selectedStageIdsSet.size === 0 && spaceFilterIds.length === 0) return timelineTasks ?? [];
     return (timelineTasks ?? []).filter((task) => {
+      if (task.operationalMealPolicyId && task.operationalMealScope !== "space") return true;
       if (spaceFilterIds.includes(Number(task.spaceId))) return true;
       const taskZoneId = Number(task?.zoneId);
       if (Number.isFinite(taskZoneId) && selectedStageIdsSet.has(taskZoneId)) return true;
@@ -1148,6 +1178,12 @@ function TaskStatusMenuTrigger({
     const spaceTasksMap = new Map<number, Task[]>();
 
     for (const task of filteredDailyTasksByStage ?? []) {
+      if (task.operationalMealPolicyId) {
+        const keys = task.operationalMealScope === "team" ? [`itinerant_team:${task.itinerantTeamId}`]
+          : task.operationalMealScope === "resource" ? (task.assignedResources ?? []).map(id => `resource_item:${id}`) : [];
+        for (const key of keys) mapped.set(key, [...(mapped.get(key) ?? []), task]);
+        continue;
+      }
       const taskZoneIdRaw = task?.zoneId;
       const taskSpaceIdRaw = task?.spaceId;
       const taskZoneId = taskZoneIdRaw == null ? null : Number(taskZoneIdRaw);
@@ -1515,6 +1551,7 @@ function TaskStatusMenuTrigger({
   if (!hasPlanning && timelineTasks.length > 0) {
     return (
       <Card className="planning-scroll-viewport p-4 bg-muted/50 space-y-4">
+        {mealNotice}
         <p className="text-muted-foreground text-center">
           {assistedDraftMode ? "Aún no hay tareas con horario. Selecciona un alcance y genera una propuesta en Assisted." : "Aún no hay tareas con horario para consultar en esta vista."}
         </p>
@@ -1533,6 +1570,7 @@ function TaskStatusMenuTrigger({
   if (timelineTasks.length === 0) {
     return (
       <Card className="planning-scroll-viewport p-4 text-center bg-muted/50">
+        {mealNotice}
         <p className="text-muted-foreground">No hay tareas creadas todavía.</p>
       </Card>
     );
@@ -1690,6 +1728,7 @@ function TaskStatusMenuTrigger({
 
     return (
               <TooltipProvider>
+                {mealNotice}
                 <div className="planning-timeline-shell min-h-0 flex flex-1 flex-col border rounded-xl bg-card shadow-sm">
                       <div ref={scrollRef} className="planning-scroll-viewport" tabIndex={0} role="region" aria-label="Timeline de espacios">
                         <div className="w-max min-w-full" data-planning-canvas data-fixed-width="96" data-fixed-height="152">
@@ -1730,7 +1769,7 @@ function TaskStatusMenuTrigger({
                   const zoneCols: ZoneCol[] = (filteredZones as any[])
                     .filter((z: any) => {
                       const idx = (z as any).uiOrderIndex ?? (z as any).ui_order_index;
-                      return planningGroupOrder(idx, mode === "assisted-draft") !== null;
+                      return planningGroupOrder(idx, mode === "assisted-draft") !== null || mealLocations.zoneIds.has(Number(z.id));
                     })
                     .map((z: any) => {
                       const zid = Number(z.id);
@@ -1745,7 +1784,7 @@ function TaskStatusMenuTrigger({
                         zoneId: zid,
                         zoneName,
                         zoneColor,
-                        orderIndex: planningGroupOrder((z as any).uiOrderIndex ?? (z as any).ui_order_index, mode === "assisted-draft")!,
+                        orderIndex: planningGroupOrder((z as any).uiOrderIndex ?? (z as any).ui_order_index, mode === "assisted-draft") ?? Number.MAX_SAFE_INTEGER,
                         spaces: spList.map((sp: any) => ({
                           id: Number(sp.id),
                           name: String(sp.name),
@@ -1873,8 +1912,8 @@ function TaskStatusMenuTrigger({
                   sortTasks(unlocatedCol.tasks);
 
                   const itinerantColsToShow = mode !== "assisted-draft" && (uiItinerantGroupOrderIndex === null || uiItinerantGroupOrderIndex === undefined)
-                    ? []
-                    : itinerantCols.filter((team) => team.tasks.some(isRealTask));
+                    ? itinerantCols.filter(team => team.tasks.some(task => Boolean(task.operationalMealPolicyId)))
+                    : itinerantCols.filter((team) => team.tasks.some(task => isRealTask(task) || Boolean(task.operationalMealPolicyId)));
 
                   // Filtrar platós vacíos (no mostrar bloques sin tareas)
                   const zoneColsToShow = zoneCols
@@ -1892,7 +1931,7 @@ function TaskStatusMenuTrigger({
                   const zoneUiOrderById = new Map<number, number>();
                   (filteredZones as any[]).forEach((z: any) => {
                     const zid = Number(z?.id);
-                    const idx = planningGroupOrder((z as any)?.uiOrderIndex ?? (z as any)?.ui_order_index, mode === "assisted-draft");
+                    const idx = planningGroupOrder((z as any)?.uiOrderIndex ?? (z as any)?.ui_order_index, mode === "assisted-draft") ?? (mealLocations.zoneIds.has(zid) ? Number.MAX_SAFE_INTEGER : null);
                     if (Number.isFinite(zid) && idx !== null) zoneUiOrderById.set(zid, idx);
                   });
 
@@ -2367,6 +2406,7 @@ function TaskStatusMenuTrigger({
     if (selectedResourceKeys.length === 0) {
       return (
         <Card className="planning-scroll-viewport p-4 text-center bg-muted/50">
+          {mealNotice}
           <p className="text-muted-foreground">Selecciona recursos para ver sus tareas.</p>
         </Card>
       );
@@ -2434,6 +2474,7 @@ function TaskStatusMenuTrigger({
 
     return (
       <TooltipProvider>
+        {mealNotice}
         <div className="planning-timeline-shell min-h-0 flex flex-1 flex-col border rounded-xl bg-card shadow-sm">
           <div ref={scrollRef} className="planning-scroll-viewport" tabIndex={0} role="region" aria-label="Agenda de recursos">
             <div className="p-2 w-full min-w-0" data-planning-canvas>
@@ -2514,7 +2555,7 @@ function TaskStatusMenuTrigger({
                                 </div>
                               </div>
                               <Badge variant="outline" className="shrink-0 text-[10px]">
-                                {operationalStatusLabels[task.status] ?? "Estado por revisar"}
+                                {task.operationalMealPolicyId ? operationalMeals.authority === "accepted" ? "Aceptada" : "Borrador" : operationalStatusLabels[task.status] ?? "Estado por revisar"}
                               </Badge>
                             </div>
                           </TaskStatusMenuTrigger>
@@ -2534,6 +2575,7 @@ function TaskStatusMenuTrigger({
 
   return (
     <TooltipProvider>
+      {mealNotice}
       <PlanningMinuteClock planId={plan.id} date={plan.date} onChange={setNowTime}/>
       <div className="planning-timeline-shell min-h-0 flex flex-1 flex-col border rounded-xl bg-card shadow-sm">
         <div ref={scrollRef} className="planning-scroll-viewport" tabIndex={0} role="region" aria-label="Timeline de concursantes">
