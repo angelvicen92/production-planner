@@ -1,0 +1,66 @@
+{
+  "status": "PASS",
+  "remoteWrites": 0,
+  "source": "historical accepted A2 snapshot",
+  "checks": [],
+  "screenshots": [],
+  "presentationFixture": "Three configured colors and a long PASILLO title; task IDs/times and accepted snapshots unchanged",
+  "viewport": {
+    "baseline": true,
+    "fits": [
+      [
+        80.57065217391305,
+        62.07627118644068
+      ],
+      [
+        80.1650951998833,
+        62.07627118644068
+      ],
+      [
+        80.09755931513192,
+        62.07627118644068
+      ],
+      [
+        80.09755931513192,
+        62.07627118644068
+      ],
+      [
+        80.09755931513192,
+        62.07627118644068
+      ]
+    ],
+    "resources": [
+      {
+        "canvas": 23774.234375,
+        "firstColumn": 23758.234375
+      }
+    ],
+    "screenshots": [
+      "before-fit.png",
+      "before-resource-one.png",
+      "before-resource-fit-repeated.png"
+    ],
+    "resourceFits": [
+      [
+        10,
+        14.734734734734733
+      ],
+      [
+        10,
+        10
+      ],
+      [
+        10,
+        10
+      ],
+      [
+        10,
+        10
+      ],
+      [
+        10,
+        10
+      ]
+    ]
+  }
+}

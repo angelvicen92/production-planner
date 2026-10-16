@@ -21,3 +21,14 @@ test("independent axes and bounded linked zoom preserve proportions", () => {
   assert.deepEqual(zoomAxes(10, 40, "linked", .5), { zoomX: 10, zoomY: 40 });
   assert.equal(clampPanelRatio(2), 30); assert.equal(clampPanelRatio(90), 70); assert.equal(clampPanelRatio("60"), 50);
 });
+
+test("fit uses intrinsic geometry and fixed chrome, independent of previous zoom", async () => {
+  const { fitPlanningZoom, resourceColumnWidth } = await import("./planning-workspace-geometry");
+  const content = { width: 1440, height: 960, fixedWidth: 192, fixedHeight: 92 };
+  assert.deepEqual(fitPlanningZoom({ width: 1200, height: 764 }, content), { zoomX: 70, zoomY: 70 });
+  assert.deepEqual(fitPlanningZoom({ width: 912, height: 572 }, content), { zoomX: 50, zoomY: 50 });
+  assert.deepEqual(fitPlanningZoom({ width: 0, height: 0 }, content), { zoomX: 10, zoomY: 10 });
+  assert.equal(resourceColumnWidth(25), 240);
+  assert.equal(resourceColumnWidth(100), 280);
+  assert.equal(resourceColumnWidth(250), 400);
+});

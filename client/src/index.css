@@ -232,3 +232,12 @@ body[data-planning-fullscreen="true"] [data-radix-popper-content-wrapper] {
 
 .planning-row-label { width: var(--planning-label-width, 192px); }
 @media (max-width: 640px) { .planning-panel { --planning-label-width: 112px; } }
+
+/* Keep every visible panel in the maximized workspace, with its native scroll. */
+.planning-workspace-fullscreen { height: 100dvh; margin: 0 !important; }
+.planning-workspace-fullscreen > :not(.planning-panes) { flex-shrink: 0; }
+.planning-workspace-fullscreen .planning-panes { flex: 1; min-height: 0; grid-auto-rows: minmax(0, 1fr); }
+.planning-workspace-fullscreen .planning-retained { min-height: 0; }
+.planning-workspace-fullscreen .planning-retained > [data-testid] { height: 100%; min-height: 0; }
+.planning-workspace-fullscreen .planning-panel:not([data-fullscreen="true"]) { height: 100%; min-height: 0; }
+.planning-resource-task { overflow-wrap: anywhere; }

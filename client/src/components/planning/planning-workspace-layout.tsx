@@ -1,5 +1,6 @@
 import {
   memo,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -11,6 +12,8 @@ import {
   MapPin,
   Video,
   Columns2,
+  Maximize2,
+  Minimize2,
   Rows2,
   Grid2X2,
   X,
@@ -23,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { PlanningFullscreenContext, usePlanningFullscreen } from "./planning-fullscreen";
 import { FullscreenPlanningPanel } from "./fullscreen-planning-panel";
 import { PlanningTimeline } from "../planning-timeline";
 import {
@@ -72,6 +76,13 @@ function ScopedPlanningWorkspaceLayout({
     return stored === "horizontal" || stored === "grid" ? stored : "vertical";
   });
   const [ratio, setRatio] = useState(() => clampPanelRatio(readPreference(preferenceKey, { ratio: 50 }).ratio));
+  const [workspaceFullscreen, setWorkspaceFullscreen] = useState(false);
+  const [activePanel, setActivePanel] = useState<string | null>(null);
+  const exitFullscreen = useCallback(() => {
+    if (activePanel) setActivePanel(null);
+    else setWorkspaceFullscreen(false);
+  }, [activePanel]);
+  usePlanningFullscreen(workspaceFullscreen || activePanel !== null, exitFullscreen);
   const panesRef = useRef<HTMLDivElement>(null);
   const panelOrder = [...visible, ...planningViews.filter(view => !visible.includes(view))];
   const moveView = (view: PlanningView, direction: number) => setVisible(old => {
@@ -116,8 +127,10 @@ function ScopedPlanningWorkspaceLayout({
     }
   }, [preferenceKey, visible, layout, ratio]);
   return (
+    <PlanningFullscreenContext.Provider value={{ activePanel, setActivePanel }}>
     <section
-      className="space-y-3"
+      className={workspaceFullscreen ? "planning-workspace-fullscreen fixed inset-0 z-[90] flex min-h-0 flex-col gap-3 bg-background p-2 sm:p-4" : "space-y-3"}
+      data-workspace-fullscreen={workspaceFullscreen}
       aria-label="Vistas de la planificación"
       data-testid="planning-multiview"
     >
@@ -146,9 +159,13 @@ function ScopedPlanningWorkspaceLayout({
           })}
         </div>
         <div
-          className="flex items-center gap-1"
+          className="flex flex-wrap items-center gap-1"
           aria-label="Distribución de paneles"
         >
+          <Button size="sm" variant="outline" onClick={() => { setActivePanel(null); setWorkspaceFullscreen(old => !old); }}>
+            {workspaceFullscreen ? <Minimize2 className="mr-1 h-4 w-4" /> : <Maximize2 className="mr-1 h-4 w-4" />}
+            {workspaceFullscreen ? "Restaurar conjunto (Esc)" : "Maximizar conjunto"}
+          </Button>
           {(
             [
               ["horizontal", Columns2, "Horizontal"],
@@ -247,9 +264,10 @@ function ScopedPlanningWorkspaceLayout({
               onMove={(direction) => moveView(view, direction)}
               moveBeforeDisabled={visible.indexOf(view) === 0}
               moveAfterDisabled={visible.indexOf(view) === visible.length - 1}
-              onHide={() =>
-                setVisible((old) => toggledPlanningViews(old, view))
-              }
+              onHide={() => {
+                if (activePanel === `${preferenceKey}:${view}`) setActivePanel(null);
+                setVisible((old) => toggledPlanningViews(old, view));
+              }}
             />
           </RetainedView>
         ))}
@@ -263,6 +281,7 @@ function ScopedPlanningWorkspaceLayout({
         ><span /></div> : null}
       </div>
     </section>
+    </PlanningFullscreenContext.Provider>
   );
 }
 
