@@ -1,0 +1,188 @@
+{
+  "status": "PASS",
+  "remoteWrites": 0,
+  "scenarios": [
+    {
+      "name": "S0 → S1 → S2",
+      "activeStageId": 3,
+      "stageIds": [
+        1,
+        2,
+        3
+      ],
+      "persistedStages": 3,
+      "generation": {
+        "totalStages": 2,
+        "knownStages": 2,
+        "durationMs": 63951
+      },
+      "process": {
+        "totalStages": 2,
+        "knownStages": 2,
+        "durationMs": 68906
+      },
+      "elapsed": {
+        "start": "2026-10-16T09:46:53.304114+00:00",
+        "end": "2026-10-16T09:48:05.791148+00:00",
+        "durationMs": 72487
+      }
+    },
+    {
+      "name": "browser reload",
+      "activeStageId": 3,
+      "stageIds": [
+        1,
+        2,
+        3
+      ],
+      "persistedStages": 3,
+      "generation": {
+        "totalStages": 2,
+        "knownStages": 2,
+        "durationMs": 63951
+      },
+      "process": {
+        "totalStages": 2,
+        "knownStages": 2,
+        "durationMs": 68906
+      },
+      "elapsed": {
+        "start": "2026-10-16T09:46:53.304114+00:00",
+        "end": "2026-10-16T09:48:05.791148+00:00",
+        "durationMs": 72487
+      }
+    },
+    {
+      "name": "restore S1",
+      "activeStageId": 2,
+      "stageIds": [
+        1,
+        2
+      ],
+      "persistedStages": 3,
+      "generation": {
+        "totalStages": 1,
+        "knownStages": 1,
+        "durationMs": 63595
+      },
+      "process": {
+        "totalStages": 1,
+        "knownStages": 1,
+        "durationMs": 65645
+      },
+      "elapsed": {
+        "start": "2026-10-16T09:46:53.304114+00:00",
+        "end": "2026-10-16T09:47:58.949782+00:00",
+        "durationMs": 65645
+      }
+    },
+    {
+      "name": "redo S2",
+      "activeStageId": 3,
+      "stageIds": [
+        1,
+        2,
+        3
+      ],
+      "persistedStages": 3,
+      "generation": {
+        "totalStages": 2,
+        "knownStages": 2,
+        "durationMs": 63951
+      },
+      "process": {
+        "totalStages": 2,
+        "knownStages": 2,
+        "durationMs": 68906
+      },
+      "elapsed": {
+        "start": "2026-10-16T09:46:53.304114+00:00",
+        "end": "2026-10-16T09:48:05.791148+00:00",
+        "durationMs": 72487
+      }
+    },
+    {
+      "name": "restart to S0",
+      "activeStageId": 1,
+      "stageIds": [
+        1
+      ],
+      "persistedStages": 3,
+      "generation": {
+        "durationMs": null,
+        "knownStages": 0,
+        "totalStages": 0
+      },
+      "process": {
+        "durationMs": null,
+        "knownStages": 0,
+        "totalStages": 0
+      },
+      "elapsed": null
+    },
+    {
+      "name": "new accepted branch after restart",
+      "activeStageId": 4,
+      "stageIds": [
+        1,
+        4
+      ],
+      "persistedStages": 4,
+      "generation": {
+        "totalStages": 1,
+        "knownStages": 1,
+        "durationMs": 61217
+      },
+      "process": {
+        "totalStages": 1,
+        "knownStages": 1,
+        "durationMs": 62639
+      },
+      "elapsed": {
+        "start": "2026-10-16T09:48:18.249218+00:00",
+        "end": "2026-10-16T09:49:20.888942+00:00",
+        "durationMs": 62639
+      }
+    },
+    {
+      "name": "new branch persists after mobile reload",
+      "activeStageId": 4,
+      "stageIds": [
+        1,
+        4
+      ],
+      "persistedStages": 4,
+      "generation": {
+        "totalStages": 1,
+        "knownStages": 1,
+        "durationMs": 61217
+      },
+      "process": {
+        "totalStages": 1,
+        "knownStages": 1,
+        "durationMs": 62639
+      },
+      "elapsed": {
+        "start": "2026-10-16T09:48:18.249218+00:00",
+        "end": "2026-10-16T09:49:20.888942+00:00",
+        "durationMs": 62639
+      }
+    }
+  ],
+  "screenshots": [
+    "history-current-s2-desktop.png",
+    "history-before-desktop.png",
+    "history-after-desktop.png",
+    "history-after-mobile.png"
+  ],
+  "visualWrites": [],
+  "baselineSourceHash": "87800faaf0e9fbcc3f062bd8a2b12b9bc26fd0a6d057b832ddb518d7d9f2ba67",
+  "stagesPreserved": 3,
+  "obligationsPreserved": 266,
+  "runtimeHashes": {
+    "shared/assistedHistory.ts": "7e3eb76dd2c9d14fd0b8765d45bf7b337191c59bff8e9fed5e0828d21f051ce8",
+    "shared/assistedStageLineage.ts": "4b41c71b2eb226e7a4f1944e951f217b6ef537b5db510bec228c31b1b13965e0",
+    "client/src/components/planning/assisted-stage-history.tsx": "61a4343c3d6a2af023fe88b20a602445a2d4c55c1f68a646d63c8f4488e235a6",
+    "script/demo/smokeAssistedActiveHistory.ts": "1807d1eb783b9e6a8652456ddb1dfe0e138865926a97d65d49df643c8ea097ff"
+  }
+}

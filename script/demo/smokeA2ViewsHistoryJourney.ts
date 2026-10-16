@@ -148,10 +148,13 @@ export async function runA2ViewsHistoryJourney(options: Options, page: Page) {
       if (stage.ordinal === 0) { assert.equal(timing.generation, null); assert.equal(timing.requestToAcceptance, null); continue; }
       assert.equal(timing.generation.durationMs, stage.finished_at.getTime() - stage.started_at.getTime());
       assert.equal(timing.requestToAcceptance.durationMs, stage.accepted_at.getTime() - stage.created_at.getTime());
+      const details = history.locator(`[data-testid="active-history-stage"][data-stage-id="${stage.id}"] details`);
+      await details.locator("summary").click();
       for (const interval of [timing.generation, timing.requestToAcceptance]) {
         assert.ok(await history.locator(`time[datetime="${interval.start}"]`).count());
         assert.ok(await history.locator(`time[datetime="${interval.end}"]`).count());
       }
+      await details.locator("summary").click();
     }
     for (const role of ["anon", "norole", "viewer", "aux", "production", "admin"]) {
       const response = await api(`${path}/history/timings`, role);
