@@ -1,0 +1,11 @@
+{
+  "base": "c1cf4359fe721c60f30244f90a73989e37018282",
+  "productFilesMatchBase": {
+    "client/src/components/planning-timeline.tsx": true,
+    "client/src/components/planning/fullscreen-planning-panel.tsx": true,
+    "client/src/components/planning/planning-workspace-layout.tsx": true,
+    "client/src/lib/planning-workspace-geometry.ts": true,
+    "client/src/lib/planning-workspace-preferences.ts": true,
+    "client/src/index.css": true
+  }
+}

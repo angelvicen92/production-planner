@@ -1,0 +1,167 @@
+{
+  "base": "c1cf4359fe721c60f30244f90a73989e37018282",
+  "check": "PASS",
+  "build": "PASS",
+  "focalTestFiles": 7,
+  "focalTests": "PASS",
+  "chromium": "PASS",
+  "fitGroups": 61,
+  "fitPresses": 305,
+  "maxDriftPercentagePoints": 0.0,
+  "resourceCases": [
+    {
+      "width": 1365,
+      "count": 1,
+      "columnWidths": [
+        313.75
+      ],
+      "titleFontPx": 14,
+      "colors": [
+        "rgb(253, 230, 138)",
+        "rgb(91, 33, 182)",
+        "rgb(22, 78, 99)"
+      ],
+      "longTitlePresent": true
+    },
+    {
+      "width": 1365,
+      "count": 2,
+      "columnWidths": [
+        313.75,
+        313.75
+      ],
+      "titleFontPx": 14,
+      "colors": [
+        "rgb(253, 230, 138)",
+        "rgb(91, 33, 182)",
+        "rgb(22, 78, 99)"
+      ],
+      "longTitlePresent": true
+    },
+    {
+      "width": 1365,
+      "count": 3,
+      "columnWidths": [
+        313.75,
+        313.75,
+        313.75
+      ],
+      "titleFontPx": 14,
+      "colors": [
+        "rgb(253, 230, 138)",
+        "rgb(91, 33, 182)",
+        "rgb(22, 78, 99)"
+      ],
+      "longTitlePresent": true
+    },
+    {
+      "width": 1365,
+      "count": 8,
+      "columnWidths": [
+        313.75,
+        313.75,
+        313.75,
+        313.75,
+        313.75,
+        313.75,
+        313.75,
+        313.75
+      ],
+      "titleFontPx": 14,
+      "colors": [
+        "rgb(253, 230, 138)",
+        "rgb(91, 33, 182)",
+        "rgb(22, 78, 99)"
+      ],
+      "longTitlePresent": true
+    },
+    {
+      "width": 1920,
+      "count": 1,
+      "columnWidths": [
+        296.328125
+      ],
+      "titleFontPx": 14,
+      "colors": [
+        "rgb(253, 230, 138)",
+        "rgb(91, 33, 182)",
+        "rgb(22, 78, 99)"
+      ],
+      "longTitlePresent": true
+    },
+    {
+      "width": 1920,
+      "count": 2,
+      "columnWidths": [
+        296.328125,
+        296.328125
+      ],
+      "titleFontPx": 14,
+      "colors": [
+        "rgb(253, 230, 138)",
+        "rgb(91, 33, 182)",
+        "rgb(22, 78, 99)"
+      ],
+      "longTitlePresent": true
+    },
+    {
+      "width": 1920,
+      "count": 3,
+      "columnWidths": [
+        296.328125,
+        296.328125,
+        296.34375
+      ],
+      "titleFontPx": 14,
+      "colors": [
+        "rgb(253, 230, 138)",
+        "rgb(91, 33, 182)",
+        "rgb(22, 78, 99)"
+      ],
+      "longTitlePresent": true
+    },
+    {
+      "width": 1920,
+      "count": 8,
+      "columnWidths": [
+        296.328125,
+        296.328125,
+        296.34375,
+        296.328125,
+        296.328125,
+        296.34375,
+        296.328125,
+        296.328125
+      ],
+      "titleFontPx": 14,
+      "colors": [
+        "rgb(253, 230, 138)",
+        "rgb(91, 33, 182)",
+        "rgb(22, 78, 99)"
+      ],
+      "longTitlePresent": true
+    }
+  ],
+  "SQLAuthoritiesUnchanged": true,
+  "visualMutationRequests": [],
+  "executedSourceHashesMatchCandidate": true,
+  "remoteWrites": 0,
+  "integrationChecks": 16,
+  "navigationChecks": [
+    "independent X/Y and proportional linked zoom change real dimensions; reload/reset preserve identities",
+    "reduced contestant Y zoom scales entire rows; fit contains every lane and obligation",
+    "two panels resize by pointer and keyboard, swap and persist without losing tasks",
+    "spaces: single two-axis viewport, accessible horizontal scroll, aligned sticky headings, real zoom and fit",
+    "zoomed drag moves exactly five minutes; shared local edit survives reorder and discards without SQL writes",
+    "scheduled hideEmpty and resource agenda retain identities across zoom, three panels and accepted/draft navigation",
+    "desktop 1440/1920 and mobile 390: no document overflow; all SQL authorities unchanged",
+    "27002: all 266 unscheduled obligations retain assigned spaces; empty catalog choices and stale selection disappear",
+    "viewer can zoom and pan both axes by real touch; isolated preferences and unchanged SQL authorities",
+    "UI-01B: stable fit, readable resource columns, workspace fullscreen and SQL invariance"
+  ],
+  "limits": [
+    "Historical 266-obligation UI replay, not a new solver certification",
+    "Minimum zoom 10%; small viewports retain internal scroll",
+    "No deployed environment certification"
+  ]
+}
