@@ -25,7 +25,7 @@ export async function runRealityScopeJourney({appUrl,baselineUrl,db,users,direct
   await page.goto(`${url}/plans/${planId}?tab=planning`);await page.getByTestId('planning-multiview').waitFor();
   await page.getByRole('button',{name:'Mostrar Platós y espacios',exact:true}).click();
  };
- const capture=async(page:Page,name:string)=>{await page.getByTestId('planning-panel-spaces').screenshot({path:`${directory}/${name}.png`});report.screenshots.push(`${name}.png`);};
+ const capture=async(page:Page,name:string)=>{const root=page.getByTestId('planning-panel-spaces');await root.getByRole('button',{name:'Ajustar',exact:true}).click();await root.locator(`[data-planning-task-id="${mobile[0].taskId}"]`).first().evaluate(card=>{card.closest('[data-planning-column]')?.scrollIntoView({block:'start',inline:'center'});});await (name.endsWith('maximized')?page:root).screenshot({path:`${directory}/${name}.png`});report.screenshots.push(`${name}.png`);};
  try{
   if(baselineUrl){const base=await browser.newPage({viewport:{width:1600,height:1100}});await login(base,baselineUrl);await capture(base,'reality-before');await base.close();}
   const page=await browser.newPage({viewport:{width:1600,height:1100}});const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
@@ -37,8 +37,9 @@ export async function runRealityScopeJourney({appUrl,baselineUrl,db,users,direct
    for(const op of mobile){const card=cards.locator(`xpath=self::*[@data-planning-task-id="${op.taskId}"]`);assert.equal(await card.count(),1,`one principal card ${op.taskId}`);
     assert.equal(await card.getAttribute('data-planning-team-id'),String(rows.get(op.taskId).itinerantTeamId??op.itinerantTeamId));
     assert.equal(await card.getAttribute('data-planning-agenda'),'ITINERANT_UNIT');
+    const column=card.locator('xpath=ancestor::*[@data-planning-column][1]');assert.equal(await column.locator(`[data-header-scope="itinerant_team:${rows.get(op.taskId).itinerantTeamId??op.itinerantTeamId}"]`).count(),1);
     assert.equal(await card.getAttribute('data-planning-space-id'),String(rows.get(op.taskId).spaceId));}
-   for(const id of anchors)assert.equal(await panel().locator(`[data-planning-task-id="${id}"]`).getAttribute('data-planning-agenda'),'PHYSICAL_SPACE');
+   for(const id of anchors){const card=panel().locator(`[data-planning-task-id="${id}"]`);assert.equal(await card.getAttribute('data-planning-agenda'),'PHYSICAL_SPACE');assert.equal(await card.locator('xpath=ancestor::*[@data-planning-column][1]').locator(`[data-header-scope="space:${rows.get(id).spaceId}"]`).count(),1);}
    assert.equal(await panel().locator('[data-physical-occupation-task-id]').count(),mobile.length);
   };
   await verify();await capture(page,'reality-after-timeline');

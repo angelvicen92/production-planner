@@ -1,0 +1,115 @@
+{
+  "status": "PASS",
+  "mode": "NATIVE_DISPOSABLE_HTTP_SQL",
+  "remoteWrites": 0,
+  "baselineFingerprint": "4e1a8ddfc2f82af162a57a00a9eec3986cba9be3933a456da051c639dddae0f2",
+  "baseline": {
+    "hardValid": true,
+    "dependencyViolationCount": 0,
+    "overlapViolationCount": 0,
+    "transitionViolationCount": 0,
+    "availabilityViolationCount": 0,
+    "taskAvailabilityViolationCount": 0,
+    "blockViolationCount": 0,
+    "resourceAvailabilityViolationCount": 0,
+    "resourceOverlapViolationCount": 0,
+    "resourceTransitionViolationCount": 0,
+    "secondaryContinuityViolationCount": 0,
+    "setupViolationCount": 0,
+    "setupPreparationViolationCount": 0,
+    "roundSynchronizationViolationCount": 0,
+    "roundPreparationViolationCount": 0,
+    "jointGroupViolationCount": 0,
+    "transportGroupingViolationCount": 0,
+    "technicalOperationViolationCount": 0,
+    "technicalChainViolationCount": 0,
+    "spaceMealViolationCount": 0,
+    "mainFlowMealViolationCount": 0,
+    "anchoredAccompanimentViolationCount": 0,
+    "participantMealViolationCount": 0,
+    "resourceMealViolationCount": 0,
+    "operationalMealViolationCount": 0,
+    "itinerantUnitMealViolationCount": 0,
+    "reasonCodes": [],
+    "unstructuredReasonCodes": [],
+    "violations": []
+  },
+  "moved": {
+    "hardValid": false,
+    "dependencyViolationCount": 0,
+    "overlapViolationCount": 0,
+    "transitionViolationCount": 0,
+    "availabilityViolationCount": 1,
+    "taskAvailabilityViolationCount": 0,
+    "blockViolationCount": 0,
+    "resourceAvailabilityViolationCount": 0,
+    "resourceOverlapViolationCount": 0,
+    "resourceTransitionViolationCount": 0,
+    "secondaryContinuityViolationCount": 0,
+    "setupViolationCount": 0,
+    "setupPreparationViolationCount": 0,
+    "roundSynchronizationViolationCount": 0,
+    "roundPreparationViolationCount": 0,
+    "jointGroupViolationCount": 0,
+    "transportGroupingViolationCount": 1,
+    "technicalOperationViolationCount": 0,
+    "technicalChainViolationCount": 0,
+    "spaceMealViolationCount": 0,
+    "mainFlowMealViolationCount": 0,
+    "anchoredAccompanimentViolationCount": 0,
+    "participantMealViolationCount": 0,
+    "resourceMealViolationCount": 0,
+    "operationalMealViolationCount": 0,
+    "itinerantUnitMealViolationCount": 0,
+    "reasonCodes": [
+      "AVAILABILITY_VIOLATION",
+      "TRANSPORT_GROUPING_VIOLATION"
+    ],
+    "unstructuredReasonCodes": [
+      "TRANSPORT_GROUPING_VIOLATION"
+    ],
+    "violations": [
+      {
+        "ruleCode": "AVAILABILITY_VIOLATION",
+        "severity": "HARD",
+        "affectedTaskIds": [
+          "task:110022"
+        ],
+        "affectedResourceIds": [],
+        "affectedSpaceIds": [
+          "space:49"
+        ],
+        "dimensions": {
+          "start": 1140,
+          "end": 1145
+        }
+      }
+    ]
+  },
+  "productViolations": [
+    {
+      "ruleCode": "AVAILABILITY_VIOLATION",
+      "severity": "HARD",
+      "affectedTaskIds": [
+        110022
+      ],
+      "affectedResourceIds": [],
+      "affectedSpaceIds": [
+        49
+      ],
+      "details": {
+        "dimensions": {
+          "start": 1140,
+          "end": 1145
+        }
+      },
+      "inheritedAcceptedExceptionId": null,
+      "violationKey": "{\"ruleCode\":\"AVAILABILITY_VIOLATION\",\"taskIds\":[110022],\"resourceIds\":[],\"spaceIds\":[49],\"dimensions\":{\"end\":1145,\"start\":1140}}"
+    }
+  ],
+  "manualUndoRedo": "PASS",
+  "blockUndoRedo": "PASS",
+  "reset": "EXACT_BASELINE",
+  "acceptedMaterial": "UNCHANGED",
+  "anonymousTransport": "FAIL_CLOSED"
+}

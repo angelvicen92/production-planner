@@ -132,7 +132,7 @@ if(process.argv.includes('--app')){
   const restPort=start('rest',images.rest,3000,{PGRST_DB_URI:`postgres://authenticator:${password}@db:5432/postgres`,PGRST_DB_SCHEMAS:'public',PGRST_DB_ANON_ROLE:'anon',PGRST_JWT_SECRET:secret,PGRST_SERVER_PORT:'3000'});
   const transport:any[]=[];report.transport=transport;
   gateway=http.createServer((req,res)=>{
-   res.setHeader('Access-Control-Allow-Origin',(headerNotes||operationalMeals||controlRoom||templateAuthorization||templateCreation||collapsibleSections||settingsSections)&&baselineUrl&&req.headers.origin===baselineUrl?baselineUrl:appUrl);res.setHeader('Access-Control-Allow-Headers',req.headers['access-control-request-headers']??'authorization,apikey,content-type');res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,PATCH,DELETE,OPTIONS');
+   res.setHeader('Access-Control-Allow-Origin',(realityScope||headerNotes||operationalMeals||controlRoom||templateAuthorization||templateCreation||collapsibleSections||settingsSections)&&baselineUrl&&req.headers.origin===baselineUrl?baselineUrl:appUrl);res.setHeader('Access-Control-Allow-Headers',req.headers['access-control-request-headers']??'authorization,apikey,content-type');res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,PATCH,DELETE,OPTIONS');
    if(req.method==='OPTIONS'){res.writeHead(204);res.end();return;}
    const path=req.url??'/',isAuth=path.startsWith('/auth/v1/'),isRest=path.startsWith('/rest/v1/');
    if(!isAuth&&!isRest){res.writeHead(404);res.end();return;}
