@@ -132,7 +132,7 @@ export async function runAutopilotWorkspace({ appUrl, users, planId, directory, 
     await page.getByRole("button", { name: "Maximizar conjunto", exact: true }).click();
     await page.waitForFunction(() => {
       const panel = document.querySelector('[data-testid="planning-panel-contestants"]');
-      return panel && Number(panel.querySelector('.planning-panel')?.getAttribute('data-zoom-x')) > 90;
+      return panel && Number(panel.querySelector('.planning-panel')?.getAttribute('data-zoom-x')) > 105;
     });
     const geometry = await workspace.getByTestId("planning-panel-contestants").evaluate(panel => {
       const viewport = panel.querySelector<HTMLElement>(".planning-scroll-viewport")!;
@@ -149,6 +149,7 @@ export async function runAutopilotWorkspace({ appUrl, users, planId, directory, 
     assert.equal(geometry.rows, 19, "every contestant lane must remain rendered");
     assert.ok(geometry.contentHeight <= geometry.viewportHeight + 22, `vertical clipping: ${JSON.stringify(geometry)}`);
     assert.ok(geometry.contentWidth <= geometry.viewportWidth + 22, `horizontal clipping: ${JSON.stringify(geometry)}`);
+    assert.ok(geometry.contentWidth >= geometry.viewportWidth * 0.84, `unused width: ${JSON.stringify(geometry)}`);
     assert.ok(geometry.headerHeight <= 115, `header not compact: ${JSON.stringify(geometry)}`);
     await workspace.getByRole("button", { name: "Mostrar Platós y espacios", exact: true }).click();
     await page.getByRole("button", { name: "Restaurar conjunto (Esc)", exact: true }).click();
