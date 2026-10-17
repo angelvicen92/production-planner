@@ -21,8 +21,8 @@ function readSettings(viewKey: string) {
   } catch { return { zoomX: 100, zoomY: 100, frame: "day" as const, axis: "linked" as const }; }
 }
 
-export function FullscreenPlanningPanel({ title, viewKey, supportsZoom = false, children, toolbarRight, hydrationBlocked = false }: {
-  title?: string; viewKey: string; supportsZoom?: boolean; children: ReactNode; toolbarRight?: ReactNode; hydrationBlocked?: boolean;
+export function FullscreenPlanningPanel({ title, viewKey, supportsZoom = false, children, toolbarRight, hydrationBlocked = false, fitOnceRequest = 0 }: {
+  title?: string; viewKey: string; supportsZoom?: boolean; children: ReactNode; toolbarRight?: ReactNode; hydrationBlocked?: boolean; fitOnceRequest?: number;
 }) {
   const [localFullscreen, setLocalFullscreen] = useState(false);
   const fullscreen = useContext(PlanningFullscreenContext);
@@ -34,18 +34,28 @@ export function FullscreenPlanningPanel({ title, viewKey, supportsZoom = false, 
   });
   const [settings, setSettings] = useState(() => readSettings(viewKey));
   const [fitRequest, setFitRequest] = useState(0);
+  const [presentationFit, setPresentationFit] = useState<{zoomX:number;zoomY:number}|null>(null);
+  const [awaitingAutoFit, setAwaitingAutoFit] = useState(false);
+  const visibleSettings = presentationFit ? {...settings,...presentationFit}:settings;
+  useEffect(() => {
+    if (fitOnceRequest) { setPresentationFit(null); setAwaitingAutoFit(true); setFitRequest(old => old + 1); }
+    else { setPresentationFit(null); setAwaitingAutoFit(false); setFitRequest(0); }
+  }, [fitOnceRequest]);
   useEffect(() => {
     try {
       localStorage.setItem(`${viewKey}:density`, density);
       localStorage.setItem(`${viewKey}:geometry`, JSON.stringify(settings));
     } catch { /* Local preferences must not block planning. */ }
   }, [viewKey, density, settings]);
-  const changeZoom = (factor: number) => { setFitRequest(0); setSettings(old => ({ ...old, ...zoomAxes(old.zoomX, old.zoomY, old.axis, factor) })); };
+  const changeZoom = (factor: number) => { setFitRequest(0); setAwaitingAutoFit(false); setPresentationFit(null); setSettings(old => ({ ...old, ...zoomAxes(visibleSettings.zoomX, visibleSettings.zoomY, old.axis, factor) })); };
   return (
     <PlanningDensityContext.Provider value={density}>
-      <PlanningGeometryContext.Provider value={{ ...settings, fitRequest, setZoom: (x, y) => setSettings(old => Math.abs(old.zoomX - clampZoom(x)) < .01 && Math.abs(old.zoomY - clampZoom(y)) < .01 ? old : ({ ...old, zoomX: clampZoom(x), zoomY: clampZoom(y) })) }}>
+      <PlanningGeometryContext.Provider value={{ ...visibleSettings, fitRequest, setZoom: (x, y) => {
+        if (awaitingAutoFit) { setPresentationFit({zoomX:clampZoom(x),zoomY:clampZoom(y)}); setAwaitingAutoFit(false); setFitRequest(0); }
+        else { setPresentationFit(null); setSettings(old => Math.abs(old.zoomX - clampZoom(x)) < .01 && Math.abs(old.zoomY - clampZoom(y)) < .01 ? old : ({ ...old, zoomX: clampZoom(x), zoomY: clampZoom(y) })); }
+      } }}>
         <div className={cn("planning-panel flex min-h-0 min-w-0 flex-col", isFullscreen && "fixed inset-0 z-[100] bg-background p-2 sm:p-4")}
-          data-density={density} data-fullscreen={isFullscreen} data-zoom-x={settings.zoomX} data-zoom-y={settings.zoomY}>
+          data-density={density} data-fullscreen={isFullscreen} data-zoom-x={visibleSettings.zoomX} data-zoom-y={visibleSettings.zoomY}>
           <div className="planning-panel-toolbar mb-2 flex shrink-0 flex-col gap-2 rounded-lg border bg-card px-2 py-2">
             <div className="flex flex-wrap items-center justify-between gap-1">
               {title ? <p className="text-sm font-semibold">{title}</p> : null}
@@ -68,8 +78,8 @@ export function FullscreenPlanningPanel({ title, viewKey, supportsZoom = false, 
                   <option value="linked">Vinculado</option><option value="x">Zoom X</option><option value="y">Zoom Y</option>
                 </select>
                 <Button size="icon" className="h-8 w-8" variant="ghost" aria-label="Reducir zoom" onClick={() => changeZoom(1 / 1.1)}><Minus className="h-3 w-3" /></Button>
-                <Button size="sm" className="h-8 px-1 text-xs tabular-nums" variant="ghost" aria-label="Restaurar zoom al 100%" onClick={() => { setFitRequest(0); setSettings(old => ({ ...old, zoomX: 100, zoomY: 100 })); }}>
-                  {Math.round(settings.zoomX)}% × {Math.round(settings.zoomY)}%
+                <Button size="sm" className="h-8 px-1 text-xs tabular-nums" variant="ghost" aria-label="Restaurar zoom al 100%" onClick={() => { setFitRequest(0); setAwaitingAutoFit(false); setPresentationFit(null); setSettings(old => ({ ...old, zoomX: 100, zoomY: 100 })); }}>
+                  {Math.round(visibleSettings.zoomX)}% × {Math.round(visibleSettings.zoomY)}%
                 </Button>
                 <Button size="icon" className="h-8 w-8" variant="ghost" aria-label="Ampliar zoom" onClick={() => changeZoom(1.1)}><Plus className="h-3 w-3" /></Button>
                 <Button size="sm" className="h-8 px-2" variant="outline" onClick={() => setFitRequest(old => old + 1)}><Scan className="mr-1 h-3 w-3" />Ajustar</Button>
