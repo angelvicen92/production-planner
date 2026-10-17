@@ -60,10 +60,14 @@ function ScopedPlanningWorkspaceLayout({
   planId,
   timelineProps,
   onPendingEditsChange,
+  header,
+  maximizeRequest = 0,
 }: {
   planId: number;
   timelineProps: TimelineProps;
   onPendingEditsChange?: (count:number)=>void;
+  header?: React.ReactNode;
+  maximizeRequest?: number;
 }) {
   const { user } = useAuth();
   const preferenceKey = `optiplan:workspace:${user?.id ?? "session"}:${planId}`;
@@ -79,6 +83,14 @@ function ScopedPlanningWorkspaceLayout({
   const [ratio, setRatio] = useState(() => clampPanelRatio(readPreference(preferenceKey, { ratio: 50 }).ratio));
   const [workspaceFullscreen, setWorkspaceFullscreen] = useState(false);
   const [activePanel, setActivePanel] = useState<string | null>(null);
+  const consumedMaximizeRequest = useRef(maximizeRequest);
+  useEffect(() => {
+    if (consumedMaximizeRequest.current === maximizeRequest) return;
+    consumedMaximizeRequest.current = maximizeRequest;
+    if (!maximizeRequest) return;
+    setActivePanel(null);
+    setWorkspaceFullscreen(true);
+  }, [maximizeRequest]);
   const exitFullscreen = useCallback(() => {
     if (activePanel) setActivePanel(null);
     else setWorkspaceFullscreen(false);
@@ -135,9 +147,10 @@ function ScopedPlanningWorkspaceLayout({
       aria-label="Vistas de la planificación"
       data-testid="planning-multiview"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/20 p-3">
+      {header ? <div className="shrink-0 max-h-[32dvh] sm:max-h-[45dvh] overflow-auto">{header}</div> : null}
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/20 p-3">
         <div className="flex flex-wrap gap-1">
-          <span className="mr-2 self-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <span className="mr-2 hidden self-center text-xs font-semibold uppercase sm:inline tracking-wide text-muted-foreground">
             Vistas
           </span>
           {planningViews.map((view) => {
@@ -154,7 +167,7 @@ function ScopedPlanningWorkspaceLayout({
                 }
               >
                 <Icon className="mr-2 h-4 w-4" />
-                {labels[view]}
+                <span className="sm:hidden">{view === "spaces" ? "Espacios" : labels[view]}</span><span className="hidden sm:inline">{labels[view]}</span>
               </Button>
             );
           })}
@@ -182,13 +195,13 @@ function ScopedPlanningWorkspaceLayout({
               aria-label={`Distribución ${label.toLowerCase()}`}
               onClick={() => setLayout(value)}
             >
-              <Icon className="mr-1 h-4 w-4" />
-              {label}
+              <Icon className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">{label}</span>
             </Button>
           ))}
         </div>
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className={`${workspaceFullscreen ? "hidden sm:block " : ""}text-xs text-muted-foreground`}>
         Un mismo borrador en todas las vistas. Los filtros, el zoom y la
         distribución sólo cambian tu visualización.
       </p>

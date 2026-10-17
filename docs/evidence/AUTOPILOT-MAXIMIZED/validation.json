@@ -1,0 +1,19 @@
+{
+  "unitTests": {
+    "total": 83,
+    "pass": 83,
+    "fail": 0
+  },
+  "typescript": "PASS",
+  "integrationTypescript": "PASS",
+  "build": "PASS",
+  "migrationSequence": "PASS",
+  "diffCheck": "PASS",
+  "realHttpAssistedChromium": "PASS",
+  "simulatedCase": "React Query AbortError with cached plan; retained DOM, then real Stages complete",
+  "ui01bFullNavigation": "FAIL identical to base: sticky zone heading -113 != 207",
+  "ui01bViewport": "FAIL identical to base: two-horizontal/start-250/spaces fit drift",
+  "merge": false,
+  "replitPublication": false,
+  "remoteWrites": 0
+}
