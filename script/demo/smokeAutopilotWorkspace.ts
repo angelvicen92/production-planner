@@ -50,6 +50,7 @@ export async function runAutopilotWorkspace({ appUrl, users, planId, directory, 
     assert.equal(await workspace.getByRole("progressbar").count(), 1);
     assert.equal(await page.getByRole("progressbar").count(), 1);
     const header = await workspace.getByTestId("assisted-autopilot").boundingBox();
+    assert.ok(header && header.height <= 115, `Autopilot header should remain compact: ${header?.height}px`);
     const panes = await workspace.locator(".planning-panes").boundingBox();
     assert.ok(header && panes && header.y + header.height <= panes.y && panes.height > 200);
     await page.keyboard.press("Escape");
