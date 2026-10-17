@@ -247,3 +247,13 @@ body[data-planning-fullscreen="true"] [data-radix-popper-content-wrapper] {
 @media (max-width: 639px) {
   .planning-workspace-fullscreen .planning-panes { grid-auto-rows: minmax(22rem, 1fr); overflow-y: auto; }
 }
+
+/* Autopilot presentation: give the planning canvas almost all viewport space. */
+.planning-workspace-fullscreen.planning-autopilot-presentation { gap: 4px; padding: 6px; }
+.planning-autopilot-presentation > .rounded-lg { padding: 5px 8px; gap: 6px; }
+.planning-autopilot-presentation .planning-panel-toolbar { margin-bottom: 4px; padding: 4px 6px; gap: 4px; }
+.planning-autopilot-presentation [data-testid^="planning-panel-"] { padding: 4px; }
+.planning-autopilot-presentation .planning-panel-content > .mb-3 { margin-bottom: 4px; }
+@media (min-width: 900px) {
+  .planning-autopilot-presentation .planning-panel-toolbar { flex-direction: row; align-items: center; justify-content: space-between; }
+}
