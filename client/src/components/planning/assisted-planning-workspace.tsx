@@ -186,11 +186,17 @@ export const AssistedPlanningWorkspace = memo(function AssistedPlanningWorkspace
   <Button size="sm" variant="outline" disabled={!!busy||!state.session?.draftScopeJson?.editLedger?.length} onClick={()=>mutate("undo",()=>apiRequest("POST",`/api/plans/${planId}/assisted/draft/undo`,guard()))}>Deshacer edición</Button><Button size="sm" variant="outline" disabled={!!busy||!state.session?.draftScopeJson?.redoLedger?.length} onClick={()=>mutate("redo-edit",()=>apiRequest("POST",`/api/plans/${planId}/assisted/draft/redo`,guard()))}>Rehacer edición</Button>
 </fieldset></DayCollapsibleSection>}
   />;
-  const autopilotHeader=authorized.current&&(isAutopilotClean(state)||autopilotProgress)?<Card className="border-border p-3 space-y-2" data-testid="assisted-autopilot">
-      <div className="flex flex-wrap items-center gap-2">{busy!=="autopilot"&&isAutopilotClean(state)?<Button disabled={!!busy||pendingTimelineEdits>0} onClick={startAutopilot}>Completar automáticamente</Button>:null}
-      {busy==="autopilot"?<Button variant="outline" disabled={autopilotProgress?.stopRequested} onClick={()=>autopilot.current?.requestStop()}>Detener al terminar la etapa</Button>:null}</div>
-
-      {autopilotProgress?<AssistedAutopilotProgress progress={autopilotProgress} view={projectAutopilotProgress(autopilotProgress,plan.dailyTasks??[],scopeSpaces)}/>:null}
+  const autopilotView=autopilotProgress?projectAutopilotProgress(autopilotProgress,plan.dailyTasks??[],scopeSpaces):null;
+  const autopilotHeader=(maximized:boolean)=>authorized.current&&(isAutopilotClean(state)||autopilotProgress)?<Card className={maximized&&autopilotProgress?"min-w-0 border-border p-2":"border-border p-3 space-y-2"} data-testid="assisted-autopilot">
+      {maximized&&autopilotProgress&&autopilotView?<div className="flex min-w-0 items-center gap-3">
+        <AssistedAutopilotProgress compact progress={autopilotProgress} view={autopilotView}/>
+        {busy==="autopilot"?<Button size="sm" variant="outline" className="h-8 shrink-0 text-xs" disabled={autopilotProgress.stopRequested} onClick={()=>autopilot.current?.requestStop()}>Detener al terminar la etapa</Button>:null}
+        {busy!=="autopilot"&&autopilotProgress.phase!=="COMPLETE"&&isAutopilotClean(state)?<Button size="sm" className="h-8 shrink-0 text-xs" onClick={startAutopilot}>Completar automáticamente</Button>:null}
+      </div>:<>
+        <div className="flex flex-wrap items-center gap-2">{busy!=="autopilot"&&isAutopilotClean(state)?<Button disabled={!!busy||pendingTimelineEdits>0} onClick={startAutopilot}>Completar automáticamente</Button>:null}
+        {busy==="autopilot"?<Button variant="outline" disabled={autopilotProgress?.stopRequested} onClick={()=>autopilot.current?.requestStop()}>Detener al terminar la etapa</Button>:null}</div>
+        {autopilotProgress&&autopilotView?<AssistedAutopilotProgress progress={autopilotProgress} view={autopilotView}/>:null}
+      </>}
     </Card>:null;
   const acceptedSnapshot=autopilotProgress&&autopilotCheckpoint?autopilotCheckpoint.activeStage.snapshotJson:active?.snapshotJson;
   return <div className="space-y-3" data-testid="assisted-workspace">
@@ -224,6 +230,6 @@ export const AssistedPlanningWorkspace = memo(function AssistedPlanningWorkspace
     {viewControls}
     {composedOperations.length>0&&<details data-testid="anchored-operations"><summary>Operaciones acompañadas · {composedOperations.length}</summary><ul>{composedOperations.map(operation=><li key={operation.id} data-testid="anchored-operation">Acompañamiento · {operation.status==='CONTINUOUS'?`${operation.start}–${operation.end} · ${operation.durationMinutes} min · Ensayo incluido ${operation.anchorOccupation?.durationMinutes} min`:'Pendiente de completar'} · 1 operación</li>)}</ul></details>}
     <div className="flex flex-wrap items-center gap-2"><span className="text-sm font-medium">Planificación consultada</span><Button size="sm" variant={viewAuthority==="draft"?"default":"outline"} onClick={()=>setViewAuthority("draft")}>Edición del borrador</Button><Button size="sm" variant={viewAuthority==="accepted"?"default":"outline"} disabled={pendingTimelineEdits>0} onClick={()=>setViewAuthority("accepted")}>Planning aceptado · ejecución</Button>{viewAuthority==="accepted"?<><Badge variant="outline">Sin arrastre · acciones según autoridad</Badge><Button size="sm" variant="outline" onClick={onOpenExecution}>Abrir ejecución</Button></>:null}</div>
-    <PlanningWorkspaceLayout planId={planId} header={autopilotHeader} maximizeRequest={maximizeRequest} onPendingEditsChange={setPendingTimelineEdits} timelineProps={{...timelineProps as any,operationalMeals,onTaskStatusChange:busy!=="autopilot"&&viewAuthority==="accepted"?timelineProps.onTaskStatusChange:undefined,plan:viewAuthority==="accepted"?{...plan,dailyTasks:buildAssistedPlanningView(plan.dailyTasks??[],acceptedSnapshot)}:assistedPlan,mode:viewAuthority==="accepted"?"accepted":"assisted-draft",readOnly:busy==="autopilot"||viewAuthority==="accepted"||preview?.outcome==="PROPOSAL"||!authorized.current,taskVisualStates:viewAuthority==="draft"?visual:{},onApplyManualEdits:viewAuthority==="draft"&&authorized.current&&busy!=="autopilot"?applyTimelineEdits:undefined}} />
+    <PlanningWorkspaceLayout planId={planId} header={autopilotHeader} maximizeRequest={maximizeRequest} presentationMode={busy==="autopilot"||!!autopilotProgress} onPendingEditsChange={setPendingTimelineEdits} timelineProps={{...timelineProps as any,operationalMeals,onTaskStatusChange:busy!=="autopilot"&&viewAuthority==="accepted"?timelineProps.onTaskStatusChange:undefined,plan:viewAuthority==="accepted"?{...plan,dailyTasks:buildAssistedPlanningView(plan.dailyTasks??[],acceptedSnapshot)}:assistedPlan,mode:viewAuthority==="accepted"?"accepted":"assisted-draft",readOnly:busy==="autopilot"||viewAuthority==="accepted"||preview?.outcome==="PROPOSAL"||!authorized.current,taskVisualStates:viewAuthority==="draft"?visual:{},onApplyManualEdits:viewAuthority==="draft"&&authorized.current&&busy!=="autopilot"?applyTimelineEdits:undefined}} />
   </div>;
 });

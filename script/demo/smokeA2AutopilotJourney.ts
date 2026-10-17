@@ -59,8 +59,15 @@ export async function runA2AutopilotJourney(options: Options, baseline: Baseline
         return ["FAILED", "STOPPED", "COMPLETE"].includes(phase ?? "");
       }, undefined, { timeout: 600_000 });
       assert.equal(await page!.getByTestId("assisted-autopilot-progress").getAttribute("data-phase"), expected, await page!.getByTestId("assisted-autopilot-progress").innerText());
-      await page!.getByRole("button", { name: "Completar automáticamente", exact: true }).waitFor({ state: "visible" });
-      await page!.waitForFunction(() => [...document.querySelectorAll("button")].some(b => b.textContent === "Completar automáticamente" && !b.disabled));
+      if (expected === "STOPPED") {
+        // A stopped Stage must remain restartable without leaving maximized mode.
+        await page!.getByRole("button", { name: "Completar automáticamente", exact: true }).waitFor({ state: "visible" });
+        await page!.waitForFunction(() => [...document.querySelectorAll("button")].some(b => b.textContent === "Completar automáticamente" && !b.disabled));
+      } else {
+        // The completed showcase intentionally keeps the result on screen rather
+        // than offering a redundant start button before the operator restores it.
+        assert.equal(await page!.getByRole("progressbar").getAttribute("aria-valuenow"), "100");
+      }
     };
     const start = async (doubleClick = false) => {
       const button = page!.getByRole("button", { name: "Completar automáticamente", exact: true });

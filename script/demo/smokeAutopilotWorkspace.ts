@@ -50,6 +50,7 @@ export async function runAutopilotWorkspace({ appUrl, users, planId, directory, 
     assert.equal(await workspace.getByRole("progressbar").count(), 1);
     assert.equal(await page.getByRole("progressbar").count(), 1);
     const header = await workspace.getByTestId("assisted-autopilot").boundingBox();
+    assert.ok(header && header.height <= 115, `Autopilot header should remain compact: ${header?.height}px`);
     const panes = await workspace.locator(".planning-panes").boundingBox();
     assert.ok(header && panes && header.y + header.height <= panes.y && panes.height > 200);
     await page.keyboard.press("Escape");
@@ -123,6 +124,34 @@ export async function runAutopilotWorkspace({ appUrl, users, planId, directory, 
     assert.equal(await workspace.getAttribute("data-workspace-fullscreen"), "true");
     await page.screenshot({ path: `${directory}/autopilot-workspace-complete.png` });
     report.final = final;
+    // Validate a one-view presentation on the user's reported 1909x935 display.
+    // A manual re-maximization reuses the same transient one-shot fit signal.
+    await workspace.getByRole("button", { name: "Mostrar Platós y espacios", exact: true }).click();
+    await page.setViewportSize({ width: 1909, height: 935 });
+    await page.getByRole("button", { name: "Restaurar conjunto (Esc)", exact: true }).click();
+    await page.getByRole("button", { name: "Maximizar conjunto", exact: true }).click();
+    await page.waitForFunction(() => {
+      const panel = document.querySelector('[data-testid="planning-panel-contestants"]');
+      return panel && Number(panel.querySelector('.planning-panel')?.getAttribute('data-zoom-x')) > 105;
+    });
+    const geometry = await workspace.getByTestId("planning-panel-contestants").evaluate(panel => {
+      const viewport = panel.querySelector<HTMLElement>(".planning-scroll-viewport")!;
+      const rows = [...panel.querySelectorAll<HTMLElement>("[data-planning-lane]")];
+      const header = document.querySelector<HTMLElement>('[data-testid="assisted-autopilot"]')!;
+      return { rows: rows.length, viewportHeight: viewport.clientHeight, contentHeight: viewport.scrollHeight,
+        viewportWidth: viewport.clientWidth, contentWidth: viewport.scrollWidth,
+        headerHeight: Math.round(header.getBoundingClientRect().height),
+        zoomX: Number(panel.querySelector('.planning-panel')?.getAttribute('data-zoom-x')),
+        zoomY: Number(panel.querySelector('.planning-panel')?.getAttribute('data-zoom-y')) };
+    });
+    report.oneView1909x935 = geometry;
+    await page.screenshot({ path: `${directory}/autopilot-workspace-one-view-1909.png` });
+    assert.equal(geometry.rows, 19, "every contestant lane must remain rendered");
+    assert.ok(geometry.contentHeight <= geometry.viewportHeight + 22, `vertical clipping: ${JSON.stringify(geometry)}`);
+    assert.ok(geometry.contentWidth <= geometry.viewportWidth + 22, `horizontal clipping: ${JSON.stringify(geometry)}`);
+    assert.ok(geometry.contentWidth >= geometry.viewportWidth * 0.84, `unused width: ${JSON.stringify(geometry)}`);
+    assert.ok(geometry.headerHeight <= 115, `header not compact: ${JSON.stringify(geometry)}`);
+    await workspace.getByRole("button", { name: "Mostrar Platós y espacios", exact: true }).click();
     await page.getByRole("button", { name: "Restaurar conjunto (Esc)", exact: true }).click();
     assert.equal(await workspace.getAttribute("data-workspace-fullscreen"), "false");
     assert.deepEqual(await preferences(), before);

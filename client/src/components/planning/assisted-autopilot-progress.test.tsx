@@ -35,3 +35,15 @@ test("complete, stopped and failed renders preserve achieved global progress and
     assert.match(html, /Plató 7/); assert.doesNotMatch(html, /Generando propuesta/);
   }
 });
+
+test("maximized presentation keeps one compact verified-progress bar with stage and scope", () => {
+  const html = renderToStaticMarkup(<AssistedAutopilotProgress compact progress={progress} view={projectAutopilotProgress(progress, [{ id: 1, template: { name: "Grabación" } }], [{ id: 7, name: "Plató 7" }])} />);
+  assert.equal((html.match(/role="progressbar"/g) ?? []).length, 1);
+  assert.match(html, /47 de 266 tareas/);
+  assert.match(html, /Etapa 5/);
+  assert.match(html, /Generando propuesta/);
+  assert.match(html, /Plató 7/);
+  assert.doesNotMatch(html, /Tipos de tarea:|Quedan 219 tareas/);
+  assert.match(html, /aria-valuenow="17\.669/);
+  assert.match(html, /aria-live="polite"/);
+});
