@@ -1294,7 +1294,9 @@ ${reasonMessage}` : message,
     setTimeLockDialog({ open: true, task, start, end });
   };
 
-  if (planLoading || planError || planReconnecting) {
+  // A background timeout must not dispose Assisted's active controller or its
+  // retained views when a usable plan is already cached.
+  if (planLoading || planError || (planReconnecting && !(plan && planningMode === "assisted"))) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-[60vh] px-4">
@@ -1853,6 +1855,7 @@ ${reasonMessage}` : message,
     <Layout>
       <div className="w-full">
         <div className="mx-auto w-full max-w-[1800px] space-y-5">
+        {planReconnecting ? <p role="status" className="text-sm text-muted-foreground">Reconectando con el plan. Se conserva la última planificación confirmada.</p> : null}
         <DayHeader plan={plan as any} onNavigate={setActiveTab} onBack={() => setLocation("/plans")} />
         <Tabs
           value={activeTab}

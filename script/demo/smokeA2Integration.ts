@@ -58,6 +58,7 @@ if(process.argv.includes('--app')){
  const workspaceSetup=process.argv.includes("--workspace-setup");
  const stageOrder=process.argv.includes('--stage-order');
  const autopilot=process.argv.includes('--autopilot');
+ const autopilotWorkspace=process.argv.includes('--autopilot-workspace');
  assert.ok(!realityScope||(full&&historicalTopology),'--reality-scope requires a complete disposable historical A2');
  assert.ok(!stageOrder||full,'--stage-order requires the complete real baseline (--full)');
  assert.ok(!autopilot||full,'--autopilot requires the complete real baseline (--full)');
@@ -83,6 +84,7 @@ if(process.argv.includes('--app')){
  if(warRoom)runtimeFiles.push('script/demo/smokeWarRoomJourney.ts','server/incidents.ts','server/incidentErrors.ts','shared/incidents.ts','client/src/pages/my-day.tsx','client/src/pages/war-room.tsx','client/src/hooks/use-war-room.ts','client/src/hooks/use-plan-realtime.ts','client/src/lib/war-room-store.ts','client/src/pages/dashboard.tsx','client/src/pages/call-sheet.tsx','server/apiAuthorization.ts','shared/routes.ts','shared/schema.ts','supabase/migrations/094_operational_incidents.sql');
  runtimeFiles.push('client/src/hooks/use-execution-context.ts','client/src/hooks/use-tasks.ts','client/src/hooks/use-production-clock.ts','shared/execution.ts','script/demo/smokeLiveExecutionJourney.ts');
  if(stageOrder)runtimeFiles.push('script/demo/probeA2StageOrder.ts','server/assistedScopeOrchestrator.ts');
+ if(autopilotWorkspace)runtimeFiles.push('script/demo/smokeAutopilotWorkspace.ts','client/src/components/planning/assisted-autopilot-progress.tsx','client/src/lib/assisted-autopilot.ts','client/src/lib/assisted-autopilot-progress.ts');
  if(autopilot)runtimeFiles.push('shared/assistedAutopilot.ts','client/src/lib/assisted-autopilot.ts','script/demo/smokeA2AutopilotJourney.ts');
  if(settingsSections)runtimeFiles.push('script/demo/smokeSettingsSections.ts','script/demo/smokeSettingsOperations.ts','client/src/pages/settings.tsx','client/src/components/settings/settings-section.tsx','client/src/hooks/use-settings-section.ts','client/src/lib/settings-section-preferences.ts','client/src/components/general-program-settings.tsx','client/src/components/general-optimizer-settings.tsx','client/src/components/control-room-settings.tsx','client/src/components/transport-settings-card.tsx','client/src/components/resources-list.tsx','client/src/components/create-resource-pool.tsx','client/src/components/settings/users-admin.tsx');
  if(templateCreation)runtimeFiles.push('script/demo/smokeTemplateCreation.ts','server/apiAuthorization.ts','server/middleware/requireAuth.ts','server/authz.ts','shared/routes.ts','shared/schema.ts','client/src/pages/settings.tsx');
@@ -248,7 +250,8 @@ if(process.argv.includes('--app')){
    else if(warRoom){const {runWarRoomJourney}=await import('./smokeWarRoomJourney');report.warRoom=await runWarRoomJourney({...options,planId:27001});}
    else {const {runLiveExecutionJourney}=await import('./smokeLiveExecutionJourney');report.liveExecution=await runLiveExecutionJourney({...options,planId:27001});}
    assert.equal(await otherDays(),untouched);pass('other disposable days remain literal during accepted-snapshot execution');
-  }else report.journey=workspaceSetup?await runDayWorkspaceSetup(options):await runA2BrowserJourney(options);
+  }else if(autopilotWorkspace){const {runAutopilotWorkspace}=await import('./smokeAutopilotWorkspace');report.autopilotWorkspace=await runAutopilotWorkspace(options);}
+  else report.journey=workspaceSetup?await runDayWorkspaceSetup(options):await runA2BrowserJourney(options);
   if(stageOrder){const {probeA2StageOrder}=await import('./probeA2StageOrder');report.stageOrder=await probeA2StageOrder(options,report.journey,initialInput);}
   if(autopilot){const {runA2AutopilotJourney}=await import('./smokeA2AutopilotJourney');report.autopilot=await runA2AutopilotJourney(options,report.journey);}
   if(historicalTopology&&!liveSnapshot){

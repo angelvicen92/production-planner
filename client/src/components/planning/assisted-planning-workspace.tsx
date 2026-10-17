@@ -22,8 +22,8 @@ import { cascadeTasks, reorderTasks, resetTasksToBase, shiftTasks, swapTasks, ty
 import { collectAssistedDraftWarnings } from "@/lib/assisted-draft-warnings";
 import { summarizeConfigRefreshChange } from "@/lib/config-refresh-summary";
 import { useUserRole } from "@/hooks/use-user-role";
-import { AssistedAutopilot, autopilotErrorMessage, isAutopilotClean, type AutopilotProgress } from "@shared/assistedAutopilot";
-import { assistedAutopilotApi, hasAutopilotDraftAlerts } from "@/lib/assisted-autopilot";
+import { AssistedAutopilot, autopilotErrorMessage, isAutopilotClean, type AutopilotProgress, type AutopilotState } from "@shared/assistedAutopilot";
+import { assistedAutopilotApi, hasAutopilotDraftAlerts, observeAutopilotCheckpoints } from "@/lib/assisted-autopilot";
 import { projectAutopilotProgress } from "@/lib/assisted-autopilot-progress";
 import { AssistedAutopilotProgress } from "./assisted-autopilot-progress";
 import type { AssistedStageTiming } from "@shared/assistedStageTiming";
@@ -54,6 +54,8 @@ export const AssistedPlanningWorkspace = memo(function AssistedPlanningWorkspace
   const {role}=useUserRole();const authorized=useRef(false);authorized.current=role==="admin"||role==="production";
   const autopilot=useRef<AssistedAutopilot|null>(null);
   const [autopilotProgress,setAutopilotProgress]=useState<AutopilotProgress|null>(null);
+  const [autopilotCheckpoint,setAutopilotCheckpoint]=useState<AutopilotState|null>(null);
+  const [maximizeRequest,setMaximizeRequest]=useState(0);
   useEffect(()=>()=>{autopilot.current?.dispose();autopilot.current=null;},[planId]);
   const [pendingTimelineEdits,setPendingTimelineEdits]=useState(0);
   const [viewAuthority,setViewAuthority]=useState<"draft"|"accepted">("draft");
@@ -69,7 +71,7 @@ export const AssistedPlanningWorkspace = memo(function AssistedPlanningWorkspace
   useEffect(()=>{if(stateQ.isError&&isMissingAssistedSession(stateQ.error))bootstrap();},[planId,stateQ.isError,role]);
   const pollQ=useQuery({queryKey:["assisted-proposal",planId,runId],queryFn:()=>apiRequest<any>("GET",`/api/plans/${planId}/assisted/proposals/${runId}`),enabled:runId!=null,refetchInterval:q=>{const s=(q.state.data as any)?.status;return s==="running"||s==="queued"?1000:false;}});
   useEffect(()=>{const run=pollQ.data;if(!run||autopilot.current)return;const status=run.status;if(status==="success"){setPreview(run.assisted_result_json??run.assistedResultJson);setBusy(null);}else if(status==="error"){setMessage("No se pudo generar una propuesta con la selección actual. Revisa disponibilidad y conflictos.");setBusy(null);}},[pollQ.data]);
-  const state=stateQ.data; const draft=state?.draft??state?.session?.draftSnapshotJson; const active=state?.activeStage;
+  const state=busy==="autopilot"&&autopilotCheckpoint?autopilotCheckpoint:stateQ.data; const draft=state?.draft??state?.session?.draftSnapshotJson; const active=state?.activeStage;
   const operationalMeals=useMemo(()=>resolvePlanningOperationalMeals(plan.plannerNextConfiguration,viewAuthority==="accepted"?active?.snapshotJson:draft,viewAuthority),[plan.plannerNextConfiguration,active,draft,viewAuthority]);
   const base=useMemo(()=>state?.history?.find((stage:any)=>Number(stage.id)===Number(state?.draftBaseStageId))?.snapshotJson??active?.snapshotJson??null,[state,active]);
   const scopeSpaces:ScopeSpace[]=spaces.map(space=>({id:Number(space.id),name:space.name,zoneId:space.zoneId==null?null:Number(space.zoneId)}));
@@ -86,7 +88,7 @@ export const AssistedPlanningWorkspace = memo(function AssistedPlanningWorkspace
   const guard=()=>({expectedDraftFingerprint:state.draftFingerprint,expectedBaseStageId:Number(state.draftBaseStageId)});
   const refresh=async(planToo=false)=>{await client.invalidateQueries({queryKey:key(planId)});await stateQ.refetch();if(planToo){await client.invalidateQueries({queryKey:planQueryKey(planId)});await client.refetchQueries({queryKey:planQueryKey(planId)});}};
   const clearProposal=()=>{setPreview(null);setRunId(null);};
-  const mutate=async(label:string,work:()=>Promise<any>,planToo=false)=>{if(autopilot.current||!authorized.current||busy)return false;setBusy(label);setMessage(null);try{await work();clearProposal();await refresh(planToo);return true;}catch(e:any){setMessage(operatorError(e));if(isAssistedConflict(e)){clearProposal();await refresh();}return false;}finally{setBusy(null);}};
+  const mutate=async(label:string,work:()=>Promise<any>,planToo=false)=>{if(autopilot.current||!authorized.current||busy)return false;setBusy(label);setMessage(null);setAutopilotProgress(null);setAutopilotCheckpoint(null);try{await work();clearProposal();await refresh(planToo);return true;}catch(e:any){setMessage(operatorError(e));if(isAssistedConflict(e)){clearProposal();await refresh();}return false;}finally{setBusy(null);}};
   const restart=()=>{
     if(busy||!authorized.current||autopilot.current)return;
     if(!window.confirm("Volverás al estado inicial de esta sesión (Etapa 0). Se descartarán los cambios del borrador y se restaurará el planning inicial. Las etapas posteriores permanecerán en el historial; la configuración vigente se conservará. ¿Reiniciar Asistida?"))return;
@@ -96,12 +98,18 @@ export const AssistedPlanningWorkspace = memo(function AssistedPlanningWorkspace
     },true);
   };
   const startAutopilot=()=>{
-    if(autopilot.current||busy||!authorized.current||!isAutopilotClean(state))return;
+    if(autopilot.current||busy||pendingTimelineEdits>0||!authorized.current||!isAutopilotClean(state))return;
     if(!window.confirm("Delegas la aceptación automática exclusivamente de etapas con propuesta completa y certificada, validación sin conflictos críticos ni desviaciones y sin alertas pendientes de decisión. Las etapas aceptadas se conservarán. Mantén esta pestaña abierta; puedes detenerte entre etapas. ¿Completar automáticamente?"))return;
-    clearProposal();setBusy("autopilot");setMessage(null);
-    const controller=new AssistedAutopilot(planId,assistedAutopilotApi(planId,apiRequest),{
+    clearProposal();setAutopilotCheckpoint(null);setViewAuthority("accepted");setBusy("autopilot");setMessage(null);
+    setMaximizeRequest(value=>value+1);
+    const checkpoints=observeAutopilotCheckpoints(assistedAutopilotApi(planId,apiRequest),(accepted,acceptedPlan)=>{
+      setAutopilotCheckpoint(accepted);
+      client.setQueryData(key(planId),accepted);
+      client.setQueryData(planQueryKey(planId),acceptedPlan);
+    });
+    const controller=new AssistedAutopilot(planId,checkpoints.api,{
       authorized:()=>authorized.current,hasPendingAlerts:hasAutopilotDraftAlerts,
-      onProgress:value=>{if(autopilot.current===controller){setAutopilotProgress(value);void client.invalidateQueries({queryKey:key(planId)});}},
+      onProgress:value=>{if(autopilot.current===controller){checkpoints.onProgress(value);setAutopilotProgress(value);}},
     });autopilot.current=controller;
     void controller.start().catch(error=>{if(autopilot.current===controller)setMessage(autopilotErrorMessage(error));}).finally(async()=>{
       if(autopilot.current!==controller)return;
@@ -178,13 +186,14 @@ export const AssistedPlanningWorkspace = memo(function AssistedPlanningWorkspace
   <Button size="sm" variant="outline" disabled={!!busy||!state.session?.draftScopeJson?.editLedger?.length} onClick={()=>mutate("undo",()=>apiRequest("POST",`/api/plans/${planId}/assisted/draft/undo`,guard()))}>Deshacer edición</Button><Button size="sm" variant="outline" disabled={!!busy||!state.session?.draftScopeJson?.redoLedger?.length} onClick={()=>mutate("redo-edit",()=>apiRequest("POST",`/api/plans/${planId}/assisted/draft/redo`,guard()))}>Rehacer edición</Button>
 </fieldset></DayCollapsibleSection>}
   />;
-  return <div className="space-y-3" data-testid="assisted-workspace">
-    {authorized.current&&(isAutopilotClean(state)||autopilotProgress)?<Card className="border-border p-3 space-y-2" data-testid="assisted-autopilot">
-      <div className="flex flex-wrap items-center gap-2">{isAutopilotClean(state)?<Button disabled={!!busy||pendingTimelineEdits>0} onClick={startAutopilot}>Completar automáticamente</Button>:null}
+  const autopilotHeader=authorized.current&&(isAutopilotClean(state)||autopilotProgress)?<Card className="border-border p-3 space-y-2" data-testid="assisted-autopilot">
+      <div className="flex flex-wrap items-center gap-2">{busy!=="autopilot"&&isAutopilotClean(state)?<Button disabled={!!busy||pendingTimelineEdits>0} onClick={startAutopilot}>Completar automáticamente</Button>:null}
       {busy==="autopilot"?<Button variant="outline" disabled={autopilotProgress?.stopRequested} onClick={()=>autopilot.current?.requestStop()}>Detener al terminar la etapa</Button>:null}</div>
-      <p className="text-sm text-muted-foreground">Mantén la pestaña abierta. Las etapas aceptadas se conservarán al detenerte o recargar.</p>
+
       {autopilotProgress?<AssistedAutopilotProgress progress={autopilotProgress} view={projectAutopilotProgress(autopilotProgress,plan.dailyTasks??[],scopeSpaces)}/>:null}
-    </Card>:null}
+    </Card>:null;
+  const acceptedSnapshot=autopilotProgress&&autopilotCheckpoint?autopilotCheckpoint.activeStage.snapshotJson:active?.snapshotJson;
+  return <div className="space-y-3" data-testid="assisted-workspace">
     <DayCollapsibleSection title="Configuración y mantenimiento de la sesión" open={maintenanceOpen} onOpenChange={setMaintenanceOpen} testId="section-assisted-maintenance"><div className="space-y-3">    {authorized.current?<Button variant="outline" disabled={!!busy||pendingTimelineEdits>0} onClick={restart}>Reiniciar Asistida</Button>:null}
     <Card className="border-border p-3 space-y-2" data-testid="assisted-config-refresh"><div className="flex items-center gap-2"><strong>Configuración del día</strong><Button size="sm" variant="outline" disabled={!!busy} onClick={previewConfig}>Actualizar desde configuración general</Button></div>
     {configPreview?<><p className="text-sm">La configuración se materializa automáticamente al crear el día. Esta actualización sólo sirve para poner al día jornadas existentes; no es una tarea diaria obligatoria. Revisa y elige qué cambios compatibles incorporar. Las etapas aceptadas y sus decisiones no se modificarán.</p>{configPreview.localOverrides?.length>0?<div className="rounded border p-2 text-sm"><b>Ajustes locales existentes en el día:</b><ul className="list-disc pl-5">{configPreview.localOverrides.map((item:any)=><li key={item.key}>{item.label} <Badge variant="outline">Ajuste local del día</Badge></li>)}</ul></div>:null}{configPreview.changes.length===0?<p className="text-sm text-muted-foreground">{configPreview.unsupportedAuthorities.length===0?"La configuración del día ya está actualizada.":"No hay cambios en las categorías compatibles."}</p>:<div className="space-y-1">{configPreview.changes.map((change:any)=><label key={change.key} className="flex items-start gap-2 rounded border p-2 text-sm"><Checkbox aria-label={`Incluir ${change.label}`} checked={configSelection.includes(change.key)} onCheckedChange={value=>setConfigSelection(old=>value?[...old,change.key]:old.filter(key=>key!==change.key))}/><span><b>{change.label}</b> · {change.kind==="NEW"?"Nuevo":change.kind==="REMOVED"?"Eliminado":"Modificado"}{change.localOverride?<Badge variant="outline" className="ml-2">Ajuste local del día</Badge>:null}<small className="block text-muted-foreground">{change.category} · Origen actual: {change.currentSource??"no disponible"} · Impacto: {change.impact==="REVALIDATE"?"requiere revalidar":"desconocido"}</small><ul className="list-disc pl-5 text-xs text-muted-foreground">{summarizeConfigRefreshChange(change).map(summary=><li key={summary}>{summary}</li>)}</ul>{change.incompatibilities?.length?<small className="block text-destructive">Incompatibilidades: {change.incompatibilities.join(", ")}</small>:null}</span></label>)}</div>}{configPreview.unsupportedAuthorities.length>0?<div className="rounded border border-amber-300 bg-amber-50 p-2 text-sm"><b>Categorías aún no comparables:</b><ul className="list-disc pl-5">{configPreview.unsupportedAuthorities.map((item:any)=><li key={item.authority}>{item.label}</li>)}</ul></div>:null}<div className="flex gap-2"><Button size="sm" disabled={!!busy||configSelection.length===0} onClick={applyConfig}>Aplicar selección</Button><Button size="sm" variant="outline" disabled={configPreview.changes.length===0} onClick={()=>setConfigSelection(configPreview.changes.map((x:any)=>x.key))}>Seleccionar todos los cambios compatibles</Button><Button size="sm" variant="ghost" onClick={()=>setConfigPreview(null)}>Cerrar</Button></div></>:null}</Card>
@@ -215,6 +224,6 @@ export const AssistedPlanningWorkspace = memo(function AssistedPlanningWorkspace
     {viewControls}
     {composedOperations.length>0&&<details data-testid="anchored-operations"><summary>Operaciones acompañadas · {composedOperations.length}</summary><ul>{composedOperations.map(operation=><li key={operation.id} data-testid="anchored-operation">Acompañamiento · {operation.status==='CONTINUOUS'?`${operation.start}–${operation.end} · ${operation.durationMinutes} min · Ensayo incluido ${operation.anchorOccupation?.durationMinutes} min`:'Pendiente de completar'} · 1 operación</li>)}</ul></details>}
     <div className="flex flex-wrap items-center gap-2"><span className="text-sm font-medium">Planificación consultada</span><Button size="sm" variant={viewAuthority==="draft"?"default":"outline"} onClick={()=>setViewAuthority("draft")}>Edición del borrador</Button><Button size="sm" variant={viewAuthority==="accepted"?"default":"outline"} disabled={pendingTimelineEdits>0} onClick={()=>setViewAuthority("accepted")}>Planning aceptado · ejecución</Button>{viewAuthority==="accepted"?<><Badge variant="outline">Sin arrastre · acciones según autoridad</Badge><Button size="sm" variant="outline" onClick={onOpenExecution}>Abrir ejecución</Button></>:null}</div>
-    <PlanningWorkspaceLayout planId={planId} onPendingEditsChange={setPendingTimelineEdits} timelineProps={{...timelineProps as any,operationalMeals,onTaskStatusChange:viewAuthority==="accepted"?timelineProps.onTaskStatusChange:undefined,plan:viewAuthority==="accepted"?{...plan,dailyTasks:buildAssistedPlanningView(plan.dailyTasks??[],active?.snapshotJson)}:assistedPlan,mode:viewAuthority==="accepted"?"accepted":"assisted-draft",readOnly:viewAuthority==="accepted"||preview?.outcome==="PROPOSAL"||!authorized.current,taskVisualStates:viewAuthority==="draft"?visual:{},onApplyManualEdits:viewAuthority==="draft"&&authorized.current?applyTimelineEdits:undefined}} />
+    <PlanningWorkspaceLayout planId={planId} header={autopilotHeader} maximizeRequest={maximizeRequest} onPendingEditsChange={setPendingTimelineEdits} timelineProps={{...timelineProps as any,operationalMeals,onTaskStatusChange:busy!=="autopilot"&&viewAuthority==="accepted"?timelineProps.onTaskStatusChange:undefined,plan:viewAuthority==="accepted"?{...plan,dailyTasks:buildAssistedPlanningView(plan.dailyTasks??[],acceptedSnapshot)}:assistedPlan,mode:viewAuthority==="accepted"?"accepted":"assisted-draft",readOnly:busy==="autopilot"||viewAuthority==="accepted"||preview?.outcome==="PROPOSAL"||!authorized.current,taskVisualStates:viewAuthority==="draft"?visual:{},onApplyManualEdits:viewAuthority==="draft"&&authorized.current&&busy!=="autopilot"?applyTimelineEdits:undefined}} />
   </div>;
 });

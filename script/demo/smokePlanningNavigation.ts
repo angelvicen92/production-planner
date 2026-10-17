@@ -42,6 +42,13 @@ export async function runPlanningNavigation({ appUrl, users, db, directory, pass
     }
     await login("production"); await open();
     const before = await material();
+    if (process.argv.includes("--viewport-only")) {
+      const { verifyPlanningViewport } = await import("./smokePlanningViewport");
+      report.viewport = await verifyPlanningViewport(page, directory, planId);
+      assert.deepEqual(await material(), before);
+      assert.deepEqual(errors, []);
+      report.status = "PASS"; return report;
+    }
     if (process.argv.includes("--viewport-baseline")) {
       const { runPlanningViewport } = await import("./smokePlanningViewport");
       report.viewport = await runPlanningViewport(page, directory, true);

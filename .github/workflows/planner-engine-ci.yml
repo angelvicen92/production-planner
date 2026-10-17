@@ -22,6 +22,7 @@ on:
       - "client/public/fonts/**"
       - "client/src/components/layout.tsx"
       - "client/src/components/planning/assisted-planning-workspace.tsx"
+      - "client/src/components/planning/assisted-autopilot-progress*"
       - "client/src/components/planning/stage-history-timing.tsx"
       - "client/src/components/planning-timeline.tsx"
       - "client/src/pages/plan-details.tsx"
@@ -55,6 +56,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  autopilot-workspace:
+    name: autopilot-workspace
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
+      - run: node --import tsx --test client/src/lib/assisted-autopilot-checkpoints.test.ts client/src/lib/assisted-autopilot-progress.test.ts client/src/components/planning/assisted-autopilot-progress.test.tsx
+      - run: npm run demo:a2:smoke -- work/autopilot-workspace --historical-topology --autopilot-workspace
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: autopilot-workspace
+          path: |
+            work/autopilot-workspace/integration.json
+            work/autopilot-workspace/autopilot-workspace.json
+            work/autopilot-workspace/autopilot-workspace-*.png
   a2-assisted-integration:
     name: a2-assisted-integration
     runs-on: ubuntu-latest

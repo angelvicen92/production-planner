@@ -243,3 +243,7 @@ body[data-planning-fullscreen="true"] [data-radix-popper-content-wrapper] {
 .planning-workspace-fullscreen .planning-retained > [data-testid] { height: 100%; min-height: 0; }
 .planning-workspace-fullscreen .planning-panel:not([data-fullscreen="true"]) { height: 100%; min-height: 0; }
 .planning-resource-task { overflow-wrap: anywhere; }
+
+@media (max-width: 639px) {
+  .planning-workspace-fullscreen .planning-panes { grid-auto-rows: minmax(22rem, 1fr); overflow-y: auto; }
+}
