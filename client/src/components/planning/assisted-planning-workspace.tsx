@@ -24,6 +24,8 @@ import { summarizeConfigRefreshChange } from "@/lib/config-refresh-summary";
 import { useUserRole } from "@/hooks/use-user-role";
 import { AssistedAutopilot, autopilotErrorMessage, isAutopilotClean, type AutopilotProgress } from "@shared/assistedAutopilot";
 import { assistedAutopilotApi, hasAutopilotDraftAlerts } from "@/lib/assisted-autopilot";
+import { projectAutopilotProgress } from "@/lib/assisted-autopilot-progress";
+import { AssistedAutopilotProgress } from "./assisted-autopilot-progress";
 import type { AssistedStageTiming } from "@shared/assistedStageTiming";
 import { AssistedStageHistory } from "./assisted-stage-history";
 import { buildAssistedHistory, stageObligations } from "@shared/assistedHistory";
@@ -180,12 +182,8 @@ export const AssistedPlanningWorkspace = memo(function AssistedPlanningWorkspace
     {authorized.current&&(isAutopilotClean(state)||autopilotProgress)?<Card className="border-border p-3 space-y-2" data-testid="assisted-autopilot">
       <div className="flex flex-wrap items-center gap-2">{isAutopilotClean(state)?<Button disabled={!!busy||pendingTimelineEdits>0} onClick={startAutopilot}>Completar automáticamente</Button>:null}
       {busy==="autopilot"?<Button variant="outline" disabled={autopilotProgress?.stopRequested} onClick={()=>autopilot.current?.requestStop()}>Detener al terminar la etapa</Button>:null}</div>
-      <p className="text-sm text-muted-foreground">Aceptará sólo propuestas certificadas con validación limpia. Mantén la pestaña abierta. Al detenerte o recargar se conservarán las etapas aceptadas.</p>
-      {autopilotProgress?<div role="status" aria-live="polite" data-testid="assisted-autopilot-progress" data-phase={autopilotProgress.phase} className="text-sm space-y-1">
-        <p>Etapa {autopilotProgress.stage} · {autopilotProgress.completed}/{autopilotProgress.total} tareas completadas</p>
-        {autopilotProgress.scope?<p>Alcance actual: {autopilotProgress.scopeTaskIds.length} obligaciones · {taskContext(autopilotProgress.scopeTaskIds)}</p>:null}
-        {autopilotProgress.runId?<p>Propuesta automática en curso</p>:null}<p>{autopilotProgress.message}</p>
-      </div>:null}
+      <p className="text-sm text-muted-foreground">Mantén la pestaña abierta. Las etapas aceptadas se conservarán al detenerte o recargar.</p>
+      {autopilotProgress?<AssistedAutopilotProgress progress={autopilotProgress} view={projectAutopilotProgress(autopilotProgress,plan.dailyTasks??[],scopeSpaces)}/>:null}
     </Card>:null}
     <DayCollapsibleSection title="Configuración y mantenimiento de la sesión" open={maintenanceOpen} onOpenChange={setMaintenanceOpen} testId="section-assisted-maintenance"><div className="space-y-3">    {authorized.current?<Button variant="outline" disabled={!!busy||pendingTimelineEdits>0} onClick={restart}>Reiniciar Asistida</Button>:null}
     <Card className="border-border p-3 space-y-2" data-testid="assisted-config-refresh"><div className="flex items-center gap-2"><strong>Configuración del día</strong><Button size="sm" variant="outline" disabled={!!busy} onClick={previewConfig}>Actualizar desde configuración general</Button></div>

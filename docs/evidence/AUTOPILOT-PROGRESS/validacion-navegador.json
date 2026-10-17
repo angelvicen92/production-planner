@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "scope": "Componente React real y proyector, con estados locales simulados; sin servidor ni escrituras remotas",
+  "checks": [
+    "Barra accesible y 47/266",
+    "Detalle técnico oculto y apertura por clic y teclado",
+    "Fases de propuesta/validación/aceptación mantienen progreso",
+    "Checkpoint confirmado avanza a 50/266",
+    "Parada, validación, sin propuesta y éxito conservan último ámbito",
+    "Final a 100%",
+    "Viewport móvil 375px sin desbordamiento",
+    "Sin errores de React o navegador"
+  ]
+}
