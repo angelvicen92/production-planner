@@ -191,6 +191,7 @@ export const AssistedPlanningWorkspace = memo(function AssistedPlanningWorkspace
       {maximized&&autopilotProgress&&autopilotView?<div className="flex min-w-0 items-center gap-3">
         <AssistedAutopilotProgress compact progress={autopilotProgress} view={autopilotView}/>
         {busy==="autopilot"?<Button size="sm" variant="outline" className="h-8 shrink-0 text-xs" disabled={autopilotProgress.stopRequested} onClick={()=>autopilot.current?.requestStop()}>Detener al terminar la etapa</Button>:null}
+        {busy!=="autopilot"&&autopilotProgress.phase!=="COMPLETE"&&isAutopilotClean(state)?<Button size="sm" className="h-8 shrink-0 text-xs" onClick={startAutopilot}>Completar automáticamente</Button>:null}
       </div>:<>
         <div className="flex flex-wrap items-center gap-2">{busy!=="autopilot"&&isAutopilotClean(state)?<Button disabled={!!busy||pendingTimelineEdits>0} onClick={startAutopilot}>Completar automáticamente</Button>:null}
         {busy==="autopilot"?<Button variant="outline" disabled={autopilotProgress?.stopRequested} onClick={()=>autopilot.current?.requestStop()}>Detener al terminar la etapa</Button>:null}</div>
