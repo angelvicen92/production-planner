@@ -3,8 +3,32 @@ import { CircleAlert, CircleCheck, CirclePause, Loader2 } from "lucide-react";
 import type { AutopilotProgress } from "@shared/assistedAutopilot";
 import type { AutopilotProgressView } from "@/lib/assisted-autopilot-progress";
 
-export function AssistedAutopilotProgress({ view, progress }: { view: AutopilotProgressView; progress: AutopilotProgress }) {
+export function AssistedAutopilotProgress({ view, progress, compact = false }: { view: AutopilotProgressView; progress: AutopilotProgress; compact?: boolean }) {
   const Icon = view.tone === "success" ? CircleCheck : view.tone === "warning" ? CircleAlert : view.tone === "stopped" ? CirclePause : Loader2;
+  if (compact) return <section data-testid="assisted-autopilot-progress" data-phase={progress.phase} className="min-w-0 flex-1 space-y-1">
+    <div className="flex min-w-0 items-center gap-2 text-xs sm:text-sm">
+      <strong className="shrink-0 tabular-nums">{view.completed} de {view.total} tareas</strong>
+      <div role="progressbar" aria-label="Progreso de la jornada planificada" aria-valuemin={0} aria-valuemax={100} aria-valuenow={view.percent} aria-valuetext={`${view.completed} de ${view.total} tareas completadas`} className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-secondary">
+        <div className="h-full rounded-full bg-primary transition-[width] motion-reduce:transition-none" style={{ width: `${view.percent}%` }} />
+      </div>
+      <strong className="shrink-0 tabular-nums">{view.percentLabel}%</strong>
+    </div>
+    <div className="flex min-w-0 items-center gap-2 text-xs">
+      <p role="status" aria-live="polite" className="flex min-w-0 flex-1 items-center gap-1">
+        <Icon aria-hidden="true" className={`h-3.5 w-3.5 shrink-0 ${view.tone === "running" ? "motion-safe:animate-spin text-primary" : "text-primary"}`} />
+        <span className="shrink-0">{view.terminal ? view.title : view.phaseLabel} · Etapa {progress.stage}</span>
+        {view.scopeLabel ? <span className="min-w-0 truncate text-muted-foreground" title={`${view.scopeCaption}: ${view.scopeLabel}`}>· {view.scopeCaption}: {view.scopeLabel}</span> : null}
+      </p>
+      <details className="relative shrink-0 text-muted-foreground" data-testid="assisted-autopilot-technical">
+        <summary className="cursor-pointer focus-visible:outline focus-visible:outline-2">Detalle</summary>
+        <div className="absolute right-0 top-full z-50 max-h-[45dvh] w-[min(85vw,28rem)] overflow-auto rounded border bg-card p-2 shadow-lg">
+          {view.guidance ? <p>{view.guidance}</p> : null}
+          <p>{progress.message}</p>
+          <pre className="whitespace-pre-wrap break-words">{JSON.stringify(progress, null, 2)}</pre>
+        </div>
+      </details>
+    </div>
+  </section>;
   return <section data-testid="assisted-autopilot-progress" data-phase={progress.phase} className="grid gap-2 sm:grid-cols-2 sm:gap-x-4">
     <div role="status" aria-live="polite" aria-atomic="true" className="space-y-1">
       <p className="text-xs font-medium text-muted-foreground">OptiPlan · Planificación automática</p>
