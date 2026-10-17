@@ -62,12 +62,14 @@ function ScopedPlanningWorkspaceLayout({
   onPendingEditsChange,
   header,
   maximizeRequest = 0,
+  presentationMode = false,
 }: {
   planId: number;
   timelineProps: TimelineProps;
   onPendingEditsChange?: (count:number)=>void;
-  header?: React.ReactNode;
+  header?: React.ReactNode | ((maximized:boolean)=>React.ReactNode);
   maximizeRequest?: number;
+  presentationMode?: boolean;
 }) {
   const { user } = useAuth();
   const preferenceKey = `optiplan:workspace:${user?.id ?? "session"}:${planId}`;
@@ -142,12 +144,13 @@ function ScopedPlanningWorkspaceLayout({
   return (
     <PlanningFullscreenContext.Provider value={{ activePanel, setActivePanel }}>
     <section
-      className={workspaceFullscreen ? "planning-workspace-fullscreen fixed inset-0 z-[90] flex min-h-0 flex-col gap-3 bg-background p-2 sm:p-4" : "space-y-3"}
+      className={workspaceFullscreen ? `planning-workspace-fullscreen fixed inset-0 z-[90] flex min-h-0 flex-col gap-3 bg-background p-2 sm:p-4 ${presentationMode?"planning-autopilot-presentation":""}` : "space-y-3"}
       data-workspace-fullscreen={workspaceFullscreen}
+      data-autopilot-presentation={workspaceFullscreen&&presentationMode}
       aria-label="Vistas de la planificación"
       data-testid="planning-multiview"
     >
-      {header ? <div className="shrink-0 max-h-[32dvh] sm:max-h-[45dvh] overflow-auto">{header}</div> : null}
+      {header ? <div className="shrink-0 max-h-[32dvh] sm:max-h-[45dvh]">{typeof header==="function"?header(workspaceFullscreen):header}</div> : null}
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/20 p-3">
         <div className="flex flex-wrap gap-1">
           <span className="mr-2 hidden self-center text-xs font-semibold uppercase sm:inline tracking-wide text-muted-foreground">
@@ -201,7 +204,7 @@ function ScopedPlanningWorkspaceLayout({
           ))}
         </div>
       </div>
-      <p className={`${workspaceFullscreen ? "hidden sm:block " : ""}text-xs text-muted-foreground`}>
+      <p className={`${workspaceFullscreen ? "hidden " : ""}text-xs text-muted-foreground`}>
         Un mismo borrador en todas las vistas. Los filtros, el zoom y la
         distribución sólo cambian tu visualización.
       </p>
@@ -273,6 +276,7 @@ function ScopedPlanningWorkspaceLayout({
             <PlanningViewPanel
               view={view}
               preferenceKey={`${preferenceKey}:${view}`}
+              fitOnceRequest={workspaceFullscreen&&presentationMode?maximizeRequest:0}
               timelineProps={sharedProps}
               hideDisabled={visible.length === 1}
               onMove={(direction) => moveView(view, direction)}
@@ -322,6 +326,7 @@ function RetainedView({
 function PlanningViewPanel({
   view,
   preferenceKey,
+  fitOnceRequest,
   timelineProps,
   onHide,
   hideDisabled,
@@ -331,6 +336,7 @@ function PlanningViewPanel({
 }: {
   view: PlanningView;
   preferenceKey: string;
+  fitOnceRequest: number;
   timelineProps: TimelineProps;
   onHide: () => void;
   hideDisabled: boolean;
@@ -475,6 +481,7 @@ function PlanningViewPanel({
       <FullscreenPlanningPanel
         title={labels[view]}
         viewKey={preferenceKey}
+        fitOnceRequest={fitOnceRequest}
         supportsZoom
         toolbarRight={controls}
       >
