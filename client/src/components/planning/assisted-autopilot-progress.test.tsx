@@ -44,6 +44,6 @@ test("maximized presentation keeps one compact verified-progress bar with stage 
   assert.match(html, /Generando propuesta/);
   assert.match(html, /Plató 7/);
   assert.doesNotMatch(html, /Tipos de tarea:|Quedan 219 tareas/);
-  assert.match(html, /aria-valuenow="17\\.669/);
+  assert.match(html, /aria-valuenow="17\.669/);
   assert.match(html, /aria-live="polite"/);
 });
