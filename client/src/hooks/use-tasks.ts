@@ -130,18 +130,19 @@ export function useUpdateTaskStatus() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   return useMutation({
-    mutationFn: ({ taskId, planId, status, expectedStatus }: {
+    mutationFn: ({ taskId, planId, status, expectedStatus, expectedVersion }: {
       taskId: number;
       planId: number;
       status: "pending" | "in_progress" | "done" | "interrupted" | "cancelled";
       expectedStatus?: string;
+      expectedVersion?: number;
       effectiveTimeHHMM?: string;
       effectiveSeconds?: number;
     }) => {
       const task = queryClient.getQueryData<any[]>(planTasksQueryKey(planId))?.find(t => Number(t.id) === taskId)
         ?? queryClient.getQueryData<any>(planQueryKey(planId))?.dailyTasks?.find((t: any) => Number(t.id) === taskId);
       return apiRequest("PATCH", buildUrl(api.dailyTasks.updateStatus.path, { id: taskId }), {
-        status, ...((expectedStatus ?? task?.status) ? { expectedStatus: expectedStatus ?? task.status } : {}),
+        status, expectedVersion, ...((expectedStatus ?? task?.status) ? { expectedStatus: expectedStatus ?? task.status } : {}),
       });
     },
     onSuccess: () => toast({ title: "Actividad actualizada", description: "Registro confirmado por el servidor." }),
