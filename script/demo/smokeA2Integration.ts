@@ -52,7 +52,8 @@ if(process.argv.includes('--app')){
  const remainingDaySections=process.argv.includes('--remaining-day-sections');
  const collapsibleSections=process.argv.includes('--collapsible-sections')||remainingDaySections;
  const planningNavigation=process.argv.includes('--planning-navigation');
- const liveSnapshot=process.argv.includes('--live-execution-snapshot')||warRoom||controlRoom||collapsibleSections||planningNavigation;
+ const productionScope=process.argv.includes('--production-scope');
+ const liveSnapshot=productionScope||process.argv.includes('--live-execution-snapshot')||warRoom||controlRoom||collapsibleSections||planningNavigation;
  assert.ok(!liveSnapshot||historicalTopology,'accepted snapshot replay requires --historical-topology');
  assert.ok(!liveExecution||full,'--live-execution requires a complete accepted baseline (--full)');
  const workspaceSetup=process.argv.includes("--workspace-setup");
@@ -80,6 +81,7 @@ if(process.argv.includes('--app')){
  if(remainingDaySections)runtimeFiles.push('script/demo/smokeRemainingDaySections.ts');
  if(planningNavigation)runtimeFiles.push('script/demo/smokePlanningNavigation.ts','script/demo/smokePlanningViewport.ts','client/src/components/planning/planning-fullscreen.tsx','client/src/components/planning/fullscreen-planning-panel.tsx','client/src/lib/planning-workspace-geometry.ts');
  if(headerNotes)runtimeFiles.push('server/apiAuthorization.ts','script/demo/smokePlanningHeaderJourney.ts','client/src/lib/planning-header.ts','client/src/components/planning/operational-header.tsx','client/src/hooks/use-planning-header-notes.ts','client/src/hooks/use-planning-header-heights.ts','server/planningHeaderNotes.ts','shared/planningHeaderNotes.ts','supabase/migrations/095_planning_header_notes.sql');
+ if(productionScope)runtimeFiles.push('script/demo/smokeProductionScopeJourney.ts','supabase/migrations/096_production_execution_scope.sql');
  const hashes=()=>Object.fromEntries(runtimeFiles.map(file=>[file,createHash('sha256').update(readFileSync(file)).digest('hex')]));
  if(warRoom)runtimeFiles.push('script/demo/smokeWarRoomJourney.ts','server/incidents.ts','server/incidentErrors.ts','shared/incidents.ts','client/src/pages/my-day.tsx','client/src/pages/war-room.tsx','client/src/hooks/use-war-room.ts','client/src/hooks/use-plan-realtime.ts','client/src/lib/war-room-store.ts','client/src/pages/dashboard.tsx','client/src/pages/call-sheet.tsx','server/apiAuthorization.ts','shared/routes.ts','shared/schema.ts','supabase/migrations/094_operational_incidents.sql');
  runtimeFiles.push('client/src/hooks/use-execution-context.ts','client/src/hooks/use-tasks.ts','client/src/hooks/use-production-clock.ts','shared/execution.ts','script/demo/smokeLiveExecutionJourney.ts');
@@ -247,6 +249,7 @@ if(process.argv.includes('--app')){
    else if(collapsibleSections){const {runCollapsibleSections}=await import('./smokeCollapsibleSections');report.collapsibleSections=await runCollapsibleSections({...options,planId:27001,baselineUrl});}
    else if(planningNavigation){const {runPlanningNavigation}=await import('./smokePlanningNavigation');report.planningNavigation=await runPlanningNavigation({...options,planId:27001});}
    else if(controlRoom){const {runControlRoomJourney}=await import('./smokeControlRoomJourney');report.controlRoom=await runControlRoomJourney({...options,planId:27001,baselineUrl});}
+   else if(productionScope){const {runProductionScopeJourney}=await import('./smokeProductionScopeJourney');report.productionScope=await runProductionScopeJourney({...options,planId:27001});}
    else if(warRoom){const {runWarRoomJourney}=await import('./smokeWarRoomJourney');report.warRoom=await runWarRoomJourney({...options,planId:27001});}
    else {const {runLiveExecutionJourney}=await import('./smokeLiveExecutionJourney');report.liveExecution=await runLiveExecutionJourney({...options,planId:27001});}
    assert.equal(await otherDays(),untouched);pass('other disposable days remain literal during accepted-snapshot execution');
