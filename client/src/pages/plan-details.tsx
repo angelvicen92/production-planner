@@ -792,6 +792,7 @@ ${reasonMessage}` : message,
       taskId: Number(task?.id),
       planId: id,
       expectedStatus: task?.status ?? "pending",
+      expectedVersion: task?.executionVersion,
       status,
     };
 
@@ -2426,7 +2427,7 @@ ${reasonMessage}` : message,
                                 spaces={spaces}
                                 onChangeDraft={(fn) => updateDraftTask(t, fn)}
                                 allowedStatuses={allowedExecutionStates(t)}
-                                onChangeStatus={canChangeExecution(t) ? (next) => updateTaskStatus.mutate({ taskId: t.id, planId: id, expectedStatus: t.status, status: next as any }) : undefined}
+                                onChangeStatus={canChangeExecution(t) ? (next) => updateTaskStatus.mutate({ taskId: t.id, planId: id, expectedStatus: t.status, expectedVersion: t.executionVersion, status: next as any }) : undefined}
                                 onDelete={async () => {
                                   await apiRequest("DELETE", buildUrl(api.dailyTasks.delete.path, { id: t.id }));
                                   await queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
@@ -2482,7 +2483,7 @@ ${reasonMessage}` : message,
                             spaces={spaces}
                             onChangeDraft={(fn) => updateDraftTask(contestantDetailTask, fn)}
                             allowedStatuses={allowedExecutionStates(contestantDetailTask)}
-                            onChangeStatus={canChangeExecution(contestantDetailTask) ? (next) => updateTaskStatus.mutate({ taskId: contestantDetailTask.id, planId: id, expectedStatus: contestantDetailTask.status, status: next as any }) : undefined}
+                            onChangeStatus={canChangeExecution(contestantDetailTask) ? (next) => updateTaskStatus.mutate({ taskId: contestantDetailTask.id, planId: id, expectedStatus: contestantDetailTask.status, expectedVersion: contestantDetailTask.executionVersion, status: next as any }) : undefined}
                             onDelete={async () => {
                               await apiRequest("DELETE", buildUrl(api.dailyTasks.delete.path, { id: contestantDetailTask.id }));
                               await queryClient.invalidateQueries({ queryKey: [buildUrl(api.plans.get.path, { id })] });
@@ -2608,6 +2609,8 @@ ${reasonMessage}` : message,
                                       taskId: task.id,
                                       planId: id,
                                       status: next as "pending" | "in_progress" | "done" | "interrupted" | "cancelled",
+                                      expectedStatus: task.status,
+                                      expectedVersion: task.executionVersion,
                                     });
                                   }}
                                 >
