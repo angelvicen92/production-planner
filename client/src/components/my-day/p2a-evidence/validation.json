@@ -1,0 +1,58 @@
+{
+  "base": "0c26905d82f7b7a4cb483c33f7a3f968ca3b8a82",
+  "baseTree": "ffefca1128012c54812574f8f68437b747dc618c",
+  "integratedP1A": "a2c0b1e",
+  "integratedP1B": "0c26905d",
+  "nodeVersion": "24.19.0",
+  "gates": {
+    "typescript": "PASS",
+    "build": "PASS; existing Browserslist and bundle size notices",
+    "focalTests": {
+      "passed": 56,
+      "failed": 0,
+      "newTemporalTests": 9
+    },
+    "browserScenarios": 9,
+    "nativeP1A": "PASS",
+    "acceptedPlacementsPreserved": 266,
+    "remoteWrites": 0,
+    "newSolverRun": false,
+    "realRealtimeWebSocketCertified": false
+  },
+  "candidateFilesSha256": {
+    "client/src/pages/my-day.tsx": "f762f285a93c8672d890a72465a40115ed9b6fe96e17d515ec66898d1cfad1f3",
+    "client/src/components/my-day/activity-information.tsx": "0d1c482696e59bf5110850398b7c57a8079aa7515a820e417b875d2c1dd9134c",
+    "client/src/components/my-day/temporal-signal.tsx": "10975002912e22b75f3a6103d4a511c2bec9b5293e2eaaa107032016710c0653",
+    "client/src/components/my-day/temporal-signal.test.tsx": "4726a49e0cb3995084b8cdf7211eacdcb10f56893fc8b6d806aab4ed31fca6a4",
+    "client/src/components/my-day/p2a.browser.mjs": "be9b67b235339139c6a70b7f6653cfb84f30d982804b74e2be1b1a15d7e56782",
+    "client/src/lib/my-day-temporal.ts": "254c82cd4ede8d2468b2bdd6d827cb784c1e5cebfb5102e361be667b6101365c",
+    "client/src/lib/my-day-temporal.test.ts": "fa5f22f16cf72c44b2560a9cfdba7c8b91305506fab53553b3bb471e6f456014"
+  },
+  "unchangedAuthoritiesSha256": {
+    "shared/execution.ts": "047cf61f8114b2397ad3a3516a1f5d2d01055603dd1d28c95f788c1d73185006",
+    "client/src/lib/control-room-metrics.ts": "2777f5f1728c8d6f5973de471e9175adc439f9e466de4013310552295eb58abe",
+    "client/src/pages/control-room.tsx": "76f734334fe4b38bcc2ab030275c905393def3c55f0a3e7c4d9d1dedd1a81ee3",
+    "client/src/components/my-day/a2-native.test.ts": "6b0fe0f976907c19c2edbc3ca59ed7b87f9744d5c90ee5696f9368ffba5458e4",
+    "client/src/components/my-day/a2-journey.test.ts": "dc00509e3da308149026e5e9f7d20d28e1e8a342e543546a3e6f4de6c7dca5ba",
+    "package-lock.json": "cbe75a531336356a5d3baa75202818f1a7060b72f10d205449b8036295ffeaaa"
+  },
+  "artifactsSha256": {
+    "before-mobile.png": "8338fcf0156f43b02550ce80de6ee4020c6811a5e6d6303855ef1bebb1c21acb",
+    "browser.json": "4be61b16d86367f36d9aefb9a0fa5bcd18bc4d851d398d965449beeccdced5f8",
+    "browser.log": "a28db84f2f9ac7569a8ea2d7df4dfcf8a54db4abef519d7f7147a69b3794a323",
+    "build.log": "388d097ae7f830f5b12b002034132e5481d7b9149c6168ce94ca2b8d92e1da53",
+    "check.log": "a46a017a03ccbce6a11785073fc6ba6904936107ceda838d08b2b4b7f356a7df",
+    "completed-tablet.png": "6375388e4a123a013010ad5c2cd4ea7551d5e3adaa991ae1371fb7214d58b5be",
+    "dark-tablet.png": "94d744e3db499b45b8403d1a81f99ebfd1665ced99f62280388e5878af0c74f5",
+    "ending-mobile.png": "4af2c934377a34f827616eab13fe864261d6ab2174e611cb24fae86b9337f229",
+    "native-mi-dia-mobile-running.png": "aff91889febdd8d5605967b4c213ac653b4632cca27bac3dacbeb4210c27cdef",
+    "native-mi-dia-tablet-completed.png": "41bd4b95ea9fd4b450fb9402e9fd7e8c1e41ae1405e8b85790b0def62eafc595",
+    "native.json": "832cce0b7940ae19e86840b7912d4eeae748fb0239866e6489b2229b0efb0189",
+    "normal-mobile.png": "59662490c02ba64e80a9dabd433a8d7ccb47d542e91dfa660602ebfe5b4f9b36",
+    "offline-tablet.png": "c76d78728aac98be039546da195138097062408cdf2babb3a1d811ef903b1ce8",
+    "overrun-tablet.png": "1c6a1ac594e25d57d2e0be2a8e07c4f527451ccacf796330fc3db08933ee6a76",
+    "simulated-tablet.png": "0ea2649a2dcc71d5fa9c9fe0a09a42492e832bf3bc4cdb9a2e5154b7f926c5ba",
+    "simultaneous-tablet.png": "033030abe0b792a87110a98b43f3356bb2201de957b37cf2fc5da44e743560d3",
+    "tests.log": "943228de8eef4290cfdec0173b7e19973c52f6f077cf7865fb6f43e7b12a1545"
+  }
+}
