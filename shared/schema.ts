@@ -625,6 +625,8 @@ export const dailyTasks = pgTable("daily_tasks", {
   endPlanned: text("end_planned"),
   assignedResourceIds: jsonb("assigned_resource_ids").$type<number[]>(),
 
+  executionVersion: integer("execution_version").notNull().default(0),
+
   // Real times (Execution)
   startReal: text("start_real"),
   startRealSeconds: integer("start_real_seconds"),
@@ -836,7 +838,7 @@ export const insertPlanOptimizerSnapshotHeuristicSchema = createInsertSchema(pla
 export const insertPlanOptimizerSnapshotGroupingZoneSchema = createInsertSchema(planOptimizerSnapshotGroupingZones).omit({ id: true });
 export const insertResourcePoolSchema = createInsertSchema(resourcePools).omit({ id: true });
 export const insertPlanResourcePoolSchema = createInsertSchema(planResourcePools).omit({ id: true });
-export const insertDailyTaskSchema = createInsertSchema(dailyTasks).omit({ id: true });
+export const insertDailyTaskSchema = createInsertSchema(dailyTasks).omit({ id: true, executionVersion: true });
 export const insertLockSchema = createInsertSchema(locks).omit({ id: true });
 
 export type Plan = typeof plans.$inferSelect;

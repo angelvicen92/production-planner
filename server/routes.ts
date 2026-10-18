@@ -9,6 +9,7 @@ import { supabaseAdmin } from "./supabase";
 import { api, defaultSpatialAvailabilityResponseSchema, planSpaceAvailabilityResponseSchema, planZoneAvailabilityResponseSchema, spatialAvailabilityInitializationResponseSchema } from "@shared/routes";
 import { z } from "zod";
 import { requireAuth } from "./middleware/requireAuth";
+import { registerExecutionTimeRoutes } from "./executionTimeCorrections";
 import { canExecuteTask, executionContext, executionError } from "./liveExecution";
 import { createApiAuthorization } from './apiAuthorization';
 import { buildEngineInput } from "../engine/buildInput";
@@ -3081,6 +3082,7 @@ function mapDeleteError(err: any, fallback: string) {
             templateId: t.template_id ?? t.templateId,
             contestantId: t.contestant_id ?? t.contestantId ?? null,
             status: t.status,
+            executionVersion: t.execution_version ?? t.executionVersion,
 
             startPlanned: t.start_planned ?? t.startPlanned ?? null,
             endPlanned: t.end_planned ?? t.endPlanned ?? null,
@@ -3579,6 +3581,8 @@ function mapDeleteError(err: any, fallback: string) {
     }
   });
 
+  registerExecutionTimeRoutes(app);
+
   // Task Status Update (Execution)
   app.patch(api.dailyTasks.updateStatus.path, async (req, res) => {
     const user = (req as any).user;
@@ -3604,6 +3608,7 @@ function mapDeleteError(err: any, fallback: string) {
         endReal: updated.end_real ?? updated.endReal ?? null,
         endRealSeconds: updated.end_real_seconds ?? updated.endRealSeconds ?? null,
 
+        executionVersion: updated.execution_version,
         startRealAt: updated.start_real_at ?? null,
         endRealAt: updated.end_real_at ?? null,
         pausedAt: updated.paused_at ?? null,

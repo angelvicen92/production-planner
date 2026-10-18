@@ -1,4 +1,6 @@
 import { getCachedAccessToken, getSessionSafeWithMeta } from "./supabaseClient";
+import { queryClient } from "./queryClient";
+import { executionPrecondition } from "./execution-precondition";
 import { publishApiHealth } from "./health-events";
 
 export type ApiPermissionError = Error & {
@@ -12,6 +14,9 @@ export async function apiRequest<T>(
   data?: unknown,
   options?: { signal?: AbortSignal }
 ): Promise<T> {
+  // Existing execution controls use the task snapshots already observed in the
+  // query cache. Never fetch a fresh version just before a write or retry stale.
+  data = executionPrecondition(method, path, data, queryClient.getQueryCache().getAll().map(query => query.state.data));
   const startedAt = performance.now();
   const requestId = ++requestCounter;
   const controller = new AbortController();

@@ -117,7 +117,7 @@ export default function MyDayPage() {
     await Promise.all([planQueryKey(selected.id), planTasksQueryKey(selected.id), planLocksQueryKey(selected.id), [`/api/plans/${selected.id}/execution`]].map(queryKey => queryClient.invalidateQueries({ queryKey })));
   };
   const mutation = useMutation({
-    mutationFn: (task: any) => apiRequest('PATCH', `/api/tasks/${task.id}/status`, { status: task.status === 'pending' ? 'in_progress' : 'done', expectedStatus: task.status }),
+    mutationFn: (task: any) => apiRequest('PATCH', `/api/tasks/${task.id}/status`, { status: task.status === 'pending' ? 'in_progress' : 'done', expectedStatus: task.status, expectedVersion: task.executionVersion }),
     onSuccess: (_result, task) => { setActionError(''); toast({ title: task.status === 'pending' ? 'Actividad iniciada' : 'Actividad finalizada', description: 'Registro guardado por el servidor.' }); },
     onError: (error: any) => { const message = error?.status ? error.message : 'No se recibió confirmación. Actualiza la agenda antes de reintentar.'; setActionError(message); toast({ title: 'No se confirmó la acción', description: message, variant: 'destructive' }); },
     onSettled: async () => { await invalidate(); pressing.current = false; },

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';
-import {createApiAuthorization} from './apiAuthorization';
+import {apiRequiredRoles,createApiAuthorization} from './apiAuthorization';
 import type {AppRole} from './authz';
 import {api,buildUrl} from '../shared/routes';
 
@@ -67,4 +67,11 @@ test('template aliases and Express casing use the catalog admin authority before
   const unrelated=await fetch(url+'/api/target/1',{method:'PATCH',headers:{'x-test-user':'production'}});
   assert.equal(unrelated.status,200);
  }finally{await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}
+});
+
+test('time correction and history share execution role boundaries including Express casing', () => {
+  for (const path of ['/tasks/1/real-time','/tasks/1/real-time/','/TASKS/1/REAL-TIME']) {
+    assert.deepEqual(apiRequiredRoles('PATCH',path),['admin','production','aux']);
+  }
+  assert.deepEqual(apiRequiredRoles('GET','/tasks/1/execution-history'),['admin','production','aux','viewer']);
 });

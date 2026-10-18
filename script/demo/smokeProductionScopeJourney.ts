@@ -11,6 +11,11 @@ export async function runProductionScopeJourney({ appUrl, url, anon, users, db, 
   assert.equal(db.host,'127.0.0.1');assert.equal(new URL(url).hostname,'127.0.0.1');
   const outcomes: { name:string; status:number }[]=[];
   const request=async(role:string,path:string,method='GET',body?:unknown)=>{
+    if (method === 'PATCH' && /\/tasks\/\d+\/status$/.test(path) && body && (body as any).expectedVersion === undefined) {
+      const taskId = Number(path.split('/')[3]);
+      const observed = (await db.query('SELECT execution_version FROM daily_tasks WHERE id=$1', [taskId])).rows[0];
+      body = { ...(body as object), expectedVersion: observed?.execution_version };
+    }
     const r=await fetch(appUrl+path,{method,headers:{'Content-Type':'application/json',...(role==='anon'?{}:{Authorization:`Bearer ${users[role].token}`})},body:body===undefined?undefined:JSON.stringify(body)});
     return {status:r.status,body:await r.json() as any};
   };

@@ -12,6 +12,11 @@ export async function runLiveExecutionJourney({ appUrl, url, anon, users, db, pl
 }) {
   assert.equal(db.host, '127.0.0.1');
   const request = async (role: string, path: string, method = 'GET', body?: unknown) => {
+    if (method === 'PATCH' && /\/tasks\/\d+\/status$/.test(path) && body && (body as any).expectedVersion === undefined) {
+      const taskId = Number(path.split('/')[3]);
+      const observed = (await db.query('SELECT execution_version FROM daily_tasks WHERE id=$1', [taskId])).rows[0];
+      body = { ...(body as object), expectedVersion: observed?.execution_version };
+    }
     const response = await fetch(`${appUrl}${path}`, { method, headers: { 'Content-Type': 'application/json', ...(role === 'anon' ? {} : { Authorization: `Bearer ${users[role].token}` }) }, body: body === undefined ? undefined : JSON.stringify(body) });
     return { status: response.status, body: await response.json() as any };
   };
@@ -178,13 +183,18 @@ export async function runLiveExecutionJourney({ appUrl, url, anon, users, db, pl
     assert.equal(await legacyViewer.getByRole('button',{name:'Iniciar',exact:true}).count(),0);
     assert.equal(await legacyViewer.getByRole('button',{name:'Resetear',exact:true}).count(),0);
     pass('day workspace hides execution and reset actions without task authority');
+    // The plan detail projection must expose the observed execution version to its table controls.
+    const fullPlan=(await request('aux',`/api/plans/${planId}`)).body;
+    assert.ok(fullPlan.dailyTasks.every((t:any)=>Number.isSafeInteger(t.executionVersion)),'full plan includes executionVersion for every task');
     // The new global table uses the very same production hook and authority.
     const pending=(await db.query("SELECT id FROM daily_tasks WHERE plan_id=$1 AND space_id=$2 AND status='pending' ORDER BY start_planned,id LIMIT 1",[planId,task.space_id])).rows[0];assert.ok(pending);
     await operator.goto(`${appUrl}/plans/${planId}?tab=execution`,{waitUntil:'domcontentloaded'});
     const row=operator.getByTestId(`day-execution-task-${pending.id}`);await row.waitFor();
     for(const [label,status] of [['Iniciar','in_progress'],['Interrumpir','interrupted'],['Reanudar','in_progress'],['Finalizar','done']] as const){
       const response=operator.waitForResponse(r=>r.url().endsWith(`/api/tasks/${pending.id}/status`)&&r.request().method()==='PATCH');
-      await row.getByRole('button',{name:label,exact:true}).click();assert.equal((await response).status(),200);
+      await row.getByRole('button',{name:label,exact:true}).click();
+      const reply=await response;
+      assert.equal(reply.status(),200,`Day execution ${label}/${status}: request=${reply.request().postData() ?? '(none)'} response=${reply.status()===200?'OK':await reply.text()}`);
       const wanted={in_progress:'En curso',interrupted:'Interrumpida',done:'Completada'}[status];await row.getByText(wanted,{exact:true}).waitFor();
     }
     assert.equal(await row.getByRole('button',{name:'Resetear',exact:true}).count(),0,'aux cannot reset');
