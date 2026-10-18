@@ -181,6 +181,7 @@ export interface IStorage {
       effectiveTimeHHMM?: string;
       effectiveSeconds?: number;
       expectedStatus?: string;
+      expectedVersion: number;
     },
     userId: string,
   ): Promise<DailyTask>;
@@ -2195,6 +2196,7 @@ export class SupabaseStorage implements IStorage {
       endPlanned: t.end_planned ?? null,
       startReal: t.start_real ?? null,
       startRealSeconds: t.start_real_seconds ?? null,
+      executionVersion: t.execution_version,
       startRealAt: t.start_real_at ?? null,
       endRealAt: t.end_real_at ?? null,
       pausedAt: t.paused_at ?? null,
@@ -2459,7 +2461,7 @@ export class SupabaseStorage implements IStorage {
     updates: any,
     userId: string,
   ): Promise<DailyTask> {
-    return await executeTask(taskId, userId, updates.status, updates.expectedStatus) as DailyTask;
+    return await executeTask(taskId, userId, updates.status, updates.expectedStatus, updates.expectedVersion) as DailyTask;
   }
 
   async resetTask(taskId: number, userId: string, _effectiveTimeHHMM?: string): Promise<DailyTask> {

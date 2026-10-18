@@ -12,9 +12,9 @@ export async function executionContext(planId: number, userId: string) {
   return data;
 }
 
-export async function executeTask(taskId: number, userId: string, status: string, expectedStatus?: string) {
+export async function executeTask(taskId: number, userId: string, status: string, expectedStatus?: string, expectedVersion?: number) {
   const { data, error } = await supabaseAdmin.rpc('execute_task_transition', {
-    p_task_id: taskId, p_actor: userId, p_status: status,
+    p_task_id: taskId, p_actor: userId, p_status: status, p_expected_version: expectedVersion,
     p_expected_status: expectedStatus ?? (status === 'in_progress' || status === 'cancelled' ? 'pending' : 'in_progress'),
   });
   if (error) throw error;
@@ -25,8 +25,11 @@ export function executionError(error: any): { status: number; message: string } 
   const code = String(error?.message ?? '');
   if (code.includes('EXECUTION_FORBIDDEN')) return { status: 403, message: 'No tienes autoridad operativa sobre esta actividad.' };
   if (code.includes('EXECUTION_NOT_FOUND')) return { status: 404, message: 'La actividad ya no está disponible.' };
-  if (/EXECUTION_(STALE|TRANSITION|OCCUPIED|CLOCK_CHANGED|CLOCK_REVERSED|PLANNING_REQUIRED|LOCK_CONFLICT)/.test(code)) {
+  if (code.includes('EXECUTION_INVALID')) return { status: 400, message: 'Indica una hora con fecha y zona horaria y un motivo de 1 a 240 caracteres.' };
+  if (/EXECUTION_(CHRONOLOGY|WORKDAY|STALE|TRANSITION|OCCUPIED|CLOCK_CHANGED|CLOCK_REVERSED|PLANNING_REQUIRED|LOCK_CONFLICT)/.test(code)) {
     const messages: Record<string, string> = {
+      CHRONOLOGY: 'La hora no es compatible con el inicio, fin, pausas o reloj operativo.',
+      WORKDAY: 'La hora debe pertenecer a la fecha y los límites de la jornada.',
       STALE: 'La actividad cambió en otra sesión. Actualiza la agenda antes de continuar.',
       TRANSITION: 'Esta acción no corresponde al estado actual de la actividad.',
       OCCUPIED: 'La persona o el espacio ya tiene otra actividad en curso.',

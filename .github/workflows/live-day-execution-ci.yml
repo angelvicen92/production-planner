@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths:
       - 'server/liveExecution*'
+      - 'server/executionTimeCorrections*'
+      - 'client/src/lib/api.ts'
+      - 'client/src/lib/execution-precondition*'
+      - 'script/demo/smokeExecutionTimeCorrections.ts'
       - 'server/incidents*'
       - 'server/fixtures/executionDatabase.ts'
       - 'server/apiAuthorization*'
@@ -47,10 +51,12 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: node --import tsx --test --test-concurrency=1 server/liveExecution.spec.ts server/incidents.spec.ts server/apiAuthorization.spec.ts server/assistedPlanningWorkflow.spec.ts
+      - run: node --import tsx --test --test-concurrency=1 server/liveExecution.spec.ts server/executionTimeCorrections.spec.ts client/src/lib/execution-precondition.test.ts server/incidents.spec.ts server/apiAuthorization.spec.ts server/assistedPlanningWorkflow.spec.ts
       - name: Nominal Production authority, incidents and accepted A2 preservation
         run: node --import tsx script/demo/smokeA2Integration.ts work/production-scope --historical-topology --production-scope
       - run: npx --no-install playwright install --with-deps chromium
+      - name: Audited time corrections, concurrency, G0 and existing read views
+        run: node --import tsx script/demo/smokeA2Integration.ts work/time-corrections --historical-topology --time-corrections
       - name: Accepted snapshot, native ledger, real Auth/HTTP and two browsers
         run: node --import tsx script/demo/smokeA2Integration.ts work/live-day-execution --historical-topology --live-execution-snapshot
       - name: Public execution evidence
@@ -59,6 +65,8 @@ jobs:
         with:
           name: live-day-execution
           path: |
+            work/time-corrections/integration.json
+            work/time-corrections/p2b-*.png
             work/production-scope/integration.json
             work/live-day-execution/integration.json
             work/live-day-execution/mi-dia-*.png

@@ -1629,6 +1629,13 @@ export const api = {
     history: { method: "GET" as const, path: "/api/plans/:id/assisted/history" },
   },
   dailyTasks: {
+    correctTime: {
+      method: "PATCH" as const, path: "/api/tasks/:id/real-time",
+      input: z.object({ field: z.enum(['start', 'end']), realAt: z.string().datetime({ offset: true }),
+        reason: z.string().trim().min(1).max(240), expectedVersion: z.number().int().nonnegative().safe() }).strict(),
+      responses: { 200: z.custom<typeof dailyTasks.$inferSelect>() },
+    },
+    executionHistory: { method: "GET" as const, path: "/api/tasks/:id/execution-history" },
     create: {
       method: "POST" as const,
       path: "/api/daily-tasks",
@@ -1655,6 +1662,7 @@ export const api = {
             "interrupted",
             "cancelled",
           ]),
+          expectedVersion: z.number().int().nonnegative().safe(),
           expectedStatus: z.enum(["pending", "in_progress", "done", "interrupted", "cancelled"]).optional(),
           effectiveTimeHHMM: z
             .string()

@@ -11,6 +11,11 @@ export async function runControlRoomJourney({ appUrl, url, users, db, planId, di
 }) {
   assert.equal(db.host, '127.0.0.1'); assert.equal(new URL(url).hostname, '127.0.0.1');
   const request = async (role: string, path: string, method = 'GET', body?: unknown) => {
+    if (method === 'PATCH' && /\/tasks\/\d+\/status$/.test(path) && body && (body as any).expectedVersion === undefined) {
+      const taskId = Number(path.split('/')[3]);
+      const observed = (await db.query('SELECT execution_version FROM daily_tasks WHERE id=$1', [taskId])).rows[0];
+      body = { ...(body as object), expectedVersion: observed?.execution_version };
+    }
     const response = await fetch(`${appUrl}${path}`, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${users[role].token}` }, body: body === undefined ? undefined : JSON.stringify(body) });
     const data = await response.json() as any; assert.equal(response.status, method === 'POST' && path.endsWith('/incidents') ? 201 : 200, `${method} ${path}: ${JSON.stringify(data)}`); return data;
   };
@@ -140,7 +145,7 @@ export async function runControlRoomJourney({ appUrl, url, users, db, planId, di
     pass('P4 Viewer read-only, scoped Aux after same-browser user change, mobile/tablet/dark/offline and genuine failed incident API');
     // Post-day uses actual authorized cancellation commands for remaining obligations in this disposable rehearsal.
     const remaining = (await db.query("SELECT id FROM daily_tasks WHERE plan_id=$1 AND status='pending' ORDER BY id", [planId])).rows;
-    for (const t of remaining) await db.query("SELECT public.execute_task_transition($1,$2,'cancelled','pending')", [t.id, users.production.id]);
+    for (const t of remaining) await db.query("SELECT public.execute_task_transition($1,$2,'cancelled','pending',(SELECT execution_version FROM daily_tasks WHERE id=$1))", [t.id, users.production.id]);
     await viewer.reload(); await viewer.getByRole('heading', { name: 'Jornada terminada', exact: true }).waitFor(); await count(viewer, 'cancelled', 265);
     await capture(viewer, 'control-room-mobile-after');
     assert.deepEqual(await invariant(), original, 'every placement, accepted Stage/fingerprint, session and plan remains literal');

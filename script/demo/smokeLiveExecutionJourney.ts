@@ -12,6 +12,11 @@ export async function runLiveExecutionJourney({ appUrl, url, anon, users, db, pl
 }) {
   assert.equal(db.host, '127.0.0.1');
   const request = async (role: string, path: string, method = 'GET', body?: unknown) => {
+    if (method === 'PATCH' && /\/tasks\/\d+\/status$/.test(path) && body && (body as any).expectedVersion === undefined) {
+      const taskId = Number(path.split('/')[3]);
+      const observed = (await db.query('SELECT execution_version FROM daily_tasks WHERE id=$1', [taskId])).rows[0];
+      body = { ...(body as object), expectedVersion: observed?.execution_version };
+    }
     const response = await fetch(`${appUrl}${path}`, { method, headers: { 'Content-Type': 'application/json', ...(role === 'anon' ? {} : { Authorization: `Bearer ${users[role].token}` }) }, body: body === undefined ? undefined : JSON.stringify(body) });
     return { status: response.status, body: await response.json() as any };
   };
