@@ -10,6 +10,7 @@ export type ExecutionTask = {
   contestant?: { name: string } | null;
   locationLabel?: string | null;
   status: string;
+  executionVersion?: number | null;
   startPlanned?: string | null;
   endPlanned?: string | null;
   startReal?: string | null;
