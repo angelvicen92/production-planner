@@ -1,0 +1,26 @@
+{
+  "base": "04bd38a33c6d5666651bd509d1838cea6bc787b6",
+  "nodeVersion": "v20.20.2",
+  "remoteWrites": 0,
+  "status": "BLOCKED",
+  "completedObligationCount": 19,
+  "remainingObligationCount": 247,
+  "stageCount": 1,
+  "scopeCount": 1,
+  "firstBlocker": null,
+  "deterministicFingerprint": "bb27f392bc55684dc45cc5d8813bc21686cb15ad0f65897374cc4aacc7d5f1d6",
+  "mode": "stopAfterFirstProposal",
+  "checkoutClean": true,
+  "expectedStatus": "BLOCKED",
+  "rawReportSha256": "78346d877628b04dde19d700bdd0453904700d565e97aaf7c470fbf982696322",
+  "iteration": {
+    "acceptedStageFingerprint": "bb27f392bc55684dc45cc5d8813bc21686cb15ad0f65897374cc4aacc7d5f1d6",
+    "branchesExplored": 22053,
+    "durationMs": 103636,
+    "proposalOutcome": "PROPOSAL",
+    "newObligationCount": 19,
+    "protectedPlacementsPreserved": true,
+    "newHardViolationCount": 0,
+    "newRequiredViolationCount": 0
+  }
+}

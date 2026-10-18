@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ActivityInformation } from '@/components/my-day/activity-information';
+import { TimeCorrectionDialog } from '@/components/my-day/time-correction-dialog';
+import { canCorrectExecutionTime } from '@/lib/execution-time-correction';
 import { dayGroups, myDayTasks, myDayScopeChoices, taskZone, type DaySpace } from '@/lib/my-day-operational';
 import { Switch } from '@/components/ui/switch';
 import { useDefaultPlanId } from '@/hooks/use-default-plan-id';
@@ -74,8 +76,9 @@ export default function MyDayPage() {
   const [tick, setTick] = useState(Date.now());
   const pressing = useRef(false);
   const [actionError, setActionError] = useState('');
+  const [correctionTaskId, setCorrectionTaskId] = useState<number | null>(null);
   useEffect(() => { const timer = window.setInterval(() => setTick(Date.now()), 1000); return () => window.clearInterval(timer); }, []);
-  useEffect(() => { setActionError(''); setSearch(''); setFocus('all'); }, [selected?.id]);
+  useEffect(() => { setActionError(''); setSearch(''); setFocus('all'); setCorrectionTaskId(null); }, [selected?.id]);
   const nowMs = context ? Date.parse(context.clock.operationalAt) + Math.max(0, tick - contextQ.dataUpdatedAt) : NaN;
   const clockLabel = Number.isFinite(nowMs) ? new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(nowMs)) : '—';
   const selectedDate = String(selected?.date ?? '').slice(0, 10);
@@ -128,6 +131,8 @@ export default function MyDayPage() {
     {task.status === 'pending' ? <Play className="mr-2 h-5 w-5" /> : <CheckCircle2 className="mr-2 h-5 w-5" />}{mutation.isPending && mutation.variables?.id === task.id ? 'Guardando…' : task.status === 'pending' ? 'INICIAR ACTIVIDAD' : 'FINALIZAR ACTIVIDAD'}
   </Button> : ['pending', 'in_progress'].includes(task.status) ? <p className="flex items-start gap-2 rounded-xl border p-3 text-sm text-muted-foreground"><ShieldCheck className="h-4 w-4 shrink-0" />{!executionClockCurrent(task, context?.clock) ? 'El reloj cambió durante la actividad. Producción debe revisar el registro.' : !sync.online ? 'Sin conexión. Espera para registrar la actividad.' : !context?.planningReady && task.status === 'pending' ? 'Pendiente de aceptación del planning completo.' : context?.role === 'viewer' ? 'Tu acceso permite consultar la agenda.' : 'Sin autoridad operativa demostrada para esta actividad.'}</p> : null;
   const information = (task: any) => <ActivityInformation task={task} allTasks={tasks} nowMs={nowMs} clock={context?.clock} resources={permissions.get(task.id)?.resources ?? []} location={location} temporal={{ planDate: selectedDate, context, online: sync.online }} />;
+  const correctionAction = (task: any) => canCorrectExecutionTime(task, context) ? <Button variant="ghost" className="min-h-11" disabled={!sync.online || Boolean(ops.error || contextQ.error) || mutation.isPending} onClick={() => setCorrectionTaskId(task.id)}>Corregir hora</Button> : null;
+  const correctionTask = tasks.find(task => task.id === correctionTaskId);
   const hero = (task: any, heading: string) => {
     const start = hhmmToMinutes(task.startPlanned);
     const late = task.status === 'pending' && start !== null && nowMinute !== null && nowMinute > start;
@@ -142,6 +147,7 @@ export default function MyDayPage() {
         {late ? <p className="flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300"><AlertTriangle className="h-4 w-4" />Pendiente desde hace {nowMinute! - start!} min</p> : null}
         {deviation !== null ? <p className="text-sm text-muted-foreground">Inicio {deviation > 0 ? `${deviation} min después` : deviation < 0 ? `${-deviation} min antes` : 'a la hora prevista'} del planning.</p> : null}
         {actions(task, true)}
+        {correctionAction(task)}
       </div>
     </article>;
   };
@@ -176,10 +182,12 @@ export default function MyDayPage() {
               <div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><h4 className="text-lg font-semibold">{getTaskName(task)}</h4><p className="mt-1 text-sm text-muted-foreground">{talent(task)}</p><p className="mt-2 flex items-center gap-1.5 text-sm"><MapPin className="h-4 w-4 shrink-0" />{location(task)}</p></div><Status status={task.status as keyof typeof states} /></div>
               {information(task)}
               {['pending', 'in_progress'].includes(task.status) ? actions(task) : null}
+              {correctionAction(task)}
             </article>) : <p className="text-sm text-muted-foreground">{search.trim() ? 'Sin coincidencias en este estado.' : 'Sin actividades en este estado.'}</p>}
           </section>;
         })}</div>
       </section>
     </> : null}
+    {correctionTask ? <TimeCorrectionDialog key={`${selected.id}-${correctionTask.id}`} task={correctionTask} planDate={selectedDate} contestant={talent(correctionTask)} context={context} online={sync.online} dataCurrent={!ops.error && !contextQ.error} refresh={invalidate} onClose={() => setCorrectionTaskId(null)} onSaved={() => { setCorrectionTaskId(null); toast({ title: 'Hora rectificada', description: 'Corrección y motivo guardados por el servidor.' }); }} /> : null}
   </div></Layout>;
 }

@@ -1,0 +1,89 @@
+{"benchmark":"control-room-266","iterations":10,"meanMs":7.069611399999985}
+✔ accepted A2: all 266 obligations reconcile, unknown/unplanned/cancelled never disappear; no mutation (181.277942ms)
+✔ before/during/after derives from confirmed statuses, never clock alone (1.528488ms)
+✔ real timestamps, second precision, pauses and placement duration (not template defaults) (0.831286ms)
+✔ legacy/incomplete timestamps, changed clocks and unavailable execution cannot assert deviations (0.617454ms)
+✔ Madrid day, winter/summer and DST ambiguity: no unrelated-date delay (8.013256ms)
+✔ incidents: open includes escalated, critical excludes resolved, failed query is unknown, day isolation (0.831541ms)
+✔ all studios stay visible; simultaneous spaces and an incident do not invent a stop cause (0.759519ms)
+✔ scope: aux gets scoped obligations/spaces; completing the scope cannot finish the global day (1.589954ms)
+✔ unknown relationships and unplanned obligations remain explicit, never synthetic saturation (0.65364ms)
+✔ configured alert threshold is a reproducible attention threshold, no critical label for delay (0.388313ms)
+✔ representative read projection performance, no solver call (76.106186ms)
+✔ A2 causal replay distinguishes complete S10, complete C04 Draft and truncated Draft (2730.822989ms)
+✔ isolated omissions causally explain all seven anonymous legacy families (559.458521ms)
+✔ task move, native Draft Undo/Redo and reset preserve all 18 preparations and exact fingerprints (12634.350321ms)
+✔ block edit, block Undo/Redo and reset preserve the complete auxiliary contract (390.571081ms)
+✔ native patch rejects omission, mutation or insertion of any structural field atomically (170.382049ms)
+✔ real anonymous transport conflict blocks recording; rejecting/resetting leaves accepted S10 and daily tasks identical (532.20596ms)
+✔ complete planning snapshots are canonical, placement-sensitive and include unplaced tasks (5.524813ms)
+✔ optional itinerant assignment is fingerprinted while legacy rows retain their exact identity (1.410775ms)
+✔ explicit physical assignments are canonical while absent legacy assignments remain omitted (0.734742ms)
+✔ planning block fingerprints canonicalize block order while preserving member order (39.618431ms)
+✔ execution changes are excluded and source input remains mutable/unmodified (0.624321ms)
+✔ empty and omitted PlanningBlocks preserve the legacy blockless identity (1.013009ms)
+✔ persisted JSON object-key ordering preserves meals, preparations, blocks and the established fingerprint (3.637724ms)
+✔ operational meals are canonical, deterministic, and legacy identity remains unchanged (3.285017ms)
+✔ setup preparations are canonical while absent and empty values preserve the legacy fingerprint (3.348818ms)
+✔ round preparations are canonical, fingerprinted, replayable, and legacy-compatible (3.143487ms)
+✔ manual rebuild preserves structural presence/order and leaves the fingerprint contract unchanged (20.032674ms)
+✔ start is idempotent for an existing ACTIVE session and does not bootstrap again (2.233569ms)
+✔ patch starts from the complete draft, changes only requested tasks, fingerprints it, and uses one RPC (2.125923ms)
+✔ reset draft restores the complete canonical base through one undoable patch (0.583821ms)
+✔ block reorder persists member metadata and temporal placements in one authoritative edit (12.154493ms)
+✔ a generic temporal patch cannot cross PlanningBlock member order or create a ledger entry (0.975766ms)
+✔ unknown and duplicate patch task IDs fail deterministically without RPC (0.709985ms)
+✔ manual null is only a reset to an unplanned base and partial/null or changed duration fail (5.020376ms)
+✔ STALE_DRAFT and STALE_BASE_STAGE RPC failures map to HTTP conflict (0.847758ms)
+✔ accept passes only the expected plan/fingerprint/base/user to its single atomic RPC (0.433728ms)
+✔ rollback and redo delegate only to assisted_move_stage with unambiguous direction (1.472129ms)
+✔ state coherently projects the session's active stage, config, draft, validation, and history (0.721907ms)
+✔ state grandfathers an untouched HARD exception across config revisions while retaining its provenance (0.495899ms)
+✔ accept locks the ACTIVE session and checks base, fingerprint, and validation before snapshot mutation (0.168573ms)
+✔ snapshot application fails closed on task-set mismatch and owns only assisted columns (0.302324ms)
+✔ rollback/redo preserve config, redo follows one live child, and divergence recursively archives rather than deletes (0.19377ms)
+✔ one-live-child constraint has identical migration and Drizzle semantics (0.961274ms)
+✔ ACL denies direct helper execution and exposes only the four workflow entries to service_role (0.290848ms)
+✔ API remains globally authenticated/authorized and exposes no proposal operation (1.995297ms)
+✔ stage metrics include Sodexo obligations and exclude supporting and witness placements (28.095517ms)
+✖ A2-ASSIST-8 product request/run/apply accepts the canonical first stage (561383.668881ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  0 !== 19
+
+      at TestContext.<anonymous> (/workspace/production-planner/server/benchmarks/runA2Assist8Evidence.spec.ts:29:47)
+      at async Test.run (node:internal/test_runner/test:797:9)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:526:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 19,
+    operator: 'strictEqual'
+  }
+
+ℹ tests 48
+ℹ suites 0
+ℹ pass 47
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 593888.64724
+
+✖ failing tests:
+
+test at server/benchmarks/runA2Assist8Evidence.spec.ts:1:1294
+✖ A2-ASSIST-8 product request/run/apply accepts the canonical first stage (561383.668881ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  0 !== 19
+
+      at TestContext.<anonymous> (/workspace/production-planner/server/benchmarks/runA2Assist8Evidence.spec.ts:29:47)
+      at async Test.run (node:internal/test_runner/test:797:9)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:526:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 19,
+    operator: 'strictEqual'
+  }
