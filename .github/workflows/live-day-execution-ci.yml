@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'server/liveExecution*'
+      - 'server/incidents*'
+      - 'server/fixtures/executionDatabase.ts'
       - 'server/apiAuthorization*'
       - 'server/routes.ts'
       - 'server/storage.ts'
@@ -22,6 +24,7 @@ on:
       - 'client/src/components/production-control-panel.tsx'
       - 'supabase/migrations/**'
       - 'script/demo/smoke*Execution*'
+      - 'script/demo/smokeProductionScopeJourney.ts'
       - 'script/demo/smokeA2Integration.ts'
       - '.github/workflows/live-day-execution-ci.yml'
   workflow_dispatch:
@@ -44,7 +47,9 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: node --import tsx --test server/liveExecution.spec.ts server/apiAuthorization.spec.ts server/assistedPlanningWorkflow.spec.ts
+      - run: node --import tsx --test --test-concurrency=1 server/liveExecution.spec.ts server/incidents.spec.ts server/apiAuthorization.spec.ts server/assistedPlanningWorkflow.spec.ts
+      - name: Nominal Production authority, incidents and accepted A2 preservation
+        run: node --import tsx script/demo/smokeA2Integration.ts work/production-scope --historical-topology --production-scope
       - run: npx --no-install playwright install --with-deps chromium
       - name: Accepted snapshot, native ledger, real Auth/HTTP and two browsers
         run: node --import tsx script/demo/smokeA2Integration.ts work/live-day-execution --historical-topology --live-execution-snapshot
@@ -54,6 +59,7 @@ jobs:
         with:
           name: live-day-execution
           path: |
+            work/production-scope/integration.json
             work/live-day-execution/integration.json
             work/live-day-execution/mi-dia-*.png
             work/live-day-execution/workspace-*.png
