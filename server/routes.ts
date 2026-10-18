@@ -3082,6 +3082,7 @@ function mapDeleteError(err: any, fallback: string) {
             templateId: t.template_id ?? t.templateId,
             contestantId: t.contestant_id ?? t.contestantId ?? null,
             status: t.status,
+            executionVersion: t.execution_version ?? t.executionVersion,
 
             startPlanned: t.start_planned ?? t.startPlanned ?? null,
             endPlanned: t.end_planned ?? t.endPlanned ?? null,
