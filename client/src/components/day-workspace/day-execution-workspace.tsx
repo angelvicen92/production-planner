@@ -181,6 +181,7 @@ export const DayExecutionWorkspace = memo(function DayExecutionWorkspace({
         planId,
         status,
         expectedStatus: task.status,
+        expectedVersion: task.executionVersion ?? undefined,
       });
   };
   return (
