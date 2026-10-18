@@ -1,0 +1,127 @@
+{
+  "base": "04bd38a33c6d5666651bd509d1838cea6bc787b6",
+  "branch": "codex/ops-p3-mi-dia-audited-time-ui",
+  "finalRequiredLocalChecks": "PASS_WITH_INITIAL_CONCURRENT_BENCHMARK_FAILURE_RECORDED",
+  "checks": {
+    "focal": {
+      "tests": 33,
+      "passed": 33,
+      "failed": 0
+    },
+    "productTypeScript": {
+      "exitCode": 0,
+      "node": "20.20.2"
+    },
+    "nativeScriptTypeScript": {
+      "exitCode": 0
+    },
+    "build": {
+      "exitCode": 0
+    },
+    "migrationSequence": {
+      "exitCode": 0
+    },
+    "browser": {
+      "checks": 4,
+      "errors": 0,
+      "timezone": "America/New_York"
+    },
+    "nativeTimeCorrections": {
+      "status": "PASS",
+      "migrations": 100,
+      "successfulUiCorrections": 5,
+      "staleUiRequests": 1,
+      "acceptedTaskCount": 266,
+      "preservedPlanning": true,
+      "remoteWrites": 0
+    },
+    "nativeProductionScope": {
+      "status": "PASS"
+    },
+    "nativeLiveExecutionSnapshot": {
+      "status": "PASS"
+    },
+    "regressionConcurrentAttempt": {
+      "tests": 48,
+      "passed": 47,
+      "failed": 1,
+      "failure": "canonical first Stage accepted 0 instead of 19"
+    },
+    "regressionIsolatedRerun": {
+      "tests": 2,
+      "passed": 2,
+      "failed": 0,
+      "firstStageAccepted": 19,
+      "deterministicFingerprintComparedTwice": true
+    }
+  },
+  "baselineProbe": {
+    "base": "04bd38a33c6d5666651bd509d1838cea6bc787b6",
+    "nodeVersion": "v20.20.2",
+    "remoteWrites": 0,
+    "status": "BLOCKED",
+    "completedObligationCount": 19,
+    "remainingObligationCount": 247,
+    "stageCount": 1,
+    "scopeCount": 1,
+    "firstBlocker": null,
+    "deterministicFingerprint": "bb27f392bc55684dc45cc5d8813bc21686cb15ad0f65897374cc4aacc7d5f1d6",
+    "mode": "stopAfterFirstProposal",
+    "checkoutClean": true,
+    "expectedStatus": "BLOCKED",
+    "rawReportSha256": "78346d877628b04dde19d700bdd0453904700d565e97aaf7c470fbf982696322",
+    "iteration": {
+      "acceptedStageFingerprint": "bb27f392bc55684dc45cc5d8813bc21686cb15ad0f65897374cc4aacc7d5f1d6",
+      "branchesExplored": 22053,
+      "durationMs": 103636,
+      "proposalOutcome": "PROPOSAL",
+      "newObligationCount": 19,
+      "protectedPlacementsPreserved": true,
+      "newHardViolationCount": 0,
+      "newRequiredViolationCount": 0
+    }
+  },
+  "unchangedBaseTrees": {
+    "engine": "8942b85150ef801eb05bd02db363d14511cdcbaa",
+    "server": "6c4a5148c97151ca5e7d467c12a683774c9a31c3",
+    "shared": "14f45ada96b3657f6ecf8ce17bed1fd8b0b5bfec",
+    "supabase": "38d9bbe47e17ee7a7a1bf7dbcb83eec72977f470"
+  },
+  "sourceHashes": {
+    ".github/workflows/live-day-execution-ci.yml": "b2a582be83db434ff15e21c085cbe3803cfa405d450f3f73ba5be45e8e4b5063",
+    "client/src/pages/my-day.tsx": "cb1cc2795be79ed575bb2aa072d31f492723ebc25959f266411fa70e29b81f77",
+    "client/src/components/my-day/time-correction-dialog.tsx": "b8f5da6569b2a50caa66ec3a62e0e6e669e8aef87bd6e19070a8c4ddd9d5f9f4",
+    "client/src/components/my-day/p3.browser.mjs": "35aebb58e1f1bfc6da2cba14c2fae0b8192fe09fbae74643227af53c6ad80c1f",
+    "client/src/lib/execution-time-correction.ts": "2467c7f5ed0c303509c9599e20441c3042dc9627266fb1987b4e12442e9c7e31",
+    "client/src/lib/execution-time-correction.test.ts": "ecb65f2c3301d6465a09cf3d06932e56dacc025216bc4d028d9f7f7931209544",
+    "script/demo/smokeA2Integration.ts": "bc59fcf29acb23a445cbe8f6fd016fe18baccd859ac8f533db8d0bf77a752945",
+    "script/demo/smokeExecutionTimeCorrections.ts": "5237499343df3f6a293d29792f2a5abd9b0e95e457b81db257dec78ad6e3b2af"
+  },
+  "evidenceHashes": {
+    "docs/evidence/P3-time-ui/a2-baseline-summary.json": "331f0f325af949fa9ddb31e5474fe8ce729e8225161cf59327a1b0b4e3537ec2",
+    "docs/evidence/P3-time-ui/a2-isolated.log": "9cb3e5217ee15cf816ef466ba1670baa5d48624ced1fc938c32d21a54317b14f",
+    "docs/evidence/P3-time-ui/browser.json": "6f998b482435ca23393442a4a08e2030a31a271ad5c7edce717c36cb646a0886",
+    "docs/evidence/P3-time-ui/build.log": "8b075e9479e475c9c3765494399242e173d81245f1c6a3026883941b85ce2179",
+    "docs/evidence/P3-time-ui/focal.log": "99ef50fe6fd495c97cbde84baf51214c3fea7960a5aec2697afc931b091f6ac6",
+    "docs/evidence/P3-time-ui/form-mobile.png": "d9c41375b290df2cdaf24761a335426703b094f49d085ae446abcdb7449dc12e",
+    "docs/evidence/P3-time-ui/history-tablet.png": "e6c01ad75253e280c1a80fe2c172791994fa5a7e4fb5abc61ec8ef8a0ecfc356",
+    "docs/evidence/P3-time-ui/live-execution.json": "61c8cb82f6f421395e482091ea66ee26e848ad28990db52254026658d0e38c6a",
+    "docs/evidence/P3-time-ui/migrations.log": "528f993bb24efea745da0d12582f61193e80d4f4f9d18e22191e6d116d6fbdf9",
+    "docs/evidence/P3-time-ui/native.json": "bc199179a80a12932c8eb2a0b645dc2671802a0546a4e5c2a9230688f3376533",
+    "docs/evidence/P3-time-ui/offline-tablet.png": "5427e2333af8cfd0478d2fd2c9d14ec12a684218c5c37c7081a499f61b4f247d",
+    "docs/evidence/P3-time-ui/p3-correction-mobile.png": "08b6dd8a27e46ce39ce912f4d8517b25c802cf58c33b2f857778e7a7299c0936",
+    "docs/evidence/P3-time-ui/p3-history-tablet.png": "9d28e2782e2f9aad9b2c75dee57ba42bf16464cc6ec4b793699beda586ed64d9",
+    "docs/evidence/P3-time-ui/production-scope.json": "a7c4df6cc7395199f83b552ca5b0d340210009503881ef1119fb51326a6d230b",
+    "docs/evidence/P3-time-ui/regression.log": "bc2a6be0570bf4a6204803f8dced36c61d8102b561747d4f69cb90173b773103"
+  },
+  "limitations": [
+    "Madrid DST folds/gaps block saving; no occurrence chooser",
+    "Actor identified by stored account ID when no reliable name exists",
+    "HTTP/polling certified; Realtime/WebSocket not certified",
+    "Accepted 266-task snapshot preservation is not a new Full A2 generation",
+    "No conclusive causal attribution for the initial concurrent benchmark failure"
+  ],
+  "connectedSupabaseWrites": 0,
+  "replitDeploys": 0,
+  "merged": false
+}

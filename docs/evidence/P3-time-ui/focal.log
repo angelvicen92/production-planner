@@ -1,0 +1,41 @@
+✔ Start/Finish use the observed cached version, preserve explicit stale versions and fail closed on disagreement (39.351222ms)
+✔ Madrid seconds round-trip, summer/winter, invalid dates and DST gap/fold fail closed (16.307214ms)
+✔ conversion does not depend on device timezone; incomplete legacy times never become instants (47.291804ms)
+✔ nominal authority permits terminal corrections independently of canExecute and rejects incomplete records (0.773517ms)
+✔ ten minute placement turns orange exactly two minutes before its end and red only after the end (70.211956ms)
+✔ late start and pauses never postpone the accepted finish; simultaneous tasks use their own placements (20.873685ms)
+✔ finished activities show recorded start, end and active-duration deviations, independent of current time and connectivity (0.599967ms)
+✔ missing accepted placement, invalid geometry, records or non-comparable dates remain neutral (17.679319ms)
+✔ authorized simulation uses operational time and revision, never server wall time or browser timezone (0.590685ms)
+✔ DST gaps and repeated Madrid wall times are not comparable (4.848114ms)
+✔ pending, interrupted and cancelled do not acquire running signals; projection never mutates inputs or permissions (0.600364ms)
+✔ real HTTP middleware blocks anonymous/debug and task writes while preserving authorized application flows (596.035734ms)
+✔ template aliases and Express casing use the catalog admin authority before any handler (369.904628ms)
+✔ time correction and history share execution role boundaries including Express casing (0.902756ms)
+✔ start/end, successive corrections, immutable original audit, terminal duration and locks (17093.863221ms)
+✔ G0 revalidation: multi-scope production, editorial/viewer/revoked/other plan and direct RPC (11645.274851ms)
+✔ required version/reason/offset, unsupported states, future/date/workday and atomic rollback (15837.365591ms)
+✔ pause boundaries remain facts; impossible chronology rejected before and after Finish (18850.593351ms)
+✔ Madrid DST: explicit fold instants, skipped hour and inclusive workday limits (12488.491554ms)
+✔ incident contract trims mandatory facts, leaves unknown links/notes null and rejects forged authority (11.373848ms)
+✔ partial updates preserve omitted fields and require observed version; transitions require a decision (46.55956ms)
+✔ incident HTTP policy admits aux only to the database scope check, viewer only to queries (7.053195ms)
+✔ incident failures return actionable HTTP codes and never expose database internals (15.214301ms)
+✔ G0: editorial/revoked scope denies incident lifecycle and hides rows/events through RLS (26072.224663ms)
+✔ nominal plan authority, terminal states, one execution lock and audit-preserving reset (16112.368942ms)
+✔ event/lock persistence errors roll back the whole operation; clients cannot bypass it (9411.45194ms)
+✔ resources require concrete identities; staff mode overrides are respected (8675.748362ms)
+✔ pauses cross minute/hour boundaries using timestamps; clock changes are rejected (7491.761379ms)
+✔ Madrid simulated display is independent of host timezone and preserves DST boundaries (26.486919ms)
+✔ G0: editorial assignment alone grants no execution scope or Start/Finish authority (8822.386454ms)
+✔ G0 historical reproduction: 093/094 accept editorial execution/incidents and persist events (11079.660239ms)
+✔ G0: effective production scopes cover zones, multiple spaces/zones and overlapping helpers (16969.472521ms)
+✔ G0: revoked, inactive and non-primary identities lose authority; global roles and nominal resources retain it (9496.489773ms)
+ℹ tests 33
+ℹ suites 0
+ℹ pass 33
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 210802.462416

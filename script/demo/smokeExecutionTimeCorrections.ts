@@ -7,6 +7,7 @@ import pg from 'pg';
 import { chromium, type Page } from 'playwright';
 import { executionDuration, formatExecutionDuration } from '../../shared/execution';
 import { projectControlRoom } from '../../client/src/lib/control-room-metrics';
+import { madridWallTime } from '../../client/src/lib/execution-time-correction';
 
 type User = { id: string; token: string; email: string; password: string };
 export async function runExecutionTimeCorrections({appUrl,url,anon,users,db,planId,directory,pass}:{
@@ -121,7 +122,9 @@ export async function runExecutionTimeCorrections({appUrl,url,anon,users,db,plan
  // Existing pages, real sessions and real data, reloaded after correction.
  const browser=await chromium.launch({headless:true,args:['--no-sandbox'],executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH});
  const errors:string[]=[];
+ const uiWrites:any[]=[];
  const login=async(page:Page,role:string)=>{
+  page.setDefaultNavigationTimeout(120000); // Cold Vite builds the full application.
   page.on('pageerror',e=>errors.push(e.message));await page.goto(appUrl+'/login');
   await page.getByLabel('Email',{exact:true}).fill(users[role].email);await page.getByLabel('Contraseña (opcional para enlace)',{exact:true}).fill(users[role].password);
   await page.getByRole('button',{name:'Entrar con contraseña',exact:true}).click();await page.waitForURL('**/dashboard');
@@ -151,9 +154,70 @@ export async function runExecutionTimeCorrections({appUrl,url,anon,users,db,plan
   const startResponse=operator.waitForResponse(r=>r.url().endsWith(`/api/tasks/${pendingTask.id}/status`)&&r.request().method()==='PATCH');
   await agenda.getByRole('button',{name:/^Iniciar /}).click();
   const startHttp=await startResponse;assert.equal(startHttp.status(),200);assert.equal(startHttp.request().postDataJSON().expectedVersion,pendingTask.executionVersion);
+  const openCorrection=async(page:Page)=>{
+   await page.getByTestId(`agenda-task-${pendingTask.id}`).getByRole('button',{name:'Corregir hora',exact:true}).click();
+   await page.getByRole('dialog').waitFor();
+  };
+  const prepareCorrection=async(page:Page,field:'start'|'end',at:string,reason:string)=>{
+   const dialog=page.getByRole('dialog');await dialog.getByLabel('Hora que quieres corregir').selectOption(field);
+   await dialog.getByLabel('Nueva hora real (con segundos)').fill(madridWallTime(at).slice(11));await dialog.getByLabel('Motivo obligatorio').fill(reason);
+  };
+  const confirmCorrection=async(page:Page,expectedVersion:number,expectedStatus=200)=>{
+   const observedLocks=(await db.query('SELECT * FROM locks ORDER BY id')).rows;
+   const response=page.waitForResponse(r=>r.url().endsWith(`/api/tasks/${pendingTask.id}/real-time`)&&r.request().method()==='PATCH');
+   await page.getByRole('dialog').getByRole('button',{name:'Confirmar rectificación',exact:true}).click();
+   const http=await response;assert.equal(http.status(),expectedStatus);const body=http.request().postDataJSON();assert.equal(body.expectedVersion,expectedVersion);uiWrites.push({body,status:http.status()});
+   assert.deepEqual((await db.query('SELECT * FROM locks ORDER BY id')).rows,observedLocks);
+   if(expectedStatus===200)await page.getByRole('dialog').waitFor({state:'hidden'});
+  };
+  const uiStart=await current(pendingTask);
+  await operator.setViewportSize({width:390,height:844});
+  await openCorrection(operator);assert.equal(await operator.getByRole('dialog').locator('option[value="end"]').count(),0);
+  await operator.getByRole('dialog').getByLabel('Motivo obligatorio').fill('No redondear fracciones del servidor');
+  assert.equal(await operator.getByRole('dialog').getByRole('button',{name:'Confirmar rectificación',exact:true}).isDisabled(),true);
+  await prepareCorrection(operator,'start',iso(uiStart.start_real_at,-60),'Inicio registrado un minuto tarde desde Mi Día');
+  assert.ok(await operator.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await operator.screenshot({path:directory+'/p3-correction-mobile.png'});
+  await confirmCorrection(operator,pendingTask.executionVersion+1);
   const finishResponse=operator.waitForResponse(r=>r.url().endsWith(`/api/tasks/${pendingTask.id}/status`)&&r.request().method()==='PATCH');
   await agenda.getByRole('button',{name:/^Finalizar /}).click();
-  const finishHttp=await finishResponse;assert.equal(finishHttp.status(),200);assert.equal(finishHttp.request().postDataJSON().expectedVersion,pendingTask.executionVersion+1);
+  const finishHttp=await finishResponse;assert.equal(finishHttp.status(),200);assert.equal(finishHttp.request().postDataJSON().expectedVersion,pendingTask.executionVersion+2);
+  const uiFinish=await current(pendingTask);
+  // Nominal authority survives completion in both scopes. canExecute currently
+  // also reflects planning readiness, so it is not a status/eligibility test.
+  const terminalContext=(await request('aux',`/api/plans/${planId}/execution`)).body.tasks.find((t:any)=>t.taskId===pendingTask.id);
+  assert.equal(uiFinish.status,'done');assert.equal(terminalContext.hasAuthority,true);
+  const secondScope=(await request('aux',`/api/plans/${planId}/execution`)).body.tasks.find((t:any)=>t.taskId===Number(b.id));
+  assert.equal((await current(b)).status,'done');assert.equal(secondScope.hasAuthority,true);
+  assert.equal(await operator.getByTestId(`agenda-task-${b.id}`).getByRole('button',{name:'Corregir hora',exact:true}).count(),1);
+  await openCorrection(operator);await prepareCorrection(operator,'start',iso(uiStart.start_real_at,-120),'Rectificación del inicio de actividad completada');await confirmCorrection(operator,uiFinish.execution_version);
+  await openCorrection(operator);await prepareCorrection(operator,'end',iso(uiFinish.end_real_at,-5),'Fin registrado cinco segundos tarde');await confirmCorrection(operator,uiFinish.execution_version+1);
+  // Two independent browsers open the same observed version. HTTP polling may
+  // update the page underneath, but cannot silently replace either form snapshot.
+  await observer.goto(`${appUrl}/my-day?plan=${planId}`);
+  await observer.getByRole('combobox',{name:'Seleccionar jornada',exact:true}).click();await observer.getByRole('option',{name:label,exact:true}).click();
+  const concurrentVersion=await version(pendingTask);
+  await openCorrection(operator);await openCorrection(observer);
+  await prepareCorrection(observer,'start',iso(uiStart.start_real_at,-150),'Otra sesión corrige primero');await confirmCorrection(observer,concurrentVersion);
+  await prepareCorrection(operator,'start',iso(uiStart.start_real_at,-170),'Formulario que observó la versión anterior');await confirmCorrection(operator,concurrentVersion,409);
+  await operator.getByRole('dialog').getByRole('alert').filter({hasText:'El registro ha cambiado'}).waitFor();
+  await operator.getByRole('dialog').getByRole('button',{name:'Usar datos actuales',exact:true}).click();
+  await prepareCorrection(operator,'start',iso(uiStart.start_real_at,-180),'Revisión explícita después del conflicto');await confirmCorrection(operator,concurrentVersion+1);
+  await operator.reload();await operator.getByTestId(`agenda-task-${pendingTask.id}`).waitFor();await operator.setViewportSize({width:820,height:1180});await openCorrection(operator);
+  const historyResponse=operator.waitForResponse(r=>r.url().endsWith(`/api/tasks/${pendingTask.id}/execution-history`));await operator.getByRole('button',{name:'Ver historial',exact:true}).click();assert.equal((await historyResponse).status(),200);
+  const uiEvents=(await db.query('SELECT * FROM task_status_events WHERE task_id=$1 ORDER BY id',[pendingTask.id])).rows;
+  assert.equal(uiEvents.filter(e=>e.event_kind==='transition').length,2);assert.equal(uiEvents.filter(e=>e.event_kind==='time_correction').length,5);
+  await operator.getByTestId(`time-correction-event-${uiEvents.at(-1).id}`).waitFor();assert.equal(await operator.locator('[data-testid^="time-correction-event-"]').count(),5);
+  assert.ok(await operator.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await operator.screenshot({path:directory+'/p3-history-tablet.png'});
+  await operator.getByRole('dialog').getByRole('button',{name:'Cancelar',exact:true}).click();
+  const finalUiTask=(await request('aux',`/api/plans/${planId}/tasks`)).body.find((t:any)=>t.id===pendingTask.id);
+  const uiInformation=operator.getByTestId(`activity-information-${pendingTask.id}`);
+  const uiDuration=executionDuration(finalUiTask,Date.parse(context.clock.operationalAt),context.clock);
+  assert.equal(await uiInformation.getByTestId('execution-timer').textContent(),formatExecutionDuration(uiDuration));
+  await observer.goto(`${appUrl}/plans/${planId}/control-room`);await observer.reload();await observer.locator('#control-plan').selectOption(String(planId));
+  const uiControl=observer.getByTestId(`control-room-activity-${pendingTask.id}`);await uiControl.waitFor();assert.ok((await uiControl.textContent())?.includes(formatExecutionDuration(uiDuration)));
+  assert.ok((await uiControl.textContent())?.includes(finalUiTask.startReal));assert.ok((await uiControl.textContent())?.includes(finalUiTask.endReal));
+  pass('P3 native UI: running start, terminal start/end, five immutable corrections, two-browser 409 with observed version, explicit recovery and reload/history/Control Room concordance');
   await information.scrollIntoViewIfNeeded();await activity.scrollIntoViewIfNeeded();
   await operator.screenshot({path:directory+'/p2b-my-day.png'});await observer.screenshot({path:directory+'/p2b-control-room.png'});
   assert.deepEqual(errors,[]);
@@ -162,5 +226,5 @@ export async function runExecutionTimeCorrections({appUrl,url,anon,users,db,plan
  assert.deepEqual((await db.query('SELECT * FROM locks WHERE task_id=$1 ORDER BY id',[a.id])).rows,locks);
  pass('P2B real Mi Día and Control Room reload corrected timestamps/duration; all 266 placements, Stages and locks preserved');
  return {outcomes,correctionFinishRace:race.map(r=>r.status).sort(),correctionRace:race2.map(r=>r.status).sort(),corrections:corrections.length,
-  durationSeconds:duration,readViews:['Mi Día','Control Room'],acceptedTaskCount:266,planningSha256:createHash('sha256').update(JSON.stringify(before)).digest('hex'),preservedPlanning:true,newSolverRun:false,remoteWrites:0};
+  uiWrites,durationSeconds:duration,readViews:['Mi Día','Control Room'],acceptedTaskCount:266,planningSha256:createHash('sha256').update(JSON.stringify(before)).digest('hex'),preservedPlanning:true,newSolverRun:false,remoteWrites:0};
 }

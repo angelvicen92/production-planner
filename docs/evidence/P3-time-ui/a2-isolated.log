@@ -1,0 +1,10 @@
+✔ stage metrics include Sodexo obligations and exclude supporting and witness placements (16.502877ms)
+✔ A2-ASSIST-8 product request/run/apply accepts the canonical first stage (219374.850869ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 221043.592573
