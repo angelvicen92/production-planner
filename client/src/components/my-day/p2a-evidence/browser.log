@@ -1,0 +1,12 @@
+Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+PASS main 0c26905d combined P1A+P1B: same fixtures without temporal signals
+PASS 10 minute activity crosses final 20% live without refresh, same text in hero and agenda; 266 identities retained
+PASS Four simultaneous activities retain independent green/orange/red/neutral signals; late start does not shift finish
+PASS Early finish shows recorded deviations and never a running alarm
+PASS Offline preserves records, pauses comparison and execution controls; reconnect restores comparison
+PASS Pending planning, pending Draft, wrong date and changed revision stay neutral; authorized simulation uses operational time
+PASS Viewer can read informative signals without gaining execution authority
+PASS Start/Finish keep exactly the existing two conditional writes and server-confirmed groups across reload
+PASS No planning mutation, no extra operational writes and no JavaScript errors; mobile/tablet/dark have no overflow

@@ -1,0 +1,70 @@
+{
+  "mode": "INTERCEPTED_HTTP_PRESENTATION",
+  "base": "0c26905d82f7b7a4cb483c33f7a3f968ca3b8a82",
+  "fixtureSha256": "58cd5c0a49d7e8ff71ffbd0875192ef87fd95738f8870aeee06b82374e266500",
+  "scenarioPlanningSha256": "09ae8d46c58612ed801147c0b6e40acc06fe95edbe4b54799aa8ab5bcd409d7a",
+  "acceptedTaskCount": 266,
+  "checks": [
+    "main 0c26905d combined P1A+P1B: same fixtures without temporal signals",
+    "10 minute activity crosses final 20% live without refresh, same text in hero and agenda; 266 identities retained",
+    "Four simultaneous activities retain independent green/orange/red/neutral signals; late start does not shift finish",
+    "Early finish shows recorded deviations and never a running alarm",
+    "Offline preserves records, pauses comparison and execution controls; reconnect restores comparison",
+    "Pending planning, pending Draft, wrong date and changed revision stay neutral; authorized simulation uses operational time",
+    "Viewer can read informative signals without gaining execution authority",
+    "Start/Finish keep exactly the existing two conditional writes and server-confirmed groups across reload",
+    "No planning mutation, no extra operational writes and no JavaScript errors; mobile/tablet/dark have no overflow"
+  ],
+  "screenshots": [
+    "before-mobile.png",
+    "normal-mobile.png",
+    "ending-mobile.png",
+    "simultaneous-tablet.png",
+    "overrun-tablet.png",
+    "completed-tablet.png",
+    "offline-tablet.png",
+    "simulated-tablet.png",
+    "dark-tablet.png"
+  ],
+  "screenshotHashes": {
+    "before-mobile.png": "8338fcf0156f43b02550ce80de6ee4020c6811a5e6d6303855ef1bebb1c21acb",
+    "normal-mobile.png": "59662490c02ba64e80a9dabd433a8d7ccb47d542e91dfa660602ebfe5b4f9b36",
+    "ending-mobile.png": "4af2c934377a34f827616eab13fe864261d6ab2174e611cb24fae86b9337f229",
+    "simultaneous-tablet.png": "033030abe0b792a87110a98b43f3356bb2201de957b37cf2fc5da44e743560d3",
+    "overrun-tablet.png": "1c6a1ac594e25d57d2e0be2a8e07c4f527451ccacf796330fc3db08933ee6a76",
+    "completed-tablet.png": "6375388e4a123a013010ad5c2cd4ea7551d5e3adaa991ae1371fb7214d58b5be",
+    "offline-tablet.png": "c76d78728aac98be039546da195138097062408cdf2babb3a1d811ef903b1ce8",
+    "simulated-tablet.png": "0ea2649a2dcc71d5fa9c9fe0a09a42492e832bf3bc4cdb9a2e5154b7f926c5ba",
+    "dark-tablet.png": "94d744e3db499b45b8403d1a81f99ebfd1665ced99f62280388e5878af0c74f5"
+  },
+  "writes": [
+    {
+      "path": "/api/tasks/10006/status",
+      "body": {
+        "status": "in_progress",
+        "expectedStatus": "pending"
+      }
+    },
+    {
+      "path": "/api/tasks/10006/status",
+      "body": {
+        "status": "done",
+        "expectedStatus": "in_progress"
+      }
+    }
+  ],
+  "errors": [],
+  "viewports": [
+    [
+      390,
+      844
+    ],
+    [
+      820,
+      1180
+    ]
+  ],
+  "browserTimezone": "America/New_York",
+  "remoteWrites": 0,
+  "nativeAuthRls": false
+}

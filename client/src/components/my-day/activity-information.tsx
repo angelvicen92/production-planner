@@ -4,16 +4,20 @@ import { executionDuration, formatExecutionDuration } from '../../../../shared/e
 import type { ExecutionTask } from '../../lib/day-execution-view';
 import { getTaskName } from '../../lib/lookups';
 import { lastOperationalTasks, myDayNeighbours } from '../../lib/my-day-operational';
+import { myDayTemporal } from '../../lib/my-day-temporal';
+import { TemporalSignal } from './temporal-signal';
 
 const statusLabels: Record<string, string> = { pending: 'Pendiente', in_progress: 'En curso', done: 'Completada', interrupted: 'Interrumpida', cancelled: 'Cancelada' };
 
-export function ActivityInformation({ task, allTasks, nowMs, clock, resources, location }: {
+export function ActivityInformation({ task, allTasks, nowMs, clock, resources, location, temporal }: {
   task: ExecutionTask; allTasks: readonly ExecutionTask[]; nowMs: number; clock?: ExecutionContext['clock']; resources: readonly string[]; location: (task: ExecutionTask) => string;
+  temporal?: { planDate: string; context?: ExecutionContext; online: boolean };
 }) {
   const neighbours = myDayNeighbours(task, allTasks);
   const last = lastOperationalTasks(task, allTasks, nowMs);
   const related = (peer: ExecutionTask) => <li key={peer.id} className="mt-1">{getTaskName(peer)} · {location(peer)} · {peer.startPlanned ?? '—'}–{peer.endPlanned ?? '—'} <span className="font-semibold">{statusLabels[peer.status] ?? 'Estado no disponible'}</span></li>;
   return <div className="space-y-3 text-sm" data-testid={`activity-information-${task.id}`}>
+    {temporal ? <TemporalSignal signal={myDayTemporal(task, temporal.planDate, nowMs, temporal.context, temporal.online)} /> : null}
     <dl className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-xl bg-muted/50 p-3 sm:grid-cols-3">
       <div><dt className="text-xs text-muted-foreground">Inicio previsto</dt><dd className="mt-1 font-semibold tabular-nums">{task.startPlanned ?? 'Sin horario'}</dd></div>
       <div><dt className="text-xs text-muted-foreground">Fin previsto</dt><dd className="mt-1 font-semibold tabular-nums">{task.endPlanned ?? 'Sin horario'}</dd></div>

@@ -26,7 +26,7 @@ import { executionClockCurrent, madridClockBase } from '@shared/execution';
 
 const states = {
   pending: { label: 'Pendiente', Icon: Circle, style: 'text-muted-foreground bg-muted' },
-  in_progress: { label: 'En curso', Icon: Play, style: 'text-emerald-800 bg-emerald-100 dark:text-emerald-200 dark:bg-emerald-950' },
+  in_progress: { label: 'En curso', Icon: Play, style: 'text-primary bg-primary/10' },
   done: { label: 'Completada', Icon: CheckCircle2, style: 'text-blue-800 bg-blue-100 dark:text-blue-200 dark:bg-blue-950' },
   interrupted: { label: 'Interrumpida', Icon: PauseCircle, style: 'text-amber-800 bg-amber-100 dark:text-amber-200 dark:bg-amber-950' },
   cancelled: { label: 'Cancelada', Icon: XCircle, style: 'text-rose-800 bg-rose-100 dark:text-rose-200 dark:bg-rose-950' },
@@ -127,7 +127,7 @@ export default function MyDayPage() {
   const actions = (task: any, large = false) => canAct(task) ? <Button className={`bg-blue-700 text-white hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 ${large ? 'h-16 w-full rounded-2xl text-lg font-semibold shadow-sm' : 'min-h-11 rounded-xl'}`} disabled={mutation.isPending} onClick={() => act(task)} aria-label={`${task.status === 'pending' ? 'Iniciar' : 'Finalizar'} ${getTaskName(task)}`}>
     {task.status === 'pending' ? <Play className="mr-2 h-5 w-5" /> : <CheckCircle2 className="mr-2 h-5 w-5" />}{mutation.isPending && mutation.variables?.id === task.id ? 'Guardando…' : task.status === 'pending' ? 'INICIAR ACTIVIDAD' : 'FINALIZAR ACTIVIDAD'}
   </Button> : ['pending', 'in_progress'].includes(task.status) ? <p className="flex items-start gap-2 rounded-xl border p-3 text-sm text-muted-foreground"><ShieldCheck className="h-4 w-4 shrink-0" />{!executionClockCurrent(task, context?.clock) ? 'El reloj cambió durante la actividad. Producción debe revisar el registro.' : !sync.online ? 'Sin conexión. Espera para registrar la actividad.' : !context?.planningReady && task.status === 'pending' ? 'Pendiente de aceptación del planning completo.' : context?.role === 'viewer' ? 'Tu acceso permite consultar la agenda.' : 'Sin autoridad operativa demostrada para esta actividad.'}</p> : null;
-  const information = (task: any) => <ActivityInformation task={task} allTasks={tasks} nowMs={nowMs} clock={context?.clock} resources={permissions.get(task.id)?.resources ?? []} location={location} />;
+  const information = (task: any) => <ActivityInformation task={task} allTasks={tasks} nowMs={nowMs} clock={context?.clock} resources={permissions.get(task.id)?.resources ?? []} location={location} temporal={{ planDate: selectedDate, context, online: sync.online }} />;
   const hero = (task: any, heading: string) => {
     const start = hhmmToMinutes(task.startPlanned);
     const late = task.status === 'pending' && start !== null && nowMinute !== null && nowMinute > start;
