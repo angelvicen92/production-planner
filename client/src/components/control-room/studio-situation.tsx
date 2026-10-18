@@ -60,10 +60,15 @@ function Space({ selection: { unit, tasks }, planId, director, state, parentName
         {activities(sections.pending.slice(1))}
       </details>}
     </div>}
-    {sections.completed.length > 0 && <details open={state === 'done'} className="mt-4">
-      <summary className="min-h-11 cursor-pointer rounded py-3 font-semibold focus-visible:ring-2 focus-visible:ring-ring">Completadas · tiempos reales ({sections.completed.length})</summary>
-      {activities(sections.completed)}
-    </details>}
+    {sections.completed.length > 0 && <div className="mt-4">
+      <h5 className="font-semibold">Completadas · tiempos reales ({sections.completed.length})</h5>
+      <p className="mt-2 text-sm text-foreground/75">Última completada</p>
+      {activities(sections.completed.slice(0, 1))}
+      {sections.completed.length > 1 && <details open={state === 'done'} className="mt-3">
+        <summary className="min-h-11 cursor-pointer rounded py-3 font-medium focus-visible:ring-2 focus-visible:ring-ring">Ver las {sections.completed.length - 1} anteriores</summary>
+        {activities(sections.completed.slice(1))}
+      </details>}
+    </div>}
     {sections.other.length > 0 && <details open={state !== 'all'} className="mt-3">
       <summary className="min-h-11 cursor-pointer rounded py-3 font-medium focus-visible:ring-2 focus-visible:ring-ring">Canceladas y estados por confirmar ({sections.other.length})</summary>
       {activities(sections.other)}
