@@ -1,0 +1,92 @@
+{
+  "mode": "INTERCEPTED_HTTP_UI_REGRESSION",
+  "base": "17dc265c51bb2c7c1e93a28f8d8a05db67e9d7db",
+  "fixture": "server/fixtures/assistedA2S10.json",
+  "fixtureSha256": "58cd5c0a49d7e8ff71ffbd0875192ef87fd95738f8870aeee06b82374e266500",
+  "fixtureFingerprint": "22d728894bd73c9cddc7acb5dbd1f518d60f36f910ec2895b3035f07be95d679",
+  "inputHash": "eb79ef99e75c30ba698f065de7c3c82cf7bbe646f7899ae524d7038f24e73add",
+  "obligations": 266,
+  "checks": [
+    "Base 17dc265c: Dirección sin filtros, sólo última completada y siguiente actividad",
+    "266 actividades accesibles exactamente una vez; dos simultáneas; filtros en Dirección",
+    "Intersección plató/espacio/completadas; segundos Madrid desde navegador New York; resumen global intacto",
+    "Tablet 820 y Producción: detalle adicional, enlaces de tarea, sin overflow",
+    "Desplegables permiten abrir el historial y todas las actividades posteriores del espacio",
+    "Todas las pendientes, espacio sin actividad y combinación sin resultados explícitos",
+    "Resolución compartida elimina bloqueo; deep link de War Room conservado",
+    "Completada con timestamps incompletos permanece visible, sin duración/desviación inventada",
+    "Actualizar recupera también catálogo fallido y restablece nombres de espacios",
+    "Offline y fallo de consulta explícitos, sin cero ficticio en incidencias",
+    "Consulta sin confirmar durante más del intervalo + 20 s señala datos obsoletos",
+    "UI Viewer/Producción globales y Aux limitado; no controles de escritura operativa",
+    "Preparación y post-día se mantienen con pendientes y cancelaciones separadas",
+    "Fixtures literales; cero peticiones de escritura a planning, ejecución o incidencias; cero errores JS"
+  ],
+  "screenshots": [
+    "p1b-before-director-1920.png",
+    "p1b-before-temporal-1920.png",
+    "p1b-after-director-1920.png",
+    "p1b-after-temporal-1920.png",
+    "p1b-completed-director-1920.png",
+    "p1b-completed-director-820.png",
+    "p1b-completed-production-820.png",
+    "p1b-empty-space-820.png",
+    "p1b-incomplete-data-820.png",
+    "p1b-offline-820.png",
+    "p1b-query-error-820.png",
+    "p1b-stale-query-820.png",
+    "p1b-before-day-1920.png",
+    "p1b-after-day-1920.png"
+  ],
+  "apiWriteRequests": [],
+  "errors": [],
+  "limits": "UI con respuestas HTTP interceptadas; permisos reales cubiertos por las pruebas G0 existentes. No certifica Auth/RLS remoto ni ejecución nativa nueva.",
+  "gates": {
+    "typescript": "PASS",
+    "build": "PASS; existing Browserslist and bundle-size notices",
+    "focalTests": {
+      "passed": 34,
+      "newTemporalTests": 7,
+      "projectionTests": 11,
+      "executionIncidentAuthorizationTests": 16
+    },
+    "browserChecks": 14,
+    "viewportWidths": [
+      1920,
+      820
+    ],
+    "horizontalOverflow": false,
+    "nativeAuthRlsRerun": false,
+    "realDatabaseWrites": 0,
+    "newSolverRun": false
+  },
+  "filesSha256": {
+    "client/src/pages/control-room.tsx": "76f734334fe4b38bcc2ab030275c905393def3c55f0a3e7c4d9d1dedd1a81ee3",
+    "client/src/components/control-room/studio-situation.tsx": "f9bb8796981902bc17e083525f3b6a22199e4b16ed3e4e6638e0530dcd55b14b",
+    "client/src/components/control-room/presentation.tsx": "cf2907a80a4ba7c80a017207244bd2d8199208667f276a12089ee6997b92813a",
+    "client/src/components/control-room/temporal-navigation.ts": "08b927d7d1a58f578374584c5bbdce3b584a988fd8cae3a1aedf92e2d3813e45",
+    "client/src/components/control-room/temporal-navigation.test.ts": "5e7bff54800e079ccf704879446db10ad8a16bc7fbd67509f14b0774d84eaacc",
+    "client/src/components/control-room/p1b.browser.mjs": "d2ba3532bc5788caec8e087794404ff656d9f95920d2c34212acc704d8b30eb6",
+    "client/src/lib/control-room-metrics.ts": "2777f5f1728c8d6f5973de471e9175adc439f9e466de4013310552295eb58abe",
+    "client/src/hooks/use-control-room-data.ts": "93d24fdf063ae0383f717d4d5a55d5b1fb53b6bf03d84d4eb4524046b886a144",
+    "shared/execution.ts": "047cf61f8114b2397ad3a3516a1f5d2d01055603dd1d28c95f788c1d73185006",
+    "supabase/migrations/096_production_execution_scope.sql": "4c73025f63fd26c12752d7cc374062f373f67141ef6b5975c1a86c48e174de3a",
+    "package-lock.json": "cbe75a531336356a5d3baa75202818f1a7060b72f10d205449b8036295ffeaaa"
+  },
+  "screenshotsSha256": {
+    "p1b-before-director-1920.png": "983e985f7c24e054b2f019a0542a149110a6881b292528acfa0c7aaa0c6d145a",
+    "p1b-before-temporal-1920.png": "1c97acd43d2f5abd03856d2fe00bc4718cc6a8a4eb065833fa79450930a6da4b",
+    "p1b-after-director-1920.png": "2d0a866ec5191218d53779b30dc20ff9361bcf6a11b7696d1e4ec7de1a872833",
+    "p1b-after-temporal-1920.png": "662d84150dfe3a6f25b2e186afbd85c9e24093ba32f40b75fcba4bbaf8ef30e4",
+    "p1b-completed-director-1920.png": "8fd74cbf5b59d4bb0b18a01641f91977b92593fb52527e6f8dc7fb47b279fa30",
+    "p1b-completed-director-820.png": "eaaec5790ed38419ca015c3a47c263f971890c59733e371063f5fc3dceda7c82",
+    "p1b-completed-production-820.png": "ecd1a01179976f5026558d7c9b4991ece10ac74a013cd2fbbf3f3191057396eb",
+    "p1b-empty-space-820.png": "1833374739cb0fe83020e4b70cd1a2d22a7048251b0b51cfded6f938e352e9b0",
+    "p1b-incomplete-data-820.png": "14a7201129818400965d1b659dba3c546244da5150047f43033029a80a9a8e25",
+    "p1b-offline-820.png": "2be380d78979c6e803dd3d9b08c1916bc6b8fe01648b25647e77ef05b0385e42",
+    "p1b-query-error-820.png": "95fb30fc86fa528b2de35d9343dfcf2146f1a40e501c52e0ffb2c02e75fbb231",
+    "p1b-stale-query-820.png": "7fed7e16ff7f2259448069d9a2636c3efe622d3e4973ffb59a116e66ac76fe14",
+    "p1b-before-day-1920.png": "5329b3793a7438135fd3301b24a5a82f6290ca059bf823c20f2a20b2a24e51cd",
+    "p1b-after-day-1920.png": "8b5e29b6a687f60028ddc9940f3999b87ff8fba6128afa7b63c6eec7805f3065"
+  }
+}
