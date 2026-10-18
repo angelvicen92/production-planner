@@ -1,7 +1,12 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { formatExecutionDuration } from '@shared/execution';
+export function signedDuration(seconds: number | null): string {
+  return seconds === null || !Number.isFinite(seconds) ? 'No calculable' : `${seconds > 0 ? '+' : seconds < 0 ? '−' : ''}${formatExecutionDuration(Math.floor(Math.abs(seconds)))}`;
+}
+const clockFormatters = [false, true].map(seconds => new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', ...(seconds ? { second: '2-digit' } : {}), hour12: false }));
 export function clockTime(at: number | null, seconds = false): string {
-  return at === null || !Number.isFinite(at) ? 'No disponible' : new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', ...(seconds ? { second: '2-digit' } : {}), hour12: false }).format(at);
+  return at === null || !Number.isFinite(at) ? 'No disponible' : clockFormatters[Number(seconds)].format(at);
 }
 export function datedTime(at: number | null): string {
   return at === null || !Number.isFinite(at) ? 'Sin confirmar' : new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', dateStyle: 'short', timeStyle: 'medium' }).format(at);
