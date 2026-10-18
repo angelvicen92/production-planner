@@ -189,7 +189,9 @@ export async function runLiveExecutionJourney({ appUrl, url, anon, users, db, pl
     const row=operator.getByTestId(`day-execution-task-${pending.id}`);await row.waitFor();
     for(const [label,status] of [['Iniciar','in_progress'],['Interrumpir','interrupted'],['Reanudar','in_progress'],['Finalizar','done']] as const){
       const response=operator.waitForResponse(r=>r.url().endsWith(`/api/tasks/${pending.id}/status`)&&r.request().method()==='PATCH');
-      await row.getByRole('button',{name:label,exact:true}).click();assert.equal((await response).status(),200);
+      await row.getByRole('button',{name:label,exact:true}).click();
+      const reply=await response;
+      assert.equal(reply.status(),200,`Day execution ${label}/${status}: request=${reply.request().postData() ?? '(none)'} response=${reply.status()===200?'OK':await reply.text()}`);
       const wanted={in_progress:'En curso',interrupted:'Interrumpida',done:'Completada'}[status];await row.getByText(wanted,{exact:true}).waitFor();
     }
     assert.equal(await row.getByRole('button',{name:'Resetear',exact:true}).count(),0,'aux cannot reset');
