@@ -30,6 +30,7 @@ on:
       - "client/src/lib/planning-view-policy*"
       - "shared/assistedStageTiming*"
       - "client/src/lib/assisted-draft-warnings*"
+      - "client/src/lib/assisted-validation-messages*"
       - "client/src/lib/assisted-planning-view*"
       - "client/src/lib/assisted-autopilot*"
       - "client/src/lib/assisted-scope-selection*"
@@ -56,6 +57,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  manual-draft-validation:
+    name: manual-draft-validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
+      - run: node --import tsx --test --test-concurrency=1 engine/planner-next/transportGrouping.spec.ts server/assistedManualSnapshotFidelity.spec.ts client/src/lib/assisted-draft-warnings.test.ts client/src/components/planning/assisted-planning-workspace.test.ts
+      - run: npm run demo:a2:smoke -- work/manual-draft-validation --full --manual-validation
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: manual-draft-validation
+          path: |
+            work/manual-draft-validation/integration.json
+            work/manual-draft-validation/manual-validation-probe.json
+            work/manual-draft-validation/p9-*.png
   autopilot-workspace:
     name: autopilot-workspace
     runs-on: ubuntu-latest

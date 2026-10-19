@@ -90,6 +90,7 @@ if(process.argv.includes('--app')){
  if(warRoom)runtimeFiles.push('script/demo/smokeWarRoomJourney.ts','server/incidents.ts','server/incidentErrors.ts','shared/incidents.ts','client/src/pages/my-day.tsx','client/src/pages/war-room.tsx','client/src/hooks/use-war-room.ts','client/src/hooks/use-plan-realtime.ts','client/src/lib/war-room-store.ts','client/src/pages/dashboard.tsx','client/src/pages/call-sheet.tsx','server/apiAuthorization.ts','shared/routes.ts','shared/schema.ts','supabase/migrations/094_operational_incidents.sql');
  runtimeFiles.push('client/src/hooks/use-execution-context.ts','client/src/hooks/use-tasks.ts','client/src/hooks/use-production-clock.ts','shared/execution.ts','script/demo/smokeLiveExecutionJourney.ts');
  if(stageOrder)runtimeFiles.push('script/demo/probeA2StageOrder.ts','server/assistedScopeOrchestrator.ts');
+ if(process.argv.includes('--manual-validation')){assert.ok(full,'manual validation requires the complete accepted A2');runtimeFiles.push('script/demo/smokeManualDraftValidation.ts','client/src/lib/assisted-validation-messages.ts','engine/planner-next/transportGrouping.ts');}
  if(autopilotWorkspace)runtimeFiles.push('script/demo/smokeAutopilotWorkspace.ts','client/src/components/planning/assisted-autopilot-progress.tsx','client/src/lib/assisted-autopilot.ts','client/src/lib/assisted-autopilot-progress.ts');
  if(autopilot)runtimeFiles.push('shared/assistedAutopilot.ts','client/src/lib/assisted-autopilot.ts','script/demo/smokeA2AutopilotJourney.ts');
  if(settingsSections)runtimeFiles.push('script/demo/smokeSettingsSections.ts','script/demo/smokeSettingsOperations.ts','client/src/pages/settings.tsx','client/src/components/settings/settings-section.tsx','client/src/hooks/use-settings-section.ts','client/src/lib/settings-section-preferences.ts','client/src/components/general-program-settings.tsx','client/src/components/general-optimizer-settings.tsx','client/src/components/control-room-settings.tsx','client/src/components/transport-settings-card.tsx','client/src/components/resources-list.tsx','client/src/components/create-resource-pool.tsx','client/src/components/settings/users-admin.tsx');
@@ -240,7 +241,11 @@ if(process.argv.includes('--app')){
   assert.equal((await db.query('SELECT count(*) AS n FROM public.plan_breaks WHERE plan_id=$1',[dataset.input.planId])).rows[0].n,'0');
   pass('real storage/input adapter canon after GET day; no legacy breaks');
   report.diagnostics={};const options={appUrl,url,anon,users,db,planId:dataset.input.planId,directory,full,pass,diagnostics:report.diagnostics,buildInput:()=>buildEngineInput(dataset.input.planId,storage)};
-  if(liveSnapshot){
+  const manualReplay=process.argv.find(arg=>arg.startsWith('--manual-validation-replay='))?.split('=').slice(1).join('=');
+  if(manualReplay){
+   assert.ok(full&&process.argv.includes('--manual-validation'));report.mode='RECORDED_NATIVE_A2_MANUAL_VALIDATION';report.requestedStages=0;
+   const {runRecordedManualValidationJourney}=await import('./smokeManualDraftValidation');report.manualReplay=await runRecordedManualValidationJourney(options,manualReplay);
+  }else if(liveSnapshot){
    // The sections journey edits a disposable Draft without accepting a Stage
    // and creates an independent technical-task day. Preserve prior task rows.
    const protectedDays=collapsibleSections?(await db.query("SELECT id FROM plans WHERE id<>27002")).rows.map(row=>Number(row.id)):null;

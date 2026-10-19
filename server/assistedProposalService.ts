@@ -153,18 +153,32 @@ export function materializeAssistedSnapshotOccupations(problem:PlannerNextProble
   return {protectedPlacements,protectedOperationalMeals,protectedSetupPreparations,protectedRoundPreparations,protectedParticipantMeals};
 }
 
+export class ManualValidationUnsupportedError extends Error {
+  constructor(readonly phase:'ENGINE_INPUT'|'SNAPSHOT'|'OCCUPATIONS'|'VIOLATION_IDENTITY',readonly reasonCodes:readonly string[]){
+    super('ASSISTED_DELTA_VALIDATION_UNSUPPORTED');
+  }
+}
+
 export function validateManualAssistedDelta(input:EngineInput,draft:AssistedPlanningSnapshotV1,touched:readonly number[]){
-  const adapter=adaptEngineInputToPlannerNextProblem(input);if(adapter.status!=="SUPPORTED")return null;
-  return validateMaterializedManualDelta(adapter.problem,adapter.identityMap,draft,touched);
+  const adapter=adaptEngineInputToPlannerNextProblem(input);
+  if(adapter.status!=="SUPPORTED")throw new ManualValidationUnsupportedError('ENGINE_INPUT',adapter.reasonCodes);
+  try{return validateMaterializedManualDelta(adapter.problem,adapter.identityMap,draft,touched);}
+  catch(error){
+    if(error instanceof Error&&error.message.startsWith('UNPROJECTABLE_VALIDATION_IDENTITY:'))
+      throw new ManualValidationUnsupportedError('VIOLATION_IDENTITY',['VALIDATION_IDENTITY_UNREPRESENTABLE']);
+    if(error instanceof Error&&['UNREPRESENTABLE_PROTECTED_','UNPROJECTABLE_PLAN_RESOURCE:','INVALID_SNAPSHOT_ITINERANT_UNIT:'].some(prefix=>error.message.startsWith(prefix)))
+      throw new ManualValidationUnsupportedError('OCCUPATIONS',['SNAPSHOT_OCCUPATION_UNREPRESENTABLE']);
+    throw error;
+  }
 }
 
 function validateMaterializedManualDelta(problem:PlannerNextProblem,
   identityMap:readonly {namespace:string;sourceId:string;canonicalId:string}[],draft:AssistedPlanningSnapshotV1,touched:readonly number[]){
   const canonicalByProduct=new Map(identityMap.filter(i=>i.namespace==="task").map(i=>[Number(i.sourceId),i.canonicalId]));
-  if(touched.some(id=>!canonicalByProduct.has(id)))return null;
+  if(touched.some(id=>!canonicalByProduct.has(id)))throw new ManualValidationUnsupportedError('SNAPSHOT',['UNKNOWN_MANUAL_TASK_IDENTITY']);
   const materializableIds=new Set([...problem.tasks.map(task=>task.id),...(problem.participantMeals??[]).map(meal=>meal.sourceTaskId)]);
   if(draft.tasks.some(row=>(row.startPlanned===null)!==(row.endPlanned===null)
-    ||(row.startPlanned!==null&&!materializableIds.has(canonicalByProduct.get(row.taskId)??""))))return null;
+    ||(row.startPlanned!==null&&!materializableIds.has(canonicalByProduct.get(row.taskId)??""))))throw new ManualValidationUnsupportedError('SNAPSHOT',['SNAPSHOT_TASK_UNREPRESENTABLE']);
   const context=materializeAssistedSnapshotOccupations(problem,identityMap,draft);
   const {protectedPlacements,protectedOperationalMeals,protectedSetupPreparations,protectedParticipantMeals,protectedRoundPreparations}=context;
   const scopeIds=touched.map(id=>canonicalByProduct.get(id)!);

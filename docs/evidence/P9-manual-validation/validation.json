@@ -1,0 +1,535 @@
+{
+  "status": "PASS",
+  "base": "0e7442e4b5ccf4fde6756841b7908b27e87fe1db",
+  "observedMainAfterValidation": "1c4521ddef87029d33376d2831578c1fe81e880b",
+  "node": "v24.19.0",
+  "mode": "REAL_DISPOSABLE_PRODUCT_INTEGRATION",
+  "remoteWrites": 0,
+  "productionMigrationsApplied": 0,
+  "tests": {
+    "regression": {
+      "tests": 382,
+      "pass": 382,
+      "fail": 0
+    },
+    "check": "PASS",
+    "build": "PASS",
+    "migrations": "PASS",
+    "integrationTypes": "PASS",
+    "historicalProbeTypes": "PASS"
+  },
+  "native": {
+    "checks": 24,
+    "generatedStages": 11,
+    "completed": 266,
+    "baselineFingerprint": "d77077d5115b22c91117ff1f56b8502deaff4ca51d056f10017b520270387c0f",
+    "identicalToRedBaseline": true,
+    "cleanAccepted": true,
+    "hardReportHttp": 200,
+    "hardValid": false,
+    "newHardAfterAffectedEdit": 1,
+    "oldExceptionStatus": "SUPERSEDED",
+    "unsupported": {
+      "code": "ASSISTED_DELTA_VALIDATION_UNSUPPORTED",
+      "message": "ASSISTED_DELTA_VALIDATION_UNSUPPORTED",
+      "validationDiagnostics": {
+        "phase": "RULE_IDENTITY",
+        "reasonCodes": [
+          "ANCHORED_ACCOMPANIMENT_VIOLATION"
+        ]
+      }
+    },
+    "rollback": "PASS"
+  },
+  "runtimeHashes": {
+    "engine/planner-next/benchmarks/canonicalFullA2EngineInput.ts": "5d1c7424192bad90720a90ed369902bb1d242a5c6666c33d28b52e09a8e7bc83",
+    "engine/planner-next/benchmarks/focal-a2/full-day/manifest.ts": "fd3b2100ef56fbbde17878dce038b247352efbe59ed542c79039da06e2c57bb1",
+    "engine/planner-next/integration/engineInputPreflight.ts": "7f914071df89e85d062b6ba95e981c2dc9a5658e61c792917e6ae5e143c68b3b",
+    "engine/planner-next/placement.ts": "ebc74f7c3414efb4b3bdccfe60b5b5c2ab392d6cac7646115850fdf4ddcd2f5a",
+    "engine/planner-next/validate.ts": "69fb5d2cef7a7d1d4f2cacd1fe4c4fd49cda38caba2878bbd768c89b3358aae1",
+    "script/demo/reconcileA2Topology.ts": "15061ba3ea40a1236b52088b8944b9b0a06bf78f8f2e8cdc26cd892ea54345e8",
+    "script/demo/a2HistoricalCatalog.ts": "2c7fcecc01479958f639fd9bbc4a857947698ef6aadcf265357024400a65cdb5",
+    "shared/anchoredOperationProjection.ts": "6a4367fd88f759d20ecbc6c931a8f7e3cb6e5fdafe2a582f9810e706df7a4ccc",
+    "server/storage.ts": "0031db6620165a0546deedf0cdfd047790ee57f7d5b3226650486dd022137163",
+    "server/assistedPlanningSnapshot.ts": "2184dc531787336e974359fe0e7b0772432dc0a78c9c139a0893f390d3ddab4b",
+    "server/assistedProposalService.ts": "c410ca094ca12dd5b46b856ad5d8bd310e7553e71a6c8c3f2d65541599843009",
+    "server/assistedPlanningService.ts": "490b40550ac940ddcd69b2321247578a5c428414edefed79759f65896203629b",
+    "server/routes.ts": "4fd7a5e048dffc739e03197fd0cf7aee1a6e8bc9f0642978fda462a27f1eeb72",
+    "engine/planner-next/jointCompletionWitness.ts": "eff19c666412542cc47a364687f46300982e8690b0a341a69d02c183616068a8",
+    "engine/planner-next/exactItinerantPlan.ts": "027287c5470bd5559f71fa7d9d354ec0cec2e6ceb4ccd8186da8396d4710b69f",
+    "client/src/components/layout.tsx": "3be0f0b4501eecb52fe54547d3455d67867be651ead74df852a3562561669697",
+    "client/src/components/planning/assisted-planning-workspace.tsx": "aa250ab47450d0b86f01e59d1ea1e312389230782db117b3528144677c77d5f6",
+    "script/demo/a2ImportRows.ts": "b9c7cadd5218fdd3abe2c18796a62713a0f637f173f61d9b610fd323a57016b0",
+    "script/demo/prepareA2Import.ts": "8c18275b2786bfccb4a023e07e5270310353e36765418ee7e443b10385247244",
+    "script/demo/prepareA2Schema.ts": "1b1b038c3b0b309e65124e347a37d1180efd2629815da2703ed3dbcc416daf48",
+    "script/demo/smokeA2Integration.ts": "8dfd9879ed8c092bc578e5388422d2b362e4ffe43b00b61fec53770798c9a412",
+    "script/demo/smokeA2Journey.ts": "9f07591a05d13d8ebdb5cb2b557b89b7dd69fc0b23430d061350f0afe879d584",
+    "client/src/lib/assisted-planning-view.ts": "c54e2274d214f8992572e214ffb6787cd6ac9173d76c4c71e70e985d25fd2597",
+    "client/src/lib/assisted-draft-warnings.ts": "b59f3949e177402f8a020e04fa9c082070cd3333820f161f995865c523da4b81",
+    "script/demo/smokeA2HistoricalScopeJourney.ts": "0b53ed8c31936d5ab783414502fc46ba8620ed8f998006290a9b2c345fdca46f",
+    "engine/planner-next/integration/engineInputAdapter.ts": "aee31596cd55c038e3624f2f1b4750237e264604098f3c5937906a24cff79c02",
+    "script/demo/seedA2HistoricalRehearsal.ts": "02997b41eac761bffdc295029918dd0cabc810370b62980428ece115f0ecedd1",
+    "script/demo/a2TopologyMetrics.ts": "e8438ceb57ef098b31b411e152b4fcefa27f9bc5220aafd29c890ad7e6aa1337",
+    "script/demo/fixtures/a2-legacy-import.json.gz": "7e71838142dcb8c6a43004058f14bad1be93f624005fcfc8c4fc5c4ad8863d72",
+    "script/demo/a2SpatialTopology.ts": "c225c09d0097ae66c1e59aaee2934b3dcd8150ee1f1b3a378df0b00242f2c31a",
+    "client/src/lib/planning-view-policy.ts": "1d789e183ff19542c4397ec3fc377258893310e1700ddd0406aee636b3138b52",
+    "script/demo/smokeA2ManualSnapshotJourney.ts": "7d605d94d5f46a7209cbb841e366af8637d94a74d1f0d866e0ab88b19f68ebc3",
+    "script/demo/smokeA2ViewsHistoryJourney.ts": "2184e7523946086f7da0bf1bf3d71822804757f5f497a242f479611927a66230",
+    "shared/assistedStageTiming.ts": "1b268bc272dbdd65bfded1f6d7072a69515f2f28b158ad424b106c1f6bfd7327",
+    "client/src/lib/contestant-lane-sort.ts": "a2ac47ded69db5e74f4aaf67ee31666bb9b48be812e967cce826d1427bf81c97",
+    "client/src/components/planning/stage-history-timing.tsx": "246419d7b111b57a2bdadcb62ac31994ed892519a964de9ca2881b3b5252e5a9",
+    "client/src/components/planning-timeline.tsx": "8c78184823954f4ce648b6f15ced0dae11543b2a725ed4365d41b99dc151e637",
+    "client/src/pages/plan-details.tsx": "1fb3b616ca1bf27d67db7fbfcb2bdd4e55a1d42ae8a79a22b6ba01d06fed3d10",
+    "engine/planner-next/mainFlowPatterns.ts": "9dc382e2a75f41fe69900390d4c0a0e6bd92fcc3b62166b72aaf417a134f3700",
+    "script/demo/smokeMainFlowPreferenceJourney.ts": "040c3d37d9d43c7fc913822bb586263cb6fc9b650c94db747971c7f76f3c7543",
+    "shared/mainFlowPreference.ts": "dab5f13363162359b9111c25783049f79c1f767dbae9b46e5b1f98c20a4f3f9a",
+    "server/mainFlowPreference.ts": "730e2a9190e02ca2b332989652e605e8f30822c99a421738f581629e2cb59dda",
+    "server/dayConfigurationService.ts": "407c30774af0fa5c55b261e22e7a10f54df96041fb19f8a8c6335e4da8d8498c",
+    "server/effectiveConfigurationView.ts": "d58e7e0636fc67752d85eea7e77c26cbacd67d8d7baac86cdf4bf375eec08ae6",
+    "client/src/components/effective-configuration.tsx": "135bc86be534768ac9689a4f210234a53a6c35cbb9de4cfae8d226ae67d3aa04",
+    "client/src/components/main-flow-preference-editor.tsx": "6401fe7514ffb0ba32b71caa628a04d6a9105fbf068ad09297334b8c88ba65b0",
+    "client/src/lib/main-flow-preference-result.ts": "9f27151434586783f8c0cc8f5b1c7cf48eb3523a0c835818bbada9f337b975da",
+    "engine/planner-next/mainFlowMeal.ts": "cacb654432e5db02ce8ad844332c4e4a5678deedfdb7d971dbd5d795b5f6835d",
+    "engine/planner-next/anonymousPipelineWitness.ts": "7ba27327fbd1b8d840e0054a055b69ebfdae04105e244c5ab9cc32a2eba38034",
+    "engine/planner-next/exactMainAndFeederCore.ts": "267e233736e6a847f130d45a96f74b15976d7b729244b73f418fcb22a7fc9933",
+    "client/index.html": "78d320cec1e1d400e55ce1cf2282139ffefd94a5080b8063f22255f8b9f5aac4",
+    "client/src/index.css": "9b42a5119092f4476c7cf5275416ffd30a8602ab95e5de3598b458afb499d2b6",
+    "server/effectiveConfigurationHttp.ts": "eed69ad213d8a18e430bad746a030e74a251dfe8bd82d510d023bc24d8c0c9f5",
+    "client/src/hooks/use-plan-staff.ts": "593853326b4327d1ce58a74dfa4934731d7302a60ce301b7b145e6b61697e461",
+    "client/src/components/planning/planning-workspace-layout.tsx": "57b847c28ce0350ec810e5d18500c5dba95305efa51400be6eba2cb42bb27f04",
+    "client/src/components/planning/planning-stage-toolbar.tsx": "cb1d9d38aebcd8a4e362c3f0d62aead4eaaa9c40e3c2fe25de5522ff9f9e4e22",
+    "client/src/lib/day-execution-view.ts": "2a6205b9fe278d441fe8bc1d6fcfbaefeed4ac76a9f0d55623bc334517382672",
+    "client/src/lib/planning-workspace-preferences.ts": "d2b3f70e15aafd4fba49ab7dd317b27f9d38efe609dcc8e92e53713fa5ad96c4",
+    "script/demo/smokeDayWorkspaceJourney.ts": "a5e117fc1ac1f4a2c9e933d5585d785bebe156e4821bc060c2db49c8bb834bfb",
+    "script/demo/smokeDayWorkspaceSetup.ts": "f3390d8d22321ef133f92057f3e5c4e6f7b5b2deda7cad915659f49bfdd54b42",
+    "client/src/components/day-workspace/contestant-day-roster.tsx": "7424c04dde5f93f383a848202d993b49d7d02d8fecfb1dc9174e2892b3e22105",
+    "client/src/components/day-workspace/contestant-identity.tsx": "27a7815092cc1a2ccf3f65301cf704cab70caae275dc6db412052a511a1fb719",
+    "client/src/components/day-workspace/day-capability-editor.tsx": "d7b951f83fbadfd2b8b7b5037db767a4509c67f30094f0096cf27e66b4202ae8",
+    "client/src/components/day-workspace/day-collapsible-section.tsx": "c28217aace9a143538f93906a72b388b0deb0597dae2374f6c07c127cce4189c",
+    "client/src/components/day-workspace/day-execution-workspace.tsx": "5d75d9ad06799c99acb687be377d62eab98240733798f9a6a6f5a38a48d9bd6e",
+    "client/src/components/day-workspace/day-resources-workspace.tsx": "7ab835b5b94cd79bb37a3f1c06bfc117d4a487f5eb0fec08bbf4d3088da41f5f",
+    "client/src/components/day-workspace/day-staff-workspace.tsx": "ddcf2cec1214066cedfff0c6978d8eba6d87990894792201c9b0cb7970277b5b",
+    "client/src/components/day-workspace/day-workspace-shell.tsx": "4b8670d6aa9d0e58c3a3c5f4baddfeab9c93cfc5889b324aff5e05509cd6d1d0",
+    "client/src/components/day-workspace/effective-configuration-fields.tsx": "c8bc5b0e91c3cdb70e1487e1f9b255a59ce94d30803d990137918b6f93d4a02c",
+    "client/src/components/day-workspace/legacy-planning-diagnosis.tsx": "80a8d383c75580a40dc36a98689a7d4c4380d295dac3af56c5bbb5093a381d05",
+    "client/src/hooks/use-execution-context.ts": "4912b2048abcff5a33a1439a3076fb15c3b43b9837dd9e15effb8bb2abe9556c",
+    "client/src/hooks/use-tasks.ts": "651b83f6729b0a27e6feccefa960ec9a2cc90973362db3cee898b38ce0199337",
+    "client/src/hooks/use-production-clock.ts": "e8781e9bc663750ae721b54b064b7d1bed2e024bb6e0cf3befe3a42e4c5581fc",
+    "shared/execution.ts": "047cf61f8114b2397ad3a3516a1f5d2d01055603dd1d28c95f788c1d73185006",
+    "script/demo/smokeLiveExecutionJourney.ts": "d19270b5d2d7cc7f828ec6bc2446fde84bf2f6e0629c91d8d3ea927fbf89a1e6",
+    "script/demo/smokeManualDraftValidation.ts": "7749ff991285313c4f82fd17cfeab8e73b59eebb008791f9afb15c5e65170a92",
+    "client/src/lib/assisted-validation-messages.ts": "b603c4f1a402cded880db7629b06175707ac59272db8c09c8b5db371b119e483",
+    "engine/planner-next/transportGrouping.ts": "5965a089a8a89471f5cec994330934b88f3a15faf258267f0caeec2f0b01861e"
+  },
+  "migrationHashes": [
+    {
+      "file": "001_init.sql",
+      "sha256": "ed0ad38bf9c0c31bf9e411eb0d2edd6bc724f25f1cbbf78d1020efc68090f1cf"
+    },
+    {
+      "file": "002_contestants.sql",
+      "sha256": "d0c7337081de996324e0d490897399a178023cc9bb18c65689859b23a216826c"
+    },
+    {
+      "file": "003_contestants_plan.sql",
+      "sha256": "a2c2906f35362b689aa85398a234f63a971089691222e7c28ab0013d952d208c"
+    },
+    {
+      "file": "004_task_locations.sql",
+      "sha256": "9c8a9952d3033d5381ad7c57bdf218a954b8ab46c1b3ce2f56fa46cbbafcb6e9"
+    },
+    {
+      "file": "005_resource_pools.sql",
+      "sha256": "f8b72cd2e5efa8f879a884e602480284885024d8bfb1cc75ef35db772b37f601"
+    },
+    {
+      "file": "006_resource_items.sql",
+      "sha256": "11704fa9dade1929beab474a613ec9b75c6d4d66497cf756776b0842f0968a82"
+    },
+    {
+      "file": "007_contestants_details.sql",
+      "sha256": "20ac4847148ee7e73337044ac92be0a833fe1e660cf1cdbc5468519329fca640"
+    },
+    {
+      "file": "008_task_templates_ui_color.sql",
+      "sha256": "220125c60e17a2eeff78fc27bba9d9f2bfc9523a64289c8ac2eaa0207623fade"
+    },
+    {
+      "file": "009_task_template_dependencies.sql",
+      "sha256": "fa42b4dfa4491bf03936aa535b2464011849de74d084ab9835de4d2336150ae9"
+    },
+    {
+      "file": "010_plan_contestant_meal_settings.sql",
+      "sha256": "f04f7d913e50a40b75086e008ca92db3189bbcdcf0d97132775fee63f953bc0a"
+    },
+    {
+      "file": "011_program_settings.sql",
+      "sha256": "374e818ff6abfaef4f983acea3dbf95ff364584580ce7125da4020ed5b64d116"
+    },
+    {
+      "file": "012_program_settings_meal_task_name.sql",
+      "sha256": "80c60ea5ef71380d6dc9fd524337cbe3f71bcd72e8fe9bb718213476fcc1a061"
+    },
+    {
+      "file": "013_space_resource_assignments.sql",
+      "sha256": "7d06a0e52020fc600ec711ffaa815ae7f9a7c6fcd7097c1b9176d878d868f452"
+    },
+    {
+      "file": "014_zone_resource_assignments.sql",
+      "sha256": "3af1a3718d4f1a8a22f71fd837bea0f7ec1d78479a2e5d81fc71c7dfe702425c"
+    },
+    {
+      "file": "015_add_task_secondary_color.sql",
+      "sha256": "725243fd536dbf5ab7e61e6b2fe187008c94063ccfce459a1fb6b97009a8463e"
+    },
+    {
+      "file": "016_add_zone_color.sql",
+      "sha256": "f0c9bc03853f8555f6160ab6a0fcf366effcd00d6546ebd757cd1fed18f641d3"
+    },
+    {
+      "file": "017_task_template_multi_dependencies.sql",
+      "sha256": "af50644d9da78f41f61dc8bc184f66ebf0931607976c5372c237c2316a52f461"
+    },
+    {
+      "file": "018_resource_item_components.sql",
+      "sha256": "5589e1ad6ac3e1f8c1bc618c7f4b76bb1f581f00c0910b6affc9c86bf104609d"
+    },
+    {
+      "file": "019_daily_tasks_required_plan_resources.sql",
+      "sha256": "dd05d90300ceb510764b6cf0e585fb8ba69a5329bcbe11703ad39b19363d8243"
+    },
+    {
+      "file": "020_zone_space_resource_type_requirements.sql",
+      "sha256": "cecad680843af5e0018e850c2a567a581286177804999f9a6e332b0d3e2c0a7c"
+    },
+    {
+      "file": "021_task_template_resource_requirements.sql",
+      "sha256": "bf19ee7ad73aca8ae65045a9326ecb7251b7d77611472599a1ce4557dacd0bf5"
+    },
+    {
+      "file": "022_daily_tasks_assigned_resources.sql",
+      "sha256": "61f8336e74ac820b4d05f7868e01d65b260e20a832e4f6ccb4fd3b400a6ce007"
+    },
+    {
+      "file": "023_plan_vocal_coach_rules.sql",
+      "sha256": "d0edc8be44e56daca806b7ad946c9a29b94fe73efae5db3cfbab17d01080c78a"
+    },
+    {
+      "file": "024_vocal_coach_rules.sql",
+      "sha256": "1b133945ce420b0edb49d963051be514cfac4b90789fe2190845f63b29e0f2f1"
+    },
+    {
+      "file": "025_contestants_availability_notes_instrument_name.sql",
+      "sha256": "63c1c51e6821414c0c967189cd849d8b3ff4c45afec9e0647e5d884da1515f89"
+    },
+    {
+      "file": "026_optimizer_settings.sql",
+      "sha256": "99adde203c4c4da4e3b6cd58c79e9309276c3d91d936803aeb27f4938b4463a0"
+    },
+    {
+      "file": "027_optimizer_settings_levels.sql",
+      "sha256": "b1e29d87e9bce68de32a15d4cde207dcfebd75c06ddba348e95e02cc26b515dd"
+    },
+    {
+      "file": "028_optimizer_settings_compact_and_main_zone_modes.sql",
+      "sha256": "08c1baa2abc88abfc4bde0f4dd9024b0142b6aa4e33f448825019f22eab86596"
+    },
+    {
+      "file": "029_staff_people_and_assignments.sql",
+      "sha256": "a02221fb3e0c149af6a6c11848558bad354944d45b623553e9fdd00dc588f243"
+    },
+    {
+      "file": "030_staff_defaults.sql",
+      "sha256": "062a79a9ef08b1fd69b4b6ec28a58e1a39baf96869f8d2314eff5601db6dbb55"
+    },
+    {
+      "file": "031_realtime_daily_tasks.sql",
+      "sha256": "66a214ae8570289e707070f61a02329a08fd630f465a54b811c93f336b9c5d5e"
+    },
+    {
+      "file": "032_itinerant_teams.sql",
+      "sha256": "0ac8d1b7df4b0580793ae312221d112a8cf45b82ed1ddaf9152c3ca56b08b7b1"
+    },
+    {
+      "file": "033_staff_assignments_itinerant_team.sql",
+      "sha256": "cdb0ade0db8e814137f468bb7d2100562f410a6cb1001c90f557c786266ac727"
+    },
+    {
+      "file": "034_2_task_templates_itinerant_team_requirement.sql",
+      "sha256": "3e8b48b13d29ff8e1b48e90fff01d7a0612ed11bc80cfda20a382057b207ccee"
+    },
+    {
+      "file": "034_staff_scope_check_itinerant_team.sql",
+      "sha256": "06def9cb6af3d80bf735073f6b947f6c6a4fb9c7687ea8e61aa9d62eab77e303"
+    },
+    {
+      "file": "035_plan_staff_assignments_scope_check_itinerant_team.sql",
+      "sha256": "5eead9f5e0328546a082c38497a7bbe13dbb2a80edd944ac6d568a3bb8aea3a5"
+    },
+    {
+      "file": "036_optimizer_settings_mode_and_advanced.sql",
+      "sha256": "51509cb83228990fe32170978b210a2897f05d63d8234f751b38dfcc370d4476"
+    },
+    {
+      "file": "037_rbac_auth_magic_link.sql",
+      "sha256": "b93e793b87da3e74e1d9bd801b80d892c9db485984d84a421678fea8f362d00c"
+    },
+    {
+      "file": "038_settings_delete_admin_policies.sql",
+      "sha256": "58d83f4e02bd54b6f0c5a9a763ac17cbe30cc6d2a92863121100657e53b3eb2d"
+    },
+    {
+      "file": "039_clock_and_task_events.sql",
+      "sha256": "5c066f2d1986c0efb69676c2d52df6003136583c2ae1d50f95c71415786d1ceb"
+    },
+    {
+      "file": "040_user_entity_links.sql",
+      "sha256": "86d181b5965da068a77853bf244be2323ee791beabb5bf5cd6cd60179458172a"
+    },
+    {
+      "file": "041_abbrev_and_task_comments.sql",
+      "sha256": "b1d6718bdc81ebdcb22a30102cb6480337529f587d72d84f09fc40eb126c9e33"
+    },
+    {
+      "file": "042_daily_tasks_manual_blocks.sql",
+      "sha256": "ec0437571ff1e032cd098271dc1762b4c3cc0878072b5464867b95a60a3b2cad"
+    },
+    {
+      "file": "043_space_itinerant_meal_breaks.sql",
+      "sha256": "aa4666cacfb4862147299793ab14cfb7bf8e63f9ba72ce42636966bc682aea56"
+    },
+    {
+      "file": "044_add_is_active_resource_types.sql",
+      "sha256": "68073b34170baa7792760e6607b7546579aa622302010f3451ce06f446167720"
+    },
+    {
+      "file": "044_grouping_scope_config.sql",
+      "sha256": "dfe9f5b20655e057647ff996d0412597dcc99ac8a1b583e5c97e8d648257b128"
+    },
+    {
+      "file": "045_user_preferences_favorite_plan.sql",
+      "sha256": "f4586d1697ee516b1047b1910be5165258c7ae0d7acb2639d94f04f7a815c0af"
+    },
+    {
+      "file": "046_daily_tasks_real_seconds.sql",
+      "sha256": "dddfc97c94d9fd5b0f81ddea703b5df7ab914e1ae01e818ad51f4cc300639e27"
+    },
+    {
+      "file": "047_control_room_settings_and_planning_runs.sql",
+      "sha256": "23369c94aec5dfc9b71d3d6ddf9d7c2320538ec95f21f6d2fd7165f0a59e9193"
+    },
+    {
+      "file": "048_plan_summaries_view.sql",
+      "sha256": "c0cc21fb6ce4dc6227ce0cffc0b81c13c5ce75330c79c6f571093135f6cf09d5"
+    },
+    {
+      "file": "049_optimizer_contestant_total_span_and_planning_progress.sql",
+      "sha256": "70bb9e34ee0f09bd609541ed3bcf6ad241deece5c2ea6aeeff168aa22b354b67"
+    },
+    {
+      "file": "050_simulated_set_at.sql",
+      "sha256": "ac6ab3d38deed030717614bf7f89a9fac6bab53e5e5217bd64aab1a896e39f51"
+    },
+    {
+      "file": "051_fix_staff_assignment_defaults_invalid.sql",
+      "sha256": "27dda71e0798be0bd41c719d65f403e652cb71597059ce71d0286009e51ea00e"
+    },
+    {
+      "file": "052_global_plan_favorite.sql",
+      "sha256": "7bced8853f4845eed3155f29687f30100effd941f152569cd05d080b40046bcb"
+    },
+    {
+      "file": "053_transport_breaks_settings.sql",
+      "sha256": "ce6d7e6d9ee1f4097b8369c398628704e5d0940065bb02e42c8fd3a617f5f1c3"
+    },
+    {
+      "file": "054_minimize_changes_by_zone_space.sql",
+      "sha256": "4a8876b9d00e9017c0c4848d9f5f20514a367528c19f6aae4523ab8a21f50db0"
+    },
+    {
+      "file": "055_pause_fields_daily_tasks.sql",
+      "sha256": "70fc3bcd0039387b59a785172c5a8b78d461ffdf2e5c48425cf15c6dcf2ec1c9"
+    },
+    {
+      "file": "056_task_templates_auto_create_on_contestant_create.sql",
+      "sha256": "a4a2e459c4229f14f891396fd53a8d18bc9e1ffffed1fca46b7f7ad56230e39f"
+    },
+    {
+      "file": "057_optimizer_grouping_zone_ids.sql",
+      "sha256": "b9355d112fc2f6d503b5184608723b7447b93da18dcc7f838f9edb5df65866ab"
+    },
+    {
+      "file": "058_optimizer_main_zone_split.sql",
+      "sha256": "dc68169fc477625cd488f4835a689b0c45a397c0dca072428b02320e319335aa"
+    },
+    {
+      "file": "059_plans_space_meal_break_minutes.sql",
+      "sha256": "86f0f214dc104140e70ec7a2b7b4604bf337975d5dee3791291da75dea101a33"
+    },
+    {
+      "file": "060_plans_planning_warnings_stats.sql",
+      "sha256": "30631ab6f4c6a6ead7e08c3ee3e989a17ca3c574a0af3c942606db459ce04928"
+    },
+    {
+      "file": "061_ui_order_indexes.sql",
+      "sha256": "2c08fae6db4696a1c29f45ad066cdcb9fa212cca690e91c9ba2252e46a0b3322"
+    },
+    {
+      "file": "062_zones_max_template_changes.sql",
+      "sha256": "ebc0f3fbd5ab04ebccadc9ac1c25403c5e505f89667e7189a4792adeb2f81ceb"
+    },
+    {
+      "file": "063_optimizer_transport_min_gaps.sql",
+      "sha256": "8205d7a6cb77caa9821836811a58b308a073e198d56d01de280757333a33ad32"
+    },
+    {
+      "file": "064_optimizer_near_hard_breaks_max.sql",
+      "sha256": "0d5bce8893174b211927162404190e3351c90ea7907a36585ff19b4360fbd372"
+    },
+    {
+      "file": "064_planning_runs_engine_v3.sql",
+      "sha256": "2945fc639bab4590c811391dcc64ac305d2901248e538572ad4cea36795de99c"
+    },
+    {
+      "file": "065_enable_rls_security_advisor.sql",
+      "sha256": "3a8c84051fbfeecd11a85b7dda29fbd70cccdabe74ef95dd6a9100b54378064d"
+    },
+    {
+      "file": "066_resource_bundles.sql",
+      "sha256": "e79f0ee50d65e1030b08a930ebc8d25cb7f9ce5cb9f2e6d14db5e58c48489aff"
+    },
+    {
+      "file": "067_planning_run_diagnostics.sql",
+      "sha256": "53efc56e4d75b5755d6373f74d0ab1ac1b354c845124b0878a83cd9a9fad78ce"
+    },
+    {
+      "file": "068_flexible_meal_mode_and_progress_history.sql",
+      "sha256": "6db6e92c78a93833b61a69cf8c9b4be9761b1b3ea521eb2b70a70b1f69e3be30"
+    },
+    {
+      "file": "069_planning_run_transactional_cancellation.sql",
+      "sha256": "68cbcde8878b9a0b297d57bbababb8f1264e05efa662a0be9669a0e04c667ae7"
+    },
+    {
+      "file": "070_engine_v4_parallel_results.sql",
+      "sha256": "19ca2db86b27228b3055fd9a5b54d9fdf3933cfeaffc270b6c7a9aa1ce359b20"
+    },
+    {
+      "file": "071_id258_zone_meal_break_minutes.sql",
+      "sha256": "159e9d53605f595fa8ec5e1b9dca1a745ccdea822c9965783d04df08a70c96eb"
+    },
+    {
+      "file": "072_resource_availability_snapshots.sql",
+      "sha256": "261613e4b1105c353077eeb59c1cf18e7a4aa530c60b089107013df996f63a7e"
+    },
+    {
+      "file": "073_workday_space_availability_snapshots.sql",
+      "sha256": "97f2d92821d01a09e96bf9d93fff3ebcee55bd9a90ef1547619b43351ddeb8a1"
+    },
+    {
+      "file": "074_plan_task_template_snapshots.sql",
+      "sha256": "f4f3d1bca7b2dbb31b64968f32dd3800a41460ef74411953cc02b9852a9d1a66"
+    },
+    {
+      "file": "075_plan_optimizer_snapshots.sql",
+      "sha256": "7819065271e7fdbf9cdaddb8fe08554f42d6896fd1f73af5f07013f9433d328f"
+    },
+    {
+      "file": "076_plan_operational_config_snapshots.sql",
+      "sha256": "049a9ec287659cae105543dc9fa79f1e539cca92754032f3a4bec8faeb447027"
+    },
+    {
+      "file": "077_assisted_planning_state.sql",
+      "sha256": "a0602631d7585b452597b4a5a037892ddd73d5eb660238ca02a45dac71bb7ded"
+    },
+    {
+      "file": "078_assisted_planning_workflow.sql",
+      "sha256": "696345975aff94824931ddd8a71448743fd8a20a86f990b23388970f693961eb"
+    },
+    {
+      "file": "079_assisted_proposal_runs.sql",
+      "sha256": "2fe10ec163e51ab70202fce6e282eae0873832b7cb39b979901ce318377a09e2"
+    },
+    {
+      "file": "080_assisted_clean_validation.sql",
+      "sha256": "02a9ffc6d84debc804adf5c9f72769345c0c8bb2f072e8b5e2107258baa65e3c"
+    },
+    {
+      "file": "081_assisted_draft_editing.sql",
+      "sha256": "b7dce87ff65e9a7518ce9526aa59fbb8fc8b470070cede4028a18a7d95d6aca9"
+    },
+    {
+      "file": "082_assisted_stage_validation_exceptions.sql",
+      "sha256": "77d9b7232231447f45dd7d66120f644303c010748daeaf920e149a8d8462ea39"
+    },
+    {
+      "file": "083_assisted_config_refresh.sql",
+      "sha256": "bcfcc064ca52f8e4d95f608584dcdd66a8e0fb0f4e2eccd983918d63809d0c76"
+    },
+    {
+      "file": "084_day_config_provenance.sql",
+      "sha256": "33b456db69df55ea52bcbae04be5e47abf90732b7ba5fbfd611fd04326b47862"
+    },
+    {
+      "file": "085_optimizer_day_config_restore.sql",
+      "sha256": "b57e2602325fbe66a45896c7671b8c86ca7a2fab81bd89f225f18220a2290aa1"
+    },
+    {
+      "file": "086_assisted_itinerant_resource_persistence.sql",
+      "sha256": "305b7334b970fe99411ece5048adfd964f694009603516ccc6474c2c5d82d698"
+    },
+    {
+      "file": "087_participant_transition_margins.sql",
+      "sha256": "fe67550f63987681d15cc2802d19f2ee2a39ec7b6c754c6b8df67d896935a61b"
+    },
+    {
+      "file": "088_plan_planner_next_configuration.sql",
+      "sha256": "7a346ad5be956a0798a79508bb32bb8dc02b0ec84853190d3ee4fd3275321f1b"
+    },
+    {
+      "file": "089_assisted_native_sql_integrity.sql",
+      "sha256": "a42dc7c86abcfe157d1244448ac8455c1740d01aad5a69f6eaf2b75c228bfd20"
+    },
+    {
+      "file": "090_assisted_manual_snapshot_fidelity.sql",
+      "sha256": "0015226018eef7e2beb079634acb4ee731fabf233306f444542c97cf9d785a6b"
+    },
+    {
+      "file": "091_assisted_restart_bootstrap.sql",
+      "sha256": "f484b6fb65de88a17d50012001853d227488034d475c315ee12f7df7e322a8b8"
+    },
+    {
+      "file": "092_main_flow_soft_preference.sql",
+      "sha256": "3d4f8193e0d7fccc0efc385e487edad5403d8c76d7d07ed1610385e93fc79f59"
+    },
+    {
+      "file": "093_live_task_execution.sql",
+      "sha256": "7a6fc40f1a353a3b8e6d4a7f7adaceeb0afcadd266ed82c4728b2fbc6c3fb341"
+    },
+    {
+      "file": "094_operational_incidents.sql",
+      "sha256": "1ac45fb1b56ce1ef552c4b19d0d3840c60d4b80b1ae187fc82124af8eb422918"
+    },
+    {
+      "file": "095_planning_header_notes.sql",
+      "sha256": "e0188833959b5bcd2d440635f5d8ecd14203a03cfde357c48c338b710ac6cb9f"
+    },
+    {
+      "file": "096_production_execution_scope.sql",
+      "sha256": "4c73025f63fd26c12752d7cc374062f373f67141ef6b5975c1a86c48e174de3a"
+    },
+    {
+      "file": "097_audited_execution_time_corrections.sql",
+      "sha256": "a2c679c1bb8170248f86737c97480551a05d8f3b297713ba0aa9d70d2759ee31"
+    },
+    {
+      "file": "098_execution_start_workday.sql",
+      "sha256": "56af8f2e4e58ff6451d2adf79035dbd9e5df539f94cc14e401fcc221615ddfbf"
+    }
+  ],
+  "limits": [
+    "Original remote HTTP attempt not observed; actual historical Stage/config read-only and replayed offline.",
+    "Pre-existing full view/sort browser gate lacks Orden por tarea; preserved in prior-view-limit.log.",
+    "Hosted CI status is available on the PR; local report does not claim a remote deployment rehearsal."
+  ]
+}

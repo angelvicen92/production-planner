@@ -24,6 +24,10 @@ test('real HTTP middleware blocks anonymous/debug and task writes while preservi
    assert.equal((await request('/debug/generate/27001','GET',role)).status,role==null?401:role==='admin'?200:403);
   }
   assert.equal(writes,5,'denied requests must never reach a write handler');
+  for(const role of ['viewer','aux','editorial'])for(const endpoint of ['validate','accept-stage']){
+   const before:number=writes;assert.equal((await request(`/plans/27001/assisted/${endpoint}`,'POST',role)).status,403);
+   assert.equal(writes,before,'Assisted validation and exceptions require existing production/admin authority');
+  }
   for (const role of [undefined,'norole','viewer','aux','production','admin']) {
    const before:number=writes;
    const response=await request('/tasks/10002/status','PATCH',role);

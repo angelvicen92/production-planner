@@ -13,7 +13,7 @@ test("explicit synchronized transport respects capacity without masking other ov
   const configuration={taskOperations:tasks.map(task=>({taskId:task.id,operationalRole:'transport_arrival'})),arrivalMaximumGroupSize:3};
   assert.deepEqual(collectAssistedDraftWarnings(tasks,undefined,configuration),[]);
   assert.ok(collectAssistedDraftWarnings(tasks).some(w=>w.kind==='SPACE_OVERLAP'));
-  assert.ok(collectAssistedDraftWarnings(tasks,undefined,{...configuration,arrivalMaximumGroupSize:2}).some(w=>w.kind==='RESOURCE_OVERLAP'));
+  assert.deepEqual(collectAssistedDraftWarnings(tasks,undefined,{...configuration,arrivalMaximumGroupSize:2}),[{kind:'TRANSPORT_GROUP_SIZE',taskIds:[1,2,3],actualGroupSize:3,maximumGroupSize:2}]);
   const shifted=tasks.map((task,i)=>({...task,startPlanned:i===0?'09:05':task.startPlanned}));
   assert.ok(collectAssistedDraftWarnings(shifted,undefined,configuration).some(w=>w.kind==='SPACE_OVERLAP'));
   assert.ok(collectAssistedDraftWarnings(tasks,undefined,{...configuration,taskOperations:configuration.taskOperations.map((op,i)=>({...op,operationalRole:i===0?'transport_departure':op.operationalRole}))}).some(w=>w.kind==='SPACE_OVERLAP'));

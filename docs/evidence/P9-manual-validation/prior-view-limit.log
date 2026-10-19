@@ -1,0 +1,41 @@
+
+> rest-express@1.0.0 demo:a2:smoke
+> node --import tsx script/demo/smokeA2Integration.ts work/p9/red --full --manual-validation
+
+PASS entire native application migration ledger
+PASS real password login for five Auth identities
+PASS native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved
+PASS real storage/input adapter canon after GET day; no legacy breaks
+PASS HTTP role matrix, 15 real REST/RLS boundaries and client RPC denial; rejected writes leave DB unchanged
+PASS actual browser password login and role bootstrap
+PASS S0 creation from UI, all 19 contestant names, idempotence with admin, native persistence and reload
+PASS all client identities denied direct Stage/Draft writes; validation UPDATE privileges unchanged
+PASS S1 UI → run → apply → validate → accept → SQL persistence → reload (19/266)
+PASS S2 UI → run → apply → validate → accept → SQL persistence → reload (38/266)
+PASS S3 UI → run → apply → validate → accept → SQL persistence → reload (46/266)
+PASS S4 UI → run → apply → validate → accept → SQL persistence → reload (65/266)
+PASS S5 UI → run → apply → validate → accept → SQL persistence → reload (73/266)
+PASS S6 UI → run → apply → validate → accept → SQL persistence → reload (109/266)
+PASS S7 UI → run → apply → validate → accept → SQL persistence → reload (151/266)
+PASS S8 UI → run → apply → validate → accept → SQL persistence → reload (189/266)
+PASS S9 UI → run → apply → validate → accept → SQL persistence → reload (191/266)
+PASS S10 UI → run → apply → validate → accept → SQL persistence → reload (209/266)
+PASS S11 UI → run → apply → validate → accept → SQL persistence → reload (266/266)
+PASS complete SQL snapshot: canonical hard-valid 266/266, all eight operational meals and preparations valid
+PASS complete canonical coverage 266/266 and certified corrected snapshot; no remaining scope
+PASS independent viewer browser session reopens the same persisted Stage and Draft
+PASS admin atomic rollback to S0 and redo to final accepted Stage
+PASS Legacy partial/total reset is blocked on active Assisted session, without any SQL writes
+locator.click: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for getByTestId('assisted-workspace').getByRole('button', { name: 'Orden por tarea', exact: true })[22m
+
+    at runA2ViewsHistoryJourney (/workspace/production-planner/script/demo/smokeA2ViewsHistoryJourney.ts:84:85)
+    at async runA2BrowserJourney (/workspace/production-planner/script/demo/smokeA2Journey.ts:195:36)
+    at async <anonymous> (/workspace/production-planner/script/demo/smokeA2Integration.ts:263:74)
+{"status":"FAIL","evidence":"/workspace/production-planner/work/p9/red/integration.json","remoteWrites":0}
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice

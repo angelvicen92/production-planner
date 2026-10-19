@@ -1,0 +1,390 @@
+{
+  "mode": "P9_NATIVE_CAUSAL_PROBE",
+  "remoteReads": 0,
+  "remoteWrites": 0,
+  "remoteCaseReproduced": false,
+  "baselineFingerprint": "d77077d5115b22c91117ff1f56b8502deaff4ca51d056f10017b520270387c0f",
+  "move": {
+    "before": {
+      "taskId": 10135,
+      "zoneId": 6022,
+      "spaceId": 3022,
+      "endPlanned": "12:05",
+      "startPlanned": "12:00",
+      "locationLabel": null,
+      "camerasOverride": null,
+      "durationOverride": 5,
+      "assignedResourceIds": []
+    },
+    "after": {
+      "taskId": 10135,
+      "startPlanned": "11:30",
+      "endPlanned": "11:35"
+    },
+    "targetIds": [
+      10150,
+      10233,
+      10259
+    ]
+  },
+  "fourIN": {
+    "evidence": {
+      "scopeTaskCount": 1,
+      "scopeTaskIds": [
+        "task:10135"
+      ],
+      "supportingTaskIds": [],
+      "supportingReasonByTaskId": {},
+      "protectedPlacementCount": 247,
+      "protectedPlacementsPreserved": true,
+      "proposalCount": 0,
+      "completeForScope": true,
+      "hardValid": false,
+      "requiredValid": false,
+      "fingerprint": "54846727df3fc2685d57c8a0d7eea5b6dd09acee14de374fd4cd71e853119d17",
+      "work": {},
+      "causalDiagnostic": null,
+      "reasonCodes": [
+        "TRANSPORT_GROUPING_VIOLATION"
+      ],
+      "validationSummary": {
+        "hardValid": false,
+        "dependencyViolationCount": 0,
+        "overlapViolationCount": 0,
+        "transitionViolationCount": 0,
+        "availabilityViolationCount": 0,
+        "taskAvailabilityViolationCount": 0,
+        "blockViolationCount": 0,
+        "resourceAvailabilityViolationCount": 0,
+        "resourceOverlapViolationCount": 0,
+        "resourceTransitionViolationCount": 0,
+        "secondaryContinuityViolationCount": 0,
+        "setupViolationCount": 0,
+        "setupPreparationViolationCount": 0,
+        "roundSynchronizationViolationCount": 0,
+        "roundPreparationViolationCount": 0,
+        "jointGroupViolationCount": 0,
+        "transportGroupingViolationCount": 1,
+        "technicalOperationViolationCount": 0,
+        "technicalChainViolationCount": 0,
+        "spaceMealViolationCount": 0,
+        "mainFlowMealViolationCount": 0,
+        "anchoredAccompanimentViolationCount": 0,
+        "participantMealViolationCount": 0,
+        "resourceMealViolationCount": 0,
+        "operationalMealViolationCount": 0,
+        "itinerantUnitMealViolationCount": 0,
+        "reasonCodes": [
+          "TRANSPORT_GROUPING_VIOLATION"
+        ],
+        "unstructuredReasonCodes": [
+          "TRANSPORT_GROUPING_VIOLATION"
+        ],
+        "violations": []
+      },
+      "structuredViolations": []
+    },
+    "validation": {
+      "status": 422,
+      "body": {
+        "code": "ASSISTED_DELTA_VALIDATION_UNSUPPORTED",
+        "message": "ASSISTED_DELTA_VALIDATION_UNSUPPORTED"
+      }
+    },
+    "draftFingerprint": "54846727df3fc2685d57c8a0d7eea5b6dd09acee14de374fd4cd71e853119d17",
+    "draftValidationId": null,
+    "transport": {
+      "violationCount": 1,
+      "arrivalGroup": [
+        {
+          "id": "task:10135",
+          "duration": 5,
+          "spaceId": "space:3022",
+          "blocksSpace": false,
+          "dependencies": [],
+          "kind": "auxiliary",
+          "participantId": "participant:210",
+          "start": 690,
+          "end": 695
+        },
+        {
+          "id": "task:10150",
+          "duration": 5,
+          "spaceId": "space:3022",
+          "blocksSpace": false,
+          "dependencies": [],
+          "kind": "auxiliary",
+          "participantId": "participant:211",
+          "start": 690,
+          "end": 695
+        },
+        {
+          "id": "task:10233",
+          "duration": 5,
+          "spaceId": "space:3022",
+          "blocksSpace": false,
+          "dependencies": [],
+          "kind": "auxiliary",
+          "participantId": "participant:217",
+          "start": 690,
+          "end": 695
+        },
+        {
+          "id": "task:10259",
+          "duration": 5,
+          "spaceId": "space:3022",
+          "blocksSpace": false,
+          "dependencies": [],
+          "kind": "auxiliary",
+          "participantId": "participant:219",
+          "start": 690,
+          "end": 695
+        }
+      ]
+    }
+  },
+  "valid": {
+    "change": {
+      "taskId": 10004,
+      "startPlanned": "15:15",
+      "endPlanned": "15:20"
+    },
+    "before": {
+      "taskId": 10004,
+      "zoneId": 6018,
+      "spaceId": 3018,
+      "endPlanned": "15:25",
+      "startPlanned": "15:20",
+      "locationLabel": null,
+      "camerasOverride": null,
+      "durationOverride": 5,
+      "assignedResourceIds": []
+    },
+    "evidence": {
+      "scopeTaskCount": 1,
+      "scopeTaskIds": [
+        "task:10004"
+      ],
+      "supportingTaskIds": [],
+      "supportingReasonByTaskId": {},
+      "protectedPlacementCount": 247,
+      "protectedPlacementsPreserved": true,
+      "proposalCount": 1,
+      "completeForScope": true,
+      "hardValid": true,
+      "requiredValid": true,
+      "fingerprint": "73d748e25f28f6f78d9020ee8f96e8c521171e54a891878f0776104432e5b0f1",
+      "work": {},
+      "causalDiagnostic": null,
+      "reasonCodes": [],
+      "validationSummary": {
+        "hardValid": true,
+        "dependencyViolationCount": 0,
+        "overlapViolationCount": 0,
+        "transitionViolationCount": 0,
+        "availabilityViolationCount": 0,
+        "taskAvailabilityViolationCount": 0,
+        "blockViolationCount": 0,
+        "resourceAvailabilityViolationCount": 0,
+        "resourceOverlapViolationCount": 0,
+        "resourceTransitionViolationCount": 0,
+        "secondaryContinuityViolationCount": 0,
+        "setupViolationCount": 0,
+        "setupPreparationViolationCount": 0,
+        "roundSynchronizationViolationCount": 0,
+        "roundPreparationViolationCount": 0,
+        "jointGroupViolationCount": 0,
+        "transportGroupingViolationCount": 0,
+        "technicalOperationViolationCount": 0,
+        "technicalChainViolationCount": 0,
+        "spaceMealViolationCount": 0,
+        "mainFlowMealViolationCount": 0,
+        "anchoredAccompanimentViolationCount": 0,
+        "participantMealViolationCount": 0,
+        "resourceMealViolationCount": 0,
+        "operationalMealViolationCount": 0,
+        "itinerantUnitMealViolationCount": 0,
+        "reasonCodes": [],
+        "unstructuredReasonCodes": [],
+        "violations": []
+      },
+      "structuredViolations": []
+    },
+    "validation": {
+      "status": 200,
+      "body": {
+        "current": true,
+        "mode": "MANUAL_STAGE_VALIDATION_V1",
+        "validation": {
+          "id": 12,
+          "planId": 27001,
+          "sessionId": 1,
+          "baseStageId": 12,
+          "draftFingerprint": "73d748e25f28f6f78d9020ee8f96e8c521171e54a891878f0776104432e5b0f1",
+          "configRevisionId": 1,
+          "hardCount": 0,
+          "requiredCount": 0,
+          "preferredCount": 0,
+          "reportJson": {
+            "mode": "MANUAL_STAGE_VALIDATION_V1",
+            "work": {},
+            "hardCount": 0,
+            "hardValid": true,
+            "violations": [],
+            "fingerprint": "73d748e25f28f6f78d9020ee8f96e8c521171e54a891878f0776104432e5b0f1",
+            "reasonCodes": [],
+            "newHardCount": 0,
+            "requiredCount": 0,
+            "changedTaskIds": [
+              10004,
+              10135
+            ],
+            "preferredCount": 0,
+            "contractVersion": 1,
+            "completeForScope": true,
+            "newRequiredCount": 0,
+            "supportingTaskIds": [],
+            "preferredAssessment": "NOT_CLASSIFIED",
+            "futureFullDayFeasibility": "NOT_CERTIFIED",
+            "supportingReasonByTaskId": {},
+            "protectedPlacementsPreserved": true
+          },
+          "createdAt": "2026-10-19T18:38:38.575783+00:00"
+        }
+      }
+    }
+  },
+  "trace": [
+    {
+      "suffix": "/draft",
+      "method": "PATCH",
+      "request": {
+        "expectedDraftFingerprint": "d77077d5115b22c91117ff1f56b8502deaff4ca51d056f10017b520270387c0f",
+        "expectedBaseStageId": 12,
+        "changes": [
+          {
+            "taskId": 10135,
+            "startPlanned": "11:30",
+            "endPlanned": "11:35"
+          }
+        ]
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "suffix": "/validate",
+      "method": "POST",
+      "request": {
+        "expectedDraftFingerprint": "54846727df3fc2685d57c8a0d7eea5b6dd09acee14de374fd4cd71e853119d17",
+        "expectedBaseStageId": 12
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "code": "ASSISTED_DELTA_VALIDATION_UNSUPPORTED",
+          "message": "ASSISTED_DELTA_VALIDATION_UNSUPPORTED"
+        }
+      }
+    },
+    {
+      "suffix": "/draft/reset",
+      "method": "POST",
+      "request": {
+        "expectedDraftFingerprint": "54846727df3fc2685d57c8a0d7eea5b6dd09acee14de374fd4cd71e853119d17",
+        "expectedBaseStageId": 12
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "suffix": "/draft",
+      "method": "PATCH",
+      "request": {
+        "expectedDraftFingerprint": "d77077d5115b22c91117ff1f56b8502deaff4ca51d056f10017b520270387c0f",
+        "expectedBaseStageId": 12,
+        "changes": [
+          {
+            "taskId": 10004,
+            "startPlanned": "15:15",
+            "endPlanned": "15:20"
+          }
+        ]
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "suffix": "/validate",
+      "method": "POST",
+      "request": {
+        "expectedDraftFingerprint": "73d748e25f28f6f78d9020ee8f96e8c521171e54a891878f0776104432e5b0f1",
+        "expectedBaseStageId": 12
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "current": true,
+          "mode": "MANUAL_STAGE_VALIDATION_V1",
+          "validation": {
+            "id": 12,
+            "planId": 27001,
+            "sessionId": 1,
+            "baseStageId": 12,
+            "draftFingerprint": "73d748e25f28f6f78d9020ee8f96e8c521171e54a891878f0776104432e5b0f1",
+            "configRevisionId": 1,
+            "hardCount": 0,
+            "requiredCount": 0,
+            "preferredCount": 0,
+            "reportJson": {
+              "mode": "MANUAL_STAGE_VALIDATION_V1",
+              "work": {},
+              "hardCount": 0,
+              "hardValid": true,
+              "violations": [],
+              "fingerprint": "73d748e25f28f6f78d9020ee8f96e8c521171e54a891878f0776104432e5b0f1",
+              "reasonCodes": [],
+              "newHardCount": 0,
+              "requiredCount": 0,
+              "changedTaskIds": [
+                10004,
+                10135
+              ],
+              "preferredCount": 0,
+              "contractVersion": 1,
+              "completeForScope": true,
+              "newRequiredCount": 0,
+              "supportingTaskIds": [],
+              "preferredAssessment": "NOT_CLASSIFIED",
+              "futureFullDayFeasibility": "NOT_CERTIFIED",
+              "supportingReasonByTaskId": {},
+              "protectedPlacementsPreserved": true
+            },
+            "createdAt": "2026-10-19T18:38:38.575783+00:00"
+          }
+        }
+      }
+    },
+    {
+      "suffix": "/draft/reset",
+      "method": "POST",
+      "request": {
+        "expectedDraftFingerprint": "73d748e25f28f6f78d9020ee8f96e8c521171e54a891878f0776104432e5b0f1",
+        "expectedBaseStageId": 12
+      },
+      "response": {
+        "status": 200
+      }
+    }
+  ],
+  "acceptedMaterial": "UNCHANGED",
+  "shape": {
+    "tasks": 266,
+    "meals": 8,
+    "setup": 1,
+    "round": 17
+  }
+}

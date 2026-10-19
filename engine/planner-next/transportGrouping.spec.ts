@@ -63,6 +63,43 @@ function validationProblem(count = 7): PlannerNextProblem {
 }
 const scheduled = (task: Task, start: number): ScheduledTask => ({ ...task, start, end: start + task.duration });
 
+test('P9 transport size and gap identities describe every affected member deterministically',()=>{
+ const problem=validationProblem(7);
+ problem.transportPolicy!.arrival={...policy(1,3,30),taskIds:problem.tasks.map(t=>t.id)};
+ const timeline=problem.tasks.map((t,i)=>scheduled(t,i<4?600:620));
+ const report=validateTransportGrouping(problem,timeline);
+ assert.equal(report.violationCount,2);
+ assert.deepEqual(report.violations.map(v=>v.dimensions.kind),['GROUP_SIZE','GROUP_GAP']);
+ assert.deepEqual(report.violations[0].affectedTaskIds,timeline.slice(0,4).map(t=>t.id));
+ assert.deepEqual(report.violations[1].affectedTaskIds,timeline.map(t=>t.id));
+ assert.equal(report.violations[1].dimensions.actualGapMinutes,20);
+ assert.equal(report.violations[1].dimensions.minGapMinutes,30);
+ const reversed=structuredClone(problem);reversed.transportPolicy!.arrival.taskIds.reverse();
+ assert.deepEqual(validateTransportGrouping(reversed,[...timeline].reverse()),report);
+});
+
+test('P9 coverage and participant defects retain structured identity alongside aggregate counts',()=>{
+ const problem=validationProblem(3);problem.transportPolicy!.arrival={...policy(1,3,30),taskIds:problem.tasks.map(t=>t.id)};
+ const timeline=problem.tasks.map(t=>scheduled(t,600));
+ const missing=validateTransportGrouping(problem,timeline.slice(1));
+ assert.equal(missing.violationCount,1);assert.equal(missing.violations[0].dimensions.kind,'TASK_COVERAGE');
+ assert.deepEqual(missing.violations[0].affectedTaskIds,[timeline[0].id]);
+ const duplicate=validateTransportGrouping(problem,[...timeline,timeline[0]]);
+ assert.ok(duplicate.violations.some(v=>v.dimensions.kind==='TASK_COVERAGE'));
+ assert.ok(duplicate.violations.some(v=>v.dimensions.kind==='PARTICIPANT_IDENTITY'));
+});
+
+test('P9 transport boundary identity includes the material participant meal',()=>{
+ const problem=arrivalWorkStyleDepartureProblem();
+ const timeline=problem.tasks.filter(t=>/^(in|work|style|out)-/.test(t.id)).map(t=>scheduled(t,t.id.startsWith('in-')?0:t.id.startsWith('work-')?20:t.id.startsWith('style-')?40:80));
+ const meal={id:'meal-p-0',sourceTaskId:'meal-source-p-0',participantId:'p-0',duration:10,start:95,end:105};
+ const report=validateTransportGrouping(problem,timeline,[meal]);
+ const boundary=report.violations.find(v=>v.dimensions.kind==='PARTICIPANT_BOUNDARY')!;
+ assert.deepEqual(boundary.affectedTaskIds,['meal-source-p-0','out-p-0']);
+ assert.equal(boundary.dimensions.direction,'departure');
+ assert.notDeepEqual(validateTransportGrouping(problem,timeline,[{...meal,start:100,end:110}]).violations,report.violations);
+});
+
 test("independent validation enforces coverage, synchronization, bounds, and consecutive-start gap", () => {
   const problem = validationProblem();
   const [a, b, c, d, e, f, g] = problem.tasks;
