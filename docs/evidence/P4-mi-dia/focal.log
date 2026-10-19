@@ -1,0 +1,42 @@
+✔ each activity exposes planned and persisted actual endpoints, active duration and effective resources (42.492491ms)
+✔ incoming previous status remains visible for running, done and pending; location never confirms physical presence (3.627434ms)
+✔ unknown neighbours and no contestant have explicit readable fallbacks (2.148375ms)
+✔ signals express state and time without color or hover, with soft light/dark appearances (42.742188ms)
+✔ completed record is neutral and describes real deviations rather than a running alarm (8.280296ms)
+✔ Start/Finish use the observed cached version, preserve explicit stale versions and fail closed on disagreement (2.486524ms)
+✔ Madrid seconds round-trip, summer/winter, invalid dates and DST gap/fold fail closed (29.224325ms)
+✔ conversion does not depend on device timezone; incomplete legacy times never become instants (1.719562ms)
+✔ nominal authority permits terminal corrections independently of canExecute and rejects incomplete records (4.813247ms)
+✔ multiple zones/spaces and overlapping helpers narrow only the effective server scope (5.565125ms)
+✔ no identity, editorial-only and viewer contexts do not manufacture execution permissions (1.518869ms)
+✔ focus options deduplicate scope locations, preserve partial scopes and daily zone identity (38.956044ms)
+✔ previous and next use received planning even outside visible scope and regardless of execution order (2.776297ms)
+✔ simultaneous and tied activities are explicit plural relations, never an ID-derived route (0.272124ms)
+✔ missing contestants, absent neighbours, invalid/incomplete schedules do not imply a journey (0.267845ms)
+✔ last known operational location requires actual execution and does not use scheduled/cancelled/future records (2.624141ms)
+✔ every existing activity state belongs to exactly one operational group (0.214979ms)
+✔ cancelled work is visible as a prior state but is not a next destination (0.228728ms)
+✔ same-name spaces in different zones have distinguishable focus labels (0.38551ms)
+✔ three simultaneous pending survive 08:59, exact 09:00, 09:00:01 and 09:01 regardless of permissions or input order (14.289602ms)
+✔ running, every overdue slot and first current/future slot coexist; stopped and done never become upcoming (6.421517ms)
+✔ missing date/schedule, other operational day, offline, unaccepted planning and missing clock authority never assert lateness (1.227882ms)
+✔ Madrid DST gap/fold remain uncomparable while normal winter/summer times compare correctly (5.136007ms)
+✔ planning order ignores actual start, puts missing schedule last and never mutates input (4.356908ms)
+✔ all and four state filters preserve exact identities and counts can be taken before filtering (0.322137ms)
+✔ global production/admin get visual locations without manufacturing nominal scope or authority (2.670385ms)
+✔ nominal space scope cannot expand through zone focus, even when other tasks share its location (4.699542ms)
+✔ ten minute placement turns orange exactly two minutes before its end and red only after the end (1.727189ms)
+✔ late start and pauses never postpone the accepted finish; simultaneous tasks use their own placements (3.068142ms)
+✔ finished activities show recorded start, end and active-duration deviations, independent of current time and connectivity (0.397711ms)
+✔ missing accepted placement, invalid geometry, records or non-comparable dates remain neutral (6.643511ms)
+✔ authorized simulation uses operational time and revision, never server wall time or browser timezone (0.364317ms)
+✔ DST gaps and repeated Madrid wall times are not comparable (1.610005ms)
+✔ pending, interrupted and cancelled do not acquire running signals; projection never mutates inputs or permissions (0.389771ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 34
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2929.828871

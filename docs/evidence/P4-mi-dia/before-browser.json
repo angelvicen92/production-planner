@@ -1,0 +1,16 @@
+{
+  "mode": "INTERCEPTED_HTTP_UI",
+  "checks": [
+    "Baseline f1f085f reproduces one of three 09:00 pending activities, with a next label after its start; running hides all pending from the hero"
+  ],
+  "writes": [],
+  "screenshots": [
+    "before-running-mobile.png",
+    "before-singular-mobile.png",
+    "before-singular-tablet.png"
+  ],
+  "errors": [],
+  "acceptedTaskCount": 266,
+  "remoteWrites": 0,
+  "nativeAuthRls": false
+}

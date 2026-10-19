@@ -1,0 +1,85 @@
+{
+  "base": "f1f085ff9c5a93c012a3c5c7d9136259c4755a93",
+  "branch": "codex/ops-p4-mi-dia-matrix-filters",
+  "createdAt": "2026-10-19T10:32:00.346845+00:00",
+  "status": "PASS",
+  "sourceHashes": {
+    "client/src/pages/my-day.tsx": "85665c806299f9b9f1bba75463357dca37a3566f0fccaf651c7dfa2fd1afcba9",
+    "client/src/lib/my-day-operational.ts": "1924e0ee65a098bf8426208fc311ad88e87a318d33620aa5faf0348d6801bfd2",
+    "client/src/lib/my-day-operational.test.ts": "60e3c1b5ce44e0cbee060c0e64efe8ee8a53b3a43df1aeb2b37a75820973c94f",
+    "client/src/components/my-day/p4.browser.mjs": "4cc0ca867f3c8a8e9b00fecca5ffb57bfea1fdc161d62f063d188549311fd150",
+    ".github/workflows/live-day-execution-ci.yml": "6e787125d44baccbb4bc12ae5401e8900a6c2dceacd45fb39d07a8eb0f6c7581"
+  },
+  "unchangedAuthorityHashes": {
+    "shared/execution.ts": "047cf61f8114b2397ad3a3516a1f5d2d01055603dd1d28c95f788c1d73185006",
+    "client/src/lib/my-day-temporal.ts": "254c82cd4ede8d2468b2bdd6d827cb784c1e5cebfb5102e361be667b6101365c",
+    "client/src/components/my-day/activity-information.tsx": "0d1c482696e59bf5110850398b7c57a8079aa7515a820e417b875d2c1dd9134c",
+    "client/src/components/my-day/time-correction-dialog.tsx": "b8f5da6569b2a50caa66ec3a62e0e6e669e8aef87bd6e19070a8c4ddd9d5f9f4",
+    "client/src/hooks/use-execution-context.ts": "4912b2048abcff5a33a1439a3076fb15c3b43b9837dd9e15effb8bb2abe9556c",
+    "server/liveExecution.ts": "f842964265077f4d8eaf1e17877cc4ad2faa25bb8bd4ccc26ace3e0e07f132b1",
+    "server/executionTimeCorrections.ts": "20c247d08c2ac51f88f41c6f40fe9dd79a3c371e6a92928f603d5c7c6343b838"
+  },
+  "unchangedProtectedPaths": [
+    "engine",
+    "shared",
+    "server",
+    "supabase",
+    "client/src/pages/control-room.tsx",
+    "client/src/pages/plan-details.tsx"
+  ],
+  "gates": {
+    "check": "PASS",
+    "build": "PASS",
+    "migrationSequence": "PASS",
+    "focal": {
+      "passed": 34,
+      "failed": 0
+    },
+    "liveExecutionGate": {
+      "passed": 41,
+      "failed": 0
+    },
+    "p4Browser": {
+      "passed": 8,
+      "errors": 0
+    },
+    "p3Browser": {
+      "passed": 4,
+      "errors": 0
+    },
+    "native": [
+      "execution",
+      "scope",
+      "corrections"
+    ]
+  },
+  "acceptedObligations": 266,
+  "historicalStages": 11,
+  "otherObligations": 333,
+  "newSolverRun": false,
+  "remoteWrites": 0,
+  "realtimeWebSocket": "NOT_TESTED",
+  "evidenceHashes": {
+    "docs/evidence/P4-mi-dia/before-browser.json": "1b855d95bd2730a116b201c0aebeb79dec7a7bd0eb49eb58a96d57ec92f93db9",
+    "docs/evidence/P4-mi-dia/before-browser.log": "a99102ad17ae08c1916f8c5f3cf23ee0e8ef55ab1d51d72df2cca9f20c391ad9",
+    "docs/evidence/P4-mi-dia/before-singular-mobile.png": "9bb4d0028419f3105b99fe13ad4008909d27d10174b82b8d859a2e49684614ed",
+    "docs/evidence/P4-mi-dia/before-singular-tablet.png": "217cd18ad0015f6dd227a4b28c2e90fadef43bb728394abf79d4b0bd56b8aa76",
+    "docs/evidence/P4-mi-dia/browser.json": "3ad81d33d112631e34785707de3b04d5bb05233fd6a253721552def27c76ba41",
+    "docs/evidence/P4-mi-dia/browser.log": "e88e305585a6bd723031339500b8ea70d3fa6f0c56a232f792ba76677f776ab0",
+    "docs/evidence/P4-mi-dia/build.log": "1576d22e25a300c17f09b1b40aef6dec2013b0bc152955c7cd28f8545756ee0b",
+    "docs/evidence/P4-mi-dia/check.log": "0fedab01a35ca9fca53fe6fd66268f14af56d83677404c554d736f962da99fb3",
+    "docs/evidence/P4-mi-dia/execution-gate.log": "843fa3db0451ef78b5eb32f9263e8658b805718ae91832cf4565daa8aa568572",
+    "docs/evidence/P4-mi-dia/expanded-tablet.png": "05e56881163facce2e20024038e2d65f805f2136bd91f4b5eed0cedf43799bcc",
+    "docs/evidence/P4-mi-dia/focal.log": "e6a6e4a627d9bc3848db1f267b2c03a4062990ef35804da31d8f4b7197d00a84",
+    "docs/evidence/P4-mi-dia/late-tablet.png": "444e15b424c0d84269be146827966f5ebc3e29c4337bd7832d5754e4546bffd6",
+    "docs/evidence/P4-mi-dia/matrix-tablet.png": "ae5222f3c0e34d101a7da1bea222e71e89d63b1ae37bd98aa5e2ed4c103bdace",
+    "docs/evidence/P4-mi-dia/migrations.log": "7985048eba3e7cf7f4eb97de85e9a1dbd7cf78abde6eaf3a444cf8ec7a0eb983",
+    "docs/evidence/P4-mi-dia/native-corrections.json": "532f1c9c90f3ec9de9adcb39feb2e08991b996df3003611d68e65ee55362060e",
+    "docs/evidence/P4-mi-dia/native-execution.json": "aa3c9dd321c6cd782f375daaa65a6a4845b6b2c3d0375b6f4d664086b6dd22e4",
+    "docs/evidence/P4-mi-dia/native-scope.json": "5bd11a55f8b4a5e42d09910462fad31a28b4df00009d42c948e1c7ff345736f7",
+    "docs/evidence/P4-mi-dia/offline-tablet.png": "e3e507741562f555412f4c33983011c7f5e0d1d921524bd969ff352e093344c6",
+    "docs/evidence/P4-mi-dia/p3-browser.json": "bee4ec27b5c8f8ee58cd271291920500343002e55acbbf5fd0bd4519c9063a49",
+    "docs/evidence/P4-mi-dia/p3-browser.log": "57d3c0e7283c9dd55e5e20514ec30982b4a1c69f807c749bf9aa135c6cf4ac3b",
+    "docs/evidence/P4-mi-dia/upcoming-mobile.png": "395d8b38f51fca5e765b0d2a19fe5b22152f38c71b01a384abd209be62cb389f"
+  }
+}

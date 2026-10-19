@@ -1,0 +1,238 @@
+{
+  "mode": "REAL_DISPOSABLE_EXECUTION_ACCEPTED_SNAPSHOT_REPLAY",
+  "nodeVersion": "v24.19.0",
+  "status": "PASS",
+  "checks": [
+    "entire native application migration ledger",
+    "real password login for five Auth identities",
+    "historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import",
+    "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved",
+    "real storage/input adapter canon after GET day; no legacy breaks",
+    "G0 editorial-only/unlinked HTTP, War Room context/list/detail and native RLS deny without writes",
+    "G0 whole zone, multiple spaces/zones, overlapping helpers, Start/Finish and complete incident lifecycle",
+    "G0 concurrent revocation rechecked after lock; global roles and legitimate nominal resources preserved",
+    "G0 persistence failures/forged direct RPC leave no partial writes; 266 accepted A2 placements, all Stages/Drafts/plans/clock remain literal",
+    "other disposable days remain literal during accepted-snapshot execution"
+  ],
+  "historicalPreservation": {
+    "oldPlanId": 27001,
+    "oldObligations": 266,
+    "oldStages": 11,
+    "otherObligations": 333,
+    "newDaySeedPlacements": 0
+  },
+  "snapshotReplay": {
+    "source": "script/demo/fixtures/a2-legacy-import.json.gz",
+    "sourceSha256": "7e71838142dcb8c6a43004058f14bad1be93f624005fcfc8c4fc5c4ad8863d72",
+    "planId": 27001,
+    "acceptedStage": 10,
+    "fingerprint": "a58fc840fa4b8d04049c96d8310eac6e5d4df66f08069d968fe7a5e0adf9e2dc",
+    "newSolverRun": false
+  },
+  "productionScope": {
+    "outcomes": [
+      {
+        "name": "unlinked aux Start",
+        "status": 403
+      },
+      {
+        "name": "unlinked aux Finish",
+        "status": 403
+      },
+      {
+        "name": "unlinked aux create",
+        "status": 403
+      },
+      {
+        "name": "unlinked aux update",
+        "status": 403
+      },
+      {
+        "name": "unlinked aux resolve",
+        "status": 403
+      },
+      {
+        "name": "unlinked aux reopen",
+        "status": 403
+      },
+      {
+        "name": "unlinked aux escalate",
+        "status": 403
+      },
+      {
+        "name": "unlinked aux detail",
+        "status": 403
+      },
+      {
+        "name": "editorial only Start",
+        "status": 403
+      },
+      {
+        "name": "editorial only Finish",
+        "status": 403
+      },
+      {
+        "name": "editorial only create",
+        "status": 403
+      },
+      {
+        "name": "editorial only update",
+        "status": 403
+      },
+      {
+        "name": "editorial only resolve",
+        "status": 403
+      },
+      {
+        "name": "editorial only reopen",
+        "status": 403
+      },
+      {
+        "name": "editorial only escalate",
+        "status": 403
+      },
+      {
+        "name": "editorial only detail",
+        "status": 403
+      },
+      {
+        "name": "forged HTTP actor/role/scope",
+        "status": 403
+      },
+      {
+        "name": "viewer with nominal production assignment",
+        "status": 403
+      },
+      {
+        "name": "viewer Finish",
+        "status": 403
+      },
+      {
+        "name": "viewer incident write",
+        "status": 403
+      },
+      {
+        "name": "zone assignment dormant in space mode Start",
+        "status": 403
+      },
+      {
+        "name": "zone assignment dormant in space mode Finish",
+        "status": 403
+      },
+      {
+        "name": "zone assignment dormant in space mode create",
+        "status": 403
+      },
+      {
+        "name": "zone assignment dormant in space mode update",
+        "status": 403
+      },
+      {
+        "name": "zone assignment dormant in space mode resolve",
+        "status": 403
+      },
+      {
+        "name": "zone assignment dormant in space mode reopen",
+        "status": 403
+      },
+      {
+        "name": "zone assignment dormant in space mode escalate",
+        "status": 403
+      },
+      {
+        "name": "zone assignment dormant in space mode detail",
+        "status": 403
+      },
+      {
+        "name": "other space Start",
+        "status": 403
+      },
+      {
+        "name": "other space Finish",
+        "status": 403
+      },
+      {
+        "name": "other space incident",
+        "status": 403
+      },
+      {
+        "name": "incident retarget outside scope",
+        "status": 403
+      },
+      {
+        "name": "revoked Finish",
+        "status": 403
+      },
+      {
+        "name": "revoked assignment Start",
+        "status": 403
+      },
+      {
+        "name": "revoked assignment Finish",
+        "status": 403
+      },
+      {
+        "name": "revoked assignment create",
+        "status": 403
+      },
+      {
+        "name": "revoked assignment update",
+        "status": 403
+      },
+      {
+        "name": "revoked assignment resolve",
+        "status": 403
+      },
+      {
+        "name": "revoked assignment reopen",
+        "status": 403
+      },
+      {
+        "name": "revoked assignment escalate",
+        "status": 403
+      },
+      {
+        "name": "revoked assignment detail",
+        "status": 403
+      },
+      {
+        "name": "task_status_events rollback",
+        "status": 503
+      },
+      {
+        "name": "locks rollback",
+        "status": 503
+      },
+      {
+        "name": "operational_incident_events rollback",
+        "status": 503
+      },
+      {
+        "name": "incident update rollback",
+        "status": 503
+      }
+    ],
+    "startRace": [
+      200,
+      409
+    ],
+    "finishRace": [
+      200,
+      409
+    ],
+    "incidentRace": [
+      200,
+      409
+    ],
+    "acceptedTaskCount": 266,
+    "planningSha256": "e9f50aac705441fb9c5e5f3da1856019f27670f22b351bac73619fec265fe642",
+    "preservedPlanning": true,
+    "newSolverRun": false,
+    "remoteWrites": 0
+  },
+  "remoteWrites": 0,
+  "startedAt": "2026-10-19T10:26:00.708Z",
+  "finishedAt": "2026-10-19T10:27:19.888Z",
+  "migrationCount": 100,
+  "rawReportSha256": "e1e5995c7c24d5a5a448f75c3c4c11059437c2fcfe06b8331e26f824b632dba6"
+}
