@@ -1,0 +1,16 @@
+✔ accepts audited historical baseline and continuous 071-073 (150.70729ms)
+✔ rejects a post-cutoff duplicate (97.94778ms)
+✔ rejects a new migration at or below 070 (36.167802ms)
+✔ rejects a gap in the post-cutoff sequence (52.158844ms)
+✔ rejects a filename without a canonical prefix (16.539068ms)
+✔ filesystem order does not affect deterministic output (12.459631ms)
+✔ rejects a new unauthorized historical collision (31.183666ms)
+✔ rejects a missing audited historical file (59.592381ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 766.519639

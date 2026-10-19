@@ -1,0 +1,18 @@
+✔ P7: a manual clock advanced beyond the plan date rejects Start without writes (10767.783833ms)
+✔ P7: exact Madrid date and inclusive 097 bounds, without changing the plan or clock (6759.711896ms)
+✔ P7: actual automatic clock rejects another day; fresh simulation resolves each plan date (7978.301438ms)
+✔ P7: Madrid DST manual gap/fold rejected, unambiguous bases on both transition days accepted (5989.067858ms)
+✔ P7: elapsed time follows the 23/25-hour Madrid calendar day, independently of session timezone (8111.603817ms)
+✔ P7: permissions, observed version, readiness and occupancy remain independent of time (7029.241605ms)
+✔ P7: existing runs can Finish/Interrupt/Resume/Cancel after the day; reset permits no invalid new Start (5005.275469ms)
+✔ P7: changed/reversed clocks retain their existing conflicts and reset remains available (6361.380618ms)
+✔ P7: replacement preserves signature/ACL and existing data; no retroactive validation (4983.616861ms)
+✔ P7: HTTP mapping distinguishes temporal, permission, concurrent and transient failures (1.40364ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 65451.026304

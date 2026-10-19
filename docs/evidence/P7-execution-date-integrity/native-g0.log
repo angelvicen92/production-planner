@@ -1,0 +1,11 @@
+PASS entire native application migration ledger
+PASS real password login for five Auth identities
+PASS historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import
+PASS native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved
+PASS real storage/input adapter canon after GET day; no legacy breaks
+PASS G0 editorial-only/unlinked HTTP, War Room context/list/detail and native RLS deny without writes
+PASS G0 whole zone, multiple spaces/zones, overlapping helpers, Start/Finish and complete incident lifecycle
+PASS G0 concurrent revocation rechecked after lock; global roles and legitimate nominal resources preserved
+PASS G0 persistence failures/forged direct RPC leave no partial writes; 266 accepted A2 placements, all Stages/Drafts/plans/clock remain literal
+PASS other disposable days remain literal during accepted-snapshot execution
+{"status":"PASS","evidence":"/workspace/production-planner/work/p7/g0/integration.json","remoteWrites":0}

@@ -1,0 +1,41 @@
+✔ canonical P14 projects CAM1 to ordinary Recursos/Pasillo, while itinerant operations retain physical occupancy without inheritance (157.925572ms)
+✔ a missing shared resource admits the old cross-space conflict; effective CAM1 rejects it in placement, domains and HARD validation (134.268705ms)
+✔ P14 keeps own-space exclusivity and Giratuto parallelism independently of shared CAM1 (71.286198ms)
+✔ Stage-1 analytical future retains P14 CAM1 requirements without making P14 visible or protected (78.457598ms)
+✔ P14 remains one Assisted unit containing all three spaces (14.008418ms)
+✔ canonical P15 projects CAM2 through both member spaces with preferred concentration (75.067701ms)
+✔ stage metrics include Sodexo obligations and exclude supporting and witness placements (21.172951ms)
+✖ A2-ASSIST-8 product request/run/apply accepts the canonical first stage (542298.601014ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 7
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 545227.412055
+
+✖ failing tests:
+
+test at server/benchmarks/runA2Assist8Evidence.spec.ts:1:1294
+✖ A2-ASSIST-8 product request/run/apply accepts the canonical first stage (542298.601014ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    {
+  +   fingerprint: 'bb27f392bc55684dc45cc5d8813bc21686cb15ad0f65897374cc4aacc7d5f1d6',
+  +   stage: 'bb27f392bc55684dc45cc5d8813bc21686cb15ad0f65897374cc4aacc7d5f1d6'
+  -   fingerprint: '67e4a4c3f411d39b8c3b14fd11a3c19b1b78dd742a55ed0fe3a3c45bfb639c3d',
+  -   stage: undefined
+    }
+
+      at TestContext.<anonymous> (/workspace/production-planner/server/benchmarks/runA2Assist8Evidence.spec.ts:43:10)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { stage: 'bb27f392bc55684dc45cc5d8813bc21686cb15ad0f65897374cc4aacc7d5f1d6', fingerprint: 'bb27f392bc55684dc45cc5d8813bc21686cb15ad0f65897374cc4aacc7d5f1d6' },
+    expected: { stage: undefined, fingerprint: '67e4a4c3f411d39b8c3b14fd11a3c19b1b78dd742a55ed0fe3a3c45bfb639c3d' },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

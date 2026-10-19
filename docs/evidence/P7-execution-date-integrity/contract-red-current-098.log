@@ -1,0 +1,82 @@
+✖ P7 same-day reality: early and late Starts preserve the real timestamp outside planning hours (13011.960191ms)
+✖ P7 same-day reality: legacy late Start and Finish can be corrected with immutable audit (3672.759244ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 17887.486816
+
+✖ failing tests:
+
+test at server/liveExecutionDateIntegrity.spec.ts:7:628
+✖ P7 same-day reality: early and late Starts preserve the real timestamp outside planning hours (13011.960191ms)
+  error: EXECUTION_START_WORKDAY
+      at pe.Ue (/workspace/production-planner/node_modules/@electric-sql/pg-protocol/src/parser.ts:442:11)
+      at pe.tt (/workspace/production-planner/node_modules/@electric-sql/pg-protocol/src/parser.ts:220:16)
+      at pe.parse (/workspace/production-planner/node_modules/@electric-sql/pg-protocol/src/parser.ts:104:21)
+      at N.qe (/workspace/production-planner/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+      at <anonymous> (/workspace/production-planner/node_modules/@electric-sql/pglite/dist/index.js:5:1155)
+      at wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+      at wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+      at wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+      at wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+      at wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d {
+    length: 183,
+    severity: 'ERROR',
+    code: 'P0001',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: 'PL/pgSQL function public.execute_task_transition(bigint,uuid,text,text,integer) line 35 at RAISE',
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'pl_exec.c',
+    line: '3923',
+    routine: 'exec_stmt_raise',
+    query: 'SELECT * FROM execute_task_transition($1,$2,$3,$4,$5)',
+    params: [ 1, '00000000-0000-0000-0000-000000000002', 'in_progress', 'pending', 0 ],
+    queryOptions: undefined
+  }
+
+test at server/liveExecutionDateIntegrity.spec.ts:7:1288
+✖ P7 same-day reality: legacy late Start and Finish can be corrected with immutable audit (3672.759244ms)
+  error: EXECUTION_WORKDAY
+      at pe.Ue (/workspace/production-planner/node_modules/@electric-sql/pg-protocol/src/parser.ts:442:11)
+      at pe.tt (/workspace/production-planner/node_modules/@electric-sql/pg-protocol/src/parser.ts:220:16)
+      at pe.parse (/workspace/production-planner/node_modules/@electric-sql/pg-protocol/src/parser.ts:104:21)
+      at N.qe (/workspace/production-planner/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+      at <anonymous> (/workspace/production-planner/node_modules/@electric-sql/pglite/dist/index.js:5:1155)
+      at wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+      at wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+      at wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+      at wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+      at wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d {
+    length: 186,
+    severity: 'ERROR',
+    code: 'P0001',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: 'PL/pgSQL function public.correct_task_execution_time(bigint,uuid,text,text,text,integer) line 57 at RAISE',
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'pl_exec.c',
+    line: '3923',
+    routine: 'exec_stmt_raise',
+    query: 'SELECT * FROM correct_task_execution_time(1,$1,$2,$3,$4,$5)',
+    params: [ '00000000-0000-0000-0000-000000000002', 'start', '2026-10-31T19:05:00+01:00', 'Registro real fuera del horario previsto', 1 ],
+    queryOptions: undefined
+  }

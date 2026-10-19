@@ -51,6 +51,8 @@ export async function runLiveExecutionJourney({ appUrl, url, anon, users, db, pl
   const context = await request('aux', `/api/plans/${planId}/execution`);
   assert.equal(context.status, 200); assert.equal(context.body.planningReady, true);
   assert.equal(context.body.planningState, 'accepted');
+  // P7: this accepted historical day is not today's automatic-clock date.
+  assert.equal((await request('admin','/api/program-settings','PATCH',{clockMode:'manual',simulatedTime:task.start_planned})).status,200);
   // Fault injection is confined to this newly created local database.
   for (const table of ['task_status_events', 'locks']) {
     const before = await material();
@@ -61,12 +63,13 @@ export async function runLiveExecutionJourney({ appUrl, url, anon, users, db, pl
     await db.query(`DROP TRIGGER ejec_fail ON public.${table}; DROP FUNCTION public.ejec_fail();`);
   }
   pass('real HTTP event and lock failures leave task/history/protections unchanged');
-  const raceBeganAt=Date.now();
+  const raceBeganAt=Date.parse((await request('aux',`/api/plans/${planId}/execution`)).body.clock.operationalAt);
   const race = await Promise.all(['aux', 'production'].map(role => request(role, path, 'PATCH', { status: 'in_progress', expectedStatus: 'pending', effectiveTimeHHMM: '00:00', effectiveSeconds: 59 })));
   assert.deepEqual(race.map(r => r.status).sort(), [200, 409]);
   const recorded=race.find(r=>r.status===200)!.body;
   const actualStart=Date.parse(recorded.startRealAt);
-  assert.ok(actualStart>=raceBeganAt-1000&&actualStart<=Date.now()+1000,'real clock comes from server time, regardless of browser timestamp');
+  const raceEndedAt=Date.parse((await request('aux',`/api/plans/${planId}/execution`)).body.clock.operationalAt);
+  assert.ok(actualStart>=raceBeganAt-1000&&actualStart<=raceEndedAt+1000,'operational clock comes from the server, regardless of browser timestamp');
   assert.equal(recorded.startReal,new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Madrid',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(actualStart)));
   const finishRace = await Promise.all(['aux', 'admin'].map(role => request(role, path, 'PATCH', { status: 'done', expectedStatus: 'in_progress' })));
   assert.deepEqual(finishRace.map(r => r.status).sort(), [200, 409]);
@@ -234,6 +237,6 @@ export async function runLiveExecutionJourney({ appUrl, url, anon, users, db, pl
       assert.equal(direct.status, 403);
     }
     pass('two independent real browsers: mobile Start -> Control Room; Finish -> persisted reload; viewer/offline/direct RPC denied');
-    return { status: 'PASS', syncTransport: 'HTTP polling fallback', pollingIntervalMs: 5000, startLatencyMs, finishLatencyMs, durationSeconds, eventCount: events.length, executionLockCount: 1, preservedObligations: 266, remoteWrites: 0, dayWorkspaceTransitions:'PASS',dayWorkspaceStaffHeaders:'PASS',clockModes:'real clock HTTP races + admin-authorized simulation in browser',uiPersistenceFailure:'PASS',multipleSimultaneousTasks:'PASS',screenshots: ['mi-dia-mobile-pending.png', 'mi-dia-mobile-running.png', 'mi-dia-desktop-running.png','mi-dia-desktop-dark.png'], realtimeWebSocket: 'NOT TESTED: disposable gateway has no Realtime service' };
+    return { status: 'PASS', syncTransport: 'HTTP polling fallback', pollingIntervalMs: 5000, startLatencyMs, finishLatencyMs, durationSeconds, eventCount: events.length, executionLockCount: 1, preservedObligations: 266, remoteWrites: 0, dayWorkspaceTransitions:'PASS',dayWorkspaceStaffHeaders:'PASS',clockModes:'server-authoritative manual clock on accepted historical day',uiPersistenceFailure:'PASS',multipleSimultaneousTasks:'PASS',screenshots: ['mi-dia-mobile-pending.png', 'mi-dia-mobile-running.png', 'mi-dia-desktop-running.png','mi-dia-desktop-dark.png'], realtimeWebSocket: 'NOT TESTED: disposable gateway has no Realtime service' };
   } finally { await browser.close(); }
 }

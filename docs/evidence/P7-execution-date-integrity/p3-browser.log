@@ -1,0 +1,7 @@
+Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+PASS Hero/agenda share form; seconds and Madrid independent of New York; required reason, no-op, double-submit, observed snapshot, 409 and explicit recovery
+PASS Completed end editable with canExecute=false; lazy history reopens with full corrections, original transitions excluded; history failure stays explicit
+PASS 400/403/503/409 show no success; offline blocks writes without optimistic marks
+PASS Madrid DST gap/fold and missing day block saving; editorial/no authority and Viewer have no correction controls; 266 tasks retained
