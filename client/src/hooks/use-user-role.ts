@@ -1,14 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest, type ApiPermissionError } from "@/lib/api";
+import { useAuth } from './use-auth';
 
 export type AppRole = "admin" | "production" | "aux" | "viewer";
 
 export function useUserRole(enabled = true) {
+  const { user } = useAuth();
   const query = useQuery<{ role: AppRole }, ApiPermissionError | Error>({
-    queryKey: ["/api/me/role"],
-    enabled,
+    queryKey: ["/api/me/role", user?.id],
+    enabled: enabled && !!user?.id,
     retry: false,
-    queryFn: () => apiRequest<{ role: AppRole }>("GET", "/api/me/role"),
+    refetchInterval: 30000,
+    queryFn: ({ signal }) => apiRequest<{ role: AppRole }>("GET", "/api/me/role", undefined, { signal }),
   });
 
   if (!enabled) {
@@ -22,7 +25,7 @@ export function useUserRole(enabled = true) {
   }
 
   return {
-    role: query.data?.role ?? null,
+    role: !user?.id || query.isError ? null : query.data?.role ?? null,
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,

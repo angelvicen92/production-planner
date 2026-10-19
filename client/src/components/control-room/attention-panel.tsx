@@ -6,7 +6,7 @@ import { warRoomHref, type ControlRoomProjection } from '@/lib/control-room-metr
 import { Surface, datedTime, incidentAge } from './presentation';
 
 export function AttentionPanel({ metrics: m, planId, realNow, director }: { metrics: ControlRoomProjection; planId: number; realNow: number; director: boolean }) {
-  const incidents = [...m.incidents.recent].sort((a, b) => Number(b.status !== 'resolved' && b.severity === 'critical') - Number(a.status !== 'resolved' && a.severity === 'critical') || Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
+  const incidents = [...m.incidents.recent].sort((a, b) => Number(a.status === 'resolved') - Number(b.status === 'resolved') || Number(b.severity === 'critical') - Number(a.severity === 'critical') || Number(b.status === 'escalated') - Number(a.status === 'escalated') || Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
   return <div className="grid min-w-0 gap-4 xl:grid-cols-2">
     <Surface label="Atención operativa"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className={cn('text-xl font-semibold', director && 'text-3xl')}>Atención operativa</h2><Badge variant={m.incidents.critical ? 'destructive' : 'secondary'}>{m.alerts.length} hechos de atención</Badge></div>
       <p className="mt-2 text-sm text-foreground/75">Prioridad por incidencia crítica, escalada y desviación observada.</p>

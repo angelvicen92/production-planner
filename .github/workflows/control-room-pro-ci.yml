@@ -8,6 +8,8 @@ on:
       - 'client/src/pages/control-room.tsx'
       - 'client/src/pages/war-room.tsx'
       - 'client/src/lib/control-room-metrics*'
+      - 'client/src/lib/control-room-modes*'
+      - 'client/src/hooks/use-user-role.ts'
       - 'client/src/hooks/use-control-room-data.ts'
       - 'client/src/hooks/use-execution-context.ts'
       - 'client/src/hooks/use-war-room.ts'
@@ -34,15 +36,18 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run build
-      - run: node --import tsx --test client/src/lib/control-room-metrics.test.ts server/liveExecution.spec.ts server/incidents.spec.ts server/apiAuthorization.spec.ts
+      - run: node --import tsx --test client/src/lib/control-room-metrics.test.ts client/src/lib/control-room-modes.test.ts client/src/components/control-room/temporal-navigation.test.ts server/liveExecution.spec.ts server/incidents.spec.ts server/apiAuthorization.spec.ts
       - run: npx --no-install playwright install --with-deps chromium
+      - name: Purposeful modes, saved selections and role changes
+        run: P6_CHROMIUM=$(node -e "process.stdout.write(require('playwright').chromium.executablePath())") node client/src/components/control-room/p6.browser.mjs
       - name: Actual A2, Auth, HTTP and independent sessions on disposable services
-        run: node --import tsx script/demo/smokeA2Integration.ts work/control-room-p4 --historical-topology --control-room-snapshot
+        run: node --import tsx script/demo/smokeA2Integration.ts work/control-room-p6 --historical-topology --control-room-snapshot
       - name: Public evidence only
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: control-room-p4
+          name: control-room-p6
           path: |
-            work/control-room-p4/integration.json
-            work/control-room-p4/control-room-*.png
+            docs/evidence/P6-CONTROL-ROOM-UI/
+            work/control-room-p6/integration.json
+            work/control-room-p6/control-room-*.png
