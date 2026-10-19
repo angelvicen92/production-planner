@@ -11,6 +11,7 @@ export type HistoryStage = StageLineageNode & {
 export type TimingTotal = { durationMs: number | null; knownStages: number; totalStages: number };
 export type StageHistoryMetrics = {
   stage: HistoryStage;
+  localNumber: number;
   timing: AssistedStageTiming;
   generationTotal: TimingTotal;
   processTotal: TimingTotal;
@@ -36,7 +37,10 @@ const add = (total: TimingTotal, interval: StageTimeInterval | null): TimingTota
   durationMs: interval ? (total.durationMs ?? 0) + interval.durationMs : total.durationMs,
 });
 
-export function buildAssistedHistory(history: readonly HistoryStage[], active: HistoryStage | null | undefined, timings: readonly AssistedStageTiming[] = []) {
+/** Presentation only: the persisted ordinal remains the historical acceptance order.
+ * Resolve parent IDs first; never use ordinal gaps, dates or live-row counts as depth.
+ */
+export function projectAssistedStageCycle(history: readonly HistoryStage[], active: HistoryStage | null | undefined) {
   let lineage: HistoryStage[] = [];
   let lineageError: string | null = null;
   try {
@@ -47,10 +51,22 @@ export function buildAssistedHistory(history: readonly HistoryStage[], active: H
     const ids = new Set(lineage.map(stage => stage.id));
     if (stages.some((stage, index) => ids.has(stage.id) && stages.findIndex(other => other.id === stage.id) !== index)) throw new Error("Hay etapas duplicadas en el recorrido.");
     if (lineage[0].ordinal !== 0 || lineage.some((stage, index) => stage.archivedAt || (index > 0 && stage.ordinal <= lineage[index - 1].ordinal))) throw new Error("El recorrido no tiene un S0 válido o contiene etapas inconsistentes.");
-  } catch {
-    lineageError = "No se puede reconstruir el recorrido actual: faltan etapas o sus relaciones son inconsistentes. Los acumulados no están disponibles.";
+  } catch (error) {
+    const cause = error instanceof Error && error.message === "CORRUPT_STAGE_LINEAGE" ? "Faltan ancestros o hay un ciclo en sus relaciones."
+      : error instanceof Error && error.message === "STALE_BASE_STAGE" ? "No se encuentra la etapa activa."
+      : error instanceof Error ? error.message : "Relaciones inconsistentes.";
+    lineageError = `No se puede reconstruir el recorrido actual: ${cause} Numeración y acumulados no disponibles.`;
     lineage = [];
   }
+  return { lineage, localNumber: lineage.length ? lineage.length - 1 : null, lineageError };
+}
+
+export function assistedStageLabel(localNumber: number | null) {
+  return localNumber === null ? "Etapa no disponible" : `Etapa S${localNumber}`;
+}
+
+export function buildAssistedHistory(history: readonly HistoryStage[], active: HistoryStage | null | undefined, timings: readonly AssistedStageTiming[] = []) {
+  const { lineage, localNumber, lineageError } = projectAssistedStageCycle(history, active);
   const ids = new Set(lineage.map(stage => stage.id));
   const otherStages = history.filter(stage => !ids.has(stage.id));
   const issues: number[] = [];
@@ -69,7 +85,7 @@ export function buildAssistedHistory(history: readonly HistoryStage[], active: H
     if (inconsistent) { issues.push(stage.id); generation = null; process = null; }
     previousAcceptance = accepted ?? (process ? stageTimestamp(process.end) : null);
     if (index > 0) { generationTotal = add(generationTotal, generation); processTotal = add(processTotal, process); }
-    return { stage, timing: { stageId: stage.id, generation, requestToAcceptance: process }, generationTotal, processTotal };
+    return { stage, localNumber: index, timing: { stageId: stage.id, generation, requestToAcceptance: process }, generationTotal, processTotal };
   });
   // Wall time requires full process coverage. Never span a missing request or
   // silently treat a manual Stage / unknown run as zero.
@@ -77,5 +93,5 @@ export function buildAssistedHistory(history: readonly HistoryStage[], active: H
   const last = rows.at(-1)?.timing.requestToAcceptance;
   const elapsed = first && last && processTotal.knownStages === processTotal.totalStages
     ? { start: first.start, end: last.end, durationMs: stageTimestamp(last.end)! - stageTimestamp(first.start)! } : null;
-  return { rows, otherStages, lineageError, timingIssues: issues, generationTotal, processTotal, elapsed };
+  return { rows, otherStages, localNumber, lineageError, timingIssues: issues, generationTotal, processTotal, elapsed };
 }

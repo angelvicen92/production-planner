@@ -11,7 +11,7 @@ const progress: AutopilotProgress = {
   scope: { kind: "SPACE", spaceId: 7 }, scopeTaskIds: [1], runId: 99,
   stopRequested: false, message: "RAW_TECHNICAL_MESSAGE",
 };
-const render = (p = progress) => renderToStaticMarkup(<AssistedAutopilotProgress progress={p} view={projectAutopilotProgress(p, [{ id: 1, template: { name: "Grabación" } }], [{ id: 7, name: "Plató 7" }])} />);
+const render = (p = progress) => renderToStaticMarkup(<AssistedAutopilotProgress progress={p} view={projectAutopilotProgress(p, [{ id: 1, template: { name: "Grabación" } }], [{ id: 7, name: "Plató 7" }], { localNumber: 2, lineageError: null })} />);
 
 test("primary render puts accessible graphical progress, business scope and work before collapsed diagnostics", () => {
   const html = render();
@@ -37,10 +37,10 @@ test("complete, stopped and failed renders preserve achieved global progress and
 });
 
 test("maximized presentation keeps one compact verified-progress bar with stage and scope", () => {
-  const html = renderToStaticMarkup(<AssistedAutopilotProgress compact progress={progress} view={projectAutopilotProgress(progress, [{ id: 1, template: { name: "Grabación" } }], [{ id: 7, name: "Plató 7" }])} />);
+  const html = renderToStaticMarkup(<AssistedAutopilotProgress compact progress={progress} view={projectAutopilotProgress(progress, [{ id: 1, template: { name: "Grabación" } }], [{ id: 7, name: "Plató 7" }], { localNumber: 2, lineageError: null })} />);
   assert.equal((html.match(/role="progressbar"/g) ?? []).length, 1);
   assert.match(html, /47 de 266 tareas/);
-  assert.match(html, /Etapa 5/);
+  assert.match(html, /Etapa S2/);
   assert.match(html, /Generando propuesta/);
   assert.match(html, /Plató 7/);
   assert.doesNotMatch(html, /Tipos de tarea:|Quedan 219 tareas/);

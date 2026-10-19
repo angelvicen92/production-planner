@@ -1,0 +1,450 @@
+{
+  "remoteWrites": 0,
+  "source": "disposable A2 / native Auth, HTTP, SQL and Chromium",
+  "validation": "fixture metadata for identical bootstrap snapshots; no new validation or solver certification",
+  "checkpoints": [
+    {
+      "name": "initial S0",
+      "historicalOrdinal": 0,
+      "localNumber": 0,
+      "activeIds": [
+        12
+      ],
+      "activeOrdinals": [
+        0
+      ],
+      "visibleNumbers": [
+        0
+      ],
+      "otherIds": []
+    },
+    {
+      "name": "initial S1",
+      "historicalOrdinal": 1,
+      "localNumber": 1,
+      "activeIds": [
+        12,
+        13
+      ],
+      "activeOrdinals": [
+        0,
+        1
+      ],
+      "visibleNumbers": [
+        0,
+        1
+      ],
+      "otherIds": []
+    },
+    {
+      "name": "initial S2",
+      "historicalOrdinal": 2,
+      "localNumber": 2,
+      "activeIds": [
+        12,
+        13,
+        14
+      ],
+      "activeOrdinals": [
+        0,
+        1,
+        2
+      ],
+      "visibleNumbers": [
+        0,
+        1,
+        2
+      ],
+      "otherIds": []
+    },
+    {
+      "name": "initial S12",
+      "historicalOrdinal": 12,
+      "localNumber": 12,
+      "activeIds": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24
+      ],
+      "activeOrdinals": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "visibleNumbers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "otherIds": []
+    },
+    {
+      "name": "restart from S12 returns S0",
+      "historicalOrdinal": 0,
+      "localNumber": 0,
+      "activeIds": [
+        12
+      ],
+      "activeOrdinals": [
+        0
+      ],
+      "visibleNumbers": [
+        0
+      ],
+      "otherIds": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24
+      ]
+    },
+    {
+      "name": "first restart: historical 13 displays S1",
+      "historicalOrdinal": 13,
+      "localNumber": 1,
+      "activeIds": [
+        12,
+        25
+      ],
+      "activeOrdinals": [
+        0,
+        13
+      ],
+      "visibleNumbers": [
+        0,
+        1
+      ],
+      "otherIds": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24
+      ]
+    },
+    {
+      "name": "second restart: historical 14 displays S1",
+      "historicalOrdinal": 14,
+      "localNumber": 1,
+      "activeIds": [
+        12,
+        26
+      ],
+      "activeOrdinals": [
+        0,
+        14
+      ],
+      "visibleNumbers": [
+        0,
+        1
+      ],
+      "otherIds": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25
+      ]
+    },
+    {
+      "name": "real structural case [0,14..24] displays [0..11]",
+      "historicalOrdinal": 24,
+      "localNumber": 11,
+      "activeIds": [
+        12,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36
+      ],
+      "activeOrdinals": [
+        0,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24
+      ],
+      "visibleNumbers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "otherIds": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25
+      ]
+    },
+    {
+      "name": "rollback to S4",
+      "historicalOrdinal": 17,
+      "localNumber": 4,
+      "activeIds": [
+        12,
+        26,
+        27,
+        28,
+        29
+      ],
+      "activeOrdinals": [
+        0,
+        14,
+        15,
+        16,
+        17
+      ],
+      "visibleNumbers": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "otherIds": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36
+      ]
+    },
+    {
+      "name": "redo without divergence to S5",
+      "historicalOrdinal": 18,
+      "localNumber": 5,
+      "activeIds": [
+        12,
+        26,
+        27,
+        28,
+        29,
+        30
+      ],
+      "activeOrdinals": [
+        0,
+        14,
+        15,
+        16,
+        17,
+        18
+      ],
+      "visibleNumbers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "otherIds": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36
+      ]
+    },
+    {
+      "name": "new branch after S4 displays S5",
+      "historicalOrdinal": 25,
+      "localNumber": 5,
+      "activeIds": [
+        12,
+        26,
+        27,
+        28,
+        29,
+        37
+      ],
+      "activeOrdinals": [
+        0,
+        14,
+        15,
+        16,
+        17,
+        25
+      ],
+      "visibleNumbers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "otherIds": [
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36
+      ]
+    }
+  ],
+  "autopilot": {
+    "persistedStage": 24,
+    "visible": "Etapa S11",
+    "completed": 0,
+    "total": 266
+  },
+  "before": {
+    "toolbar": "Etapa 24\n0/266 con horario\n266 pendientes\nPendiente de validar\nSugerir siguiente alcance\nGenerar propuesta\nValidar borrador\nAceptar etapa\nHerramientas de edición",
+    "header": "Última etapa aceptada\n\nEtapa 24\n\nCheckpoint del plan de trabajo",
+    "sqlHash": "e54cf2cf4fbd23a575398c7f114eb48498e76734abde348d657ca3d5c7e0c69f"
+  },
+  "after": {
+    "toolbar": "Etapa S11\n0/266 con horario\n266 pendientes\nPendiente de validar\nSugerir siguiente alcance\nGenerar propuesta\nValidar borrador\nAceptar etapa\nHerramientas de edición",
+    "header": "Última etapa aceptada\n\nEtapa S11\n\nCheckpoint del plan de trabajo",
+    "progress": [
+      "S0",
+      "S1",
+      "S2",
+      "S3",
+      "S4",
+      "S5",
+      "S6",
+      "S7",
+      "S8",
+      "S9",
+      "S10",
+      "S11"
+    ],
+    "activeCards": 12,
+    "archivedCards": 13,
+    "obligations": 266,
+    "renderedPlacementCards": 0,
+    "sqlHash": "e54cf2cf4fbd23a575398c7f114eb48498e76734abde348d657ca3d5c7e0c69f"
+  },
+  "pageErrors": [],
+  "status": "PASS"
+}

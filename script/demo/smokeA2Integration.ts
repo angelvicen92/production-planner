@@ -54,8 +54,9 @@ if(process.argv.includes('--app')){
  const planningNavigation=process.argv.includes('--planning-navigation');
  const timeCorrections=process.argv.includes('--time-corrections');
  const productionScope=process.argv.includes('--production-scope');
+ const assistedStageCycle=process.argv.includes('--assisted-stage-cycle');
  const executionDateIntegrity=process.argv.includes('--execution-date-integrity');
- const liveSnapshot=executionDateIntegrity||timeCorrections||productionScope||process.argv.includes('--live-execution-snapshot')||warRoom||controlRoom||collapsibleSections||planningNavigation;
+ const liveSnapshot=assistedStageCycle||executionDateIntegrity||timeCorrections||productionScope||process.argv.includes('--live-execution-snapshot')||warRoom||controlRoom||collapsibleSections||planningNavigation;
  assert.ok(!liveSnapshot||historicalTopology,'accepted snapshot replay requires --historical-topology');
  assert.ok(!liveExecution||full,'--live-execution requires a complete accepted baseline (--full)');
  const workspaceSetup=process.argv.includes("--workspace-setup");
@@ -89,6 +90,7 @@ if(process.argv.includes('--app')){
  const hashes=()=>Object.fromEntries(runtimeFiles.map(file=>[file,createHash('sha256').update(readFileSync(file)).digest('hex')]));
  if(warRoom)runtimeFiles.push('script/demo/smokeWarRoomJourney.ts','server/incidents.ts','server/incidentErrors.ts','shared/incidents.ts','client/src/pages/my-day.tsx','client/src/pages/war-room.tsx','client/src/hooks/use-war-room.ts','client/src/hooks/use-plan-realtime.ts','client/src/lib/war-room-store.ts','client/src/pages/dashboard.tsx','client/src/pages/call-sheet.tsx','server/apiAuthorization.ts','shared/routes.ts','shared/schema.ts','supabase/migrations/094_operational_incidents.sql');
  runtimeFiles.push('client/src/hooks/use-execution-context.ts','client/src/hooks/use-tasks.ts','client/src/hooks/use-production-clock.ts','shared/execution.ts','script/demo/smokeLiveExecutionJourney.ts');
+ if(assistedStageCycle)runtimeFiles.push('script/demo/smokeAssistedStageCycle.ts','shared/assistedHistory.ts','shared/assistedStageLineage.ts','client/src/components/planning/assisted-stage-history.tsx','client/src/components/planning/assisted-autopilot-progress.tsx','client/src/lib/assisted-autopilot-progress.ts');
  if(stageOrder)runtimeFiles.push('script/demo/probeA2StageOrder.ts','server/assistedScopeOrchestrator.ts');
  if(autopilotWorkspace)runtimeFiles.push('script/demo/smokeAutopilotWorkspace.ts','client/src/components/planning/assisted-autopilot-progress.tsx','client/src/lib/assisted-autopilot.ts','client/src/lib/assisted-autopilot-progress.ts');
  if(autopilot)runtimeFiles.push('shared/assistedAutopilot.ts','client/src/lib/assisted-autopilot.ts','script/demo/smokeA2AutopilotJourney.ts');
@@ -140,7 +142,7 @@ if(process.argv.includes('--app')){
   const restPort=start('rest',images.rest,3000,{PGRST_DB_URI:`postgres://authenticator:${password}@db:5432/postgres`,PGRST_DB_SCHEMAS:'public',PGRST_DB_ANON_ROLE:'anon',PGRST_JWT_SECRET:secret,PGRST_SERVER_PORT:'3000'});
   const transport:any[]=[];report.transport=transport;
   gateway=http.createServer((req,res)=>{
-   res.setHeader('Access-Control-Allow-Origin',(realityScope||headerNotes||operationalMeals||controlRoom||templateAuthorization||templateCreation||collapsibleSections||settingsSections)&&baselineUrl&&req.headers.origin===baselineUrl?baselineUrl:appUrl);res.setHeader('Access-Control-Allow-Headers',req.headers['access-control-request-headers']??'authorization,apikey,content-type');res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,PATCH,DELETE,OPTIONS');
+   res.setHeader('Access-Control-Allow-Origin',(assistedStageCycle||realityScope||headerNotes||operationalMeals||controlRoom||templateAuthorization||templateCreation||collapsibleSections||settingsSections)&&baselineUrl&&req.headers.origin===baselineUrl?baselineUrl:appUrl);res.setHeader('Access-Control-Allow-Headers',req.headers['access-control-request-headers']??'authorization,apikey,content-type');res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,PATCH,DELETE,OPTIONS');
    if(req.method==='OPTIONS'){res.writeHead(204);res.end();return;}
    const path=req.url??'/',isAuth=path.startsWith('/auth/v1/'),isRest=path.startsWith('/rest/v1/');
    if(!isAuth&&!isRest){res.writeHead(404);res.end();return;}
@@ -206,7 +208,7 @@ if(process.argv.includes('--app')){
   const appLog=createWriteStream(`${directory}/app-private.log`,{mode:0o600});
   app=spawn(process.execPath,['--import','tsx',resolve('script/demo/smokeA2Integration.ts'),'--app'],{env:localEnv,stdio:['ignore','pipe','pipe']});app.stdout!.pipe(appLog);app.stderr!.pipe(appLog);
   await eventually(async()=>{assert.equal(app!.exitCode,null,'product server exited');const r=await fetch(`${appUrl}/api/plans/${dataset.input.planId}`,{headers:{Authorization:`Bearer ${users.production.token}`}});assert.equal(r.status,200);});
-  const requestedBaseline=realityScope?process.env.REALITY_BASELINE_ROOT:headerNotes?process.env.UI06_BASELINE_ROOT:operationalMeals?process.env.UI05_BASELINE_ROOT:settingsSections?process.env.SETTINGS_SECTIONS_BASELINE_ROOT:collapsibleSections?process.env.SECTIONS_BASELINE_ROOT:templateCreation?process.env.TEMPLATE_CREATION_BASELINE_ROOT:templateAuthorization?process.env.TEMPLATE_AUTHORIZATION_BASELINE_ROOT:configurationReadRecovery?process.env.CONFIG_READ_BASELINE_ROOT:controlRoom?process.env.CONTROL_ROOM_BASELINE_ROOT:undefined;
+  const requestedBaseline=assistedStageCycle?process.env.P8_BASELINE_ROOT:realityScope?process.env.REALITY_BASELINE_ROOT:headerNotes?process.env.UI06_BASELINE_ROOT:operationalMeals?process.env.UI05_BASELINE_ROOT:settingsSections?process.env.SETTINGS_SECTIONS_BASELINE_ROOT:collapsibleSections?process.env.SECTIONS_BASELINE_ROOT:templateCreation?process.env.TEMPLATE_CREATION_BASELINE_ROOT:templateAuthorization?process.env.TEMPLATE_AUTHORIZATION_BASELINE_ROOT:configurationReadRecovery?process.env.CONFIG_READ_BASELINE_ROOT:controlRoom?process.env.CONTROL_ROOM_BASELINE_ROOT:undefined;
   if(requestedBaseline){
    const baselineRoot=resolve(requestedBaseline),baselinePort=await freePort();baselineUrl=`http://127.0.0.1:${baselinePort}`;
    const baselineLog=createWriteStream(`${directory}/baseline-private.log`,{mode:0o600});
@@ -243,13 +245,14 @@ if(process.argv.includes('--app')){
   if(liveSnapshot){
    // The sections journey edits a disposable Draft without accepting a Stage
    // and creates an independent technical-task day. Preserve prior task rows.
-   const protectedDays=collapsibleSections?(await db.query("SELECT id FROM plans WHERE id<>27002")).rows.map(row=>Number(row.id)):null;
+   const protectedDays=(collapsibleSections||assistedStageCycle)?(await db.query("SELECT id FROM plans WHERE id<>27002")).rows.map(row=>Number(row.id)):null;
    const otherDays=async()=>JSON.stringify((await db!.query(protectedDays?"SELECT to_jsonb(t) row FROM daily_tasks t WHERE plan_id=ANY($1::int[]) ORDER BY id":"SELECT to_jsonb(t) row FROM daily_tasks t WHERE plan_id<>27001 ORDER BY id",protectedDays?[protectedDays]:[])).rows);
    const untouched=await otherDays();
    const source=(await db.query("SELECT snapshot_fingerprint,ordinal FROM assisted_planning_stages WHERE id=(SELECT active_stage_id FROM assisted_planning_sessions WHERE plan_id=27001 AND status='ACTIVE')")).rows[0];
    report.snapshotReplay={source:'script/demo/fixtures/a2-legacy-import.json.gz',sourceSha256:createHash('sha256').update(readFileSync('script/demo/fixtures/a2-legacy-import.json.gz')).digest('hex'),planId:27001,acceptedStage:source.ordinal,fingerprint:source.snapshot_fingerprint,newSolverRun:false};
    if(process.argv.includes("--day-workspace")){const {runDayWorkspaceSnapshot}=await import("./smokeDayWorkspaceJourney");report.dayWorkspace=await runDayWorkspaceSnapshot(options);}
-   if(remainingDaySections){const {runRemainingDaySections}=await import('./smokeRemainingDaySections');report.remainingDaySections=await runRemainingDaySections({...options,planId:27001,baselineUrl});}
+   if(assistedStageCycle){const {runAssistedStageCycle}=await import('./smokeAssistedStageCycle');report.assistedStageCycle=await runAssistedStageCycle({...options,baselineUrl});}
+   else if(remainingDaySections){const {runRemainingDaySections}=await import('./smokeRemainingDaySections');report.remainingDaySections=await runRemainingDaySections({...options,planId:27001,baselineUrl});}
    else if(collapsibleSections){const {runCollapsibleSections}=await import('./smokeCollapsibleSections');report.collapsibleSections=await runCollapsibleSections({...options,planId:27001,baselineUrl});}
    else if(planningNavigation){const {runPlanningNavigation}=await import('./smokePlanningNavigation');report.planningNavigation=await runPlanningNavigation({...options,planId:27001});}
    else if(controlRoom){const {runControlRoomJourney}=await import('./smokeControlRoomJourney');report.controlRoom=await runControlRoomJourney({...options,planId:27001,baselineUrl});}
@@ -278,7 +281,7 @@ if(process.argv.includes('--app')){
   if(liveExecution){const {runLiveExecutionJourney}=await import('./smokeLiveExecutionJourney');report.liveExecution=await runLiveExecutionJourney(options);}
   }
   assert.deepEqual(hashes(),report.runtimeHashes,'runtime sources changed during integration rehearsal');
-  if(preservation&&!liveSnapshot){await preservation.assertPreserved();pass('old day, 11 prior Stages, 333 other tasks and historical catalog remain literal after real UI/Autopilot/execution');}
+  if(preservation&&(!liveSnapshot||assistedStageCycle)){await preservation.assertPreserved();pass('old day, 11 prior Stages, 333 other tasks and historical catalog remain literal after real UI/Autopilot/execution');}
   report.status='PASS';report.finishedAt=new Date().toISOString();
  }catch(error){report.status='FAIL';report.error=(error instanceof Error?error.stack??error.message:String(error)).replaceAll(password,'[local secret]').replaceAll(secret,'[local secret]');process.exitCode=1;console.error(report.error);}
  finally{await cleanup();writeFileSync(`${directory}/integration.json`,JSON.stringify(report,null,2));}
