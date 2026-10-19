@@ -1,0 +1,24 @@
+{
+  "checks": [
+    "Empleado vinculado: Mi hoja por defecto, dos simultáneas, móvil y selector sin poderes globales",
+    "Producción: selección exacta Ana/Celia; copia, impresión y PDF A4 del destinatario; sesión/cookies intactas; notas nuevas aisladas y anteriores conservadas",
+    "Vacíos sin fallback; Realización limitada; Redacción sin hits; recurso y espacio nominales; cambio de jornada sin asignaciones heredadas",
+    "Impresión de 42 actividades en 9 páginas A4, sin paneles ni diálogo sobre la hoja",
+    "Cambio real de sesión con caché conservada: viewer editorial ve solo su hoja; sin vínculo muestra general explícita y Mi hoja vacía",
+    "Error de identidad bloquea falsa personalización; cero escrituras de Hoja del día, sin GET que sincronice comidas ni errores de React"
+  ],
+  "screenshots": [
+    "worker-mobile.png",
+    "production-mobile.png",
+    "production-tablet.png",
+    "production-desktop.png"
+  ],
+  "pdf": "celia-A4.pdf",
+  "multiplePagePdf": {
+    "file": "ana-multiple-A4.pdf",
+    "activities": 42,
+    "pages": 9
+  },
+  "writes": 0,
+  "errors": []
+}

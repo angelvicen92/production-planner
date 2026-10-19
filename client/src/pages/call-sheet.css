@@ -1,0 +1,19 @@
+.call-sheet { min-width: 0; overflow-wrap: anywhere; }
+.call-sheet.print-mode { background: white; color: black; padding: 1rem; }
+.call-sheet.print-mode article, .call-sheet.print-mode section, .call-sheet.print-mode header { background: white; color: black; }
+@media print {
+  /* The page owns this print surface; Radix portals and the app's mobile
+     chrome must not cover it, including during dialog exit animations. */
+  body:has(.call-sheet) > div[data-state],
+  body:has(.call-sheet) div:has(> div > button[aria-controls="main-navigation"]) { display: none !important; }
+  body:has(.call-sheet) .h-screen:has(.call-sheet) { display: block; height: auto; overflow: visible; }
+  body:has(.call-sheet) .min-h-screen:has(.call-sheet) { min-height: 0; background: white; }
+  body:has(.call-sheet) main { height: auto; overflow: visible !important; }
+  /* Let each activity move to the next page without keeping a whole morning
+     together, overriding the global section break avoidance. */
+  .call-sheet > section { break-inside: auto; page-break-inside: auto; }
+  .call-sheet article, .call-sheet header { break-inside: avoid; page-break-inside: avoid; }
+  .call-sheet { font-size: 10pt; max-width: none; }
+  .call-sheet details:not(.no-print) > * { display: block; }
+  .call-sheet .no-print { display: none !important; }
+}
