@@ -1,0 +1,36 @@
+name: Call sheet recipient views
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'client/src/pages/call-sheet*'
+      - 'client/src/lib/call-sheet*'
+      - 'client/src/hooks/use-call-sheet-data.ts'
+      - '.github/workflows/call-sheet-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  call-sheet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Recipient projection and existing execution/authorization regression
+        run: node --import tsx --test --test-concurrency=1 client/src/lib/call-sheet-projection.test.ts server/apiAuthorization.spec.ts server/liveExecution.spec.ts server/incidents.spec.ts
+      - run: npx --no-install playwright install --with-deps chromium
+      - name: Actual app, recipient exports, responsive layout and session isolation (local HTTP fixtures)
+        run: node --import tsx client/src/pages/call-sheet.browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: call-sheet-recipient-evidence
+          path: work/p5-browser

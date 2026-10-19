@@ -1,368 +1,181 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "wouter";
-import { useQueryClient } from "@tanstack/react-query";
-import { buildUrl, api } from "@shared/routes";
-import { QueryGuard } from "@/components/QueryGuard";
-import { Layout } from "@/components/layout";
-import { usePlans } from "@/hooks/use-plans";
-import { usePlanOpsData } from "@/hooks/usePlanOpsData";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { formatRange, hhmmToMinutes, minutesToHHMM } from "@/lib/time";
-import { useDefaultPlanId } from "@/hooks/use-default-plan-id";
-import { buildSpacesById, buildZonesById, getSpaceName, getTaskName, getZoneName } from "@/lib/lookups";
-import { useMeLinks } from "@/hooks/useMeLinks";
-import { useProductionClock } from "@/hooks/use-production-clock";
+import { useState } from 'react';
+import { Link } from 'wouter';
+import { Layout } from '@/components/layout';
+import { QueryGuard } from '@/components/QueryGuard';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useAuth } from '@/hooks/use-auth';
+import { pickDefaultPlan } from '@/lib/plan-default';
+import { useCallSheetData, useCallSheetIdentity, useCallSheetPlans, type SheetIdentity, type SheetPlan } from '@/hooks/use-call-sheet-data';
+import { assignmentLabel, callSheetSummary, canPreviewSheet, projectCallSheet, sheetLocation, sheetSimultaneous, sheetTaskName, staffRoleLabel, type SheetData, type SheetTarget } from '@/lib/call-sheet-projection';
+import { formatRange, hhmmToMinutes } from '@/lib/time';
+import './call-sheet.css';
 
-const roles = ["Realización", "Producción", "Redacción", "Técnico", "Coach/Contenido"];
-
-const scopeLabels: Record<string, string> = {
-  zone: "Plató",
-  space: "Espacio",
-  reality_team: "Equipo reality",
-  itinerant_team: "Equipo itinerante",
-};
+const legacyRoles = ['Realización', 'Producción', 'Redacción', 'Técnico', 'Coach/Contenido'];
+const roleLabels = { admin: 'Administración', production: 'Producción', aux: 'Auxiliar', viewer: 'Consulta' };
+const statusLabels: Record<string, string> = { pending: 'Pendiente', in_progress: 'En curso', done: 'Completada', interrupted: 'Interrumpida', cancelled: 'Cancelada' };
+const selectClass = 'min-h-10 w-full min-w-0 rounded-md border bg-background px-3 py-2 text-sm';
+function readLocal(key: string) { try { return localStorage.getItem(key) ?? ''; } catch { return ''; } }
 
 export default function CallSheetPage() {
-  const { data: plans = [], isLoading: plansLoading, error: plansError, refetch: refetchPlans } = usePlans();
-  const [planId, setPlanId] = useState<string>("");
-  const [role, setRole] = useState(roles[0]);
+  const { user } = useAuth();
+  // Account changes remount selection/notes; queries are also user-keyed.
+  return <Layout>{user ? <CallSheetWorkspace key={user.id} userId={user.id} /> : <p>Inicia sesión para consultar tu hoja.</p>}</Layout>;
+}
+
+function CallSheetWorkspace({ userId }: { userId: string }) {
+  const identity = useCallSheetIdentity(userId);
+  const plansQ = useCallSheetPlans(userId);
+  const [planId, setPlanId] = useState('');
+  const plans = plansQ.data ?? [];
+  // Keep selection local: the shared default-plan hook can POST a preference
+  // cleanup, which is outside this read-only document's contract.
+  const plan = plans.find(p => p.id === Number(planId)) ?? pickDefaultPlan(plans);
+  const ops = useCallSheetData(userId, plan?.id ?? null);
+  const loading = identity.isLoading || plansQ.isLoading || (!!plan && ops.isLoading);
+  const error = identity.error || plansQ.error || ops.error;
+  if (loading || error) return <QueryGuard isLoading={loading} isError={!!error} error={error} loadingText="Verificando destinatario y asignaciones de la jornada…" onRetry={() => { identity.refetch(); plansQ.refetch(); ops.refetch(); }} />;
+  if (!plan || !identity.data) return <p>No hay jornadas disponibles. <Link href="/plans" className="underline">Ir a planes</Link></p>;
+  return <CallSheetDocument key={`${userId}:${plan.id}`} userId={userId} identity={identity.data} plan={plan} plans={plans} data={ops.data} updatedAt={ops.updatedAt} onPlanChange={setPlanId} onRefresh={() => { identity.refetch(); plansQ.refetch(); ops.refetch(); }} />;
+}
+
+function CallSheetDocument({ userId, identity, plan, plans, data, updatedAt, onPlanChange, onRefresh }: {
+  userId: string; identity: SheetIdentity; plan: SheetPlan; plans: SheetPlan[]; data: SheetData;
+  updatedAt: number; onPlanChange: (id: string) => void; onRefresh: () => void;
+}) {
+  const linked = !!(identity.staffPersonId || identity.resourceItemId);
+  const [selection, setSelection] = useState(linked ? 'mine' : 'general');
   const [compact, setCompact] = useState(false);
   const [printMode, setPrintMode] = useState(false);
   const [pdfHelpOpen, setPdfHelpOpen] = useState(false);
-  const [onlyMine, setOnlyMine] = useState(false);
-
-  const queryClient = useQueryClient();
-
-  const { defaultPlanId } = useDefaultPlanId(plans, planId);
-  const selected = useMemo(() => plans.find((plan) => plan.id === defaultPlanId) || null, [plans, defaultPlanId]);
-  const { data, isLoading, error, refetch } = usePlanOpsData(selected?.id);
-  const { links, staffPerson, resourceItem } = useMeLinks(true);
-  const { nowTime } = useProductionClock();
-
-  const zonesById = useMemo(() => buildZonesById(data.zones || []), [data.zones]);
-  const spacesById = useMemo(() => buildSpacesById(data.spaces || []), [data.spaces]);
-
-  const tasks = useMemo(
-    () => [...(data.tasks || [])].sort((a: any, b: any) => (hhmmToMinutes(a?.startPlanned) ?? 9999) - (hhmmToMinutes(b?.startPlanned) ?? 9999)),
-    [data.tasks],
-  );
-
-  useEffect(() => {
-    if (!links?.staffPersonId) return;
-    const linked = (data.staffAssignments || []).find((a: any) => Number(a.staffPersonId) === Number(links.staffPersonId));
-    if (!linked) return;
-    if (linked.staffRole === "production") setRole("Producción");
-    if (linked.staffRole === "editorial") setRole("Redacción");
-  }, [data.staffAssignments, links?.staffPersonId]);
-
-  const myScope = useMemo(() => {
-    const set = new Set<string>();
-    if (!links?.staffPersonId) return set;
-    for (const assignment of data.staffAssignments || []) {
-      if (Number(assignment.staffPersonId) !== Number(links.staffPersonId)) continue;
-      if (assignment.scopeType === "zone" && assignment.zoneId) set.add(`zone:${assignment.zoneId}`);
-      if (assignment.scopeType === "space" && assignment.spaceId) set.add(`space:${assignment.spaceId}`);
-    }
-    return set;
-  }, [data.staffAssignments, links?.staffPersonId]);
-
-  const tasksView = useMemo(() => {
-    if (!onlyMine) return tasks;
-    if (links?.staffPersonId && myScope.size > 0) {
-      return tasks.filter((task: any) => myScope.has(`space:${task?.spaceId}`) || myScope.has(`zone:${task?.zoneId}`));
-    }
-    if (links?.resourceItemId && String(resourceItem?.typeName || "").toLowerCase().includes("cámara")) {
-      return tasks.filter((task: any) => Number(task?.camerasOverride ?? task?.template?.defaultCameras ?? 0) > 0);
-    }
-    return tasks;
-  }, [onlyMine, tasks, links, myScope, resourceItem]);
-
-  const notesKey = `call-sheet-notes-${selected?.id || "none"}-${role}`;
-  const [notes, setNotes] = useState("");
-  useEffect(() => {
-    try { setNotes(localStorage.getItem(notesKey) || ""); } catch { setNotes(""); }
-  }, [notesKey]);
-  useEffect(() => {
-    try { localStorage.setItem(notesKey, notes); } catch {}
-  }, [notesKey, notes]);
-
-  const blocks = useMemo(() => ({
-    Mañana: tasksView.filter((task: any) => (hhmmToMinutes(task?.startPlanned) ?? 0) < 12 * 60),
-    Mediodía: tasksView.filter((task: any) => {
-      const minute = hhmmToMinutes(task?.startPlanned) ?? 0;
-      return minute >= 12 * 60 && minute < 16 * 60;
-    }),
-    Tarde: tasksView.filter((task: any) => (hhmmToMinutes(task?.startPlanned) ?? 0) >= 16 * 60),
-  }), [tasksView]);
-
-  const nowMinutes = hhmmToMinutes(nowTime) ?? 0;
-  const nowTask = tasksView.find((task: any) => {
-    const start = hhmmToMinutes(task?.startPlanned);
-    const end = hhmmToMinutes(task?.endPlanned);
-    return start !== null && end !== null && nowMinutes >= start && nowMinutes <= end;
-  });
-  const nextTask = tasksView.find((task: any) => (hhmmToMinutes(task?.startPlanned) ?? 9999) > nowMinutes);
-
-  const critical = useMemo(() => {
-    const output: string[] = [];
-    if ((data.tasks || []).some((task: any) => !task?.zoneId && !task?.spaceId)) output.push("Hay tareas sin ubicación");
-    if ((data.tasks || []).some((task: any) => !task?.startPlanned || !task?.endPlanned)) output.push("Hay tareas sin horario completo");
-    if ((data.locks || []).length > 8) output.push("Nivel alto de bloqueos");
-    return output.slice(0, 3);
-  }, [data]);
-
-  const endMinute = Math.max(...tasks.map((task: any) => hhmmToMinutes(task?.endPlanned) ?? 0), 0);
-
-  const modeByZone = useMemo(() => {
-    const map = new Map<number, "zone" | "space">();
-    for (const mode of data.zoneStaffModes || []) {
-      map.set(Number(mode.zoneId), mode.mode === "space" ? "space" : "zone");
-    }
-    return map;
-  }, [data.zoneStaffModes]);
-
-  const staffByRole = useMemo(() => {
-    const byRole = {
-      production: [] as any[],
-      editorial: [] as any[],
-    };
-
-    for (const assignment of data.staffAssignments || []) {
-      const zoneId = Number(assignment.zoneId || spacesById.get(Number(assignment.spaceId))?.zoneId || 0);
-      const mode = modeByZone.get(zoneId) || "zone";
-      const include = assignment.scopeType === "zone" || assignment.scopeType === "space" || assignment.scopeType === "reality_team" || assignment.scopeType === "itinerant_team";
-      if (!include) continue;
-
-      if (mode === "zone" && assignment.scopeType === "space") continue;
-      if (mode === "space" && assignment.scopeType === "zone") continue;
-
-      const bucket = assignment.staffRole === "editorial" ? byRole.editorial : byRole.production;
-      bucket.push(assignment);
-    }
-
-    return byRole;
-  }, [data.staffAssignments, modeByZone, spacesById]);
-
-  const groupedStaff = (entries: any[]) => {
-    const grouped = new Map<string, any[]>();
-    for (const assignment of entries) {
-      const key = assignment.scopeType === "zone"
-        ? `${scopeLabels.zone} · ${getZoneName(assignment.zoneId, zonesById)}`
-        : assignment.scopeType === "space"
-          ? `${scopeLabels.space} · ${getSpaceName(assignment.spaceId, spacesById)}`
-          : `${scopeLabels[assignment.scopeType] || assignment.scopeType}`;
-
-      if (!grouped.has(key)) grouped.set(key, []);
-      grouped.get(key)?.push(assignment);
-    }
-
-    return [...grouped.entries()];
-  };
-
-
-  const technicalTopCams = [...tasks]
-    .sort((a: any, b: any) => Number(b?.camerasOverride ?? b?.template?.defaultCameras ?? 0) - Number(a?.camerasOverride ?? a?.template?.defaultCameras ?? 0))
-    .slice(0, 5);
-
+  const [copyMessage, setCopyMessage] = useState('');
+  const canPreview = canPreviewSheet(identity.role);
+  // A visual selection neither grants permissions nor survives their loss.
+  const effectiveSelection = canPreview || ['mine', 'general'].includes(selection) ? selection : linked ? 'mine' : 'general';
+  const [kind, rawId] = effectiveSelection.split(':');
+  const id = Number(rawId);
+  const target: SheetTarget = kind === 'mine' ? { kind: 'mine', ...identity } :
+    kind === 'role' ? { kind: 'role', role: rawId as 'production' | 'editorial' | 'realization' } :
+    ['person', 'resource', 'resource-type', 'zone', 'space'].includes(kind) ? { kind: kind as 'person' | 'resource' | 'resource-type' | 'zone' | 'space', id } : { kind: 'general' };
+  const projection = projectCallSheet(data, plan.id, target);
+  const personId = target.kind === 'person' ? target.id : target.kind === 'mine' ? identity.staffPersonId : null;
+  const personName = data.people.find(p => p.id === personId)?.name ?? data.assignments.find(a => a.staffPersonId === personId)?.staffPersonName;
+  const resourceName = projection.recipientResources.map(r => r.name).join(', ');
+  const title = target.kind === 'mine' ? `Mi hoja · ${personName || resourceName || 'Vínculo sin nombre disponible'}` :
+    target.kind === 'person' ? `Por persona · ${personName || 'Nombre no disponible'}` :
+    target.kind === 'resource' ? `Por recurso · ${resourceName || 'Recurso no disponible'}` :
+    target.kind === 'resource-type' ? `Por función · ${data.resources.find(r => r.typeId === id)?.type.name || 'Tipo de recurso no disponible'}` :
+    target.kind === 'role' ? `Por rol · ${rawId === 'realization' ? 'Realización' : staffRoleLabel(rawId)}` :
+    target.kind === 'zone' ? `Por plató · ${data.zones.find(z => z.id === id)?.name || 'Nombre no disponible'}` :
+    target.kind === 'space' ? `Por espacio · ${data.spaces.find(s => s.id === id)?.name || 'Nombre no disponible'}` : 'Vista general';
+  const preview = canPreview && !['mine', 'general'].includes(target.kind);
+  const tasks = projection.entries.map(e => e.task);
+  const next = tasks.find(t => t.status === 'pending');
+  const date = String(plan.date).slice(0, 10);
+  const functions = [...new Set(projection.assignments.map(a => staffRoleLabel(a.staffRole)))];
+  const assignments = [...new Map(projection.assignments.map(a => [`${a.staffPersonId}:${a.staffRole}:${a.scopeType}:${a.zoneId}:${a.spaceId}:${a.itinerantTeamId}:${a.realityTeamCode}`, a])).values()];
+  const people = new Map(data.people.map(p => [p.id, p.name]));
+  data.assignments.filter(a => a.planId === plan.id).forEach(a => { if (!people.has(a.staffPersonId)) people.set(a.staffPersonId, a.staffPersonName || 'Nombre no disponible'); });
+  const resourceTypes = [...new Map(data.resources.map(r => [r.typeId, r.type.name])).entries()];
+  const sections = ['Mañana', 'Mediodía', 'Tarde', 'Sin horario confirmado'].map(label => ({ label, entries: projection.entries.filter(({ task }) => {
+    const minute = hhmmToMinutes(task.startPlanned);
+    return label === 'Sin horario confirmado' ? minute === null : minute !== null && (label === 'Mañana' ? minute < 720 : label === 'Mediodía' ? minute >= 720 && minute < 960 : minute >= 960);
+  }) })).filter(section => section.entries.length);
   const copySummary = async () => {
-    const lines = [
-      `Hoja del día · ${(selected as any)?.name || "Sin plan"}`,
-      `Fecha: ${String(selected?.date || "").slice(0, 10)}`,
-      `Rol: ${role}`,
-      `Ahora: ${nowTask ? getTaskName(nowTask) : "Sin tarea"}`,
-      `Siguiente: ${nextTask ? getTaskName(nextTask) : "Sin tarea"}`,
-      `Riesgos: ${critical.length ? critical.join(", ") : "Sin alertas críticas"}`,
-    ].join("\n");
-
-    try {
-      await navigator.clipboard.writeText(lines);
-    } catch {}
+    try { await navigator.clipboard.writeText(callSheetSummary(title, date, projection, data)); setCopyMessage('Resumen de esta hoja copiado.'); }
+    catch { setCopyMessage('No se pudo copiar. Usa la impresión de esta hoja.'); }
   };
+  const print = () => { document.title = `Hoja del día · ${date} · ${title}`; window.print(); };
 
-  if (plansLoading || plansError) return <Layout><div className="p-8"><QueryGuard isLoading={plansLoading} isError={Boolean(plansError)} error={plansError} loadingText="Cargando planes..." onRetry={() => { queryClient.cancelQueries({ queryKey: [api.plans.list.path] }); refetchPlans(); }} /></div></Layout>;
-
-  if (!plans.length) {
-    return (
-      <Layout>
-        <div className="rounded-lg border bg-card p-6 text-sm">
-          No hay planes disponibles. <Link className="text-primary underline" href="/plans">Ir a planes</Link>.
-        </div>
-      </Layout>
-    );
-  }
-
-  return (
-    <Layout>
-      <div className={printMode ? "print-mode" : ""}>
-        <div className="no-print sticky top-0 z-10 mb-4 rounded-lg border bg-card p-4">
-          <div className="flex flex-wrap gap-2 items-center">
-            <h1 className="mr-auto text-2xl font-bold">Hoja del Día</h1>
-            <Select value={selected ? String(selected.id) : undefined} onValueChange={setPlanId}>
-              <SelectTrigger className="w-[260px]"><SelectValue placeholder="Seleccionar plan" /></SelectTrigger>
-              <SelectContent>{plans.map((plan) => <SelectItem key={plan.id} value={String(plan.id)}>{(plan as any).name || `Plan ${plan.id}`}</SelectItem>)}</SelectContent>
-            </Select>
-            <Button variant={compact ? "default" : "outline"} onClick={() => setCompact((value) => !value)}>Compacto/Detallado</Button>
-            <Button variant={printMode ? "default" : "outline"} onClick={() => setPrintMode((value) => !value)}>Modo impresión</Button>
-            <Button onClick={() => window.print()}>Imprimir</Button>
-            <Button variant="outline" onClick={() => {
-              const dismissed = localStorage.getItem("callSheetPdfHelpDismissed") === "1";
-              if (!dismissed) setPdfHelpOpen(true);
-              else window.print();
-            }}>Exportar PDF</Button>
-            <Button variant="outline" onClick={copySummary}>Copiar resumen</Button>
-            {(staffPerson || resourceItem) ? (
-              <Badge variant="secondary">{staffPerson ? `Operador: ${staffPerson.name}` : `Recurso vinculado: ${resourceItem?.name || "-"}`}</Badge>
-            ) : null}
-            {(links?.staffPersonId || links?.resourceItemId) ? (
-              <Button variant={onlyMine ? "default" : "outline"} onClick={() => setOnlyMine((v) => !v)}>Solo mis scopes</Button>
-            ) : null}
-          </div>
-          <Tabs value={role} onValueChange={setRole} className="mt-3">
-            <TabsList>{roles.map((item) => <TabsTrigger key={item} value={item}>{item}</TabsTrigger>)}</TabsList>
-          </Tabs>
-        </div>
-
-        {(isLoading || error) && (
-          <section className="mb-4">
-            <QueryGuard
-              isLoading={isLoading}
-              isError={Boolean(error)}
-              error={error}
-              loadingText="Cargando datos operativos..."
-              onRetry={() => {
-                if (selected?.id) {
-                  queryClient.cancelQueries({ queryKey: [buildUrl(api.plans.get.path, { id: selected.id })] });
-                  queryClient.cancelQueries({ queryKey: [`/api/plans/${selected.id}/tasks`] });
-                  queryClient.cancelQueries({ queryKey: [`/api/plans/${selected.id}/locks`] });
-                }
-                refetch();
-              }}
-            />
-          </section>
-        )}
-
-        <div className="print-only mb-3 border-b pb-2">
-          <div className="text-lg font-semibold">Hoja del Día · {(selected as any)?.name || "Sin plan"}</div>
-          <div className="text-xs">Fecha: {String(selected?.date || "").slice(0, 10)} · Generado: {minutesToHHMM(nowMinutes)}</div>
-        </div>
-
-        <section className="mb-4 rounded-lg border bg-card p-4 print-block">
-          <h2 className="font-semibold">Cabecera de día</h2>
-          <div className="text-sm text-muted-foreground">{String(selected?.date || "").slice(0, 10)} · {selected?.workStart || "--:--"}–{selected?.workEnd || "--:--"}</div>
-          <div className="mt-2 text-sm">Hora prevista fin: <strong>{minutesToHHMM(endMinute)}</strong></div>
-          <div className="mt-2 flex flex-wrap gap-1">{critical.length ? critical.map((item) => <Badge key={item} variant="destructive">{item}</Badge>) : <span className="text-sm text-muted-foreground">Sin alertas críticas</span>}</div>
-        </section>
-
-        <section className="mb-4 rounded-lg border bg-card p-4 print-block">
-          <h3 className="font-semibold mb-2">Enfoque {role}</h3>
-          {role === "Realización" && (
-            <div className="text-sm space-y-1">
-              <div>Ahora: <strong>{nowTask ? getTaskName(nowTask) : "Sin tarea en curso"}</strong></div>
-              <div>Siguiente: <strong>{nextTask ? getTaskName(nextTask) : "Sin siguiente"}</strong></div>
-              <div>Cambios en 60 min: {tasks.filter((task: any) => {
-                const start = hhmmToMinutes(task?.startPlanned);
-                return start !== null && start >= nowMinutes && start <= nowMinutes + 60;
-              }).length}</div>
-            </div>
-          )}
-          {role === "Producción" && (
-            <ul className="list-disc pl-5 text-sm">
-              <li>Locks activos: {data.locks.length}</li>
-              <li>Tareas sin ubicación: {tasks.filter((task: any) => !task?.zoneId && !task?.spaceId).length}</li>
-              <li><Link href={`/war-room?plan=${selected?.id}`}>Consultar incidencias compartidas en War Room</Link></li>
-            </ul>
-          )}
-          {role === "Técnico" && (
-            <div className="space-y-1 text-sm">
-              <div>Pico cámaras identificado en dashboard operativo.</div>
-              {technicalTopCams.map((task) => (
-                <div key={task.id}>• {getTaskName(task)} · {Number(task?.camerasOverride ?? task?.template?.defaultCameras ?? 0)} cam · {formatRange(task?.startPlanned, task?.endPlanned)}</div>
-              ))}
-            </div>
-          )}
-          {role === "Redacción" && (
-            <div className="space-y-1 text-sm">
-              {tasks.map((task: any) => (
-                <div key={task.id} className="flex items-center gap-2">
-                  <Badge variant="outline">Hit</Badge>
-                  <span>{formatRange(task?.startPlanned, task?.endPlanned)} · {getTaskName(task)} · {task?.spaceId ? getSpaceName(task.spaceId, spacesById) : getZoneName(task.zoneId, zonesById)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          {role === "Coach/Contenido" && <div className="text-sm">Revisar tiempos de bloques, incidencias y notas para briefing de equipo.</div>}
-        </section>
-
-        {Object.entries(blocks).map(([label, items]) => (
-          <section key={label} className={`mb-4 rounded-lg border bg-card p-4 print-block ${compact ? "text-sm" : ""}`}>
-            <h3 className="mb-2 font-semibold">{label}</h3>
-            {(items as any[]).length === 0 ? <div className="text-sm text-muted-foreground">Sin tareas</div> : (items as any[]).map((task: any) => (
-              <div key={task.id} className="mb-2 rounded border p-2">
-                <div className="font-medium">{getTaskName(task)}</div>
-                <div className="text-muted-foreground">{formatRange(task?.startPlanned, task?.endPlanned)} · {task?.spaceId ? getSpaceName(task.spaceId, spacesById) : task?.zoneId ? getZoneName(task.zoneId, zonesById) : "Ubicación por definir"}</div>
-                <div className="mt-1 flex gap-1 flex-wrap">
-                  <Badge variant="secondary">{Number(task?.camerasOverride ?? task?.template?.defaultCameras ?? 0)} cam</Badge>
-                  {(!task?.zoneId && !task?.spaceId) && <Badge variant="outline">Sin ubicación</Badge>}
-                </div>
-              </div>
-            ))}
-          </section>
-        ))}
-
-        <section className="mb-4 rounded-lg border bg-card p-4 print-block">
-          <h3 className="font-semibold mb-2">Personal y Asignaciones</h3>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <div className="mb-1 font-medium">Producción</div>
-              {groupedStaff(staffByRole.production).length === 0 ? <div className="text-sm text-muted-foreground">Sin asignaciones</div> : groupedStaff(staffByRole.production).map(([group, entries]) => (
-                <div key={group} className="mb-2 text-sm">
-                  <div className="font-medium">{group}</div>
-                  <div>{(entries as any[]).map((entry) => entry.staffPersonName || "Sin nombre").join(", ")}</div>
-                </div>
-              ))}
-            </div>
-            <div>
-              <div className="mb-1 font-medium">Redacción</div>
-              {groupedStaff(staffByRole.editorial).length === 0 ? <div className="text-sm text-muted-foreground">Sin asignaciones</div> : groupedStaff(staffByRole.editorial).map(([group, entries]) => (
-                <div key={group} className="mb-2 text-sm">
-                  <div className="font-medium">{group}</div>
-                  <div>{(entries as any[]).map((entry) => entry.staffPersonName || "Sin nombre").join(", ")}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-lg border bg-card p-4 print-block">
-          <h3 className="font-semibold mb-2">Riesgos y notas operativas</h3>
-          <ul className="list-disc pl-5 text-sm mb-3">
-            {critical.map((item) => <li key={item}>{item}</li>)}
-          </ul>
-          <Textarea className="no-print" placeholder="Notas por rol (autosave local)..." value={notes} onChange={(e) => setNotes(e.target.value)} />
-          <div className="print-only text-sm whitespace-pre-wrap">{notes}</div>
-        </section>
-
-        <Dialog open={pdfHelpOpen} onOpenChange={setPdfHelpOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Exportar a PDF</DialogTitle>
-              <DialogDescription>
-                En el diálogo de impresión selecciona “Guardar como PDF”. Activa gráficos de fondo si quieres mantener chips y colores. Tamaño A4 y escala ajustar.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setPdfHelpOpen(false)}>Cerrar</Button>
-              <Button onClick={() => { localStorage.setItem("callSheetPdfHelpDismissed", "1"); setPdfHelpOpen(false); window.print(); }}>No volver a mostrar e imprimir</Button>
-              <Button onClick={() => { setPdfHelpOpen(false); window.print(); }}>Continuar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+  return <div className={`call-sheet mx-auto max-w-5xl space-y-4 pb-8 ${printMode ? 'print-mode' : ''}`} data-testid="call-sheet">
+    <div className="no-print rounded-xl border bg-card p-4 space-y-4">
+      <h1 className="text-2xl font-bold">Hoja del día</h1>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="space-y-1 text-sm">Jornada<select aria-label="Jornada" className={selectClass} value={String(plan.id)} onChange={e => onPlanChange(e.target.value)}>{plans.map(p => <option key={p.id} value={p.id}>{String(p.date).slice(0, 10)} · {p.name || 'Jornada'}</option>)}</select></label>
+        <label className="space-y-1 text-sm">Destinatario<select aria-label="Destinatario" className={selectClass} value={effectiveSelection} onChange={e => { setSelection(e.target.value); setCopyMessage(''); }}>
+          <option value="mine">Mi hoja</option><option value="general">Vista general</option>
+          {canPreview && <>
+            <optgroup label="Por rol operativo"><option value="role:production">Producción / ayudante</option><option value="role:editorial">Redacción / Reality</option><option value="role:realization">Realización · relación no disponible</option></optgroup>
+            {resourceTypes.length > 0 && <optgroup label="Por función de recurso">{resourceTypes.map(([typeId, name]) => <option key={typeId} value={`resource-type:${typeId}`}>{name}</option>)}</optgroup>}
+            <optgroup label="Por persona">{[...people].sort((a, b) => a[1].localeCompare(b[1], 'es')).map(([personId, name]) => <option key={personId} value={`person:${personId}`}>{name}</option>)}</optgroup>
+            <optgroup label="Por recurso nominal">{data.resources.filter(r => r.planId === plan.id).map(r => <option key={r.id} value={`resource:${r.id}`}>{r.name} · {r.type.name}</option>)}</optgroup>
+            <optgroup label="Por plató">{data.zones.map(z => <option key={z.id} value={`zone:${z.id}`}>{z.name}</option>)}</optgroup>
+            <optgroup label="Por espacio">{data.daySpaces.map(s => <option key={s.spaceId} value={`space:${s.spaceId}`}>{data.spaces.find(c => c.id === s.spaceId)?.name || 'Nombre no disponible'}</option>)}</optgroup>
+          </>}
+        </select></label>
       </div>
-    </Layout>
-  );
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" aria-pressed={compact} onClick={() => setCompact(v => !v)}>{compact ? 'Ver detallado' : 'Ver compacto'}</Button>
+        <Button variant="outline" aria-pressed={printMode} onClick={() => setPrintMode(v => !v)}>Modo impresión</Button>
+        <Button onClick={print}>Imprimir</Button>
+        <Button variant="outline" onClick={() => readLocal('callSheetPdfHelpDismissed') === '1' ? print() : setPdfHelpOpen(true)}>Exportar PDF</Button>
+        <Button variant="outline" onClick={copySummary}>Copiar resumen</Button>
+        <Button variant="ghost" onClick={onRefresh}>Actualizar datos</Button>
+      </div>
+      <p role="status" className="text-sm">{copyMessage}</p>
+      <p className="text-xs text-muted-foreground">Acceso de la cuenta: {roleLabels[identity.role]}. Las perspectivas de lectura no modifican tus permisos.</p>
+    </div>
+
+    <header className="rounded-xl border bg-card p-4 space-y-2" data-testid="sheet-header">
+      <p className="text-sm text-muted-foreground">Hoja del día · {date} · {plan.name || 'Jornada'}</p>
+      <h2 className="text-xl font-semibold break-words">{title}</h2>
+      <Badge variant="secondary">{preview ? 'Vista previa de Producción · solo lectura' : 'Solo lectura'}</Badge>
+      <p className="text-sm">Horario global previsto: {formatRange(plan.workStart, plan.workEnd)} · {tasks.length} {tasks.length === 1 ? 'actividad' : 'actividades'} de esta hoja</p>
+      <p className="text-sm">Función operativa verificada: {[...functions, ...projection.recipientResources.map(r => r.type.name)].join(', ') || 'Sin función confirmada para este destinatario'}</p>
+      <p className="text-xs text-muted-foreground">Planning guardado y asignaciones de la jornada · consulta {new Date(updatedAt).toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })} (Madrid). Los nombres proceden del catálogo.</p>
+      <p className="text-xs text-muted-foreground">Las ubicaciones y el orden son previstos; no acreditan presencia física, traslados ni retrasos.</p>
+    </header>
+
+    <section className="rounded-xl border bg-card p-4 space-y-2" aria-label="Briefing">
+      <h3 className="font-semibold">Briefing y asignaciones de esta hoja</h3>
+      {!linked && target.kind === 'general' && <p className="text-sm">Sin vínculo personal o de recurso confirmado. Estás consultando la vista general autorizada.</p>}
+      {projection.warnings.map(warning => <p className="text-sm text-amber-800 dark:text-amber-300" key={warning}>{warning}</p>)}
+      {assignments.length > 0 && <details><summary className="cursor-pointer text-sm">Ámbitos y funciones efectivos ({assignments.length})</summary><ul className="mt-2 space-y-1 text-sm">{assignments.map(a => <li key={a.id}>{a.staffPersonName || people.get(a.staffPersonId)} · {staffRoleLabel(a.staffRole)} · {assignmentLabel(a, data)}{['itinerant_team', 'reality_team'].includes(a.scopeType) ? ' · Asignación no verificable' : ''}</li>)}</ul></details>}
+      {next && <p className="text-sm">Próxima pendiente en orden previsto: {formatRange(next.startPlanned, next.endPlanned)} · {sheetTaskName(next)}.</p>}
+      {!tasks.length && <p className="text-sm" data-testid="sheet-empty">No hay actividades verificables para esta selección en esta jornada.</p>}
+    </section>
+
+    {sections.map(({ label, entries }) => <section key={label} className="sheet-agenda space-y-2" aria-label={label}>
+      <h3 className="font-semibold">{label}</h3>
+      {entries.map(({ task, reasons, resources }) => <article key={task.id} data-testid={`sheet-task-${task.id}`} className={`rounded-lg border bg-card p-3 break-words ${compact ? 'text-sm' : ''}`}>
+        <div className="flex flex-wrap items-start justify-between gap-2"><h4 className="font-medium">{sheetTaskName(task)}</h4><span className="font-mono text-sm">{formatRange(task.startPlanned, task.endPlanned)}</span></div>
+        <p className="text-sm">Ubicación prevista: {sheetLocation(task, data)}{task.locationLabel && (task.spaceId || task.zoneId) ? ` · ${task.locationLabel}` : ''}</p>
+        <p className="text-sm">Participante: {data.contestants.find(c => c.id === task.contestantId)?.name || 'Sin participante confirmado'}</p>
+        <div className="my-2 flex flex-wrap gap-1"><Badge variant="outline">{statusLabels[task.status || ''] || 'Estado no disponible'}</Badge>{sheetSimultaneous(task, tasks).length > 0 && <Badge variant="secondary">Coincide con {sheetSimultaneous(task, tasks).length} {sheetSimultaneous(task, tasks).length === 1 ? 'actividad' : 'actividades'} de esta hoja</Badge>}</div>
+        <p className="text-sm">Recursos nominales efectivos: {resources.map(r => r.name).join(', ') || 'Sin recurso nominal confirmado'}</p>
+        {(task.startReal || task.endReal) && <p className="text-sm">Ejecución registrada: {formatRange(task.startReal, task.endReal)}</p>}
+        {!compact && <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+          {reasons.length > 0 && <p>Incluida por: {reasons.join(' · ')}</p>}
+          {(task.camerasOverride ?? task.template?.defaultCameras) != null && <p>Necesidad de cámaras declarada: {task.camerasOverride ?? task.template?.defaultCameras} (no identifica operador).</p>}
+          {[task.comment1Text, task.comment2Text].filter(Boolean).map((text, index) => <p key={index}>Nota compartida de actividad: {text}</p>)}
+        </div>}
+      </article>)}
+    </section>)}
+
+    <LocalSheetNotes key={`${userId}:${plan.id}:${effectiveSelection}`} noteKey={`call-sheet-notes-v2:${userId}:${plan.id}:${effectiveSelection}`} planId={plan.id} />
+    <Dialog open={pdfHelpOpen} onOpenChange={setPdfHelpOpen}><DialogContent className="no-print"><DialogHeader><DialogTitle>Exportar esta hoja a PDF</DialogTitle><DialogDescription>Se imprimirá {title}, con fecha {date}. Selecciona “Guardar como PDF”, tamaño A4 y escala ajustar en el diálogo de impresión.</DialogDescription></DialogHeader><DialogFooter>
+      <Button variant="outline" onClick={() => setPdfHelpOpen(false)}>Cerrar</Button>
+      <Button variant="outline" onClick={() => { try { localStorage.setItem('callSheetPdfHelpDismissed', '1'); } catch {} setPdfHelpOpen(false); print(); }}>No volver a mostrar e imprimir</Button>
+      <Button onClick={() => { setPdfHelpOpen(false); print(); }}>Continuar</Button>
+    </DialogFooter></DialogContent></Dialog>
+  </div>;
+}
+
+function LocalSheetNotes({ noteKey, planId }: { noteKey: string; planId: number }) {
+  const [notes, setNotes] = useState(() => readLocal(noteKey));
+  const [saveError, setSaveError] = useState(false);
+  const legacy = legacyRoles.map(role => ({ role, text: readLocal(`call-sheet-notes-${planId}-${role}`) })).filter(note => note.text);
+  return <section className="rounded-xl border bg-card p-4 space-y-2">
+    <h3 className="font-semibold">Notas locales de esta cuenta sobre esta hoja</h3>
+    <p className="text-xs text-muted-foreground">Solo en este navegador. No son compartidas ni se escriben como el destinatario de la vista previa.</p>
+    <Textarea aria-label="Notas locales de esta hoja" className="no-print" value={notes} onChange={event => {
+      const value = event.target.value; setNotes(value);
+      try { localStorage.setItem(noteKey, value); setSaveError(false); } catch { setSaveError(true); }
+    }} />
+    {saveError && <p role="alert" className="text-sm">No se han podido guardar las notas en este navegador.</p>}
+    <p className="print-only whitespace-pre-wrap break-words text-sm">{notes || 'Sin notas locales para esta hoja.'}</p>
+    {legacy.length > 0 && <details className="no-print text-sm"><summary>Notas locales anteriores por enfoque (conservadas, sin cuenta ni destinatario confirmados)</summary>{legacy.map(note => <div key={note.role} className="mt-2"><strong>{note.role}</strong><p className="whitespace-pre-wrap break-words">{note.text}</p></div>)}</details>}
+  </section>;
 }
