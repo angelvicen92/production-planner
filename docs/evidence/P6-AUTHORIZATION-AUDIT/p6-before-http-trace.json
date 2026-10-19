@@ -1,0 +1,996 @@
+[
+  {
+    "at": "2026-10-19T14:03:50.586Z",
+    "kind": "console",
+    "text": "[apiRequest #5] START GET /api/me/role"
+  },
+  {
+    "at": "2026-10-19T14:03:50.595Z",
+    "kind": "request",
+    "method": "GET",
+    "path": "/api/me/role"
+  },
+  {
+    "at": "2026-10-19T14:03:50.654Z",
+    "kind": "response",
+    "status": 200,
+    "path": "/api/me/role"
+  },
+  {
+    "at": "2026-10-19T14:03:50.660Z",
+    "kind": "console",
+    "text": "[apiRequest #5] END GET /api/me/role (69ms) · status=200"
+  },
+  {
+    "at": "2026-10-19T14:03:51.156Z",
+    "kind": "console",
+    "text": "[apiRequest #5] START GET /api/me/role"
+  },
+  {
+    "at": "2026-10-19T14:03:51.198Z",
+    "kind": "request",
+    "method": "GET",
+    "path": "/api/me/role"
+  },
+  {
+    "at": "2026-10-19T14:03:51.325Z",
+    "kind": "response",
+    "status": 200,
+    "path": "/api/me/role"
+  },
+  {
+    "at": "2026-10-19T14:03:51.325Z",
+    "kind": "console",
+    "text": "[apiRequest #5] END GET /api/me/role (124ms) · status=200"
+  },
+  {
+    "at": "2026-10-19T14:03:52.359Z",
+    "kind": "console",
+    "text": "[apiRequest #35] START GET /api/me/role"
+  },
+  {
+    "at": "2026-10-19T14:03:52.359Z",
+    "kind": "request",
+    "method": "GET",
+    "path": "/api/me/role"
+  },
+  {
+    "at": "2026-10-19T14:03:52.661Z",
+    "kind": "console",
+    "text": "[apiRequest #25] ERROR GET /api/plans/27002/assisted (440ms) · SESSION_NOT_FOUND"
+  },
+  {
+    "at": "2026-10-19T14:03:52.661Z",
+    "kind": "console",
+    "text": "[apiRequest #26] ERROR GET /api/resource-types (438ms) · La API devolvió text/html; charset=utf-8 en vez de JSON. Probablemente estás cayendo en index.html. Respuesta: \"<!DOCTYPE html> <html lang=\"es\"> <head> <script type=\"module\"> import { cr...\""
+  },
+  {
+    "at": "2026-10-19T14:03:52.679Z",
+    "kind": "response",
+    "status": 200,
+    "path": "/api/me/role"
+  },
+  {
+    "at": "2026-10-19T14:03:52.679Z",
+    "kind": "console",
+    "text": "[apiRequest #35] END GET /api/me/role (310ms) · status=200"
+  },
+  {
+    "at": "2026-10-19T14:03:52.760Z",
+    "kind": "request",
+    "method": "POST",
+    "path": "/api/plans/27002/assisted/session"
+  },
+  {
+    "at": "2026-10-19T14:03:53.461Z",
+    "kind": "response",
+    "status": 200,
+    "path": "/api/plans/27002/assisted/session"
+  },
+  {
+    "at": "2026-10-19T14:03:53.469Z",
+    "kind": "console",
+    "text": "[apiRequest #54] ERROR GET /api/resource-types (48ms) · La API devolvió text/html; charset=utf-8 en vez de JSON. Probablemente estás cayendo en index.html. Respuesta: \"<!DOCTYPE html> <html lang=\"es\"> <head> <script type=\"module\"> import { cr...\""
+  },
+  {
+    "at": "2026-10-19T14:03:54.310Z",
+    "kind": "request",
+    "method": "GET",
+    "path": "/api/plans/27002/assisted/next-scope"
+  },
+  {
+    "at": "2026-10-19T14:03:54.586Z",
+    "kind": "response",
+    "status": 200,
+    "path": "/api/plans/27002/assisted/next-scope"
+  },
+  {
+    "at": "2026-10-19T14:03:54.617Z",
+    "kind": "request",
+    "method": "POST",
+    "path": "/api/plans/27002/assisted/proposals"
+  },
+  {
+    "at": "2026-10-19T14:03:55.161Z",
+    "kind": "response",
+    "status": 202,
+    "path": "/api/plans/27002/assisted/proposals"
+  },
+  {
+    "at": "2026-10-19T14:03:55.161Z",
+    "kind": "request",
+    "method": "GET",
+    "path": "/api/plans/27002/assisted/proposals/1"
+  },
+  {
+    "at": "2026-10-19T14:03:55.229Z",
+    "kind": "response",
+    "status": 200,
+    "path": "/api/plans/27002/assisted/proposals/1"
+  },
+  {
+    "at": "2026-10-19T14:03:56.233Z",
+    "kind": "request",
+    "method": "GET",
+    "path": "/api/plans/27002/assisted/proposals/1"
+  },
+  {
+    "at": "2026-10-19T14:04:16.170Z",
+    "kind": "console",
+    "text": "[apiRequest #62] ABORT GET /api/plans/27002 (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:04:16.170Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:04:16.230Z",
+    "kind": "console",
+    "text": "[apiRequest #63] ABORT GET /api/plans/27002/assisted/proposals/1 (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:04:16.230Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/assisted/proposals/1",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:04:17.234Z",
+    "kind": "request",
+    "method": "GET",
+    "path": "/api/plans/27002/assisted/proposals/1"
+  },
+  {
+    "at": "2026-10-19T14:04:17.367Z",
+    "kind": "console",
+    "text": "[apiRequest #64] ABORT GET /api/plans/27002/execution (20004ms)"
+  },
+  {
+    "at": "2026-10-19T14:04:17.368Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/execution",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:04:21.171Z",
+    "kind": "console",
+    "text": "[apiRequest #65] ABORT GET /api/plans/27002 (20007ms)"
+  },
+  {
+    "at": "2026-10-19T14:04:21.173Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:04:22.780Z",
+    "kind": "console",
+    "text": "[apiRequest #78] START GET /api/me/role"
+  },
+  {
+    "at": "2026-10-19T14:04:22.794Z",
+    "kind": "request",
+    "method": "GET",
+    "path": "/api/me/role"
+  },
+  {
+    "at": "2026-10-19T14:04:26.169Z",
+    "kind": "console",
+    "text": "[apiRequest #66] ABORT GET /api/plans/27002 (20005ms)"
+  },
+  {
+    "at": "2026-10-19T14:04:26.170Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:04:28.336Z",
+    "kind": "console",
+    "text": "[apiRequest #67] ABORT GET /api/plans/27002/resource-items (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:04:28.337Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/resource-items",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:04:28.486Z",
+    "kind": "console",
+    "text": "[apiRequest #68] ABORT GET /api/plans/27002/zone-resource-assignments (20152ms)"
+  },
+  {
+    "at": "2026-10-19T14:04:28.486Z",
+    "kind": "console",
+    "text": "[apiRequest #69] ABORT GET /api/plans/27002/space-resource-assignments (20152ms)"
+  },
+  {
+    "at": "2026-10-19T14:04:28.486Z",
+    "kind": "console",
+    "text": "[apiRequest #70] ABORT GET /api/plans/27002/zone-availability (20152ms)"
+  },
+  {
+    "at": "2026-10-19T14:04:28.486Z",
+    "kind": "console",
+    "text": "[apiRequest #71] ABORT GET /api/plans/27002/space-availability (20152ms)"
+  },
+  {
+    "at": "2026-10-19T14:04:28.641Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/zone-resource-assignments",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:04:28.641Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/space-resource-assignments",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:04:28.641Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/zone-availability",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:04:28.641Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/space-availability",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:04:28.780Z",
+    "kind": "console",
+    "text": "[apiRequest #72] ABORT GET /api/plans/27002/header-notes (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:04:28.781Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/header-notes",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:04:31.171Z",
+    "kind": "console",
+    "text": "[apiRequest #73] ABORT GET /api/plans/27002 (20006ms)"
+  },
+  {
+    "at": "2026-10-19T14:04:31.172Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:04:36.169Z",
+    "kind": "console",
+    "text": "[apiRequest #74] ABORT GET /api/plans/27002 (20001ms)"
+  },
+  {
+    "at": "2026-10-19T14:04:36.170Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:04:37.233Z",
+    "kind": "console",
+    "text": "[apiRequest #75] ABORT GET /api/plans/27002/assisted/proposals/1 (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:04:37.233Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/assisted/proposals/1",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:04:38.236Z",
+    "kind": "request",
+    "method": "GET",
+    "path": "/api/plans/27002/assisted/proposals/1"
+  },
+  {
+    "at": "2026-10-19T14:04:41.174Z",
+    "kind": "console",
+    "text": "[apiRequest #76] ABORT GET /api/plans/27002 (20007ms)"
+  },
+  {
+    "at": "2026-10-19T14:04:41.175Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:04:42.363Z",
+    "kind": "console",
+    "text": "[apiRequest #77] ABORT GET /api/plans/27002/execution (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:04:42.367Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/execution",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:04:42.781Z",
+    "kind": "console",
+    "text": "[apiRequest #78] ABORT GET /api/me/role (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:04:42.781Z",
+    "kind": "requestFailed",
+    "path": "/api/me/role",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:04:46.172Z",
+    "kind": "console",
+    "text": "[apiRequest #79] ABORT GET /api/plans/27002 (20002ms)"
+  },
+  {
+    "at": "2026-10-19T14:04:46.173Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:04:51.171Z",
+    "kind": "console",
+    "text": "[apiRequest #80] ABORT GET /api/plans/27002 (20001ms)"
+  },
+  {
+    "at": "2026-10-19T14:04:51.171Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:04:56.169Z",
+    "kind": "console",
+    "text": "[apiRequest #81] ABORT GET /api/plans/27002 (20002ms)"
+  },
+  {
+    "at": "2026-10-19T14:04:56.169Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:04:58.236Z",
+    "kind": "console",
+    "text": "[apiRequest #82] ABORT GET /api/plans/27002/assisted/proposals/1 (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:04:58.237Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/assisted/proposals/1",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:01.168Z",
+    "kind": "console",
+    "text": "[apiRequest #83] ABORT GET /api/plans/27002 (20001ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:01.168Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:03.335Z",
+    "kind": "console",
+    "text": "[apiRequest #84] ABORT GET /api/plans/27002/resource-items (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:03.336Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/resource-items",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:03.338Z",
+    "kind": "console",
+    "text": "[apiRequest #85] ABORT GET /api/plans/27002/zone-resource-assignments (20001ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:03.338Z",
+    "kind": "console",
+    "text": "[apiRequest #86] ABORT GET /api/plans/27002/space-resource-assignments (20001ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:03.338Z",
+    "kind": "console",
+    "text": "[apiRequest #87] ABORT GET /api/plans/27002/zone-availability (20001ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:03.338Z",
+    "kind": "console",
+    "text": "[apiRequest #88] ABORT GET /api/plans/27002/space-availability (20001ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:03.338Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/zone-resource-assignments",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:03.340Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/space-resource-assignments",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:03.340Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/zone-availability",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:03.340Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/space-availability",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:03.785Z",
+    "kind": "console",
+    "text": "[apiRequest #89] ABORT GET /api/plans/27002/header-notes (20001ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:03.785Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/header-notes",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:06.169Z",
+    "kind": "console",
+    "text": "[apiRequest #90] ABORT GET /api/plans/27002 (20003ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:06.170Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:07.366Z",
+    "kind": "console",
+    "text": "[apiRequest #91] ABORT GET /api/plans/27002/execution (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:07.367Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/execution",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:11.153Z",
+    "kind": "console",
+    "text": "[apiRequest #92] ABORT GET /api/health (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:11.158Z",
+    "kind": "requestFailed",
+    "path": "/api/health",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:11.158Z",
+    "kind": "console",
+    "text": "[apiRequest #93] ABORT GET /api/health (20002ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:11.158Z",
+    "kind": "requestFailed",
+    "path": "/api/health",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:11.172Z",
+    "kind": "console",
+    "text": "[apiRequest #94] ABORT GET /api/plans/27002 (20006ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:11.172Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:12.781Z",
+    "kind": "console",
+    "text": "[apiRequest #101] START GET /api/me/role"
+  },
+  {
+    "at": "2026-10-19T14:05:12.781Z",
+    "kind": "request",
+    "method": "GET",
+    "path": "/api/me/role"
+  },
+  {
+    "at": "2026-10-19T14:05:16.169Z",
+    "kind": "console",
+    "text": "[apiRequest #95] ABORT GET /api/plans/27002 (20003ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:16.169Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:18.234Z",
+    "kind": "console",
+    "text": "[apiRequest #96] ABORT GET /api/plans/27002/assisted (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:18.236Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/assisted",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:21.169Z",
+    "kind": "console",
+    "text": "[apiRequest #97] ABORT GET /api/plans/27002 (20002ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:21.169Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:26.166Z",
+    "kind": "console",
+    "text": "[apiRequest #98] ABORT GET /api/plans/27002 (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:26.166Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:31.172Z",
+    "kind": "console",
+    "text": "[apiRequest #99] ABORT GET /api/plans/27002 (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:31.172Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:32.366Z",
+    "kind": "console",
+    "text": "[apiRequest #100] ABORT GET /api/plans/27002/execution (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:32.366Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/execution",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:32.789Z",
+    "kind": "console",
+    "text": "[apiRequest #101] ABORT GET /api/me/role (20001ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:32.789Z",
+    "kind": "requestFailed",
+    "path": "/api/me/role",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:36.170Z",
+    "kind": "console",
+    "text": "[apiRequest #102] ABORT GET /api/plans/27002 (20003ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:36.171Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:38.235Z",
+    "kind": "console",
+    "text": "[apiRequest #103] ABORT GET /api/plans/27002/assisted (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:38.237Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/assisted",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:38.335Z",
+    "kind": "console",
+    "text": "[apiRequest #104] ABORT GET /api/plans/27002/resource-items (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:38.336Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/resource-items",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:38.337Z",
+    "kind": "console",
+    "text": "[apiRequest #105] ABORT GET /api/plans/27002/zone-resource-assignments (20002ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:38.339Z",
+    "kind": "console",
+    "text": "[apiRequest #106] ABORT GET /api/plans/27002/space-resource-assignments (20002ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:38.339Z",
+    "kind": "console",
+    "text": "[apiRequest #107] ABORT GET /api/plans/27002/zone-availability (20002ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:38.339Z",
+    "kind": "console",
+    "text": "[apiRequest #108] ABORT GET /api/plans/27002/space-availability (20001ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:38.339Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/zone-resource-assignments",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:38.339Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/space-resource-assignments",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:38.339Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/zone-availability",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:38.339Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/space-availability",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:38.784Z",
+    "kind": "console",
+    "text": "[apiRequest #109] ABORT GET /api/plans/27002/header-notes (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:38.786Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/header-notes",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:41.170Z",
+    "kind": "console",
+    "text": "[apiRequest #110] ABORT GET /api/plans/27002 (20001ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:41.170Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:46.216Z",
+    "kind": "console",
+    "text": "[apiRequest #111] ABORT GET /api/plans/27002 (20052ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:46.229Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:51.168Z",
+    "kind": "console",
+    "text": "[apiRequest #112] ABORT GET /api/plans/27002 (20001ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:51.168Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:56.170Z",
+    "kind": "console",
+    "text": "[apiRequest #113] ABORT GET /api/plans/27002 (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:56.170Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:57.368Z",
+    "kind": "console",
+    "text": "[apiRequest #114] ABORT GET /api/plans/27002/execution (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:57.368Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/execution",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:05:58.240Z",
+    "kind": "console",
+    "text": "[apiRequest #115] ABORT GET /api/plans/27002 (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:05:58.241Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:06:01.170Z",
+    "kind": "console",
+    "text": "[apiRequest #116] ABORT GET /api/plans/27002 (20004ms)"
+  },
+  {
+    "at": "2026-10-19T14:06:01.171Z",
+    "kind": "console",
+    "text": "[apiRequest #117] ABORT GET /api/plans/27002 (20003ms)"
+  },
+  {
+    "at": "2026-10-19T14:06:01.171Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:06:01.171Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:06:02.783Z",
+    "kind": "console",
+    "text": "[apiRequest #131] START GET /api/me/role"
+  },
+  {
+    "at": "2026-10-19T14:06:02.785Z",
+    "kind": "request",
+    "method": "GET",
+    "path": "/api/me/role"
+  },
+  {
+    "at": "2026-10-19T14:06:06.168Z",
+    "kind": "console",
+    "text": "[apiRequest #118] ABORT GET /api/plans/27002 (20001ms)"
+  },
+  {
+    "at": "2026-10-19T14:06:06.168Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:06:11.154Z",
+    "kind": "console",
+    "text": "[apiRequest #119] ABORT GET /api/health (20001ms)"
+  },
+  {
+    "at": "2026-10-19T14:06:11.154Z",
+    "kind": "requestFailed",
+    "path": "/api/health",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:06:11.156Z",
+    "kind": "console",
+    "text": "[apiRequest #120] ABORT GET /api/health (20002ms)"
+  },
+  {
+    "at": "2026-10-19T14:06:11.156Z",
+    "kind": "requestFailed",
+    "path": "/api/health",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:06:11.170Z",
+    "kind": "console",
+    "text": "[apiRequest #121] ABORT GET /api/plans/27002 (20001ms)"
+  },
+  {
+    "at": "2026-10-19T14:06:11.170Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:06:13.337Z",
+    "kind": "console",
+    "text": "[apiRequest #122] ABORT GET /api/plans/27002/resource-items (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:06:13.339Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/resource-items",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:06:13.340Z",
+    "kind": "console",
+    "text": "[apiRequest #123] ABORT GET /api/plans/27002/zone-resource-assignments (20001ms)"
+  },
+  {
+    "at": "2026-10-19T14:06:13.340Z",
+    "kind": "console",
+    "text": "[apiRequest #124] ABORT GET /api/plans/27002/space-resource-assignments (20001ms)"
+  },
+  {
+    "at": "2026-10-19T14:06:13.340Z",
+    "kind": "console",
+    "text": "[apiRequest #125] ABORT GET /api/plans/27002/zone-availability (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:06:13.340Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/zone-resource-assignments",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:06:13.340Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/space-resource-assignments",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:06:13.342Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/zone-availability",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:06:13.342Z",
+    "kind": "console",
+    "text": "[apiRequest #126] ABORT GET /api/plans/27002/space-availability (20002ms)"
+  },
+  {
+    "at": "2026-10-19T14:06:13.342Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/space-availability",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:06:13.787Z",
+    "kind": "console",
+    "text": "[apiRequest #127] ABORT GET /api/plans/27002/header-notes (20001ms)"
+  },
+  {
+    "at": "2026-10-19T14:06:13.787Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/header-notes",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:06:16.171Z",
+    "kind": "console",
+    "text": "[apiRequest #128] ABORT GET /api/plans/27002 (20001ms)"
+  },
+  {
+    "at": "2026-10-19T14:06:16.171Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:06:21.174Z",
+    "kind": "console",
+    "text": "[apiRequest #129] ABORT GET /api/plans/27002 (20003ms)"
+  },
+  {
+    "at": "2026-10-19T14:06:21.174Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:06:22.369Z",
+    "kind": "console",
+    "text": "[apiRequest #130] ABORT GET /api/plans/27002/execution (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:06:22.369Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002/execution",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:06:22.783Z",
+    "kind": "console",
+    "text": "[apiRequest #131] ABORT GET /api/me/role (20000ms)"
+  },
+  {
+    "at": "2026-10-19T14:06:22.784Z",
+    "kind": "requestFailed",
+    "path": "/api/me/role",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:06:26.172Z",
+    "kind": "console",
+    "text": "[apiRequest #132] ABORT GET /api/plans/27002 (20001ms)"
+  },
+  {
+    "at": "2026-10-19T14:06:26.172Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:06:31.242Z",
+    "kind": "console",
+    "text": "[apiRequest #133] ABORT GET /api/plans/27002 (20021ms)"
+  },
+  {
+    "at": "2026-10-19T14:06:31.242Z",
+    "kind": "requestFailed",
+    "path": "/api/plans/27002",
+    "error": "net::ERR_ABORTED"
+  },
+  {
+    "at": "2026-10-19T14:06:52.801Z",
+    "kind": "console",
+    "text": "[apiRequest #161] START GET /api/me/role"
+  },
+  {
+    "at": "2026-10-19T14:06:52.801Z",
+    "kind": "request",
+    "method": "GET",
+    "path": "/api/me/role"
+  },
+  {
+    "at": "2026-10-19T14:06:52.819Z",
+    "kind": "response",
+    "status": 200,
+    "path": "/api/me/role"
+  },
+  {
+    "at": "2026-10-19T14:06:52.819Z",
+    "kind": "console",
+    "text": "[apiRequest #161] END GET /api/me/role (19ms) · status=200"
+  }
+]

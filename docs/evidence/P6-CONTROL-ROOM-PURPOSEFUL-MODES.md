@@ -1,5 +1,7 @@
 # P6 — Control Room con perspectivas diferenciadas
 
+**Gate de merge bloqueado.** La [auditoría posterior de autorización](P6-AUTHORIZATION-AUDIT.md) demuestra una regresión del hook global en Autopilot y deja sin aislar el origen de una lectura JSON fallida. Los verdes locales descritos abajo no cierran P6 ni sustituyen Planner Engine CI completo.
+
 Rama `codex/ops-p6-control-room-purposeful-modes`, base autorizada `c1b3305b792e75d1409740e2893b3fd137ea6933`. Un PR contra main, sin merge ni publicación. No se modifica backend, SQL/migraciones/RLS, motor, planning, fechas, Mi Día, Hoja del día ni War Room.
 
 ## Causa y cambio

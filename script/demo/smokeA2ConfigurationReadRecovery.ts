@@ -12,6 +12,7 @@ type Options={appUrl:string;baselineUrl?:string;db:pg.Client;planId:number;direc
 export async function runA2ConfigurationReadRecovery(o:Options){
  assert.equal(new URL(o.appUrl).hostname,'127.0.0.1');assert.equal(o.planId,27002);
  const requests:any[]=[],report:any={mode:'NATIVE_DISPOSABLE_CONFIG_READ_RECOVERY',remoteWrites:0,requests};
+ const safeMessage=(v:unknown)=>String(v??'').replace(/https?:\/\/\S+|Bearer\s+\S+|eyJ[\w-]+\.[\w-]+\.[\w-]+/g,'[redacted]').slice(0,240);
  const request=async<T>(method:string,path:string,body?:unknown,base=o.appUrl,role='production'):Promise<T>=>{
   // Node 20 can reset a reused idle socket when synchronous search outlives
   // the server's keep-alive timer. Fresh connections keep this HTTP harness
@@ -23,7 +24,20 @@ export async function runA2ConfigurationReadRecovery(o:Options){
    if(error?.name==='TimeoutError')throw Object.assign(new Error('Request aborted'),{name:'AbortError'});
    throw error;
   });
-  const value=await response.json() as any;
+  // Preserve the original JSON reader and failure. Capture transport metadata
+  // before the generic "engine must return its result" assertion hides it.
+  const inspection=response.clone();let value:any;
+  try { value=await response.json(); }
+  catch(error:any){
+   const bytes=await inspection.arrayBuffer().then(body=>body.byteLength).catch(()=>null);
+   const failure={runtime:base===o.appUrl?'candidate':'base',method,path,status:response.status,
+    headers:Object.fromEntries(['content-type','content-length','transfer-encoding','connection'].map(key=>[key,response.headers.get(key)])),
+    receivedBytes:bytes,jsonError:{name:safeMessage(error?.name),
+     message:error?.message==='Unexpected end of JSON input'?'Unexpected end of JSON input':'JSON response could not be decoded'}};
+   requests.push(failure);
+   writeFileSync(`${o.directory}/configuration-read-http-failure.json`,JSON.stringify(failure,null,2));
+   throw error;
+  }finally{void inspection.body?.cancel().catch(()=>{});}
   requests.push({runtime:base===o.appUrl?'candidate':'base',method,path,status:response.status,code:value.code,
    ...(path.endsWith('/next-scope')?{selector:value.selector,taskCount:value.taskIds?.length}:{}),
    ...(path.endsWith('/effective-configuration')?{readiness:value.readiness?.status}:{}),
@@ -83,7 +97,6 @@ export async function runA2ConfigurationReadRecovery(o:Options){
  }});
  const result=await controller.start();
  const stored= result.runId?(await o.db.query('SELECT status,message,assisted_result_json IS NOT NULL AS has_result FROM planning_runs WHERE id=$1',[result.runId])).rows[0]:null;
- const safeMessage=(v:unknown)=>String(v??'').replace(/https?:\/\/\S+|Bearer\s+\S+|eyJ[\w-]+\.[\w-]+\.[\w-]+/g,'[redacted]').slice(0,240);
  writeFileSync(`${o.directory}/configuration-read-controller.json`,JSON.stringify({phase:result.phase,code:safeMessage(result.code),requests,storedRun:stored?{status:stored.status,hasResult:stored.has_result,message:safeMessage(stored.message)}:null},null,2));
  assert.ok(phases.includes('GENERATING'));assert.ok(result.runId,'initial run must exist');assert.ok(result.result,'engine must return its result');
  assert.ok(['STOPPED','FAILED'].includes(result.phase));

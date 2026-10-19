@@ -1,5 +1,5 @@
 {
-  "status": "PASS",
+  "status": "BLOCKED",
   "base": "c1b3305b792e75d1409740e2893b3fd137ea6933",
   "branch": "codex/ops-p6-control-room-purposeful-modes",
   "nodeVersion": "v24.19.0",
@@ -75,5 +75,7 @@
     "browser": "docs/evidence/P6-CONTROL-ROOM-UI/browser-evidence.json",
     "documentation": "docs/evidence/P6-CONTROL-ROOM-PURPOSEFUL-MODES.md",
     "existingNativeJourneys": "docs/evidence/P6-CONTROL-ROOM-REGRESSIONS.json"
-  }
+  },
+  "overallMergeGate": "NOT CLOSED: reproduced global role/Autopilot regression; failed JSON response origin not isolated",
+  "audit": "docs/evidence/P6-AUTHORIZATION-AUDIT.md"
 }

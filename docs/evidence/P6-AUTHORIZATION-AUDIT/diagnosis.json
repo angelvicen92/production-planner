@@ -1,0 +1,128 @@
+{
+  "auditedHead": "e7cf5a2b81905599fa9077a12648add622dbe9ac",
+  "base": "c1b3305b792e75d1409740e2893b3fd137ea6933",
+  "runId": 39256905113,
+  "attempts": {
+    "1": {
+      "autopilotJob": 118074988071,
+      "outcome": "Unexpected end of JSON input; stored run running",
+      "configurationJob": 118074987776
+    },
+    "2": {
+      "autopilotJob": 118093848661,
+      "outcome": "FAILED/UNAUTHORIZED/stage0/completed0",
+      "configurationJob": 118093847679,
+      "configurationReadStep": "PASS at unchanged head; full job still running at inspection"
+    }
+  },
+  "roleFailure": {
+    "localNativeReproductions": 2,
+    "roleReadConfirmedInitially": true,
+    "rolePollAborts20s": true,
+    "observedHttp401or403": 0,
+    "acceptStageRequests": 0,
+    "origin": "shared/assistedAutopilot.ts:123 check -> options.authorized() -> authorized.current -> useUserRole role=null on background query error",
+    "localNodes": [
+      "v24.19.0",
+      "v20.19.5"
+    ],
+    "ciNode": "v20.20.2"
+  },
+  "configurationFailure": {
+    "failureBoundary": "JSON decoding in native HTTP reader, before a run result could be inspected",
+    "readerSha256BaseAndAuditedHead": "bf49f996bb287dd98a2548756e3f55926d171abd81978ba3918b4b79ca778468",
+    "usesReactRoleHook": false,
+    "controllerAuthorization": "constant true; real server authorizes every HTTP request",
+    "reproducedLocally": false,
+    "localNode": "v20.20.2",
+    "localOutcome": "STOPPED; stored run success; result received and stage accepted",
+    "failedJsonBodyOrigin": "NOT ISOLATED: original failed response status/body headers absent from prior artifact"
+  },
+  "remoteWrites": 0,
+  "productFixApplied": false,
+  "mergeGate": "NOT CLOSED",
+  "baseComparison": {
+    "node": "v20.20.2",
+    "status": "PASS",
+    "checkpoints": [
+      {
+        "stage": 1,
+        "completed": 19
+      },
+      {
+        "stage": 2,
+        "completed": 38
+      },
+      {
+        "stage": 3,
+        "completed": 46
+      }
+    ],
+    "terminal": "STOPPED",
+    "final": {
+      "phase": "COMPLETE",
+      "stage": 11,
+      "completed": 266,
+      "total": 266
+    },
+    "roleQueryKeys": [
+      "[\"/api/me/role\"]"
+    ],
+    "authorityCheckFailures": 0
+  },
+  "diagnosticValidation": {
+    "typescript": "PASS",
+    "integrationTypeScript": "PASS",
+    "build": "PASS",
+    "focalConfigurationTests": {
+      "pass": 6,
+      "fail": 0
+    },
+    "controlRoomAndAuthorizationTests": {
+      "pass": 38,
+      "fail": 0
+    },
+    "configurationBeforeAndAfterInstrumentation": [
+      {
+        "folder": "config-before",
+        "status": "PASS",
+        "node": "v20.20.2",
+        "outcome": "PROPOSAL",
+        "fingerprint": "10ce592a3772452096b245973a39ba841e4079e32ff76d1890fd087139ac6113",
+        "proposalHash": "eea2f0e5a139da2ee096468953d37562379592b7ede9d50e60119e17a855b110",
+        "checks": [
+          "entire native application migration ledger",
+          "real password login for five Auth identities",
+          "historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import",
+          "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved",
+          "52 observed legacy breaks: configuration reads, S0/266 recommendation and SUPPORTED native input without row changes",
+          "locked break conflicts remain blocked with a safe operational error; existing HTTP permissions remain enforced",
+          "Autopilot reaches the real engine from S0/266 and returns proposal/search Evidence without the initial infrastructure error",
+          "restart after recovery preserves configuration, history, 52 legacy rows and all 266 obligations",
+          "old day, 11 prior Stages, 333 other tasks and historical catalog remain literal after real UI/Autopilot/execution"
+        ]
+      },
+      {
+        "folder": "config-instrumented",
+        "status": "PASS",
+        "node": "v20.20.2",
+        "outcome": "PROPOSAL",
+        "fingerprint": "10ce592a3772452096b245973a39ba841e4079e32ff76d1890fd087139ac6113",
+        "proposalHash": "eea2f0e5a139da2ee096468953d37562379592b7ede9d50e60119e17a855b110",
+        "checks": [
+          "entire native application migration ledger",
+          "real password login for five Auth identities",
+          "historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import",
+          "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved",
+          "52 observed legacy breaks: configuration reads, S0/266 recommendation and SUPPORTED native input without row changes",
+          "locked break conflicts remain blocked with a safe operational error; existing HTTP permissions remain enforced",
+          "Autopilot reaches the real engine from S0/266 and returns proposal/search Evidence without the initial infrastructure error",
+          "restart after recovery preserves configuration, history, 52 legacy rows and all 266 obligations",
+          "old day, 11 prior Stages, 333 other tasks and historical catalog remain literal after real UI/Autopilot/execution"
+        ]
+      }
+    ],
+    "sameProposal": true,
+    "sameProposedFingerprint": true
+  }
+}

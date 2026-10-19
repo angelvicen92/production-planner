@@ -1,0 +1,10 @@
+{
+  "mode": "REAL_DISPOSABLE_HTTP_ASSISTED_CHROMIUM",
+  "planId": 27002,
+  "checkpoints": [],
+  "errors": [],
+  "visualWrites": 0,
+  "simulatedCacheTimeout": "retained workspace and controller; subsequent real HTTP Stages must complete",
+  "status": "FAIL",
+  "error": "AssertionError [ERR_ASSERTION]: {\"phase\":\"FAILED\",\"stage\":0,\"completed\":0,\"total\":266,\"scope\":{\"kind\":\"SPACE\",\"spaceId\":48},\"scopeTaskIds\":[110002,110017,110031,110043,110056,110072,110088,110102,110116,110131,110147,110161,110175,110190,110203,110218,110229,110243,110256],\"runId\":1,\"stopRequested\":false,\"message\":\"La ejecución se detuvo: necesitas permisos vigentes para aceptar etapas.\",\"code\":\"UNAUTHORIZED\"}"
+}

@@ -128,6 +128,7 @@ jobs:
             work/a2-config-read-recovery/integration.json
             work/a2-config-read-recovery/configuration-read-run.json
             work/a2-config-read-recovery/configuration-read-controller.json
+            work/a2-config-read-recovery/configuration-read-http-failure.json
             work/a2-integration/*-real-ui.png
             work/a2-integration/reality-scope.json
             work/a2-integration/reality-*.png
