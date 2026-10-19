@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { actor, executionDatabase } from './fixtures/executionDatabase';
-import { executionError } from './liveExecution';
 
 async function database() {
   const db = await executionDatabase();
@@ -203,7 +202,13 @@ test('P7: replacement preserves signature/ACL and existing data; no retroactive 
   } finally { await db.close(); }
 });
 
-test('P7: HTTP mapping distinguishes temporal, permission, concurrent and transient failures', () => {
+test('P7: HTTP mapping distinguishes temporal, permission, concurrent and transient failures', async () => {
+  // Importing the existing mapper also initializes its RPC client. This pure
+  // mapping test needs no connected account and must run in credential-free CI.
+  process.env.SUPABASE_URL ??= 'http://localhost';
+  process.env.SUPABASE_ANON_KEY ??= 'test';
+  process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'test';
+  const { executionError } = await import('./liveExecution');
   assert.deepEqual(executionError({message:'EXECUTION_START_WORKDAY'}), {status:409,message:'La hora operativa no corresponde a la jornada del planning.'});
   assert.equal(executionError({message:'EXECUTION_FORBIDDEN'}).status,403);
   assert.equal(executionError({message:'EXECUTION_STALE'}).status,409);

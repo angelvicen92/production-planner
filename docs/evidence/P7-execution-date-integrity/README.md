@@ -60,6 +60,8 @@ Resultados exactos y comandos en [validation.json](validation.json); ensayos pú
 
 Los JSON conservan checks, resultados, hashes de fuentes y ledger, y resumen el tráfico RPC por ruta/método/status para evitar duplicar cada petición. El runner y los artefactos de CI conservan su traza completa.
 
+La CI del primer head detectó una dependencia accidental del test puro de `executionError` respecto a las variables Supabase del entorno local. Se cambió a importación diferida con valores locales de prueba cuando faltan credenciales; no se cambió lógica productiva. La suite P7 se repitió con las cinco variables Supabase/Vite eliminadas: **10/10 PASS**, sin conexiones remotas ([log](date-integrity-no-credentials.log)). También pasa `tsc -p script/demo/tsconfig.integration.json`.
+
 El ledger nativo completo se aplica desde cero, incluidos 093 → 094 → 095 → 096 → 097 → 098. No se saltan migraciones históricas. El ensayo P7 reconstituye adicionalmente la función anterior y aplica 098 sobre datos reales ya iniciados para observar la continuidad.
 
 Los extremos exactos y DST se prueban en PostgreSQL/PGlite con instantes controlados; el ensayo Auth/HTTP usa `execution_clock` real. Para probar automático positivo sobre el snapshot histórico, una transacción local cambia temporalmente la fecha/ventana del fixture, ejecuta la RPC y hace **ROLLBACK**. No persiste cambios de planning ni altera el reloj productivo.

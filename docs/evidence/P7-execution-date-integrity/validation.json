@@ -75,6 +75,23 @@
       "status": "PASS",
       "exitCode": 0,
       "evidence": "p3-browser.json"
+    },
+    {
+      "name": "P7 without connected credentials",
+      "command": "env -u SUPABASE_URL -u SUPABASE_ANON_KEY -u SUPABASE_SERVICE_ROLE_KEY -u VITE_SUPABASE_URL -u VITE_SUPABASE_ANON_KEY node --import tsx --test --test-concurrency=1 server/liveExecutionDateIntegrity.spec.ts",
+      "status": "PASS",
+      "tests": 10,
+      "pass": 10,
+      "fail": 0,
+      "exitCode": 0,
+      "evidence": "date-integrity-no-credentials.log"
+    },
+    {
+      "name": "integration TypeScript",
+      "command": "npx --no-install tsc -p script/demo/tsconfig.integration.json",
+      "status": "PASS",
+      "exitCode": 0,
+      "evidence": "integration-check.log"
     }
   ],
   "nativeGates": {
@@ -237,7 +254,14 @@
     "workflow": ".github/workflows/live-day-execution-ci.yml",
     "newGate": "SQL Start workday integrity, clock races, real HTTP and unchanged Mi Día",
     "timeoutChanged": false,
-    "resultLocation": "Pull request checks"
+    "resultLocation": "Pull request checks",
+    "initialHead": "26823124fb6a7d0f79658de194ad82329387de7c",
+    "initialFailure": {
+      "run": "https://github.com/angelvicen92/production-planner/actions/runs/39257079421",
+      "step": "focal tests",
+      "error": "Missing Supabase environment variables on server",
+      "fix": "Pure mapper test uses a deferred import and local fallback credentials; verified 10/10 with all five connection variables unset."
+    }
   },
   "limits": [
     "Night/extraordinary windows have no new contract",
