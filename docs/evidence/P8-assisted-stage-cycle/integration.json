@@ -9,7 +9,7 @@
     "rest": "postgrest/postgrest:v12.2.12@sha256:5f4ce744539bbba786b4e24dbbd95bdb2a956dcf568c5374995a0ff4a68f5bd2"
   },
   "requestedStages": 2,
-  "startedAt": "2026-10-19T18:18:28.240Z",
+  "startedAt": "2026-10-19T18:22:07.170Z",
   "runtimeHashes": {
     "engine/planner-next/benchmarks/canonicalFullA2EngineInput.ts": "5d1c7424192bad90720a90ed369902bb1d242a5c6666c33d28b52e09a8e7bc83",
     "engine/planner-next/benchmarks/focal-a2/full-day/manifest.ts": "fd3b2100ef56fbbde17878dce038b247352efbe59ed542c79039da06e2c57bb1",
@@ -87,7 +87,7 @@
     "shared/execution.ts": "047cf61f8114b2397ad3a3516a1f5d2d01055603dd1d28c95f788c1d73185006",
     "script/demo/smokeLiveExecutionJourney.ts": "d19270b5d2d7cc7f828ec6bc2446fde84bf2f6e0629c91d8d3ea927fbf89a1e6",
     "script/demo/smokeAssistedStageCycle.ts": "0ce068195efa3020f869048ee17b4a0cff94819b596f95b9a88775bfe9af60f1",
-    "shared/assistedHistory.ts": "912dc0c87906fb64541391247ff844a992e74c3580384e38ca75f46a387c1656",
+    "shared/assistedHistory.ts": "c7191252b4f9db3152c95180a5411d3b607a79c82cd5ca40d0d32e349f3c086f",
     "shared/assistedStageLineage.ts": "4b41c71b2eb226e7a4f1944e951f217b6ef537b5db510bec228c31b1b13965e0",
     "client/src/components/planning/assisted-stage-history.tsx": "e481d8ff6a64551f62ff0caca0f7c243c7ac0cab3f4fc3d3892c04ca09d75878",
     "client/src/components/planning/assisted-autopilot-progress.tsx": "10f54ed2c9a508ece3f61b43ba5bebc7d96eb4dc79c3ed3e4dee9fced2101db8",
@@ -818,6 +818,16 @@
       "error": null
     },
     {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "68",
+      "receivedBytes": 68,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
       "path": "/rest/v1/rpc/assisted_move_stage",
       "method": "POST",
       "contentLength": "48",
@@ -1297,7 +1307,7 @@
     "before": {
       "toolbar": "Etapa 24\n0/266 con horario\n266 pendientes\nPendiente de validar\nSugerir siguiente alcance\nGenerar propuesta\nValidar borrador\nAceptar etapa\nHerramientas de edición",
       "header": "Última etapa aceptada\n\nEtapa 24\n\nCheckpoint del plan de trabajo",
-      "sqlHash": "e54cf2cf4fbd23a575398c7f114eb48498e76734abde348d657ca3d5c7e0c69f"
+      "sqlHash": "22fd8d276291e850887b7832ec1e2866d3d442002cbcb145241c543276380f13"
     },
     "after": {
       "toolbar": "Etapa S11\n0/266 con horario\n266 pendientes\nPendiente de validar\nSugerir siguiente alcance\nGenerar propuesta\nValidar borrador\nAceptar etapa\nHerramientas de edición",
@@ -1320,11 +1330,11 @@
       "archivedCards": 13,
       "obligations": 266,
       "renderedPlacementCards": 0,
-      "sqlHash": "e54cf2cf4fbd23a575398c7f114eb48498e76734abde348d657ca3d5c7e0c69f"
+      "sqlHash": "22fd8d276291e850887b7832ec1e2866d3d442002cbcb145241c543276380f13"
     },
     "pageErrors": [],
     "status": "PASS"
   },
   "status": "PASS",
-  "finishedAt": "2026-10-19T18:19:18.669Z"
+  "finishedAt": "2026-10-19T18:23:32.978Z"
 }

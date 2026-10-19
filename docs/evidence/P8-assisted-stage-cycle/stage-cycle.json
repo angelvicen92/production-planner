@@ -420,7 +420,7 @@
   "before": {
     "toolbar": "Etapa 24\n0/266 con horario\n266 pendientes\nPendiente de validar\nSugerir siguiente alcance\nGenerar propuesta\nValidar borrador\nAceptar etapa\nHerramientas de edición",
     "header": "Última etapa aceptada\n\nEtapa 24\n\nCheckpoint del plan de trabajo",
-    "sqlHash": "e54cf2cf4fbd23a575398c7f114eb48498e76734abde348d657ca3d5c7e0c69f"
+    "sqlHash": "22fd8d276291e850887b7832ec1e2866d3d442002cbcb145241c543276380f13"
   },
   "after": {
     "toolbar": "Etapa S11\n0/266 con horario\n266 pendientes\nPendiente de validar\nSugerir siguiente alcance\nGenerar propuesta\nValidar borrador\nAceptar etapa\nHerramientas de edición",
@@ -443,7 +443,7 @@
     "archivedCards": 13,
     "obligations": 266,
     "renderedPlacementCards": 0,
-    "sqlHash": "e54cf2cf4fbd23a575398c7f114eb48498e76734abde348d657ca3d5c7e0c69f"
+    "sqlHash": "22fd8d276291e850887b7832ec1e2866d3d442002cbcb145241c543276380f13"
   },
   "pageErrors": [],
   "status": "PASS"

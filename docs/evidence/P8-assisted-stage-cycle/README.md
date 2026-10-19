@@ -11,7 +11,7 @@ usado por la herencia de excepciones.
 Toolbar, progreso S0/S1/S2, historial, resumen aceptado y presentación de Autopilot
 consumen esta proyección. Las etapas fuera del recorrido muestran `Etapa histórica
 #ordinal · ID id`; las archivadas indican `Rama archivada · otro recorrido`.
-Las relaciones incompletas, ciclos, duplicados, raíz inválida o ancestros archivados
+Los IDs o padres ausentes, relaciones incompletas, ciclos, duplicados, raíz inválida o ancestros archivados
 dejan la numeración y los acumulados sin valor y muestran la causa. Ninguna
 superficie usa el ordinal histórico como alternativa a una profundidad desconocida.
 

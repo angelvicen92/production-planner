@@ -48,6 +48,9 @@ export function projectAssistedStageCycle(history: readonly HistoryStage[], acti
     // Same fallback as state() on the server when history omits the active row.
     const stages = history.some(stage => stage.id === active.id) ? history : [...history, active];
     lineage = resolveActiveStageLineage(stages, active.id).reverse();
+    if (lineage.some(stage => !Number.isSafeInteger(stage.id) ||
+      (stage.parentStageId !== null && !Number.isSafeInteger(stage.parentStageId))))
+      throw new Error("Faltan identificadores o relaciones válidas en el recorrido.");
     const ids = new Set(lineage.map(stage => stage.id));
     if (stages.some((stage, index) => ids.has(stage.id) && stages.findIndex(other => other.id === stage.id) !== index)) throw new Error("Hay etapas duplicadas en el recorrido.");
     if (lineage[0].ordinal !== 0 || lineage.some((stage, index) => stage.archivedAt || (index > 0 && stage.ordinal <= lineage[index - 1].ordinal))) throw new Error("El recorrido no tiene un S0 válido o contiene etapas inconsistentes.");

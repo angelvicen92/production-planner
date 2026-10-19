@@ -59,6 +59,8 @@ test("cycles, missing ancestors, root other than S0, duplicate IDs and archived 
     [[s1], s1], [[s0, s1, { ...s1 }], s1],
     [[{ ...s0, archivedAt: stamp(1) }, s1], s1],
     [[s0, { ...s1, ordinal: 0 }], s1],
+    [[{ ...s0, parentStageId: undefined } as unknown as HistoryStage], s0],
+    [[{ ...s0, id: undefined } as unknown as HistoryStage], { ...s0, id: undefined } as unknown as HistoryStage],
     [[s0], null],
   ] as const) {
     const model = buildAssistedHistory(history, active, times);
