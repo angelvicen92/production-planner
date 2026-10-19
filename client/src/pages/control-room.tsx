@@ -17,7 +17,7 @@ import { contestantsQueryKey } from '@/lib/plan-query-keys';
 import { datedTime } from '@/components/control-room/presentation';
 import { ProductionControlPanel } from '@/components/production-control-panel';
 import { projectControlRoom, type LocationRead } from '@/lib/control-room-metrics';
-import { useUserRole } from '@/hooks/use-user-role';
+import { useControlRoomRole } from '@/hooks/use-user-role';
 import { allowedControlRoomModes, resolveControlRoomMode, modeLabels, modeStorageKey, type ControlRoomMode } from '@/lib/control-room-modes';
 import { DirectorOverview } from '@/components/control-room/director-overview';
 import { DataHealth } from '@/components/control-room/data-health';
@@ -27,7 +27,7 @@ import { cn } from '@/lib/utils';
 
 export default function ControlRoomPage() {
   const { user } = useAuth();
-  const roleQuery = useUserRole();
+  const roleQuery = useControlRoomRole();
   // Keep existing endpoint/cache prefixes and isolate responses by authenticated actor.
   const actor = user?.id;
   const plansQ = useQuery({ queryKey: [api.plans.list.path, 'control-room', actor], enabled: !!actor,

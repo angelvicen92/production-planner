@@ -67,7 +67,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           queryClient.invalidateQueries();
         }
 
+        let actorId = nextSession?.user.id;
         const { data: sub } = supabase.auth.onAuthStateChange(async (_event, updatedSession) => {
+          if (updatedSession?.user.id !== actorId) {
+            // Cancel pending reads and discard authority from the previous session.
+            queryClient.removeQueries({ queryKey: ['/api/me/role'] });
+            actorId = updatedSession?.user.id;
+          }
           setSession(updatedSession ?? null);
           setAuthLoading(false);
 

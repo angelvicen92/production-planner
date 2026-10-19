@@ -1,0 +1,106 @@
+✔ A2: all 266 identities survive selection and temporal sections, exactly once; input stays literal (125.262527ms)
+✔ combined zone, space and state filters intersect without changing global summary (0.605463ms)
+✔ empty spaces remain visible; active and confirmed problems select individual spaces (0.434616ms)
+✔ completed history follows real finish, simultaneous and unplanned work remain available (0.363327ms)
+✔ missing locations, unknown states and null metrics never disappear or become calculated (0.78923ms)
+✔ viewer and production retain global read; aux selection cannot broaden the projected scope (0.470379ms)
+✔ selection preserves shared incident references and unavailable register (0.451721ms)
+{"benchmark":"control-room-266","iterations":10,"meanMs":3.383423600000003}
+✔ accepted A2: all 266 obligations reconcile, unknown/unplanned/cancelled never disappear; no mutation (55.426053ms)
+✔ before/during/after derives from confirmed statuses, never clock alone (1.380953ms)
+✔ real timestamps, second precision, pauses and placement duration (not template defaults) (0.787608ms)
+✔ legacy/incomplete timestamps, changed clocks and unavailable execution cannot assert deviations (0.72265ms)
+✔ Madrid day, winter/summer and DST ambiguity: no unrelated-date delay (2.506689ms)
+✔ incidents: open includes escalated, critical excludes resolved, failed query is unknown, day isolation (0.64979ms)
+✔ all studios stay visible; simultaneous spaces and an incident do not invent a stop cause (0.589399ms)
+✔ scope: aux gets scoped obligations/spaces; completing the scope cannot finish the global day (1.960266ms)
+✔ unknown relationships and unplanned obligations remain explicit, never synthetic saturation (0.852395ms)
+✔ configured alert threshold is a reproducible attention threshold, no critical label for delay (0.394465ms)
+✔ representative read projection performance, no solver call (36.054404ms)
+✔ perspectives follow verified role and execution authority, never localStorage (1.893284ms)
+✔ account switch, revoked role and saved forbidden perspectives clamp on every render (0.31184ms)
+✔ health retains last success but distinguishes errors, offline, stale and unconfirmed reads (0.346953ms)
+✔ real HTTP middleware blocks anonymous/debug and task writes while preserving authorized application flows (583.322527ms)
+✔ template aliases and Express casing use the catalog admin authority before any handler (384.85988ms)
+✔ time correction and history share execution role boundaries including Express casing (4.357872ms)
+[planning-configuration] {
+  code: 'PLANNING_CONFIGURATION_CONFLICT',
+  reasonCode: 'TASK_OPERATIONS_MISMATCH',
+  inputTaskCount: 318,
+  operationCount: 266
+}
+[planning-configuration] {
+  code: 'PLANNING_CONFIGURATION_CONFLICT',
+  reasonCode: 'LOCKED_LEGACY_BREAK',
+  inputTaskCount: 318,
+  operationCount: 266
+}
+[planning-configuration] {
+  code: 'PLANNING_CONFIGURATION_CONFLICT',
+  reasonCode: 'INVALID_CONTRACT',
+  inputTaskCount: 318,
+  operationCount: 266
+}
+✔ effective configuration API rejects invalid plan ids before storage (1.316364ms)
+✔ known configuration conflicts have an actionable public category without internal identifiers (3.128177ms)
+✔ effective configuration API maps a missing real plan without Assisted state (0.183868ms)
+✔ authority failures return a useful JSON 500 without fabricating configuration or exposing database internals (0.358972ms)
+✔ incident contract trims mandatory facts, leaves unknown links/notes null and rejects forged authority (5.121723ms)
+✔ partial updates preserve omitted fields and require observed version; transitions require a decision (1.906064ms)
+✔ incident HTTP policy admits aux only to the database scope check, viewer only to queries (0.593966ms)
+✔ incident failures return actionable HTTP codes and never expose database internals (0.433604ms)
+✔ G0: editorial/revoked scope denies incident lifecycle and hides rows/events through RLS (5156.483423ms)
+✔ nominal plan authority, terminal states, one execution lock and audit-preserving reset (6269.941786ms)
+✔ event/lock persistence errors roll back the whole operation; clients cannot bypass it (4712.085267ms)
+✔ resources require concrete identities; staff mode overrides are respected (4208.905027ms)
+✔ pauses cross minute/hour boundaries using timestamps; clock changes are rejected (3917.694099ms)
+✔ Madrid simulated display is independent of host timezone and preserves DST boundaries (34.937035ms)
+✔ G0: editorial assignment alone grants no execution scope or Start/Finish authority (1860.395314ms)
+✔ G0 historical reproduction: 093/094 accept editorial execution/incidents and persist events (1452.666546ms)
+✔ G0: effective production scopes cover zones, multiple spaces/zones and overlapping helpers (1378.240505ms)
+✔ G0: revoked, inactive and non-primary identities lose authority; global roles and nominal resources retain it (1486.37574ms)
+✔ continues the active checkpoint through real operation order and retains run Evidence (15.982196ms)
+✔ starts at S0 and confirms persisted completion, rather than exhaustion (5.017812ms)
+✔ configuration read conflicts stop before proposing and explain the operational cause (0.652344ms)
+✔ a safe stop finishes only the current stage; a new delegation resumes the checkpoint (3.310669ms)
+✔ double click and another controller share one delegation and cannot duplicate accepts (3.783922ms)
+✔ disposal at GENERATING prevents all later mutations (0.370258ms)
+✔ disposal at APPLYING prevents all later mutations (0.628808ms)
+✔ disposal at VALIDATING prevents all later mutations (0.538571ms)
+✔ disposal at ACCEPTING prevents all later mutations (0.837312ms)
+✔ late acceptance after disposal is preserved once, without background continuation (1.191315ms)
+✔ polling observes concurrent draft changes before applying (0.816661ms)
+✔ polling observes concurrent stage changes before applying (0.401165ms)
+✔ polling observes concurrent config changes before applying (0.546454ms)
+✔ polling observes concurrent live changes before applying (0.617881ms)
+✔ rejects run failure without modifying Draft (0.870211ms)
+✔ rejects proposal failure without modifying Draft (0.629548ms)
+✔ rejects certification failure without modifying Draft (0.55757ms)
+✔ rejects hard failure without modifying Draft (0.551081ms)
+✔ rejects required failure without modifying Draft (0.539112ms)
+✔ rejects exception failure without modifying Draft (0.495827ms)
+✔ rejects globalMeal failure without modifying Draft (0.535357ms)
+✔ rejects protected failure without modifying Draft (0.541115ms)
+✔ rejects scope failure without modifying Draft (0.724893ms)
+✔ rejects identity failure without modifying Draft (0.51743ms)
+✔ an unexpectedly empty recommendation is a failure while obligations remain (0.558321ms)
+✔ manual edits including resources/meals prevent initial delegation (0.491872ms)
+✔ permissions are checked initially and again before acceptance (1.376204ms)
+✔ unclean validation (hard) retains Draft and never accepts (1.023652ms)
+✔ unclean validation (required) retains Draft and never accepts (0.529228ms)
+✔ unclean validation (revision) retains Draft and never accepts (0.509969ms)
+✔ unclean validation (alerts) retains Draft and never accepts (0.814017ms)
+✔ unclean validation (mode) retains Draft and never accepts (0.54381ms)
+✔ HTTP failure after an accepted response is never retried (0.638362ms)
+✔ no persistent advance stops the loop rather than declaring success (0.58448ms)
+✔ an aborted read while the real run computes resumes polling, without retrying any mutation (2.635562ms)
+✔ an authoritative polling error stops and retains the checkpoint (0.455276ms)
+✔ polling uses the existing stale-run gate and never calls a stale run completed (0.349928ms)
+ℹ tests 79
+ℹ suites 0
+ℹ pass 79
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 39437.144934

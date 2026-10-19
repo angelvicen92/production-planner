@@ -15,6 +15,8 @@ on:
       - "client/src/lib/day-execution-view*"
       - "client/src/lib/planning-workspace-preferences*"
       - "client/src/hooks/use-plan-staff.ts"
+      - "client/src/hooks/use-user-role.ts"
+      - "client/src/hooks/use-auth.tsx"
       - "client/src/hooks/use-tasks.ts"
       - "client/src/components/add-task-dialog.tsx"
       - "client/src/index.css"
@@ -69,6 +71,8 @@ jobs:
       - run: npm ci
       - run: npx --no-install playwright install --with-deps chromium
       - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
+      - name: Role policy regression (browser, controller and intercepted HTTP)
+        run: node --import tsx script/demo/userRolePolicy.browser.mjs
       - run: node --import tsx --test client/src/lib/assisted-autopilot-checkpoints.test.ts client/src/lib/assisted-autopilot-progress.test.ts client/src/components/planning/assisted-autopilot-progress.test.tsx
       - run: npm run demo:a2:smoke -- work/autopilot-workspace --historical-topology --autopilot-workspace
       - uses: actions/upload-artifact@v4
@@ -79,6 +83,7 @@ jobs:
             work/autopilot-workspace/integration.json
             work/autopilot-workspace/autopilot-workspace.json
             work/autopilot-workspace/autopilot-workspace-*.png
+            work/p6-role-policy/policy.json
   a2-assisted-integration:
     name: a2-assisted-integration
     runs-on: ubuntu-latest

@@ -85,6 +85,8 @@ async function open(origin, role = 'production', mode = 'production') {
     return route.fulfill({ status: 200, json: {} });
   });
   const page = await context.newPage(); page.on('pageerror', e => errors.push(e.message));
+  page.on('console', message => { if (message.type() === 'error') console.error('P6_BROWSER_CONSOLE', message.text().slice(0, 300)); });
+  page.on('requestfailed', request => console.error('P6_BROWSER_TRANSPORT', new URL(request.url()).pathname, request.failure()?.errorText));
   await page.goto(`${origin}/control-room?plan=1`);
   await page.locator('[data-testid=control-room-pro], [data-testid=control-room-director], [data-testid=control-room-technical]').first().waitFor({ timeout: 60000 });
   return { context, page, state };

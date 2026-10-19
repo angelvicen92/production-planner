@@ -1,6 +1,6 @@
 # P6 — auditoría causal de autorización y lectura del run
 
-**Estado: diagnóstico; P6 NO está cerrado y el PR #1154 no debe considerarse listo para merge.**
+**Estado histórico del head `c0ad6dd`: diagnóstico, sin corrección de producto.** La continuación autorizada aplica y valida la [corrección del contrato de roles](P6-AUTHORIZATION-CORRECTION.md). Este informe conserva la Evidence y las limitaciones del diagnóstico original.
 
 Head auditado `e7cf5a2b81905599fa9077a12648add622dbe9ac`; base `c1b3305b792e75d1409740e2893b3fd137ea6933`. Se continúa la misma rama y PR. No se modifica P7, producto, autorización SQL/backend, motor, presupuestos, timeouts ni configuración efectiva.
 

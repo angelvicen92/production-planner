@@ -1,5 +1,5 @@
 {
-  "status": "BLOCKED",
+  "status": "LOCAL_PASS_CI_CHECKS_REQUIRED",
   "base": "c1b3305b792e75d1409740e2893b3fd137ea6933",
   "branch": "codex/ops-p6-control-room-purposeful-modes",
   "nodeVersion": "v24.19.0",
@@ -76,6 +76,15 @@
     "documentation": "docs/evidence/P6-CONTROL-ROOM-PURPOSEFUL-MODES.md",
     "existingNativeJourneys": "docs/evidence/P6-CONTROL-ROOM-REGRESSIONS.json"
   },
-  "overallMergeGate": "NOT CLOSED: reproduced global role/Autopilot regression; failed JSON response origin not isolated",
-  "audit": "docs/evidence/P6-AUTHORIZATION-AUDIT.md"
+  "overallMergeGate": {
+    "status": "REQUIRES_ALL_CURRENT_PR_CHECKS_GREEN",
+    "productFixApplied": true,
+    "localAutopilot": "COMPLETE 266/266 Stage 11; same final fingerprint as baseline",
+    "realRevocation": "403 at accept-stage despite stale production cache; accepted state unchanged",
+    "configuration": "native pass with original proposal fingerprint; original malformed-body origin not asserted",
+    "ciEvidence": "https://github.com/angelvicen92/production-planner/pull/1154/checks"
+  },
+  "audit": "docs/evidence/P6-AUTHORIZATION-AUDIT.md",
+  "currentCorrectionEvidence": "docs/evidence/P6-AUTHORIZATION-CORRECTION/validation.json",
+  "integratedMain": "0e7442e4b5ccf4fde6756841b7908b27e87fe1db"
 }
