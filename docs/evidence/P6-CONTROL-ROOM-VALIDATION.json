@@ -24,6 +24,17 @@
         "aux",
         "viewer"
       ]
+    },
+    "integrationTypeScript": "PASS",
+    "existingNativeJourneys": {
+      "timeCorrections": {
+        "checks": 10,
+        "status": "PASS"
+      },
+      "liveExecution": {
+        "checks": 16,
+        "status": "PASS"
+      }
     }
   },
   "preservation": {
@@ -49,7 +60,9 @@
     "client/src/lib/control-room-modes.test.ts": "d8bc8c4796cfbffa3de1ecec33f2bd1533e8546b97ee574537ecd2a403701112",
     "client/src/lib/control-room-modes.ts": "45a7f67a2c3025eda2cf9fc21a9399252a4ac9f81bd650722135c41f3fe511b5",
     "client/src/pages/control-room.tsx": "9c9d95edfaf28fefc74139c5c7b686b6f780d9b67a12a9b8c0a6665e7e3dc2d9",
-    "script/demo/smokeControlRoomJourney.ts": "2dea154bc7761ef7f96fb2fb537490ad65347885faf458269737b42b55da473a"
+    "script/demo/smokeControlRoomJourney.ts": "2dea154bc7761ef7f96fb2fb537490ad65347885faf458269737b42b55da473a",
+    "script/demo/smokeExecutionTimeCorrections.ts": "b89873ede71a575e4aaef295f0e1cb1c40366c57224ab19d093c7b887cf8d450",
+    "script/demo/smokeLiveExecutionJourney.ts": "80b73741767adfb3cc375828102c465dd178aab7ddb2491f9000ff9553b96b6a"
   },
   "limits": [
     "HTTP reconciliation verified; WebSocket delivery not certified",
@@ -60,6 +73,7 @@
   "artifacts": {
     "native": "docs/evidence/P6-CONTROL-ROOM-NATIVE.json",
     "browser": "docs/evidence/P6-CONTROL-ROOM-UI/browser-evidence.json",
-    "documentation": "docs/evidence/P6-CONTROL-ROOM-PURPOSEFUL-MODES.md"
+    "documentation": "docs/evidence/P6-CONTROL-ROOM-PURPOSEFUL-MODES.md",
+    "existingNativeJourneys": "docs/evidence/P6-CONTROL-ROOM-REGRESSIONS.json"
   }
 }

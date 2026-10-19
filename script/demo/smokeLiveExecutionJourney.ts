@@ -97,6 +97,7 @@ export async function runLiveExecutionJourney({ appUrl, url, anon, users, db, pl
     await operator.getByTestId(`agenda-task-${task.id}`).waitFor();
     await observer.goto(`${appUrl}/plans/${planId}/control-room`);
     await observer.getByTestId('control-room-pro').waitFor();
+    await observer.getByText('Inspección detallada por plató y espacio', { exact: true }).click();
     await viewer.goto(`${appUrl}/my-day?plan=${planId}`);
     await viewer.getByTestId(`agenda-task-${task.id}`).waitFor();
     assert.equal(await viewer.getByRole('button', { name: /^(Iniciar|Finalizar) / }).count(), 0);
@@ -158,6 +159,7 @@ export async function runLiveExecutionJourney({ appUrl, url, anon, users, db, pl
     const finishLatencyMs = Date.now() - finishedAt;
     await operator.reload(); await observer.reload();
     await operator.getByTestId(`agenda-task-${task.id}`).getByText('Completada', { exact: true }).waitFor();
+    await observer.getByText('Inspección detallada por plató y espacio', { exact: true }).click();
     await observer.getByTestId(`control-room-done-${task.id}`).waitFor();
     const result = (await db.query('SELECT * FROM daily_tasks WHERE id=$1', [task.id])).rows[0];
     assert.equal(result.status, 'done'); assert.ok(result.start_real_at); assert.ok(result.end_real_at);
