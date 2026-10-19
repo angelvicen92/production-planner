@@ -35,6 +35,8 @@ export async function runProductionScopeJourney({ appUrl, url, anon, users, db, 
     (SELECT jsonb_agg(s ORDER BY id) FROM assisted_planning_sessions s) sessions,
     (SELECT jsonb_agg(p ORDER BY id) FROM plans p) plans,
     (SELECT jsonb_agg(p ORDER BY id) FROM program_settings p) clock`)).rows;
+  // P7: nominal authority tests need an admissible clock on this historical day.
+  assert.equal((await request('admin','/api/program-settings','PATCH',{clockMode:'manual',simulatedTime:'12:00'})).status,200);
   const original=await planning();
   assert.equal(original[0].tasks.filter((t:any)=>Number(t.plan)===planId).length,266);
   const tasks=(await db.query(`SELECT DISTINCT ON(t.space_id) t.id,t.space_id,coalesce(t.zone_id,s.zone_id) zone_id FROM daily_tasks t

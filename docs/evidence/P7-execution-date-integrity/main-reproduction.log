@@ -1,0 +1,25 @@
+✖ P7: a manual clock advanced beyond the plan date rejects Start without writes (4423.419468ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4962.939844
+
+✖ failing tests:
+
+test at server/liveExecutionDateIntegrity.spec.ts:5:76
+✖ P7: a manual clock advanced beyond the plan date rejects Start without writes (4423.419468ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (/workspace/production-planner/server/liveExecutionDateIntegrity.spec.ts:25:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /EXECUTION_START_WORKDAY/,
+    operator: 'rejects',
+    diff: 'simple'
+  }

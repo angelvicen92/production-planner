@@ -12,6 +12,7 @@ async function database() {
     INSERT INTO user_entity_links VALUES('${actor(3)}','staff_person',5,true);
     INSERT INTO plan_staff_assignments VALUES(1,5,'space',NULL,10,'production');`);
   await db.exec(readFileSync('supabase/migrations/097_audited_execution_time_corrections.sql','utf8'));
+  await db.exec(readFileSync('supabase/migrations/098_execution_start_workday.sql','utf8'));
   return db;
 }
 type DB = Awaited<ReturnType<typeof database>>;
@@ -81,7 +82,7 @@ test('G0 revalidation: multi-scope production, editorial/viewer/revoked/other pl
   } finally {await db.close();}
 });
 
-test('required version/reason/offset, unsupported states, future/date/workday and atomic rollback',async()=>{
+test('required version/reason/offset, unsupported states, future/date/planning deviation and atomic rollback',async()=>{
   const db=await database();
   try {
     await assert.rejects(()=>correct(db,'start','2026-10-18T10:00:00Z',0),/EXECUTION_TRANSITION/);
@@ -94,7 +95,10 @@ test('required version/reason/offset, unsupported states, future/date/workday an
     await assert.rejects(()=>correct(db,'start',iso(start.start_real_at,3600),1),/EXECUTION_CHRONOLOGY/);
     await assert.rejects(()=>correct(db,'start',iso(start.start_real_at,-86400),1),/EXECUTION_WORKDAY/);
     await db.exec("UPDATE plans SET work_start='23:58',work_end='23:59'");
-    await assert.rejects(()=>correct(db,'start',value,1),/EXECUTION_WORKDAY/);
+    // Planning bounds do not prevent correcting a same-day real fact.
+    await db.exec('BEGIN');
+    await correct(db,'start',value,1);
+    await db.exec('ROLLBACK');
     await db.exec("UPDATE plans SET work_start='00:00',work_end='23:59'");
     const before=await state(db);
     await db.exec("CREATE FUNCTION fail_correction() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.event_kind='time_correction' THEN RAISE EXCEPTION 'Injected correction failure'; END IF; RETURN NEW; END;$$; CREATE TRIGGER fail_correction BEFORE INSERT ON task_status_events FOR EACH ROW EXECUTE FUNCTION fail_correction();");
@@ -124,11 +128,11 @@ test('pause boundaries remain facts; impossible chronology rejected before and a
   } finally {await db.close();}
 });
 
-test('Madrid DST: explicit fold instants, skipped hour and inclusive workday limits',async()=>{
+test('Madrid DST: explicit fold instants, offset normalization and same-day planning deviations',async()=>{
   const db=await database();
   try {
     await db.exec(`UPDATE plans SET date='2026-10-25',work_start='02:00',work_end='04:00';
-      UPDATE program_settings SET clock_mode='manual',simulated_time='04:00',simulated_set_at=clock_timestamp();`);
+      UPDATE program_settings SET clock_mode='manual',simulated_time='03:59',simulated_set_at=clock_timestamp();`);
     const start=await transition(db,'in_progress',0);
     await correct(db,'start','2026-10-25T02:00:00+02:00',1);
     const done=await transition(db,'done',2);
@@ -136,15 +140,24 @@ test('Madrid DST: explicit fold instants, skipped hour and inclusive workday lim
     assert.equal(executionDuration({status:'done',startRealAt:corrected.start_real_at,endRealAt:corrected.end_real_at},0),3600);
     assert.equal(corrected.start_real,'02:00');assert.equal(corrected.end_real,'02:00');
     await db.query('SELECT reset_task_execution(1,$1)',[actor(1)]);
-    await db.exec("UPDATE plans SET date='2026-03-29',work_start='03:00',work_end='04:00';UPDATE program_settings SET simulated_time='04:00',simulated_set_at=clock_timestamp();");
+    await db.exec("UPDATE plans SET date='2026-03-29',work_start='03:00',work_end='04:00';UPDATE program_settings SET simulated_time='03:59',simulated_set_at=clock_timestamp();");
     await transition(db,'in_progress',5);
-    // 02:30 +02:00 is 01:30 Madrid, outside the configured window; no invented gap time.
-    await assert.rejects(()=>correct(db,'start','2026-03-29T02:30:00+02:00',6),/EXECUTION_WORKDAY/);
+    // Explicit offset identifies 01:30 Madrid: a valid same-day early fact,
+    // not a nonexistent 02:30 Madrid or an expansion of planning availability.
+    await db.exec('BEGIN');
+    const early=await correct(db,'start','2026-03-29T02:30:00+02:00',6);
+    assert.equal(early.start_real,'01:30');
+    await db.exec('ROLLBACK');
     await correct(db,'start','2026-03-29T03:00:00+02:00',6);
     assert.ok(start&&done);
     await db.query('SELECT reset_task_execution(1,$1)',[actor(1)]);
     await db.exec("UPDATE program_settings SET simulated_time='02:30',simulated_set_at=clock_timestamp();");
+    // Before P7, Start silently normalized this nonexistent manual 02:30.
+    // Keep the historical negative correction case on a previously started run.
+    await assert.rejects(()=>transition(db,'in_progress',8),/EXECUTION_CLOCK_INVALID/);
+    await db.exec("UPDATE program_settings SET simulated_time='03:59',simulated_set_at=clock_timestamp();");
     await transition(db,'in_progress',8);
+    await db.exec("UPDATE program_settings SET simulated_time='02:30',simulated_set_at=clock_timestamp();");
     await assert.rejects(()=>correct(db,'start','2026-03-29T03:00:00+02:00',9),/EXECUTION_CLOCK_CHANGED/);
   } finally {await db.close();}
 });

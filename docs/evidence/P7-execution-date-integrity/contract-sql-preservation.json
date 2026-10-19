@@ -1,0 +1,9 @@
+{
+  "startBodyOutsideNewGuardByteIdenticalTo097": true,
+  "correctionBodyOutsideDateAuthorityByteIdenticalTo097": true,
+  "startNormalizedSha256": "785512f286ce294b1a88f587d22f290cee697356a667b6cfd0c6966113e664ca",
+  "correctionNormalizedSha256": "055c24a18bb022ee92de2a8960766b8049cca55613a8789f095557a36827c1e0",
+  "migration097Unchanged": true,
+  "engineAssistedStorageAndUIUnchanged": true,
+  "migration098Sha256": "56af8f2e4e58ff6451d2adf79035dbd9e5df539f94cc14e401fcc221615ddfbf"
+}

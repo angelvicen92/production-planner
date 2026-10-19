@@ -1,0 +1,279 @@
+{
+  "base": "c1b3305b792e75d1409740e2893b3fd137ea6933",
+  "branch": "codex/ops-p7-execution-date-integrity",
+  "nodeVersion": "v24.19.0",
+  "localGates": [
+    {
+      "name": "execution and authorization regression",
+      "command": "node --import tsx --test --test-concurrency=1 server/liveExecution.spec.ts server/liveExecutionDateIntegrity.spec.ts server/executionTimeCorrections.spec.ts client/src/lib/execution-precondition.test.ts client/src/lib/execution-time-correction.test.ts client/src/lib/my-day-temporal.test.ts server/incidents.spec.ts server/apiAuthorization.spec.ts server/assistedPlanningWorkflow.spec.ts",
+      "status": "PASS",
+      "tests": 61,
+      "pass": 61,
+      "fail": 0,
+      "evidence": "regression.log"
+    },
+    {
+      "name": "P7 isolated SQL cases",
+      "command": "node --import tsx --test --test-concurrency=1 server/liveExecutionDateIntegrity.spec.ts",
+      "status": "PASS",
+      "tests": 10,
+      "pass": 10,
+      "fail": 0,
+      "evidence": "date-integrity.log"
+    },
+    {
+      "name": "snapshot fidelity and existing read metrics",
+      "command": "node --import tsx --test --test-concurrency=1 server/assistedPlanningSnapshot.spec.ts server/assistedManualSnapshotFidelity.spec.ts client/src/lib/control-room-metrics.test.ts",
+      "status": "PASS",
+      "tests": 28,
+      "pass": 28,
+      "fail": 0,
+      "evidence": "preservation.log"
+    },
+    {
+      "name": "migration sequence tests",
+      "command": "node --test script/check-migration-sequence.test.mjs",
+      "status": "PASS",
+      "tests": 8,
+      "pass": 8,
+      "fail": 0,
+      "evidence": "migration-tests.log"
+    },
+    {
+      "name": "A2 isolated first-stage determinism",
+      "command": "node --import tsx --test --test-concurrency=1 server/benchmarks/runA2Assist8Evidence.spec.ts",
+      "status": "PASS",
+      "tests": 2,
+      "pass": 2,
+      "fail": 0,
+      "evidence": "a2-isolated.log"
+    },
+    {
+      "name": "TypeScript",
+      "command": "npm run check",
+      "status": "PASS",
+      "exitCode": 0,
+      "evidence": "check.log"
+    },
+    {
+      "name": "build",
+      "command": "npm run build",
+      "status": "PASS",
+      "exitCode": 0,
+      "evidence": "build.log"
+    },
+    {
+      "name": "migration ledger",
+      "command": "npm run check:migrations",
+      "status": "PASS",
+      "exitCode": 0,
+      "evidence": "migrations.log"
+    },
+    {
+      "name": "existing P3 browser gate",
+      "command": "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium node client/src/components/my-day/p3.browser.mjs",
+      "status": "PASS",
+      "exitCode": 0,
+      "evidence": "p3-browser.json"
+    },
+    {
+      "name": "P7 without connected credentials",
+      "command": "env -u SUPABASE_URL -u SUPABASE_ANON_KEY -u SUPABASE_SERVICE_ROLE_KEY -u VITE_SUPABASE_URL -u VITE_SUPABASE_ANON_KEY node --import tsx --test --test-concurrency=1 server/liveExecutionDateIntegrity.spec.ts",
+      "status": "PASS",
+      "tests": 10,
+      "pass": 10,
+      "fail": 0,
+      "exitCode": 0,
+      "evidence": "date-integrity-no-credentials.log"
+    },
+    {
+      "name": "integration TypeScript",
+      "command": "npx --no-install tsc -p script/demo/tsconfig.integration.json",
+      "status": "PASS",
+      "exitCode": 0,
+      "evidence": "integration-check.log"
+    }
+  ],
+  "nativeGates": {
+    "p7": {
+      "status": "PASS",
+      "postgresVersion": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+      "evidence": "native-p7.json",
+      "remoteWrites": 0
+    },
+    "g0": {
+      "status": "PASS",
+      "postgresVersion": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+      "evidence": "native-g0.json",
+      "remoteWrites": 0
+    },
+    "p2b-p3": {
+      "status": "PASS",
+      "postgresVersion": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+      "evidence": "native-p2b-p3.json",
+      "remoteWrites": 0
+    },
+    "p1": {
+      "status": "PASS",
+      "postgresVersion": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+      "evidence": "native-p1.json",
+      "remoteWrites": 0
+    }
+  },
+  "mainReproduction": {
+    "status": "EXPECTED_FAIL",
+    "exitCode": 1,
+    "error": "AssertionError: Missing expected rejection",
+    "ledger": "097",
+    "evidence": "main-reproduction.log",
+    "nativeBefore": 200,
+    "nativeAfter": 409
+  },
+  "initialConcurrentA2Run": {
+    "tests": 8,
+    "pass": 7,
+    "fail": 1,
+    "status": "FAIL",
+    "error": "second execution had no accepted Stage; fingerprints differed",
+    "evidence": "a2-contended.log",
+    "engineAndAssistedUnchanged": true
+  },
+  "sqlPreservation": {
+    "versionedFunctionOutsideNewGuard": "BYTE_IDENTICAL_TO_097",
+    "sha256": "785512f286ce294b1a88f587d22f290cee697356a667b6cfd0c6966113e664ca"
+  },
+  "migrationLedger093to098": [
+    {
+      "file": "093_live_task_execution.sql",
+      "sha256": "7a6fc40f1a353a3b8e6d4a7f7adaceeb0afcadd266ed82c4728b2fbc6c3fb341"
+    },
+    {
+      "file": "094_operational_incidents.sql",
+      "sha256": "1ac45fb1b56ce1ef552c4b19d0d3840c60d4b80b1ae187fc82124af8eb422918"
+    },
+    {
+      "file": "095_planning_header_notes.sql",
+      "sha256": "e0188833959b5bcd2d440635f5d8ecd14203a03cfde357c48c338b710ac6cb9f"
+    },
+    {
+      "file": "096_production_execution_scope.sql",
+      "sha256": "4c73025f63fd26c12752d7cc374062f373f67141ef6b5975c1a86c48e174de3a"
+    },
+    {
+      "file": "097_audited_execution_time_corrections.sql",
+      "sha256": "a2c679c1bb8170248f86737c97480551a05d8f3b297713ba0aa9d70d2759ee31"
+    },
+    {
+      "file": "098_execution_start_workday.sql",
+      "sha256": "ed511d2c18acb8f6dbfea1f5cf2cb526fc2f397d0d4b4c3f3417b75e650fcaf2"
+    }
+  ],
+  "acceptedSnapshot": {
+    "source": "script/demo/fixtures/a2-legacy-import.json.gz",
+    "sourceSha256": "7e71838142dcb8c6a43004058f14bad1be93f624005fcfc8c4fc5c4ad8863d72",
+    "planId": 27001,
+    "acceptedStage": 10,
+    "fingerprint": "a58fc840fa4b8d04049c96d8310eac6e5d4df66f08069d968fe7a5e0adf9e2dc",
+    "newSolverRun": false
+  },
+  "temporalIntegrity": {
+    "legacyStatus": 200,
+    "legacyMismatch": true,
+    "legacyOperationalAt": "2026-10-30T10:00:00.210Z",
+    "outcomes": [
+      {
+        "name": "manual advanced 25h after reset",
+        "status": 409
+      },
+      {
+        "name": "actual automatic clock on historical plan",
+        "status": 409
+      },
+      {
+        "name": "outside workday 08:59",
+        "status": 409
+      },
+      {
+        "name": "outside workday 21:01",
+        "status": 409
+      },
+      {
+        "name": "editorial remains forbidden",
+        "status": 403
+      },
+      {
+        "name": "viewer remains forbidden",
+        "status": 403
+      },
+      {
+        "name": "nominal production cannot bypass temporal guard",
+        "status": 409
+      }
+    ],
+    "startRace": [
+      200,
+      409
+    ],
+    "invalidRace": [
+      409,
+      409
+    ],
+    "uiWrites": [
+      {
+        "status": 409,
+        "body": {
+          "status": "in_progress",
+          "expectedStatus": "pending",
+          "expectedVersion": 7
+        }
+      },
+      {
+        "status": 200,
+        "body": {
+          "status": "in_progress",
+          "expectedStatus": "pending",
+          "expectedVersion": 7
+        }
+      },
+      {
+        "status": 200,
+        "body": {
+          "status": "done",
+          "expectedStatus": "in_progress",
+          "expectedVersion": 8
+        }
+      }
+    ],
+    "acceptedTaskCount": 266,
+    "preservedPlanning": true,
+    "planningSha256": "67512d61ac8286e48e6758441188c009388c8c50adf177f2b5ffe3dce4fee883",
+    "newSolverRun": false,
+    "remoteWrites": 0
+  },
+  "ci": {
+    "workflow": ".github/workflows/live-day-execution-ci.yml",
+    "newGate": "SQL Start workday integrity, clock races, real HTTP and unchanged Mi Día",
+    "timeoutChanged": false,
+    "resultLocation": "Pull request checks",
+    "initialHead": "26823124fb6a7d0f79658de194ad82329387de7c",
+    "initialFailure": {
+      "run": "https://github.com/angelvicen92/production-planner/actions/runs/39257079421",
+      "step": "focal tests",
+      "error": "Missing Supabase environment variables on server",
+      "fix": "Pure mapper test uses a deferred import and local fallback credentials; verified 10/10 with all five connection variables unset."
+    }
+  },
+  "limits": [
+    "Night/extraordinary windows have no new contract",
+    "Accepted 266-task snapshot preservation is not a new Full A2 solver run",
+    "Realtime/WebSocket and remote deployment excluded"
+  ],
+  "firstNativeAttempt": {
+    "sqlAndHttp": "PASS",
+    "ui": "page.goto /login exceeded default 30000 ms",
+    "retry": "PASS, same code and timeouts"
+  },
+  "remoteWrites": 0,
+  "merge": false,
+  "deployment": false
+}

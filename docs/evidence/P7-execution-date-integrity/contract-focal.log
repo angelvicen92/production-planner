@@ -1,0 +1,25 @@
+✔ start/end, successive corrections, immutable original audit, terminal duration and locks (5661.153103ms)
+✔ G0 revalidation: multi-scope production, editorial/viewer/revoked/other plan and direct RPC (3107.363313ms)
+✔ required version/reason/offset, unsupported states, future/date/planning deviation and atomic rollback (2750.726038ms)
+✔ pause boundaries remain facts; impossible chronology rejected before and after Finish (2810.175345ms)
+✔ Madrid DST: explicit fold instants, offset normalization and same-day planning deviations (3100.54116ms)
+✔ P7: a manual clock advanced beyond the plan date rejects Start without writes (4458.536923ms)
+✔ P7 same-day reality: early and late Starts preserve the real timestamp outside planning hours (2787.851374ms)
+✔ P7 same-day reality: legacy late Start and Finish can be corrected with immutable audit (2974.542415ms)
+✔ P7: Madrid date independent of planning hours, without changing the plan or clock (2853.452744ms)
+✔ P7: actual automatic clock rejects another day; fresh simulation resolves each plan date (2758.763275ms)
+✔ P7: Madrid DST manual gap/fold rejected, unambiguous bases on both transition days accepted (2703.204023ms)
+✔ P7: elapsed time follows the 23/25-hour Madrid calendar day, independently of session timezone (2550.718761ms)
+✔ P7: permissions, observed version, readiness and occupancy remain independent of time (2714.811193ms)
+✔ P7: existing runs can Finish/Interrupt/Resume/Cancel after the day; reset permits no invalid new Start (2687.290952ms)
+✔ P7: changed/reversed clocks retain their existing conflicts and reset remains available (3091.06987ms)
+✔ P7: replacement preserves signature/ACL and existing data; no retroactive validation (2840.35324ms)
+✔ P7: HTTP mapping distinguishes temporal, permission, concurrent and transient failures (233.235502ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 52736.768068
