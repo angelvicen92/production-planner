@@ -1,0 +1,103 @@
+{
+  "mode": "INTERCEPTED_HTTP_UI",
+  "checks": [
+    "Hero/agenda share form; seconds and Madrid independent of New York; required reason, no-op, double-submit, observed snapshot, 409 and explicit recovery",
+    "Completed end editable with canExecute=false; lazy history reopens with full corrections, original transitions excluded; history failure stays explicit",
+    "400/403/503/409 show no success; offline blocks writes without optimistic marks",
+    "Madrid DST gap/fold and missing day block saving; editorial/no authority and Viewer have no correction controls; 266 tasks retained"
+  ],
+  "writes": [
+    {
+      "body": {
+        "field": "start",
+        "realAt": "2026-10-18T07:59:07.000Z",
+        "reason": "Registro tardío",
+        "expectedVersion": 1
+      },
+      "taskId": 10001
+    },
+    {
+      "body": {
+        "field": "start",
+        "realAt": "2026-10-18T07:58:09.000Z",
+        "reason": "Revisión tras conflicto",
+        "expectedVersion": 3
+      },
+      "taskId": 10001
+    },
+    {
+      "body": {
+        "field": "end",
+        "realAt": "2026-10-18T08:07:09.000Z",
+        "reason": "Fin tardío",
+        "expectedVersion": 2
+      },
+      "taskId": 10002
+    },
+    {
+      "body": {
+        "field": "start",
+        "realAt": "2026-10-18T07:58:00.000Z",
+        "reason": "Rectificación sucesiva",
+        "expectedVersion": 4
+      },
+      "taskId": 10001
+    },
+    {
+      "body": {
+        "field": "start",
+        "realAt": "2026-10-18T07:57:00.000Z",
+        "reason": "Ensayo de error",
+        "expectedVersion": 5
+      },
+      "taskId": 10001
+    },
+    {
+      "body": {
+        "field": "start",
+        "realAt": "2026-10-18T07:57:00.000Z",
+        "reason": "Ensayo de error",
+        "expectedVersion": 5
+      },
+      "taskId": 10001
+    },
+    {
+      "body": {
+        "field": "start",
+        "realAt": "2026-10-18T07:57:00.000Z",
+        "reason": "Ensayo de error",
+        "expectedVersion": 5
+      },
+      "taskId": 10001
+    },
+    {
+      "body": {
+        "field": "start",
+        "realAt": "2026-10-18T07:57:00.000Z",
+        "reason": "Ensayo de error",
+        "expectedVersion": 5
+      },
+      "taskId": 10001
+    }
+  ],
+  "historyRequests": [
+    "/api/tasks/10001/execution-history",
+    "/api/tasks/10001/execution-history",
+    "/api/tasks/10001/execution-history"
+  ],
+  "screenshots": [
+    "form-mobile.png",
+    "history-tablet.png",
+    "offline-tablet.png"
+  ],
+  "errors": [],
+  "screenshotHashes": {
+    "form-mobile.png": "8f7c49108bb246f9d68969fdb0679e2827daaa9356db58200e0de05770bcb9d7",
+    "history-tablet.png": "aea0735185c2ec83348469f8e718eb1ffc398cb315c42355a03a502c1329a531",
+    "offline-tablet.png": "92a5827020d03ac5507f48b44eb4676e0b56b86d42bf4f49c185a4a728c55685"
+  },
+  "browserTimezone": "America/New_York",
+  "acceptedTaskCount": 266,
+  "remoteWrites": 0,
+  "nativeAuthRls": false
+}

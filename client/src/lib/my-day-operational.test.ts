@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { ExecutionContext } from '../../../shared/execution';
 import type { ExecutionTask } from './day-execution-view';
-import { dayGroups, lastOperationalTasks, myDayNeighbours, myDayScopeChoices, myDayTasks, taskZone } from './my-day-operational';
+import { dayGroups, myDayPanel, myDayPlanningOrder, myDayStatusTasks, type MyDayStatus, lastOperationalTasks, myDayNeighbours, myDayScopeChoices, myDayTasks, taskZone } from './my-day-operational';
 
 const task = (id: number, patch: Partial<ExecutionTask> = {}): ExecutionTask => ({ id, contestantId: 7, status: 'pending', startPlanned: '10:00', endPlanned: '10:15', ...patch });
 const context = (ids: number[], role: ExecutionContext['role'] = 'aux'): ExecutionContext => ({ role, hasScope: ids.length > 0, planningReady: true, planningState: 'accepted', draftPending: false, clock: { operationalAt: '2026-10-30T10:00:00Z', serverAt: '2026-10-30T10:00:00Z', mode: 'auto', revision: null }, tasks: [1, 2, 3, 4].map(taskId => ({ taskId, inScope: ids.includes(taskId), hasAuthority: role === 'aux' && ids.includes(taskId), canExecute: role === 'aux' && ids.includes(taskId), resources: [] })) });
@@ -95,4 +95,104 @@ test('same-name spaces in different zones have distinguishable focus labels', ()
   assert.equal(new Set(labels).size, 2);
   assert.ok(labels.some(label => label.includes('Ensayo') && label.includes('Plató 14')));
   assert.ok(labels.some(label => label.includes('Ensayo') && label.includes('Plató 15')));
+});
+
+// P4: full-date Madrid projection; exact boundary and plural slots.
+const date = '2026-10-30';
+const at = (time: string) => Date.parse(`${date}T${time}+01:00`);
+const simultaneous = [task(30, { startPlanned: '09:00', spaceId: 10, contestantId: 1 }), task(2, { startPlanned: '09:00', spaceId: 12, contestantId: 2 }), task(19, { startPlanned: '09:00', contestantId: 3 })];
+
+test('three simultaneous pending survive 08:59, exact 09:00, 09:00:01 and 09:01 regardless of permissions or input order', () => {
+  const ctx = context([]), input = Object.freeze(simultaneous.map(t => Object.freeze(t)));
+  const before = structuredClone({ input, ctx });
+  for (const time of ['08:59:00', '09:00:00']) {
+    const result = myDayPanel(input, date, at(time), ctx);
+    assert.deepEqual(result.late, []);
+    assert.deepEqual(result.upcoming?.tasks.map(t => t.id), [2, 19, 30]);
+  }
+  for (const [time, seconds] of [['09:00:01', 1], ['09:01:00', 60]] as const) {
+    const result = myDayPanel(input, date, at(time), ctx);
+    assert.deepEqual(result.late[0].tasks.map(t => t.id), [2, 19, 30]);
+    assert.equal(result.late[0].delaySeconds, seconds);
+    assert.equal(result.upcoming, null);
+  }
+  assert.deepEqual({ input, ctx }, before);
+});
+
+test('running, every overdue slot and first current/future slot coexist; stopped and done never become upcoming', () => {
+  const all = [...simultaneous, task(7, { status: 'in_progress' }), task(8, { status: 'in_progress' }), task(9, { startPlanned: '11:00' }), task(10, { startPlanned: '11:00' }), task(11, { startPlanned: '12:00' }), task(12, { status: 'done' }), task(13, { status: 'cancelled' }), task(14, { status: 'interrupted' }), task(15, { startPlanned: '08:00' })];
+  const result = myDayPanel(all.reverse(), date, at('09:01:00'), context([]));
+  assert.deepEqual(result.running.map(t => t.id), [7, 8]);
+  assert.deepEqual(result.late.map(slot => slot.tasks.map(t => t.id)), [[15], [2, 19, 30]]);
+  assert.deepEqual(result.upcoming?.tasks.map(t => t.id), [9, 10]);
+});
+
+test('missing date/schedule, other operational day, offline, unaccepted planning and missing clock authority never assert lateness', () => {
+  const ctx = context([]);
+  for (const [day, now, c, online] of [
+    ['', at('09:01:00'), ctx, true], ['2026-02-30', at('09:01:00'), ctx, true],
+    ['2026-10-29', at('09:01:00'), ctx, true], [date, NaN, ctx, true], [date, at('09:01:00'), undefined, true],
+    [date, at('09:01:00'), ctx, false], [date, at('09:01:00'), { ...ctx, planningReady: false }, true],
+    [date, at('09:01:00'), { ...ctx, draftPending: true }, true],
+    ...['operationalAt', 'serverAt'].flatMap(key => ['invalid', '2026-10-30T10:00:00'].map(value => [date, at('09:01:00'), { ...ctx, clock: { ...ctx.clock, [key]: value } }, true])),
+  ] as [string, number, ExecutionContext | undefined, boolean][]) {
+    const result = myDayPanel(simultaneous, day, now, c, online);
+    assert.equal(result.late.length, 0);
+    assert.equal(result.upcoming, null);
+    assert.equal(result.uncomparable, 3);
+  }
+  const result = myDayPanel([task(1, { startPlanned: null }), task(2, { startPlanned: 'bad' })], date, at('09:01:00'), ctx);
+  assert.equal(result.uncomparable, 2);
+  assert.deepEqual(result.late, []);
+});
+
+test('Madrid DST gap/fold remain uncomparable while normal winter/summer times compare correctly', () => {
+  for (const day of ['2026-03-29', '2026-10-25']) {
+    const result = myDayPanel([task(1, { startPlanned: '02:30' })], day, Date.parse(`${day}T04:00:00Z`), context([]));
+    assert.deepEqual(result.late, []);
+    assert.equal(result.upcoming, null);
+    assert.equal(result.uncomparable, 1);
+  }
+  for (const [day, utc] of [['2026-07-01', '07:00:01'], [date, '08:00:01']]) {
+    const ctx = { ...context([]), clock: { ...context([]).clock, mode: 'manual' as const } };
+    const result = myDayPanel(simultaneous, day, Date.parse(`${day}T${utc}Z`), ctx);
+    assert.equal(result.late[0].delaySeconds, 1);
+    assert.equal(result.late[0].tasks.length, 3);
+  }
+});
+
+test('planning order ignores actual start, puts missing schedule last and never mutates input', () => {
+  const all = Object.freeze([task(3, { startPlanned: null }), task(2, { startPlanned: '09:00' }), task(1, { startPlanned: '09:00', startRealAt: '2026-10-30T19:00:00Z' })]);
+  assert.deepEqual(myDayPlanningOrder(all, date).map(t => t.id), [1, 2, 3]);
+  assert.deepEqual(all.map(t => t.id), [3, 2, 1]);
+});
+
+test('all and four state filters preserve exact identities and counts can be taken before filtering', () => {
+  const all = [task(1), task(2, { status: 'in_progress' }), task(3, { status: 'done' }), task(4, { status: 'interrupted' }), task(5, { status: 'cancelled' })];
+  const expected = { all: [1, 2, 3, 4, 5], running: [2], pending: [1], done: [3], stopped: [4, 5] };
+  for (const [status, ids] of Object.entries(expected)) {
+    assert.deepEqual(myDayStatusTasks(all, status as MyDayStatus).map(t => t.id), ids);
+    assert.equal(all.length, 5);
+  }
+  assert.equal(dayGroups.at(-1)?.key, 'done');
+});
+
+test('global production/admin get visual locations without manufacturing nominal scope or authority', () => {
+  for (const role of ['production', 'admin'] as const) {
+    const ctx = context([], role), before = structuredClone(ctx);
+    const choices = myDayScopeChoices(tasks, ctx, spaces, new Map(), new Map());
+    assert.ok(choices.some(choice => choice.value === 'zone:20'));
+    assert.ok(choices.some(choice => choice.value === 'space:12'));
+    assert.deepEqual(myDayTasks(tasks, ctx, true, 'zone:20', spaces).map(t => t.id), [1, 2]);
+    assert.deepEqual(ctx, before);
+    assert.equal(ctx.hasScope, false);
+  }
+});
+
+test('nominal space scope cannot expand through zone focus, even when other tasks share its location', () => {
+  const ctx = context([1]);
+  assert.deepEqual(myDayTasks(tasks, ctx, true, 'zone:20', spaces).map(t => t.id), [1]);
+  assert.equal(myDayScopeChoices(tasks, ctx, spaces, new Map(), new Map()).some(c => c.value === 'space:11'), false);
+  assert.equal(myDayScopeChoices(tasks, ctx, spaces, new Map(), new Map(), false).some(c => c.value === 'space:11'), true);
+  assert.deepEqual(myDayStatusTasks(myDayTasks(tasks, ctx, true, 'zone:20', spaces), 'pending').map(t => t.id), [1]);
 });

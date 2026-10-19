@@ -1,15 +1,50 @@
 import type { ExecutionContext } from '../../../shared/execution';
 import type { ExecutionTask } from './day-execution-view';
 import { hhmmToMinutes } from './time';
+import { madridDate, plannedInstant } from './control-room-metrics';
 
 export type DaySpace = { spaceId: number; zoneId: number | null };
 export type ScopeChoice = { value: string; label: string };
 export const dayGroups = [
   { key: 'running', label: 'En curso', statuses: ['in_progress'] },
   { key: 'pending', label: 'Pendientes', statuses: ['pending'] },
-  { key: 'done', label: 'Completadas', statuses: ['done'] },
   { key: 'stopped', label: 'Interrumpidas / canceladas', statuses: ['interrupted', 'cancelled'] },
+  { key: 'done', label: 'Completadas', statuses: ['done'] },
 ] as const;
+export type MyDayStatus = 'all' | typeof dayGroups[number]['key'];
+
+export function myDayStatusTasks(tasks: readonly ExecutionTask[], status: MyDayStatus) {
+  const group = dayGroups.find(group => group.key === status);
+  return tasks.filter(task => !group || group.statuses.some(status => status === task.status));
+}
+
+/** Accepted placement order, independent of actual execution or permission. */
+export function myDayPlanningOrder(tasks: readonly ExecutionTask[], planDate: string) {
+  return tasks.map(task => ({ task, at: plannedInstant(planDate, task.startPlanned) ?? Infinity }))
+    .sort((a, b) => a.at - b.at || a.task.id - b.task.id).map(row => row.task);
+}
+
+export type MyDaySlot = { at: number; tasks: ExecutionTask[]; delaySeconds: number };
+/** UI projection only. Missing temporal authority never implies lateness. */
+export function myDayPanel(tasks: readonly ExecutionTask[], planDate: string, nowMs: number, context?: ExecutionContext, online = true) {
+  const ordered = myDayPlanningOrder(tasks, planDate);
+  const running = ordered.filter(task => task.status === 'in_progress');
+  const pending = ordered.filter(task => task.status === 'pending');
+  const fullTimestamp = (value: string) => /T.*(?:Z|[+-]\d{2}:\d{2})$/i.test(value) && Number.isFinite(Date.parse(value));
+  const comparable = Boolean(online && context?.planningReady && !context.draftPending &&
+    fullTimestamp(context.clock.operationalAt) && fullTimestamp(context.clock.serverAt) && madridDate(nowMs) === planDate);
+  const late: MyDaySlot[] = [], upcoming: MyDaySlot[] = [];
+  let uncomparable = 0;
+  for (const task of pending) {
+    const at = comparable ? plannedInstant(planDate, task.startPlanned) : null;
+    if (at === null) { uncomparable++; continue; }
+    const slots = at < nowMs ? late : upcoming;
+    const slot = slots.at(-1);
+    if (slot?.at === at) slot.tasks.push(task);
+    else slots.push({ at, tasks: [task], delaySeconds: Math.max(0, Math.ceil((nowMs - at) / 1000)) });
+  }
+  return { running, late, upcoming: upcoming[0] ?? null, uncomparable };
+}
 
 export function taskZone(task: ExecutionTask, daySpaces: readonly DaySpace[]) {
   return task.zoneId ?? daySpaces.find(space => Number(space.spaceId) === Number(task.spaceId))?.zoneId ?? null;
@@ -23,11 +58,10 @@ export function myDayTasks(tasks: readonly ExecutionTask[], context: ExecutionCo
     (focus === 'all' || (focus.startsWith('space:') ? Number(task.spaceId) === Number(focus.slice(6)) : taskZone(task, daySpaces) === Number(focus.slice(5)))));
 }
 
-export function myDayScopeChoices(tasks: readonly ExecutionTask[], context: ExecutionContext | undefined, daySpaces: readonly DaySpace[], zones: ReadonlyMap<number, { name: string }>, spaces: ReadonlyMap<number, { name: string }>) {
+export function myDayScopeChoices(tasks: readonly ExecutionTask[], context: ExecutionContext | undefined, daySpaces: readonly DaySpace[], zones: ReadonlyMap<number, { name: string }>, spaces: ReadonlyMap<number, { name: string }>, onlyMine = true) {
   const choices = new Map<string, ScopeChoice>();
-  const scope = new Set(context?.tasks.filter(task => task.inScope).map(task => task.taskId));
-  for (const task of tasks) {
-    if (!scope.has(task.id)) continue;
+  if (!context || (!context.hasScope && !['production', 'admin'].includes(context.role ?? ''))) return [];
+  for (const task of myDayTasks(tasks, context, onlyMine, 'all', daySpaces)) {
     const zoneId = taskZone(task, daySpaces);
     if (zoneId) choices.set(`zone:${zoneId}`, { value: `zone:${zoneId}`, label: `Plató / zona · ${zones.get(zoneId)?.name ?? 'Nombre no disponible'}` });
     if (task.spaceId) choices.set(`space:${task.spaceId}`, { value: `space:${task.spaceId}`, label: `Espacio · ${spaces.get(task.spaceId)?.name ?? 'Nombre no disponible'}${zoneId ? ` · ${zones.get(zoneId)?.name ?? 'Zona sin nombre'}` : ''}` });

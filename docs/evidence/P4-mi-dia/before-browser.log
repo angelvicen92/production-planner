@@ -1,0 +1,4 @@
+Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+PASS Baseline f1f085f reproduces one of three 09:00 pending activities, with a next label after its start; running hides all pending from the hero

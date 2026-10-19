@@ -9,6 +9,7 @@ on:
       - 'client/src/lib/api.ts'
       - 'client/src/lib/execution-precondition*'
       - 'client/src/lib/execution-time-correction*'
+      - 'client/src/lib/my-day-operational*'
       - 'client/src/components/my-day/**'
       - 'script/demo/smokeExecutionTimeCorrections.ts'
       - 'server/incidents*'
@@ -55,11 +56,14 @@ jobs:
       - run: npm ci
       - run: node --import tsx --test --test-concurrency=1 server/liveExecution.spec.ts server/executionTimeCorrections.spec.ts client/src/lib/execution-precondition.test.ts server/incidents.spec.ts server/apiAuthorization.spec.ts server/assistedPlanningWorkflow.spec.ts
       - run: node --import tsx --test client/src/lib/execution-time-correction.test.ts client/src/lib/my-day-temporal.test.ts
+      - run: node --import tsx --test client/src/lib/my-day-operational.test.ts client/src/components/my-day/activity-information.test.tsx
       - name: Nominal Production authority, incidents and accepted A2 preservation
         run: node --import tsx script/demo/smokeA2Integration.ts work/production-scope --historical-topology --production-scope
       - run: npx --no-install playwright install --with-deps chromium
       - name: Mi Día correction form, errors, Madrid DST and mobile/tablet
         run: node client/src/components/my-day/p3.browser.mjs
+      - name: Mi Día simultaneous matrix, real filters, scope and mobile/tablet
+        run: node client/src/components/my-day/p4.browser.mjs
       - name: Audited time corrections, concurrency, G0 and existing read views
         run: node --import tsx script/demo/smokeA2Integration.ts work/time-corrections --historical-topology --time-corrections
       - name: Accepted snapshot, native ledger, real Auth/HTTP and two browsers
@@ -75,6 +79,8 @@ jobs:
             work/time-corrections/p3-*.png
             work/p3-browser/browser.json
             work/p3-browser/*.png
+            work/p4-browser/browser.json
+            work/p4-browser/*.png
             work/production-scope/integration.json
             work/live-day-execution/integration.json
             work/live-day-execution/mi-dia-*.png
