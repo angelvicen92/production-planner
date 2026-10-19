@@ -12,6 +12,7 @@ async function database() {
     INSERT INTO user_entity_links VALUES('${actor(3)}','staff_person',5,true);
     INSERT INTO plan_staff_assignments VALUES(1,5,'space',NULL,10,'production');`);
   await db.exec(readFileSync('supabase/migrations/097_audited_execution_time_corrections.sql','utf8'));
+  await db.exec(readFileSync('supabase/migrations/098_execution_start_workday.sql','utf8'));
   return db;
 }
 type DB = Awaited<ReturnType<typeof database>>;
@@ -128,7 +129,7 @@ test('Madrid DST: explicit fold instants, skipped hour and inclusive workday lim
   const db=await database();
   try {
     await db.exec(`UPDATE plans SET date='2026-10-25',work_start='02:00',work_end='04:00';
-      UPDATE program_settings SET clock_mode='manual',simulated_time='04:00',simulated_set_at=clock_timestamp();`);
+      UPDATE program_settings SET clock_mode='manual',simulated_time='03:59',simulated_set_at=clock_timestamp();`);
     const start=await transition(db,'in_progress',0);
     await correct(db,'start','2026-10-25T02:00:00+02:00',1);
     const done=await transition(db,'done',2);
@@ -136,7 +137,7 @@ test('Madrid DST: explicit fold instants, skipped hour and inclusive workday lim
     assert.equal(executionDuration({status:'done',startRealAt:corrected.start_real_at,endRealAt:corrected.end_real_at},0),3600);
     assert.equal(corrected.start_real,'02:00');assert.equal(corrected.end_real,'02:00');
     await db.query('SELECT reset_task_execution(1,$1)',[actor(1)]);
-    await db.exec("UPDATE plans SET date='2026-03-29',work_start='03:00',work_end='04:00';UPDATE program_settings SET simulated_time='04:00',simulated_set_at=clock_timestamp();");
+    await db.exec("UPDATE plans SET date='2026-03-29',work_start='03:00',work_end='04:00';UPDATE program_settings SET simulated_time='03:59',simulated_set_at=clock_timestamp();");
     await transition(db,'in_progress',5);
     // 02:30 +02:00 is 01:30 Madrid, outside the configured window; no invented gap time.
     await assert.rejects(()=>correct(db,'start','2026-03-29T02:30:00+02:00',6),/EXECUTION_WORKDAY/);
@@ -144,7 +145,12 @@ test('Madrid DST: explicit fold instants, skipped hour and inclusive workday lim
     assert.ok(start&&done);
     await db.query('SELECT reset_task_execution(1,$1)',[actor(1)]);
     await db.exec("UPDATE program_settings SET simulated_time='02:30',simulated_set_at=clock_timestamp();");
+    // Before P7, Start silently normalized this nonexistent manual 02:30.
+    // Keep the historical negative correction case on a previously started run.
+    await assert.rejects(()=>transition(db,'in_progress',8),/EXECUTION_START_WORKDAY/);
+    await db.exec("UPDATE program_settings SET simulated_time='03:59',simulated_set_at=clock_timestamp();");
     await transition(db,'in_progress',8);
+    await db.exec("UPDATE program_settings SET simulated_time='02:30',simulated_set_at=clock_timestamp();");
     await assert.rejects(()=>correct(db,'start','2026-03-29T03:00:00+02:00',9),/EXECUTION_CLOCK_CHANGED/);
   } finally {await db.close();}
 });

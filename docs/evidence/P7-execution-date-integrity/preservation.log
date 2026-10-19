@@ -1,0 +1,37 @@
+{"benchmark":"control-room-266","iterations":10,"meanMs":10.956115599999976}
+✔ accepted A2: all 266 obligations reconcile, unknown/unplanned/cancelled never disappear; no mutation (538.888318ms)
+✔ before/during/after derives from confirmed statuses, never clock alone (6.568273ms)
+✔ real timestamps, second precision, pauses and placement duration (not template defaults) (0.859069ms)
+✔ legacy/incomplete timestamps, changed clocks and unavailable execution cannot assert deviations (0.840835ms)
+✔ Madrid day, winter/summer and DST ambiguity: no unrelated-date delay (8.653333ms)
+✔ incidents: open includes escalated, critical excludes resolved, failed query is unknown, day isolation (25.022251ms)
+✔ all studios stay visible; simultaneous spaces and an incident do not invent a stop cause (42.200502ms)
+✔ scope: aux gets scoped obligations/spaces; completing the scope cannot finish the global day (13.102864ms)
+✔ unknown relationships and unplanned obligations remain explicit, never synthetic saturation (5.186354ms)
+✔ configured alert threshold is a reproducible attention threshold, no critical label for delay (5.595271ms)
+✔ representative read projection performance, no solver call (121.433112ms)
+✔ A2 causal replay distinguishes complete S10, complete C04 Draft and truncated Draft (1797.43804ms)
+✔ isolated omissions causally explain all seven anonymous legacy families (878.823143ms)
+✔ task move, native Draft Undo/Redo and reset preserve all 18 preparations and exact fingerprints (10639.757773ms)
+✔ block edit, block Undo/Redo and reset preserve the complete auxiliary contract (201.774258ms)
+✔ native patch rejects omission, mutation or insertion of any structural field atomically (148.607229ms)
+✔ real anonymous transport conflict blocks recording; rejecting/resetting leaves accepted S10 and daily tasks identical (449.070163ms)
+✔ complete planning snapshots are canonical, placement-sensitive and include unplaced tasks (84.847551ms)
+✔ optional itinerant assignment is fingerprinted while legacy rows retain their exact identity (7.284796ms)
+✔ explicit physical assignments are canonical while absent legacy assignments remain omitted (20.61245ms)
+✔ planning block fingerprints canonicalize block order while preserving member order (384.696546ms)
+✔ execution changes are excluded and source input remains mutable/unmodified (383.772898ms)
+✔ empty and omitted PlanningBlocks preserve the legacy blockless identity (497.647403ms)
+✔ persisted JSON object-key ordering preserves meals, preparations, blocks and the established fingerprint (11.297249ms)
+✔ operational meals are canonical, deterministic, and legacy identity remains unchanged (18.175609ms)
+✔ setup preparations are canonical while absent and empty values preserve the legacy fingerprint (183.17682ms)
+✔ round preparations are canonical, fingerprinted, replayable, and legacy-compatible (392.284236ms)
+✔ manual rebuild preserves structural presence/order and leaves the fingerprint contract unchanged (440.52076ms)
+ℹ tests 28
+ℹ suites 0
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 35622.74475

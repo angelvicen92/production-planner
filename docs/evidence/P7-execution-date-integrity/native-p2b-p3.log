@@ -1,0 +1,11 @@
+PASS entire native application migration ledger
+PASS real password login for five Auth identities
+PASS historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import
+PASS native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved
+PASS real storage/input adapter canon after GET day; no legacy breaks
+PASS P2B native Start/end, successive terminal corrections, complete original audit and correction/Finish races
+PASS P2B native G0 multiple scopes, denials/revocation under lock, pause chronology and complete rollback
+PASS P3 native UI: running start, terminal start/end, five immutable corrections, two-browser 409 with observed version, explicit recovery and reload/history/Control Room concordance
+PASS P2B real Mi Día and Control Room reload corrected timestamps/duration; all 266 placements, Stages and locks preserved
+PASS other disposable days remain literal during accepted-snapshot execution
+{"status":"PASS","evidence":"/workspace/production-planner/work/p7/p2b-p3/integration.json","remoteWrites":0}

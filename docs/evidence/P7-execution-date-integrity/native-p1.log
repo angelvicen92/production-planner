@@ -1,0 +1,17 @@
+PASS entire native application migration ledger
+PASS real password login for five Auth identities
+PASS historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import
+PASS native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved
+PASS real storage/input adapter canon after GET day; no legacy breaks
+PASS real HTTP anonymous/no-role/viewer/unlinked aux denied before writes
+PASS aux scoped assignment accepted; unrelated task and other plan denied
+PASS real HTTP event and lock failures leave task/history/protections unchanged
+PASS native simultaneous Start/Finish each commit once; server clock and audited reset
+PASS admin HTTP enables the existing simulated clock; viewer cannot alter it
+PASS multiple simultaneous tasks are both visible; viewer has no execution actions
+PASS day workspace hides execution and reset actions without task authority
+PASS day workspace real UI: scoped aux Start/Interrupt/Resume/Finish and Production confirmed reset; planned material unchanged
+PASS day workspace real Roles UI: save/reload Production and Editorial, then verify both effective names in accepted Planning headers
+PASS two independent real browsers: mobile Start -> Control Room; Finish -> persisted reload; viewer/offline/direct RPC denied
+PASS other disposable days remain literal during accepted-snapshot execution
+{"status":"PASS","evidence":"/workspace/production-planner/work/p7/p1/integration.json","remoteWrites":0}

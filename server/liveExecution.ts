@@ -26,6 +26,7 @@ export function executionError(error: any): { status: number; message: string } 
   if (code.includes('EXECUTION_FORBIDDEN')) return { status: 403, message: 'No tienes autoridad operativa sobre esta actividad.' };
   if (code.includes('EXECUTION_NOT_FOUND')) return { status: 404, message: 'La actividad ya no está disponible.' };
   if (code.includes('EXECUTION_INVALID')) return { status: 400, message: 'Indica una hora con fecha y zona horaria y un motivo de 1 a 240 caracteres.' };
+  if (code.includes('EXECUTION_START_WORKDAY')) return { status: 409, message: 'La hora operativa no corresponde a la jornada del planning.' };
   if (/EXECUTION_(CHRONOLOGY|WORKDAY|STALE|TRANSITION|OCCUPIED|CLOCK_CHANGED|CLOCK_REVERSED|PLANNING_REQUIRED|LOCK_CONFLICT)/.test(code)) {
     const messages: Record<string, string> = {
       CHRONOLOGY: 'La hora no es compatible con el inicio, fin, pausas o reloj operativo.',
