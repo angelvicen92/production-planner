@@ -26,11 +26,12 @@ export function executionError(error: any): { status: number; message: string } 
   if (code.includes('EXECUTION_FORBIDDEN')) return { status: 403, message: 'No tienes autoridad operativa sobre esta actividad.' };
   if (code.includes('EXECUTION_NOT_FOUND')) return { status: 404, message: 'La actividad ya no está disponible.' };
   if (code.includes('EXECUTION_INVALID')) return { status: 400, message: 'Indica una hora con fecha y zona horaria y un motivo de 1 a 240 caracteres.' };
+  if (code.includes('EXECUTION_CLOCK_INVALID')) return { status: 409, message: 'El reloj manual no determina una hora válida y unívoca en Madrid. Producción debe revisarlo.' };
   if (code.includes('EXECUTION_START_WORKDAY')) return { status: 409, message: 'La hora operativa no corresponde a la jornada del planning.' };
   if (/EXECUTION_(CHRONOLOGY|WORKDAY|STALE|TRANSITION|OCCUPIED|CLOCK_CHANGED|CLOCK_REVERSED|PLANNING_REQUIRED|LOCK_CONFLICT)/.test(code)) {
     const messages: Record<string, string> = {
       CHRONOLOGY: 'La hora no es compatible con el inicio, fin, pausas o reloj operativo.',
-      WORKDAY: 'La hora debe pertenecer a la fecha y los límites de la jornada.',
+      WORKDAY: 'La hora debe pertenecer a la fecha de Madrid del planning.',
       STALE: 'La actividad cambió en otra sesión. Actualiza la agenda antes de continuar.',
       TRANSITION: 'Esta acción no corresponde al estado actual de la actividad.',
       OCCUPIED: 'La persona o el espacio ya tiene otra actividad en curso.',

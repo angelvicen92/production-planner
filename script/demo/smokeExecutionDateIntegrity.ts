@@ -64,7 +64,31 @@ export async function runExecutionDateIntegrity({ appUrl, url, users, db, planId
 
   assert.equal((await request('admin', '/api/program-settings', 'PATCH', { clockMode: 'auto' })).status, 200);
   await deny('actual automatic clock on historical plan');
-  for (const time of ['08:59','21:01']) { await manual(time); await deny('outside workday ' + time); }
+  const deviations: { time: string; start: number; correction: number; finish: number; endCorrection: number }[] = [];
+  for (const time of ['08:59','21:10']) {
+    await manual(time);
+    const start = await status('in_progress'); assert.equal(start.status,200);
+    const started = await current(); assert.equal(started.start_real,time);
+    const locks = (await db.query('SELECT * FROM locks ORDER BY id')).rows;
+    const correction = async (field: string, at: string) => request('production',`/api/tasks/${task.id}/real-time`,'PATCH',{
+      field,realAt:at,expectedVersion:(await current()).execution_version,reason:'Hecho real fuera del horario previsto' });
+    const correctedStart = await correction('start',new Date(started.start_real_at.getTime()-60000).toISOString());
+    assert.equal(correctedStart.status,200);
+    const finish = await status('done'); assert.equal(finish.status,200);
+    const endCorrection = await correction('end',new Date(started.start_real_at.getTime()-30000).toISOString());
+    assert.equal(endCorrection.status,200);
+    assert.deepEqual((await db.query('SELECT * FROM locks ORDER BY id')).rows,locks);
+    const history = await request('production',`/api/tasks/${task.id}/execution-history`); assert.equal(history.status,200);
+    const events = history.body.events;
+    const originalStart = events.findLast((e: any)=>e.event_kind==='transition'&&e.previous_status==='pending'&&e.status==='in_progress');
+    assert.equal(Date.parse(originalStart.task_snapshot.start_real_at),started.start_real_at.getTime());
+    assert.ok(events.some((e:any)=>e.event_kind==='time_correction'&&e.reason==='Hecho real fuera del horario previsto'&&e.previous_snapshot&&e.old_value&&e.new_value));
+    const before = await material();
+    const outsideDate = await correction('start',new Date(started.start_real_at.getTime()-86400000).toISOString());
+    assert.equal(outsideDate.status,409); assert.deepEqual(await material(),before);
+    deviations.push({time,start:start.status,correction:correctedStart.status,finish:finish.status,endCorrection:endCorrection.status});
+    await reset();
+  }
   await manual('10:00', '25 hours');
   const staff = (await db.query("INSERT INTO staff_people(name,role_type) VALUES('P7 nominal operator','production') RETURNING id")).rows[0];
   await db.query("INSERT INTO user_entity_links(user_id,entity_type,entity_id) VALUES($1,'staff_person',$2)", [users.aux.id, staff.id]);
@@ -85,7 +109,7 @@ export async function runExecutionDateIntegrity({ appUrl, url, users, db, planId
   assert.equal((await db.query('SELECT count(*)::int n FROM task_status_events WHERE task_id=$1 AND execution_version=$2', [task.id,started.execution_version])).rows[0].n, 1);
   assert.equal((await db.query('SELECT count(*)::int n FROM locks WHERE task_id=$1 AND execution_owned', [task.id])).rows[0].n, 1);
   await reset();
-  pass('P7 real HTTP: auto/day mismatch, bounds, G0 editorial/viewer, nominal production, invalid/valid concurrent Starts and one version/event/lock');
+  pass('P7 real HTTP: auto/day mismatch, same-day early/late Start/correction/Finish/history, G0 editorial/viewer, nominal production, invalid/valid concurrent Starts and one version/event/lock');
 
   // The same SQL under the actual automatic clock: all mutations roll back.
   await db.query('BEGIN');
@@ -98,7 +122,7 @@ export async function runExecutionDateIntegrity({ appUrl, url, users, db, planId
   // A Start waiting on settings must validate the revision/time that wins the lock.
   const blocker = new pg.Client((db as any).connectionParameters); await blocker.connect();
   try {
-    for (const [time, expected] of [['08:00',409],['10:00',200]] as const) {
+    for (const [time, age, expected] of [['10:00','25 hours',409],['08:00','0 seconds',200],['21:10','0 seconds',200]] as const) {
       await manual();
       await blocker.query('BEGIN'); await blocker.query('SELECT 1 FROM program_settings WHERE id=1 FOR UPDATE');
       const before = await material(), pending = status('in_progress');
@@ -107,7 +131,7 @@ export async function runExecutionDateIntegrity({ appUrl, url, users, db, planId
         while (!(await db.query("SELECT 1 FROM pg_stat_activity WHERE wait_event_type='Lock' AND query LIKE '%execute_task_transition%' AND pid<>pg_backend_pid()")).rows.length) {
           assert.ok(Date.now() < deadline, 'Start reached native settings lock'); await new Promise(r => setTimeout(r,25));
         }
-        await blocker.query("UPDATE program_settings SET simulated_time=$1,simulated_set_at=clock_timestamp() WHERE id=1", [time]);
+        await blocker.query("UPDATE program_settings SET simulated_time=$1,simulated_set_at=clock_timestamp()-$2::interval WHERE id=1", [time,age]);
         await blocker.query('COMMIT');
         const result = await pending; assert.equal(result.status, expected);
         if (expected === 409) assert.deepEqual(await material(), before);
@@ -145,12 +169,35 @@ export async function runExecutionDateIntegrity({ appUrl, url, users, db, planId
     const before = await material(); await click('Iniciar',409);
     await page.getByText('La hora operativa no corresponde a la jornada del planning.', { exact: true }).first().waitFor();
     assert.deepEqual(await material(), before); await page.screenshot({ path: directory + '/p7-start-rejected.png' });
-    await manual(); await page.reload(); await click('Iniciar',200); await click('Finalizar',200);
+    // Same UI and observed-version path now records a real late execution.
+    await manual('21:10'); await page.reload(); await click('Iniciar',200);
+    const uiStart = await current(); assert.equal(uiStart.start_real,'21:10');
+    const correctUI = async (field: string, time: string) => {
+      await agenda.getByRole('button',{name:'Corregir hora',exact:true}).click();
+      const dialog = page.getByRole('dialog'); await dialog.waitFor();
+      await dialog.getByLabel('Hora que quieres corregir').selectOption(field);
+      await dialog.getByLabel('Nueva hora real (con segundos)').fill(time);
+      await dialog.getByLabel('Motivo obligatorio').fill('Desviación real del horario desde Mi Día');
+      const observed = (await current()).execution_version;
+      const response = page.waitForResponse(r=>r.url().endsWith(`/api/tasks/${task.id}/real-time`)&&r.request().method()==='PATCH');
+      await dialog.getByRole('button',{name:'Confirmar rectificación',exact:true}).click();
+      const r = await response; assert.equal(r.status(),200); assert.equal(r.request().postDataJSON().expectedVersion,observed);
+      uiWrites.push({status:r.status(),body:r.request().postDataJSON()}); await dialog.waitFor({state:'hidden'});
+    };
+    await correctUI('start','21:09:00'); await click('Finalizar',200); await correctUI('end','21:09:30');
+    await page.reload();
+    const info = page.getByTestId(`activity-information-${task.id}`); await info.waitFor();
+    assert.ok((await info.textContent())?.includes('21:09'));
+    await agenda.getByRole('button',{name:'Corregir hora',exact:true}).click();
+    await page.getByRole('button',{name:'Ver historial',exact:true}).click();
+    const uiEvents = (await db.query("SELECT * FROM task_status_events WHERE task_id=$1 AND event_kind='time_correction' ORDER BY id",[task.id])).rows;
+    await page.getByTestId(`time-correction-event-${uiEvents.at(-1).id}`).waitFor();
+    await page.screenshot({path:directory+'/p7-late-correction-history.png'});
     assert.deepEqual(errors, []);
   } finally { await browser.close(); }
   assert.deepEqual(await planning(), original);
-  pass('P7 real Mi Día -> PATCH status -> versioned SQL: rejected Start displays the domain message; valid Start/Finish work; all 266 placements and Stages remain literal');
-  return { legacyStatus: old.status, legacyMismatch: mismatch, legacyOperationalAt: legacy.start_real_at, outcomes,
+  pass('P7 real Mi Día -> PATCH status -> versioned SQL: rejected Start displays the domain message; late Start/Finish and both audited corrections/history work; all 266 placements and Stages remain literal');
+  return { legacyStatus: old.status, legacyMismatch: mismatch, legacyOperationalAt: legacy.start_real_at, outcomes, sameDayDeviations:deviations,
     startRace: race.map(r => r.status).sort(), invalidRace: invalidRace.map(r => r.status), uiWrites,
     acceptedTaskCount:266, preservedPlanning:true, planningSha256:createHash('sha256').update(JSON.stringify(original)).digest('hex'), newSolverRun:false, remoteWrites:0 };
 }

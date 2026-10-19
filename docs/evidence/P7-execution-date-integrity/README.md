@@ -1,93 +1,80 @@
-# P7 — Integridad temporal de nuevos Starts
+# P7 — Fecha de ejecución y fidelidad del registro real
 
-Base y rama verificadas: `c1b3305b792e75d1409740e2893b3fd137ea6933`, `codex/ops-p7-execution-date-integrity`. Fuentes consultadas: 00 v2.13 (autoridad), 01 v5.2 (estados y permisos), 04 v2.7 (snapshot diario y ventana máxima de jornada), 05 v2.7 (gates y determinismo), 07 v2.2 (método causal). Evidence previa: EJEC-01/P1, G0, P2B y P3.
+PR #1155, base `c1b3305b792e75d1409740e2893b3fd137ea6933`, rama `codex/ops-p7-execution-date-integrity`. Esta revisión corrige el contrato del head auditado `3c3b51439cb9681a6d9449647248088ea1199549`; los resultados anteriores se conservan como históricos y no acreditan el contrato actual.
 
-## Defecto y reproducción anterior al cambio
+## Causa y cambio requerido
 
-`execution_clock(plan)` obtiene el reloj del servidor. En modo manual resuelve `plans.date + simulated_time` en Madrid y suma el tiempo físico transcurrido desde `simulated_set_at`. Por tanto, un reloj fijado a las 10:00 hace 25 horas ya pertenece a otro día. La transición versionada de 097 adquiría locks y comprobaba autorización, versión, estado, readiness, ocupación, revisión y cronología, pero no contrastaba la fecha/hora resultante con el plan.
+- **X:** un Start real a las **19:10**, fecha del plan **31/10/2026**, horario previsto **08:00–19:00**, era rechazado. También fallaba rectificar un inicio tardío preexistente.
+- **Y:** 098 reutilizaba `work_start/work_end` como límites de ejecución; `correct_task_execution_time` de 097 imponía la misma restricción.
+- **Z:** producción no podía reflejar una desviación real del mismo día y Start/rectificación quedaban incoherentes.
+- **W:** separar la fecha de pertenencia de la ejecución de la ventana usada para planificar.
+- **M:** el mismo día de Madrid admite hechos reales tempranos o tardíos y su corrección auditada; otro día sigue rechazándose. No se recorta, desplaza ni sustituye el timestamp real.
 
-Se añadió primero el test SQL `P7: a manual clock advanced beyond the plan date rejects Start without writes` sobre 097, antes de crear 098. **Rojo observado: `AssertionError: Missing expected rejection`**; no fue un rechazo por permisos ni un fallo de conexión. Véase [main-reproduction.log](main-reproduction.log).
+La **Fuente 01 v5.2**, §11, §4.2 y «Día en vivo exitoso», establece «Start fija el inicio real», «La ejecución real es la verdad operativa» y «Los retrasos se registran». La **Fuente 04 v2.7**, Parte III §6–7 y disponibilidad temporal de recursos, define la ventana del día, su snapshot y la intersección de disponibilidades para **planificar**. Esa ventana permanece intacta: no se amplía la disponibilidad del motor al admitir un hecho ejecutado fuera de previsión. Se consultaron también 00 v2.13, 05 v2.7 y 07 v2.2; no se modifican normas oficiales.
 
-El ensayo nativo reproduce además el cuerpo exacto de la función de 097 en PostgreSQL descartable, sin alterar el resto del ledger: HTTP responde **200**, persiste el inicio y SQL confirma que su fecha de Madrid es distinta de `plans.date`. Reinstala 098, verifica igualdad literal de datos antes/después de la migración, termina esa ejecución antigua y hace reset. El siguiente Start con el mismo reloj fuera de fecha devuelve **409**, sin modificar tarea, versión, eventos ni locks. Este antes/después queda automatizado en `smokeExecutionDateIntegrity.ts`.
+Se distinguen cuatro autoridades: horario previsto y disponibilidad para planificar; fecha de jornada (`plans.date` en Madrid); instante real del reloj servidor e historial inmutable; desviación, observable porque se conservan simultáneamente los tiempos planificados y reales. No se añade una regla de búsqueda ni una vista nueva para compensar el registro.
 
-## Recorrido productivo observado
+## Prueba roja antes de modificar 098
 
-`Mi Día / Iniciar` → `useUpdateTaskStatus` con `expectedStatus/expectedVersion` observados → `PATCH /api/tasks/:id/status` → middleware de autenticación/autorización → `storage.updateTaskStatus` → `server/liveExecution.executeTask` → PostgREST `execute_task_transition(bigint,uuid,text,text,integer)` → PostgreSQL.
+Se añadieron primero dos tests positivos al código auditado. Ambos fallaron por la causa esperada, sin error de conexión ni autorización:
 
-El actor procede de la sesión HTTP; el cliente no aporta el instante de inicio a la RPC. El ensayo envía también los campos horarios legacy: no permiten rescatar un Start inadmisible. En Chromium real, con zona del dispositivo `America/New_York`, la UI existente permite enviar el Start y muestra la respuesta del servidor. Rechazo **409**, posterior Start válido **200**, Finish **200**. Las dos peticiones de Start observan la misma versión porque el rechazo no la incrementa. Véase [p7-start-rejected.png](p7-start-rejected.png).
+1. Start a las 19:10 del mismo día: `EXECUTION_START_WORKDAY`.
+2. Rectificación a las 19:05 de un inicio a las 19:10 ya admitido por 097: `EXECUTION_WORKDAY`.
 
-## Delta SQL y decisión temporal
+[contract-red-current-098.log](contract-red-current-098.log) conserva el resultado. El ensayo nativo mantiene también el antes/después del defecto original: la función exacta de 097 admite un Start con reloj manual avanzado 25 horas y fecha equivocada (HTTP 200); 098 conserva esos datos y permite terminar/resetear el registro antiguo, pero rechaza el siguiente Start (409, sin escrituras).
 
-098 contiene exclusivamente `CREATE OR REPLACE` de la firma versionada de `execute_task_transition`. Conserva defaults, OID/ACL, invoker, `search_path`, orden de locks y todo el cuerpo anterior fuera de la guarda. No incorpora otra firma ni cambia grants, RLS o tablas.
+## Delta productivo
 
-Después de los locks efectivos de plan → sesión activa → tarea → settings, y antes de cualquier escritura, sólo para `pending → in_progress`:
+`098_execution_start_workday.sql` contiene `CREATE OR REPLACE` de **las dos firmas existentes**. 097 permanece idéntica a la base y no se aplica 098 a Supabase real.
 
-1. Lee fecha y límites diarios de `plans`, ya bloqueado.
-2. Usa `operationalAt` de `execution_clock`, leído bajo el lock de settings.
-3. Compara fecha y hora en **Europe/Madrid**, con los límites inclusivos de 097.
-4. En modo manual aplica el mismo round-trip y detección de fold/gap que la corrección auditada. Una base HH:mm ambigua o inexistente no se normaliza silenciosamente, aunque después hayan transcurrido horas.
-5. Rechaza con `EXECUTION_START_WORKDAY` → `executionError` → HTTP **409**: «La hora operativa no corresponde a la jornada del planning.» Permisos siguen siendo 403, versión stale 409 y fallo de persistencia 503.
+En `execute_task_transition(bigint,uuid,text,text,integer)`, únicamente `pending → in_progress` compara `operationalAt` con `plans.date` en **Europe/Madrid**, después de locks y antes de cualquier escritura. No consulta `work_start/work_end`. Conserva autorización/G0, expectedStatus/expectedVersion, estados, readiness, ocupación de persona/espacio, modo/revisión y cronología. El modo manual conserva el round-trip y detección del fold/gap: una base HH:mm sin instante unívoco se rechaza aunque haya transcurrido tiempo desde su fijación. Una base unívoca sí puede avanzar a cualquiera de los dos instantes reales del fold.
 
-No se exige que un plan simulado sea el día físico actual. Un reloj manual recién fijado se ancla por contrato al día de cada plan; varias jornadas siguen siendo independientes. Tampoco se usa un umbral fijo de 24 horas: las pruebas verifican días de Madrid de **23 y 25 horas**, dos instantes reales del fold alcanzados desde una base unívoca y una fecha UTC distinta que pertenece al día correcto en Madrid. El reloj automático debe corresponder al día real de Madrid del plan.
+En `correct_task_execution_time(bigint,uuid,text,text,text,integer)`, se retira únicamente la barrera de horas previstas y se mantiene la fecha Madrid del inicio y del fin, si existe. Continúan actor y ámbito, versión observada, motivo, offset explícito, estado, límite de futuro, cronología y límites de pausas del run actual, locks intactos, incremento de versión y evento inmutable con valor anterior/nuevo y snapshots. Los instantes explícitos del fold siguen siendo distintos; un offset identifica un instante que se convierte a Madrid, sin inventar la hora inexistente del gap.
 
-## Continuidad de las demás operaciones
+La comparación de cuerpos acredita igualdad por bytes fuera de estas autoridades temporales ([contract-sql-preservation.json](contract-sql-preservation.json)). Los tests comparan OID, argumentos/defaults y ACL de ambas funciones antes/después de reemplazarlas; `anon/authenticated` no pueden ejecutar las RPC. No se añaden grants, firmas alternativas, tablas, columnas ni backfills.
 
-| Operación | Al finalizar/cambiar de fecha | Si cambia revisión/modo o se invierte el reloj |
-|---|---|---|
-| Nuevo Start desde pending | Nueva guarda temporal; límites inclusivos de 097 | Mantiene además las precondiciones existentes |
-| Finish | Puede cerrar una ejecución ya iniciada fuera de la ventana/día | Sigue devolviendo CLOCK_CHANGED/CLOCK_REVERSED cuando corresponda |
-| Interrupt | Conserva la ejecución y registra la pausa fuera de ventana/día | Conserva los conflictos de reloj existentes |
-| Resume desde interrupted | No es un nuevo Start; mantiene cronología y ocupación | Conserva revisión/modo y rechazo de inversión |
-| Cancel desde pending | Conserva su contrato; no requiere fecha de nuevo Start | Mantiene reglas previas |
-| Cancel desde interrupted | Conserva acumulación de pausa y cierre | Mantiene revisión/modo y cronología |
-| Reset | Disponible para Admin/Producción, incluso para datos antiguos; conserva auditoría | No requiere recuperar el reloj anterior; el siguiente Start vuelve a validar |
-| Corrección auditada P2B/P3 | Conserva sus límites y cronología de 097 | Conserva sus propios conflictos de reloj y control de versión |
+`server/liveExecution.ts` distingue mensajes de fecha equivocada (409), reloj manual inválido/DST (409), reloj modificado (409), revisión de tarea obsoleta (409), cronología incompatible (409), permisos (403) y persistencia fallida (503). Un Start tardío del día correcto responde **200**.
 
-La migración no revalida ni reescribe tareas antiguas. Se prueba una ejecución fuera de día creada con 097 y terminada después de aplicar 098. No se amplían las políticas de cierre, interrupción, cancelación o rectificación. Una ejecución terminada fuera de ventana puede seguir encontrando las restricciones previas de corrección; P7 no introduce esa política.
+## Continuidad y frontera de medianoche
 
-Ventanas nulas, invertidas o de duración cero no tienen un Start admisible, como en 097. Las Fuentes no autorizan aquí un contrato nocturno o excepcional: no se transforma `fin <= inicio` en cruce de medianoche, no se amplía la ventana y no se crea activación humana de jornada. Esos casos quedan aislados mediante rechazo y tests.
+| Operación | Contrato actual |
+|---|---|
+| Nuevo Start | Fecha de Madrid del plan; puede ser anterior/posterior al horario previsto |
+| Finish / Interrupt / Resume / Cancel | Cuerpo previo intacto; permite continuidad de registros existentes fuera de horario/día, sujeto a revisión y cronología |
+| Reset | Contrato previo intacto, auditoría y retirada exclusiva del lock de ejecución; el nuevo Start revalida la fecha |
+| Corrección de inicio/fin | Mismo día Madrid, incluso fuera de horario; conserva cronología, pausas, futuro, versión, actor y motivo |
+| Historial | Eventos originales inmutables; la rectificación añade evento y conserva snapshots anterior/nuevo |
 
-## Expectativas históricas corregidas, sin eliminar pruebas
+No se infiere una jornada nocturna de `20:00–04:00`, ni de límites nulos/invertidos. Las horas de planificación no deciden la fecha del registro: un hecho del día siguiente no se convierte en parte del anterior. Un Start de otro día se rechaza incluso con esos límites. La política anterior de Finish permite cerrar un registro existente tras medianoche; esta revisión no amplía la rectificación a fechas distintas. Un hecho **enteramente del mismo día** puede iniciarse, terminarse, rectificarse y leerse en el historial sin la antigua incoherencia.
 
-- P1 hacía un Start automático sobre la fecha histórica del snapshot A2 y esperaba 200; ese era precisamente el comportamiento defectuoso. El recorrido positivo configura ahora por la API existente un reloj manual válido y contrasta los timestamps de Start contra el reloj operativo del servidor. Sigue comprobando carreras, fallos de persistencia, dos navegadores, reset, permisos y preservación. P7 cubre separadamente automático real correcto/incorrecto.
-- G0 configura de igual forma un reloj manual válido antes de capturar su baseline: su prueba sigue aislando permisos y preserva literalmente planes, Stages y reloj durante las operaciones de autorización.
-- El test DST de correcciones iniciaba en `04:00` con límite `04:00`, aunque el reloj ya había sumado fracciones de segundo y quedaba fuera. El inicio usa `03:59`; se mantienen las pruebas de corrección y se prueban por separado los extremos exactos y un microsegundo fuera del intervalo.
-- El mismo test iniciaba usando el gap manual `02:30` del 29 de marzo: ahora exige rechazo del nuevo Start. Conserva su rechazo histórico de corrección sobre una ejecución previamente iniciada de forma válida, tras cambiar a ese reloj inválido.
+El reloj manual se ancla al día de cada plan conforme a `execution_clock`, no a la fecha física de fijación. Se prueban días de 23/25 horas y zona de sesión/dispositivo distinta; no se sustituye el calendario por un umbral fijo de 24 horas.
 
-## Validación y alcance de la Evidence
+## Recorrido real y validación
 
-Resultados exactos y comandos en [validation.json](validation.json); ensayos públicos nativos y logs adyacentes. Entorno local: Node 24.19.0, PostgreSQL 17.11, imágenes fijadas por digest del runner existente, Chromium del sistema. CI conserva Node 20 y sus timeouts anteriores.
+`Mi Día / Iniciar` → versión/estado observados → `PATCH /api/tasks/:id/status` → actor autenticado → `storage.updateTaskStatus` → `liveExecution.executeTask` → PostgREST → RPC versionada. La hora del cliente no es autoridad. La rectificación usa `PATCH /api/tasks/:id/real-time`; el historial usa la API existente.
 
-Los JSON conservan checks, resultados, hashes de fuentes y ledger, y resumen el tráfico RPC por ruta/método/status para evitar duplicar cada petición. El runner y los artefactos de CI conservan su traza completa.
+El ensayo descartable aplica **todo el ledger hasta 098**, PostgreSQL 17, Auth con contraseña, HTTP, PostgREST y Chromium. Verifica Starts temprano/tardío, correcciones de inicio/fin tras Finish, historial original, rechazo sin cambios materiales por otra fecha, G0, carreras entre dos actores y Start en espera del lock del reloj. El reloj ganador puede rechazar por día distinto o admitir una hora temprana/tardía del mismo día. Cada carrera válida confirma un único incremento/evento/lock.
 
-La CI del primer head detectó una dependencia accidental del test puro de `executionError` respecto a las variables Supabase del entorno local. Se cambió a importación diferida con valores locales de prueba cuando faltan credenciales; no se cambió lógica productiva. La suite P7 se repitió con las cinco variables Supabase/Vite eliminadas: **10/10 PASS**, sin conexiones remotas ([log](date-integrity-no-credentials.log)). También pasa `tsc -p script/demo/tsconfig.integration.json`.
+En Mi Día real, Chromium usa `America/New_York`: observa 409 por otra fecha con versión intacta; registra Start **21:10**, rectifica inicio **21:09:00**, finaliza y rectifica fin **21:09:30**, recarga y abre el historial. Se comprueban timestamps y versiones enviados. Capturas: [rechazo](contract-start-rejected.png) e [historial tardío](contract-late-correction-history.png). No se modifican componentes de Mi Día ni Control Room/P6.
 
-El ledger nativo completo se aplica desde cero, incluidos 093 → 094 → 095 → 096 → 097 → 098. No se saltan migraciones históricas. El ensayo P7 reconstituye adicionalmente la función anterior y aplica 098 sobre datos reales ya iniciados para observar la continuidad.
+Resultados exactos, comandos, hashes y límites en [validation.json](validation.json). Los reportes nativos actuales llevan prefijo `contract-`. Los antiguos `native-*.json`, logs sin ese prefijo y [audit-3c3b514-validation.json](audit-3c3b514-validation.json) son Evidence histórica de la iteración auditada; sus expectativas de ventana **han sido sustituidas** por esta revisión.
 
-Los extremos exactos y DST se prueban en PostgreSQL/PGlite con instantes controlados; el ensayo Auth/HTTP usa `execution_clock` real. Para probar automático positivo sobre el snapshot histórico, una transacción local cambia temporalmente la fecha/ventana del fixture, ejecuta la RPC y hace **ROLLBACK**. No persiste cambios de planning ni altera el reloj productivo.
+El snapshot aceptado sigue siendo una copia versionada de **266 obligaciones y S0–S10**, fingerprint `a58fc840fa4b8d04049c96d8310eac6e5d4df66f08069d968fe7a5e0adf9e2dc`. El ensayo compara literalmente placements, planes, sesiones, Stages y otras jornadas. Esta preservación no se presenta como una nueva generación Full A2; Planner Engine CI ejecuta por separado la generación y determinismo. Motor, Assisted, storage, límites y presupuestos de búsqueda no cambian.
 
-El A2 de ejecución es una **copia aceptada** del fixture versionado: 266 obligaciones, S0–S10, fingerprint `a58fc840fa4b8d04049c96d8310eac6e5d4df66f08069d968fe7a5e0adf9e2dc`. Se comparan literalmente todos los placements, Stages, sesiones y planes, además de las otras jornadas. Eso acredita preservación; no se presenta como una nueva generación Full A2. La regresión de primer Stage ejecuta por separado dos recorridos productivos y compara fingerprints deterministas.
+Los ajustes históricos de P1/G0 para fijar por API un reloj manual válido siguen siendo necesarios: un Start automático sobre el snapshot histórico debe rechazarse por otra fecha. En los tests de 097, la antigua expectativa de rechazar una corrección por horario se sustituye por aceptación auditada; se conservan los negativos de fecha/cronología/DST y se añade la comprobación del instante Madrid real cuando se aporta offset.
 
-El intento de primer Stage concurrente con los gates nativos falló: 7/8 tests, segunda ejecución sin Stage aceptado y fingerprint distinto ([log](a2-contended.log), 542,299 s para el test). La repetición aislada **sin cambios de código, límites ni timeout pasó 2/2**, incluidos ambos recorridos y la igualdad de fingerprints ([log](a2-isolated.log)). Motor, servicios Assisted, storage y benchmark permanecen idénticos por bytes a la base. La ejecución SQL no participa en ese benchmark en memoria. Se conserva el fallo observado; no se atribuye una causa exacta de parada que el log no detalla ni se modifica el planificador para ocultarlo.
-
-Un primer intento nativo pasó SQL/HTTP y agotó los 30 segundos de navegación inicial mientras se ejecutaban otros gates. El reintento con el mismo código pasó. No se incrementó ningún timeout. No se publican logs privados ni credenciales del ensayo.
-
-No hay cambios de componentes de Mi Día/Control Room, ORC, Assisted ni snapshots del producto. No se ejecutan migraciones contra Supabase real. Realtime/WebSocket, despliegue real y adopción del catálogo conectado quedan fuera de esta unidad. Sin merge ni despliegue.
+No hay activación humana de jornada, merge, publicación Replit, despliegue ni migración remota. Realtime/WebSocket y ejecución publicada quedan fuera del ensayo local.
 
 ## Reproducir
 
 ```sh
-npm run check:migrations
-node --test script/check-migration-sequence.test.mjs
-node --import tsx --test --test-concurrency=1 server/liveExecutionDateIntegrity.spec.ts server/liveExecution.spec.ts server/executionTimeCorrections.spec.ts server/incidents.spec.ts server/apiAuthorization.spec.ts client/src/lib/execution-precondition.test.ts client/src/lib/execution-time-correction.test.ts client/src/lib/my-day-temporal.test.ts server/assistedPlanningWorkflow.spec.ts
-node --import tsx --test --test-concurrency=1 server/assistedPlanningSnapshot.spec.ts server/assistedManualSnapshotFidelity.spec.ts client/src/lib/control-room-metrics.test.ts
-node --import tsx --test --test-concurrency=1 server/benchmarks/runA2Assist8Evidence.spec.ts engine/planner-next/benchmarks/canonicalFullA2EngineInput.spec.ts
+node --import tsx --test --test-concurrency=1 server/liveExecutionDateIntegrity.spec.ts server/executionTimeCorrections.spec.ts
 npm run check
 npm run build
-node --import tsx script/demo/smokeA2Integration.ts work/p7-native --historical-topology --execution-date-integrity
-node --import tsx script/demo/smokeA2Integration.ts work/p7-g0 --historical-topology --production-scope
-node --import tsx script/demo/smokeA2Integration.ts work/p7-p2b-p3 --historical-topology --time-corrections
-node --import tsx script/demo/smokeA2Integration.ts work/p7-p1 --historical-topology --live-execution-snapshot
+npm run check:migrations
+npx --no-install tsc -p script/demo/tsconfig.integration.json
+PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium node --import tsx script/demo/smokeA2Integration.ts work/p7-contract/native --historical-topology --execution-date-integrity
+PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium node --import tsx script/demo/smokeA2Integration.ts work/p7-contract/p2b-p3 --historical-topology --time-corrections
 ```
 
-`PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium` permite usar Chromium del sistema. El runner sólo admite servicios propios en loopback y los elimina al terminar. `Live day execution` ejecuta la prueba nueva junto a sus gates existentes y publica JSON/captura del rechazo.
+El runner solo admite servicios propios en loopback y los elimina al terminar. `Live day execution` ejecuta el gate P7 junto a G0, P2B/P3, P1 y sus gates visuales existentes, sin aumentar timeouts.

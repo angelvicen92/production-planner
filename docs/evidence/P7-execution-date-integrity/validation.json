@@ -1,34 +1,45 @@
 {
   "base": "c1b3305b792e75d1409740e2893b3fd137ea6933",
+  "auditedHead": "3c3b51439cb9681a6d9449647248088ea1199549",
   "branch": "codex/ops-p7-execution-date-integrity",
-  "nodeVersion": "v24.19.0",
+  "previousIterationEvidence": "audit-3c3b514-validation.json",
+  "contract": "Real Start and audited start/end corrections are constrained by Madrid plan date, not planning hours",
+  "reproduction": {
+    "status": "EXPECTED_FAIL",
+    "beforeCode": "audited 098",
+    "failures": [
+      "EXECUTION_START_WORKDAY for same-day 19:10 Start with planned end 19:00",
+      "EXECUTION_WORKDAY for correcting a legacy same-day late Start"
+    ],
+    "evidence": "contract-red-current-098.log"
+  },
   "localGates": [
     {
-      "name": "execution and authorization regression",
+      "name": "execution/authorization regression",
       "command": "node --import tsx --test --test-concurrency=1 server/liveExecution.spec.ts server/liveExecutionDateIntegrity.spec.ts server/executionTimeCorrections.spec.ts client/src/lib/execution-precondition.test.ts client/src/lib/execution-time-correction.test.ts client/src/lib/my-day-temporal.test.ts server/incidents.spec.ts server/apiAuthorization.spec.ts server/assistedPlanningWorkflow.spec.ts",
       "status": "PASS",
-      "tests": 61,
-      "pass": 61,
+      "tests": 63,
+      "pass": 63,
       "fail": 0,
-      "evidence": "regression.log"
+      "evidence": "contract-regression.log"
     },
     {
-      "name": "P7 isolated SQL cases",
-      "command": "node --import tsx --test --test-concurrency=1 server/liveExecutionDateIntegrity.spec.ts",
+      "name": "focal SQL and audited corrections",
+      "command": "node --import tsx --test --test-concurrency=1 server/liveExecutionDateIntegrity.spec.ts server/executionTimeCorrections.spec.ts",
       "status": "PASS",
-      "tests": 10,
-      "pass": 10,
+      "tests": 17,
+      "pass": 17,
       "fail": 0,
-      "evidence": "date-integrity.log"
+      "evidence": "contract-focal.log"
     },
     {
-      "name": "snapshot fidelity and existing read metrics",
+      "name": "snapshot fidelity and existing metrics",
       "command": "node --import tsx --test --test-concurrency=1 server/assistedPlanningSnapshot.spec.ts server/assistedManualSnapshotFidelity.spec.ts client/src/lib/control-room-metrics.test.ts",
       "status": "PASS",
       "tests": 28,
       "pass": 28,
       "fail": 0,
-      "evidence": "preservation.log"
+      "evidence": "contract-preservation.log"
     },
     {
       "name": "migration sequence tests",
@@ -37,110 +48,176 @@
       "tests": 8,
       "pass": 8,
       "fail": 0,
-      "evidence": "migration-tests.log"
-    },
-    {
-      "name": "A2 isolated first-stage determinism",
-      "command": "node --import tsx --test --test-concurrency=1 server/benchmarks/runA2Assist8Evidence.spec.ts",
-      "status": "PASS",
-      "tests": 2,
-      "pass": 2,
-      "fail": 0,
-      "evidence": "a2-isolated.log"
+      "evidence": "contract-migration-tests.log"
     },
     {
       "name": "TypeScript",
       "command": "npm run check",
       "status": "PASS",
       "exitCode": 0,
-      "evidence": "check.log"
+      "evidence": "contract-check.log"
     },
     {
       "name": "build",
       "command": "npm run build",
       "status": "PASS",
       "exitCode": 0,
-      "evidence": "build.log"
+      "evidence": "contract-build.log"
     },
     {
       "name": "migration ledger",
       "command": "npm run check:migrations",
       "status": "PASS",
       "exitCode": 0,
-      "evidence": "migrations.log"
-    },
-    {
-      "name": "existing P3 browser gate",
-      "command": "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium node client/src/components/my-day/p3.browser.mjs",
-      "status": "PASS",
-      "exitCode": 0,
-      "evidence": "p3-browser.json"
-    },
-    {
-      "name": "P7 without connected credentials",
-      "command": "env -u SUPABASE_URL -u SUPABASE_ANON_KEY -u SUPABASE_SERVICE_ROLE_KEY -u VITE_SUPABASE_URL -u VITE_SUPABASE_ANON_KEY node --import tsx --test --test-concurrency=1 server/liveExecutionDateIntegrity.spec.ts",
-      "status": "PASS",
-      "tests": 10,
-      "pass": 10,
-      "fail": 0,
-      "exitCode": 0,
-      "evidence": "date-integrity-no-credentials.log"
+      "evidence": "contract-migrations.log"
     },
     {
       "name": "integration TypeScript",
       "command": "npx --no-install tsc -p script/demo/tsconfig.integration.json",
       "status": "PASS",
       "exitCode": 0,
-      "evidence": "integration-check.log"
+      "evidence": "contract-integration-check.log"
     }
   ],
   "nativeGates": {
     "p7": {
       "status": "PASS",
       "postgresVersion": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
-      "evidence": "native-p7.json",
-      "remoteWrites": 0
-    },
-    "g0": {
-      "status": "PASS",
-      "postgresVersion": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
-      "evidence": "native-g0.json",
+      "command": "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium node --import tsx script/demo/smokeA2Integration.ts work/p7-contract/native --historical-topology --execution-date-integrity",
+      "evidence": "contract-native-p7.json",
       "remoteWrites": 0
     },
     "p2b-p3": {
       "status": "PASS",
       "postgresVersion": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
-      "evidence": "native-p2b-p3.json",
-      "remoteWrites": 0
-    },
-    "p1": {
-      "status": "PASS",
-      "postgresVersion": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
-      "evidence": "native-p1.json",
+      "command": "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium node --import tsx script/demo/smokeA2Integration.ts work/p7-contract/p2b-p3 --historical-topology --time-corrections",
+      "evidence": "contract-native-p2b-p3.json",
       "remoteWrites": 0
     }
   },
-  "mainReproduction": {
-    "status": "EXPECTED_FAIL",
-    "exitCode": 1,
-    "error": "AssertionError: Missing expected rejection",
-    "ledger": "097",
-    "evidence": "main-reproduction.log",
-    "nativeBefore": 200,
-    "nativeAfter": 409
-  },
-  "initialConcurrentA2Run": {
-    "tests": 8,
-    "pass": 7,
-    "fail": 1,
-    "status": "FAIL",
-    "error": "second execution had no accepted Stage; fingerprints differed",
-    "evidence": "a2-contended.log",
-    "engineAndAssistedUnchanged": true
-  },
   "sqlPreservation": {
-    "versionedFunctionOutsideNewGuard": "BYTE_IDENTICAL_TO_097",
-    "sha256": "785512f286ce294b1a88f587d22f290cee697356a667b6cfd0c6966113e664ca"
+    "startBodyOutsideNewGuardByteIdenticalTo097": true,
+    "correctionBodyOutsideDateAuthorityByteIdenticalTo097": true,
+    "startNormalizedSha256": "785512f286ce294b1a88f587d22f290cee697356a667b6cfd0c6966113e664ca",
+    "correctionNormalizedSha256": "055c24a18bb022ee92de2a8960766b8049cca55613a8789f095557a36827c1e0",
+    "migration097Unchanged": true,
+    "engineAssistedStorageAndUIUnchanged": true,
+    "migration098Sha256": "56af8f2e4e58ff6451d2adf79035dbd9e5df539f94cc14e401fcc221615ddfbf"
+  },
+  "acceptedSnapshot": {
+    "source": "script/demo/fixtures/a2-legacy-import.json.gz",
+    "sourceSha256": "7e71838142dcb8c6a43004058f14bad1be93f624005fcfc8c4fc5c4ad8863d72",
+    "planId": 27001,
+    "acceptedStage": 10,
+    "fingerprint": "a58fc840fa4b8d04049c96d8310eac6e5d4df66f08069d968fe7a5e0adf9e2dc",
+    "newSolverRun": false
+  },
+  "historicalPreservation": {
+    "oldPlanId": 27001,
+    "oldObligations": 266,
+    "oldStages": 11,
+    "otherObligations": 333,
+    "newDaySeedPlacements": 0
+  },
+  "temporalIntegrity": {
+    "legacyStatus": 200,
+    "legacyMismatch": true,
+    "legacyOperationalAt": "2026-10-30T10:00:00.380Z",
+    "outcomes": [
+      {
+        "name": "manual advanced 25h after reset",
+        "status": 409
+      },
+      {
+        "name": "actual automatic clock on historical plan",
+        "status": 409
+      },
+      {
+        "name": "editorial remains forbidden",
+        "status": 403
+      },
+      {
+        "name": "viewer remains forbidden",
+        "status": 403
+      },
+      {
+        "name": "nominal production cannot bypass temporal guard",
+        "status": 409
+      }
+    ],
+    "sameDayDeviations": [
+      {
+        "time": "08:59",
+        "start": 200,
+        "correction": 200,
+        "finish": 200,
+        "endCorrection": 200
+      },
+      {
+        "time": "21:10",
+        "start": 200,
+        "correction": 200,
+        "finish": 200,
+        "endCorrection": 200
+      }
+    ],
+    "startRace": [
+      200,
+      409
+    ],
+    "invalidRace": [
+      409,
+      409
+    ],
+    "uiWrites": [
+      {
+        "status": 409,
+        "body": {
+          "status": "in_progress",
+          "expectedStatus": "pending",
+          "expectedVersion": 19
+        }
+      },
+      {
+        "status": 200,
+        "body": {
+          "status": "in_progress",
+          "expectedStatus": "pending",
+          "expectedVersion": 19
+        }
+      },
+      {
+        "status": 200,
+        "body": {
+          "field": "start",
+          "realAt": "2026-10-29T20:09:00.000Z",
+          "reason": "Desviación real del horario desde Mi Día",
+          "expectedVersion": 20
+        }
+      },
+      {
+        "status": 200,
+        "body": {
+          "status": "done",
+          "expectedStatus": "in_progress",
+          "expectedVersion": 21
+        }
+      },
+      {
+        "status": 200,
+        "body": {
+          "field": "end",
+          "realAt": "2026-10-29T20:09:30.000Z",
+          "reason": "Desviación real del horario desde Mi Día",
+          "expectedVersion": 22
+        }
+      }
+    ],
+    "acceptedTaskCount": 266,
+    "preservedPlanning": true,
+    "planningSha256": "a2df965efccbb87863fd6bd05cb073b820d30fde9425707ca50af52c0f02198d",
+    "newSolverRun": false,
+    "remoteWrites": 0
   },
   "migrationLedger093to098": [
     {
@@ -165,114 +242,22 @@
     },
     {
       "file": "098_execution_start_workday.sql",
-      "sha256": "ed511d2c18acb8f6dbfea1f5cf2cb526fc2f397d0d4b4c3f3417b75e650fcaf2"
+      "sha256": "56af8f2e4e58ff6451d2adf79035dbd9e5df539f94cc14e401fcc221615ddfbf"
     }
   ],
-  "acceptedSnapshot": {
-    "source": "script/demo/fixtures/a2-legacy-import.json.gz",
-    "sourceSha256": "7e71838142dcb8c6a43004058f14bad1be93f624005fcfc8c4fc5c4ad8863d72",
-    "planId": 27001,
-    "acceptedStage": 10,
-    "fingerprint": "a58fc840fa4b8d04049c96d8310eac6e5d4df66f08069d968fe7a5e0adf9e2dc",
-    "newSolverRun": false
-  },
-  "temporalIntegrity": {
-    "legacyStatus": 200,
-    "legacyMismatch": true,
-    "legacyOperationalAt": "2026-10-30T10:00:00.210Z",
-    "outcomes": [
-      {
-        "name": "manual advanced 25h after reset",
-        "status": 409
-      },
-      {
-        "name": "actual automatic clock on historical plan",
-        "status": 409
-      },
-      {
-        "name": "outside workday 08:59",
-        "status": 409
-      },
-      {
-        "name": "outside workday 21:01",
-        "status": 409
-      },
-      {
-        "name": "editorial remains forbidden",
-        "status": 403
-      },
-      {
-        "name": "viewer remains forbidden",
-        "status": 403
-      },
-      {
-        "name": "nominal production cannot bypass temporal guard",
-        "status": 409
-      }
-    ],
-    "startRace": [
-      200,
-      409
-    ],
-    "invalidRace": [
-      409,
-      409
-    ],
-    "uiWrites": [
-      {
-        "status": 409,
-        "body": {
-          "status": "in_progress",
-          "expectedStatus": "pending",
-          "expectedVersion": 7
-        }
-      },
-      {
-        "status": 200,
-        "body": {
-          "status": "in_progress",
-          "expectedStatus": "pending",
-          "expectedVersion": 7
-        }
-      },
-      {
-        "status": 200,
-        "body": {
-          "status": "done",
-          "expectedStatus": "in_progress",
-          "expectedVersion": 8
-        }
-      }
-    ],
-    "acceptedTaskCount": 266,
-    "preservedPlanning": true,
-    "planningSha256": "67512d61ac8286e48e6758441188c009388c8c50adf177f2b5ffe3dce4fee883",
-    "newSolverRun": false,
-    "remoteWrites": 0
-  },
   "ci": {
-    "workflow": ".github/workflows/live-day-execution-ci.yml",
-    "newGate": "SQL Start workday integrity, clock races, real HTTP and unchanged Mi Día",
-    "timeoutChanged": false,
-    "resultLocation": "Pull request checks",
-    "initialHead": "26823124fb6a7d0f79658de194ad82329387de7c",
-    "initialFailure": {
-      "run": "https://github.com/angelvicen92/production-planner/actions/runs/39257079421",
-      "step": "focal tests",
-      "error": "Missing Supabase environment variables on server",
-      "fix": "Pure mapper test uses a deferred import and local fallback credentials; verified 10/10 with all five connection variables unset."
-    }
+    "required": [
+      "Live day execution",
+      "Planner Engine CI"
+    ],
+    "resultLocation": "Pull request #1155 checks on the final head",
+    "timeoutChanged": false
   },
   "limits": [
-    "Night/extraordinary windows have no new contract",
-    "Accepted 266-task snapshot preservation is not a new Full A2 solver run",
-    "Realtime/WebSocket and remote deployment excluded"
+    "No cross-midnight correction or night-shift contract inferred",
+    "Local accepted snapshot preservation is distinct from new Full A2 generation in CI",
+    "Realtime/WebSocket and published runtime excluded"
   ],
-  "firstNativeAttempt": {
-    "sqlAndHttp": "PASS",
-    "ui": "page.goto /login exceeded default 30000 ms",
-    "retry": "PASS, same code and timeouts"
-  },
   "remoteWrites": 0,
   "merge": false,
   "deployment": false
