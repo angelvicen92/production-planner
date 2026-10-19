@@ -1,0 +1,97 @@
+{
+  "status": "LOCAL_PASS_CI_CHECKS_REQUIRED",
+  "productFixApplied": true,
+  "integratedMain": "0e7442e4b5ccf4fde6756841b7908b27e87fe1db",
+  "previousHead": "c0ad6ddb08a07139f2952a74fb62c49c56d837fe",
+  "baselineComparison": "c1b3305b792e75d1409740e2893b3fd137ea6933",
+  "remoteWrites": 0,
+  "typescript": "PASS",
+  "integrationTypescript": "PASS",
+  "build": "PASS; existing large bundle warning",
+  "migrationSequence": "PASS; 098 unchanged from integrated main",
+  "focalTests": {
+    "pass": 79,
+    "fail": 0
+  },
+  "rolePolicyBrowser": {
+    "checks": 5,
+    "status": "PASS",
+    "redBeforeFix": true
+  },
+  "controlRoomBrowser": {
+    "checks": 11,
+    "screenshots": 23,
+    "status": "PASS"
+  },
+  "native": {
+    "autopilot": {
+      "status": "PASS",
+      "checks": 10,
+      "node": "v20.20.2"
+    },
+    "control-room": {
+      "status": "PASS",
+      "checks": 14,
+      "node": "v20.20.2"
+    },
+    "time-corrections": {
+      "status": "PASS",
+      "checks": 10,
+      "node": "v20.20.2"
+    },
+    "p7-date-integrity": {
+      "status": "PASS",
+      "checks": 10,
+      "node": "v20.20.2"
+    },
+    "configuration": {
+      "status": "PASS",
+      "checks": 9,
+      "node": "v20.20.2"
+    }
+  },
+  "autopilot": {
+    "phase": "COMPLETE",
+    "completed": 266,
+    "total": 266,
+    "stage": 11,
+    "roleTimeout": {
+      "role": "production",
+      "status": "error",
+      "error": "AbortError",
+      "mode": "WITHHELD_ROLE_TRANSPORT_EXISTING_20S_TIMEOUT"
+    },
+    "revocation": {
+      "from": "production",
+      "to": "viewer",
+      "cachedRole": "production",
+      "httpStatus": 403,
+      "acceptedStatePreserved": true
+    },
+    "stopReloadResume": true,
+    "sameFinalFingerprintAsBase": true,
+    "finalFingerprint": "4e1a8ddfc2f82af162a57a00a9eec3986cba9be3933a456da051c639dddae0f2",
+    "historicalPreservation": "old day, 11 prior Stages, 333 other tasks and historical catalog literal"
+  },
+  "configuration": {
+    "resultReceived": true,
+    "outcome": "PROPOSAL",
+    "sameFingerprintAsPreviousInstrumentedPass": true,
+    "fingerprint": "10ce592a3772452096b245973a39ba841e4079e32ff76d1890fd087139ac6113",
+    "originalMalformedResponseOrigin": "not retrospectively identifiable; no recurrence in this run",
+    "failureInstrumentationRetained": true
+  },
+  "ciGate": {
+    "source": "GitHub Checks of current PR head",
+    "required": "all triggered workflows, including all four Planner Engine CI jobs, must succeed",
+    "url": "https://github.com/angelvicen92/production-planner/pull/1154/checks"
+  },
+  "sourceSha256": {
+    "client/src/hooks/use-user-role.ts": "a233158d1ae25c631c608cecee98e5dcf2fe6e4c9becc014e9ab48f9f423ded6",
+    "client/src/hooks/use-auth.tsx": "5cd332ee8902aec8e08916e68f2adacc0e9be522a457861c6a4ae2cec1cfa110",
+    "client/src/pages/control-room.tsx": "76ca6e2beaa9d695e136d95f57e7d40d7f7c855791291327dce50faeb2d46e13",
+    "script/demo/smokeAutopilotWorkspace.ts": "b425f195a1781e049f2eeb1ad325dedb1f6b0f31ddbc68e00d551389dd0fa6e1",
+    "script/demo/smokeA2ConfigurationReadRecovery.ts": "8c785a39feeb46a305d0be00c29b2a35ad3df995e6c79a4a5666a085b6efe877"
+  },
+  "protectedSourceDiffFromMain": []
+}

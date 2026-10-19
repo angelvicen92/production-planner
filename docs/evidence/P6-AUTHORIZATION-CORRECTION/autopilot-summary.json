@@ -1,0 +1,218 @@
+{
+  "mode": "REAL_DISPOSABLE_HTTP_ASSISTED_CHROMIUM",
+  "status": "PASS",
+  "roleTimeout": {
+    "role": "production",
+    "status": "error",
+    "error": "AbortError",
+    "mode": "WITHHELD_ROLE_TRANSPORT_EXISTING_20S_TIMEOUT"
+  },
+  "roleRevocation": {
+    "from": "production",
+    "to": "viewer",
+    "cachedRole": "production",
+    "httpStatus": 403,
+    "acceptedStatePreserved": true
+  },
+  "authorityHttp": [
+    {
+      "path": "/api/me/role",
+      "status": 200
+    },
+    {
+      "path": "/api/me/role",
+      "status": 200
+    },
+    {
+      "path": "/api/me/role",
+      "status": 200
+    },
+    {
+      "path": "/api/plans/27002/assisted/accept-stage",
+      "status": 200
+    },
+    {
+      "path": "/api/plans/27002/assisted/accept-stage",
+      "status": 200
+    },
+    {
+      "path": "/api/plans/27002/assisted/accept-stage",
+      "status": 200
+    },
+    {
+      "path": "/api/plans/27002/assisted/accept-stage",
+      "status": 200
+    },
+    {
+      "path": "/api/plans/27002/assisted/accept-stage",
+      "status": 403
+    },
+    {
+      "path": "/api/me/role",
+      "status": 200
+    },
+    {
+      "path": "/api/plans/27002/assisted/accept-stage",
+      "status": 200
+    },
+    {
+      "path": "/api/me/role",
+      "status": 200
+    },
+    {
+      "path": "/api/me/role",
+      "status": 200
+    },
+    {
+      "path": "/api/plans/27002/assisted/accept-stage",
+      "status": 200
+    },
+    {
+      "path": "/api/plans/27002/assisted/accept-stage",
+      "status": 200
+    },
+    {
+      "path": "/api/plans/27002/assisted/accept-stage",
+      "status": 200
+    },
+    {
+      "path": "/api/plans/27002/assisted/accept-stage",
+      "status": 200
+    },
+    {
+      "path": "/api/plans/27002/assisted/accept-stage",
+      "status": 200
+    },
+    {
+      "path": "/api/plans/27002/assisted/accept-stage",
+      "status": 200
+    }
+  ],
+  "reloadBeforeResume": true,
+  "acceptedStages": [
+    {
+      "ordinal": 0,
+      "snapshot_fingerprint": "3fc6af620295a5b6d09f18a787912063e046701d3dbec9d40e1285242ac65795"
+    },
+    {
+      "ordinal": 1,
+      "snapshot_fingerprint": "10ce592a3772452096b245973a39ba841e4079e32ff76d1890fd087139ac6113"
+    },
+    {
+      "ordinal": 2,
+      "snapshot_fingerprint": "160dff9b9ebf9f4b223b211b28b379ddeb2355168de7b9dd0340fde913327fd5"
+    },
+    {
+      "ordinal": 3,
+      "snapshot_fingerprint": "b050159ef3535f38826a0d7d2a56b1d6a4ac4157cbcba96a2219b01d4b5eece0"
+    },
+    {
+      "ordinal": 4,
+      "snapshot_fingerprint": "8dc1924a408e503aff3b1b955ee253df312fedfb647287ff13c888d4fd899af3"
+    },
+    {
+      "ordinal": 5,
+      "snapshot_fingerprint": "723c659bc85a84f10e2570f6cf9f4858c18f3a9126e851c00f17a3631eef42b2"
+    },
+    {
+      "ordinal": 6,
+      "snapshot_fingerprint": "c1f260b5000a92ee63f1f51bac28e4de7ad793a7b640249dac0cdcbb6f96c3ff"
+    },
+    {
+      "ordinal": 7,
+      "snapshot_fingerprint": "c110d94474ebb18ebb5f9fcf4ed6fc469db304866330146d083ad5712ab2682e"
+    },
+    {
+      "ordinal": 8,
+      "snapshot_fingerprint": "32a01355d07605bd75d617ade43da9c3f6ef0150bdc0c10cf8f6cf06278722d5"
+    },
+    {
+      "ordinal": 9,
+      "snapshot_fingerprint": "e375895c3d20d90e1e0f934f7c41ac3653ae30e3a07640b16d09919f4e053c6a"
+    },
+    {
+      "ordinal": 10,
+      "snapshot_fingerprint": "8394d4c6ad3e93722b591edbbe44c78873378ceaada35e7087a523be05ebdb96"
+    },
+    {
+      "ordinal": 11,
+      "snapshot_fingerprint": "4e1a8ddfc2f82af162a57a00a9eec3986cba9be3933a456da051c639dddae0f2"
+    }
+  ],
+  "lifecycle": [
+    {
+      "event": "navigation",
+      "at": "2026-10-19T17:38:09.793Z",
+      "path": "/login"
+    },
+    {
+      "event": "vite",
+      "at": "2026-10-19T17:38:10.126Z",
+      "message": "[vite] connecting..."
+    },
+    {
+      "event": "vite",
+      "at": "2026-10-19T17:38:10.768Z",
+      "message": "[vite] connected."
+    },
+    {
+      "event": "navigation",
+      "at": "2026-10-19T17:38:16.077Z",
+      "path": "/dashboard"
+    },
+    {
+      "event": "navigation",
+      "at": "2026-10-19T17:38:16.379Z",
+      "path": "/plans/27002"
+    },
+    {
+      "event": "vite",
+      "at": "2026-10-19T17:38:16.450Z",
+      "message": "[vite] connecting..."
+    },
+    {
+      "event": "vite",
+      "at": "2026-10-19T17:38:16.467Z",
+      "message": "[vite] connected."
+    },
+    {
+      "event": "navigation",
+      "at": "2026-10-19T17:41:27.377Z",
+      "path": "/plans/27002"
+    },
+    {
+      "event": "vite",
+      "at": "2026-10-19T17:41:27.394Z",
+      "message": "[vite] connecting..."
+    },
+    {
+      "event": "vite",
+      "at": "2026-10-19T17:41:27.429Z",
+      "message": "[vite] connected."
+    }
+  ],
+  "errors": [],
+  "checkpoints": [
+    {
+      "stage": 1,
+      "completed": 19
+    },
+    {
+      "stage": 2,
+      "completed": 38
+    },
+    {
+      "stage": 3,
+      "completed": 46
+    }
+  ],
+  "final": {
+    "phase": "COMPLETE",
+    "stage": 11,
+    "completed": 266,
+    "total": 266
+  },
+  "baselineFinalFingerprint": "4e1a8ddfc2f82af162a57a00a9eec3986cba9be3933a456da051c639dddae0f2",
+  "correctedFinalFingerprint": "4e1a8ddfc2f82af162a57a00a9eec3986cba9be3933a456da051c639dddae0f2",
+  "sameFinalFingerprint": true
+}

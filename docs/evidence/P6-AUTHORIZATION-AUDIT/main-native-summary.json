@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "mode": "REAL_DISPOSABLE_PRODUCT_INTEGRATION",
+  "nodeVersion": "v20.20.2",
+  "remoteWrites": 0,
+  "checks": [
+    "entire native application migration ledger",
+    "real password login for five Auth identities",
+    "historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import",
+    "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved",
+    "real storage/input adapter canon after GET day; no legacy breaks",
+    "Autopilot: real accepted stages rendered progressively, single header, preferences, Escape, stop/resume and complete maximized",
+    "persisted physical topology, styling capacity and final SQL KPI projection",
+    "old day, 11 prior Stages, 333 other tasks and historical catalog remain literal after real UI/Autopilot/execution"
+  ],
+  "historicalPreservation": {
+    "oldPlanId": 27001,
+    "oldObligations": 266,
+    "oldStages": 11,
+    "otherObligations": 333,
+    "newDaySeedPlacements": 0
+  },
+  "startedAt": "2026-10-19T14:11:10.960Z",
+  "finishedAt": "2026-10-19T14:15:26.076Z",
+  "auditedRuntimeHashes": {
+    "server/assistedProposalService.ts": "f58b99a0b3b45df191a9d944bd06457dc0644b25b8fee120433b8903ceb837c2",
+    "server/routes.ts": "2822610aa4933483147473ecf6a3d88e63001f7e4216240ba89a6b1fad7d1510",
+    "script/demo/smokeAutopilotWorkspace.ts": "6d6817cd333e899097f6c9cbd2dd1be2e5c623d31b8201dfe8d6627f759176a5"
+  }
+}
