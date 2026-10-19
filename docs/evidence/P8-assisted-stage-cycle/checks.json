@@ -1,0 +1,17 @@
+{
+  "base": "0e7442e4b5ccf4fde6756841b7908b27e87fe1db",
+  "nodeVersion": "v24.19.0",
+  "checks": {
+    "npm run check": "PASS",
+    "npm run build": "PASS (existing chunk-size warning)",
+    "npm run check:migrations": "PASS",
+    "tsc -p script/demo/tsconfig.integration.json": "PASS",
+    "focal tests": "PASS: 12 files, no failures",
+    "native Auth/HTTP/DB/Chromium before-after": "PASS",
+    "git diff --check": "PASS"
+  },
+  "remoteWrites": 0,
+  "sqlBefore": "22fd8d276291e850887b7832ec1e2866d3d442002cbcb145241c543276380f13",
+  "sqlAfter": "22fd8d276291e850887b7832ec1e2866d3d442002cbcb145241c543276380f13",
+  "nativeValidation": "fixture metadata for identical S0 snapshots; no P9/solver certification"
+}

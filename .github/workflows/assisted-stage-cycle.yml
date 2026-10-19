@@ -1,0 +1,63 @@
+name: Assisted stage cycle display
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'shared/assistedHistory*'
+      - 'shared/assistedStageLineage*'
+      - 'client/src/components/planning/assisted-stage-history*'
+      - 'client/src/components/planning/planning-stage-toolbar*'
+      - 'client/src/components/planning/assisted-planning-workspace*'
+      - 'client/src/components/planning/assisted-autopilot-progress*'
+      - 'client/src/lib/assisted-autopilot-progress*'
+      - 'client/src/components/day-workspace/day-workspace-shell.tsx'
+      - 'script/demo/smokeAssistedStageCycle.ts'
+      - 'script/demo/smokeA2Integration.ts'
+      - '.github/workflows/assisted-stage-cycle.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: assisted-stage-cycle-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  assisted-stage-cycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run check && npm run check:migrations && npm run build
+      - name: Lineage display, times, checkpoint publication and persistence regressions
+        run: >-
+          node --import tsx --test --test-concurrency=1
+          shared/assistedHistory.test.ts shared/assistedStageTiming.test.ts shared/assistedAutopilot.test.ts
+          client/src/components/planning/assisted-stage-history.test.tsx
+          client/src/components/planning/assisted-autopilot-progress.test.tsx
+          client/src/components/planning/assisted-planning-workspace.test.ts
+          client/src/lib/assisted-autopilot-progress.test.ts client/src/lib/assisted-autopilot-checkpoints.test.ts
+          server/assistedHistoryTimings.spec.ts server/assistedRestart.spec.ts
+          server/assistedPlanningWorkflow.spec.ts server/assistedPlanningStorage.spec.ts
+      - run: npx --no-install playwright install --with-deps chromium
+      - name: Native Auth, HTTP, SQL and before/after UI on disposable A2
+        env:
+          P8_BASELINE_ROOT: work/p8/base
+          BASELINE_REF: ${{ github.event.pull_request.base.sha || 'main' }}
+        run: |
+          git worktree add --detach "$P8_BASELINE_ROOT" "$BASELINE_REF"
+          ln -s "$PWD/node_modules" "$P8_BASELINE_ROOT/node_modules"
+          node --import tsx script/demo/smokeA2Integration.ts work/p8/native --historical-topology --assisted-stage-cycle
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: assisted-stage-cycle
+          path: |
+            work/p8/native/integration.json
+            work/p8/native/stage-cycle.json
+            work/p8/native/p8-*.png

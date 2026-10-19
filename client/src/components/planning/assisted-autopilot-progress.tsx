@@ -16,7 +16,7 @@ export function AssistedAutopilotProgress({ view, progress, compact = false }: {
     <div className="flex min-w-0 items-center gap-2 text-xs">
       <p role="status" aria-live="polite" className="flex min-w-0 flex-1 items-center gap-1">
         <Icon aria-hidden="true" className={`h-3.5 w-3.5 shrink-0 ${view.tone === "running" ? "motion-safe:animate-spin text-primary" : "text-primary"}`} />
-        <span className="shrink-0">{view.terminal ? view.title : view.phaseLabel} · Etapa {progress.stage}</span>
+        <span className="shrink-0">{view.terminal ? view.title : view.phaseLabel} · {view.checkpointLabel}</span>
         {view.scopeLabel ? <span className="min-w-0 truncate text-muted-foreground" title={`${view.scopeCaption}: ${view.scopeLabel}`}>· {view.scopeCaption}: {view.scopeLabel}</span> : null}
       </p>
       <details className="relative shrink-0 text-muted-foreground" data-testid="assisted-autopilot-technical">
@@ -28,6 +28,7 @@ export function AssistedAutopilotProgress({ view, progress, compact = false }: {
         </div>
       </details>
     </div>
+    {view.lineageError ? <p role="status" className="text-xs text-destructive">{view.lineageError}</p> : null}
   </section>;
   return <section data-testid="assisted-autopilot-progress" data-phase={progress.phase} className="grid gap-2 sm:grid-cols-2 sm:gap-x-4">
     <div role="status" aria-live="polite" aria-atomic="true" className="space-y-1">
@@ -51,6 +52,7 @@ export function AssistedAutopilotProgress({ view, progress, compact = false }: {
       <p className="text-sm text-muted-foreground">{view.countsKnown ? `${view.percentLabel}% de la jornada planificada · Quedan ${view.remaining} tareas` : "Total de tareas pendiente de comprobar."}</p>
       <p className="hidden text-xs text-muted-foreground sm:block">{view.stageLabel} · El progreso refleja las tareas confirmadas.</p>
     </div>
+    {view.lineageError ? <p role="status" className="text-xs text-destructive sm:col-span-2">{view.lineageError}</p> : null}
     {view.scopeLabel ? <div className="text-xs sm:col-span-2">
       <p><span className="text-muted-foreground">{view.scopeCaption}: </span><strong>{view.scopeLabel}</strong> · {view.scopeCountLabel}</p>
       <p className="text-muted-foreground">Tipos de tarea: {view.breakdown}</p>

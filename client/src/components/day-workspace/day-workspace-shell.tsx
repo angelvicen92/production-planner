@@ -1,3 +1,4 @@
+import { assistedStageLabel, projectAssistedStageCycle } from "@shared/assistedHistory";
 import { useCallback, useEffect, useState } from "react";
 import {
   ArrowLeft,
@@ -121,6 +122,7 @@ export function DayHeader({
   const tasks = plan.dailyTasks ?? [];
   const draftTasks = assisted?.draft?.tasks;
   const accepted = assisted?.activeStage;
+  const stageCycle = projectAssistedStageCycle(assisted?.history ?? [], accepted);
   const obligations = draftTasks ? buildAssistedPlanningView(tasks as any,assisted.draft) : tasks;
   const draftIds = new Set((draftTasks ?? []).map((task:any)=>Number(task.taskId)));
   const taskSetCurrent = !draftTasks || (tasks.length===draftTasks.length && tasks.every(task=>draftIds.has(Number(task.id))));
@@ -229,11 +231,12 @@ export function DayHeader({
         <div>
           <p className="text-xs text-muted-foreground">Última etapa aceptada</p>
           <p className="mt-1 font-semibold">
-            {accepted ? `Etapa ${accepted.ordinal}` : "Sin etapa aceptada"}
+            {accepted ? assistedStageLabel(stageCycle.localNumber) : "Sin etapa aceptada"}
           </p>
           <p className="hidden text-xs text-muted-foreground sm:block">
             Checkpoint del plan de trabajo
           </p>
+          {accepted && stageCycle.lineageError ? <p role="status" className="text-xs text-destructive">{stageCycle.lineageError}</p> : null}
         </div>
         <div>
           <p className="text-xs text-muted-foreground">
