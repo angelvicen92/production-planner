@@ -45,7 +45,11 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
   }
   const headers={apikey:anon,Authorization:`Bearer ${role==='anon'?anon:users[role].token}`,'Content-Type':'application/json',Prefer:'return=representation'};
   for(const table of securityTables){
-   const r=await fetch(`${url}/rest/v1/${table}?select=*&limit=1`,{headers});assert.equal(r.status,200,`${role} REST ${table}: ${r.status===200?'':await r.text()}`);
+   const r=await fetch(`${url}/rest/v1/${table}?select=*&limit=1`,{headers});
+   if(process.argv.includes('--restricted-data-api')&&role==='anon'){
+    assert.equal(r.status,401);assert.equal((await r.json() as any).code,'42501');continue;
+   }
+   assert.equal(r.status,200,`${role} REST ${table}: ${r.status===200?'':await r.text()}`);
    const rows=await r.json() as any[];const source=(await db.query(`SELECT * FROM public.${table} LIMIT 1`)).rows;
    assert.equal(rows.length,['anon','norole'].includes(role)?0:source.length,`${role} REST ${table}`);
   }

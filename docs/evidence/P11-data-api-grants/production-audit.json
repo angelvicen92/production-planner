@@ -1,0 +1,22 @@
+{
+  "project": "dyqusivzgxebkxkwohwn",
+  "date": "2026-10-20",
+  "readOnly": true,
+  "tables": 60,
+  "rlsTables": 60,
+  "anonSelectObjects": 45,
+  "noPolicyTables": [
+    "engine_plan_results",
+    "plan_optimizer_snapshot_grouping_zones",
+    "plan_optimizer_snapshot_heuristics",
+    "plan_optimizer_snapshots",
+    "plan_resource_bundle_snapshots",
+    "plan_space_settings",
+    "plan_task_template_snapshots",
+    "plan_zone_settings"
+  ],
+  "planSummariesOptions": [
+    "security_invoker=true"
+  ],
+  "writes": 0
+}

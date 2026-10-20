@@ -1,0 +1,69 @@
+name: Data API grants
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: data-api-grants-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  data-api-grants:
+    name: data-api-grants (${{ matrix.journey }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - journey: assisted
+            arguments: --full --manual-validation --transport-policy
+          - journey: configuration
+            arguments: --workspace-setup
+          - journey: execution
+            arguments: --historical-topology --time-corrections
+          - journey: control-room
+            arguments: --historical-topology --control-room-snapshot
+          - journey: war-room
+            arguments: --historical-topology --war-room-snapshot
+          - journey: headers
+            arguments: --historical-topology --header-notes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
+      - run: npm run check:migrations
+      - name: Restricted defaults, effective permissions and native product journey
+        env:
+          JOURNEY_ARGUMENTS: ${{ matrix.arguments }}
+        run: npm run demo:a2:smoke -- work/data-api-grants --restricted-data-api $JOURNEY_ARGUMENTS
+      - name: REQUIRED exceptions in an independent disposable day
+        if: matrix.journey == 'assisted'
+        run: npm run demo:a2:smoke -- work/data-api-required --restricted-data-api --manual-required-replay=work/data-api-grants/manual-validation-baseline.json
+      - name: Public evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: data-api-grants-${{ matrix.journey }}
+          path: |
+            work/data-api-grants/integration.json
+            work/data-api-grants/data-api-*.json
+            work/data-api-grants/day-workspace-setup.json
+            work/data-api-grants/manual-validation-probe.json
+            work/data-api-grants/transport-policy.json
+            work/data-api-grants/*.png
+            work/data-api-required/integration.json
+            work/data-api-required/data-api-*.json
+            work/data-api-required/required-acceptance.json

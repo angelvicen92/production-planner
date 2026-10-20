@@ -1,0 +1,23 @@
+{
+  "status": "IN_PROGRESS",
+  "base": "5f3052d3f520535502ca76e205aea6e9cd9a144e",
+  "checks": {
+    "focalTests": {
+      "pass": 23,
+      "fail": 0
+    },
+    "typescript": "PASS",
+    "integrationTypescript": "PASS",
+    "build": "PASS",
+    "migrationSequence": "PASS",
+    "nativeConfiguration": "PASS"
+  },
+  "pending": [
+    "native Assisted full and REQUIRED",
+    "native execution, Control Room, War Room, headers",
+    "hosted CI"
+  ],
+  "remoteWrites": 0,
+  "merged": false,
+  "deployed": false
+}
