@@ -197,6 +197,7 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
    diagnostics.viewsHistory=await (process.argv.includes("--day-workspace")?runDayWorkspaceJourney:runA2ViewsHistoryJourney)({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics},page);
    diagnostics.manualSnapshotFidelity=await runA2ManualSnapshotJourney({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics});
   }
+  if(process.argv.includes('--transport-policy')){const {runTransportPolicyIntegrity}=await import('./smokeTransportPolicyIntegrity');diagnostics.transportPolicy=await runTransportPolicyIntegrity({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics},page);}
   return {roleMatrix,s0:'PASS',stages,completed:stages.at(-1)!.completed,pageErrors,secondBrowserSession:'PASS',rollbackRedo:'PASS',searchPoliciesUnchanged:true,persistedCanonical};
  }catch(error){
   // Preserve the actual SQL run outcome before the disposable database is

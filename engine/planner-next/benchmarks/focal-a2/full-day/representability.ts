@@ -105,7 +105,7 @@ function runTransportPolicyProbe(expansion: ExpandedCanonicalFullA2Template): Re
   const invalidInputs = [
     (() => { const value = structuredClone(input); delete value.departureMinGapMinutes; return value; })(),
     (() => { const value = structuredClone(input); value.transportSettings!.arrivalTargetGroupSize = 4; return value; })(),
-    (() => { const value = structuredClone(input); value.arrivalGroupingTarget = 7; value.transportSettings!.arrivalTargetGroupSize = 7; return value; })(),
+    (() => { const value = structuredClone(input); value.arrivalMinimumGroupSize = 7; value.transportSettings!.arrivalMinimumGroupSize = 7; return value; })(),
   ];
   const exactProblem = adapted.status === "SUPPORTED" ? { ...adapted.problem, searchPolicy: "EXACT_CONSTRUCTIVE" as const } : null;
   const execution = exactProblem ? executePlannerNext(exactProblem) : null;

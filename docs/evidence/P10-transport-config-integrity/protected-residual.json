@@ -1,0 +1,193 @@
+{
+  "base": "c777c5d",
+  "policy": {
+    "taskIds": [
+      "independent-0",
+      "independent-1",
+      "independent-2"
+    ],
+    "minimumGroupSize": 2,
+    "targetGroupSize": 3,
+    "maximumGroupSize": 3,
+    "minGapMinutes": 30,
+    "groupingWeight": 1
+  },
+  "fixed": [
+    {
+      "id": "independent-0",
+      "kind": "auxiliary",
+      "participantId": "member-0",
+      "duration": 5,
+      "spaceId": "transit",
+      "blocksSpace": false,
+      "dependencies": [],
+      "start": 10,
+      "end": 15
+    },
+    {
+      "id": "independent-1",
+      "kind": "auxiliary",
+      "participantId": "member-1",
+      "duration": 5,
+      "spaceId": "transit",
+      "blocksSpace": false,
+      "dependencies": [],
+      "start": 10,
+      "end": 15
+    }
+  ],
+  "before": {
+    "status": "INFEASIBLE",
+    "scheduled": null
+  },
+  "after": {
+    "status": "FEASIBLE",
+    "scheduled": [
+      {
+        "id": "independent-2",
+        "kind": "auxiliary",
+        "participantId": "member-2",
+        "duration": 5,
+        "spaceId": "transit",
+        "blocksSpace": false,
+        "dependencies": [],
+        "start": 10,
+        "end": 15
+      }
+    ],
+    "evidence": {
+      "directions": [
+        {
+          "direction": "arrival",
+          "orderedTaskIds": [
+            "independent-0",
+            "independent-1",
+            "independent-2"
+          ],
+          "orderedParticipantIds": [
+            "member-0",
+            "member-1",
+            "member-2"
+          ],
+          "orderedDeadlines": [
+            15,
+            15,
+            120
+          ],
+          "packetSizes": [
+            3
+          ],
+          "packetMembers": [
+            [
+              "independent-0",
+              "independent-1",
+              "independent-2"
+            ]
+          ],
+          "starts": [
+            10
+          ],
+          "minGapMinutes": 30,
+          "construction": "interval-exact",
+          "alternativesExplored": 0,
+          "classification": "MEMBERSHIP_REQUIRED",
+          "classificationBreakers": [
+            "HARD_TRANSPORT_CONTEXT"
+          ],
+          "contiguousStatesExplored": 0,
+          "membershipFallbackEntered": false,
+          "taskCount": 3,
+          "candidateStartCount": 1,
+          "contextClasses": [
+            [
+              "independent-0",
+              "independent-1",
+              "independent-2"
+            ]
+          ],
+          "algorithm": "INTERVAL_CAPACITY_MATCHING",
+          "statesExplored": 2,
+          "matchingChecks": 1,
+          "matchingTraversals": 112,
+          "membershipBranches": 0,
+          "budgetExhausted": false,
+          "failureCause": null,
+          "contiguousFirstDeadEnd": null
+        },
+        {
+          "direction": "departure",
+          "orderedTaskIds": [],
+          "orderedParticipantIds": [],
+          "packetSizes": [],
+          "orderedDeadlines": [],
+          "packetMembers": [],
+          "starts": [],
+          "minGapMinutes": 30,
+          "construction": "contiguous",
+          "alternativesExplored": 0,
+          "classification": "CONTIGUOUS_EXACT",
+          "classificationBreakers": [],
+          "contiguousStatesExplored": 1,
+          "membershipFallbackEntered": false,
+          "taskCount": 0,
+          "candidateStartCount": 0,
+          "contextClasses": [],
+          "algorithm": "CONTIGUOUS_EXACT",
+          "statesExplored": 1,
+          "matchingChecks": 0,
+          "matchingTraversals": 0,
+          "membershipBranches": 0,
+          "budgetExhausted": false,
+          "failureCause": null,
+          "contiguousFirstDeadEnd": null
+        }
+      ],
+      "fingerprint": "498f25d0ef4195d81852909db3ea83b32f1dc1fc5a2d9a27edb199e2ea1355bb"
+    }
+  },
+  "validation": {
+    "violationCount": 0,
+    "groupsByDirection": {
+      "arrival": [
+        [
+          {
+            "id": "independent-0",
+            "kind": "auxiliary",
+            "participantId": "member-0",
+            "duration": 5,
+            "spaceId": "transit",
+            "blocksSpace": false,
+            "dependencies": [],
+            "start": 10,
+            "end": 15
+          },
+          {
+            "id": "independent-1",
+            "kind": "auxiliary",
+            "participantId": "member-1",
+            "duration": 5,
+            "spaceId": "transit",
+            "blocksSpace": false,
+            "dependencies": [],
+            "start": 10,
+            "end": 15
+          },
+          {
+            "id": "independent-2",
+            "kind": "auxiliary",
+            "participantId": "member-2",
+            "duration": 5,
+            "spaceId": "transit",
+            "blocksSpace": false,
+            "dependencies": [],
+            "start": 10,
+            "end": 15
+          }
+        ]
+      ],
+      "departure": []
+    },
+    "violations": []
+  },
+  "fixedUnchanged": true
+}

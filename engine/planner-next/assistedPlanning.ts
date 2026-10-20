@@ -203,7 +203,7 @@ export interface AssistedPlanningEvidence {
   readonly firstSharedCapacityPass?: unknown;
   readonly sharedCapacityFingerprint?: string | null;
   readonly standaloneDiagnostic?: Pick<ExactItinerantPlanEvidence,
-    "standaloneBranchesByDepth" | "standaloneSelectionsByTaskId" | "standaloneCandidateStartsByTaskId"
+    "transportPartitionFailures" | "standaloneBranchesByDepth" | "standaloneSelectionsByTaskId" | "standaloneCandidateStartsByTaskId"
     | "standaloneMaximumDepth" | "standaloneCompleteLeafCount" | "terminalTransportMaterializationAttempts"
     | "macroCandidateCausalTraces" | "macroCandidateCausalReconciliation"
     | "roundSynchronizationSharedOperationalMealPolicyIds" | "roundSynchronizationBreakVariantsConsidered"
@@ -690,7 +690,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     : !searchHardValid ? "ASSISTED_HARD_VALIDATION_FAILED" : "ASSISTED_SCOPE_COMPLETE");
   const evidenceRecord = result && "evidence" in result ? result.evidence as unknown as Record<string, unknown> : {};
   const metricsRecord = result && "metrics" in result ? result.metrics as unknown as Record<string, unknown> : {};
-  const standaloneKeys = ["bundleContinuationDeferrals","bundleContinuationResumptions","bundlePendingContinuations",
+  const standaloneKeys = ["transportPartitionFailures","bundleContinuationDeferrals","bundleContinuationResumptions","bundlePendingContinuations",
     "standaloneBranchesByDepth","standaloneSelectionsByTaskId","standaloneCandidateStartsByTaskId",
     "standaloneMaximumDepth","standaloneCompleteLeafCount","terminalTransportMaterializationAttempts",
     "macroCandidateCausalTraces","macroCandidateCausalReconciliation",

@@ -1,3 +1,4 @@
+import { effectiveTransportDirection } from "../shared/transportPolicy";
 import { mainFlowPreferenceFromRow } from "../shared/mainFlowPreference";
 import { mainFlowPreferenceGeometry } from "./mainFlowPreference";
 import type { EngineInput } from "../engine/types";
@@ -8,6 +9,24 @@ import type { IStorage } from "./storage";
 
 export type { EffectiveConfigurationValue, EffectiveConfigurationView } from "../shared/effectiveConfigurationContracts";
 
+function transportView(input:EngineInput,optimizer:any,plan:any) {
+  const effectiveTransport:Record<string,number|undefined>={vanCapacity:input.vanCapacity};
+  const transportSources:Record<string,string>={};
+  for(const direction of ['arrival','departure'] as const){
+    const policy=effectiveTransportDirection(input,direction);
+    const source=input.optimizerSnapshotSource==='DAY_OVERRIDE'?'Override del día':input.optimizerSnapshotSource==='LEGACY_BACKFILL'?'Snapshot histórico del día':'Snapshot heredado del día';
+    effectiveTransport[`${direction}MinimumGroupSize`]=policy.minimumGroupSize;
+    effectiveTransport[`${direction}GroupingTarget`]=policy.targetGroupSize??0;
+    effectiveTransport[`${direction}MaximumGroupSize`]=policy.maximumGroupSize;
+    effectiveTransport[`${direction}MinGapMinutes`]=policy.minGapMinutes;
+    for(const suffix of ['GroupingTarget','MinGapMinutes'])transportSources[`${direction}${suffix}`]=source;
+    const minimumOverride=plan.planner_next_configuration?.[`${direction}MinimumGroupSize`]??plan.plannerNextConfiguration?.[`${direction}MinimumGroupSize`];
+    transportSources[`${direction}MinimumGroupSize`]=input.optimizerSnapshotSource==='DAY_OVERRIDE'&&optimizer?.transport?.[`${direction}MinimumGroupSize`]!=null?source:minimumOverride!=null?'Override explícito de configuración de la jornada':optimizer?.transport?.[`${direction}MinimumGroupSize`]!=null?source:'Compatibilidad histórica: mínimo HARD 1';
+    const explicit=plan.planner_next_configuration?.[`${direction}MaximumGroupSize`]??plan.plannerNextConfiguration?.[`${direction}MaximumGroupSize`];
+    transportSources[`${direction}MaximumGroupSize`]=input.optimizerSnapshotSource==='DAY_OVERRIDE'&&optimizer?.transport?.[`${direction}MaximumGroupSize`]!=null?source:explicit!=null?'Override explícito de configuración de la jornada':optimizer?.transport?.[`${direction}MaximumGroupSize`]!=null?source:'Capacidad de vehículo del snapshot del día';
+  }
+  return {effectiveTransport,transportSources};
+}
 const absent = (c:ConfigurabilityCapability):EffectiveConfigurationValue => ({capabilityId:c.capabilityId,label:c.name,category:c.category,value:null,availability:c.status==="MISSING"?"UNAVAILABLE":"UNKNOWN",unit:c.unit,source:"UNKNOWN",validationStatus:c.status==="MISSING"?"UNSUPPORTED":"UNKNOWN",requiresReplan:"UNKNOWN",implementationStatus:c.status,blockers:c.blockers,requiredForDay:false});
 function projected(c:ConfigurabilityCapability,input:EngineInput,plan:any,general:any,revision?:number,fingerprint?:string,optimizer?:any,optimizerState?:any,geometry?:ReturnType<typeof mainFlowPreferenceGeometry>):EffectiveConfigurationValue {
   const common={capabilityId:c.capabilityId,label:c.name,category:c.category,unit:c.unit,effectiveRevision:revision,requiresReplan:"UNKNOWN" as const,implementationStatus:c.status,blockers:c.blockers,requiredForDay:false};
@@ -21,7 +40,7 @@ function projected(c:ConfigurabilityCapability,input:EngineInput,plan:any,genera
     case "TASKS_DEPENDENCIES": return {...common,value:{tasks:input.tasks.length,dependencies:input.tasks.reduce((n,t)=>n+(t.dependsOnTaskIds?.length??0),0)},availability:"AVAILABLE",source:"MIXED",fingerprint:input.taskTemplateSnapshotFingerprint,validationStatus:"VALID"};
     case "SPATIAL_AVAILABILITY": return {...common,value:{zones:input.planZoneSettings?.length??0,spaces:input.planSpaceSettings?.length??0},availability:"AVAILABLE",source:"DAY_SNAPSHOT",validationStatus:"VALID"};
     case "PLAN_RESOURCE_ASSIGNMENTS": return {...common,value:{items:input.planResourceItems.length,taskRequirements:input.tasks.filter(t=>t.resourceRequirements).length},availability:"AVAILABLE",source:"MIXED",validationStatus:"VALID"};
-    case "OPTIMIZATION": return {...common,value:optimizer??{editingMode:input.optimizerSnapshotEditingMode},baseline:optimizerState?.baseline_snapshot??undefined,canRestoreInherited:input.optimizerSnapshotSource==="DAY_OVERRIDE"&&!!optimizerState?.baseline_snapshot,overrideMetadata:{createdBy:optimizerState?.override_by??null,createdAt:optimizerState?.override_at??null},availability:"AVAILABLE",source:input.optimizerSnapshotSource??"UNKNOWN",fingerprint:input.optimizerSnapshotFingerprint,validationStatus:(input.optimizerCompatibilityWarnings?.length??0)>0?"INCOMPATIBLE":"VALID"};
+    case "OPTIMIZATION": return {...common,value:{...(optimizer??{editingMode:input.optimizerSnapshotEditingMode}),...transportView(input,optimizer,plan)},baseline:optimizerState?.baseline_snapshot??undefined,canRestoreInherited:input.optimizerSnapshotSource==="DAY_OVERRIDE"&&!!optimizerState?.baseline_snapshot,overrideMetadata:{createdBy:optimizerState?.override_by??null,createdAt:optimizerState?.override_at??null},availability:"AVAILABLE",source:input.optimizerSnapshotSource??"UNKNOWN",fingerprint:input.optimizerSnapshotFingerprint,validationStatus:(input.optimizerCompatibilityWarnings?.length??0)>0?"INCOMPATIBLE":"VALID"};
     case "PROTECTED_STATE_LOCKS": return {...common,value:{locks:input.locks.length,protectedTasks:input.tasks.filter(t=>t.status==="done"||t.status==="in_progress").length},availability:"AVAILABLE",source:"PROTECTED",validationStatus:"VALID",requiresReplan:"NO"};
     default:return absent(c);
   }

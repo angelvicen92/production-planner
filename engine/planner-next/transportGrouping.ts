@@ -31,6 +31,7 @@ export interface TransportMaterializationDirectionEvidence {
   failureCause: "INFEASIBLE" | "BUDGET_EXHAUSTED" | null;
   contiguousFirstDeadEnd: {index:number;remaining:number;groupTaskIds:string[];groupSize:number;
     deadline:number;temporalLimit:number;startsBeforeBoundaryFilter:number;startsAfterBoundaryFilter:number}|null;
+  hardPartitionFailure?: { reasonCode: "GROUP_CARDINALITY_PARTITION_IMPOSSIBLE"; count:number; minimumGroupSize:number; maximumGroupSize:number };
 }
 
 export interface TransportMaterializationEvidence {
@@ -48,6 +49,9 @@ export interface DetailedTransportMaterialization {
 export interface TransportMaterializationOptions {
   consumeFallbackBranch?: () => boolean;
   onEvidence?: (evidence: TransportMaterializationEvidence) => void;
+  /** Internal recursion guard. Existing violations remain for independent
+   * validation/AcceptedException; this never authorizes a new violation. */
+  preserveFixedTransportDirections?: readonly TransportDirection[];
 }
 
 export type TransportContextClassification = "CONTIGUOUS_EXACT" | "MEMBERSHIP_REQUIRED";
@@ -147,8 +151,8 @@ export function validateCertifiedArrivalSchedule(problem:PlannerNextProblem,subs
     if(item.spaceId!==task.spaceId)return reject("ARRIVAL_SPACE_MISMATCH",{taskId:id,expected:task.spaceId,actual:item.spaceId});
     scheduled.push({...task,start:item.start,end:item.end});
   }
-  const grouped=new Map<string,ScheduledTask[]>();
-  for(const task of scheduled){const key=`${task.start}:${task.end}`;const group=grouped.get(key)??[];group.push(task);grouped.set(key,group);}
+  const grouped=new Map<number,ScheduledTask[]>();
+  for(const task of scheduled){const key=task.start;const group=grouped.get(key)??[];group.push(task);grouped.set(key,group);}
   const groups=[...grouped.values()].sort((left,right)=>left[0]!.start-right[0]!.start||left[0]!.end-right[0]!.end);
   const previousStarts:number[]=[];
   for(const group of groups){
@@ -195,10 +199,29 @@ function combinations<T>(values: readonly T[], size: number): T[][] {
 }
 
 export function canPartitionTransportCount(count: number, minimum: number, maximum: number): boolean {
+  if (![count,minimum,maximum].every(Number.isInteger) || count < 0 || minimum < 1 || maximum < minimum) return false;
   if (count === 0) return true;
   const minimumGroups = Math.ceil(count / maximum);
   const maximumGroups = Math.floor(count / minimum);
   return minimumGroups <= maximumGroups;
+}
+
+/** A cold direction needs a complete cardinality partition independently of
+ * target or timing. Abstain with protected members: accepted exceptions and
+ * partially filled fixed groups require their full material context. */
+export function transportPartitionFailures(problem:Readonly<PlannerNextProblem>,fixed:readonly ScheduledTask[]=[]) {
+  const fixedIds=new Set(fixed.map(task=>task.id));
+  const taskIds=new Set(problem.tasks.map(task=>task.id));
+  return (["arrival","departure"] as const).flatMap(direction=>{
+    const policy=problem.transportPolicy?.[direction];
+    if(!policy || !Array.isArray(policy.taskIds) || new Set(policy.taskIds).size!==policy.taskIds.length
+      || policy.taskIds.some(id=>fixedIds.has(id)||!taskIds.has(id))
+      || !Number.isInteger(policy.minimumGroupSize) || !Number.isInteger(policy.maximumGroupSize)
+      || policy.minimumGroupSize<1 || policy.maximumGroupSize<policy.minimumGroupSize
+      || canPartitionTransportCount(policy.taskIds.length,policy.minimumGroupSize,policy.maximumGroupSize))return [];
+    return [{direction,count:policy.taskIds.length,minimumGroupSize:policy.minimumGroupSize,
+      maximumGroupSize:policy.maximumGroupSize,taskIds:[...policy.taskIds].sort()}];
+  });
 }
 
 /** Canonical candidate groups containing the first remaining task; no invalid residual is emitted. */
@@ -422,6 +445,50 @@ export function materializeTerminalTransportDetailed(
   if (!problem.transportPolicy) return {status:"FEASIBLE",scheduled:[],evidence:{directions:[],fingerprint:createHash("sha256").update("[]").digest("hex")}};
   const transportIds = transportTaskIds(problem);
   const alreadyMaterializedTransportIds=new Set(substantive.filter(task=>transportIds.has(task.id)).map(({id})=>id));
+  // A protected member may complete a pending packet. Solve the entire affected
+  // direction with singleton availability for fixed rows, rather than proving
+  // impossibility from the pending count alone. Return only newly placed rows.
+  const preservedDirections=new Set(options.preserveFixedTransportDirections??[]);
+  const fixedGroups=(direction:TransportDirection)=>{
+    const groups=new Map<number,ScheduledTask[]>();
+    for(const task of substantive.filter(task=>problem.transportPolicy![direction].taskIds.includes(task.id)))
+      groups.set(task.start,[...(groups.get(task.start)??[]),task]);
+    return [...groups.values()];
+  };
+  for(const direction of ["arrival","departure"] as const){
+    const policy=problem.transportPolicy[direction];
+    // An oversized or unsynchronized fixed group cannot be repaired by adding
+    // members. Retain its literal violation for the independent acceptance gate.
+    if(fixedGroups(direction).some(group=>group.length>policy.maximumGroupSize||group.some(task=>task.end!==group[0]!.end)))
+      preservedDirections.add(direction);
+  }
+  const recursiveOptions={...options,preserveFixedTransportDirections:[...preservedDirections]};
+  const affectedDirections = (["arrival","departure"] as const).filter(direction =>
+    !preservedDirections.has(direction)
+    && problem.transportPolicy![direction].taskIds.some(id=>alreadyMaterializedTransportIds.has(id))
+    && problem.transportPolicy![direction].taskIds.some(id=>!alreadyMaterializedTransportIds.has(id)));
+  if (affectedDirections.length) {
+    const included = new Set(affectedDirections.flatMap(direction=>problem.transportPolicy![direction].taskIds));
+    const fixed = new Map(substantive.filter(task=>included.has(task.id)).map(task=>[task.id,task]));
+    const constrained:PlannerNextProblem = {...problem,tasks:problem.tasks.map(task=>{
+      const row=fixed.get(task.id);
+      if(!row)return task;
+      const availability=(task.availability?.length?task.availability:[problem.day]).flatMap(window=>{
+        const start=Math.max(window.start,row.start),end=Math.min(window.end,row.end);
+        return end-start===task.duration?[{start,end}]:[];
+      });
+      // Empty availability is unconstrained elsewhere; retain an impossible
+      // singleton for an incompatible protected row instead of silently opening it.
+      return {...task,availability:availability.length?availability:[{start:row.start,end:row.start}]};
+    })};
+    const result=materializeTerminalTransportDetailed(constrained,substantive.filter(task=>!fixed.has(task.id)),participantMeals,recursiveOptions);
+    const existingViolationDirections=affectedDirections.filter(direction=>
+      fixedGroups(direction).some(group=>group.length<problem.transportPolicy![direction].minimumGroupSize));
+    if(result.status!=="FEASIBLE"&&existingViolationDirections.length)
+      return materializeTerminalTransportDetailed(problem,substantive,participantMeals,{...recursiveOptions,
+        preserveFixedTransportDirections:[...preservedDirections,...existingViolationDirections]});
+    return {...result,scheduled:result.scheduled?.filter(task=>!fixed.has(task.id))??null};
+  }
   const obligationsFor = (participantId: string) => [
     ...substantive.filter((task) => task.participantId === participantId && !transportIds.has(task.id)),
     ...participantMeals.filter((meal) => meal.participantId === participantId),
@@ -445,6 +512,8 @@ export function materializeTerminalTransportDetailed(
         options.consumeFallbackBranch);
       if (!solved.scheduled) {
         const item:TransportMaterializationDirectionEvidence={ direction, orderedTaskIds: tasks.map(({id})=>id),orderedParticipantIds:tasks.map(({participantId})=>participantId!),orderedDeadlines:tasks.map(boundary),packetSizes:[],packetMembers:[],starts:[],minGapMinutes:policy.minGapMinutes,construction:"contiguous",alternativesExplored:solved.alternatives,classification:classified.classification,classificationBreakers:[],contiguousStatesExplored:solved.states,membershipFallbackEntered:false,...detailedFields(tasks,"CONTIGUOUS_EXACT"),statesExplored:solved.states,failureCause:"INFEASIBLE"};
+        if(!canPartitionTransportCount(tasks.length,policy.minimumGroupSize,policy.maximumGroupSize))
+          item.hardPartitionFailure={reasonCode:"GROUP_CARDINALITY_PARTITION_IMPOSSIBLE",count:tasks.length,minimumGroupSize:policy.minimumGroupSize,maximumGroupSize:policy.maximumGroupSize};
         item.budgetExhausted=solved.budgetExhausted;
         item.failureCause=solved.budgetExhausted?"BUDGET_EXHAUSTED":"INFEASIBLE";
         directionEvidence.push(item);const evidence={directions:directionEvidence,fingerprint:createHash("sha256").update(JSON.stringify(directionEvidence)).digest("hex")};options.onEvidence?.(evidence);return {status:solved.budgetExhausted?"BUDGET_EXHAUSTED":"INFEASIBLE",scheduled:null,evidence};
@@ -527,10 +596,15 @@ export function canPlaceTransportGroup(
   policy: Readonly<TransportGroupingPolicy>,
 ): boolean {
   const first = tasks[0];
+  const direction = first && transportDirectionForTask(problem,first.id);
+  const peers = direction ? placed.filter(task=>transportDirectionForTask(problem,task.id)===direction) : [];
+  const simultaneous = peers.filter(task=>task.start===start);
   return first !== undefined
+    && tasks.length + simultaneous.length <= policy.maximumGroupSize
+    && simultaneous.every(task=>task.end===start+first.duration)
     && tasks.every((task) => task.duration === first.duration)
     && new Set(tasks.map((task) => task.participantId)).size === tasks.length
-    && previousGroupStarts.every((other) => Math.abs(start - other) >= policy.minGapMinutes)
+    && [...previousGroupStarts,...peers.map(task=>task.start)].every((other) => other===start || Math.abs(start - other) >= policy.minGapMinutes)
     && tasks.every((task) => task.dependencies.every((dependencyId) => {
       const dependency = placed.find(({ id }) => id === dependencyId);
       return dependency !== undefined && dependency.end <= start;
@@ -578,7 +652,7 @@ function participantBoundaryViolation(
     : otherObligations.some((obligation) => obligation.end > transportTask.start);
 }
 
-/** Independent final validation: derives groups solely from direction plus executed interval. */
+/** Independent final validation: equal starts form one group per direction. */
 export function validateTransportGrouping(
   problem: Readonly<PlannerNextProblem>,
   scheduled: readonly ScheduledTask[],
@@ -608,20 +682,23 @@ export function validateTransportGrouping(
       const defective=actual.filter(t=>!t.participantId||actual.filter(other=>other.participantId===t.participantId).length>1);
       detail('PARTICIPANT_IDENTITY',defective.map(t=>t.id),{tasks:defective.map(({id,participantId,start,end})=>({taskId:id,participantId:participantId??null,start,end}))});
     }
-    const byInterval = new Map<string, ScheduledTask[]>();
+    const byInterval = new Map<number, ScheduledTask[]>();
     for (const task of actual) {
-      const key = `${task.start}:${task.end}`;
+      const key = task.start;
       byInterval.set(key, [...(byInterval.get(key) ?? []), task]);
     }
     const groups = [...byInterval.values()]
       .map((group) => group.sort((left, right) => left.id.localeCompare(right.id)))
       .sort((left, right) => left[0]!.start - right[0]!.start || left[0]!.id.localeCompare(right[0]!.id));
     groupsByDirection[direction].push(...groups);
-    const invalidGroups=groups.filter((group) => group.length < policy.minimumGroupSize || group.length > policy.maximumGroupSize
-      || group.some((task) => task.start !== group[0]!.start || task.end !== group[0]!.end));
+    const invalidGroups=groups.filter((group) => group.length < policy.minimumGroupSize || group.length > policy.maximumGroupSize);
     if (invalidGroups.length) violationCount += 1;
     for(const group of invalidGroups)detail('GROUP_SIZE',group.map(t=>t.id),{start:group[0]!.start,end:group[0]!.end,
       actualGroupSize:group.length,minimumGroupSize:policy.minimumGroupSize,maximumGroupSize:policy.maximumGroupSize});
+    const unsynchronized=groups.filter(group=>group.some(task=>task.end!==group[0]!.end));
+    if(unsynchronized.length)violationCount+=1;
+    for(const group of unsynchronized)detail('GROUP_SYNCHRONIZATION',group.map(t=>t.id),{
+      start:group[0]!.start,members:group.map(({id,end})=>({taskId:id,end}))});
     for (let index = 1; index < groups.length; index += 1) {
       const previous=groups[index-1]!,current=groups[index]!;
       if (current[0]!.start - previous[0]!.start < policy.minGapMinutes) {

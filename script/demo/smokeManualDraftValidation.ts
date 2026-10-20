@@ -280,6 +280,8 @@ export async function runRecordedManualValidationJourney(options:Parameters<type
   await page.getByRole('button',{name:'Entrar con contraseña',exact:true}).click();await page.waitForURL('**/dashboard');
   await page.goto(`${appUrl}/plans/${planId}?tab=planning`);await page.getByTestId('assisted-workspace').waitFor();
   pass('recorded native A2 replay, generation explicitly not rerun');
-  return {sourceSha256:createHash('sha256').update(bytes).digest('hex'),generatedPlan:false,manual:await runManualDraftValidationProbe(options,page)};
+  const manual=process.argv.includes('--transport-policy-only')?undefined:await runManualDraftValidationProbe(options,page);
+  const transportPolicy=process.argv.includes('--transport-policy')?await (await import('./smokeTransportPolicyIntegrity')).runTransportPolicyIntegrity(options,page):undefined;
+  return {sourceSha256:createHash('sha256').update(bytes).digest('hex'),generatedPlan:false,manual,transportPolicy};
  }finally{await browser.close();}
 }

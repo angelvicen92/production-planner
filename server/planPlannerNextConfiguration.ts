@@ -53,6 +53,7 @@ export const planPlannerNextConfigurationSchema=z.object({
  operationalMealPolicies:z.array(z.object({id:text,window,durationMinutes:id,planResourceItemIds:ids,spaceIds:ids.optional()}).strict()),
  itinerantTeamAvailability:z.array(z.object({itinerantTeamId:id,windows:z.array(window).min(1),planResourceItemIds:ids.optional(),transitionMinutes:minutes.optional()}).strict()),
  resourcePresenceConcentrationPolicies:z.record(z.enum(['PREFERRED','REQUIRED'])),
+ arrivalMinimumGroupSize:id.optional(),departureMinimumGroupSize:id.optional(),
  arrivalMaximumGroupSize:id,departureMaximumGroupSize:id,
 }).strict();
 export type PlanPlannerNextConfiguration=z.infer<typeof planPlannerNextConfigurationSchema>;
@@ -75,7 +76,14 @@ export function applyPlanPlannerNextConfiguration(input:EngineInput,raw:unknown)
  if(!input.tasks.some(t=>t.templateId===config.mealTaskTemplateId))throw Error('INVALID_PLANNER_NEXT_CONFIGURATION: unknown meal template');
  const operations=new Map(config.taskOperations.map(({taskId,...op})=>[taskId,op]));
  const {contractVersion,taskOperations,legacyGroupingMode,...authorities}=config;
- return {...input,...authorities,transportSettings:input.transportSettings?{...input.transportSettings,arrivalMaximumGroupSize:config.arrivalMaximumGroupSize,departureMaximumGroupSize:config.departureMaximumGroupSize}:undefined,
+ const bounds = Object.fromEntries((["arrival", "departure"] as const).flatMap(direction =>
+  (["MinimumGroupSize", "MaximumGroupSize"] as const).map(kind => {
+   const field = `${direction}${kind}` as const;
+   const value = input.optimizerSnapshotSource === "DAY_OVERRIDE" && input[field] != null
+    ? input[field] : config[field] ?? input[field];
+   return [field, value];
+  }))) as Pick<EngineInput,"arrivalMinimumGroupSize"|"departureMinimumGroupSize"|"arrivalMaximumGroupSize"|"departureMaximumGroupSize">;
+ return {...input,...authorities,...bounds,transportSettings:input.transportSettings?{...input.transportSettings,...bounds}:undefined,
   // An explicit new day uses its setupPolicies, rather than inferred legacy V3
   // zone defaults. Existing days without this contract retain all legacy fields.
   groupingBySpaceId:{},minimizeChangesBySpace:{},groupingZoneIds:[],maxTemplateChangesByZoneId:{},optimizerGroupBySpaceAndTemplate:false,optimizerGroupingLevel:0,

@@ -1,0 +1,13 @@
+✔ historical frozen optimizer fingerprint and semantics survive absent/null new fields (16.156315ms)
+✔ explicit directional HARD bounds roundtrip through persistence, normalization, diff and fingerprint (2.254616ms)
+✔ human invalid bounds, fractions, targets and gaps are rejected before search without clamping (3.340536ms)
+✔ legacy day overrides dominate inherited snapshots; explicit day edits supersede legacy bounds through a new revision (34.415209ms)
+✔ the real General storage reader selects new bounds and supplies them to new-day snapshot capture (144.010438ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 694.687316

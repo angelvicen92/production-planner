@@ -1,3 +1,4 @@
+import { transportBoundsSchema } from "../shared/transportPolicy";
 import { mainFlowPreferenceFromRow } from "../shared/mainFlowPreference";
 import { registerIncidentRoutes } from './incidents';
 import { registerPlanningHeaderNotesRoutes } from './planningHeaderNotes';
@@ -1845,6 +1846,10 @@ function mapDeleteError(err: any, fallback: string) {
         groupingZoneIds: settings.groupingZoneIds,
         arrivalTaskTemplateName: settings.arrivalTaskTemplateName,
         departureTaskTemplateName: settings.departureTaskTemplateName,
+        arrivalMinimumGroupSize: settings.arrivalMinimumGroupSize ?? null,
+        departureMinimumGroupSize: settings.departureMinimumGroupSize ?? null,
+        arrivalMaximumGroupSize: settings.arrivalMaximumGroupSize ?? null,
+        departureMaximumGroupSize: settings.departureMaximumGroupSize ?? null,
         arrivalGroupingTarget: settings.arrivalGroupingTarget,
         departureGroupingTarget: settings.departureGroupingTarget,
         arrivalMinGapMinutes: settings.arrivalMinGapMinutes,
@@ -1863,6 +1868,7 @@ function mapDeleteError(err: any, fallback: string) {
     try {
       const input = api.optimizerSettings.update.input.parse(req.body);
       const current = await storage.getOptimizerSettings();
+      transportBoundsSchema.parse({...current, ...input});
 
       const patch: any = {};
       if (input.mainZoneId !== undefined) patch.main_zone_id = input.mainZoneId;
@@ -1924,6 +1930,10 @@ function mapDeleteError(err: any, fallback: string) {
       if (input.groupingZoneIds !== undefined) patch.grouping_zone_ids = Array.from(new Set((input.groupingZoneIds ?? []).map((v) => Number(v)).filter((v) => Number.isInteger(v) && v > 0)));
       if (input.arrivalTaskTemplateName !== undefined) patch.arrival_task_template_name = String(input.arrivalTaskTemplateName ?? "").trim();
       if (input.departureTaskTemplateName !== undefined) patch.departure_task_template_name = String(input.departureTaskTemplateName ?? "").trim();
+      if (input.arrivalMinimumGroupSize !== undefined) patch.arrival_minimum_group_size = input.arrivalMinimumGroupSize;
+      if (input.departureMinimumGroupSize !== undefined) patch.departure_minimum_group_size = input.departureMinimumGroupSize;
+      if (input.arrivalMaximumGroupSize !== undefined) patch.arrival_maximum_group_size = input.arrivalMaximumGroupSize;
+      if (input.departureMaximumGroupSize !== undefined) patch.departure_maximum_group_size = input.departureMaximumGroupSize;
       if (input.arrivalGroupingTarget !== undefined) patch.arrival_grouping_target = Math.max(0, Number(input.arrivalGroupingTarget));
       if (input.departureGroupingTarget !== undefined) patch.departure_grouping_target = Math.max(0, Number(input.departureGroupingTarget));
       if (input.arrivalMinGapMinutes !== undefined) patch.arrival_min_gap_minutes = Math.max(0, Number(input.arrivalMinGapMinutes));

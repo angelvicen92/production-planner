@@ -1,267 +1,51 @@
 import { SettingsSection } from "@/components/settings/settings-section";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { api } from "@shared/routes";
+import { transportBoundsSchema } from "@shared/transportPolicy";
 import { CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-type TransportSettings = {
-  arrivalTaskTemplateName: string;
-  departureTaskTemplateName: string;
-  arrivalGroupingTarget: number;
-  departureGroupingTarget: number;
-  arrivalMinGapMinutes: number;
-  departureMinGapMinutes: number;
-  vanCapacity: number;
-  weightArrivalDepartureGrouping: number;
-};
-
-const DEBOUNCE_MS = 500;
+import { TransportPolicyFields } from "./transport-policy-fields";
 
 export function TransportSettingsCard() {
-  const qc = useQueryClient();
-  const { toast } = useToast();
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState(false);
-  const [draft, setDraft] = useState<TransportSettings | null>(null);
-
-  const debounceTimerRef = useRef<number | null>(null);
-  const isSavingRef = useRef(false);
-  const pendingSaveRef = useRef<Partial<TransportSettings> | null>(null);
-
-  const settingsQ = useQuery<any>({
-    queryKey: [api.optimizerSettings.get.path],
-    queryFn: () => apiRequest("GET", api.optimizerSettings.get.path),
-  });
-  const templatesQ = useQuery<any[]>({
-    queryKey: [api.taskTemplates.list.path],
-    queryFn: () => apiRequest("GET", api.taskTemplates.list.path),
-  });
-
-  useEffect(() => {
-    if (!settingsQ.data) return;
-    setDraft({
-      arrivalTaskTemplateName: String(settingsQ.data.arrivalTaskTemplateName ?? ""),
-      departureTaskTemplateName: String(settingsQ.data.departureTaskTemplateName ?? ""),
-      arrivalGroupingTarget: Math.max(0, Number(settingsQ.data.arrivalGroupingTarget ?? 0) || 0),
-      departureGroupingTarget: Math.max(0, Number(settingsQ.data.departureGroupingTarget ?? 0) || 0),
-      arrivalMinGapMinutes: Math.max(0, Number(settingsQ.data.arrivalMinGapMinutes ?? 0) || 0),
-      departureMinGapMinutes: Math.max(0, Number(settingsQ.data.departureMinGapMinutes ?? 0) || 0),
-      vanCapacity: Math.max(0, Number(settingsQ.data.vanCapacity ?? 0) || 0),
-      weightArrivalDepartureGrouping: Math.max(0, Math.min(10, Number(settingsQ.data.weightArrivalDepartureGrouping ?? 0) || 0)),
-    });
-  }, [settingsQ.data]);
-
-  useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current !== null) {
-        window.clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, []);
-
-  const patchNow = async (payload: Partial<TransportSettings>) => {
-    if (Object.keys(payload).length === 0) return;
-
-    if (isSavingRef.current) {
-      pendingSaveRef.current = { ...(pendingSaveRef.current ?? {}), ...payload };
-      return;
-    }
-
-    setIsSaving(true);
-    setSaveError(false);
-    isSavingRef.current = true;
-
-    try {
-      await apiRequest("PATCH", api.optimizerSettings.update.path, payload);
-      qc.invalidateQueries({ queryKey: [api.optimizerSettings.get.path] });
-      toast({ title: "Transporte guardado" });
-    } catch (err: any) {
-      setSaveError(true);
-      toast({ title: "No se pudo guardar", description: err?.message || "Error desconocido", variant: "destructive" });
-    } finally {
-      setIsSaving(false);
-      isSavingRef.current = false;
-
-      if (pendingSaveRef.current) {
-        const queued = pendingSaveRef.current;
-        pendingSaveRef.current = null;
-        await patchNow(queued);
-      }
-    }
+  const qc=useQueryClient(),{toast}=useToast();
+  const [draft,setDraft]=useState<Record<string,any>|null>(null);
+  const [saving,setSaving]=useState(false),[error,setError]=useState<string|null>(null);
+  const settingsQ=useQuery<any>({queryKey:[api.optimizerSettings.get.path],queryFn:()=>apiRequest('GET',api.optimizerSettings.get.path)});
+  const templatesQ=useQuery<any[]>({queryKey:[api.taskTemplates.list.path],queryFn:()=>apiRequest('GET',api.taskTemplates.list.path)});
+  useEffect(()=>{
+    if(!settingsQ.data)return;
+    const fields=['arrivalTaskTemplateName','departureTaskTemplateName','arrivalMinimumGroupSize','departureMinimumGroupSize','arrivalGroupingTarget','departureGroupingTarget','arrivalMaximumGroupSize','departureMaximumGroupSize','arrivalMinGapMinutes','departureMinGapMinutes','vanCapacity','weightArrivalDepartureGrouping'];
+    setDraft(Object.fromEntries(fields.map(field=>[field,settingsQ.data[field]??(field.endsWith('Name')?'':field.endsWith('GroupSize')?null:0)])));
+  },[settingsQ.data]);
+  if(settingsQ.error)return <p role="alert">Error cargando transporte</p>;
+  if(!draft)return <Loader2 className="h-6 w-6 animate-spin"/>;
+  const update=(patch:Record<string,unknown>)=>setDraft(previous=>({...previous,...patch}));
+  const save=async()=>{
+    const parsed=api.optimizerSettings.update.input.safeParse(draft);
+    const bounds=transportBoundsSchema.safeParse(draft);
+    if(!parsed.success||!bounds.success){setError(bounds.error?.issues[0]?.message??'Revisa los valores: usa enteros no negativos y mínimos/máximos positivos.');return;}
+    setSaving(true);setError(null);
+    try{await apiRequest('PATCH',api.optimizerSettings.update.path,parsed.data);await qc.invalidateQueries({queryKey:[api.optimizerSettings.get.path]});toast({title:'Transporte guardado'});}
+    catch(err:any){setError(err.message??'No se pudo guardar el transporte');}
+    finally{setSaving(false);}
   };
-
-  const scheduleSave = (payload: Partial<TransportSettings>) => {
-    if (debounceTimerRef.current !== null) {
-      window.clearTimeout(debounceTimerRef.current);
-    }
-    debounceTimerRef.current = window.setTimeout(() => {
-      debounceTimerRef.current = null;
-      void patchNow(payload);
-    }, DEBOUNCE_MS);
-  };
-
-  const flushDebouncedSave = () => {
-    if (debounceTimerRef.current !== null) {
-      window.clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = null;
-    }
-  };
-
-  if (settingsQ.isLoading || !draft) {
-    return <div className="flex items-center justify-center h-24"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
-  }
-
-  if (settingsQ.error) {
-    return <div className="text-sm text-destructive">Error cargando transporte</div>;
-  }
-
-  const templates = (templatesQ.data ?? []) as any[];
-
-  return (
-    <SettingsSection section="transport" title="Transporte" busy={isSaving} error={settingsQ.error || saveError}>
-
-      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label>Plantilla Llegada</Label>
-          <Select
-            value={draft.arrivalTaskTemplateName || "none"}
-            disabled={isSaving}
-            onValueChange={(value) => {
-              const arrivalTaskTemplateName = value === "none" ? "" : value;
-              setDraft((prev) => (prev ? { ...prev, arrivalTaskTemplateName } : prev));
-              scheduleSave({ arrivalTaskTemplateName });
-            }}
-          >
-            <SelectTrigger><SelectValue placeholder="Selecciona plantilla" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Sin plantilla</SelectItem>
-              {templates.map((t: any) => <SelectItem key={t.id} value={String(t.name)}>{String(t.name)}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-1">
-          <Label>Plantilla Salida</Label>
-          <Select
-            value={draft.departureTaskTemplateName || "none"}
-            disabled={isSaving}
-            onValueChange={(value) => {
-              const departureTaskTemplateName = value === "none" ? "" : value;
-              setDraft((prev) => (prev ? { ...prev, departureTaskTemplateName } : prev));
-              scheduleSave({ departureTaskTemplateName });
-            }}
-          >
-            <SelectTrigger><SelectValue placeholder="Selecciona plantilla" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Sin plantilla</SelectItem>
-              {templates.map((t: any) => <SelectItem key={t.id} value={String(t.name)}>{String(t.name)}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-1">
-          <Label>Mínimo participantes por grupo de llegada</Label>
-          <Input
-            type="number"
-            value={draft.arrivalGroupingTarget}
-            disabled={isSaving}
-            onChange={(e) => {
-              const arrivalGroupingTarget = Math.max(0, Number(e.target.value) || 0);
-              setDraft((prev) => (prev ? { ...prev, arrivalGroupingTarget } : prev));
-            }}
-            onBlur={() => {
-              flushDebouncedSave();
-              void patchNow({ arrivalGroupingTarget: draft.arrivalGroupingTarget });
-            }}
-          />
-        </div>
-        <div className="space-y-1">
-          <Label>Mínimo participantes por grupo de salida</Label>
-          <Input
-            type="number"
-            value={draft.departureGroupingTarget}
-            disabled={isSaving}
-            onChange={(e) => {
-              const departureGroupingTarget = Math.max(0, Number(e.target.value) || 0);
-              setDraft((prev) => (prev ? { ...prev, departureGroupingTarget } : prev));
-            }}
-            onBlur={() => {
-              flushDebouncedSave();
-              void patchNow({ departureGroupingTarget: draft.departureGroupingTarget });
-            }}
-          />
-        </div>
-        <div className="space-y-1">
-          <Label>Tiempo mínimo entre llegadas (min)</Label>
-          <Input
-            type="number"
-            value={draft.arrivalMinGapMinutes}
-            disabled={isSaving}
-            onChange={(e) => {
-              const arrivalMinGapMinutes = Math.max(0, Number(e.target.value) || 0);
-              setDraft((prev) => (prev ? { ...prev, arrivalMinGapMinutes } : prev));
-            }}
-            onBlur={() => {
-              flushDebouncedSave();
-              void patchNow({ arrivalMinGapMinutes: draft.arrivalMinGapMinutes });
-            }}
-          />
-        </div>
-        <div className="space-y-1">
-          <Label>Tiempo mínimo entre salidas (min)</Label>
-          <Input
-            type="number"
-            value={draft.departureMinGapMinutes}
-            disabled={isSaving}
-            onChange={(e) => {
-              const departureMinGapMinutes = Math.max(0, Number(e.target.value) || 0);
-              setDraft((prev) => (prev ? { ...prev, departureMinGapMinutes } : prev));
-            }}
-            onBlur={() => {
-              flushDebouncedSave();
-              void patchNow({ departureMinGapMinutes: draft.departureMinGapMinutes });
-            }}
-          />
-        </div>
-        <div className="space-y-1">
-          <Label>Máximo participantes por grupo (capacidad furgoneta)</Label>
-          <Input
-            type="number"
-            value={draft.vanCapacity}
-            disabled={isSaving}
-            onChange={(e) => {
-              const vanCapacity = Math.max(0, Number(e.target.value) || 0);
-              setDraft((prev) => (prev ? { ...prev, vanCapacity } : prev));
-            }}
-            onBlur={() => {
-              flushDebouncedSave();
-              void patchNow({ vanCapacity: draft.vanCapacity });
-            }}
-          />
-        </div>
-        <div className="space-y-1">
-          <Label>Peso agrupación (0-10)</Label>
-          <Input
-            type="number"
-            value={draft.weightArrivalDepartureGrouping}
-            disabled={isSaving}
-            onChange={(e) => {
-              const weightArrivalDepartureGrouping = Math.max(0, Math.min(10, Number(e.target.value) || 0));
-              setDraft((prev) => (prev ? { ...prev, weightArrivalDepartureGrouping } : prev));
-            }}
-            onBlur={() => {
-              flushDebouncedSave();
-              void patchNow({ weightArrivalDepartureGrouping: draft.weightArrivalDepartureGrouping });
-            }}
-          />
-        </div>
-      </CardContent>
-    </SettingsSection>
-  );
+  return <SettingsSection section="transport" title="Transporte" busy={saving} error={!!error}>
+    <CardContent className="space-y-4">
+      <p className="text-sm text-muted-foreground">Configuración general para días nuevos. Las jornadas existentes conservan su configuración efectiva hasta una actualización explícita.</p>
+      <div className="grid gap-3 md:grid-cols-2">{([['arrival','Llegada IN'],['departure','Salida OUT']] as const).map(([direction,label])=><label key={direction} className="text-sm">Plantilla {label}
+        <select aria-label={`Plantilla ${label}`} disabled={saving} className="mt-1 block w-full rounded-md border bg-background p-2" value={draft[`${direction}TaskTemplateName`]} onChange={event=>update({[`${direction}TaskTemplateName`]:event.target.value})}>
+          <option value="">Sin plantilla</option>{(templatesQ.data??[]).map(template=><option key={template.id} value={template.name}>{template.name}</option>)}
+        </select></label>)}</div>
+      <TransportPolicyFields value={draft} disabled={saving} onChange={update}/>
+      <div className="grid gap-3 md:grid-cols-2">{([['vanCapacity','Capacidad de vehículo'],['weightArrivalDepartureGrouping','Peso agrupación (0-10)']] as const).map(([field,title])=><label key={field} className="text-sm">{title}<Input aria-label={title} type="number" min={0} step={1} disabled={saving} value={draft[field]} onChange={event=>update({[field]:Number(event.target.value)})}/></label>)}</div>
+      <p className="text-xs text-muted-foreground">Si no se declara un máximo por dirección, se utiliza la capacidad del vehículo. Un máximo explícito por dirección gobierna esa dirección y puede diferir de la capacidad heredada del vehículo.</p>
+      {error?<p role="alert" className="text-sm text-destructive">{error}</p>:null}
+      <Button disabled={saving} onClick={()=>void save()}>Guardar transporte</Button>
+    </CardContent>
+  </SettingsSection>;
 }

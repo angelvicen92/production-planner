@@ -30,9 +30,16 @@ export function transportViolationExplanation(violation:any):string|null{
  if(violation.ruleCode!=='TRANSPORT_GROUPING_VIOLATION')return null;
  const d=violation.details?.dimensions??{},direction=d.direction==='arrival'?'IN':'OUT';
  if(d.kind==='GROUP_SIZE')return `${direction}: grupo de ${d.actualGroupSize} participantes; ${d.actualGroupSize>d.maximumGroupSize?`máximo permitido ${d.maximumGroupSize}`:`mínimo requerido ${d.minimumGroupSize}`}.`;
+ if(d.kind==='GROUP_SYNCHRONIZATION')return `${direction}: los participantes con el mismo inicio forman un único grupo y deben terminar juntos. Revisa las duraciones de todos sus miembros.`;
  if(d.kind==='GROUP_GAP')return `${direction}: hay ${d.actualGapMinutes} minutos entre inicios de grupos; mínimo requerido ${d.minGapMinutes}.`;
  if(d.kind==='PARTICIPANT_BOUNDARY')return direction==='IN'?'La entrada debe terminar antes de las demás obligaciones del participante, incluida su comida.':'La salida debe empezar después de las demás obligaciones del participante, incluida su comida.';
  if(d.kind==='TASK_COVERAGE')return `${direction}: faltan tareas de transporte o existen tareas duplicadas.`;
  if(d.kind==='PARTICIPANT_IDENTITY')return `${direction}: cada tarea de transporte debe identificar un participante distinto.`;
  return 'La agrupación de entradas o salidas incumple la configuración vigente.';
+}
+
+export function transportPartitionExplanation(evidence:any):string|null{
+ const failures=evidence?.standaloneDiagnostic?.transportPartitionFailures;
+ if(!Array.isArray(failures)||!failures.length)return null;
+ return failures.map(value=>`${value.direction==='arrival'?'IN':'OUT'}: no existe una partición de ${value.count} participantes en grupos de ${value.minimumGroupSize} a ${value.maximumGroupSize}. Revisa los límites HARD de esta jornada.`).join(' ');
 }

@@ -1,5 +1,6 @@
 import { mainFlowPreferenceSchema } from "./mainFlowPreference";
 import { z } from "zod";
+import { transportParametersSchema } from "./transportPolicy";
 
 export const dayConfigSourceSchema = z.enum(["INHERITED", "DAY_OVERRIDE", "LEGACY_BACKFILL"]);
 export type DayConfigSource = z.infer<typeof dayConfigSourceSchema>;
@@ -33,7 +34,11 @@ export const dayConfigEditSchema = z.object({
   workday: timeWindowSchema.optional(),
   meal: mealConfigurationSchema.optional(),
   mainFlowPreference: mainFlowPreferenceSchema.optional(),
-  optimizer: z.record(z.string(), z.unknown()).optional(),
+  optimizer: z.record(z.string(), z.unknown()).superRefine((value,ctx)=>{
+    const transport=value.transport;
+    const parsed=transportParametersSchema.safeParse(transport==null?value:{...(typeof transport==='object'?transport:{}),...value});
+    if(!parsed.success)for(const issue of parsed.error.issues)ctx.addIssue({...issue,path:['transport',...issue.path]});
+  }).optional(),
   participantTransitionMinutes: z.number().int().min(0).optional(),
 }).strict().refine(value => value.mainFlowPreference !== undefined || value.workday !== undefined || value.meal !== undefined || value.optimizer !== undefined || value.participantTransitionMinutes !== undefined, "At least one capability is required");
 

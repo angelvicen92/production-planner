@@ -1,0 +1,25 @@
+{
+  "status": "CANDIDATE",
+  "base": "c777c5df2b040db4e9b69f30e73531ae13a19578",
+  "localProductCI": {
+    "status": "PASS",
+    "tests": 3001,
+    "fail": 0,
+    "note": "Followed by focal General-reader and accepted-context corrections; final head CI pending."
+  },
+  "transportReplay": {
+    "status": "PASS",
+    "generatedPlan": false,
+    "source": "Freshly generated native 266-obligation A2 in this task",
+    "remoteWrites": 0
+  },
+  "coldA2": {
+    "completed": 266,
+    "stageCount": 11,
+    "P9": "PASS",
+    "finalHeadRerun": "RUNNING"
+  },
+  "merge": false,
+  "publication": false,
+  "realSupabaseWrites": 0
+}

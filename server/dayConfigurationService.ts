@@ -1,3 +1,4 @@
+import { transportBoundsSchema } from "../shared/transportPolicy";
 import { mainFlowPreferenceFromRow } from "../shared/mainFlowPreference";
 import { withMainFlowPreference, validateMainFlowPreference } from "./mainFlowPreference";
 import { buildEngineInput } from "../engine/buildInput";
@@ -150,7 +151,14 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
       effectiveOptimizer = current.replay.optimizerSnapshot.source === "DAY_OVERRIDE" ? current.replay.optimizerSnapshot : optimizerBaseline;
     }
   }
-  const candidate = await buildCanonicalPlanConfig(planId, repository, candidateInput(current.input, plan, general, operation, payload), effectiveOptimizer);
+  // Rebuild from the candidate daily snapshot before deriving its authorities.
+  // Merely swapping replay.optimizerSnapshot leaves EngineInput/maxima stale.
+  const candidateRepository = new Proxy(repository, {get(target,key,receiver){
+    return key === 'getPlanOptimizerSnapshot' ? async()=>effectiveOptimizer : Reflect.get(target,key,receiver);
+  }});
+  const optimizerInput = optimizerSelected ? await buildEngineInput(planId,candidateRepository) : current.input;
+  transportBoundsSchema.parse(optimizerInput);
+  const candidate = await buildCanonicalPlanConfig(planId, repository, candidateInput(optimizerInput, plan, general, operation, payload), effectiveOptimizer);
   const { data, error } = await supabaseAdmin.rpc("apply_day_config_operation_v3", {
     p_plan_id: planId, p_actor: actorId, p_operation: operation, p_payload: {...payload,...(optimizerBaseline?{optimizerBaseline}: {}),...(mainPreferenceBaseline?{mainPreferenceBaseline}: {})},
     p_expected_revision: plan.current_config_revision_id == null ? null : Number(plan.current_config_revision_id),

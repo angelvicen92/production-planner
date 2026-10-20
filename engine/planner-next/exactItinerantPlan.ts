@@ -37,7 +37,7 @@ import { mainFlowMealBlockDistribution, createMainFlowMeal, mainFlowMealPolicy, 
 import { setupFamilySequence } from "./setupGrouping";
 import { roundSynchronizationTaskIds, validateRoundSynchronizations } from "./roundSynchronization";
 import { exploreExactRoundSynchronizationPolicy, revalidateFutureRoundSynchronizationWitness, probeExactRoundSynchronizationMacroDomain, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
-import { assessCoreArrivalTransportFeasibility, materializeTerminalTransportDetailed, transportTaskIds, type TransportMaterializationEvidence } from "./transportGrouping";
+import { assessCoreArrivalTransportFeasibility, materializeTerminalTransportDetailed, transportTaskIds, transportPartitionFailures, type TransportMaterializationEvidence } from "./transportGrouping";
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
 import { createTechnicalChainExplorer, getTechnicalChains, partialTechnicalChainContext, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
@@ -266,6 +266,7 @@ export function effectiveMainBlockCount(tasks:readonly ScheduledTask[]):number {
 }
 
 export interface ExactItinerantPlanEvidence extends FutureCollectiveClosureEvidence {
+  transportPartitionFailures?:ReturnType<typeof transportPartitionFailures>;
   mainFlowSoftPreference?:MainFlowSoftPreferenceEvidence;
   priorJointCompletionRevalidation?:"PASS"|"STALE"|"BUDGET_EXHAUSTED";
   priorJointCompletionReused?:boolean;
@@ -2330,6 +2331,14 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     standaloneBlockingTaskDetails:{},
     participantMealBranchesExplored:0,participantMealFutureFeasibilityChecks:0,participantMealFutureInfeasibleBranches:0,participantMealCheapProbes:0,participantMealAffectedObligationsChecked:0,participantMealAnalyticDomainBuilds:0,participantMealLogicalGridStarts:0,participantMealAnalyticallyEliminatedStarts:0,participantMealActuallyEvaluatedStarts:0,participantMealZeroDomainPrunes:0,participantMealAnalyticCollectivePrunes:0,participantMealExactSearchesAvoided:0,participantMealExactMaterializations:0,participantMealBlockingTaskIds:[],participantMealAcceptedWitnessFingerprint:null,participantMealFinalSelectionOrder:[],participantMealAttemptedSelectionTrace:[],firstParticipantMealFuturePrune:null,participantFutureReservationChecks:0,participantFutureReservationPasses:0,participantFutureReservationPrunes:0,participantFutureReservationAbstentions:0,participantFutureAffectedParticipants:0,participantFutureTasksChecked:0,participantFutureMealsChecked:0,participantFutureIndividualDomainChecks:0,participantFutureIndividualZeroDomainPrunes:0,participantFutureJointTaskMealChecks:0,participantFutureJointTaskMealPrunes:0,participantFutureCollectiveChecks:0,participantFutureCollectivePasses:0,participantFutureCollectivePrunes:0,participantFutureCompatiblePairChecks:0,participantFutureAnalyticChecks:0,participantFutureBranchesConsumed:0,participantFutureDominatedLaterStartsSkipped:0,participantFutureEarliestDominanceBranches:0,participantFutureMacroAnalyticChecks:0,participantFutureMacroAnalyticPrunes:0,participantFutureMacroAnalyticAbstentions:0,participantFutureTerminalExactChecks:0,participantFutureTerminalExactPasses:0,participantFutureTerminalExactPrunes:0,participantFutureTerminalExactAbstentions:0,participantFutureTerminalExactBranches:0,firstParticipantFutureTerminalExact:null,firstParticipantFutureReservationPrune:null,participantFutureUnreachableDependencyIds:[],technicalChainFutureReservationChecks:0,technicalChainFutureReservationPasses:0,technicalChainFutureReservationPrunes:0,technicalChainFutureReservationAbstentions:0,technicalChainFutureBranchesConsumed:0,firstTechnicalChainFutureReservationPrune:null,firstMultiDecisionConflict:null,preparedFutureTechnicalChainEvidence:futureTechnicalChains.evidence,operationalMealFutureReservation:operationalMeals.evidence,fixedMainFeederMealChecks:0,fixedMainFeederMealPasses:0,fixedMainFeederMealPrunes:0,firstFixedMainFeederMealPrune:null,standaloneEntryMealWitness:null,causalDiagnostic:null,
   };
+  const partitionFailures=transportPartitionFailures(problem,options.fixedPlacements);
+  if(partitionFailures.length){
+    evidence.transportPartitionFailures=partitionFailures;
+    evidence.reasonCodes=["TRANSPORT_GROUP_CARDINALITY_PARTITION_IMPOSSIBLE"];
+    const remainingTaskIds=problem.tasks.map(task=>task.id).sort();evidence.remainingTaskIds=remainingTaskIds;
+    return {status:"INFEASIBLE",complete:false,scheduledTasks:[],scheduledSetupPreparations:[],scheduledRoundPreparations:[],
+      scheduledSpaceMeals:[],scheduledParticipantMeals:[],scheduledResourceMeals:[],scheduledOperationalMeals:[],scheduledItinerantUnitMeals:[],remainingTaskIds,evidence};
+  }
   let selectedTasks: ScheduledTask[] | null = null, selectedPreparations: ScheduledSetupPreparation[] = [], selectedRoundPreparations: ScheduledRoundPreparation[] = [], selectedMeals: ScheduledSpaceMeal[] = [], selectedParticipantMeals: ParticipantMealWitness | null = null, selectedOperationalMeals: OperationalMealWitness | null = null, selectedCoreIds = new Set<string>();
   let selectedFutureRoundWitnesses:FutureRoundSynchronizationWitnessV1[]=[];
   let selectedFutureItinerantWitnesses:FutureItinerantAgendaWitnessV1[]=[];
@@ -3207,6 +3216,8 @@ export function constructFirstHardValidExactItinerantPlan(problem: PlannerNextPr
 
 /** AUTO keeps its accepted path; SOFT constructs the requested family first. */
 export function constructExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false,fixedSetupPreparations?:readonly ScheduledSetupPreparation[],fixedRoundPreparations?:readonly ScheduledRoundPreparation[],prior?:readonly import("./anonymousPipelineWitness").FutureStructuralWitness[]|Extract<import("./anonymousPipelineWitness").FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>,checkpoint?:()=>void): ExactItinerantPlanResult {
+  if(transportPartitionFailures(problem,fixedPlacements).length)
+    return runExactItinerantPlanSearch(problem,{fixedPlacements,acceptsValidation,checkpoint});
   const requested=problem.mainFlow?.preferredBlockCount;
   if(requested===undefined||!Number.isSafeInteger(requested)||requested<1)
     return constructConfiguredExactItinerantPlan(problem,causalDiagnostic,acceptsValidation,fixedPlacements,fixedPlacementsAsContext,

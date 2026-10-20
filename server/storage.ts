@@ -278,6 +278,10 @@ export interface IStorage {
     groupingZoneIds: number[];
     arrivalTaskTemplateName: string;
     departureTaskTemplateName: string;
+    arrivalMinimumGroupSize?: number | null;
+    departureMinimumGroupSize?: number | null;
+    arrivalMaximumGroupSize?: number | null;
+    departureMaximumGroupSize?: number | null;
     arrivalGroupingTarget: number;
     departureGroupingTarget: number;
     arrivalMinGapMinutes: number;
@@ -737,7 +741,7 @@ export class SupabaseStorage implements IStorage {
     const { data, error } = await supabaseAdmin
       .from("optimizer_settings")
       .select(
-        "main_zone_id, prioritize_main_zone, group_by_space_and_template, main_zone_priority_level, grouping_level, main_zone_opt_finish_early, main_zone_opt_keep_busy, contestant_compact_level, optimization_mode, main_zone_priority_advanced_value, main_zone_finish_early_level, main_zone_finish_early_advanced_value, main_zone_keep_busy_level, main_zone_keep_busy_advanced_value, grouping_advanced_value, contestant_compact_advanced_value, contestant_stay_in_zone_level, contestant_stay_in_zone_advanced_value, contestant_total_span_level, contestant_total_span_advanced_value, grouping_zone_ids, arrival_task_template_name, departure_task_template_name, arrival_grouping_target, departure_grouping_target, arrival_min_gap_minutes, departure_min_gap_minutes, van_capacity, weight_arrival_departure_grouping, near_hard_breaks_max",
+        "main_zone_id, prioritize_main_zone, group_by_space_and_template, main_zone_priority_level, grouping_level, main_zone_opt_finish_early, main_zone_opt_keep_busy, contestant_compact_level, optimization_mode, main_zone_priority_advanced_value, main_zone_finish_early_level, main_zone_finish_early_advanced_value, main_zone_keep_busy_level, main_zone_keep_busy_advanced_value, grouping_advanced_value, contestant_compact_advanced_value, contestant_stay_in_zone_level, contestant_stay_in_zone_advanced_value, contestant_total_span_level, contestant_total_span_advanced_value, grouping_zone_ids, arrival_task_template_name, departure_task_template_name, arrival_minimum_group_size, departure_minimum_group_size, arrival_maximum_group_size, departure_maximum_group_size, arrival_grouping_target, departure_grouping_target, arrival_min_gap_minutes, departure_min_gap_minutes, van_capacity, weight_arrival_departure_grouping, near_hard_breaks_max",
       )
       .eq("id", 1)
       .single();
@@ -881,6 +885,10 @@ export class SupabaseStorage implements IStorage {
       groupingZoneIds: parseGroupingZoneIds((data as any)?.grouping_zone_ids),
       arrivalTaskTemplateName: String((data as any)?.arrival_task_template_name ?? ""),
       departureTaskTemplateName: String((data as any)?.departure_task_template_name ?? ""),
+      arrivalMinimumGroupSize: (data as any)?.arrival_minimum_group_size ?? null,
+      departureMinimumGroupSize: (data as any)?.departure_minimum_group_size ?? null,
+      arrivalMaximumGroupSize: (data as any)?.arrival_maximum_group_size ?? null,
+      departureMaximumGroupSize: (data as any)?.departure_maximum_group_size ?? null,
       arrivalGroupingTarget: Math.max(0, Number((data as any)?.arrival_grouping_target ?? 0) || 0),
       departureGroupingTarget: Math.max(0, Number((data as any)?.departure_grouping_target ?? 0) || 0),
       arrivalMinGapMinutes: Math.max(0, Number((data as any)?.arrival_min_gap_minutes ?? 0) || 0),

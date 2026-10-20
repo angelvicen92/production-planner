@@ -488,6 +488,8 @@ export interface EngineInput {
   departureGroupingTarget?: number;
   arrivalMinGapMinutes?: number;
   departureMinGapMinutes?: number;
+  arrivalMinimumGroupSize?: number;
+  departureMinimumGroupSize?: number;
   arrivalMaximumGroupSize?: number;
   departureMaximumGroupSize?: number;
   vanCapacity?: number;
@@ -506,6 +508,8 @@ export interface EngineInput {
     departureTargetGroupSize?: number | null;
     arrivalMinGapMinutes?: number | null;
     departureMinGapMinutes?: number | null;
+    arrivalMinimumGroupSize?: number | null;
+    departureMinimumGroupSize?: number | null;
     arrivalMaximumGroupSize?: number | null;
     departureMaximumGroupSize?: number | null;
     vehicleCapacity?: number | null;

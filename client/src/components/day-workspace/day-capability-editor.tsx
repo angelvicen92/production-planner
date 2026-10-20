@@ -1,3 +1,5 @@
+import { TransportPolicyFields } from "../transport-policy-fields";
+import { transportBoundsSchema } from "@shared/transportPolicy";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +19,7 @@ export function DayCapabilityEditor({
   const [draft, setDraft] = useState(effective);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    setDraft(effective);
+    setDraft(effective?.transport?{...effective,transport:{...effective.transport,...effective.effectiveTransport}}:effective);
     setError(null);
   }, [effective]);
   if (!draft || value.availability !== "AVAILABLE") return null;
@@ -42,6 +44,10 @@ export function DayCapabilityEditor({
                 ),
               }
             : { optimizer: draft };
+    if(value.capabilityId === "OPTIMIZATION" && draft.transport) {
+      const bounds=transportBoundsSchema.safeParse({...effective.effectiveTransport,...draft.transport});
+      if(!bounds.success){setError(bounds.error.issues[0].message);return;}
+    }
     const parsed = dayConfigEditSchema.safeParse(payload);
     if (!parsed.success) {
       setError(
@@ -125,6 +131,10 @@ export function DayCapabilityEditor({
       ) : null}
       {value.capabilityId === "OPTIMIZATION" ? (
         <>
+          {draft.transport?<TransportPolicyFields disabled={disabled}
+            value={{...effective.effectiveTransport,...draft.transport}}
+            sources={effective.transportSources}
+            onChange={patch=>update({transport:{...draft.transport,...patch}})}/>:null}
           <label className="block text-sm">
             Modo de optimización
             <select

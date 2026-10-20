@@ -149,6 +149,10 @@ export function diffPlanOptimizerSnapshotsV1(
     current.transport.departurePlanTemplateSnapshotId,
     candidate.transport.departurePlanTemplateSnapshotId,
   );
+  pushScalarChange(changes, "TRANSPORT_PARAMETER", "transport.arrivalMinimumGroupSize", current.transport.arrivalMinimumGroupSize ?? null, candidate.transport.arrivalMinimumGroupSize ?? null);
+  pushScalarChange(changes, "TRANSPORT_PARAMETER", "transport.departureMinimumGroupSize", current.transport.departureMinimumGroupSize ?? null, candidate.transport.departureMinimumGroupSize ?? null);
+  pushScalarChange(changes, "TRANSPORT_PARAMETER", "transport.arrivalMaximumGroupSize", current.transport.arrivalMaximumGroupSize ?? null, candidate.transport.arrivalMaximumGroupSize ?? null);
+  pushScalarChange(changes, "TRANSPORT_PARAMETER", "transport.departureMaximumGroupSize", current.transport.departureMaximumGroupSize ?? null, candidate.transport.departureMaximumGroupSize ?? null);
   pushScalarChange(
     changes,
     "TRANSPORT_PARAMETER",

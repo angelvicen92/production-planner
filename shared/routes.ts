@@ -1,6 +1,7 @@
 import { mainFlowPreferenceSchema } from "./mainFlowPreference";
 import { createIncidentSchema, updateIncidentSchema, transitionIncidentSchema, incidentSchema, incidentDetailSchema, incidentContextSchema } from './incidents';
 import { z } from "zod";
+import { transportBoundsFields } from "./transportPolicy";
 import { createDayConfigurationIntentSchema, dayConfigEditSchema, dayConfigRefreshSchema, dayConfigRestoreSchema } from "./dayConfig";
 import { optimizerHeuristicKeys } from "./optimizer";
 import {
@@ -1095,6 +1096,7 @@ export const api = {
           groupingZoneIds: z.array(z.number().int().positive()),
           arrivalTaskTemplateName: z.string(),
           departureTaskTemplateName: z.string(),
+          ...transportBoundsFields,
           arrivalGroupingTarget: z.number().int().min(0).max(100),
           departureGroupingTarget: z.number().int().min(0).max(100),
           arrivalMinGapMinutes: z.number().int().min(0).max(600),
@@ -1151,6 +1153,7 @@ export const api = {
           groupingZoneIds: z.array(z.number().int().positive()).optional(),
           arrivalTaskTemplateName: z.string().max(120).optional(),
           departureTaskTemplateName: z.string().max(120).optional(),
+          ...transportBoundsFields,
           arrivalGroupingTarget: z.number().int().min(0).max(100).optional(),
           departureGroupingTarget: z.number().int().min(0).max(100).optional(),
           arrivalMinGapMinutes: z.number().int().min(0).max(600).optional(),
