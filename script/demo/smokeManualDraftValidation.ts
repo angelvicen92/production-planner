@@ -253,8 +253,14 @@ export async function runRequiredDeviationAcceptance(options:Parameters<typeof r
   await page.getByRole('button',{name:'Entrar con contraseña',exact:true}).click();await page.waitForURL('**/dashboard');await page.goto(`${appUrl}/plans/${planId}?tab=planning`);
   await page.getByTestId('stage-validation-report').waitFor();assert.equal(await page.getByTestId('assisted-hard-admin-required').count(),0);
   const response=page.waitForResponse(r=>r.url().endsWith('/assisted/accept-stage')&&r.request().method()==='POST');
-  const consent=page.waitForEvent('dialog');const click=page.getByRole('button',{name:'Aceptar etapa',exact:true}).click();
-  const dialog=await consent;confirmationText=dialog.message();assert.match(confirmationText,/desviación\(es\) operativas nuevas/);await dialog.accept();await click;
+  await page.getByRole('button',{name:'Aceptar etapa',exact:true}).click();
+  const consent=page.getByRole('alertdialog');await consent.waitFor();
+  confirmationText=await consent.innerText();
+  assert.match(confirmationText,/desviaciones operativas nuevas|desviación operativa nueva/);
+  await consent.locator('summary').click();
+  assert.ok((await consent.innerText()).includes('Aceptar') || (await consent.innerText()).includes('desviación'));
+  await consent.getByRole('button',{name:'Aceptar con desviaciones',exact:true}).click();
+  await consent.waitFor({state:'hidden'});
   const http=await response;assert.equal(http.status(),200);assert.equal(http.request().postDataJSON().confirmation,'REQUIRED_DEVIATIONS');
   await page.getByTestId('stage-validation-report').waitFor({state:'detached'});await page.getByTestId('assisted-workspace').screenshot({path:`${directory}/p9-required-accepted.png`});
  }finally{await browser.close();}
