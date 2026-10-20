@@ -1,0 +1,12 @@
+✔ A2-ASSIST-6 executes validation, atomic acceptance and inherited proposal (626.744489ms)
+✔ A2-ASSIST-2 executes editing, validation and Accept S2 through workflow seams (1282.543074ms)
+✔ stage metrics include Sodexo obligations and exclude supporting and witness placements (18.263158ms)
+✔ A2-ASSIST-8 product request/run/apply accepts the canonical first stage (128678.565158ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 131915.844831

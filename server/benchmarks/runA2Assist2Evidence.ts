@@ -51,7 +51,7 @@ export async function runA2Assist2Evidence(){
     return {error:{message:`unexpected RPC ${name}`}};
   };
   const identityMap=[1,2,3,4].map(id=>({namespace:"task",sourceId:String(id),canonicalId:`task:${id}`}));
-  const service=new AssistedPlanningService(storage,rpc,{buildInput:async()=>({planId,tasks:[]} as any),buildConfigRevision:()=>({contractVersion:1,planId,components:[],configurationFingerprint:"c".repeat(64)}),validateManual:createManualDeltaValidationHarness(problem,identityMap) as any});
+  const service=new AssistedPlanningService(storage,rpc,{lookupRole:async()=>'production',buildInput:async()=>({planId,tasks:[]} as any),buildConfigRevision:()=>({contractVersion:1,planId,components:[],configurationFingerprint:"c".repeat(64)}),validateManual:createManualDeltaValidationHarness(problem,identityMap) as any});
   const counters={manualEditCount:0,blockShiftCount:0,swapCount:0,splitCount:0,mergeCount:0,undoCount:0,redoCount:0};
   await service.editPlanningBlocks(planId,session.draftFingerprint,baseStageId,{kind:"CREATE_BLOCK",memberTaskIds:[1,2,3,4]});counters.manualEditCount++;
   const originalBlock=session.draftSnapshotJson.planningBlocks[0];

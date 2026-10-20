@@ -187,5 +187,22 @@
       "cause": "The variable PR base already contained P8 and correctly displayed S11; the historical before assertion expected Etapa 24.",
       "resolution": "Pin the baseline documented by P8; keep all candidate assertions unchanged."
     }
+  },
+  "benchmarkAuthorizationSeams": {
+    "tests": 4,
+    "pass": 4,
+    "fail": 0,
+    "productionCodeChanged": false,
+    "fixtures": {
+      "ASST-2": "production, clean acceptance",
+      "ASST-6": "admin, HARD decision and inheritance",
+      "ASST-8": "production, canonical first stage repeated",
+      "historical ASST-7": "admin role dependency; historical blocked diagnostic remains excluded from product gate"
+    },
+    "ciBefore": {
+      "head": "7c77f3bd20465d15ae307e09f96ef23d67f5c5a4",
+      "job": "https://github.com/angelvicen92/production-planner/actions/runs/39379923201/job/118486692360",
+      "cause": "In-memory acceptance benchmarks lacked the newly required live-role dependency; no fallback authorization was introduced."
+    }
   }
 }

@@ -135,3 +135,10 @@ integrar P8 esa base ya muestra S11, por lo que no puede representar Etapa 24.
 El workflow fija la base histórica 0e7442e4 documentada en la Evidence P8.
 El [ensayo repetido](p8-comparison.json) pasa las mismas aserciones de candidato,
 rollback, redo, divergencia y conservación de material; [integración](p8-integration.json.gz).
+
+Los seams de aceptación ASST-2/6/8 simulan almacenamiento y RPC, por lo que
+proporcionan también el rol del actor: production en aceptaciones limpias y admin
+en decisiones HARD. El harness histórico ASST-7 declara admin sin alterar su
+frontera bloqueada. [Cuatro regresiones ejecutadas](benchmark-roles.log), incluidas
+las dos ejecuciones canónicas de ASST-8, pasan. Las aserciones y los presupuestos
+se conservan; el servidor productivo mantiene su consulta de rol real.

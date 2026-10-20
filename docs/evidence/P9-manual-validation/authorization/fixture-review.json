@@ -15,8 +15,19 @@
     },
     {
       "file": "docs/evidence/P9-manual-validation/authorization/README.md",
-      "sha256": "781df8ec448ee83dcccbf28a9e52d7fbd5e7531be719c6d8093f417cdbfb9fae",
-      "decompressedBytes": 8144,
+      "sha256": "25fcf8b062901e3011a112216d5888a8d2e9ef4c56389f71dcdac1bfc660b504",
+      "decompressedBytes": 8621,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/benchmark-roles.log",
+      "sha256": "b440a6721d1df0c2f47b44412d57cd566811baec15ff2ce80413d8c904e661fe",
+      "decompressedBytes": 508,
       "findings": {
         "email": 0,
         "JWT": 0,
@@ -28,6 +39,17 @@
       "file": "docs/evidence/P9-manual-validation/authorization/build.log",
       "sha256": "853687749b240f126885eaed0d835173d200f02830ba51eba5251e8c8bd996fd",
       "decompressedBytes": 1261,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/check-benchmark-roles.log",
+      "sha256": "a46a017a03ccbce6a11785073fc6ba6904936107ceda838d08b2b4b7f356a7df",
+      "decompressedBytes": 34,
       "findings": {
         "email": 0,
         "JWT": 0,
@@ -180,8 +202,8 @@
     },
     {
       "file": "docs/evidence/P9-manual-validation/authorization/validation.json",
-      "sha256": "6b6f4d543fcd57a97bfefc989e847aa44be39273b665cf3b9fbd4bc282f210e1",
-      "decompressedBytes": 12743,
+      "sha256": "07858b35f3590bed099629ca73d407248556711ee05434c9a1893ea72586a531",
+      "decompressedBytes": 13503,
       "findings": {
         "email": 0,
         "JWT": 0,
