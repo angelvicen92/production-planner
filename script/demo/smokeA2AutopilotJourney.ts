@@ -36,10 +36,25 @@ export async function runA2AutopilotJourney(options: Options, baseline: Baseline
     page = await browser.newPage({ viewport: { width: 1440, height: 1000 } }); page.setDefaultTimeout(30_000);
     const errors: string[] = []; page.on("pageerror", e => errors.push(e.message));
     let consent = false;
-    page.on("dialog", dialog => {
-      assert.match(dialog.message(), /^(Delegas la aceptación automática exclusivamente|Volverás al estado inicial)/);
-      if (consent) { if(dialog.message().startsWith("Delegas")) report.delegatedConfirmations++; else report.restartConfirmations=(report.restartConfirmations??0)+1; void dialog.accept(); } else void dialog.dismiss();
-    });
+    const unexpectedNativeDialogs: string[] = [];
+    page.on("dialog", dialog => { unexpectedNativeDialogs.push(dialog.type()); void dialog.dismiss(); });
+    const chooseConsent = async (kind: "autopilot" | "restart") => {
+      const dialog = page!.getByRole("alertdialog");
+      await dialog.waitFor();
+      if (kind === "autopilot") {
+        assert.match(await dialog.innerText(), /etapas válidas/);
+      } else {
+        assert.match(await dialog.innerText(), /descartará el borrador/);
+      }
+      if (consent) {
+        await dialog.getByRole("button", { name: kind === "autopilot" ? "Completar automáticamente" : "Reiniciar", exact: true }).click();
+        if (kind === "autopilot") report.delegatedConfirmations++;
+        else report.restartConfirmations = (report.restartConfirmations ?? 0) + 1;
+      } else {
+        await dialog.getByRole("button", { name: "Cancelar", exact: true }).click();
+      }
+      await dialog.waitFor({ state: "hidden" });
+    };
     page.on("request", request => {
       if (request.method() !== "POST" || !request.url().includes(path)) return;
       const suffix = request.url().slice(request.url().indexOf(path) + path.length), body = request.postDataJSON();
@@ -73,6 +88,7 @@ export async function runA2AutopilotJourney(options: Options, baseline: Baseline
     const start = async (doubleClick = false) => {
       const button = page!.getByRole("button", { name: "Completar automáticamente", exact: true });
       if (doubleClick) await button.evaluate((el: HTMLButtonElement) => { el.click(); el.click(); }); else await button.click();
+      await chooseConsent("autopilot");
     };
     const scenarioStarts = new Map<number, number>();
     const markStart = async () => {
@@ -129,12 +145,15 @@ export async function runA2AutopilotJourney(options: Options, baseline: Baseline
     const beforeRestart=await api(),beforeRestartRequests=report.requests.length;
     await page.getByText("Configuración y mantenimiento de la sesión",{exact:true}).click();
     await page.getByRole("button",{name:"Reiniciar Asistida",exact:true}).click();
+    await chooseConsent("restart");
     assert.deepEqual(await api(),beforeRestart);assert.equal(report.requests.length,beforeRestartRequests);
     const denied=await fetch(`${appUrl}${path}/restart`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${users.viewer.token}`},body:JSON.stringify({expectedDraftFingerprint:beforeRestart.draftFingerprint,expectedBaseStageId:Number(beforeRestart.draftBaseStageId),confirmation:"RESTART_BOOTSTRAP"})});
     assert.equal(denied.status,403);assert.deepEqual(await api(),beforeRestart);
     consent=true;
     const restarted=page.waitForResponse(response=>response.url().endsWith(`${path}/restart`)&&response.status()===200);
-    await page.getByRole("button",{name:"Reiniciar Asistida",exact:true}).click();await restarted;
+    await page.getByRole("button",{name:"Reiniciar Asistida",exact:true}).click();
+    await chooseConsent("restart");
+    await restarted;
     await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(button=>button.textContent==='Reiniciar Asistida'&&!button.disabled));
     const clean=await api();assert.equal(clean.activeStage.ordinal,0);assert.deepEqual(clean.draft,s0.snapshotJson);
     assert.equal(clean.draft.tasks.filter((task:any)=>task.startPlanned&&task.endPlanned).length,0);
@@ -151,6 +170,7 @@ export async function runA2AutopilotJourney(options: Options, baseline: Baseline
     // gate; the fingerprint comparison is Evidence, not a scheduling hardcode.
     report.baselineFingerprint = baseline.stages.at(-1)!.fingerprint; report.sameBaselineGeometry = full.fingerprint === report.baselineFingerprint;
     await page.getByTestId("assisted-autopilot").screenshot({ path: `${directory}/autopilot-real-ui.png` });
+    assert.deepEqual(unexpectedNativeDialogs, [], "no browser-native confirmation dialogs remain");
     assert.deepEqual(errors, []); report.status = "PASS"; return report;
   } catch (error) {
     report.status = "FAIL"; report.error = error instanceof Error ? error.message : String(error);
