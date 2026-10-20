@@ -169,5 +169,23 @@
     "server/middleware/requireAuth.ts": "3b12e1b2e385707e66a7c4587ed13bdc9ee309f35756ebff8efd56a61fd237f6",
     "shared/assistedHistory.ts": "c7191252b4f9db3152c95180a5411d3b607a79c82cd5ca40d0d32e349f3c086f",
     "shared/assistedStageLineage.ts": "4b41c71b2eb226e7a4f1944e951f217b6ef537b5db510bec228c31b1b13965e0"
+  },
+  "p8Comparison": {
+    "status": "PASS",
+    "historicalBaseline": "0e7442e4b5ccf4fde6756841b7908b27e87fe1db",
+    "integratedMain": "e479c0695800cf78059a91d5f78beaeb3d1ad0d2",
+    "before": "Etapa 24",
+    "candidate": "Etapa S11",
+    "rollback": "S4",
+    "redo": "S5",
+    "branchAfterS4": "S5",
+    "remoteWrites": 0,
+    "materialPreserved": true,
+    "ciFailure": {
+      "head": "dc9a23132e00183944c9b69b71d5d7319b08698f",
+      "job": "https://github.com/angelvicen92/production-planner/actions/runs/39379385891/job/118484737118",
+      "cause": "The variable PR base already contained P8 and correctly displayed S11; the historical before assertion expected Etapa 24.",
+      "resolution": "Pin the baseline documented by P8; keep all candidate assertions unchanged."
+    }
   }
 }

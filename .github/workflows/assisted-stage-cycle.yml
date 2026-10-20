@@ -48,7 +48,9 @@ jobs:
       - name: Native Auth, HTTP, SQL and before/after UI on disposable A2
         env:
           P8_BASELINE_ROOT: work/p8/base
-          BASELINE_REF: ${{ github.event.pull_request.base.sha || 'main' }}
+          # The before/after probe asserts the pre-P8 display. New PR bases
+          # already contain P8; retain its documented historical authority.
+          BASELINE_REF: 0e7442e4b5ccf4fde6756841b7908b27e87fe1db
         run: |
           git worktree add --detach "$P8_BASELINE_ROOT" "$BASELINE_REF"
           ln -s "$PWD/node_modules" "$P8_BASELINE_ROOT/node_modules"

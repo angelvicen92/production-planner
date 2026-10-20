@@ -15,8 +15,8 @@
     },
     {
       "file": "docs/evidence/P9-manual-validation/authorization/README.md",
-      "sha256": "cb3dbccf3ed8871e29a01e14bad58a59648d451734aad4f85c36bb03bf0554a8",
-      "decompressedBytes": 7728,
+      "sha256": "781df8ec448ee83dcccbf28a9e52d7fbd5e7531be719c6d8093f417cdbfb9fae",
+      "decompressedBytes": 8144,
       "findings": {
         "email": 0,
         "JWT": 0,
@@ -113,6 +113,28 @@
       }
     },
     {
+      "file": "docs/evidence/P9-manual-validation/authorization/p8-comparison.json",
+      "sha256": "7b4165d6909159cffb8c64c00d348e11e3593f3a331544136a7a9205e3b8d167",
+      "decompressedBytes": 737,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/p8-integration.json.gz",
+      "sha256": "9109e5f8740d5dd0026fddc5f6c9eff6172a43de7cc552f5f37020c6bf8a4f0a",
+      "decompressedBytes": 43732,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
       "file": "docs/evidence/P9-manual-validation/authorization/red-authorization.log",
       "sha256": "8f433a49ca2d6365fec25da1a3be52f808b97d5ffe58a7d3dbcfb22b62427ae5",
       "decompressedBytes": 8523,
@@ -158,8 +180,8 @@
     },
     {
       "file": "docs/evidence/P9-manual-validation/authorization/validation.json",
-      "sha256": "5ec083e5dd74e21ebe8f62dc3ee4a48b8701599a1f9b6dfe425e9b938f819a4d",
-      "decompressedBytes": 11953,
+      "sha256": "6b6f4d543fcd57a97bfefc989e847aa44be39273b665cf3b9fbd4bc282f210e1",
+      "decompressedBytes": 12743,
       "findings": {
         "email": 0,
         "JWT": 0,

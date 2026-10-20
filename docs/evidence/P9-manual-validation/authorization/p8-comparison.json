@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "historicalBaseline": "0e7442e4b5ccf4fde6756841b7908b27e87fe1db",
+  "integratedMain": "e479c0695800cf78059a91d5f78beaeb3d1ad0d2",
+  "before": "Etapa 24",
+  "candidate": "Etapa S11",
+  "rollback": "S4",
+  "redo": "S5",
+  "branchAfterS4": "S5",
+  "remoteWrites": 0,
+  "materialPreserved": true,
+  "ciFailure": {
+    "head": "dc9a23132e00183944c9b69b71d5d7319b08698f",
+    "job": "https://github.com/angelvicen92/production-planner/actions/runs/39379385891/job/118484737118",
+    "cause": "The variable PR base already contained P8 and correctly displayed S11; the historical before assertion expected Etapa 24.",
+    "resolution": "Pin the baseline documented by P8; keep all candidate assertions unchanged."
+  }
+}

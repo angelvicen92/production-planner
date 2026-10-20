@@ -129,3 +129,9 @@ de la fixture permanecen intactas.
 No hay escrituras ni migraciones en Supabase real. No se cambia el solver,
 presupuestos, heurísticas ni reglas de validación de transporte. P8 conserva su
 numeración por lineage. El PR queda abierto; no se realiza merge ni despliegue.
+
+El comparador CI de P8 usaba la base variable del PR como estado «antes». Tras
+integrar P8 esa base ya muestra S11, por lo que no puede representar Etapa 24.
+El workflow fija la base histórica 0e7442e4 documentada en la Evidence P8.
+El [ensayo repetido](p8-comparison.json) pasa las mismas aserciones de candidato,
+rollback, redo, divergencia y conservación de material; [integración](p8-integration.json.gz).
