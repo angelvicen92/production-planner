@@ -1,0 +1,31 @@
+✔ accepts audited historical baseline and continuous 071-073 (78.548361ms)
+✔ rejects a post-cutoff duplicate (15.407308ms)
+✔ rejects a new migration at or below 070 (7.331832ms)
+✔ rejects a gap in the post-cutoff sequence (6.728735ms)
+✔ rejects a filename without a canonical prefix (8.165545ms)
+✔ filesystem order does not affect deterministic output (16.39886ms)
+✔ rejects a new unauthorized historical collision (8.257283ms)
+✔ rejects a missing audited historical file (7.541978ms)
+✔ 15 table policies resist legacy PUBLIC grants/policies and keep server access, for all six client identities (19077.466419ms)
+✔ real HTTP middleware blocks anonymous/debug and task writes while preserving authorized application flows (1076.051197ms)
+✔ template aliases and Express casing use the catalog admin authority before any handler (392.299308ms)
+✔ time correction and history share execution role boundaries including Express casing (4.813809ms)
+✔ production cannot accept a new HARD with NONE; no privileged RPC (57.580176ms)
+✔ production cannot accept a new HARD with REQUIRED_DEVIATIONS; no privileged RPC (1.72846ms)
+✔ production cannot accept a new HARD with HARD_EXCEPTIONS; no privileged RPC (3.460744ms)
+✔ admin accepts a new HARD only after a current server role lookup (1.627245ms)
+✔ production preserves clean acceptance (1.139363ms)
+✔ production preserves REQUIRED acceptance (1.65292ms)
+✔ production preserves intact inherited HARD acceptance (0.749982ms)
+✔ production preserves inherited HARD and new REQUIRED acceptance (0.833604ms)
+✔ revocation after validation is read at acceptance and forbids every write (0.918733ms)
+✔ a non-admin cannot preauthorize HARD_EXCEPTIONS on a clean or stale report (2.967609ms)
+✔ a legacy report without new counts falls back to total HARD and remains protected (0.236536ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 41087.058113

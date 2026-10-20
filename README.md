@@ -2,6 +2,17 @@
 
 Proyecto conectado a GitHub y gestionado con Codex.
 
+## P11 — Seguridad y disponibilidad Data API · 20/10/2026
+
+La migración aditiva 100 declara los permisos que necesita el servidor y las lecturas
+Realtime, y completa RLS al reconstruir el historial sin grants automáticos. No añade
+permisos anon ni escrituras authenticated. El gate `Data API grants` prueba permisos
+efectivos y llamadas nativas con PostgreSQL/Auth/PostgREST descartables.
+
+La [Evidence P11](docs/evidence/P11-data-api-grants/README.md) contiene la matriz por
+objeto/rol, la reproducción 42501 antes/después y las validaciones; conserva los avisos
+Advisor independientes. La entrega no aplica cambios a Supabase ni publica Replit.
+
 ## Demo A2 sobre catálogo histórico
 
 La Fuente 06 v2.8 y el [procedimiento de implantación](docs/evidence/A2-REAL-TOPOLOGY-DEPLOYMENT.md)

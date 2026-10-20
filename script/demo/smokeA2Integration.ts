@@ -19,6 +19,8 @@ import {buildA2SchemaSQL} from './prepareA2Schema';
 import {inspectA2Catalog} from './a2Preflight';
 import {runA2BrowserJourney} from './smokeA2Journey';
 import {seedA2ScopeCatalog} from './smokeA2ScopeSelectionJourney';
+import {dataApiCatalog} from './dataApiCatalog';
+import {legacyDataApiCatalog,verifyDataApiGrants,verifyDataApiActors} from './dataApiGrantsGate';
 
 const images={db:'postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24',auth:'supabase/gotrue:v2.177.0@sha256:6a916b47af0386b7e0152ca84f3d45d050bf056e449a75a5460b48742fd67822',rest:'postgrest/postgrest:v12.2.12@sha256:5f4ce744539bbba786b4e24dbbd95bdb2a956dcf568c5374995a0ff4a68f5bd2'};
 const delay=(ms:number)=>new Promise(r=>setTimeout(r,ms));
@@ -35,6 +37,7 @@ if(process.argv.includes('--app')){
  assert.equal(process.env.SUPABASE_URL,process.env.VITE_SUPABASE_URL);
  await import('../../server/index');
 }else{
+ const restrictedDataApi=process.argv.includes('--restricted-data-api');
  const templateAuthorization=process.argv.includes('--template-authorization');
  const settingsSections=process.argv.includes('--settings-sections');
  const templateCreation=process.argv.includes('--template-creation');
@@ -90,6 +93,7 @@ if(process.argv.includes('--app')){
  if(timeCorrections)runtimeFiles.push('script/demo/smokeExecutionTimeCorrections.ts','server/executionTimeCorrections.ts','server/liveExecution.ts','server/apiAuthorization.ts','shared/routes.ts','shared/schema.ts','client/src/lib/api.ts','client/src/lib/execution-precondition.ts','client/src/pages/my-day.tsx','client/src/components/my-day/time-correction-dialog.tsx','client/src/lib/execution-time-correction.ts','supabase/migrations/097_audited_execution_time_corrections.sql');
  if(productionScope)runtimeFiles.push('script/demo/smokeProductionScopeJourney.ts','supabase/migrations/096_production_execution_scope.sql');
  if(executionDateIntegrity)runtimeFiles.push('script/demo/smokeExecutionDateIntegrity.ts','server/liveExecution.ts','supabase/migrations/098_execution_start_workday.sql');
+ if(restrictedDataApi)runtimeFiles.push('script/demo/dataApiCatalog.ts','script/demo/dataApiGrantsGate.ts','script/demo/dataApiCallSheet.ts','script/demo/fixtures/data-api-privileges.json','supabase/migrations/100_data_api_explicit_grants.sql');
  const hashes=()=>Object.fromEntries(runtimeFiles.map(file=>[file,createHash('sha256').update(readFileSync(file)).digest('hex')]));
  if(warRoom)runtimeFiles.push('script/demo/smokeWarRoomJourney.ts','server/incidents.ts','server/incidentErrors.ts','shared/incidents.ts','client/src/pages/my-day.tsx','client/src/pages/war-room.tsx','client/src/hooks/use-war-room.ts','client/src/hooks/use-plan-realtime.ts','client/src/lib/war-room-store.ts','client/src/pages/dashboard.tsx','client/src/pages/call-sheet.tsx','server/apiAuthorization.ts','shared/routes.ts','shared/schema.ts','supabase/migrations/094_operational_incidents.sql');
  runtimeFiles.push('client/src/hooks/use-execution-context.ts','client/src/hooks/use-tasks.ts','client/src/hooks/use-production-clock.ts','shared/execution.ts','script/demo/smokeLiveExecutionJourney.ts');
@@ -133,13 +137,18 @@ if(process.argv.includes('--app')){
    CREATE SCHEMA auth;CREATE SCHEMA extensions;CREATE EXTENSION pgcrypto WITH SCHEMA extensions;
    CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claims',true)::jsonb->>'sub','')::uuid $$;
    GRANT USAGE ON SCHEMA public,auth,extensions TO anon,authenticated,service_role;
-   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon,authenticated,service_role;
-   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon,authenticated,service_role;`);
+   ${restrictedDataApi ? `ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM anon,authenticated,service_role;
+   ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM anon,authenticated,service_role;
+   ALTER DEFAULT PRIVILEGES REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
+   ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM anon,authenticated,service_role;`
+   : `ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon,authenticated,service_role;
+   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon,authenticated,service_role;`}`);
   const appPort=await freePort(),gatewayPort=await freePort(),url=`http://127.0.0.1:${gatewayPort}`,appUrl=`http://127.0.0.1:${appPort}`;
   const authPort=start('auth',images.auth,9999,{GOTRUE_API_HOST:'0.0.0.0',GOTRUE_API_PORT:'9999',API_EXTERNAL_URL:`${url}/auth/v1`,GOTRUE_SITE_URL:appUrl,GOTRUE_DB_DRIVER:'postgres',GOTRUE_DB_DATABASE_URL:`postgres://postgres:${password}@db:5432/postgres?search_path=auth`,GOTRUE_JWT_SECRET:secret,GOTRUE_JWT_EXP:'3600',GOTRUE_JWT_AUD:'authenticated',GOTRUE_JWT_DEFAULT_GROUP:'authenticated',GOTRUE_JWT_ADMIN_ROLES:'service_role',GOTRUE_DISABLE_SIGNUP:'false',GOTRUE_MAILER_AUTOCONFIRM:'true',GOTRUE_EXTERNAL_EMAIL_ENABLED:'true'});
   await eventually(async()=>assert.equal((await fetch(`http://127.0.0.1:${authPort}/health`)).status,200));
   report.migrations=[];
   for(const file of readdirSync('supabase/migrations').filter(n=>n.endsWith('.sql')).sort()){
+   if(restrictedDataApi && Number(file.slice(0,3))>=100)continue;
    const sql=readFileSync(`supabase/migrations/${file}`,'utf8');await db.query(sql);
    report.migrations.push({file,sha256:createHash('sha256').update(sql).digest('hex')});
   }
@@ -160,6 +169,29 @@ if(process.argv.includes('--app')){
   });
   await new Promise<void>(r=>gateway!.listen(gatewayPort,'127.0.0.1',r));
   await eventually(async()=>assert.equal((await fetch(`${url}/rest/v1/`,{headers:{apikey:anon}})).status,200));
+  if(restrictedDataApi){
+   const before=await dataApiCatalog(db);
+   writeFileSync(`${directory}/data-api-before.json`,JSON.stringify(before,null,2));
+   const denied=await fetch(`${url}/rest/v1/plans?select=id&limit=1`,{headers:{Authorization:`Bearer ${service}`}});
+   const failure=await denied.json() as any;assert.equal(denied.status,403);assert.equal(failure.code,'42501');
+   report.dataApiBefore={status:denied.status,error:failure};
+   const legacy=await legacyDataApiCatalog(db,{host:'127.0.0.1',port:dbPort,user:'postgres',password});
+   writeFileSync(`${directory}/data-api-legacy.json`,JSON.stringify(legacy,null,2));
+   let rollout=before;
+   for(const file of readdirSync('supabase/migrations').filter(n=>n.endsWith('.sql')&&Number(n.slice(0,3))>=100).sort()){
+    const sql=readFileSync(`supabase/migrations/${file}`,'utf8');await db.query(sql);
+    report.migrations.push({file,sha256:createHash('sha256').update(sql).digest('hex')});
+    if(Number(file.slice(0,3))===100){
+     rollout=await dataApiCatalog(db);await db.query(sql);
+     assert.deepEqual(await dataApiCatalog(db),rollout,'migration 100 is idempotent');
+    }
+   }
+   writeFileSync(`${directory}/data-api-after.json`,JSON.stringify(await dataApiCatalog(db),null,2));
+   await db.query("NOTIFY pgrst,'reload schema'");
+   await eventually(async()=>assert.equal((await fetch(`${url}/rest/v1/plans?select=id&limit=1`,{headers:{Authorization:`Bearer ${service}`}})).status,200));
+   report.dataApi=await verifyDataApiGrants({db,url,service,authenticatedToken:jwt('authenticated'),directory,before,legacy,rollout});
+   pass('restricted defaults: native service_role 42501 before additive grants, successful REST after');
+  }
   const users:Record<string,{id:string;email:string;password:string;token:string}>={};
   for(const role of ['admin','production','aux','viewer','norole']){
    const email=`${role}@a2.local.test`,loginPassword=`A2-${randomBytes(18).toString('hex')}!`,headers={Authorization:`Bearer ${service}`,apikey:service,'Content-Type':'application/json'};
@@ -227,6 +259,10 @@ if(process.argv.includes('--app')){
    await eventually(async()=>{assert.equal(baselineApp!.exitCode,null);assert.equal((await fetch(`${baselineUrl}/api/plans/27001`,{headers:{Authorization:`Bearer ${users.production.token}`}})).status,200);});
   }
   Object.assign(process.env,{SUPABASE_URL:url,SUPABASE_ANON_KEY:anon,SUPABASE_SERVICE_ROLE_KEY:service});
+  if(restrictedDataApi){
+   report.dataApiActors=await verifyDataApiActors({db,url,appUrl,anon,service,users,planId:dataset.input.planId,directory});
+   pass('native complete object/role matrix, invalid Auth, same-JWT role change/revocation and admin user cleanup');
+  }
   const {storage}=await import('../../server/storage');const {buildEngineInput}=await import('../../engine/buildInput');const {adaptEngineInputToPlannerNextProblem}=await import('../../engine/planner-next/integration/engineInputAdapter');
   if(headerNotes){
    const {runPlanningHeaderJourney}=await import('./smokePlanningHeaderJourney');

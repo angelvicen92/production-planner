@@ -1,0 +1,87 @@
+{
+  "status": "NATIVE_VALIDATED",
+  "base": "5f3052d3f520535502ca76e205aea6e9cd9a144e",
+  "migration100Sha256": "daa4764c56c2d878df0f39f3fd2d4ae5a119196506a55718b9a395483c589273",
+  "checks": {
+    "focalTests": {
+      "pass": 23,
+      "fail": 0
+    },
+    "typescript": "PASS",
+    "integrationTypescript": "PASS",
+    "build": "PASS",
+    "migrationSequence": "PASS",
+    "effectivePrivilegesNative": "PASS",
+    "sourceAstCallSites": 410,
+    "mutationMissingGrant": "PASS",
+    "mutationAnonymousExpansion": "PASS",
+    "nativeFutureTable42501AndRlsControl": "PASS",
+    "sameJwtRoleRevocation": "PASS",
+    "adminUserCleanup": "PASS",
+    "callSheetNativeBrowser": "PASS",
+    "nativeAssisted11Stages266Tasks": "PASS",
+    "nativeManualHardAndRequiredAcceptance": "PASS",
+    "nativeConfiguration": "PASS",
+    "nativeExecutionCorrections": "PASS",
+    "nativeControlRoom": "PASS in hosted CI 4739ad7",
+    "nativeWarRoom": "PASS in hosted CI 4739ad7",
+    "nativeHeaders": "PASS locally with authorized comparison base"
+  },
+  "reports": {
+    "configuration-integration.json": {
+      "status": "PASS",
+      "node": "v20.19.5",
+      "remoteWrites": 0,
+      "startedAt": "2026-10-20T15:20:44.981Z",
+      "checks": 11
+    },
+    "assisted-integration.json.gz": {
+      "status": "PASS",
+      "node": "v20.20.2",
+      "remoteWrites": 0,
+      "startedAt": "2026-10-20T15:28:14.830Z",
+      "checks": 28
+    },
+    "required-integration.json.gz": {
+      "status": "PASS",
+      "node": "v20.20.2",
+      "remoteWrites": 0,
+      "startedAt": "2026-10-20T15:32:29.313Z",
+      "checks": 7
+    },
+    "headers-integration.json.gz": {
+      "status": "PASS",
+      "node": "v20.19.5",
+      "remoteWrites": 0,
+      "startedAt": "2026-10-20T15:34:11.454Z",
+      "checks": 14
+    },
+    "execution-integration.json.gz": {
+      "status": "PASS",
+      "node": "v20.19.5",
+      "remoteWrites": 0,
+      "startedAt": "2026-10-20T15:24:41.184Z",
+      "checks": 12
+    }
+  },
+  "hostedCi": {
+    "initialHead": "4739ad79f4604f76023b3db474f968d5b3a711df",
+    "run": "https://github.com/angelvicen92/production-planner/actions/runs/39448501782",
+    "initialResults": {
+      "assisted": "PASS",
+      "configuration": "PASS",
+      "execution": "PASS",
+      "control-room": "PASS",
+      "war-room": "PASS",
+      "headers": "missing UI06_BASELINE_ROOT; workflow setup corrected and native local rehearsal PASS"
+    },
+    "finalResults": "See live checks on PR #1159; Evidence recorded before final push"
+  },
+  "localDiagnostics": {
+    "systemChromium": "420s proposal UI timeout on both authorized base with legacy grants and restricted candidate; CI bundled Chromium completed all 11 Stages. No engine or solver budget changes.",
+    "browserSetup": "Bundled Playwright Chromium installed for final local header rehearsal."
+  },
+  "remoteProductionWrites": 0,
+  "merged": false,
+  "deployed": false
+}

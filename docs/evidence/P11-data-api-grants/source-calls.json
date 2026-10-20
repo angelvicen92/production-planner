@@ -1,0 +1,4319 @@
+[
+  {
+    "file": "server/assistedConfigRefresh.ts",
+    "line": 100,
+    "kind": "rpc",
+    "object": "assisted_apply_config_refresh",
+    "ops": [],
+    "storageMethod": "apply",
+    "endpoints": []
+  },
+  {
+    "file": "server/assistedPlanningService.ts",
+    "line": 84,
+    "kind": "rpc",
+    "object": "assisted_bootstrap_session",
+    "ops": [],
+    "storageMethod": "start",
+    "endpoints": []
+  },
+  {
+    "file": "server/assistedPlanningService.ts",
+    "line": 143,
+    "kind": "rpc",
+    "object": "assisted_patch_draft",
+    "ops": [],
+    "storageMethod": "patchDraft",
+    "endpoints": []
+  },
+  {
+    "file": "server/assistedPlanningService.ts",
+    "line": 162,
+    "kind": "rpc",
+    "object": "assisted_patch_draft",
+    "ops": [],
+    "storageMethod": "editPlanningBlocks",
+    "endpoints": []
+  },
+  {
+    "file": "server/assistedPlanningService.ts",
+    "line": 178,
+    "kind": "rpc",
+    "object": "assisted_patch_draft",
+    "ops": [],
+    "storageMethod": "resetDraft",
+    "endpoints": []
+  },
+  {
+    "file": "server/assistedPlanningService.ts",
+    "line": 200,
+    "kind": "rpc",
+    "object": "assisted_accept_stage",
+    "ops": [],
+    "storageMethod": "accept",
+    "endpoints": []
+  },
+  {
+    "file": "server/assistedPlanningService.ts",
+    "line": 220,
+    "kind": "rpc",
+    "object": "assisted_record_proposal_clean_validation",
+    "ops": [],
+    "storageMethod": "validateDraft",
+    "endpoints": []
+  },
+  {
+    "file": "server/assistedPlanningService.ts",
+    "line": 270,
+    "kind": "rpc",
+    "object": "assisted_record_stage_validation",
+    "ops": [],
+    "storageMethod": "validateDraft",
+    "endpoints": []
+  },
+  {
+    "file": "server/assistedPlanningService.ts",
+    "line": 278,
+    "kind": "rpc",
+    "object": "assisted_restart_bootstrap",
+    "ops": [],
+    "storageMethod": "restart",
+    "endpoints": []
+  },
+  {
+    "file": "server/assistedPlanningService.ts",
+    "line": 283,
+    "kind": "rpc",
+    "object": "assisted_move_stage",
+    "ops": [],
+    "storageMethod": "rollback",
+    "endpoints": []
+  },
+  {
+    "file": "server/assistedPlanningService.ts",
+    "line": 284,
+    "kind": "rpc",
+    "object": "assisted_move_stage",
+    "ops": [],
+    "storageMethod": "redo",
+    "endpoints": []
+  },
+  {
+    "file": "server/assistedPlanningService.ts",
+    "line": 285,
+    "kind": "rpc",
+    "object": "assisted_move_draft_edit",
+    "ops": [],
+    "storageMethod": "undoDraft",
+    "endpoints": []
+  },
+  {
+    "file": "server/assistedPlanningService.ts",
+    "line": 286,
+    "kind": "rpc",
+    "object": "assisted_move_draft_edit",
+    "ops": [],
+    "storageMethod": "redoDraft",
+    "endpoints": []
+  },
+  {
+    "file": "server/assistedProposalService.ts",
+    "line": 73,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "insert",
+      "select"
+    ],
+    "storageMethod": "create",
+    "endpoints": []
+  },
+  {
+    "file": "server/assistedProposalService.ts",
+    "line": 74,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "find",
+    "endpoints": []
+  },
+  {
+    "file": "server/assistedProposalService.ts",
+    "line": 75,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "update"
+    ],
+    "storageMethod": "fail",
+    "endpoints": []
+  },
+  {
+    "file": "server/assistedProposalService.ts",
+    "line": 76,
+    "kind": "rpc",
+    "object": "assisted_finish_proposal",
+    "ops": [],
+    "storageMethod": "finish",
+    "endpoints": []
+  },
+  {
+    "file": "server/assistedProposalService.ts",
+    "line": 77,
+    "kind": "rpc",
+    "object": "assisted_apply_proposal",
+    "ops": [],
+    "storageMethod": "apply",
+    "endpoints": []
+  },
+  {
+    "file": "server/authz.ts",
+    "line": 7,
+    "kind": "from",
+    "object": "user_roles",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/dayConfigurationService.ts",
+    "line": 53,
+    "kind": "rpc",
+    "object": "initialize_day_config_revision",
+    "ops": []
+  },
+  {
+    "file": "server/dayConfigurationService.ts",
+    "line": 62,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/dayConfigurationService.ts",
+    "line": 63,
+    "kind": "from",
+    "object": "program_settings",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/dayConfigurationService.ts",
+    "line": 121,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/dayConfigurationService.ts",
+    "line": 122,
+    "kind": "from",
+    "object": "program_settings",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/dayConfigurationService.ts",
+    "line": 123,
+    "kind": "from",
+    "object": "plan_optimizer_snapshots",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/dayConfigurationService.ts",
+    "line": 162,
+    "kind": "rpc",
+    "object": "apply_day_config_operation_v3",
+    "ops": []
+  },
+  {
+    "file": "server/dayConfigurationService.ts",
+    "line": 170,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/effectiveConfigurationView.ts",
+    "line": 61,
+    "kind": "from",
+    "object": "program_settings",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/effectiveConfigurationView.ts",
+    "line": 61,
+    "kind": "from",
+    "object": "plan_optimizer_snapshots",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/executionTimeCorrections.ts",
+    "line": 17,
+    "kind": "rpc",
+    "object": "correct_task_execution_time",
+    "ops": []
+  },
+  {
+    "file": "server/executionTimeCorrections.ts",
+    "line": 21,
+    "kind": "rpc",
+    "object": "task_execution_history",
+    "ops": []
+  },
+  {
+    "file": "server/incidents.ts",
+    "line": 22,
+    "kind": "rpc",
+    "object": "incident_query",
+    "ops": []
+  },
+  {
+    "file": "server/incidents.ts",
+    "line": 37,
+    "kind": "rpc",
+    "object": "incident_command",
+    "ops": []
+  },
+  {
+    "file": "server/liveExecution.ts",
+    "line": 4,
+    "kind": "rpc",
+    "object": "execution_task_authorized",
+    "ops": []
+  },
+  {
+    "file": "server/liveExecution.ts",
+    "line": 10,
+    "kind": "rpc",
+    "object": "execution_context",
+    "ops": []
+  },
+  {
+    "file": "server/liveExecution.ts",
+    "line": 16,
+    "kind": "rpc",
+    "object": "execute_task_transition",
+    "ops": []
+  },
+  {
+    "file": "server/planningHeaderNotes.ts",
+    "line": 24,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/planningHeaderNotes.ts",
+    "line": 27,
+    "kind": "from",
+    "object": "plan_header_notes",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/planningHeaderNotes.ts",
+    "line": 33,
+    "kind": "rpc",
+    "object": "save_planning_header_notes",
+    "ops": []
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 103,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 112,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 161,
+    "kind": "from",
+    "object": "roles",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "POST /api/bootstrap-role"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 171,
+    "kind": "from",
+    "object": "user_roles",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "POST /api/bootstrap-role"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 183,
+    "kind": "from",
+    "object": "user_roles",
+    "ops": [
+      "upsert"
+    ],
+    "endpoints": [
+      "POST /api/bootstrap-role"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 189,
+    "kind": "from",
+    "object": "user_roles",
+    "ops": [
+      "insert"
+    ],
+    "endpoints": [
+      "POST /api/bootstrap-role"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 224,
+    "kind": "from",
+    "object": "user_entity_links",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "GET /api/me/links"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 251,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "GET /api/me/preferences"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 291,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "update"
+    ],
+    "endpoints": [
+      "POST /api/me/preferences/favorite-plan"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 298,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "update"
+    ],
+    "endpoints": [
+      "POST /api/me/preferences/favorite-plan"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 331,
+    "kind": "from",
+    "object": "user_roles",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "GET /api/admin/users"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 343,
+    "kind": "from",
+    "object": "user_entity_links",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "GET /api/admin/users"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 420,
+    "kind": "from",
+    "object": "roles",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "PATCH /api/admin/users/:userId/role"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 427,
+    "kind": "from",
+    "object": "user_roles",
+    "ops": [
+      "upsert"
+    ],
+    "endpoints": [
+      "PATCH /api/admin/users/:userId/role"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 454,
+    "kind": "from",
+    "object": "staff_people",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "PATCH /api/admin/users/:userId/links"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 460,
+    "kind": "from",
+    "object": "resource_items",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "PATCH /api/admin/users/:userId/links"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 467,
+    "kind": "from",
+    "object": "user_entity_links",
+    "ops": [
+      "delete"
+    ],
+    "endpoints": [
+      "PATCH /api/admin/users/:userId/links"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 477,
+    "kind": "from",
+    "object": "user_entity_links",
+    "ops": [
+      "upsert"
+    ],
+    "endpoints": [
+      "PATCH /api/admin/users/:userId/links"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 576,
+    "kind": "from",
+    "object": "staff_people",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 601,
+    "kind": "from",
+    "object": "staff_people",
+    "ops": [
+      "insert",
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 637,
+    "kind": "from",
+    "object": "staff_people",
+    "ops": [
+      "update",
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 664,
+    "kind": "from",
+    "object": "staff_people",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 681,
+    "kind": "from",
+    "object": "itinerant_teams",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 709,
+    "kind": "from",
+    "object": "itinerant_teams",
+    "ops": [
+      "insert",
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 741,
+    "kind": "from",
+    "object": "itinerant_teams",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 758,
+    "kind": "from",
+    "object": "staff_zone_mode_defaults",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 785,
+    "kind": "from",
+    "object": "staff_zone_mode_defaults",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 793,
+    "kind": "from",
+    "object": "staff_zone_mode_defaults",
+    "ops": [
+      "insert"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 808,
+    "kind": "from",
+    "object": "staff_assignment_defaults",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 919,
+    "kind": "from",
+    "object": "staff_assignment_defaults",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 927,
+    "kind": "from",
+    "object": "staff_assignment_defaults",
+    "ops": [
+      "insert"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 946,
+    "kind": "from",
+    "object": "plan_zone_staff_mode",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 977,
+    "kind": "from",
+    "object": "plan_zone_staff_mode",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 985,
+    "kind": "from",
+    "object": "plan_zone_staff_mode",
+    "ops": [
+      "insert"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1004,
+    "kind": "from",
+    "object": "plan_staff_assignments",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1060,
+    "kind": "from",
+    "object": "plan_staff_assignments",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1068,
+    "kind": "from",
+    "object": "plan_staff_assignments",
+    "ops": [
+      "insert"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1088,
+    "kind": "from",
+    "object": "zone_resource_defaults",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1119,
+    "kind": "from",
+    "object": "zone_resource_defaults",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1132,
+    "kind": "from",
+    "object": "zone_resource_defaults",
+    "ops": [
+      "insert"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1155,
+    "kind": "from",
+    "object": "space_resource_defaults",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1183,
+    "kind": "from",
+    "object": "space_resource_defaults",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1196,
+    "kind": "from",
+    "object": "space_resource_defaults",
+    "ops": [
+      "insert"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1215,
+    "kind": "from",
+    "object": "zone_resource_type_defaults",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1249,
+    "kind": "from",
+    "object": "zone_resource_type_defaults",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1263,
+    "kind": "from",
+    "object": "zone_resource_type_defaults",
+    "ops": [
+      "insert"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1282,
+    "kind": "from",
+    "object": "space_resource_type_defaults",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1316,
+    "kind": "from",
+    "object": "space_resource_type_defaults",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1330,
+    "kind": "from",
+    "object": "space_resource_type_defaults",
+    "ops": [
+      "insert"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1346,
+    "kind": "from",
+    "object": "resource_types",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "GET /api/resource-types-with-items"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1390,
+    "kind": "from",
+    "object": "resource_types",
+    "ops": [
+      "insert",
+      "select"
+    ],
+    "endpoints": [
+      "POST /api/resource-types"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1409,
+    "kind": "from",
+    "object": "resource_types",
+    "ops": [
+      "update"
+    ],
+    "endpoints": [
+      "DELETE /api/resource-types/:id"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1437,
+    "kind": "from",
+    "object": "resource_items",
+    "ops": [
+      "insert",
+      "select"
+    ],
+    "endpoints": [
+      "POST /api/resource-items"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1488,
+    "kind": "from",
+    "object": "resource_items",
+    "ops": [
+      "update",
+      "select"
+    ],
+    "endpoints": [
+      "PATCH /api/resource-items/:id"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1507,
+    "kind": "from",
+    "object": "resource_items",
+    "ops": [
+      "update"
+    ],
+    "endpoints": [
+      "DELETE /api/resource-items/:id"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1527,
+    "kind": "from",
+    "object": "resource_item_components",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "GET /api/resource-items/:id/components"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1540,
+    "kind": "from",
+    "object": "resource_items",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "GET /api/resource-items/:id/components"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1597,
+    "kind": "from",
+    "object": "resource_item_components",
+    "ops": [
+      "delete"
+    ],
+    "endpoints": [
+      "PUT /api/resource-items/:id/components"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1610,
+    "kind": "from",
+    "object": "resource_item_components",
+    "ops": [
+      "insert"
+    ],
+    "endpoints": [
+      "PUT /api/resource-items/:id/components"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1625,
+    "kind": "from",
+    "object": "resource_pools",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "GET /api/resource-pools"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1653,
+    "kind": "from",
+    "object": "resource_pools",
+    "ops": [
+      "insert",
+      "select"
+    ],
+    "endpoints": [
+      "POST /api/resource-pools"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1684,
+    "kind": "from",
+    "object": "resource_pools",
+    "ops": [
+      "update",
+      "select"
+    ],
+    "endpoints": [
+      "PATCH /api/resource-pools/:id"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1703,
+    "kind": "from",
+    "object": "resource_pools",
+    "ops": [
+      "delete"
+    ],
+    "endpoints": [
+      "DELETE /api/resource-pools/:id"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1719,
+    "kind": "from",
+    "object": "program_settings",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1772,
+    "kind": "from",
+    "object": "control_room_settings",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 1810,
+    "kind": "from",
+    "object": "control_room_settings",
+    "ops": [
+      "update"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2015,
+    "kind": "from",
+    "object": "optimizer_settings",
+    "ops": [
+      "update"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2031,
+    "kind": "from",
+    "object": "vocal_coach_rules",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2061,
+    "kind": "from",
+    "object": "vocal_coach_rules",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2073,
+    "kind": "from",
+    "object": "vocal_coach_rules",
+    "ops": [
+      "insert"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2089,
+    "kind": "from",
+    "object": "plan_resource_items",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2134,
+    "kind": "from",
+    "object": "plan_resource_items",
+    "ops": [
+      "insert",
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2158,
+    "kind": "from",
+    "object": "plan_resource_items",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2181,
+    "kind": "from",
+    "object": "plan_resource_items",
+    "ops": [
+      "update"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2201,
+    "kind": "from",
+    "object": "plan_resource_items",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2213,
+    "kind": "from",
+    "object": "plan_resource_items",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2232,
+    "kind": "from",
+    "object": "plan_resource_items",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2243,
+    "kind": "from",
+    "object": "resource_items",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2262,
+    "kind": "from",
+    "object": "plan_resource_items",
+    "ops": [
+      "insert"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2279,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2288,
+    "kind": "from",
+    "object": "plan_vocal_coach_rules",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2321,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2333,
+    "kind": "from",
+    "object": "plan_vocal_coach_rules",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2349,
+    "kind": "from",
+    "object": "plan_vocal_coach_rules",
+    "ops": [
+      "insert"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2368,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2377,
+    "kind": "from",
+    "object": "plan_space_resource_assignments",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2418,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2435,
+    "kind": "from",
+    "object": "plan_resource_items",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2453,
+    "kind": "from",
+    "object": "plan_space_resource_assignments",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2468,
+    "kind": "from",
+    "object": "plan_space_resource_assignments",
+    "ops": [
+      "insert"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2491,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2500,
+    "kind": "from",
+    "object": "plan_zone_resource_assignments",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2540,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2560,
+    "kind": "from",
+    "object": "plan_resource_items",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2577,
+    "kind": "from",
+    "object": "plan_zone_resource_assignments",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2592,
+    "kind": "from",
+    "object": "plan_zone_resource_assignments",
+    "ops": [
+      "insert"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2613,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2622,
+    "kind": "from",
+    "object": "plan_zone_resource_type_requirements",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2662,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2680,
+    "kind": "from",
+    "object": "plan_zone_resource_type_requirements",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2696,
+    "kind": "from",
+    "object": "plan_zone_resource_type_requirements",
+    "ops": [
+      "insert"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2715,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2724,
+    "kind": "from",
+    "object": "plan_space_resource_type_requirements",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2764,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2782,
+    "kind": "from",
+    "object": "plan_space_resource_type_requirements",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2798,
+    "kind": "from",
+    "object": "plan_space_resource_type_requirements",
+    "ops": [
+      "insert"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2817,
+    "kind": "from",
+    "object": "plan_resource_pools",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2858,
+    "kind": "from",
+    "object": "plan_resource_pools",
+    "ops": [
+      "update",
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2881,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2890,
+    "kind": "from",
+    "object": "plan_resource_pools",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2901,
+    "kind": "from",
+    "object": "resource_pools",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2916,
+    "kind": "from",
+    "object": "plan_resource_pools",
+    "ops": [
+      "insert"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2934,
+    "kind": "from",
+    "object": "spaces",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2949,
+    "kind": "from",
+    "object": "task_templates",
+    "ops": [
+      "update"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2960,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "update"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2973,
+    "kind": "from",
+    "object": "zones",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 2989,
+    "kind": "from",
+    "object": "spaces",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 3003,
+    "kind": "from",
+    "object": "task_templates",
+    "ops": [
+      "update"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 3016,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "update"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 3028,
+    "kind": "from",
+    "object": "spaces",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 3354,
+    "kind": "from",
+    "object": "task_templates",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 3374,
+    "kind": "from",
+    "object": "task_templates",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 3394,
+    "kind": "from",
+    "object": "spaces",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 3697,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 3717,
+    "kind": "from",
+    "object": "locks",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 3726,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 3747,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 3888,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "PATCH /api/daily-tasks/:id/planned-time"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 3896,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "update"
+    ],
+    "endpoints": [
+      "PATCH /api/daily-tasks/:id/planned-time"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 3918,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "DELETE /api/daily-tasks/:id/lock"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 3927,
+    "kind": "from",
+    "object": "locks",
+    "ops": [
+      "delete",
+      "select"
+    ],
+    "endpoints": [
+      "DELETE /api/daily-tasks/:id/lock"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 3960,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "PATCH /api/daily-tasks/:id/time-lock"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 3979,
+    "kind": "from",
+    "object": "locks",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "PATCH /api/daily-tasks/:id/time-lock"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4001,
+    "kind": "from",
+    "object": "locks",
+    "ops": [
+      "delete",
+      "select"
+    ],
+    "endpoints": [
+      "PATCH /api/daily-tasks/:id/time-lock"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4027,
+    "kind": "from",
+    "object": "locks",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "PATCH /api/daily-tasks/:id/time-lock"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4038,
+    "kind": "from",
+    "object": "locks",
+    "ops": [
+      "update"
+    ],
+    "endpoints": [
+      "PATCH /api/daily-tasks/:id/time-lock"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4050,
+    "kind": "from",
+    "object": "locks",
+    "ops": [
+      "insert"
+    ],
+    "endpoints": [
+      "PATCH /api/daily-tasks/:id/time-lock"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4064,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "update"
+    ],
+    "endpoints": [
+      "PATCH /api/daily-tasks/:id/time-lock"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4086,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "DELETE /api/plans/:id/time-locks"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4094,
+    "kind": "from",
+    "object": "locks",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "DELETE /api/plans/:id/time-locks"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4109,
+    "kind": "from",
+    "object": "locks",
+    "ops": [
+      "delete"
+    ],
+    "endpoints": [
+      "DELETE /api/plans/:id/time-locks"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4132,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "POST /api/plans/:id/reset"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4141,
+    "kind": "from",
+    "object": "engine_plan_results",
+    "ops": [
+      "delete",
+      "select"
+    ],
+    "endpoints": [
+      "POST /api/plans/:id/reset"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4161,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "POST /api/plans/:id/reset"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4167,
+    "kind": "from",
+    "object": "locks",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "POST /api/plans/:id/reset"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4204,
+    "kind": "from",
+    "object": "plan_breaks",
+    "ops": [
+      "update"
+    ],
+    "endpoints": [
+      "POST /api/plans/:id/reset"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4207,
+    "kind": "from",
+    "object": "plan_breaks",
+    "ops": [
+      "update"
+    ],
+    "endpoints": [
+      "POST /api/plans/:id/reset"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4208,
+    "kind": "from",
+    "object": "engine_plan_results",
+    "ops": [
+      "delete"
+    ],
+    "endpoints": [
+      "POST /api/plans/:id/reset"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4220,
+    "kind": "from",
+    "object": "locks",
+    "ops": [
+      "delete",
+      "select"
+    ],
+    "endpoints": [
+      "POST /api/plans/:id/reset"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4229,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "delete",
+      "select"
+    ],
+    "endpoints": [
+      "POST /api/plans/:id/reset"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4256,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "update"
+    ],
+    "endpoints": [
+      "POST /api/plans/:id/reset"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4264,
+    "kind": "from",
+    "object": "locks",
+    "ops": [
+      "delete",
+      "select"
+    ],
+    "endpoints": [
+      "POST /api/plans/:id/reset"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4319,
+    "kind": "from",
+    "object": "task_templates",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "POST /api/plans/:id/manual-block"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4328,
+    "kind": "from",
+    "object": "task_templates",
+    "ops": [
+      "insert",
+      "select"
+    ],
+    "endpoints": [
+      "POST /api/plans/:id/manual-block"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4372,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "insert",
+      "select"
+    ],
+    "endpoints": [
+      "POST /api/plans/:id/manual-block"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4380,
+    "kind": "from",
+    "object": "locks",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "POST /api/plans/:id/manual-block"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4390,
+    "kind": "from",
+    "object": "locks",
+    "ops": [
+      "update"
+    ],
+    "endpoints": [
+      "POST /api/plans/:id/manual-block"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4401,
+    "kind": "from",
+    "object": "locks",
+    "ops": [
+      "insert"
+    ],
+    "endpoints": [
+      "POST /api/plans/:id/manual-block"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4460,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "PATCH /api/daily-tasks/:id/manual-block"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4468,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "update"
+    ],
+    "endpoints": [
+      "PATCH /api/daily-tasks/:id/manual-block"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4544,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ],
+    "endpoints": [
+      "GET /api/debug/daily-task/:taskId"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4617,
+    "kind": "from",
+    "object": "engine_plan_results",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4649,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4712,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4739,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "update",
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4749,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 4776,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5140,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "update"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5178,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5186,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "update"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5192,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5208,
+    "kind": "from",
+    "object": "locks",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5227,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5245,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "insert",
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5278,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "update"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5294,
+    "kind": "from",
+    "object": "engine_plan_results",
+    "ops": [
+      "insert"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5306,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "update"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5315,
+    "kind": "from",
+    "object": "engine_plan_results",
+    "ops": [
+      "insert"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5326,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "update"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5375,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "insert",
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5384,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "insert",
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5394,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "update",
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5416,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5510,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "update",
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5587,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "update",
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5607,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5615,
+    "kind": "from",
+    "object": "plan_breaks",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5629,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "update"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5641,
+    "kind": "from",
+    "object": "plan_breaks",
+    "ops": [
+      "update"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5666,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "update",
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5702,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "select"
+    ]
+  },
+  {
+    "file": "server/routes.ts",
+    "line": 5722,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "update"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 84,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 100,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 107,
+    "kind": "from",
+    "object": "contestants",
+    "ops": [
+      "delete"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 352,
+    "kind": "from",
+    "object": "plan_config_revisions",
+    "ops": [
+      "insert",
+      "select"
+    ],
+    "storageMethod": "createPlanConfigRevision",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 356,
+    "kind": "from",
+    "object": "plan_config_revisions",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getPlanConfigRevision",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 360,
+    "kind": "from",
+    "object": "plan_config_revisions",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "listPlanConfigRevisions",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 364,
+    "kind": "from",
+    "object": "assisted_planning_sessions",
+    "ops": [
+      "insert",
+      "select"
+    ],
+    "storageMethod": "createAssistedPlanningSession",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 368,
+    "kind": "from",
+    "object": "assisted_planning_sessions",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getActiveAssistedPlanningSession",
+    "endpoints": [
+      "POST /api/plans/:id/reset"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 372,
+    "kind": "from",
+    "object": "assisted_planning_sessions",
+    "ops": [
+      "update",
+      "select"
+    ],
+    "storageMethod": "updateAssistedPlanningSession",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 376,
+    "kind": "from",
+    "object": "assisted_planning_stages",
+    "ops": [
+      "insert",
+      "select"
+    ],
+    "storageMethod": "createAssistedPlanningStage",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 380,
+    "kind": "from",
+    "object": "assisted_planning_stages",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getAssistedPlanningStage",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 384,
+    "kind": "from",
+    "object": "assisted_planning_stages",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "listAssistedPlanningStages",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 388,
+    "kind": "from",
+    "object": "assisted_planning_stages",
+    "ops": [
+      "update",
+      "select"
+    ],
+    "storageMethod": "archiveAssistedPlanningStage",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 392,
+    "kind": "from",
+    "object": "assisted_planning_sessions",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getAssistedPlanningHistoryTimings",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 395,
+    "kind": "from",
+    "object": "assisted_planning_stages",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getAssistedPlanningHistoryTimings",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 398,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getAssistedPlanningHistoryTimings",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 407,
+    "kind": "from",
+    "object": "planning_stage_validations",
+    "ops": [
+      "insert",
+      "select"
+    ],
+    "storageMethod": "createPlanningStageValidation",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 411,
+    "kind": "from",
+    "object": "planning_stage_validations",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getPlanningStageValidation",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 415,
+    "kind": "from",
+    "object": "planning_accepted_exceptions",
+    "ops": [
+      "insert",
+      "select"
+    ],
+    "storageMethod": "createPlanningAcceptedException",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 419,
+    "kind": "from",
+    "object": "planning_accepted_exceptions",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "listPlanningAcceptedExceptions",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 423,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "update"
+    ],
+    "storageMethod": "createPlanningRunDiagnostics",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 451,
+    "kind": "from",
+    "object": "planning_runs",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getLatestPlanningRunDiagnostics",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 506,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "syncPlanMealBreaks",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 520,
+    "kind": "from",
+    "object": "program_settings",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "syncPlanMealBreaks",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 545,
+    "kind": "from",
+    "object": "spaces",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "syncPlanMealBreaks",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 548,
+    "kind": "from",
+    "object": "zones",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "syncPlanMealBreaks",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 558,
+    "kind": "from",
+    "object": "itinerant_teams",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "syncPlanMealBreaks",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 562,
+    "kind": "from",
+    "object": "plan_breaks",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "syncPlanMealBreaks",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 619,
+    "kind": "from",
+    "object": "plan_breaks",
+    "ops": [
+      "insert"
+    ],
+    "storageMethod": "syncPlanMealBreaks",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 650,
+    "kind": "from",
+    "object": "plan_breaks",
+    "ops": [
+      "update"
+    ],
+    "storageMethod": "syncPlanMealBreaks",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 669,
+    "kind": "from",
+    "object": "plan_breaks",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "savePlannedBreakTimes",
+    "endpoints": [
+      "POST /api/plans/:id/manual-block"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 681,
+    "kind": "from",
+    "object": "plan_breaks",
+    "ops": [
+      "update"
+    ],
+    "storageMethod": "savePlannedBreakTimes",
+    "endpoints": [
+      "POST /api/plans/:id/manual-block"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 691,
+    "kind": "from",
+    "object": "plan_breaks",
+    "ops": [
+      "update"
+    ],
+    "storageMethod": "lockBreakTimes",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 700,
+    "kind": "from",
+    "object": "plan_breaks",
+    "ops": [
+      "update"
+    ],
+    "storageMethod": "clearBreakLock",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 709,
+    "kind": "from",
+    "object": "plan_summaries",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getPlans",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 741,
+    "kind": "from",
+    "object": "optimizer_settings",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getOptimizerSettings",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 924,
+    "kind": "from",
+    "object": "contestants",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getContestantsByPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 954,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createContestantForPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 982,
+    "kind": "from",
+    "object": "contestants",
+    "ops": [
+      "insert",
+      "select"
+    ],
+    "storageMethod": "createContestantForPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1012,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createContestantForPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1051,
+    "kind": "from",
+    "object": "plan_resource_items",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createContestantForPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1067,
+    "kind": "from",
+    "object": "vocal_coach_rules",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createContestantForPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1090,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createContestantForPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1161,
+    "kind": "from",
+    "object": "plan_resource_items",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updateContestantForPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1177,
+    "kind": "from",
+    "object": "vocal_coach_rules",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updateContestantForPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1212,
+    "kind": "from",
+    "object": "contestants",
+    "ops": [
+      "update",
+      "select"
+    ],
+    "storageMethod": "updateContestantForPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1230,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updateContestantForPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1281,
+    "kind": "from",
+    "object": "contestants",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "deleteContestantForPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1291,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "deleteContestantForPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1304,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "delete"
+    ],
+    "storageMethod": "deleteContestantForPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1311,
+    "kind": "from",
+    "object": "contestants",
+    "ops": [
+      "delete"
+    ],
+    "storageMethod": "deleteContestantForPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1320,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1339,
+    "kind": "from",
+    "object": "program_settings",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1340,
+    "kind": "from",
+    "object": "zones",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1341,
+    "kind": "from",
+    "object": "spaces",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1342,
+    "kind": "from",
+    "object": "resource_bundles",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1343,
+    "kind": "from",
+    "object": "resource_bundle_components",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1344,
+    "kind": "from",
+    "object": "resource_bundle_space_affinities",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1346,
+    "kind": "from",
+    "object": "optimizer_settings",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1394,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "insert",
+      "select"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1439,
+    "kind": "from",
+    "object": "plan_task_template_snapshots",
+    "ops": [
+      "insert",
+      "select"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1469,
+    "kind": "from",
+    "object": "plan_zone_settings",
+    "ops": [
+      "insert"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1474,
+    "kind": "from",
+    "object": "plan_space_settings",
+    "ops": [
+      "insert"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1491,
+    "kind": "from",
+    "object": "plan_resource_bundle_snapshots",
+    "ops": [
+      "insert"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1524,
+    "kind": "from",
+    "object": "plan_optimizer_snapshots",
+    "ops": [
+      "insert",
+      "select"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1538,
+    "kind": "from",
+    "object": "plan_optimizer_snapshot_heuristics",
+    "ops": [
+      "insert"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1544,
+    "kind": "from",
+    "object": "plan_optimizer_snapshot_grouping_zones",
+    "ops": [
+      "insert"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1560,
+    "kind": "from",
+    "object": "resource_items",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1579,
+    "kind": "from",
+    "object": "plan_resource_items",
+    "ops": [
+      "insert"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1587,
+    "kind": "from",
+    "object": "zone_resource_defaults",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1594,
+    "kind": "from",
+    "object": "plan_resource_items",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1628,
+    "kind": "from",
+    "object": "plan_zone_resource_assignments",
+    "ops": [
+      "insert"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1636,
+    "kind": "from",
+    "object": "zone_resource_type_defaults",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1656,
+    "kind": "from",
+    "object": "plan_zone_resource_type_requirements",
+    "ops": [
+      "insert"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1665,
+    "kind": "from",
+    "object": "space_resource_type_defaults",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1686,
+    "kind": "from",
+    "object": "plan_space_resource_type_requirements",
+    "ops": [
+      "insert"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1699,
+    "kind": "from",
+    "object": "staff_zone_mode_defaults",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1715,
+    "kind": "from",
+    "object": "plan_zone_staff_mode",
+    "ops": [
+      "insert"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1722,
+    "kind": "from",
+    "object": "staff_assignment_defaults",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1845,
+    "kind": "from",
+    "object": "plan_staff_assignments",
+    "ops": [
+      "insert"
+    ],
+    "storageMethod": "createPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1866,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "deletePlan",
+    "endpoints": [
+      "DELETE /api/plans/:id"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1876,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "deletePlan",
+    "endpoints": [
+      "DELETE /api/plans/:id"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1893,
+    "kind": "from",
+    "object": "locks",
+    "ops": [
+      "delete"
+    ],
+    "storageMethod": "deletePlan",
+    "endpoints": [
+      "DELETE /api/plans/:id"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1899,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "delete"
+    ],
+    "storageMethod": "deletePlan",
+    "endpoints": [
+      "DELETE /api/plans/:id"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1905,
+    "kind": "from",
+    "object": "contestants",
+    "ops": [
+      "delete"
+    ],
+    "storageMethod": "deletePlan",
+    "endpoints": [
+      "DELETE /api/plans/:id"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1912,
+    "kind": "from",
+    "object": "plan_resource_items",
+    "ops": [
+      "delete"
+    ],
+    "storageMethod": "deletePlan",
+    "endpoints": [
+      "DELETE /api/plans/:id"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1918,
+    "kind": "from",
+    "object": "plan_resource_pools",
+    "ops": [
+      "delete"
+    ],
+    "storageMethod": "deletePlan",
+    "endpoints": [
+      "DELETE /api/plans/:id"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1924,
+    "kind": "from",
+    "object": "resource_availability",
+    "ops": [
+      "delete"
+    ],
+    "storageMethod": "deletePlan",
+    "endpoints": [
+      "DELETE /api/plans/:id"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1931,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "delete"
+    ],
+    "storageMethod": "deletePlan",
+    "endpoints": [
+      "DELETE /api/plans/:id"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1942,
+    "kind": "from",
+    "object": "zones",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getZones",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 1951,
+    "kind": "from",
+    "object": "zones",
+    "ops": [
+      "insert",
+      "select"
+    ],
+    "storageMethod": "createZone",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2006,
+    "kind": "from",
+    "object": "zones",
+    "ops": [
+      "update",
+      "select"
+    ],
+    "storageMethod": "updateZone",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2018,
+    "kind": "from",
+    "object": "spaces",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getSpaces",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2046,
+    "kind": "from",
+    "object": "spaces",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createSpace",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2060,
+    "kind": "from",
+    "object": "spaces",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createSpace",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2084,
+    "kind": "from",
+    "object": "spaces",
+    "ops": [
+      "insert",
+      "select"
+    ],
+    "storageMethod": "createSpace",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2148,
+    "kind": "from",
+    "object": "spaces",
+    "ops": [
+      "update",
+      "select"
+    ],
+    "storageMethod": "updateSpace",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2172,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getTasksForPlanForEngineInput",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2182,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getTasksForPlan",
+    "endpoints": [
+      "GET /api/plans/:id/tasks"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2278,
+    "kind": "from",
+    "object": "plan_space_settings",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createDailyTask",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2295,
+    "kind": "from",
+    "object": "task_templates",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "createDailyTask",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2305,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "insert",
+      "select"
+    ],
+    "storageMethod": "createDailyTask",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2333,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updateDailyTask",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2352,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "update",
+      "select"
+    ],
+    "storageMethod": "updateDailyTask",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2370,
+    "kind": "from",
+    "object": "spaces",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updateDailyTaskLocation",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2389,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "update",
+      "select"
+    ],
+    "storageMethod": "updateDailyTaskLocation",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2402,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updateDailyTaskLocation",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2427,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "update",
+      "select"
+    ],
+    "storageMethod": "updatePlannedTimes",
+    "endpoints": [
+      "POST /api/plans/:id/manual-block"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2454,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "update",
+      "select"
+    ],
+    "storageMethod": "updateAssignedResources",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2476,
+    "kind": "rpc",
+    "object": "reset_task_execution",
+    "ops": [],
+    "storageMethod": "resetTask",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2482,
+    "kind": "from",
+    "object": "plan_zone_settings",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getPlanZoneSettings",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2488,
+    "kind": "from",
+    "object": "plan_space_settings",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getPlanSpaceSettings",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2494,
+    "kind": "from",
+    "object": "plan_resource_bundle_snapshots",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getPlanResourceBundleSnapshot",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2501,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "initializePlanSpatialAvailabilitySnapshots",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2502,
+    "kind": "from",
+    "object": "zones",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "initializePlanSpatialAvailabilitySnapshots",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2503,
+    "kind": "from",
+    "object": "spaces",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "initializePlanSpatialAvailabilitySnapshots",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2519,
+    "kind": "from",
+    "object": "plan_zone_settings",
+    "ops": [
+      "insert"
+    ],
+    "storageMethod": "initializePlanSpatialAvailabilitySnapshots",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2524,
+    "kind": "from",
+    "object": "plan_space_settings",
+    "ops": [
+      "insert"
+    ],
+    "storageMethod": "initializePlanSpatialAvailabilitySnapshots",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2528,
+    "kind": "from",
+    "object": "plan_zone_settings",
+    "ops": [
+      "delete"
+    ],
+    "storageMethod": "initializePlanSpatialAvailabilitySnapshots",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2540,
+    "kind": "from",
+    "object": "zones",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updateProgramSettingsAtomic",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2541,
+    "kind": "from",
+    "object": "spaces",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updateProgramSettingsAtomic",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2549,
+    "kind": "from",
+    "object": "program_settings",
+    "ops": [
+      "update",
+      "select"
+    ],
+    "storageMethod": "updateProgramSettingsAtomic",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2556,
+    "kind": "from",
+    "object": "zones",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updateZoneDefaultAvailability",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2558,
+    "kind": "from",
+    "object": "program_settings",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updateZoneDefaultAvailability",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2559,
+    "kind": "from",
+    "object": "zones",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updateZoneDefaultAvailability",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2560,
+    "kind": "from",
+    "object": "spaces",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updateZoneDefaultAvailability",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2565,
+    "kind": "from",
+    "object": "zones",
+    "ops": [
+      "update",
+      "select"
+    ],
+    "storageMethod": "updateZoneDefaultAvailability",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2572,
+    "kind": "from",
+    "object": "spaces",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updateSpaceDefaultAvailability",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2574,
+    "kind": "from",
+    "object": "program_settings",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updateSpaceDefaultAvailability",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2575,
+    "kind": "from",
+    "object": "spaces",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updateSpaceDefaultAvailability",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2579,
+    "kind": "from",
+    "object": "zones",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updateSpaceDefaultAvailability",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2582,
+    "kind": "from",
+    "object": "spaces",
+    "ops": [
+      "update",
+      "select"
+    ],
+    "storageMethod": "updateSpaceDefaultAvailability",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2589,
+    "kind": "from",
+    "object": "plan_space_settings",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updatePlanSpaceAvailability",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2591,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updatePlanSpaceAvailability",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2592,
+    "kind": "from",
+    "object": "plan_space_settings",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updatePlanSpaceAvailability",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2596,
+    "kind": "from",
+    "object": "plan_zone_settings",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updatePlanSpaceAvailability",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2600,
+    "kind": "from",
+    "object": "plan_space_settings",
+    "ops": [
+      "update",
+      "select"
+    ],
+    "storageMethod": "updatePlanSpaceAvailability",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2606,
+    "kind": "from",
+    "object": "plan_zone_settings",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updatePlanZoneAvailability",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2608,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updatePlanZoneAvailability",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2609,
+    "kind": "from",
+    "object": "plan_space_settings",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updatePlanZoneAvailability",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2617,
+    "kind": "from",
+    "object": "plan_zone_settings",
+    "ops": [
+      "update",
+      "select"
+    ],
+    "storageMethod": "updatePlanZoneAvailability",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2622,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "updatePlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2674,
+    "kind": "from",
+    "object": "plans",
+    "ops": [
+      "update",
+      "select"
+    ],
+    "storageMethod": "updatePlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2686,
+    "kind": "from",
+    "object": "contestants",
+    "ops": [
+      "update"
+    ],
+    "storageMethod": "updatePlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2698,
+    "kind": "from",
+    "object": "contestants",
+    "ops": [
+      "update"
+    ],
+    "storageMethod": "updatePlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2712,
+    "kind": "from",
+    "object": "plan_optimizer_snapshots",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getPlanOptimizerSnapshot",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2727,
+    "kind": "from",
+    "object": "plan_optimizer_snapshot_heuristics",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getPlanOptimizerSnapshot",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2732,
+    "kind": "from",
+    "object": "plan_optimizer_snapshot_grouping_zones",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getPlanOptimizerSnapshot",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2750,
+    "kind": "from",
+    "object": "plan_task_template_snapshots",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getPlanTaskTemplateSnapshots",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2764,
+    "kind": "from",
+    "object": "plan_task_template_snapshots",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "ensurePlanTaskTemplateSnapshot",
+    "endpoints": [
+      "POST /api/plans/:id/manual-block"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2777,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "ensurePlanTaskTemplateSnapshot",
+    "endpoints": [
+      "POST /api/plans/:id/manual-block"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2791,
+    "kind": "from",
+    "object": "plan_task_template_snapshots",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "ensurePlanTaskTemplateSnapshot",
+    "endpoints": [
+      "POST /api/plans/:id/manual-block"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2797,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "ensurePlanTaskTemplateSnapshot",
+    "endpoints": [
+      "POST /api/plans/:id/manual-block"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2811,
+    "kind": "from",
+    "object": "task_templates",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "ensurePlanTaskTemplateSnapshot",
+    "endpoints": [
+      "POST /api/plans/:id/manual-block"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2827,
+    "kind": "from",
+    "object": "plan_task_template_snapshots",
+    "ops": [
+      "upsert"
+    ],
+    "storageMethod": "ensurePlanTaskTemplateSnapshot",
+    "endpoints": [
+      "POST /api/plans/:id/manual-block"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2847,
+    "kind": "from",
+    "object": "task_templates",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getTaskTemplates",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 2986,
+    "kind": "from",
+    "object": "task_templates",
+    "ops": [
+      "insert",
+      "select"
+    ],
+    "storageMethod": "createTaskTemplate",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3176,
+    "kind": "from",
+    "object": "task_templates",
+    "ops": [
+      "update",
+      "select"
+    ],
+    "storageMethod": "updateTaskTemplate",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3231,
+    "kind": "from",
+    "object": "daily_tasks",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "deleteTaskTemplate",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3241,
+    "kind": "from",
+    "object": "task_templates",
+    "ops": [
+      "delete"
+    ],
+    "storageMethod": "deleteTaskTemplate",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3250,
+    "kind": "from",
+    "object": "locks",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getLocksForPlan",
+    "endpoints": [
+      "GET /api/plans/:id/locks"
+    ]
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3262,
+    "kind": "from",
+    "object": "locks",
+    "ops": [
+      "insert",
+      "select"
+    ],
+    "storageMethod": "createLock",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3282,
+    "kind": "from",
+    "object": "plan_resource_items",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getCamerasAvailableForPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3290,
+    "kind": "from",
+    "object": "plan_resource_items",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getCamerasAvailableForPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3336,
+    "kind": "from",
+    "object": "plan_resource_items",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getPlanResourceItemsForPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3372,
+    "kind": "from",
+    "object": "resource_item_components",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getResourceItemComponentsMap",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3403,
+    "kind": "from",
+    "object": "resource_bundles",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getResourceBundles",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3414,
+    "kind": "from",
+    "object": "resource_bundle_components",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getResourceBundleComponents",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3425,
+    "kind": "from",
+    "object": "resource_bundle_space_affinities",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getResourceBundleSpaceAffinities",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3437,
+    "kind": "from",
+    "object": "plan_space_resource_assignments",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getSpaceResourceAssignmentsForPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3460,
+    "kind": "from",
+    "object": "plan_zone_resource_assignments",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getZoneResourceAssignmentsForPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3483,
+    "kind": "from",
+    "object": "plan_zone_resource_type_requirements",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getZoneResourceTypeRequirementsForPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3511,
+    "kind": "from",
+    "object": "plan_space_resource_type_requirements",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getSpaceResourceTypeRequirementsForPlan",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3541,
+    "kind": "from",
+    "object": "program_settings",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getPlanEngineInputDetails",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3557,
+    "kind": "from",
+    "object": "resource_availability",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getPlanEngineInputDetails",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3558,
+    "kind": "from",
+    "object": "plan_breaks",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getPlanEngineInputDetails",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3579,
+    "kind": "from",
+    "object": "program_settings",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getPlanFullDetails",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3596,
+    "kind": "from",
+    "object": "resource_availability",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getPlanFullDetails",
+    "endpoints": []
+  },
+  {
+    "file": "server/storage.ts",
+    "line": 3601,
+    "kind": "from",
+    "object": "plan_breaks",
+    "ops": [
+      "select"
+    ],
+    "storageMethod": "getPlanFullDetails",
+    "endpoints": []
+  }
+]
