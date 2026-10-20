@@ -10,7 +10,7 @@ import {validateTransportGrouping} from '../../engine/planner-next/transportGrou
 import {fingerprintAssistedPlanningSnapshotV1 as fp,type AssistedPlanningSnapshotV1} from '../../server/assistedPlanningSnapshot';
 
 export async function runManualDraftValidationProbe(options:Parameters<typeof runA2BrowserJourney>[0],page:Page){
- const {appUrl,users,db,planId,directory,buildInput,pass}=options;
+ const {appUrl,url,anon,users,db,planId,directory,buildInput,pass}=options;
  // The preceding automatic journey dismisses every unexpected dialog. P9
  // explicitly owns both cancel and confirm decisions from this point onward.
  page.removeAllListeners('dialog');
@@ -29,6 +29,17 @@ export async function runManualDraftValidationProbe(options:Parameters<typeof ru
  const initial=await state(),base=initial.draft as AssistedPlanningSnapshotV1;
  writeFileSync(`${directory}/manual-validation-baseline.json`,JSON.stringify({input,base},null,2));
  const accepted=async()=>JSON.stringify((await db.query('SELECT to_jsonb(t) row FROM daily_tasks t WHERE plan_id=$1 ORDER BY id',[planId])).rows);
+ const criticalState=async()=>JSON.stringify((await db.query(`SELECT
+  (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM daily_tasks t WHERE plan_id=$1) tasks,
+  (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM assisted_planning_stages t WHERE plan_id=$1) stages,
+  (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM assisted_planning_sessions t WHERE plan_id=$1) sessions,
+  (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM planning_accepted_exceptions t WHERE plan_id=$1) exceptions,
+  (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM planning_stage_validations t WHERE plan_id=$1) validations`,[planId])).rows);
+ const forbiddenAccept=async(body:unknown,role='production',expectedStatus=403)=>{
+  const before=await criticalState(),response=await api('/accept-stage','POST',body,role);
+  assert.equal(response.status,expectedStatus,JSON.stringify(response));assert.equal(await criticalState(),before,'rejected acceptance changes no Stage, Draft, validation, exception or task');return response;
+ };
+ const setRole=async(user:string,role:string)=>db.query('UPDATE user_roles SET role_id=(SELECT id FROM roles WHERE key=$2) WHERE user_id=$1',[users[user].id,role]);
  const before=await accepted();
  const assertConsolidated=async(snapshot:AssistedPlanningSnapshotV1)=>{
   const rows=(await db.query('SELECT id,start_planned,end_planned,zone_id,space_id,location_label,duration_override,cameras_override,assigned_resource_ids FROM daily_tasks WHERE plan_id=$1 ORDER BY id',[planId])).rows;
@@ -76,16 +87,32 @@ export async function runManualDraftValidationProbe(options:Parameters<typeof ru
  const validState=await state();valid.validation=await api('/validate','POST',guard(validState));valid.state=await state();
  assert.equal(valid.validation.status,200);assert.ok(valid.state.validation);assert.ok(valid.state.session.draftValidationId??valid.state.validation.id);
  assert.equal(await accepted(),before);
- // A clean manual Draft is accepted by the existing atomic RPC, including all 266 rows.
- assert.equal((await api('/accept-stage','POST',{...guard(await state()),confirmation:'NONE'},'admin')).status,200);
+ // Revoke after validation, keeping the same valid Auth token; authorization is fresh.
+ await setRole('production','viewer');
+ try{await forbiddenAccept({...guard(valid.state),confirmation:'NONE'});}finally{await setRole('production','production');}
+ // Production retains clean manual acceptance, including every material field of all 266 rows.
+ assert.equal((await api('/accept-stage','POST',{...guard(await state()),confirmation:'NONE'})).status,200);
  const validAccepted=await state();assert.deepEqual(validAccepted.activeStage.snapshotJson,validState.draft);await assertConsolidated(validState.draft);
  assert.equal((await api('/rollback','POST',{targetStageId:initial.activeStage.id},'admin')).status,200);await assertConsolidated(base);
  assert.equal((await api('/draft','PATCH',{...guard(await state()),changes:[move]})).status,200);
  assert.equal((await api('/validate','POST',guard(await state()))).status,200);
  for(const role of ['viewer','aux','norole']){
-  assert.equal((await api('/accept-stage','POST',{...guard(await state()),confirmation:'HARD_EXCEPTIONS'},role)).status,403);
+  await forbiddenAccept({...guard(await state()),confirmation:'HARD_EXCEPTIONS'},role);
  }
- const noConsent=await api('/accept-stage','POST',{...guard(await state()),confirmation:'NONE'});
+ for(const confirmation of ['NONE','REQUIRED_DEVIATIONS','HARD_EXCEPTIONS'])await forbiddenAccept({...guard(await state()),confirmation});
+ await forbiddenAccept({...guard(await state()),confirmation:'HARD_EXCEPTIONS',userId:users.admin.id,userRole:'admin',reportJson:{newHardCount:0}},'production',400);
+ // Even a previously admin token is not current authority after demotion.
+ await setRole('admin','production');
+ try{await forbiddenAccept({...guard(await state()),confirmation:'HARD_EXCEPTIONS'},'admin');}finally{await setRole('admin','admin');}
+ const rpcBoundary:any[]=[];
+ for(const role of ['admin','production','viewer','aux','norole']){
+  const before=await criticalState();
+  const response=await fetch(`${url}/rest/v1/rpc/assisted_accept_stage`,{method:'POST',headers:{apikey:anon,Authorization:`Bearer ${users[role].token}`,'Content-Type':'application/json'},body:JSON.stringify({p_plan_id:planId,p_user_id:users.admin.id,p_expected_fingerprint:(await state()).draftFingerprint,p_expected_base:(await state()).draftBaseStageId,p_confirmation:'HARD_EXCEPTIONS'})});
+  assert.equal(response.status,403);assert.equal(await criticalState(),before);rpcBoundary.push({role,status:response.status,spoofedActor:'admin',writes:0});
+ }
+ const rpcPrivileges=(await db.query("SELECT has_function_privilege('anon',p.oid,'EXECUTE') anon,has_function_privilege('authenticated',p.oid,'EXECUTE') authenticated,has_function_privilege('service_role',p.oid,'EXECUTE') service FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='assisted_accept_stage'")).rows;
+ assert.deepEqual(rpcPrivileges,[{anon:false,authenticated:false,service:true}]);
+ const noConsent=await api('/accept-stage','POST',{...guard(await state()),confirmation:'NONE'},'admin');
  assert.equal(noConsent.status,422);assert.equal(noConsent.body.code,'HARD_CONFIRMATION_REQUIRED');await assertConsolidated(base);
  const stale=await api('/validate','POST',{...guard(await state()),expectedDraftFingerprint:'0'.repeat(64)});
  assert.equal(stale.status,409);assert.equal(stale.body.code,'STALE_DRAFT');
@@ -97,32 +124,44 @@ export async function runManualDraftValidationProbe(options:Parameters<typeof ru
  try{
   await db.query('UPDATE assisted_planning_sessions SET current_config_revision_id=$1,draft_validation_id=NULL WHERE id=$2',[staleRevision,current.session.id]);
   const conflict=await api('/validate','POST',guard(current));assert.equal(conflict.status,409);assert.equal(conflict.body.code,'STALE_CONFIG_REVISION');
-  const blocked=await api('/accept-stage','POST',{...guard(current),confirmation:'HARD_EXCEPTIONS'});assert.equal(blocked.status,409);assert.equal(blocked.body.code,'STALE_VALIDATION');
+  const blocked=await api('/accept-stage','POST',{...guard(current),confirmation:'HARD_EXCEPTIONS'},'admin');assert.equal(blocked.status,409);assert.equal(blocked.body.code,'STALE_VALIDATION');
  }finally{await db.query('UPDATE assisted_planning_sessions SET current_config_revision_id=$1,draft_validation_id=$3 WHERE id=$2',[configId,current.session.id,current.session.draftValidationId]);}
  await page.reload();await page.getByTestId('stage-validation-report').getByText('IN: grupo de 4 participantes; máximo permitido 3.',{exact:false}).waitFor();
  await page.getByTestId('stage-validation-report').scrollIntoViewIfNeeded();
  assert.match(await page.getByTestId('stage-validation-report').innerText(),/antes 12:00–12:05; después 11:30–11:35/);
- await page.screenshot({path:`${directory}/p9-four-in-report.png`,fullPage:false});
- const cancel=page.waitForEvent('dialog');const cancelClick=page.getByRole('button',{name:'Aceptar etapa',exact:true}).click();
+ await page.getByTestId('assisted-workspace').screenshot({path:`${directory}/p9-four-in-report.png`});
+ await page.getByTestId('assisted-hard-admin-required').waitFor();assert.equal(await page.getByRole('button',{name:'Aceptar etapa',exact:true}).isEnabled(),false);
+ await page.getByTestId('assisted-workspace').screenshot({path:`${directory}/p9-admin-required.png`});
+ const adminPage=await page.context().browser()!.newPage({viewport:{width:1440,height:1000}});adminPage.setDefaultTimeout(30_000);
+ await adminPage.goto(`${appUrl}/login`);await adminPage.getByLabel('Email',{exact:true}).fill(users.admin.email);await adminPage.getByLabel('Contraseña (opcional para enlace)',{exact:true}).fill(users.admin.password);
+ await adminPage.getByRole('button',{name:'Entrar con contraseña',exact:true}).click();await adminPage.waitForURL('**/dashboard');await adminPage.goto(`${appUrl}/plans/${planId}?tab=planning`);
+ await adminPage.getByTestId('stage-validation-report').waitFor();
+ const cancel=adminPage.waitForEvent('dialog');const cancelClick=adminPage.getByRole('button',{name:'Aceptar etapa',exact:true}).click();
  const cancelled=await cancel;assert.match(cancelled.message(),/grupo de 4 participantes/);await cancelled.dismiss();await cancelClick;await assertConsolidated(base);
- const acceptedResponse=page.waitForResponse(r=>r.url().endsWith('/assisted/accept-stage')&&r.request().method()==='POST');
- const consent=page.waitForEvent('dialog');const acceptClick=page.getByRole('button',{name:'Aceptar etapa',exact:true}).click();
+ const acceptedResponse=adminPage.waitForResponse(r=>r.url().endsWith('/assisted/accept-stage')&&r.request().method()==='POST');
+ const consent=adminPage.waitForEvent('dialog');const acceptClick=adminPage.getByRole('button',{name:'Aceptar etapa',exact:true}).click();
  const dialog=await consent,confirmationText=dialog.message();await dialog.accept();await acceptClick;
+ assert.match(confirmationText,/antes 12:00–12:05; después 11:30–11:35/);assert.match(confirmationText,/usuario administrador/);assert.match(confirmationText,/indicador crítico/);
  const acceptanceHttp=await acceptedResponse;assert.equal(acceptanceHttp.status(),200);
  const acceptanceRequest=acceptanceHttp.request().postDataJSON();assert.equal(acceptanceRequest.confirmation,'HARD_EXCEPTIONS');
- trace.push({suffix:'/accept-stage',method:'POST',role:'production',source:'Chromium',request:acceptanceRequest,response:{status:200}});
+ trace.push({suffix:'/accept-stage',method:'POST',role:'admin',source:'Chromium',request:acceptanceRequest,response:{status:200}});
  const hardAccepted=await state();assert.deepEqual(hardAccepted.activeStage.snapshotJson,moved);assert.equal(hardAccepted.activeStage.validationSummaryJson.hardValid,false);await assertConsolidated(moved);
- await page.getByTestId('accepted-exception-marker').scrollIntoViewIfNeeded();await page.screenshot({path:`${directory}/p9-accepted-hard.png`,fullPage:false});
+ await adminPage.getByTestId('accepted-exception-marker').scrollIntoViewIfNeeded();await adminPage.getByTestId('assisted-workspace').screenshot({path:`${directory}/p9-accepted-hard.png`});await adminPage.close();
  const exceptions=(await db.query('SELECT * FROM planning_accepted_exceptions WHERE stage_id=$1',[hardAccepted.activeStage.id])).rows;
  assert.equal(exceptions.length,1);const exception=exceptions[0];
  assert.equal(exception.rule_code,'TRANSPORT_GROUPING_VIOLATION');assert.equal(exception.severity,'HARD');assert.equal(exception.violation_key,violation.violationKey);
- assert.equal(exception.snapshot_fingerprint,fp(moved));assert.equal(exception.accepted_by,users.production.id);assert.ok(exception.accepted_at);assert.equal(Number(exception.config_revision_id),Number(configId));
+ assert.equal(exception.snapshot_fingerprint,fp(moved));assert.equal(exception.accepted_by,users.admin.id);assert.ok(exception.accepted_at);assert.equal(Number(exception.config_revision_id),Number(configId));
  assert.deepEqual(exception.affected_task_ids_json,violation.affectedTaskIds);assert.deepEqual(exception.details_json.dimensions,violation.details.dimensions);
  // An unrelated valid move can inherit exactly the same material conflict.
  assert.equal((await api('/draft','PATCH',{...guard(hardAccepted),changes:[valid.change]})).status,200);
  assert.equal((await api('/validate','POST',guard(await state()))).status,200);
  const inherited=await state();assert.equal(inherited.validation.reportJson.newHardCount,0);assert.equal(inherited.validation.reportJson.violations[0].inheritedAcceptedExceptionId,Number(exception.id));
- assert.equal((await api('/accept-stage','POST',{...guard(inherited),confirmation:'NONE'},'admin')).status,200);
+ await page.reload();await page.getByTestId('stage-validation-report').getByText('Aceptada previamente',{exact:true}).waitFor();
+ const inheritedDialogs:string[]=[];const onInheritedDialog=async(dialog:any)=>{inheritedDialogs.push(dialog.message());await dialog.dismiss();};page.on('dialog',onInheritedDialog);
+ const inheritedResponse=page.waitForResponse(r=>r.url().endsWith('/assisted/accept-stage')&&r.request().method()==='POST');
+ await page.getByRole('button',{name:'Aceptar etapa',exact:true}).click();const inheritedHttp=await inheritedResponse;page.off('dialog',onInheritedDialog);
+ assert.equal(inheritedHttp.status(),200);assert.equal(inheritedHttp.request().postDataJSON().confirmation,'NONE');assert.deepEqual(inheritedDialogs,[]);
+ trace.push({suffix:'/accept-stage',method:'POST',role:'production',source:'Chromium',request:inheritedHttp.request().postDataJSON(),response:{status:200},dialogs:0});
  const inheritedStage=await state();assert.equal(inheritedStage.activeStage.validationSummaryJson.hardValid,false);
  assert.equal((await db.query('SELECT count(*) n FROM planning_accepted_exceptions WHERE plan_id=$1',[planId])).rows[0].n,'1');
  // Touching a member while retaining a new transport conflict requires a new decision.
@@ -130,8 +169,10 @@ export async function runManualDraftValidationProbe(options:Parameters<typeof ru
  assert.equal((await api('/draft','PATCH',{...guard(inheritedStage),changes:[shifted]})).status,200);
  assert.equal((await api('/validate','POST',guard(await state()))).status,200);
  const changed=await state();assert.ok(changed.validation.reportJson.newHardCount>0);assert.ok(changed.validation.reportJson.violations.every((v:any)=>v.inheritedAcceptedExceptionId===null));
- assert.equal((await api('/accept-stage','POST',{...guard(changed),confirmation:'NONE'})).body.code,'HARD_CONFIRMATION_REQUIRED');
- assert.equal((await api('/accept-stage','POST',{...guard(changed),confirmation:'HARD_EXCEPTIONS'})).status,200);
+ await forbiddenAccept({...guard(changed),confirmation:'HARD_EXCEPTIONS'});
+ await page.reload();await page.getByTestId('assisted-hard-admin-required').waitFor();assert.equal(await page.getByRole('button',{name:'Aceptar etapa',exact:true}).isEnabled(),false);
+ assert.equal((await api('/accept-stage','POST',{...guard(changed),confirmation:'NONE'},'admin')).body.code,'HARD_CONFIRMATION_REQUIRED');
+ assert.equal((await api('/accept-stage','POST',{...guard(changed),confirmation:'HARD_EXCEPTIONS'},'admin')).status,200);
  const superseded=(await db.query('SELECT status FROM planning_accepted_exceptions WHERE id=$1',[exception.id])).rows[0].status;
  assert.equal(superseded,'SUPERSEDED');
  assert.equal((await api('/rollback','POST',{targetStageId:initial.activeStage.id},'admin')).status,200);await assertConsolidated(base);
@@ -145,20 +186,78 @@ export async function runManualDraftValidationProbe(options:Parameters<typeof ru
  assert.equal(unsupportedHttp.status(),422);const unsupported=await unsupportedHttp.json();assert.ok(unsupported.validationDiagnostics.reasonCodes.includes('ANCHORED_ACCOMPANIMENT_VIOLATION'));
  trace.push({suffix:'/validate',method:'POST',role:'production',source:'Chromium',request:unsupportedHttp.request().postDataJSON(),response:{status:422,body:unsupported}});
  await page.getByText(/No se puede certificar este borrador/).scrollIntoViewIfNeeded();assert.equal((await state()).session.draftValidationId,null);
- assert.equal((await api('/accept-stage','POST',{...guard(await state()),confirmation:'HARD_EXCEPTIONS'})).status,409);
- await page.screenshot({path:`${directory}/p9-unsupported.png`,fullPage:false});
+ assert.equal((await api('/accept-stage','POST',{...guard(await state()),confirmation:'NONE'})).status,409);
+ await page.getByTestId('assisted-workspace').screenshot({path:`${directory}/p9-unsupported.png`});
  assert.equal((await api('/draft/reset','POST',guard(await state()))).status,200);await assertConsolidated(base);
  const report={mode:'P9_NATIVE_MANUAL_VALIDATION',remoteReads:0,remoteWrites:0,remoteCaseReproduced:false,baselineFingerprint:fp(base),
   baseline,move:{before:original,after:move,targetIds},fourIN:{evidence,validation,draftFingerprint:fp(moved),draftValidationId:afterValidation.session?.draftValidationId??null,transport},
   valid:{change:valid.change,validation:valid.validation,status:'ACCEPTED_AND_ROLLED_BACK'},trace,acceptedMaterial:'EXACT_DELTA_AND_ROLLBACK',confirmationText,
   lifecycle:{hardAcceptedStageId:hardAccepted.activeStage.id,exceptionId:exception.id,
-   acceptedException:{ruleCode:exception.rule_code,severity:exception.severity,violationKey:exception.violation_key,snapshotFingerprint:exception.snapshot_fingerprint,configRevisionId:Number(exception.config_revision_id),affectedTaskIds:exception.affected_task_ids_json,details:exception.details_json,acceptedBy:exception.accepted_by,acceptedAt:exception.accepted_at,statusAtAcceptance:exception.status,actorRole:'production'},
+   acceptedException:{ruleCode:exception.rule_code,severity:exception.severity,violationKey:exception.violation_key,snapshotFingerprint:exception.snapshot_fingerprint,configRevisionId:Number(exception.config_revision_id),affectedTaskIds:exception.affected_task_ids_json,details:exception.details_json,acceptedBy:exception.accepted_by,acceptedAt:exception.accepted_at,statusAtAcceptance:exception.status,actorRole:'admin'},
    inheritedStageId:inheritedStage.activeStage.id,newHardCountAfterMemberEdit:changed.validation.reportJson.newHardCount,oldExceptionAfterReconfirmation:superseded,unsupported},
+  authorization:{newHard:'ADMIN_ONLY',productionClean:true,requiredAcceptance:'SEPARATE_IMMUTABLE_FIXTURE',productionInheritedWithoutConsent:true,inheritedDialogs,rpcBoundary,rpcPrivileges,revocation:{productionToViewer:403,adminToProduction:403},rejectionsWriteNothing:true},
   shape:{tasks:base.tasks.length,meals:base.operationalMeals?.length,setup:base.setupPreparations?.length,round:base.roundPreparations?.length},identityMap:adapter.identityMap};
  writeFileSync(`${directory}/manual-validation-probe.json`,JSON.stringify(report,null,2));
  writeFileSync(`${directory}/manual-validation-input.json`,JSON.stringify({input,base,moved},null,2));
- pass('P9 manual validation: clean atomic acceptance, explicit HARD decision, audit identity, exact inheritance, stale/version/config/RBAC gates, unsupported-family UI and rollback; 266 tasks preserved');
+ pass('P9 manual validation: admin-only new HARD, production clean/inherited without new consent, fresh role revocation, manipulated HTTP and direct RPC rejection without writes, exact exception lifecycle, unsupported-family UI and rollback; 266 tasks preserved');
  return report;
+}
+
+/** A separate day is configured REQUIRED before insertion: 088 stays immutable.
+ * Geometry is an explicit fixture Draft; validation and acceptance are real. */
+export async function runRequiredDeviationAcceptance(options:Parameters<typeof runA2BrowserJourney>[0],sourcePath:string){
+ const {appUrl,db,planId,users,directory,pass,buildInput}=options;
+ assert.equal(db.host,'127.0.0.1');assert.equal(new URL(appUrl).hostname,'127.0.0.1');
+ const bytes=readFileSync(sourcePath),recorded=JSON.parse(bytes.toString()),snapshot=recorded.base as AssistedPlanningSnapshotV1;
+ assert.equal(recorded.input.planId,planId);assert.equal(snapshot.tasks.length,266);
+ const input=await buildInput();assert.ok(Object.values(input.resourcePresenceConcentrationPolicies??{}).every(value=>value==='REQUIRED'));
+ const api=async(suffix:string,body?:unknown)=>{
+  const response=await fetch(`${appUrl}/api/plans/${planId}/assisted${suffix}`,{method:body===undefined?'GET':'POST',headers:{Authorization:`Bearer ${users.production.token}`,'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
+  return {status:response.status,body:await response.json() as any};
+ };
+ const material=async()=>JSON.stringify((await db.query(`SELECT
+  (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM daily_tasks t WHERE plan_id=$1) tasks,
+  (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM assisted_planning_stages t WHERE plan_id=$1) stages,
+  (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM assisted_planning_sessions t WHERE plan_id=$1) sessions,
+  (SELECT jsonb_agg(to_jsonb(t) ORDER BY id) FROM planning_accepted_exceptions t WHERE plan_id=$1) exceptions`,[planId])).rows);
+ const bootstrap=await api('/session',{});assert.equal(bootstrap.status,200);const initial=bootstrap.body;
+ // Trusted fixture preparation supplies only an UNCERTIFIED complete Draft.
+ // No accepted Stage, exception, validation or daily timing is seeded. The
+ // immutable day configuration and all client/RPC privileges stay enabled.
+ await db.query("UPDATE assisted_planning_sessions SET draft_snapshot_json=$1,draft_fingerprint=$2,draft_scope_json=$3 WHERE id=$4",[snapshot,fp(snapshot),{editKind:'MANUAL',manualTouchedTaskIds:snapshot.tasks.map(task=>task.taskId)},initial.session.id]);
+ assert.equal((await db.query('SELECT count(*) n FROM planning_accepted_exceptions WHERE plan_id=$1',[planId])).rows[0].n,'0');
+ assert.equal((await db.query('SELECT count(*) n FROM daily_tasks WHERE plan_id=$1 AND start_planned IS NOT NULL',[planId])).rows[0].n,'0');
+ const draft=(await api('')).body,guard={expectedDraftFingerprint:draft.draftFingerprint,expectedBaseStageId:Number(draft.draftBaseStageId)};
+ assert.equal((await api('/validate',guard)).status,200);const validated=(await api('')).body,report=validated.validation.reportJson;
+ assert.equal(validated.validation.hardCount,0);assert.equal(report.newHardCount,0);assert.ok(report.newRequiredCount>0);
+ assert.ok(report.violations.some((v:any)=>v.ruleCode==='RESOURCE_REQUIRED_PRESENCE_VIOLATION'&&v.severity==='REQUIRED'));
+ const before=await material();const missing=await api('/accept-stage',{...guard,confirmation:'NONE'});
+ assert.equal(missing.status,422);assert.equal(missing.body.code,'REQUIRED_CONFIRMATION_REQUIRED');assert.equal(await material(),before);
+ assert.equal((await api('/accept-stage',{...guard,confirmation:'HARD_EXCEPTIONS'})).status,403);assert.equal(await material(),before);
+ const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+ let confirmationText:string;
+ try{
+  const page=await browser.newPage({viewport:{width:1440,height:1000}});page.setDefaultTimeout(30_000);
+  await page.goto(`${appUrl}/login`);await page.getByLabel('Email',{exact:true}).fill(users.production.email);await page.getByLabel('Contraseña (opcional para enlace)',{exact:true}).fill(users.production.password);
+  await page.getByRole('button',{name:'Entrar con contraseña',exact:true}).click();await page.waitForURL('**/dashboard');await page.goto(`${appUrl}/plans/${planId}?tab=planning`);
+  await page.getByTestId('stage-validation-report').waitFor();assert.equal(await page.getByTestId('assisted-hard-admin-required').count(),0);
+  const response=page.waitForResponse(r=>r.url().endsWith('/assisted/accept-stage')&&r.request().method()==='POST');
+  const consent=page.waitForEvent('dialog');const click=page.getByRole('button',{name:'Aceptar etapa',exact:true}).click();
+  const dialog=await consent;confirmationText=dialog.message();assert.match(confirmationText,/desviación\(es\) operativas nuevas/);await dialog.accept();await click;
+  const http=await response;assert.equal(http.status(),200);assert.equal(http.request().postDataJSON().confirmation,'REQUIRED_DEVIATIONS');
+  await page.getByTestId('stage-validation-report').waitFor({state:'detached'});await page.getByTestId('assisted-workspace').screenshot({path:`${directory}/p9-required-accepted.png`});
+ }finally{await browser.close();}
+ const accepted=(await api('')).body;assert.deepEqual(accepted.activeStage.snapshotJson,snapshot);assert.equal(accepted.activeStage.validationSummaryJson.hardValid,true);
+ const decisions=(await db.query('SELECT severity,rule_code,accepted_by,snapshot_fingerprint FROM planning_accepted_exceptions WHERE stage_id=$1',[accepted.activeStage.id])).rows;
+ assert.ok(decisions.length);assert.ok(decisions.every(e=>e.severity==='REQUIRED'&&e.accepted_by===users.production.id&&e.snapshot_fingerprint===fp(snapshot)));
+ const rows=(await db.query('SELECT * FROM daily_tasks WHERE plan_id=$1 ORDER BY id',[planId])).rows;assert.equal(rows.length,266);
+ for(const task of snapshot.tasks){const row=rows.find(r=>Number(r.id)===task.taskId)!;
+  assert.deepEqual([row.start_planned,row.end_planned,row.zone_id==null?null:Number(row.zone_id),row.space_id==null?null:Number(row.space_id),row.assigned_resource_ids,row.location_label,row.duration_override,row.cameras_override],
+   [task.startPlanned,task.endPlanned,task.zoneId,task.spaceId,task.assignedResourceIds??[],task.locationLabel,task.durationOverride,task.camerasOverride]);
+ }
+ const result={status:'PASS',mode:'IMMUTABLE_REQUIRED_DAY_FIXTURE',generatedPlan:false,draftSeed:'RECORDED_GEOMETRY_ONLY_UNCERTIFIED',remoteWrites:0,sourceSha256:createHash('sha256').update(bytes).digest('hex'),configuredBeforeInsert:true,
+  report,confirmation:'REQUIRED_DEVIATIONS',confirmationText,actorRole:'production',acceptedStageId:accepted.activeStage.id,configurationRevisionId:accepted.currentConfigRevisionId,decisions,tasks:rows.length};
+ writeFileSync(`${directory}/required-acceptance.json`,JSON.stringify(result,null,2));pass('Production validates and accepts REQUIRED with explicit UI consent, exact audit and 266 material task rows; immutable configuration and missing-consent rejection preserved');return result;
 }
 
 /** Fast causal iteration from a previously recorded native A2. This is explicitly

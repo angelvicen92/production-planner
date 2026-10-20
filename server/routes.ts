@@ -3296,7 +3296,12 @@ function mapDeleteError(err: any, fallback: string) {
       return res.status(500).json({code:'ASSISTED_VALIDATION_FAILED',message:'ASSISTED_VALIDATION_FAILED'});
     }
   });
-  app.post("/api/plans/:id/assisted/accept-stage", async (req, res) => assistedAction(res, () => { const body = assistedExpected.extend({confirmation:z.enum(["NONE","REQUIRED_DEVIATIONS","HARD_EXCEPTIONS"]).default("NONE")}).parse(req.body); return assistedPlanning.accept(assistedPlanId(req.params.id), (req as any).user.id, body.expectedDraftFingerprint, body.expectedBaseStageId,body.confirmation); }));
+  app.post("/api/plans/:id/assisted/accept-stage", async (req, res) => {
+    const parsed=assistedExpected.extend({confirmation:z.enum(["NONE","REQUIRED_DEVIATIONS","HARD_EXCEPTIONS"]).default("NONE")}).safeParse(req.body);
+    if(!parsed.success)return res.status(400).json({code:'INVALID_ACCEPT_REQUEST',message:'La solicitud de aceptación no es válida.'});
+    const body=parsed.data;
+    return assistedAction(res,()=>assistedPlanning.accept(assistedPlanId(req.params.id),(req as any).user.id,body.expectedDraftFingerprint,body.expectedBaseStageId,body.confirmation));
+  });
   app.post("/api/plans/:id/assisted/restart", async (req, res) => assistedAction(res, () => { const body = assistedExpected.extend({ confirmation: z.literal("RESTART_BOOTSTRAP") }).parse(req.body); return assistedPlanning.restart(assistedPlanId(req.params.id), body.expectedDraftFingerprint, body.expectedBaseStageId); }));
   app.post("/api/plans/:id/assisted/rollback", async (req, res) => assistedAction(res, () => { const body = z.object({ targetStageId: z.number().int().positive() }).strict().parse(req.body); return assistedPlanning.rollback(assistedPlanId(req.params.id), body.targetStageId); }));
   app.post("/api/plans/:id/assisted/redo", async (req, res) => assistedAction(res, () => assistedPlanning.redo(assistedPlanId(req.params.id))));

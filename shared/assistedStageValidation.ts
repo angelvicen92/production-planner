@@ -17,10 +17,23 @@ export interface StageValidationReport {
   hardValid: boolean;
   hardCount: number;
   requiredCount: number;
+  newHardCount?: number;
+  newRequiredCount?: number;
   preferredCount: number;
   preferredAssessment: "NOT_CLASSIFIED";
   violations: StageViolation[];
   [key: string]: unknown;
+}
+
+/** Legacy reports lack new counts; preserve their conservative total counts. */
+export function newStageDeviationCounts(validation?: {
+  hardCount?: number; requiredCount?: number; reportJson?: Record<string, unknown> | null;
+} | null) {
+  const count = (value: unknown, fallback: number) => typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : fallback;
+  return {
+    newHardCount: count(validation?.reportJson?.newHardCount, validation?.hardCount ?? 0),
+    newRequiredCount: count(validation?.reportJson?.newRequiredCount, validation?.requiredCount ?? 0),
+  };
 }
 
 type ViolationId = string | number;

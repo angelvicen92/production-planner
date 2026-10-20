@@ -1,6 +1,7 @@
 import {runDayWorkspaceSetup} from "./smokeDayWorkspaceSetup";
 /** Real disposable PostgreSQL / GoTrue / PostgREST / product HTTP / Chromium.
- * No remote-target option, RPC substitution, request interception or solved seed.
+ * No remote target, RPC substitution or request interception. The full journey
+ * starts unscheduled; explicitly named fixture/replay modes declare their source.
  */
 import assert from 'node:assert/strict';
 import {execFileSync,spawn,type ChildProcess} from 'node:child_process';
@@ -46,6 +47,8 @@ if(process.argv.includes('--app')){
  const replayOperationalSnapshot=operationalMeals||headerNotes;
  assert.ok(!configurationReadRecovery||historicalTopology,'configuration recovery requires the historical catalog');
  const full=process.argv.includes('--full');
+ const requiredReplay=process.argv.find(arg=>arg.startsWith('--manual-required-replay='))?.split('=').slice(1).join('=');
+ assert.ok(!requiredReplay||(!historicalTopology&&!full),'REQUIRED authority fixture is a separate unscheduled local day, without a solver run');
  const liveExecution=process.argv.includes('--live-execution');
  const warRoom=process.argv.includes('--war-room-snapshot');
  const controlRoom=process.argv.includes('--control-room-snapshot');
@@ -92,7 +95,7 @@ if(process.argv.includes('--app')){
  runtimeFiles.push('client/src/hooks/use-execution-context.ts','client/src/hooks/use-tasks.ts','client/src/hooks/use-production-clock.ts','shared/execution.ts','script/demo/smokeLiveExecutionJourney.ts');
  if(assistedStageCycle)runtimeFiles.push('script/demo/smokeAssistedStageCycle.ts','shared/assistedHistory.ts','shared/assistedStageLineage.ts','client/src/components/planning/assisted-stage-history.tsx','client/src/components/planning/assisted-autopilot-progress.tsx','client/src/lib/assisted-autopilot-progress.ts');
  if(stageOrder)runtimeFiles.push('script/demo/probeA2StageOrder.ts','server/assistedScopeOrchestrator.ts');
- if(process.argv.includes('--manual-validation')){assert.ok(full,'manual validation requires the complete accepted A2');runtimeFiles.push('script/demo/smokeManualDraftValidation.ts','client/src/lib/assisted-validation-messages.ts','engine/planner-next/transportGrouping.ts');}
+ if(process.argv.includes('--manual-validation')||requiredReplay){assert.ok(full||requiredReplay,'manual validation requires the complete accepted A2');runtimeFiles.push('script/demo/smokeManualDraftValidation.ts','client/src/lib/assisted-validation-messages.ts','engine/planner-next/transportGrouping.ts','shared/assistedStageValidation.ts','server/authz.ts','server/apiAuthorization.ts','server/middleware/requireAuth.ts','shared/assistedHistory.ts','shared/assistedStageLineage.ts');}
  if(autopilotWorkspace)runtimeFiles.push('script/demo/smokeAutopilotWorkspace.ts','client/src/components/planning/assisted-autopilot-progress.tsx','client/src/lib/assisted-autopilot.ts','client/src/lib/assisted-autopilot-progress.ts');
  if(autopilot)runtimeFiles.push('shared/assistedAutopilot.ts','client/src/lib/assisted-autopilot.ts','script/demo/smokeA2AutopilotJourney.ts');
  if(settingsSections)runtimeFiles.push('script/demo/smokeSettingsSections.ts','script/demo/smokeSettingsOperations.ts','client/src/pages/settings.tsx','client/src/components/settings/settings-section.tsx','client/src/hooks/use-settings-section.ts','client/src/lib/settings-section-preferences.ts','client/src/components/general-program-settings.tsx','client/src/components/general-optimizer-settings.tsx','client/src/components/control-room-settings.tsx','client/src/components/transport-settings-card.tsx','client/src/components/resources-list.tsx','client/src/components/create-resource-pool.tsx','client/src/components/settings/users-admin.tsx');
@@ -180,7 +183,13 @@ if(process.argv.includes('--app')){
    const {operationalMealRehearsalFixture}=await import('./seedOperationalMealRehearsal');
    dataset.tables.plans[0].planner_next_configuration=operationalMealRehearsalFixture().configuration;
   }
-  await db.query(replayOperationalSnapshot?buildA2ImportSQLFromDataset(dataset).sql:sql);
+  if(requiredReplay){
+   const policies=Object.fromEntries(Object.keys(dataset.input.resourcePresenceConcentrationPolicies??{}).map(id=>[id,'REQUIRED' as const]));
+   assert.ok(Object.keys(policies).length);dataset.input.resourcePresenceConcentrationPolicies=policies;
+   dataset.configuration.resourcePresenceConcentrationPolicies=policies;dataset.tables.plans[0].planner_next_configuration.resourcePresenceConcentrationPolicies=policies;
+   report.mode='REAL_DISPOSABLE_REQUIRED_AUTHORIZATION_FIXTURE';report.requestedStages=0;
+  }
+  await db.query(replayOperationalSnapshot||requiredReplay?buildA2ImportSQLFromDataset(dataset).sql:sql);
   if(preservation){await preservation.assertPreserved();report.historicalPreservation=preservation.summary;pass('historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import');}assert.equal(await defaults(),beforeDefaults);
   if(replayOperationalSnapshot){
    assert.ok(historicalTopology,'UI-05 replay requires the historical catalogs');
@@ -244,7 +253,9 @@ if(process.argv.includes('--app')){
   pass('real storage/input adapter canon after GET day; no legacy breaks');
   report.diagnostics={};const options={appUrl,url,anon,users,db,planId:dataset.input.planId,directory,full,pass,diagnostics:report.diagnostics,buildInput:()=>buildEngineInput(dataset.input.planId,storage)};
   const manualReplay=process.argv.find(arg=>arg.startsWith('--manual-validation-replay='))?.split('=').slice(1).join('=');
-  if(manualReplay){
+  if(requiredReplay){
+   const {runRequiredDeviationAcceptance}=await import('./smokeManualDraftValidation');report.requiredAcceptance=await runRequiredDeviationAcceptance(options,requiredReplay);
+  }else if(manualReplay){
    assert.ok(full&&process.argv.includes('--manual-validation'));report.mode='RECORDED_NATIVE_A2_MANUAL_VALIDATION';report.requestedStages=0;
    const {runRecordedManualValidationJourney}=await import('./smokeManualDraftValidation');report.manualReplay=await runRecordedManualValidationJourney(options,manualReplay);
   }else if(liveSnapshot){

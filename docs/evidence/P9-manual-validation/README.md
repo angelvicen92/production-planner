@@ -1,5 +1,10 @@
 # P9 — validación y aceptación de movimientos manuales
 
+**Cierre vigente:** [autorización administrativa de HARD nuevas e integración P8](authorization/README.md).
+La evidencia de este documento corresponde al ensayo inicial `b5ce969`; su
+aceptación con rol production se conserva como prueba del defecto de autoridad
+corregido en el cierre. Los resultados finales y límites están en ese informe.
+
 Base auditada: `0e7442e4b5ccf4fde6756841b7908b27e87fe1db`, idéntica al head
 remoto de `main` y de `codex/ops-p9-manual-draft-validation` al iniciar.
 Autoridad: Fuentes 00 v2.13, 01 v5.2, 04 v2.7 §§11–12 y 06 v2.10.
@@ -16,8 +21,9 @@ La fixture `server/fixtures/assistedP9A2.json.gz` conserva únicamente EngineInp
 snapshot y replay de configuración: no contiene sesión Auth, token, password ni
 usuario aceptante. El test reconstruye la revisión efectiva y exige igualdad
 con el fingerprint persistido de la revisión 7; también verifica el fingerprint
-íntegro de la etapa histórica. Los originales 01/04 autorizan admin y Producción;
-no se introduce ningún permiso ni jerarquía nueva.
+íntegro de la etapa histórica. Hasta disponer de delegación nominal al jefe de
+Producción, el cierre reserva las HARD nuevas a admin. Producción conserva la
+edición, validación y aceptación limpia/REQUIRED/heredada; no se crea otro RBAC.
 
 [Caso exacto rojo](exact-red.json): 266/266 obligaciones, 19 comidas de
 participante, 8 comidas operativas, 17 preparaciones de ronda y una de espacio.
@@ -119,7 +125,7 @@ production, viewer, aux y usuario sin rol. No se crea un rol editorial nuevo.
 `npm run check`, build, secuencia de migraciones y compilaciones TypeScript de
 integración y del replay histórico pasan.
 
-**Gate final completo: PASS.** [Resumen verificable](validation.json),
+**Gate inicial de validación completo (`b5ce969`): PASS.** [Resumen verificable](validation.json),
 [traza HTTP y auditoría](native.json), [integración completa comprimida](integration.json.gz)
 y [log nativo](native.log). Se construyeron las once etapas automáticas desde
 cero, 266/266; la huella del planning completo coincide con el ensayo rojo.
@@ -131,9 +137,9 @@ al planning íntegro. La Stage HARD conserva `hardValid=false`.
 
 | Recorrido | Resultado |
 |---|---|
-| Cuarto IN, regla y horarios antes/después | ![Reporte HARD](four-in-report.png) |
-| Decisión autorizada y seguimiento crítico persistente | ![HARD aceptada](accepted-hard.png) |
-| Familia no certificable, sin posibilidad de aceptación | ![Rechazo específico](unsupported.png) |
+| Cuarto IN, regla y horarios antes/después | [Reporte vigente](authorization/four-in-report.png) |
+| Decisión admin y seguimiento crítico persistente | [HARD aceptada](authorization/accepted-hard.png) |
+| Familia no certificable, sin posibilidad de aceptación | [Rechazo específico](authorization/unsupported.png) |
 
 Los logs de comprobación de tipos, build, migraciones y las 382 regresiones se
 conservan junto a este informe. El nuevo job `manual-draft-validation` ejecuta

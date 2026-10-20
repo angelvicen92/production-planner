@@ -8,6 +8,8 @@ test('manual validation messages distinguish stale, uncertifiable, failure and a
  assert.match(unsupported,/acompañamientos y adyacencias/);assert.match(unsupported,/No se puede aceptar/);assert.doesNotMatch(unsupported,/obsoleta|ANCHORED/);
  assert.match(assistedValidationErrorMessage({code:'STALE_VALIDATION'})!,/obsoleta/);
  assert.match(assistedValidationErrorMessage({code:'ASSISTED_VALIDATION_FAILED'})!,/ha fallado/);
+ assert.match(assistedValidationErrorMessage({code:'HARD_ADMIN_AUTHORIZATION_REQUIRED'})!,/autorización administrativa/);
+ assert.match(assistedValidationErrorMessage({code:'ASSISTED_ACCEPT_FORBIDDEN'})!,/rol vigente/);
  assert.equal(assistedValidationErrorMessage({code:'STALE_DRAFT'}),null);
  assert.equal(transportViolationExplanation({ruleCode:'TRANSPORT_GROUPING_VIOLATION',details:{dimensions:{direction:'arrival',kind:'GROUP_SIZE',actualGroupSize:4,minimumGroupSize:1,maximumGroupSize:3}}}),'IN: grupo de 4 participantes; máximo permitido 3.');
 });

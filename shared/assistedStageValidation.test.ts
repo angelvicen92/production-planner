@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createViolationKey, isAcceptedExceptionStillApplicable } from "./assistedStageValidation";
+import { createViolationKey, isAcceptedExceptionStillApplicable, newStageDeviationCounts } from "./assistedStageValidation";
+
+test('only new deviations require consent; inherited HARD/REQUIRED retain their total counts',()=>{
+ const validation={hardCount:2,requiredCount:3,reportJson:{newHardCount:0,newRequiredCount:1}};
+ assert.deepEqual(newStageDeviationCounts(validation),{newHardCount:0,newRequiredCount:1});
+ assert.equal(validation.hardCount,2);assert.equal(validation.requiredCount,3);
+ assert.deepEqual(newStageDeviationCounts({hardCount:1,requiredCount:2}),{newHardCount:1,newRequiredCount:2});
+ assert.deepEqual(newStageDeviationCounts({...validation,reportJson:{newHardCount:-1,newRequiredCount:null}}),{newHardCount:2,newRequiredCount:3});
+});
 
 test("violationKey is deterministic and order-independent for entity sets", () => {
   const a=createViolationKey({ruleCode:"OVERLAP_VIOLATION",affectedTaskIds:[9,2,9],affectedResourceIds:[4,1],dimensions:{interval:[20,10]}});

@@ -94,7 +94,7 @@ test("a clean scoped proposal validates and accepts an incomplete S0 -> S1 witho
     }
     return {error:{message:`unexpected RPC: ${name}`}};
   };
-  const service=new AssistedPlanningService(storage,rpc,{buildInput:async()=>structuredClone(input),
+  const service=new AssistedPlanningService(storage,rpc,{lookupRole:async()=>'production',buildInput:async()=>structuredClone(input),
     buildConfigRevision:()=>({contractVersion:1,planId,components:[],configurationFingerprint})});
   const certified=await service.validateDraft(planId,session.draftFingerprint,4);
   assert.equal(certified.current,true); assert.equal(certified.mode,"PROPOSAL_CERTIFIED_CLEAN_V1");

@@ -53,7 +53,7 @@ function harness(options: { session?: any; rpcError?: unknown; stages?: any[]; e
     calls.push({ name, parameters });
     return { error: options.rpcError ?? null };
   };
-  return { service: new AssistedPlanningService(storage, rpc), calls, storageWrites };
+  return { service: new AssistedPlanningService(storage, rpc, {lookupRole:async()=>'admin'}), calls, storageWrites };
 }
 
 async function expectConflict(action: () => Promise<unknown>, code: string) {

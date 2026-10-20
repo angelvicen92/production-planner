@@ -12,6 +12,8 @@ const ruleNames:Record<string,string>={
 
 export function assistedValidationErrorMessage(error:any):string|null{
  const code=String(error?.code??error?.message??'');
+ if(code==='HARD_ADMIN_AUTHORIZATION_REQUIRED')return 'Este borrador necesita autorización administrativa para aceptar conflictos críticos nuevos. Producción puede seguir editando y validando.';
+ if(code==='ASSISTED_ACCEPT_FORBIDDEN')return 'Tu rol vigente no permite aceptar esta etapa. Solicita la revisión de una persona autorizada.';
  if(code==='ASSISTED_DELTA_VALIDATION_UNSUPPORTED'){
   const diagnostics=error?.payload?.validationDiagnostics??error?.validationDiagnostics;
   const codes:unknown[]=Array.isArray(diagnostics?.reasonCodes)?diagnostics.reasonCodes:[];
