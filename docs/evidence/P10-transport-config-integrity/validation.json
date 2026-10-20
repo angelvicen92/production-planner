@@ -19,6 +19,12 @@
     "P9Regression": {
       "pass": 110,
       "fail": 0
+    },
+    "myDayBrowser": {
+      "status": "PASS",
+      "checks": 8,
+      "pageErrors": 0,
+      "note": "Destination visibility awaited before reset; exact zero-scroll refresh assertion unchanged. See my-day-browser-synchronization.json."
     }
   },
   "productCI": {
@@ -98,8 +104,7 @@
   "githubChecksUrl": "https://github.com/angelvicen92/production-planner/pull/1158/checks",
   "certificationLimits": [
     "Planner Next/Assisted certified; legacy engine transport coverage remains unverified.",
-    "No migration or data changes applied to real Supabase.",
-    "One earlier Mi Dia CI fragment-scroll assertion failed; the unchanged browser test passed locally. Final-head check outcome is recorded on the PR."
+    "No migration or data changes applied to real Supabase."
   ],
   "merge": false,
   "publication": false,

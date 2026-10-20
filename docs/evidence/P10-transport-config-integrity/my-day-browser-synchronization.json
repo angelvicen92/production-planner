@@ -1,0 +1,28 @@
+{
+  "observedFailedJobs": [
+    118549700938,
+    118556391963
+  ],
+  "assertion": {
+    "actual": {
+      "viewport": 69,
+      "workspace": 264
+    },
+    "expected": {
+      "viewport": 0,
+      "workspace": 0
+    }
+  },
+  "oldWait": "Any nonzero scroll, including the previous view, was considered arrival at the requested same-document fragment.",
+  "newWait": "The requested activity must enter the visible main viewport before reset and refresh; no scrolling is performed by that wait.",
+  "unchangedFinalAssertion": "viewport=0 and workspace=0 after refresh",
+  "unchangedProductAuthorities": {
+    "client/src/pages/my-day.tsx": "85665c806299f9b9f1bba75463357dca37a3566f0fccaf651c7dfa2fd1afcba9",
+    "client/src/components/layout.tsx": "3be0f0b4501eecb52fe54547d3455d67867be651ead74df852a3562561669697",
+    "client/src/index.css": "9b42a5119092f4476c7cf5275416ffd30a8602ab95e5de3598b458afb499d2b6"
+  },
+  "browserChecks": 8,
+  "pageErrors": [],
+  "timeoutsOrBudgetsChanged": false,
+  "remoteWrites": 0
+}

@@ -108,6 +108,14 @@ componer ambos ensayos. Comparar el contenido íntegro exige que Autopilot no
 cree excepciones ni cambie ninguna previa; con baseline vacío sigue exigiendo
 cero. El gate de autorización del producto no cambia.
 
+Dos ejecuciones de CI detectaron una carrera en el ensayo Mi Día: la espera de
+un scroll no nulo podía observar la posición anterior a la navegación del
+fragmento. El test ahora espera que la actividad enlazada entre en el área
+visible antes de resetear y medir el refresco. Conserva la aserción exacta de
+scroll cero posterior. `my-day-browser-synchronization.json` registra los fallos,
+los hashes del producto idéntico a la base y el resultado completo del navegador;
+no se cambian Mi Día, layout, CSS ni timeouts.
+
 Los resultados finales y las limitaciones observadas se registran en
 `validation.json`. `native-integration.json` contiene hashes de fuentes, ledger,
 los once Stages y auditorías canónicas del recorrido frío y de Autopilot.
