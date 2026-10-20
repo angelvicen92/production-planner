@@ -20,8 +20,9 @@ export async function runAutopilotWorkspace({ appUrl, users, planId, directory, 
   page.on('framenavigated', frame => { if (frame === page.mainFrame()) report.lifecycle.push({ event: 'navigation', at: new Date().toISOString(), path: new URL(frame.url()).pathname }); });
   page.on('console', message => { if (message.text().startsWith('[vite]')) report.lifecycle.push({ event: 'vite', at: new Date().toISOString(), message: message.text().slice(0, 200) }); });
   page.on("pageerror", e => errors.push(e.message));
-  let confirm = false;
-  page.on("dialog", d => { void (confirm ? d.accept() : d.dismiss()); });
+  // Any native browser dialog is a regression: Autopilot now uses OptiPlan's own AlertDialog.
+  const nativeDialogs: string[] = [];
+  page.on("dialog", d => { nativeDialogs.push(d.type()); void d.dismiss(); });
   try {
     await page.goto(`${appUrl}/login`);
     await page.getByLabel("Email", { exact: true }).fill(users.production.email);
@@ -32,6 +33,13 @@ export async function runAutopilotWorkspace({ appUrl, users, planId, directory, 
     const workspace = page.getByTestId("planning-multiview");
     const start = page.getByRole("button", { name: "Completar automáticamente", exact: true });
     await start.waitFor();
+    const consent = page.getByRole("alertdialog");
+    const startWithConsent = async () => {
+      await start.click();
+      await consent.waitFor();
+      await consent.getByRole("button", { name: "Completar automáticamente", exact: true }).click();
+      await consent.waitFor({ state: "hidden" });
+    };
     const visualWrites: string[] = [];
     const recordWrite = (request: import("playwright").Request) => {
       if (!["GET", "OPTIONS"].includes(request.method()) && request.url().includes("/api/")) visualWrites.push(new URL(request.url()).pathname);
@@ -44,12 +52,14 @@ export async function runAutopilotWorkspace({ appUrl, users, planId, directory, 
     const preferences = () => page.evaluate(() => Object.fromEntries(Object.entries(localStorage).filter(([key]) => key.startsWith("optiplan:workspace:"))));
     const before = await preferences();
     await start.click();
+    await consent.waitFor();
+    await consent.getByRole("button", { name: "Cancelar", exact: true }).click();
+    await consent.waitFor({ state: "hidden" });
     assert.equal(await workspace.getAttribute("data-workspace-fullscreen"), "false", "cancelled consent does not maximize");
     assert.deepEqual(visualWrites, [], "visual preferences and cancelled consent make no operational writes");
     report.visualWrites = visualWrites.length;
     page.off("request", recordWrite);
-    confirm = true;
-    await start.click();
+    await startWithConsent();
     await page.waitForFunction(() => document.querySelector('[data-testid="planning-multiview"]')?.getAttribute("data-workspace-fullscreen") === "true");
     await workspace.getByRole("progressbar").waitFor();
     assert.deepEqual(await preferences(), before);
@@ -163,7 +173,7 @@ export async function runAutopilotWorkspace({ appUrl, users, planId, directory, 
     });
     try {
       const rejected = page.waitForResponse(r => new URL(r.url()).pathname === `/api/plans/${planId}/assisted/accept-stage` && r.request().method() === 'POST', { timeout: 600_000 });
-      await start.click();
+      await startWithConsent();
       assert.equal((await rejected).status(), 403, 'real backend denies revoked production despite stale client cache');
       await page.waitForFunction(() => document.querySelector('[data-testid="assisted-autopilot-progress"]')?.getAttribute('data-phase') === 'FAILED');
       assert.equal(cachedRole, 'production');
@@ -184,7 +194,7 @@ export async function runAutopilotWorkspace({ appUrl, users, planId, directory, 
     report.reloadBeforeResume = true;
     // A fresh confirmed start resumes the accepted checkpoint and completes.
     await page.waitForFunction(() => [...document.querySelectorAll("button")].some(b => b.textContent === "Completar automáticamente" && !b.disabled));
-    await start.click();
+    await startWithConsent();
     await page.waitForFunction(() => ["COMPLETE", "FAILED"].includes(document.querySelector('[data-testid="assisted-autopilot-progress"]')?.getAttribute("data-phase") ?? ""), undefined, { timeout: 1_200_000 });
     const final = JSON.parse((await workspace.getByTestId("assisted-autopilot-technical").locator("pre").textContent())!);
     assert.equal(final.phase, "COMPLETE", JSON.stringify(final));
@@ -225,6 +235,7 @@ export async function runAutopilotWorkspace({ appUrl, users, planId, directory, 
     await page.getByRole("button", { name: "Restaurar conjunto (Esc)", exact: true }).click();
     assert.equal(await workspace.getAttribute("data-workspace-fullscreen"), "false");
     assert.deepEqual(await preferences(), before);
+    assert.deepEqual(nativeDialogs, [], "no native browser dialogs are emitted in Autopilot");
     assert.deepEqual(errors, []);
     report.status = "PASS"; save();
     pass("Autopilot: real accepted stages rendered progressively, single header, preferences, Escape, stop/resume and complete maximized");
