@@ -496,7 +496,7 @@ export function PlanResourcesTab({
                 await load();
                 onChanged?.();
               } catch (e: any) {
-                alert(friendlyError(e) || "No se pudo añadir");
+                toast({ title: "No se pudo añadir", description: "Revisa los datos e inténtalo de nuevo.", variant: "destructive" });
               } finally {
                 setCreating(false);
               }
@@ -1344,7 +1344,7 @@ export function PlanResourcesTab({
                           { isAvailable: next },
                         );
                       } catch (e: any) {
-                        alert(friendlyError(e) || "No se pudo guardar");
+                        toast({ title: "No se pudo guardar", description: "Revisa los datos e inténtalo de nuevo.", variant: "destructive" });
                         await load();
                         onChanged?.();
                       }
@@ -1376,7 +1376,7 @@ export function PlanResourcesTab({
                           );
                           onChanged?.();
                         } catch (err: any) {
-                          alert(friendlyError(err) || "No se pudo renombrar");
+                          toast({ title: "No se pudo renombrar", description: "Revisa los datos e inténtalo de nuevo.", variant: "destructive" });
                           await load();
                           onChanged?.();
                         }
@@ -1416,7 +1416,7 @@ export function PlanResourcesTab({
                           await load();
                           onChanged?.();
                         } catch (e: any) {
-                          alert(friendlyError(e) || "No se pudo borrar");
+                          toast({ title: "No se pudo borrar", description: "Revisa los datos e inténtalo de nuevo.", variant: "destructive" });
                         }
                       }}
                     >
