@@ -398,6 +398,16 @@ export const api = {
   },
 
   plans: {
+    resetExecution: {
+      method: "POST" as const,
+      path: "/api/plans/:id/execution/reset",
+      input: z.object({ expectedTasks: z.array(z.object({
+        id: z.number().int().positive().safe(),
+        status: z.enum(["pending", "in_progress", "done", "interrupted", "cancelled"]),
+        executionVersion: z.number().int().nonnegative().safe(),
+      }).strict()).refine(tasks => new Set(tasks.map(task => task.id)).size === tasks.length) }).strict(),
+      response: z.object({ resetCount: z.number().int().nonnegative() }),
+    },
     list: {
       method: "GET" as const,
       path: "/api/plans",

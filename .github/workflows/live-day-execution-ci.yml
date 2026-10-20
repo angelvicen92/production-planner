@@ -6,6 +6,7 @@ on:
     paths:
       - 'server/liveExecution*'
       - 'server/executionTimeCorrections*'
+      - 'server/bulkExecutionReset*'
       - 'client/src/lib/api.ts'
       - 'client/src/lib/execution-precondition*'
       - 'client/src/lib/execution-time-correction*'
@@ -55,12 +56,14 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: node --import tsx --test --test-concurrency=1 server/liveExecution.spec.ts server/liveExecutionDateIntegrity.spec.ts server/executionTimeCorrections.spec.ts client/src/lib/execution-precondition.test.ts server/incidents.spec.ts server/apiAuthorization.spec.ts server/assistedPlanningWorkflow.spec.ts
+      - run: node --import tsx --test --test-concurrency=1 server/liveExecution.spec.ts server/liveExecutionDateIntegrity.spec.ts server/executionTimeCorrections.spec.ts server/bulkExecutionReset.spec.ts client/src/lib/execution-precondition.test.ts server/incidents.spec.ts server/apiAuthorization.spec.ts server/assistedPlanningWorkflow.spec.ts
       - run: node --import tsx --test client/src/lib/execution-time-correction.test.ts client/src/lib/my-day-temporal.test.ts
       - run: node --import tsx --test client/src/lib/my-day-operational.test.ts client/src/components/my-day/activity-information.test.tsx
       - name: Nominal Production authority, incidents and accepted A2 preservation
         run: node --import tsx script/demo/smokeA2Integration.ts work/production-scope --historical-topology --production-scope
       - run: npx --no-install playwright install --with-deps chromium
+      - name: ADMIN atomic whole-day execution reset, native races and real filtered UI
+        run: node --import tsx script/demo/smokeA2Integration.ts work/bulk-execution-reset --historical-topology --bulk-execution-reset --restricted-data-api
       - name: SQL Start workday integrity, clock races, real HTTP and unchanged Mi Día
         run: node --import tsx script/demo/smokeA2Integration.ts work/execution-date-integrity --historical-topology --execution-date-integrity
       - name: Mi Día correction form, errors, Madrid DST and mobile/tablet
@@ -77,6 +80,8 @@ jobs:
         with:
           name: live-day-execution
           path: |
+            work/bulk-execution-reset/integration.json
+            work/bulk-execution-reset/bulk-execution-reset.png
             work/execution-date-integrity/integration.json
             work/execution-date-integrity/p7-*.png
             work/time-corrections/integration.json

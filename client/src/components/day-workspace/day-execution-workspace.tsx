@@ -1,5 +1,7 @@
 import { PersistedDaySection } from "./day-collapsible-section";
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { useIsMutating } from "@tanstack/react-query";
+import { api } from "@shared/routes";
 import { Check, Pause, Play, RotateCcw, Search, Columns3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +17,7 @@ import {
 } from "@/components/ui/table";
 import { useExecutionContext } from "@/hooks/use-execution-context";
 import { executionClockCurrent, executionDuration, formatExecutionDuration } from "@shared/execution";
-import { useUpdateTaskStatus, useResetTask } from "@/hooks/use-tasks";
+import { useUpdateTaskStatus, useResetTask, useResetPlanExecution } from "@/hooks/use-tasks";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import {
   emptyExecutionFilters,
@@ -82,8 +84,35 @@ export const DayExecutionWorkspace = memo(function DayExecutionWorkspace({
   const canReset = Boolean(online && !contextQ.error && (context?.role === "admin" || context?.role === "production"));
   const statusMutation = useUpdateTaskStatus();
   const reset = useResetTask();
+  const resetAll = useResetPlanExecution();
+  const mutating = useIsMutating() > 0;
+  const [confirmingReset, setConfirmingReset] = useState(false);
   const confirm = useConfirm();
-  const busy = statusMutation.isPending || reset.isPending;
+  const busy = mutating || statusMutation.isPending || reset.isPending || resetAll.isPending || confirmingReset;
+  const resetSnapshot = useMemo(() => api.plans.resetExecution.input.safeParse({
+    expectedTasks: tasks.map(({ id, status, executionVersion }) => ({ id, status, executionVersion })),
+  }), [tasks]);
+  const resetCount = tasks.filter(task => task.status !== "pending").length;
+  const resetAuthority = Boolean(online && !contextQ.error && context?.role === "admin");
+  const latestReset = useRef({ allowed: resetAuthority && !mutating, planId });
+  latestReset.current = { allowed: resetAuthority && !mutating, planId };
+  const resetWholeDay = async () => {
+    if (!resetAuthority || busy || !resetSnapshot.success || resetCount === 0) return;
+    // Capture the complete day before opening confirmation, including pending tasks.
+    const expectedTasks = resetSnapshot.data.expectedTasks;
+    setConfirmingReset(true);
+    try {
+      const accepted = await confirm({
+        title: "Resetear toda la ejecución",
+        description: `Se restablecerá la ejecución de ${resetCount} actividades de toda la jornada. Es una corrección administrativa excepcional. El planning y el historial se conservarán.`,
+        confirmText: "Resetear todas",
+        cancelText: "Cancelar",
+      });
+      if (accepted && navigator.onLine && latestReset.current.allowed && latestReset.current.planId === planId) {
+        resetAll.mutate({ planId, expectedTasks });
+      }
+    } finally { setConfirmingReset(false); }
+  };
   const [filters, setFilters] = useState<ExecutionFilters>(
     emptyExecutionFilters,
   );
@@ -353,6 +382,17 @@ export const DayExecutionWorkspace = memo(function DayExecutionWorkspace({
               ))}
             </div>
           </details>
+          {context?.role === "admin" && (
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={resetWholeDay}
+              disabled={!resetAuthority || busy || !resetSnapshot.success || resetCount === 0}
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Resetear toda la ejecución
+            </Button>
+          )}
         </div>
       </div>
       <p className="rounded-lg border p-3 text-sm text-muted-foreground" role="status">
