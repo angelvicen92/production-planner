@@ -62,7 +62,8 @@ if(process.argv.includes('--app')){
  const productionScope=process.argv.includes('--production-scope');
  const assistedStageCycle=process.argv.includes('--assisted-stage-cycle');
  const executionDateIntegrity=process.argv.includes('--execution-date-integrity');
- const liveSnapshot=assistedStageCycle||executionDateIntegrity||timeCorrections||productionScope||process.argv.includes('--live-execution-snapshot')||warRoom||controlRoom||collapsibleSections||planningNavigation;
+ const bulkExecutionReset=process.argv.includes('--bulk-execution-reset');
+ const liveSnapshot=bulkExecutionReset||assistedStageCycle||executionDateIntegrity||timeCorrections||productionScope||process.argv.includes('--live-execution-snapshot')||warRoom||controlRoom||collapsibleSections||planningNavigation;
  assert.ok(!liveSnapshot||historicalTopology,'accepted snapshot replay requires --historical-topology');
  assert.ok(!liveExecution||full,'--live-execution requires a complete accepted baseline (--full)');
  const workspaceSetup=process.argv.includes("--workspace-setup");
@@ -93,6 +94,7 @@ if(process.argv.includes('--app')){
  if(timeCorrections)runtimeFiles.push('script/demo/smokeExecutionTimeCorrections.ts','server/executionTimeCorrections.ts','server/liveExecution.ts','server/apiAuthorization.ts','shared/routes.ts','shared/schema.ts','client/src/lib/api.ts','client/src/lib/execution-precondition.ts','client/src/pages/my-day.tsx','client/src/components/my-day/time-correction-dialog.tsx','client/src/lib/execution-time-correction.ts','supabase/migrations/097_audited_execution_time_corrections.sql');
  if(productionScope)runtimeFiles.push('script/demo/smokeProductionScopeJourney.ts','supabase/migrations/096_production_execution_scope.sql');
  if(executionDateIntegrity)runtimeFiles.push('script/demo/smokeExecutionDateIntegrity.ts','server/liveExecution.ts','supabase/migrations/098_execution_start_workday.sql');
+ if(bulkExecutionReset)runtimeFiles.push('script/demo/smokeBulkExecutionReset.ts','server/bulkExecutionReset.ts','server/apiAuthorization.ts','shared/routes.ts','supabase/migrations/101_admin_bulk_execution_reset.sql');
  if(restrictedDataApi)runtimeFiles.push('script/demo/dataApiCatalog.ts','script/demo/dataApiGrantsGate.ts','script/demo/dataApiCallSheet.ts','script/demo/fixtures/data-api-privileges.json','supabase/migrations/100_data_api_explicit_grants.sql');
  const hashes=()=>Object.fromEntries(runtimeFiles.map(file=>[file,createHash('sha256').update(readFileSync(file)).digest('hex')]));
  if(warRoom)runtimeFiles.push('script/demo/smokeWarRoomJourney.ts','server/incidents.ts','server/incidentErrors.ts','shared/incidents.ts','client/src/pages/my-day.tsx','client/src/pages/war-room.tsx','client/src/hooks/use-war-room.ts','client/src/hooks/use-plan-realtime.ts','client/src/lib/war-room-store.ts','client/src/pages/dashboard.tsx','client/src/pages/call-sheet.tsx','server/apiAuthorization.ts','shared/routes.ts','shared/schema.ts','supabase/migrations/094_operational_incidents.sql');
@@ -309,6 +311,7 @@ if(process.argv.includes('--app')){
    else if(collapsibleSections){const {runCollapsibleSections}=await import('./smokeCollapsibleSections');report.collapsibleSections=await runCollapsibleSections({...options,planId:27001,baselineUrl});}
    else if(planningNavigation){const {runPlanningNavigation}=await import('./smokePlanningNavigation');report.planningNavigation=await runPlanningNavigation({...options,planId:27001});}
    else if(controlRoom){const {runControlRoomJourney}=await import('./smokeControlRoomJourney');report.controlRoom=await runControlRoomJourney({...options,planId:27001,baselineUrl});}
+   else if(bulkExecutionReset){const {runBulkExecutionReset}=await import('./smokeBulkExecutionReset');report.bulkExecutionReset=await runBulkExecutionReset({...options,planId:27001});}
    else if(executionDateIntegrity){const {runExecutionDateIntegrity}=await import('./smokeExecutionDateIntegrity');report.executionDateIntegrity=await runExecutionDateIntegrity({...options,planId:27001});}
    else if(timeCorrections){const {runExecutionTimeCorrections}=await import('./smokeExecutionTimeCorrections');report.timeCorrections=await runExecutionTimeCorrections({...options,planId:27001});}
    else if(productionScope){const {runProductionScopeJourney}=await import('./smokeProductionScopeJourney');report.productionScope=await runProductionScopeJourney({...options,planId:27001});}

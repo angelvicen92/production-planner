@@ -79,3 +79,24 @@ test('time correction and history share execution role boundaries including Expr
   }
   assert.deepEqual(apiRequiredRoles('GET','/tasks/1/execution-history'),['admin','production','aux','viewer']);
 });
+
+test('bulk execution reset requires ADMIN through real HTTP including casing and trailing slash', async () => {
+  const app = express(); let writes = 0;
+  app.use('/api',createApiAuthorization({
+    authenticate:(req,res,next)=>{const role=req.header('x-test-user');if(!role)return void res.sendStatus(401);(req as any).user={id:role};next();},
+    lookupRole:async role=>role==='norole'?null:role as AppRole,
+  }));
+  app.post(api.plans.resetExecution.path,(_req,res)=>{writes++;res.json({resetCount:4});});
+  const server=app.listen(0,'127.0.0.1'); await new Promise<void>(resolve=>server.once('listening',resolve));
+  const address=server.address(); assert.ok(address&&typeof address!=='string');
+  try {
+    for(const role of [undefined,'norole','viewer','aux','production','admin']) {
+      for(const path of ['/api/plans/1/execution/reset','/api/plans/1/execution/reset/','/API/PLANS/1/EXECUTION/RESET']) {
+        const before=writes;
+        const response: Response=await fetch(`http://127.0.0.1:${address.port}${path}`,{method:'POST',headers:role?{'x-test-user':role}:{}});
+        assert.equal(response.status,role==null?401:role==='admin'?200:403);
+        assert.equal(writes,before+(role==='admin'?1:0));
+      }
+    }
+  } finally { await new Promise<void>(resolve=>server.close(()=>resolve())); }
+});

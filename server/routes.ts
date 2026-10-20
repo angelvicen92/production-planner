@@ -11,6 +11,7 @@ import { api, defaultSpatialAvailabilityResponseSchema, planSpaceAvailabilityRes
 import { z } from "zod";
 import { requireAuth } from "./middleware/requireAuth";
 import { registerExecutionTimeRoutes } from "./executionTimeCorrections";
+import { registerBulkExecutionResetRoutes } from "./bulkExecutionReset";
 import { canExecuteTask, executionContext, executionError } from "./liveExecution";
 import { createApiAuthorization } from './apiAuthorization';
 import { buildEngineInput } from "../engine/buildInput";
@@ -3605,6 +3606,7 @@ function mapDeleteError(err: any, fallback: string) {
   });
 
   registerExecutionTimeRoutes(app);
+  registerBulkExecutionResetRoutes(app);
 
   // Task Status Update (Execution)
   app.patch(api.dailyTasks.updateStatus.path, async (req, res) => {

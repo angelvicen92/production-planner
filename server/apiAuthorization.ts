@@ -5,6 +5,7 @@ import type {RequestHandler} from 'express';
 export function apiRequiredRoles(method:string,path:string):readonly AppRole[]|null {
  const within=(prefix:string)=>path===prefix||path.startsWith(`${prefix}/`);
  if(within('/debug'))return ['admin'];
+ if(/^\/plans\/[^/]+\/execution\/reset\/?$/i.test(path))return ['admin'];
  if(/^\/plans\/[^/]+\/header-notes(?:\/|$)/i.test(path))return method==='GET'||method==='HEAD'?['admin','production','aux','viewer']:['admin','production'];
  if(/^\/plans\/[^/]+\/incidents(?:\/|$)/.test(path))return method==='GET'?['admin','production','aux','viewer']:['admin','production','aux'];
  if(/^\/tasks\/[^/]+\/execution-history\/?$/i.test(path))return ['admin','production','aux','viewer'];

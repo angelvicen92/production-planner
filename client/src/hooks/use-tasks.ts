@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { z } from "zod";
 import { apiRequest } from "@/lib/api";
 import { DailyTask, Lock, TaskTemplate, InsertDailyTask } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -162,6 +163,23 @@ export function useResetTask() {
     onError: (error: any) => toast({ title: "No se confirmó el restablecimiento", description: error?.status ? error.message : "Actualiza la agenda antes de reintentar.", variant: "destructive" }),
     onSettled: async (_data, _error, variables) => {
       await Promise.all([planQueryKey(variables.planId), planTasksQueryKey(variables.planId), planLocksQueryKey(variables.planId), [`/api/plans/${variables.planId}/execution`]].map(queryKey => queryClient.invalidateQueries({ queryKey })));
+    },
+  });
+}
+
+export function useResetPlanExecution() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationKey: ['reset-plan-execution'],
+    mutationFn: ({ planId, expectedTasks }: { planId: number } & z.infer<typeof api.plans.resetExecution.input>) =>
+      apiRequest<{ resetCount: number }>('POST', buildUrl(api.plans.resetExecution.path, { id: planId }), { expectedTasks }),
+    onSuccess: ({ resetCount }) => toast({ title: 'Ejecución restablecida', description: `Se han restablecido ${resetCount} actividades. El planning y el historial se conservan.` }),
+    onError: (error: any) => toast({ title: 'No se confirmó el restablecimiento', description: error?.status ? error.message : 'Actualiza la jornada antes de reintentar.', variant: 'destructive' }),
+    onSettled: async (_data, _error, { planId, expectedTasks }) => {
+      await Promise.all([planQueryKey(planId), planTasksQueryKey(planId), planLocksQueryKey(planId), [`/api/plans/${planId}/execution`],
+        ...expectedTasks.filter(task => task.status !== 'pending').map(task => [`/api/tasks/${task.id}/execution-history`])]
+        .map(queryKey => queryClient.invalidateQueries({ queryKey })));
     },
   });
 }
