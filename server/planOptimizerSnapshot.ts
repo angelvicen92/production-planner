@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { transportBoundsSchema } from "../shared/transportPolicy";
 import {
   clampAdvancedValue,
   clampBasicLevel,
@@ -41,6 +42,10 @@ export interface PlanOptimizerSnapshotV1 {
   readonly transport: Readonly<{
     arrivalPlanTemplateSnapshotId: number | null;
     departurePlanTemplateSnapshotId: number | null;
+    arrivalMinimumGroupSize?: number;
+    departureMinimumGroupSize?: number;
+    arrivalMaximumGroupSize?: number;
+    departureMaximumGroupSize?: number;
     arrivalGroupingTarget: number;
     departureGroupingTarget: number;
     arrivalMinGapMinutes: number;
@@ -343,6 +348,16 @@ export function normalizePlanOptimizerSnapshotV1(
     );
   }
 
+  const boundsRaw = Object.fromEntries([
+    ["arrivalMinimumGroupSize", readPresent(record, "arrivalMinimumGroupSize", "arrival_minimum_group_size") ?? readPresent(transport, "arrivalMinimumGroupSize", "arrival_minimum_group_size")],
+    ["departureMinimumGroupSize", readPresent(record, "departureMinimumGroupSize", "departure_minimum_group_size") ?? readPresent(transport, "departureMinimumGroupSize", "departure_minimum_group_size")],
+    ["arrivalMaximumGroupSize", readPresent(record, "arrivalMaximumGroupSize", "arrival_maximum_group_size") ?? readPresent(transport, "arrivalMaximumGroupSize", "arrival_maximum_group_size")],
+    ["departureMaximumGroupSize", readPresent(record, "departureMaximumGroupSize", "departure_maximum_group_size") ?? readPresent(transport, "departureMaximumGroupSize", "departure_maximum_group_size")],
+
+  ].filter(([, value]) => value != null));
+  const bounds = transportBoundsSchema.safeParse(boundsRaw);
+  if (!bounds.success) throw new PlanOptimizerSnapshotError("INVALID_PLAN_OPTIMIZER_SNAPSHOT", "Invalid transport HARD bounds.");
+
   const normalizedWithoutFingerprint = deepFreezePlanOptimizerSnapshot({
     contractVersion: PLAN_OPTIMIZER_SNAPSHOT_CONTRACT_VERSION,
     source: sourceOverride ?? normalizeSource(readPresent(record, "source")),
@@ -353,6 +368,7 @@ export function normalizePlanOptimizerSnapshotV1(
       readPresent(record, "groupingZoneIds", "grouping_zone_ids"),
     ),
     transport: {
+      ...boundsRaw as { arrivalMinimumGroupSize?:number; departureMinimumGroupSize?:number; arrivalMaximumGroupSize?:number; departureMaximumGroupSize?:number },
       arrivalPlanTemplateSnapshotId,
       departurePlanTemplateSnapshotId,
       arrivalGroupingTarget,

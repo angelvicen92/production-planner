@@ -691,7 +691,6 @@ test("transport preflight accepts integer sizes and zero-valued gap and weight",
 
 test("transport preflight rejects partial, contradictory, and invalid numeric aliases", () => {
   const mutations: Array<(value: EngineInput) => void> = [
-    (value) => { delete value.departureGroupingTarget; },
     (value) => { value.transportSettings!.arrivalTargetGroupSize = 4; },
     (value) => { value.transportSettings!.vehicleCapacity = 7; },
     (value) => { value.arrivalGroupingTarget = 1.5; value.transportSettings!.arrivalTargetGroupSize = 1.5; },
@@ -1797,4 +1796,12 @@ test("full-A2 main/vocal relation allows additional canonical prerequisites", ()
   value.tasks[0] = { ...value.tasks[0], dependsOnTaskIds: [102, 106] };
   const result = preflightEngineInputForPlannerNext(value);
   assert.equal(result.status, "SUPPORTED", JSON.stringify(result.issues));
+});
+
+// P10: target is optional preference; a complete alias supplies an absent top-level value.
+test('transport accepts an absent target alias and unspecified zero target',()=>{
+ const value=validTransportInput();delete value.departureGroupingTarget;
+ assert.equal(preflightEngineInputForPlannerNext(value).status,'SUPPORTED');
+ value.arrivalGroupingTarget=0;value.transportSettings!.arrivalTargetGroupSize=0;
+ assert.equal(preflightEngineInputForPlannerNext(value).status,'SUPPORTED');
 });

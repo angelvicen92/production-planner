@@ -1,0 +1,129 @@
+{
+  "status": "PASS",
+  "remoteWrites": 0,
+  "original": {
+    "vanCapacity": 3,
+    "arrivalMinimumGroupSize": 1,
+    "arrivalGroupingTarget": 3,
+    "arrivalMaximumGroupSize": 3,
+    "arrivalMinGapMinutes": 30,
+    "departureMinimumGroupSize": 1,
+    "departureGroupingTarget": 1,
+    "departureMaximumGroupSize": 6,
+    "departureMinGapMinutes": 20
+  },
+  "originalSources": {
+    "arrivalGroupingTarget": "Override del día",
+    "arrivalMinGapMinutes": "Override del día",
+    "arrivalMinimumGroupSize": "Compatibilidad histórica: mínimo HARD 1",
+    "arrivalMaximumGroupSize": "Override explícito de configuración de la jornada",
+    "departureGroupingTarget": "Override del día",
+    "departureMinGapMinutes": "Override del día",
+    "departureMinimumGroupSize": "Compatibilidad histórica: mínimo HARD 1",
+    "departureMaximumGroupSize": "Override explícito de configuración de la jornada"
+  },
+  "effective": {
+    "vanCapacity": 3,
+    "arrivalMinimumGroupSize": 2,
+    "arrivalGroupingTarget": 3,
+    "arrivalMaximumGroupSize": 3,
+    "arrivalMinGapMinutes": 30,
+    "departureMinimumGroupSize": 1,
+    "departureGroupingTarget": 1,
+    "departureMaximumGroupSize": 6,
+    "departureMinGapMinutes": 20
+  },
+  "sources": {
+    "arrivalGroupingTarget": "Override del día",
+    "arrivalMinGapMinutes": "Override del día",
+    "arrivalMinimumGroupSize": "Override del día",
+    "arrivalMaximumGroupSize": "Override del día",
+    "departureGroupingTarget": "Override del día",
+    "departureMinGapMinutes": "Override del día",
+    "departureMinimumGroupSize": "Override del día",
+    "departureMaximumGroupSize": "Override del día"
+  },
+  "policy": {
+    "arrival": {
+      "taskIds": [
+        "task:10006",
+        "task:10021",
+        "task:10034",
+        "task:10047",
+        "task:10060",
+        "task:10077",
+        "task:10092",
+        "task:10105",
+        "task:10120",
+        "task:10135",
+        "task:10150",
+        "task:10165",
+        "task:10180",
+        "task:10194",
+        "task:10207",
+        "task:10221",
+        "task:10233",
+        "task:10246",
+        "task:10259"
+      ],
+      "targetGroupSize": 3,
+      "minimumGroupSize": 2,
+      "maximumGroupSize": 3,
+      "minGapMinutes": 30,
+      "groupingWeight": 3
+    },
+    "departure": {
+      "taskIds": [
+        "task:10007",
+        "task:10022",
+        "task:10035",
+        "task:10048",
+        "task:10061",
+        "task:10078",
+        "task:10093",
+        "task:10106",
+        "task:10121",
+        "task:10136",
+        "task:10151",
+        "task:10166",
+        "task:10181",
+        "task:10195",
+        "task:10208",
+        "task:10222",
+        "task:10234",
+        "task:10247",
+        "task:10260"
+      ],
+      "targetGroupSize": 1,
+      "minimumGroupSize": 1,
+      "maximumGroupSize": 6,
+      "minGapMinutes": 20,
+      "groupingWeight": 3
+    }
+  },
+  "revisionFingerprint": "ce7dac37293b95b8490aec6c52fa3f7be1cbc589de3c43f5e5cfb7033d2e7045",
+  "validation": [
+    {
+      "ruleCode": "TRANSPORT_GROUPING_VIOLATION",
+      "severity": "HARD",
+      "affectedTaskIds": [
+        "task:10135"
+      ],
+      "affectedResourceIds": [],
+      "affectedSpaceIds": [],
+      "dimensions": {
+        "direction": "arrival",
+        "kind": "GROUP_SIZE",
+        "start": 720,
+        "end": 725,
+        "actualGroupSize": 1,
+        "minimumGroupSize": 2,
+        "maximumGroupSize": 3
+      }
+    }
+  ],
+  "protectedMaterial": "UNCHANGED",
+  "invalidGeneral": 400,
+  "staleAcceptance": 409,
+  "restore": 200
+}

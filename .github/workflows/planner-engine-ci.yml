@@ -38,6 +38,10 @@ on:
       - "client/src/lib/assisted-scope-selection*"
       - "client/src/components/planning/assisted-location-scope*"
       - "shared/mainFlowPreference*"
+      - "shared/transportPolicy*"
+      - "shared/dayConfig*"
+      - "client/src/components/transport-settings-card.tsx"
+      - "client/src/components/transport-policy-fields.tsx"
       - "client/src/components/effective-configuration.tsx"
       - "client/src/components/general-program-settings.tsx"
       - "client/src/components/main-flow-preference-editor.tsx"
@@ -73,8 +77,8 @@ jobs:
       - run: npm ci
       - run: npx --no-install playwright install --with-deps chromium
       - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
-      - run: node --import tsx --test --test-concurrency=1 engine/planner-next/transportGrouping.spec.ts server/assistedManualSnapshotFidelity.spec.ts server/assistedStageAcceptanceAuthorization.spec.ts shared/assistedStageValidation.test.ts client/src/lib/assisted-draft-warnings.test.ts client/src/components/planning/assisted-planning-workspace.test.ts
-      - run: npm run demo:a2:smoke -- work/manual-draft-validation --full --manual-validation
+      - run: node --import tsx --test --test-concurrency=1 engine/planner-next/transportGrouping.spec.ts engine/planner-next/transportConfigIntegrity.spec.ts server/transportConfigIntegrity.spec.ts server/assistedManualSnapshotFidelity.spec.ts server/assistedStageAcceptanceAuthorization.spec.ts shared/assistedStageValidation.test.ts client/src/lib/assisted-draft-warnings.test.ts client/src/components/planning/assisted-planning-workspace.test.ts
+      - run: npm run demo:a2:smoke -- work/manual-draft-validation --full --manual-validation --transport-policy
       - name: Production REQUIRED acceptance in a separate immutable day fixture
         run: npm run demo:a2:smoke -- work/manual-required --manual-required-replay=work/manual-draft-validation/manual-validation-baseline.json
       - uses: actions/upload-artifact@v4
@@ -85,6 +89,8 @@ jobs:
             work/manual-draft-validation/integration.json
             work/manual-draft-validation/manual-validation-probe.json
             work/manual-draft-validation/p9-*.png
+            work/manual-draft-validation/transport-policy.json
+            work/manual-draft-validation/p10-*.png
             work/manual-required/integration.json
             work/manual-required/required-acceptance.json
             work/manual-required/p9-*.png
@@ -114,8 +120,8 @@ jobs:
             work/autopilot-workspace/autopilot-workspace.json
             work/autopilot-workspace/autopilot-workspace-*.png
             work/p6-role-policy/policy.json
-  a2-assisted-integration:
-    name: a2-assisted-integration
+  a2-assisted-catalog-integration:
+    name: a2-assisted-catalog-integration
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -139,6 +145,37 @@ jobs:
         run: npm run demo:a2:smoke -- work/a2-scope-integration --scope-selection
       - name: Configuration read with the observed 52 legacy breaks and S0 Autopilot
         run: npm run demo:a2:smoke -- work/a2-config-read-recovery --historical-topology --configuration-read-recovery
+      - name: Integration evidence (no private app logs or credentials)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a2-assisted-catalog-integration
+          path: |
+            work/day-workspace-setup/integration.json
+            work/day-workspace-setup/day-workspace-setup.json
+            work/day-workspace-setup/workspace-*.png
+            work/a2-scope-integration/integration.json
+            work/a2-scope-integration/scope-selection-*.json
+            work/a2-config-read-recovery/integration.json
+            work/a2-config-read-recovery/configuration-read-run.json
+            work/a2-config-read-recovery/configuration-read-controller.json
+            work/a2-config-read-recovery/configuration-read-http-failure.json
+
+  # Independent disposable fixtures: keep every assertion and the 30-minute
+  # limit, without charging catalog/UI rehearsals to the canonical run's clock.
+  a2-assisted-canonical-integration:
+    name: a2-assisted-canonical-integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
       - name: Native SQL, Auth, HTTP and UI; canonical baseline and two deterministic orders
         run: npm run demo:a2:smoke -- work/a2-integration --historical-topology --full --day-workspace --stage-order --autopilot --reality-scope
       - name: Integration evidence (no private app logs or credentials)
@@ -155,18 +192,25 @@ jobs:
             work/a2-integration/workspace-*.png
             work/a2-integration/manual-snapshot-fidelity.json
             work/a2-integration/restart.json
-            work/day-workspace-setup/integration.json
-            work/day-workspace-setup/day-workspace-setup.json
-            work/day-workspace-setup/workspace-*.png
-            work/a2-scope-integration/integration.json
-            work/a2-scope-integration/scope-selection-*.json
-            work/a2-config-read-recovery/integration.json
-            work/a2-config-read-recovery/configuration-read-run.json
-            work/a2-config-read-recovery/configuration-read-controller.json
-            work/a2-config-read-recovery/configuration-read-http-failure.json
             work/a2-integration/*-real-ui.png
             work/a2-integration/reality-scope.json
             work/a2-integration/reality-*.png
+
+  # Preserve the existing required check as the conjunction of both rehearsals.
+  a2-assisted-integration:
+    name: a2-assisted-integration
+    needs: [a2-assisted-catalog-integration, a2-assisted-canonical-integration]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Require both complete native rehearsals
+        env:
+          P10_CATALOG_RESULT: ${{ needs.a2-assisted-catalog-integration.result }}
+          P10_CANONICAL_RESULT: ${{ needs.a2-assisted-canonical-integration.result }}
+        run: |
+          test "$P10_CATALOG_RESULT" = success
+          test "$P10_CANONICAL_RESULT" = success
 
   main-flow-preference-integration:
     name: main-flow-preference-integration

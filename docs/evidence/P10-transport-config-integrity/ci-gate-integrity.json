@@ -1,0 +1,32 @@
+{
+  "cause": "Four independent disposable integration commands shared a 30-minute CI job; the second attempt passed the final product assertion and was cancelled during teardown.",
+  "sourceCommit": "0160b9a5257df238d38234f3f0e9909a3db59690",
+  "sourceRun": 39402416600,
+  "attemptJobs": [
+    118560665033,
+    118654961642
+  ],
+  "secondAttemptEvidence": [
+    "2026-10-20T13:38:14.2398071Z PASS old day, 11 prior Stages, 333 other tasks and historical catalog remain literal after real UI/Autopilot/execution",
+    "2026-10-20T13:54:15.4359157Z PASS two focal orders repeated from complete real checkpoints: canonical 266/266, no new HARD/REQUIRED, unchanged original runs/Stages, deterministic",
+    "2026-10-20T13:59:03.4255695Z PASS Autopilot S0 uninterrupted: canonical 266/266, clean authenticated accepts, literal protections and reload",
+    "2026-10-20T13:59:03.4257053Z PASS confirmed UI restart from 266/266 to exact S0; audit retained; full Autopilot replans 266/266",
+    "2026-10-20T13:59:17.6612920Z PASS Reality agendas: single principal cards, physical anchors, real location, selected teams, Timeline/List/accepted/maximized, immutable Stages",
+    "2026-10-20T13:59:17.7913760Z PASS old day, 11 prior Stages, 333 other tasks and historical catalog remain literal after real UI/Autopilot/execution",
+    "2026-10-20T13:59:20.8907533Z ##[error]The operation was canceled."
+  ],
+  "delta": {
+    "catalogJob": "a2-assisted-catalog-integration",
+    "canonicalJob": "a2-assisted-canonical-integration",
+    "existingRequiredGate": "a2-assisted-integration",
+    "gate": "always runs and requires both native jobs to be success",
+    "nativeJobTimeoutMinutesBefore": 30,
+    "nativeJobTimeoutMinutesAfter": 30,
+    "requiredGateTimeoutMinutes": 1,
+    "productTestCommandMultisetUnchanged": true,
+    "artifactPathUnionUnchanged": true,
+    "engineBudgetsUnchanged": true,
+    "productRuntimeUnchanged": true
+  },
+  "validation": "YAML parsed; original product command multiset and artifact paths equal the partitioned jobs; both native limits remain 30 minutes; existing required gate is the conjunction of both results."
+}

@@ -17,6 +17,7 @@ export async function runA2AutopilotJourney(options: Options, baseline: Baseline
     const data: any = await r.json(); assert.equal(r.status, 200, JSON.stringify(data)); return data;
   };
   const originals = (await db.query("SELECT * FROM public.assisted_planning_stages WHERE plan_id=$1 ORDER BY id", [planId])).rows;
+  const originalExceptions = (await db.query("SELECT * FROM public.planning_accepted_exceptions WHERE plan_id=$1 ORDER BY id", [planId])).rows;
   const stageMaterial = (row: any) => { const { archived_at: _archived, ...material } = row; return material; };
   const preserveHistory = async () => {
     const rows = (await db.query("SELECT * FROM public.assisted_planning_stages WHERE plan_id=$1 ORDER BY id", [planId])).rows;
@@ -88,7 +89,8 @@ export async function runA2AutopilotJourney(options: Options, baseline: Baseline
       for (const task of checkpoint.snapshotJson.tasks.filter((t: any) => t.startPlanned && t.endPlanned)) assert.deepEqual(after.draft.tasks.find((t: any) => t.taskId === task.taskId), task);
       for (const field of ["planningBlocks", "operationalMeals", "setupPreparations", "roundPreparations"]) for (const item of checkpoint.snapshotJson[field] ?? []) assert.ok((after.draft[field] ?? []).some((candidate: any) => JSON.stringify(Object.entries(candidate).sort()) === JSON.stringify(Object.entries(item).sort())));
       await preserveHistory();
-      assert.equal((await db.query("SELECT count(*) AS n FROM public.planning_accepted_exceptions WHERE plan_id=$1", [planId])).rows[0].n, "0");
+      assert.deepEqual((await db.query("SELECT * FROM public.planning_accepted_exceptions WHERE plan_id=$1 ORDER BY id", [planId])).rows,
+        originalExceptions, "Autopilot cannot create exceptions or mutate prior accepted history, including archived P9 branches");
       assert.deepEqual((await db.query("SELECT proposal_run_id,count(*) FROM public.assisted_planning_stages WHERE plan_id=$1 AND proposal_run_id IS NOT NULL GROUP BY proposal_run_id HAVING count(*)>1", [planId])).rows, []);
       const run = await api(`/proposals/${after.activeStage.proposalRunId}`), witness = run.assisted_result_json.evidence.futureStructuralWitnesses.find((w: any) => w.kind === "JOINT_COMPLETION");
       const adapted = adaptEngineInputToPlannerNextProblem(await buildInput()); assert.equal(adapted.status, "SUPPORTED"); if (adapted.status !== "SUPPORTED") throw Error("unsupported persisted input");

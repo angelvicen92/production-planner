@@ -1,0 +1,65 @@
+{
+  "base": "c777c5d",
+  "adapterMinimum": {
+    "requested": 2,
+    "status": "SUPPORTED",
+    "actual": 1
+  },
+  "sameStartDifferentEnds": {
+    "violationCount": 0,
+    "groupsByDirection": {
+      "arrival": [
+        [
+          {
+            "id": "generic-0",
+            "kind": "auxiliary",
+            "participantId": "person-0",
+            "duration": 5,
+            "spaceId": "ride",
+            "blocksSpace": false,
+            "dependencies": [],
+            "start": 0,
+            "end": 5
+          },
+          {
+            "id": "generic-1",
+            "kind": "auxiliary",
+            "participantId": "person-1",
+            "duration": 5,
+            "spaceId": "ride",
+            "blocksSpace": false,
+            "dependencies": [],
+            "start": 0,
+            "end": 5
+          }
+        ],
+        [
+          {
+            "id": "generic-2",
+            "kind": "auxiliary",
+            "participantId": "person-2",
+            "duration": 10,
+            "spaceId": "ride",
+            "blocksSpace": false,
+            "dependencies": [],
+            "start": 0,
+            "end": 10
+          },
+          {
+            "id": "generic-3",
+            "kind": "auxiliary",
+            "participantId": "person-3",
+            "duration": 10,
+            "spaceId": "ride",
+            "blocksSpace": false,
+            "dependencies": [],
+            "start": 0,
+            "end": 10
+          }
+        ]
+      ],
+      "departure": []
+    },
+    "violations": []
+  }
+}

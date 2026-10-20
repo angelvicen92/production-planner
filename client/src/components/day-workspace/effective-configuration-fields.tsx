@@ -165,6 +165,15 @@ export function EffectiveValueField({
         <SeverityBadge severity={value.severity} />
       </div>
       <p className="text-sm">{valueSummary(value)}</p>
+      {value.capabilityId==='OPTIMIZATION'&&(value.value as any)?.effectiveTransport?<div className="space-y-1 text-sm">
+        {(['arrival','departure'] as const).map(direction=>{
+          const transport=(value.value as any).effectiveTransport;
+          const sources=(value.value as any).transportSources;
+          return <p key={direction}>{direction==='arrival'?'IN':'OUT'}: mínimo HARD {transport[`${direction}MinimumGroupSize`]}, objetivo {transport[`${direction}GroupingTarget`]||'no especificado'}, máximo HARD {transport[`${direction}MaximumGroupSize`]??'sin configurar'}, separación entre inicios {transport[`${direction}MinGapMinutes`]} min.
+            <span className="block text-xs text-muted-foreground">Mínimo: {sources?.[`${direction}MinimumGroupSize`]}. Objetivo y separación: {sources?.[`${direction}GroupingTarget`]}. Máximo: {sources?.[`${direction}MaximumGroupSize`]}.</span></p>;
+        })}
+        <p className="text-xs text-muted-foreground">Capacidad de vehículo heredada: {(value.value as any).effectiveTransport.vanCapacity}. Los máximos explícitos por dirección prevalecen.</p>
+      </div>:null}
       {baseline ? (
         <p className="text-xs text-muted-foreground">
           Heredado del día: {baseline}

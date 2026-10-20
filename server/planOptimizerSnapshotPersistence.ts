@@ -21,6 +21,10 @@ export type PlanOptimizerSnapshotPersistenceBundleV1 = Readonly<{
     main_zone_id: number | null;
     arrival_plan_template_snapshot_id: number | null;
     departure_plan_template_snapshot_id: number | null;
+    arrival_minimum_group_size?: number;
+    departure_minimum_group_size?: number;
+    arrival_maximum_group_size?: number;
+    departure_maximum_group_size?: number;
     arrival_grouping_target: number;
     departure_grouping_target: number;
     arrival_min_gap_minutes: number;
@@ -237,6 +241,10 @@ export function buildPlanOptimizerSnapshotPersistenceBundleV1(
       main_zone_id: snapshot.mainZoneId,
       arrival_plan_template_snapshot_id: snapshot.transport.arrivalPlanTemplateSnapshotId,
       departure_plan_template_snapshot_id: snapshot.transport.departurePlanTemplateSnapshotId,
+      ...(snapshot.transport.arrivalMinimumGroupSize == null ? {} : { arrival_minimum_group_size: snapshot.transport.arrivalMinimumGroupSize }),
+      ...(snapshot.transport.departureMinimumGroupSize == null ? {} : { departure_minimum_group_size: snapshot.transport.departureMinimumGroupSize }),
+      ...(snapshot.transport.arrivalMaximumGroupSize == null ? {} : { arrival_maximum_group_size: snapshot.transport.arrivalMaximumGroupSize }),
+      ...(snapshot.transport.departureMaximumGroupSize == null ? {} : { departure_maximum_group_size: snapshot.transport.departureMaximumGroupSize }),
       arrival_grouping_target: snapshot.transport.arrivalGroupingTarget,
       departure_grouping_target: snapshot.transport.departureGroupingTarget,
       arrival_min_gap_minutes: snapshot.transport.arrivalMinGapMinutes,
@@ -335,6 +343,10 @@ export function hydratePlanOptimizerSnapshotV1(
     groupingZoneIds,
     arrivalPlanTemplateSnapshotId: readPresent(snapshot, "arrivalPlanTemplateSnapshotId", "arrival_plan_template_snapshot_id"),
     departurePlanTemplateSnapshotId: readPresent(snapshot, "departurePlanTemplateSnapshotId", "departure_plan_template_snapshot_id"),
+    arrivalMinimumGroupSize: readPresent(snapshot, "arrivalMinimumGroupSize", "arrival_minimum_group_size"),
+    departureMinimumGroupSize: readPresent(snapshot, "departureMinimumGroupSize", "departure_minimum_group_size"),
+    arrivalMaximumGroupSize: readPresent(snapshot, "arrivalMaximumGroupSize", "arrival_maximum_group_size"),
+    departureMaximumGroupSize: readPresent(snapshot, "departureMaximumGroupSize", "departure_maximum_group_size"),
     arrivalGroupingTarget: readPresent(snapshot, "arrivalGroupingTarget", "arrival_grouping_target"),
     departureGroupingTarget: readPresent(snapshot, "departureGroupingTarget", "departure_grouping_target"),
     arrivalMinGapMinutes: readPresent(snapshot, "arrivalMinGapMinutes", "arrival_min_gap_minutes"),

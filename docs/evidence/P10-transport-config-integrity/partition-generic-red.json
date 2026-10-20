@@ -1,0 +1,8 @@
+{
+  "kind": "EXACT_CONSTRUCTIVE",
+  "status": "BRANCH_BUDGET_EXHAUSTED",
+  "branches": 10000,
+  "reasonCodes": [
+    "CORE_BRANCH_BUDGET_EXHAUSTED"
+  ]
+}

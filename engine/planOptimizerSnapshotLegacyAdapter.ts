@@ -50,6 +50,10 @@ export interface LegacyEngineOptimizerProjectionV1 {
     departureSourceTemplateId: number | null;
     arrivalTemplateName: string;
     departureTemplateName: string;
+    arrivalMinimumGroupSize?: number;
+    departureMinimumGroupSize?: number;
+    arrivalMaximumGroupSize?: number;
+    departureMaximumGroupSize?: number;
     arrivalGroupingTarget: number;
     departureGroupingTarget: number;
     arrivalMinGapMinutes: number;
@@ -218,6 +222,10 @@ export function adaptPlanOptimizerSnapshotToLegacyEngineV1(
       departureSourceTemplateId: departure.sourceTemplateId,
       arrivalTemplateName: arrival.templateName,
       departureTemplateName: departure.templateName,
+      ...(snapshot.transport.arrivalMinimumGroupSize == null ? {} : { arrivalMinimumGroupSize: snapshot.transport.arrivalMinimumGroupSize }),
+      ...(snapshot.transport.departureMinimumGroupSize == null ? {} : { departureMinimumGroupSize: snapshot.transport.departureMinimumGroupSize }),
+      ...(snapshot.transport.arrivalMaximumGroupSize == null ? {} : { arrivalMaximumGroupSize: snapshot.transport.arrivalMaximumGroupSize }),
+      ...(snapshot.transport.departureMaximumGroupSize == null ? {} : { departureMaximumGroupSize: snapshot.transport.departureMaximumGroupSize }),
       arrivalGroupingTarget: snapshot.transport.arrivalGroupingTarget,
       departureGroupingTarget: snapshot.transport.departureGroupingTarget,
       arrivalMinGapMinutes: snapshot.transport.arrivalMinGapMinutes,

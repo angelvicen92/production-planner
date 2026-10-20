@@ -155,7 +155,15 @@ try {
   state.readFault = false; await page.reload(); await filter(/^Todas/).waitFor();
   pass('400/403/409/503 preserve observed status with explicit errors; offline/read error block actions and reliable late labels');
   await page.goto(`${origin}/my-day?plan=1#agenda-task-${tasks[2].id}`); await card(2,false).waitFor();
-  await page.waitForFunction(() => window.scrollY > 0 || document.querySelector('main')?.scrollTop > 0);
+  // This is same-document fragment navigation. A nonzero scroll can belong to
+  // the previous view, before the browser has reached the requested activity.
+  // Observe the destination itself before resetting and testing refresh.
+  await page.waitForFunction(id => {
+    const target = document.getElementById(id)?.getBoundingClientRect();
+    const main = document.querySelector('main')?.getBoundingClientRect();
+    return target && main && target.top >= Math.max(0, main.top) - 1
+      && target.top < Math.min(innerHeight, main.bottom);
+  }, `agenda-task-${tasks[2].id}`);
   // Layout scrolls main independently from the viewport. Reset both before
   // clicking; otherwise Playwright must scroll the offscreen refresh button.
   await page.evaluate(() => { document.querySelector('main')?.scrollTo(0,0); window.scrollTo(0,0); });
