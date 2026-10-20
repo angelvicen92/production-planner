@@ -51,7 +51,7 @@ export async function runDayWorkspaceSetup({appUrl,planId,users,db,directory,pas
     } finally {await db.query("DROP TRIGGER day_workspace_task_fail ON daily_tasks; DROP FUNCTION public.day_workspace_task_fail();");}
     const added=page.waitForResponse(response=>response.url().endsWith("/api/daily-tasks")&&response.request().method()==="POST");await addTask.getByRole("button",{name:"Añadir tarea",exact:true}).click();assert.equal((await added).status(),201);await addTask.waitFor({state:"hidden"});
     report.operations.push("Tarea en ficha: error SQL real visible sin falso éxito, reintento y alta HTTP 201 por UI");pass(report.operations.at(-1));
-    await dialog.getByRole("button",{name:"Cerrar",exact:true}).click();await page.reload();await page.getByLabel("Buscar concursantes",{exact:true}).fill(name);
+    await dialog.getByRole("button",{name:"Cerrar",exact:true}).first().click();await page.reload();await page.getByLabel("Buscar concursantes",{exact:true}).fill(name);
     await page.getByRole("button",{name:`Eliminar concursante ${name}`,exact:true}).click();
     const removed=page.waitForResponse(response=>response.url().endsWith(`/contestants/${contestant.id}`)&&response.request().method()==="DELETE");await page.getByRole("button",{name:"Eliminar",exact:true}).click();assert.equal((await removed).status(),204);
     assert.deepEqual((await api(`${base}/contestants`)).data,initialContestants);assert.deepEqual((await api(base)).data.dailyTasks.map((task:any)=>Number(task.id)).sort((a:number,b:number)=>a-b),initialTaskIds);report.operations.push("Concursante: crear, abrir ficha, editar canción, recargar y retirar por UI; canon preservado");pass(report.operations.at(-1));
