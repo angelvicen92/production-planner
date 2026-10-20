@@ -116,6 +116,16 @@ scroll cero posterior. `my-day-browser-synchronization.json` registra los fallos
 los hashes del producto idéntico a la base y el resultado completo del navegador;
 no se cambian Mi Día, layout, CSS ni timeouts.
 
+El job A2 acumulaba cuatro integraciones descartables independientes bajo un
+único límite de 30 minutos. El segundo intento llegó a PASS en órdenes,
+Autopilot, Reality y preservación histórica, y fue cancelado durante el
+desmontaje. La CI separa ahora catálogo/preparación y recorrido canónico en dos
+jobs con el mismo máximo de 30 minutos. Se conserva literalmente el multiconjunto
+de comandos de producto y la unión de rutas de artefactos. El check requerido
+`a2-assisted-integration` se conserva y exige éxito en ambos jobs, incluso si uno
+falla o se cancela. No cambian aserciones, budgets ni código del producto.
+`ci-gate-integrity.json` registra la causa, los logs y las comprobaciones locales.
+
 Los resultados finales y las limitaciones observadas se registran en
 `validation.json`. `native-integration.json` contiene hashes de fuentes, ledger,
 los once Stages y auditorías canónicas del recorrido frío y de Autopilot.

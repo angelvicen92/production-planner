@@ -25,6 +25,14 @@
       "checks": 8,
       "pageErrors": 0,
       "note": "Destination visibility awaited before reset; exact zero-scroll refresh assertion unchanged. See my-day-browser-synchronization.json."
+    },
+    "ciGatePartition": {
+      "status": "CONFIGURATION_VERIFIED",
+      "productTestCommandMultisetUnchanged": true,
+      "artifactPathUnionUnchanged": true,
+      "nativeTimeoutMinutes": 30,
+      "existingRequiredCheckRequiresBoth": true,
+      "engineBudgetsUnchanged": true
     }
   },
   "productCI": {
