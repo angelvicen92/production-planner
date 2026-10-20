@@ -142,3 +142,10 @@ en decisiones HARD. El harness histórico ASST-7 declara admin sin alterar su
 frontera bloqueada. [Cuatro regresiones ejecutadas](benchmark-roles.log), incluidas
 las dos ejecuciones canónicas de ASST-8, pasan. Las aserciones y los presupuestos
 se conservan; el servidor productivo mantiene su consulta de rol real.
+
+El gate Mi Día P4 confundía el scroll de ventana con el de `main`: tras poner
+`window.scrollY=0`, `main.scrollTop` seguía en 3103 y Actualizar estaba fuera de
+pantalla. El scroll legítimo de Playwright al pulsarlo podía dejar la ventana
+en 69. El harness vuelve arriba en ambos contenedores y ahora exige ambos ceros
+tras refrescar y renderizar, sin tolerancias ni cambios de producto.
+[Diagnóstico y dos ejecuciones completas](p4-scroll.json), ocho checks cada una.

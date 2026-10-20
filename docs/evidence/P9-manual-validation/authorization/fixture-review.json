@@ -15,8 +15,8 @@
     },
     {
       "file": "docs/evidence/P9-manual-validation/authorization/README.md",
-      "sha256": "25fcf8b062901e3011a112216d5888a8d2e9ef4c56389f71dcdac1bfc660b504",
-      "decompressedBytes": 8621,
+      "sha256": "0264c2c57f86d8ace370cde51bc2821769570ccfe6188740c5864549bc9dc39c",
+      "decompressedBytes": 9095,
       "findings": {
         "email": 0,
         "JWT": 0,
@@ -135,6 +135,39 @@
       }
     },
     {
+      "file": "docs/evidence/P9-manual-validation/authorization/p4-scroll-pass-1.log",
+      "sha256": "bdfc5bb9abac2e1fe4ee442216dbc6b1ebea5291a80915cc8065849f81aa575c",
+      "decompressedBytes": 1169,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/p4-scroll-pass-2.log",
+      "sha256": "bdfc5bb9abac2e1fe4ee442216dbc6b1ebea5291a80915cc8065849f81aa575c",
+      "decompressedBytes": 1169,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/p4-scroll.json",
+      "sha256": "86773d55c7a3271dfe2e0fa6898ad44b176f0c0113b6be123e3e2ad7ee1001f4",
+      "decompressedBytes": 1070,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
       "file": "docs/evidence/P9-manual-validation/authorization/p8-comparison.json",
       "sha256": "7b4165d6909159cffb8c64c00d348e11e3593f3a331544136a7a9205e3b8d167",
       "decompressedBytes": 737,
@@ -202,8 +235,8 @@
     },
     {
       "file": "docs/evidence/P9-manual-validation/authorization/validation.json",
-      "sha256": "07858b35f3590bed099629ca73d407248556711ee05434c9a1893ea72586a531",
-      "decompressedBytes": 13503,
+      "sha256": "de62f1a2f6bd08f565b726b078746892a60a653e6be7161f0662b3c3d0de84ee",
+      "decompressedBytes": 14657,
       "findings": {
         "email": 0,
         "JWT": 0,
