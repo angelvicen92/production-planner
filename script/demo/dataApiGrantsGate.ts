@@ -41,6 +41,8 @@ export function dataApiSourceCalls(directory='server') {
 }
 
 export function assertPrivilegeContract(catalog:DataApiCatalog) {
+  for(const table of catalog.tables)if(table.kind==='r'||table.kind==='p')
+    assert.equal(table.rls,true,`${table.name}: every public table, including future migrations, requires RLS`);
   assert.deepEqual(privilegeContract(catalog),JSON.parse(readFileSync(contractPath,'utf8')),
     'Data API contract changed: review every new object, required grant, column boundary and exposed role');
 }

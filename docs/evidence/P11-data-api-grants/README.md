@@ -56,6 +56,14 @@ La instalación histórica conserva sus 45 objetos SELECT anon en producción, s
 
 La conexión PostgreSQL directa de administración y las consultas de auditoría no se confunden con PostgREST. El gate no restaura grants generales para ocultar fallos ni cambia la identidad de una RPC a SECURITY DEFINER para eludir permisos.
 
+## Resultados conservados
+
+`validation.json` enlaza los informes y conserva su procedencia. El ensayo de CI sobre `4739ad7` completó once Stages, 266/266 tareas, comidas/preparaciones, sesión viewer independiente, rollback/redo, validación HARD, revocación, transporte versionado y aceptación REQUIRED en un día independiente. Sus informes completos están comprimidos en `assisted-integration.json.gz`, `manual-validation.json.gz`, `transport-policy.json.gz`, `required-integration.json.gz` y `required-acceptance.json.gz`.
+
+Configuración y rectificaciones también pasan localmente con Node 20; Control Room y War Room pasan en el mismo ensayo alojado. La primera ejecución del nuevo job de cabeceras detectó que faltaba `UI06_BASELINE_ROOT`; el workflow prepara ahora un servidor independiente desde la base autorizada. `headers-integration.json.gz` certifica ese recorrido local corregido: CRUD/CAS de notas, cuatro roles de lectura, rechazo de escrituras directas y actores falsificados, polling, recarga y preservación literal de filas/xmin en quince tablas operativas.
+
+La generación local con el Chromium del sistema agotó la espera UI de 420 segundos tanto en la base 5f3052d con grants antiguos como en el candidato. El ensayo alojado con Chromium de Playwright completó S1–S11; no se modifica el motor ni su presupuesto para solventar esa diferencia del ejecutor. El navegador empaquetado se instaló para el ensayo local final de cabeceras. Los checks vivos del PR describen la última ejecución del head; los informes versionados indican el código y entorno con que se obtuvieron.
+
 ## Advisor y límites independientes
 
 [production-advisors.json](production-advisors.json) recoge únicamente metadatos de una consulta remota de solo lectura. Continúan los seis avisos [function_search_path_mutable](https://supabase.com/docs/guides/database/database-linter?lint=0011_function_search_path_mutable). No causan la retirada de grants automáticos y las definiciones de funciones se conservan.

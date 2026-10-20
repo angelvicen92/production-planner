@@ -45,9 +45,16 @@ jobs:
       - run: npx --no-install playwright install --with-deps chromium
       - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
       - run: npm run check:migrations
+      - name: Independent header comparison server on the authorized base
+        if: matrix.journey == 'headers'
+        run: |
+          git fetch --no-tags --depth=1 origin 5f3052d3f520535502ca76e205aea6e9cd9a144e
+          git worktree add --detach /tmp/p11-data-api-base 5f3052d3f520535502ca76e205aea6e9cd9a144e
+          ln -s "$GITHUB_WORKSPACE/node_modules" /tmp/p11-data-api-base/node_modules
       - name: Restricted defaults, effective permissions and native product journey
         env:
           JOURNEY_ARGUMENTS: ${{ matrix.arguments }}
+          UI06_BASELINE_ROOT: ${{ matrix.journey == 'headers' && '/tmp/p11-data-api-base' || '' }}
         run: npm run demo:a2:smoke -- work/data-api-grants --restricted-data-api $JOURNEY_ARGUMENTS
       - name: REQUIRED exceptions in an independent disposable day
         if: matrix.journey == 'assisted'

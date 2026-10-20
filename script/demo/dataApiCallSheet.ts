@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
+import {writeFileSync} from 'node:fs';
 
 /** Real browser and product endpoints: no request interception or seeded HTTP responses. */
 export async function dataApiCallSheet(appUrl:string,user:{email:string;password:string},directory:string) {
   assert.equal(new URL(appUrl).hostname,'127.0.0.1');
   const browser=await chromium.launch({headless:true,args:['--no-sandbox'],executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH});
+  const page=await browser.newPage(),errors:string[]=[],responses:{path:string;status:number}[]=[];
   try {
-    const page=await browser.newPage(),errors:string[]=[],responses:{path:string;status:number}[]=[];
     page.setDefaultNavigationTimeout(120_000);page.setDefaultTimeout(60_000);
     page.on('pageerror',error=>errors.push(error.message));
     page.on('response',response=>{
@@ -26,5 +27,9 @@ export async function dataApiCallSheet(appUrl:string,user:{email:string;password
     assert.deepEqual(responses.filter(r=>r.status>=400),[]);
     await page.screenshot({path:`${directory}/data-api-call-sheet.png`,fullPage:true});
     return {role:'viewer',tasks,errors,responses};
+  }catch(error){
+    await page.screenshot({path:`${directory}/data-api-call-sheet-failed.png`}).catch(()=>{});
+    writeFileSync(`${directory}/data-api-browser-failure.json`,JSON.stringify({url:page.url(),title:await page.title().catch(()=>''),errors,responses},null,2));
+    throw error;
   }finally {await browser.close();}
 }
