@@ -1,0 +1,227 @@
+{
+  "originalEvents": 513,
+  "duplicateRoleNotificationsOmitted": 482,
+  "fullOriginalArtifact": "main-role-and-acceptance-trace.json.gz",
+  "events": [
+    {
+      "at": "2026-10-19T14:11:27.382Z",
+      "kind": "roleQuery",
+      "key": [
+        "/api/me/role"
+      ],
+      "status": "pending",
+      "fetchStatus": "idle",
+      "role": null,
+      "error": null
+    },
+    {
+      "at": "2026-10-19T14:11:27.449Z",
+      "kind": "roleQuery",
+      "key": [
+        "/api/me/role"
+      ],
+      "status": "pending",
+      "fetchStatus": "fetching",
+      "role": null,
+      "error": null
+    },
+    {
+      "at": "2026-10-19T14:11:27.449Z",
+      "kind": "console",
+      "text": "[apiRequest #5] START GET /api/me/role"
+    },
+    {
+      "at": "2026-10-19T14:11:27.449Z",
+      "kind": "request",
+      "method": "GET",
+      "path": "/api/me/role"
+    },
+    {
+      "at": "2026-10-19T14:11:27.521Z",
+      "kind": "response",
+      "status": 200,
+      "path": "/api/me/role"
+    },
+    {
+      "at": "2026-10-19T14:11:27.521Z",
+      "kind": "console",
+      "text": "[apiRequest #5] END GET /api/me/role (65ms) · status=200"
+    },
+    {
+      "at": "2026-10-19T14:11:27.521Z",
+      "kind": "roleQuery",
+      "key": [
+        "/api/me/role"
+      ],
+      "status": "success",
+      "fetchStatus": "idle",
+      "role": "production",
+      "error": null
+    },
+    {
+      "at": "2026-10-19T14:11:28.101Z",
+      "kind": "roleQuery",
+      "key": [
+        "/api/me/role"
+      ],
+      "status": "pending",
+      "fetchStatus": "idle",
+      "role": null,
+      "error": null
+    },
+    {
+      "at": "2026-10-19T14:11:28.143Z",
+      "kind": "roleQuery",
+      "key": [
+        "/api/me/role"
+      ],
+      "status": "pending",
+      "fetchStatus": "fetching",
+      "role": null,
+      "error": null
+    },
+    {
+      "at": "2026-10-19T14:11:28.143Z",
+      "kind": "console",
+      "text": "[apiRequest #5] START GET /api/me/role"
+    },
+    {
+      "at": "2026-10-19T14:11:28.179Z",
+      "kind": "request",
+      "method": "GET",
+      "path": "/api/me/role"
+    },
+    {
+      "at": "2026-10-19T14:11:28.238Z",
+      "kind": "response",
+      "status": 200,
+      "path": "/api/me/role"
+    },
+    {
+      "at": "2026-10-19T14:11:28.238Z",
+      "kind": "console",
+      "text": "[apiRequest #5] END GET /api/me/role (86ms) · status=200"
+    },
+    {
+      "at": "2026-10-19T14:11:28.251Z",
+      "kind": "roleQuery",
+      "key": [
+        "/api/me/role"
+      ],
+      "status": "success",
+      "fetchStatus": "idle",
+      "role": "production",
+      "error": null
+    },
+    {
+      "at": "2026-10-19T14:11:29.439Z",
+      "kind": "roleQuery",
+      "key": [
+        "/api/me/role"
+      ],
+      "status": "success",
+      "fetchStatus": "fetching",
+      "role": "production",
+      "error": null
+    },
+    {
+      "at": "2026-10-19T14:11:29.454Z",
+      "kind": "console",
+      "text": "[apiRequest #35] START GET /api/me/role"
+    },
+    {
+      "at": "2026-10-19T14:11:29.454Z",
+      "kind": "request",
+      "method": "GET",
+      "path": "/api/me/role"
+    },
+    {
+      "at": "2026-10-19T14:11:29.765Z",
+      "kind": "response",
+      "status": 200,
+      "path": "/api/me/role"
+    },
+    {
+      "at": "2026-10-19T14:11:29.765Z",
+      "kind": "console",
+      "text": "[apiRequest #35] END GET /api/me/role (320ms) · status=200"
+    },
+    {
+      "at": "2026-10-19T14:11:29.776Z",
+      "kind": "roleQuery",
+      "key": [
+        "/api/me/role"
+      ],
+      "status": "success",
+      "fetchStatus": "idle",
+      "role": "production",
+      "error": null
+    },
+    {
+      "at": "2026-10-19T14:14:35.453Z",
+      "kind": "response",
+      "status": 200,
+      "path": "/api/plans/27002/assisted/accept-stage"
+    },
+    {
+      "at": "2026-10-19T14:14:39.708Z",
+      "kind": "response",
+      "status": 200,
+      "path": "/api/plans/27002/assisted/accept-stage"
+    },
+    {
+      "at": "2026-10-19T14:14:43.091Z",
+      "kind": "response",
+      "status": 200,
+      "path": "/api/plans/27002/assisted/accept-stage"
+    },
+    {
+      "at": "2026-10-19T14:14:46.608Z",
+      "kind": "response",
+      "status": 200,
+      "path": "/api/plans/27002/assisted/accept-stage"
+    },
+    {
+      "at": "2026-10-19T14:14:52.202Z",
+      "kind": "response",
+      "status": 200,
+      "path": "/api/plans/27002/assisted/accept-stage"
+    },
+    {
+      "at": "2026-10-19T14:14:56.288Z",
+      "kind": "response",
+      "status": 200,
+      "path": "/api/plans/27002/assisted/accept-stage"
+    },
+    {
+      "at": "2026-10-19T14:15:00.235Z",
+      "kind": "response",
+      "status": 200,
+      "path": "/api/plans/27002/assisted/accept-stage"
+    },
+    {
+      "at": "2026-10-19T14:15:04.442Z",
+      "kind": "response",
+      "status": 200,
+      "path": "/api/plans/27002/assisted/accept-stage"
+    },
+    {
+      "at": "2026-10-19T14:15:09.085Z",
+      "kind": "response",
+      "status": 200,
+      "path": "/api/plans/27002/assisted/accept-stage"
+    },
+    {
+      "at": "2026-10-19T14:15:13.614Z",
+      "kind": "response",
+      "status": 200,
+      "path": "/api/plans/27002/assisted/accept-stage"
+    },
+    {
+      "at": "2026-10-19T14:15:18.436Z",
+      "kind": "response",
+      "status": 200,
+      "path": "/api/plans/27002/assisted/accept-stage"
+    }
+  ]
+}

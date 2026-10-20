@@ -19,11 +19,13 @@ export async function runControlRoomJourney({ appUrl, url, users, db, planId, di
     const response = await fetch(`${appUrl}${path}`, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${users[role].token}` }, body: body === undefined ? undefined : JSON.stringify(body) });
     const data = await response.json() as any; assert.equal(response.status, method === 'POST' && path.endsWith('/incidents') ? 201 : 200, `${method} ${path}: ${JSON.stringify(data)}`); return data;
   };
+  const protectedLockIds = (await db.query('SELECT id FROM locks ORDER BY id')).rows.map(row => row.id);
   const invariant = async () => (await db.query(`SELECT
     (SELECT jsonb_agg(jsonb_build_object('id',id,'template',template_id,'contestant',contestant_id,'start',start_planned,'end',end_planned,'space',space_id,'zone',zone_id,'resources',assigned_resource_ids,'duration',duration_override) ORDER BY id) FROM daily_tasks WHERE plan_id=$1) tasks,
     (SELECT jsonb_agg(g ORDER BY id) FROM assisted_planning_stages g WHERE plan_id=$1) stages,
     (SELECT jsonb_agg(s ORDER BY id) FROM assisted_planning_sessions s WHERE plan_id=$1) sessions,
-    (SELECT jsonb_agg(p ORDER BY id) FROM plans p) plans`, [planId])).rows;
+    (SELECT jsonb_agg(l ORDER BY id) FROM locks l WHERE id=ANY($2::int[])) locks,
+    (SELECT jsonb_agg(p ORDER BY id) FROM plans p) plans`, [planId, protectedLockIds])).rows;
   const original = await invariant(); assert.equal(original[0].tasks.length, 266);
   const fullRows = async () => (await db.query(`SELECT (SELECT jsonb_agg(t ORDER BY id) FROM daily_tasks t) tasks,(SELECT jsonb_agg(e ORDER BY id) FROM task_status_events e) events,(SELECT jsonb_agg(l ORDER BY id) FROM locks l) locks,(SELECT jsonb_agg(p ORDER BY id) FROM program_settings p) clock`)).rows;
   const task = (await db.query("SELECT t.*,p.name task_name FROM daily_tasks t JOIN task_templates p ON p.id=t.template_id WHERE t.plan_id=$1 AND t.status='pending' AND t.space_id IS NOT NULL ORDER BY t.start_planned,t.id LIMIT 1", [planId])).rows[0]; assert.ok(task);
@@ -92,9 +94,10 @@ export async function runControlRoomJourney({ appUrl, url, users, db, planId, di
     await operator.getByRole('button', { name: /^Iniciar / }).first().waitFor();
     const startResponse = operator.waitForResponse(r => new URL(r.url()).pathname === `/api/tasks/${task.id}/status` && r.request().method() === 'PATCH');
     await operator.getByTestId(`agenda-task-${task.id}`).getByRole('button', { name: /^Iniciar / }).click(); assert.equal((await startResponse).status(), 200);
-    await count(production, 'in_progress', 1); await production.getByTestId(`control-room-running-${task.id}`).waitFor();
+    await count(production, 'in_progress', 1); await production.getByTestId(`control-room-current-${task.id}`).waitFor();
     await production.getByRole('heading', { name: 'Jornada en ejecución', exact: true }).waitFor();
     await capture(production, 'control-room-production-1440-during');
+    await production.getByText('Inspección detallada por plató y espacio', { exact: true }).click();
     await production.locator('section[aria-label="Situación por plató y espacio"]').scrollIntoViewIfNeeded();
     await capture(production, 'control-room-production-studios');
     await production.locator('section[aria-label="Resumen ejecutivo"]').scrollIntoViewIfNeeded();
@@ -123,7 +126,33 @@ export async function runControlRoomJourney({ appUrl, url, users, db, planId, di
     await operator.getByTestId(`incident-${incidentId}`).getByText('Resuelta', { exact: true }).waitFor({ timeout: 20000 });
     await production.goto(`${appUrl}/control-room?plan=${planId}`); await production.getByTestId(`control-incident-${incidentId}`).getByText('Resuelta', { exact: true }).waitFor();
     pass('P4 War Room creates critical → Control Room observes, opens exact context → other user resolves → counters/reload reconcile');
-    await viewer.goto(`${appUrl}/control-room?plan=${planId}`); await viewer.getByTestId('control-room-pro').waitFor(); await count(viewer, 'done', 1);
+    // P6: real account/role authority; diagnostic read only, without touching planning.
+    const adminCtx = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    try {
+      const admin = await adminCtx.newPage(); await login(admin, 'admin');
+      await admin.goto(`${appUrl}/control-room?plan=${planId}`);
+      await admin.getByTestId('control-room-pro').waitFor();
+      await admin.getByLabel('Modo de Control Room').selectOption('technical');
+      await admin.getByTestId('control-room-technical').waitFor();
+      await capture(admin, 'control-room-technical-1440');
+      assert.deepEqual(await admin.getByLabel('Modo de Control Room').locator('option').evaluateAll(els => els.map(e => (e as HTMLOptionElement).value)), ['production','director','technical']);
+      const authorizedReads = await Promise.all(['admin','production','aux','viewer'].map(async role => {
+        const plan = await request(role, `/api/plans/${planId}`), context = await request(role, `/api/plans/${planId}/execution`);
+        return { role, received: plan.dailyTasks.length, inScope: context.tasks.filter((t: any) => t.inScope).length, effectiveRole: context.role };
+      }));
+      assert.ok(authorizedReads.every(read => read.received === 266));
+      pass(`P6 actual API authority: plan reads return 266 for all four roles; Aux presentation uses execution scope (${JSON.stringify(authorizedReads)})`);
+      // Revoke the role in the disposable DB while its diagnostic page stays open.
+      await db.query("UPDATE user_roles SET role_id=(SELECT id FROM roles WHERE key='viewer') WHERE user_id=$1", [users.admin.id]);
+      try {
+        await admin.getByRole('button', { name: 'Actualizar', exact: true }).click();
+        await admin.getByTestId('control-room-director').waitFor();
+        assert.equal(await admin.getByTestId('control-room-technical').count(), 0);
+        assert.deepEqual(await admin.getByLabel('Modo de Control Room').locator('option').evaluateAll(els => els.map(e => (e as HTMLOptionElement).value)), ['director']);
+      } finally { await db.query("UPDATE user_roles SET role_id=(SELECT id FROM roles WHERE key='admin') WHERE user_id=$1", [users.admin.id]); }
+      pass('P6 native role revocation: open diagnostic perspective discarded; Viewer receives executive read only');
+    } finally { await adminCtx.close(); }
+    await viewer.goto(`${appUrl}/control-room?plan=${planId}`); await viewer.getByTestId('control-room-director').waitFor(); await count(viewer, 'done', 1);
     assert.equal(await viewer.getByRole('button', { name: /^(Iniciar|Finalizar|Resolver|Editar|Registrar incidencia)/ }).count(), 0);
     await capture(viewer, 'control-room-mobile-390');
     await production.setViewportSize({ width: 820, height: 1180 }); await capture(production, 'control-room-tablet-820');
@@ -148,14 +177,22 @@ export async function runControlRoomJourney({ appUrl, url, users, db, planId, di
     for (const t of remaining) await db.query("SELECT public.execute_task_transition($1,$2,'cancelled','pending',(SELECT execution_version FROM daily_tasks WHERE id=$1))", [t.id, users.production.id]);
     await viewer.reload(); await viewer.getByRole('heading', { name: 'Jornada terminada', exact: true }).waitFor(); await count(viewer, 'cancelled', 265);
     await capture(viewer, 'control-room-mobile-after');
-    assert.deepEqual(await invariant(), original, 'every placement, accepted Stage/fingerprint, session and plan remains literal');
+    assert.deepEqual(await invariant(), original, 'every placement, accepted Stage/fingerprint, session/Draft, lock and plan remains literal');
+    // Start/Finish intentionally creates and retains its execution-owned lock.
+    // Preserve every pre-existing lock, and admit exactly that native addition.
+    const addedLocks = (await db.query('SELECT plan_id,task_id,execution_owned,created_by FROM locks WHERE NOT(id=ANY($1::int[])) ORDER BY id', [protectedLockIds])).rows;
+    assert.equal(addedLocks.length, 1);
+    assert.equal(String(addedLocks[0].plan_id), String(planId));
+    assert.equal(String(addedLocks[0].task_id), String(task.id));
+    assert.equal(addedLocks[0].execution_owned, true);
+    assert.equal(addedLocks[0].created_by, users.aux.id);
     const realPlan = await request('admin', `/api/plans/${planId}`), realExecution = await request('admin', `/api/plans/${planId}/execution`), incidents = await request('admin', `/api/plans/${planId}/incidents`);
     const projection = projectControlRoom({ plan: realPlan, execution: realExecution, nowMs: Date.parse(realExecution.clock.operationalAt), incidents });
     assert.equal(projection.total, 266); assert.equal(projection.counts.done, 1); assert.equal(projection.counts.cancelled, 265); assert.equal(projection.estimate, null);
     pass('P4 post-day closes by explicit terminal decisions, cancelled separate; accepted A2 266 placements/Stages/sessions/plans literal');
     assert.deepEqual(errors, []);
-    return { status: 'PASS', transport: 'HTTP 5 s polling; WebSocket delivery not certified', browserSessions: 3, browserRoles: ['production', 'aux', 'viewer'], adminHTTPVerified: true, remoteWrites: 0, screenshots, visualChecks, benchmark,
-      acceptedA2: { total: 266, done: 1, cancelled: 265, sumStates: Object.values(projection.counts).reduce((a, b) => a + b, 0), unchangedPlanningSha256: createHash('sha256').update(JSON.stringify(original)).digest('hex'), newSolverRun: false },
+    return { status: 'PASS', transport: 'HTTP 5 s polling; WebSocket delivery not certified', browserSessions: 4, browserRoles: ['admin', 'production', 'aux', 'viewer'], adminHTTPVerified: true, remoteWrites: 0, screenshots, visualChecks, benchmark,
+      acceptedA2: { total: 266, done: 1, cancelled: 265, sumStates: Object.values(projection.counts).reduce((a, b) => a + b, 0), unchangedPlanningSha256: createHash('sha256').update(JSON.stringify(original)).digest('hex'), preservedInitialLocks: protectedLockIds.length, nativeExecutionLocksAdded: addedLocks.length, newSolverRun: false },
       allControlRoomInitialApiRequestsReadOnly: transports.filter(req => req.path !== '/api/bootstrap-role').slice(0, 10).every(req => req.method === 'GET'), errors };
   } catch (error) {
     for (const [name,page] of [['production',production],['operator',operator],['viewer',viewer]] as const) {

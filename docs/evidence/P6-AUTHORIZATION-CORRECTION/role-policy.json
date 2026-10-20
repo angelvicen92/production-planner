@@ -1,0 +1,103 @@
+{
+  "status": "PASS",
+  "mode": "INTERCEPTED_AUTH_HTTP_CONTROLLER_CONTRACT",
+  "checks": [
+    "confirmed production → role HTTP timeout → controller authority guard → Stage accepted",
+    "confirmed 403 removes authority permanently through later transport errors",
+    "stale production cache cannot authorize HTTP acceptance after true revocation",
+    "sign-out and different actor cannot inherit prior authority",
+    "Control Room polls separately, closes on transport failure, reconfirms downgrades and propagates genuine 401"
+  ],
+  "calls": [
+    {
+      "path": "/api/bootstrap-role",
+      "actor": "00000000-0000-4000-8000-000000000001",
+      "role": "production"
+    },
+    {
+      "path": "/api/me/role",
+      "actor": "00000000-0000-4000-8000-000000000001",
+      "role": "production"
+    },
+    {
+      "path": "/api/bootstrap-role",
+      "actor": "00000000-0000-4000-8000-000000000001",
+      "role": "production"
+    },
+    {
+      "path": "/api/me/role",
+      "actor": "00000000-0000-4000-8000-000000000001",
+      "role": "production"
+    },
+    {
+      "path": "/api/me/role",
+      "actor": "00000000-0000-4000-8000-000000000001",
+      "role": "production"
+    },
+    {
+      "path": "/api/test/accept-stage",
+      "actor": "00000000-0000-4000-8000-000000000001",
+      "role": "production"
+    },
+    {
+      "path": "/api/me/role",
+      "actor": "00000000-0000-4000-8000-000000000001",
+      "role": "production"
+    },
+    {
+      "path": "/api/me/role",
+      "actor": "00000000-0000-4000-8000-000000000001",
+      "role": "production"
+    },
+    {
+      "path": "/api/me/role",
+      "actor": "00000000-0000-4000-8000-000000000001",
+      "role": "production"
+    },
+    {
+      "path": "/api/test/accept-stage",
+      "actor": "00000000-0000-4000-8000-000000000001",
+      "role": "viewer"
+    },
+    {
+      "path": "/api/bootstrap-role",
+      "actor": "00000000-0000-4000-8000-000000000002",
+      "role": "viewer"
+    },
+    {
+      "path": "/api/me/role",
+      "actor": "00000000-0000-4000-8000-000000000002",
+      "role": "viewer"
+    },
+    {
+      "path": "/api/me/role",
+      "actor": "00000000-0000-4000-8000-000000000002",
+      "role": "viewer"
+    },
+    {
+      "path": "/api/me/role",
+      "actor": "00000000-0000-4000-8000-000000000002",
+      "role": "admin"
+    },
+    {
+      "path": "/api/me/role",
+      "actor": "00000000-0000-4000-8000-000000000002",
+      "role": "admin"
+    },
+    {
+      "path": "/api/me/role",
+      "actor": "00000000-0000-4000-8000-000000000002",
+      "role": "viewer"
+    },
+    {
+      "path": "/api/me/role",
+      "actor": "00000000-0000-4000-8000-000000000002",
+      "role": "viewer"
+    },
+    {
+      "path": "/api/me/role",
+      "actor": "00000000-0000-4000-8000-000000000002",
+      "role": "viewer"
+    }
+  ]
+}

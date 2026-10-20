@@ -1,3 +1,4 @@
+import { assistedStageLabel, type projectAssistedStageCycle } from "@shared/assistedHistory";
 import type { AutopilotPhase, AutopilotProgress } from "@shared/assistedAutopilot";
 
 type Task = {
@@ -40,7 +41,7 @@ function failure(code = "") {
 /** Presentation only. Counts come from the controller's verified, accepted
  * checkpoint, never the live draft or a generated proposal. Task types are the
  * configured template names; no classification by name, fixture or engine ID. */
-export function projectAutopilotProgress(progress: AutopilotProgress, tasks: readonly Task[] = [], spaces: readonly Space[] = []) {
+export function projectAutopilotProgress(progress: AutopilotProgress, tasks: readonly Task[] = [], spaces: readonly Space[] = [], cycle: Pick<ReturnType<typeof projectAssistedStageCycle>, "localNumber" | "lineageError"> | null = null) {
   const total = Math.max(0, Math.trunc(progress.total) || 0);
   const completed = Math.min(total, Math.max(0, Math.trunc(progress.completed) || 0));
   const percent = total ? completed / total * 100 : 0;
@@ -78,7 +79,9 @@ export function projectAutopilotProgress(progress: AutopilotProgress, tasks: rea
     title, terminal, percent, percentLabel, completed, total, remaining: total - completed,
     countsKnown: total > 0 || progress.phase === "COMPLETE",
     tone: progress.phase === "COMPLETE" ? "success" : progress.phase === "FAILED" ? "warning" : progress.phase === "STOPPED" ? "stopped" : "running",
-    phaseLabel: phases[progress.phase], stageLabel: `Última etapa aceptada: ${progress.stage}`,
+    phaseLabel: phases[progress.phase], stageLabel: `Última etapa aceptada: ${assistedStageLabel(cycle?.localNumber ?? null)}`,
+    checkpointLabel: assistedStageLabel(cycle?.localNumber ?? null),
+    lineageError: cycle?.lineageError ?? (cycle?.localNumber == null ? "El recorrido del checkpoint aceptado todavía no está disponible." : null),
     scopeLabel: scopeIds.size ? scopeLabel : null,
     scopeCaption: terminal || progress.phase === "READING" || progress.phase === "SELECTING" ? "Último ámbito procesado" : "Ámbito actual",
     scopeCount: scopeIds.size, scopeCountLabel: `${scopeIds.size} ${scopeIds.size === 1 ? "tarea" : "tareas"} en este bloque`, breakdown: breakdown.join(" · "),

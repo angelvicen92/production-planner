@@ -144,6 +144,7 @@ export async function runExecutionTimeCorrections({appUrl,url,anon,users,db,plan
   assert.equal(await information.getByTestId('execution-timer').textContent(),formatExecutionDuration(duration));
   await observer.goto(`${appUrl}/plans/${planId}/control-room`);await observer.reload();
   await observer.locator('#control-plan').selectOption(String(planId));
+  await observer.getByText('Inspección detallada por plató y espacio', { exact: true }).click();
   const activity=observer.getByTestId(`control-room-activity-${a.id}`);await activity.waitFor({state:'attached'});
   assert.ok((await activity.textContent())?.includes(task.startReal));assert.ok((await activity.textContent())?.includes(task.endReal));
   assert.ok((await activity.textContent())?.includes(formatExecutionDuration(duration)));
@@ -215,6 +216,7 @@ export async function runExecutionTimeCorrections({appUrl,url,anon,users,db,plan
   const uiDuration=executionDuration(finalUiTask,Date.parse(context.clock.operationalAt),context.clock);
   assert.equal(await uiInformation.getByTestId('execution-timer').textContent(),formatExecutionDuration(uiDuration));
   await observer.goto(`${appUrl}/plans/${planId}/control-room`);await observer.reload();await observer.locator('#control-plan').selectOption(String(planId));
+  await observer.getByText('Inspección detallada por plató y espacio', { exact: true }).click();
   const uiControl=observer.getByTestId(`control-room-activity-${pendingTask.id}`);await uiControl.waitFor();assert.ok((await uiControl.textContent())?.includes(formatExecutionDuration(uiDuration)));
   assert.ok((await uiControl.textContent())?.includes(finalUiTask.startReal));assert.ok((await uiControl.textContent())?.includes(finalUiTask.endReal));
   pass('P3 native UI: running start, terminal start/end, five immutable corrections, two-browser 409 with observed version, explicit recovery and reload/history/Control Room concordance');

@@ -1,0 +1,18 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: transient role timeout must retain confirmed authority
+
+'' !== 'production'
+
+    at file:///workspace/production-planner/script/demo/userRolePolicy.browser.mjs:58:10 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: '',
+  expected: 'production',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.19.0

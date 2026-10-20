@@ -1,0 +1,103 @@
+{
+  "phase": "FAILED",
+  "code": "Unexpected end of JSON input",
+  "requests": [
+    {
+      "runtime": "candidate",
+      "method": "POST",
+      "path": "/api/plans/27002/assisted/session",
+      "status": 200
+    },
+    {
+      "runtime": "candidate",
+      "method": "GET",
+      "path": "/api/plans/27002/assisted",
+      "status": 200
+    },
+    {
+      "runtime": "candidate",
+      "method": "GET",
+      "path": "/api/plans/27002/effective-configuration",
+      "status": 200,
+      "readiness": "INCOMPATIBLE"
+    },
+    {
+      "runtime": "candidate",
+      "method": "GET",
+      "path": "/api/plans/27002/assisted/next-scope",
+      "status": 200,
+      "selector": {
+        "kind": "SPACE",
+        "spaceId": 48
+      },
+      "taskCount": 19
+    },
+    {
+      "runtime": "candidate",
+      "method": "GET",
+      "path": "/api/plans/27002/assisted",
+      "status": 200
+    },
+    {
+      "runtime": "candidate",
+      "method": "GET",
+      "path": "/api/plans/27002/effective-configuration",
+      "status": 500,
+      "code": "PLANNING_CONFIGURATION_CONFLICT"
+    },
+    {
+      "runtime": "candidate",
+      "method": "GET",
+      "path": "/api/plans/27002/assisted/next-scope",
+      "status": 500,
+      "code": "PLANNING_CONFIGURATION_CONFLICT"
+    },
+    {
+      "runtime": "candidate",
+      "method": "POST",
+      "path": "/api/plans/27002/assisted/restart",
+      "status": 403
+    },
+    {
+      "runtime": "candidate",
+      "method": "GET",
+      "path": "/api/plans/27002/assisted",
+      "status": 200
+    },
+    {
+      "runtime": "candidate",
+      "method": "GET",
+      "path": "/api/plans/27002",
+      "status": 200
+    },
+    {
+      "runtime": "candidate",
+      "method": "GET",
+      "path": "/api/plans/27002/assisted/next-scope",
+      "status": 200,
+      "selector": {
+        "kind": "SPACE",
+        "spaceId": 48
+      },
+      "taskCount": 19
+    },
+    {
+      "runtime": "candidate",
+      "method": "POST",
+      "path": "/api/plans/27002/assisted/proposals",
+      "status": 202,
+      "runId": 1
+    },
+    {
+      "runtime": "candidate",
+      "method": "GET",
+      "path": "/api/plans/27002/assisted/proposals/1",
+      "status": 200
+    }
+  ],
+  "storedRun": {
+    "status": "running",
+    "hasResult": false,
+    "message": ""
+  }
+}

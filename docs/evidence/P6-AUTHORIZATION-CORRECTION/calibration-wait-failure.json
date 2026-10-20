@@ -1,0 +1,34 @@
+{
+  "mode": "REAL_DISPOSABLE_HTTP_ASSISTED_CHROMIUM",
+  "planId": 27002,
+  "checkpoints": [],
+  "authorityHttp": [
+    {
+      "path": "/api/me/role",
+      "status": 200
+    },
+    {
+      "path": "/api/me/role",
+      "status": 200
+    },
+    {
+      "path": "/api/me/role",
+      "status": 200
+    },
+    {
+      "path": "/api/me/role",
+      "status": 200
+    }
+  ],
+  "errors": [],
+  "visualWrites": 0,
+  "simulatedCacheTimeout": "retained workspace and controller; subsequent real HTTP Stages must complete",
+  "roleTimeout": {
+    "role": "production",
+    "status": "error",
+    "error": "AbortError",
+    "mode": "WITHHELD_ROLE_TRANSPORT_EXISTING_20S_TIMEOUT"
+  },
+  "status": "FAIL",
+  "error": "TimeoutError: page.waitForFunction: Timeout 600000ms exceeded."
+}

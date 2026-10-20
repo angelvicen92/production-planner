@@ -1,0 +1,107 @@
+{
+  "autopilot": {
+    "status": "PASS",
+    "nodeVersion": "v20.20.2",
+    "startedAt": "2026-10-19T17:37:57.506Z",
+    "finishedAt": "2026-10-19T17:42:01.587Z",
+    "remoteWrites": 0,
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities",
+      "historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import",
+      "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved",
+      "real storage/input adapter canon after GET day; no legacy breaks",
+      "withheld role GET aborts during real generation without losing confirmed production authority",
+      "real production\u2192viewer revocation during Autopilot denies accept-stage with 403 and preserves accepted state",
+      "Autopilot: real accepted stages rendered progressively, single header, preferences, Escape, stop/resume and complete maximized",
+      "persisted physical topology, styling capacity and final SQL KPI projection",
+      "old day, 11 prior Stages, 333 other tasks and historical catalog remain literal after real UI/Autopilot/execution"
+    ],
+    "reportSha256": "acfdf3df5931a641003af72b91a94bae652f1f3a5229d70f6e7db676effdcde2"
+  },
+  "control-room": {
+    "status": "PASS",
+    "nodeVersion": "v20.20.2",
+    "startedAt": "2026-10-19T14:54:21.959Z",
+    "finishedAt": "2026-10-19T14:55:30.449Z",
+    "remoteWrites": 0,
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities",
+      "historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import",
+      "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved",
+      "real storage/input adapter canon after GET day; no legacy breaks",
+      "P4 production browser login",
+      "P4 accepted A2 read-only: 266 pending obligations, preparation state, no task/planning/clock writes",
+      "P4 independent operator Start/Finish \u2192 Control Room count, real timestamps/duration and reload persist",
+      "P4 War Room creates critical \u2192 Control Room observes, opens exact context \u2192 other user resolves \u2192 counters/reload reconcile",
+      "P6 actual API authority: plan reads return 266 for all four roles; Aux presentation uses execution scope ([{\"role\":\"admin\",\"received\":266,\"inScope\":0,\"effectiveRole\":\"admin\"},{\"role\":\"production\",\"received\":266,\"inScope\":0,\"effectiveRole\":\"production\"},{\"role\":\"aux\",\"received\":266,\"inScope\":19,\"effectiveRole\":\"aux\"},{\"role\":\"viewer\",\"received\":266,\"inScope\":0,\"effectiveRole\":\"viewer\"}])",
+      "P6 native role revocation: open diagnostic perspective discarded; Viewer receives executive read only",
+      "P4 Viewer read-only, scoped Aux after same-browser user change, mobile/tablet/dark/offline and genuine failed incident API",
+      "P4 post-day closes by explicit terminal decisions, cancelled separate; accepted A2 266 placements/Stages/sessions/plans literal",
+      "other disposable days remain literal during accepted-snapshot execution"
+    ],
+    "reportSha256": "fceaadfb7ab3a0d34580cc55daa9b35ee4893930b357bda2b5709b171ee0fcab"
+  },
+  "time-corrections": {
+    "status": "PASS",
+    "nodeVersion": "v20.20.2",
+    "startedAt": "2026-10-19T14:56:30.719Z",
+    "finishedAt": "2026-10-19T14:57:49.043Z",
+    "remoteWrites": 0,
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities",
+      "historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import",
+      "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved",
+      "real storage/input adapter canon after GET day; no legacy breaks",
+      "P2B native Start/end, successive terminal corrections, complete original audit and correction/Finish races",
+      "P2B native G0 multiple scopes, denials/revocation under lock, pause chronology and complete rollback",
+      "P3 native UI: running start, terminal start/end, five immutable corrections, two-browser 409 with observed version, explicit recovery and reload/history/Control Room concordance",
+      "P2B real Mi D\u00eda and Control Room reload corrected timestamps/duration; all 266 placements, Stages and locks preserved",
+      "other disposable days remain literal during accepted-snapshot execution"
+    ],
+    "reportSha256": "0adcbfcaeb4b8486ec8ab2c6207bc53b5e640228fdf225f1f3647199c10257e6"
+  },
+  "p7-date-integrity": {
+    "status": "PASS",
+    "nodeVersion": "v20.20.2",
+    "startedAt": "2026-10-19T14:57:53.390Z",
+    "finishedAt": "2026-10-19T14:58:29.958Z",
+    "remoteWrites": 0,
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities",
+      "historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import",
+      "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved",
+      "real storage/input adapter canon after GET day; no legacy breaks",
+      "P7 native 097 defect reproduced (HTTP 200, wrong Madrid day); 098 preserves and finishes the legacy run, then rejects new Start with HTTP 409",
+      "P7 real HTTP: auto/day mismatch, same-day early/late Start/correction/Finish/history, G0 editorial/viewer, nominal production, invalid/valid concurrent Starts and one version/event/lock",
+      "P7 native automatic same-day Start and settings-lock races revalidate the winning clock revision before any write",
+      "P7 real Mi D\u00eda -> PATCH status -> versioned SQL: rejected Start displays the domain message; late Start/Finish and both audited corrections/history work; all 266 placements and Stages remain literal",
+      "other disposable days remain literal during accepted-snapshot execution"
+    ],
+    "reportSha256": "d9f18bacc665c87c154f5aef51cb425f91c36be77e30d7d73ff7ae1cccb52fcc"
+  },
+  "configuration": {
+    "status": "PASS",
+    "nodeVersion": "v20.20.2",
+    "startedAt": "2026-10-19T17:42:24.351Z",
+    "finishedAt": "2026-10-19T17:45:07.036Z",
+    "remoteWrites": 0,
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities",
+      "historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import",
+      "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved",
+      "52 observed legacy breaks: configuration reads, S0/266 recommendation and SUPPORTED native input without row changes",
+      "locked break conflicts remain blocked with a safe operational error; existing HTTP permissions remain enforced",
+      "Autopilot reaches the real engine from S0/266 and returns proposal/search Evidence without the initial infrastructure error",
+      "restart after recovery preserves configuration, history, 52 legacy rows and all 266 obligations",
+      "old day, 11 prior Stages, 333 other tasks and historical catalog remain literal after real UI/Autopilot/execution"
+    ],
+    "reportSha256": "2d8c0cb6218cfc18abdaac7da2fa7b9793ea0fd8fa4a87174b1c90de234159fe",
+    "proposalFingerprint": "10ce592a3772452096b245973a39ba841e4079e32ff76d1890fd087139ac6113",
+    "transportFailureArtifactProduced": false
+  }
+}

@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { assistedStageLabel } from "@shared/assistedHistory";
+import React, { type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 export function PlanningStageToolbar({
   stage,
@@ -10,7 +11,7 @@ export function PlanningStageToolbar({
   actions,
   editingTools,
 }: {
-  stage: number;
+  stage: number | null;
   planned: number;
   total: number;
   modified: boolean;
@@ -27,7 +28,7 @@ export function PlanningStageToolbar({
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-semibold">Etapa {stage}</span>
+          <span className="font-semibold">{assistedStageLabel(stage)}</span>
           <Badge variant="secondary">
             {planned}/{total} con horario
           </Badge>

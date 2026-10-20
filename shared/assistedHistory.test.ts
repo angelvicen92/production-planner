@@ -13,6 +13,8 @@ test("parent IDs define S0 → S1 → S2 independent of history order, sibling o
   const input = [s2, sibling, s0, s1]; const before = JSON.stringify({ input, times });
   const model = buildAssistedHistory(input, s2, [...times, { ...times[1], stageId: 40 }]);
   assert.deepEqual(model.rows.map(row => row.stage.id), [10, 20, 30]);
+  assert.deepEqual(model.rows.map(row => row.localNumber), [0, 1, 2]);
+  assert.equal(model.localNumber, 2);
   assert.deepEqual(model.otherStages, [sibling]); assert.equal(model.lineageError, null);
   assert.deepEqual(model.generationTotal, { durationMs: 14_000, knownStages: 2, totalStages: 2 });
   assert.deepEqual(model.processTotal, { durationMs: 69_000, knownStages: 2, totalStages: 2 });
@@ -57,11 +59,59 @@ test("cycles, missing ancestors, root other than S0, duplicate IDs and archived 
     [[s1], s1], [[s0, s1, { ...s1 }], s1],
     [[{ ...s0, archivedAt: stamp(1) }, s1], s1],
     [[s0, { ...s1, ordinal: 0 }], s1],
+    [[{ ...s0, parentStageId: undefined } as unknown as HistoryStage], s0],
+    [[{ ...s0, id: undefined } as unknown as HistoryStage], { ...s0, id: undefined } as unknown as HistoryStage],
     [[s0], null],
   ] as const) {
     const model = buildAssistedHistory(history, active, times);
+    assert.equal(model.localNumber, null);
     assert.ok(model.lineageError); assert.equal(model.rows.length, 0); assert.equal(model.processTotal.durationMs, null); assert.equal(model.elapsed, null);
   }
+});
+
+test("S12 restart and two successive restarts number children by ancestry while every historical checkpoint stays intact", () => {
+  const original = [s0, ...Array.from({ length: 12 }, (_, i) => stage(100 + i, i ? 99 + i : s0.id, i + 1))];
+  const first = stage(500, s0.id, 13);
+  const archived = original.slice(1).map(row => ({ ...row, archivedAt: stamp(1) }));
+  const history = [s0, ...archived, first];
+  assert.deepEqual(buildAssistedHistory(history, first).rows.map(row => row.localNumber), [0, 1]);
+  const second = stage(600, s0.id, 14);
+  const again = [s0, ...archived, { ...first, archivedAt: stamp(2) }, second];
+  const before = JSON.stringify(again);
+  const model = buildAssistedHistory(again, second);
+  assert.equal(model.localNumber, 1); assert.equal(model.otherStages.length, 13);
+  assert.equal(model.rows.length + model.otherStages.length, 15);
+  assert.equal(JSON.stringify(again), before);
+});
+
+test("real structural case 0,14..24 displays 0..11 and excludes thirteen archived branches from cumulative times", () => {
+  const old = Array.from({ length: 13 }, (_, i) => ({ ...stage(100 + i, i ? 99 + i : s0.id, i + 1), archivedAt: stamp(1) }));
+  const active = [s0, ...Array.from({ length: 11 }, (_, i) => stage(500 + i, i ? 499 + i : s0.id, 14 + i, 10 * (i + 1)))];
+  const timing = active.slice(1).map((row, i) => stageTiming({ ...row, acceptedAt: row.acceptedAt! }, { createdAt: stamp(10 * i + 1), startedAt: stamp(10 * i + 2), finishedAt: stamp(10 * i + 3) }));
+  const history = [...old, ...active].reverse(); const before = JSON.stringify({ history, timing });
+  const model = buildAssistedHistory(history, active.at(-1), [...timing, ...old.map(row => ({ ...timing[0], stageId: row.id }))]);
+  assert.deepEqual(model.rows.map(row => row.stage.ordinal), [0, ...Array.from({ length: 11 }, (_, i) => i + 14)]);
+  assert.deepEqual(model.rows.map(row => row.localNumber), Array.from({ length: 12 }, (_, i) => i));
+  assert.equal(model.localNumber, 11); assert.equal(model.otherStages.length, 13);
+  assert.equal(model.generationTotal.durationMs, 11_000); assert.equal(model.processTotal.durationMs, 99_000);
+  assert.equal(model.processTotal.totalStages, 11); assert.equal(model.elapsed?.durationMs, 109_000);
+  assert.equal(JSON.stringify({ history, timing }), before);
+});
+
+test("rollback to S4, redo without divergence and new branch keep local positions and all snapshot identities", () => {
+  const path = [s0, ...Array.from({ length: 8 }, (_, i) => stage(100 + i, i ? 99 + i : s0.id, 14 + i))];
+  const original = JSON.stringify(path);
+  const rollback = buildAssistedHistory(path, path[4]);
+  assert.deepEqual(rollback.rows.map(row => row.localNumber), [0, 1, 2, 3, 4]);
+  assert.equal(rollback.otherStages.length, 4);
+  assert.equal(buildAssistedHistory(path, path[5]).localNumber, 5);
+  assert.equal(buildAssistedHistory(path, path[8]).localNumber, 8);
+  const child = stage(900, path[4].id, 22);
+  const branched = [...path.map((row, i) => i > 4 ? { ...row, archivedAt: stamp(1) } : row), child];
+  const model = buildAssistedHistory(branched, child);
+  assert.deepEqual(model.rows.map(row => row.localNumber), [0, 1, 2, 3, 4, 5]);
+  assert.equal(model.rows.at(-1)?.stage.id, child.id); assert.equal(model.otherStages.length, 4);
+  assert.equal(JSON.stringify(path), original);
 });
 
 test("invalid timestamps, inconsistent interval lengths, duplicate timings and cross-stage chronology never masquerade as totals", () => {

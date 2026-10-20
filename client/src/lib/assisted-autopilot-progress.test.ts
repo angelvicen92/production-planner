@@ -17,10 +17,10 @@ const spaces = [{ id: 7, name: "Plató 7" }];
 
 test("committed counts alone drive progress through proposal, validation and acceptance", () => {
   for (const phase of ["GENERATING", "APPLYING", "VALIDATING", "ACCEPTING", "VERIFYING"] as const) {
-    const view = projectAutopilotProgress({ ...progress, phase }, tasks, spaces);
+    const view = projectAutopilotProgress({ ...progress, phase }, tasks, spaces, { localNumber: 2, lineageError: null });
     assert.equal(view.completed, 47); assert.equal(view.remaining, 219);
     assert.equal(view.percent, 47 / 266 * 100); assert.equal(view.percentLabel, "17,7");
-    assert.equal(view.stageLabel, "Última etapa aceptada: 5");
+    assert.equal(view.stageLabel, "Última etapa aceptada: Etapa S2");
   }
   assert.equal(projectAutopilotProgress({ ...progress, completed: 50 }).completed, 50);
 });
