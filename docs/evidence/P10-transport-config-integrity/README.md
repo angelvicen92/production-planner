@@ -94,17 +94,37 @@ scopes; `causal-red.json` y `partition-generic-red.json` para los defectos previ
 Las suites `transportConfigIntegrity.spec.ts` de engine y server cubren límites,
 residuales, target independiente, OUT, gap, simultaneidad, duración, fallback,
 orden inverso, contexto protegido, lectura histórica, persistencia y precedencia.
+`min3-scope.json` recorre el EngineInput A2, adapter, scope Assisted, ejecución y
+mensaje de producto: 19 IN con mínimo=máximo=3 producen propuesta nula, causa
+aritmética precisa y cero ramas, conservando el input literalmente.
 El harness nativo `--transport-policy` verifica General y jornada mediante
 Chromium/HTTP/Auth/SQL, revisión/replay, permisos, stale, restore y no mutación de
 Stages/266 filas. `--manual-validation` conserva el recorrido P9 completo.
 
+El recorrido combinado P9 → P10 → Autopilot compara todas las filas de
+AcceptedException antes y después de Autopilot. P9 crea deliberadamente dos
+excepciones en ramas históricas archivadas: exigir cero filas globales impedía
+componer ambos ensayos. Comparar el contenido íntegro exige que Autopilot no
+cree excepciones ni cambie ninguna previa; con baseline vacío sigue exigiendo
+cero. El gate de autorización del producto no cambia.
+
 Los resultados finales y las limitaciones observadas se registran en
-`validation.json`. No se aplica la migración a Supabase real, no se modifica P9,
+`validation.json`. `native-integration.json` contiene hashes de fuentes, ledger,
+los once Stages y auditorías canónicas del recorrido frío y de Autopilot.
+`p9-native-probe.json.gz` conserva el informe completo P9; su manifest permite
+verificar el hash descomprimido. `transport-policy-native.json` muestra las
+policies y procedencias leídas realmente, el residual bajo mínimo y los códigos
+400/409. `required-acceptance.json` verifica por separado el gate REQUIRED en una
+jornada inmutable cuya geometría registrada se declara explícitamente como
+fixture, sin certificarla como generación automática.
+
+No se aplica la migración a Supabase real, no se modifica el gate P9,
 no se hace merge ni publicación. La cobertura de motores legacy sigue sin estar
 certificada; el recorrido certificado de esta unidad es Planner Next/Assisted.
 
-Comportamiento X era causado por Y y producía Z; el delta W cambia esa autoridad
-y observamos M: el mínimo visible se confundía con target, el adapter imponía 1 y
-la clave start:end permitía grupos ficticios; la configuración explícita y la
-validación por inicio gobiernan ahora el mínimo/máximo real y preservan el A2
-completo y determinista.
+Comportamiento de aceptar grupos inferiores al mínimo visible era causado por
+la confusión entre target y mínimo, el mínimo 1 fijo del adapter y la clave
+start:end, y producía una configuración sin autoridad y grupos simultáneos
+ficticios; el delta de policy explícita de extremo a extremo y validación por
+inicio cambia esa autoridad y observamos límites HARD reales, rechazo causal
+del caso 19/3 y conservación del A2 completo y determinista.

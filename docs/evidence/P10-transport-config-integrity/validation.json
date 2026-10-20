@@ -1,24 +1,106 @@
 {
-  "status": "CANDIDATE",
+  "status": "LOCAL_GATES_PASS",
   "base": "c777c5df2b040db4e9b69f30e73531ae13a19578",
-  "localProductCI": {
-    "status": "PASS",
-    "tests": 3001,
-    "fail": 0,
-    "note": "Followed by focal General-reader and accepted-context corrections; final head CI pending."
+  "implementationCommit": "5dee568811b5491f60f7e9488194ed1774c00de5",
+  "testedSourceAuthority": "92 runtime source hashes in native-integration.json, verified unchanged after the complete run; includes final combined P9/Autopilot history audit.",
+  "checks": {
+    "typescript": "PASS",
+    "build": "PASS",
+    "migrationSequence": "PASS",
+    "integrationTypescript": "PASS",
+    "focalTransport": {
+      "pass": 43,
+      "fail": 0
+    },
+    "generalStorageReader": {
+      "pass": 5,
+      "fail": 0
+    },
+    "P9Regression": {
+      "pass": 110,
+      "fail": 0
+    }
   },
-  "transportReplay": {
+  "productCI": {
     "status": "PASS",
-    "generatedPlan": false,
-    "source": "Freshly generated native 266-obligation A2 in this task",
+    "commit": "5dee568811b5491f60f7e9488194ed1774c00de5",
+    "jobUrl": "https://github.com/angelvicen92/production-planner/actions/runs/39399295757/job/118549701209",
+    "tests": 3003,
+    "pass": 3002,
+    "fail": 0,
+    "skipped": 1,
+    "skipReason": "Historical SPEC10-012R2 commit objects are unavailable in the CI checkout; unchanged historical-isolation test."
+  },
+  "a2Assist8": {
+    "status": "PASS",
+    "executionsBefore": 2,
+    "executionsAfter": 2,
+    "obligations": 266,
+    "stageCount": 11,
+    "hard": 0,
+    "required": 0,
+    "allStageFingerprintsUnchanged": true,
+    "sourceScopesUnchanged": true,
+    "finalFingerprint": "b9df879577cd8fb3d1b32e4588d6da0ad404739341a431e587eee4f68fa4f30f"
+  },
+  "coldNative": {
+    "status": "PASS",
+    "command": "npm run demo:a2:smoke -- work/p10/certified-native --full --manual-validation --transport-policy --autopilot",
+    "obligations": 266,
+    "stageCount": 11,
+    "operationalMeals": 8,
+    "P9": "PASS",
+    "P10": "PASS",
+    "autopilotScenarios": [
+      {
+        "label": "S5 stop/reload/resume",
+        "completed": 266,
+        "fingerprint": "d77077d5115b22c91117ff1f56b8502deaff4ca51d056f10017b520270387c0f",
+        "noNewExceptions": true,
+        "protectedHistory": true
+      },
+      {
+        "label": "same S5 checkpoint repeated",
+        "completed": 266,
+        "fingerprint": "d77077d5115b22c91117ff1f56b8502deaff4ca51d056f10017b520270387c0f",
+        "noNewExceptions": true,
+        "protectedHistory": true
+      },
+      {
+        "label": "S0 uninterrupted",
+        "completed": 266,
+        "fingerprint": "d77077d5115b22c91117ff1f56b8502deaff4ca51d056f10017b520270387c0f",
+        "noNewExceptions": true,
+        "protectedHistory": true
+      }
+    ],
+    "sameBaselineGeometry": true,
+    "restart": "PASS",
+    "originalReportSha256": "920ba161bd796a521815457ab5e06cdcc8fe5020fb9537612fd9ac3da12fcf7d",
     "remoteWrites": 0
   },
-  "coldA2": {
-    "completed": 266,
-    "stageCount": 11,
-    "P9": "PASS",
-    "finalHeadRerun": "RUNNING"
+  "requiredNative": {
+    "status": "PASS",
+    "mode": "IMMUTABLE_REQUIRED_DAY_FIXTURE",
+    "generatedPlan": false,
+    "configurationBeforeInsert": true,
+    "actorRole": "production",
+    "remoteWrites": 0
   },
+  "mathematicalFailure": {
+    "status": "PASS",
+    "case": "19 IN; min=3,target=3,max=3",
+    "reason": "TRANSPORT_GROUP_CARDINALITY_PARTITION_IMPOSSIBLE",
+    "branchesExplored": 0,
+    "proposal": null,
+    "inputImmutable": true
+  },
+  "githubChecksUrl": "https://github.com/angelvicen92/production-planner/pull/1158/checks",
+  "certificationLimits": [
+    "Planner Next/Assisted certified; legacy engine transport coverage remains unverified.",
+    "No migration or data changes applied to real Supabase.",
+    "One earlier Mi Dia CI fragment-scroll assertion failed; the unchanged browser test passed locally. Final-head check outcome is recorded on the PR."
+  ],
   "merge": false,
   "publication": false,
   "realSupabaseWrites": 0
