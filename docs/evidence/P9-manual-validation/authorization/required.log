@@ -1,0 +1,15 @@
+
+> rest-express@1.0.0 demo:a2:smoke
+> node --import tsx script/demo/smokeA2Integration.ts /tmp/p9-hard-auth/required-fixed --manual-required-replay=/tmp/p9-hard-auth/native/manual-validation-baseline.json
+
+PASS entire native application migration ledger
+PASS real password login for five Auth identities
+PASS native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved
+PASS real storage/input adapter canon after GET day; no legacy breaks
+PASS Production validates and accepts REQUIRED with explicit UI consent, exact audit and 266 material task rows; immutable configuration and missing-consent rejection preserved
+{"status":"PASS","evidence":"/tmp/p9-hard-auth/required-fixed/integration.json","remoteWrites":0}
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice

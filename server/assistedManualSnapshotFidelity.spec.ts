@@ -8,6 +8,7 @@ import {adaptEngineInputToPlannerNextProblem} from '../engine/planner-next/integ
 import type {EngineInput} from '../engine/types';
 import {fingerprintAssistedPlanningSnapshotV1,type AssistedPlanningSnapshotV1} from './assistedPlanningSnapshot';
 import type {IStorage} from './storage';
+import {buildEffectivePlanConfigRevisionV1,projectEffectiveAuthoritiesFromEngineInputV1} from './effectivePlanConfigRevision';
 process.env.SUPABASE_URL??='http://localhost';
 process.env.SUPABASE_ANON_KEY??='test';
 process.env.SUPABASE_SERVICE_ROLE_KEY??='test';
@@ -44,6 +45,43 @@ async function harness(){
 }
 const auxiliaries=(snapshot:AssistedPlanningSnapshotV1)=>({meals:snapshot.operationalMeals,setup:snapshot.setupPreparations,round:snapshot.roundPreparations});
 
+test('P9 exact A2 historical stage exposes the fourth IN with material identity',()=>{
+ const captured=JSON.parse(gunzipSync(readFileSync('server/fixtures/assistedP9A2.json.gz')).toString());
+ const input=captured.input as EngineInput,base=captured.base as AssistedPlanningSnapshotV1;
+ const actualConfig=buildEffectivePlanConfigRevisionV1({planId:input.planId,optimizerSnapshot:captured.configReplay.optimizerSnapshot,
+  taskTemplateSnapshots:captured.configReplay.taskTemplateSnapshots,optimizerProvenance:{authority:'plan_optimizer_snapshots',authorityContractVersion:1},
+  taskTemplateProvenance:{authority:'plan_task_template_snapshots',authorityContractVersion:1},authorities:projectEffectiveAuthoritiesFromEngineInputV1(input)});
+ assert.equal(actualConfig.configurationFingerprint,captured.provenance.configurationFingerprint);
+ const draft={...base,tasks:base.tasks.map(t=>t.taskId===210221?{...t,startPlanned:'11:30',endPlanned:'11:35'}:t)};
+ assert.equal(base.tasks.length,266);assert.equal(fp(base),captured.provenance.snapshotFingerprint);
+ const baseline=validateManualAssistedDelta(input,base,[210221])!;
+ assert.deepEqual(baseline.reasonCodes,[]);
+ const result=validateManualAssistedDelta(input,draft,[210221])!;
+ assert.equal(result.hardValid,false);assert.deepEqual(result.reasonCodes,['TRANSPORT_GROUPING_VIOLATION']);
+ assert.deepEqual(result.validationSummary.unstructuredReasonCodes,[]);
+ assert.equal(result.structuredViolations.length,1);
+ assert.deepEqual(result.structuredViolations[0].affectedTaskIds,[210150,210221,210233,210259]);
+ assert.equal(result.structuredViolations[0].severity,'HARD');
+ assert.deepEqual(result.structuredViolations[0].details.dimensions,{direction:'arrival',kind:'GROUP_SIZE',start:690,end:695,actualGroupSize:4,minimumGroupSize:1,maximumGroupSize:3});
+});
+
+test('P9 exact A2 validates an admissible move and preserves dependency, margin, nominal resource and REQUIRED authorities',()=>{
+ const captured=JSON.parse(gunzipSync(readFileSync('server/fixtures/assistedP9A2.json.gz')).toString());
+ const input=captured.input as EngineInput,base=captured.base as AssistedPlanningSnapshotV1;
+ const move=(id:number,start:string,end:string)=>validateManualAssistedDelta(input,{...base,tasks:base.tasks.map(t=>t.taskId===id?{...t,startPlanned:start,endPlanned:end}:t)},[id])!;
+ const valid=move(210004,'15:15','15:20');assert.equal(valid.hardValid,true);assert.deepEqual(valid.structuredViolations,[]);
+ const dependency=move(210004,'15:25','15:30');assert.ok(dependency.structuredViolations.some(v=>v.ruleCode==='DEPENDENCY_VIOLATION'));
+ const margin=move(210005,'14:10','14:15');assert.ok(margin.structuredViolations.some(v=>v.ruleCode==='TRANSITION_VIOLATION'));
+ const resource=move(210001,'14:30','14:40').structuredViolations.find(v=>v.ruleCode==='RESOURCE_OVERLAP_VIOLATION')!;
+ assert.ok(resource);assert.ok(resource.affectedResourceIds.length>0);assert.ok(resource.affectedResourceIds.every(id=>input.planResourceItems!.some(r=>r.id===id)));
+ const requiredInput=structuredClone(input);requiredInput.resourcePresenceConcentrationPolicies![204002]='REQUIRED';
+ const required=validateManualAssistedDelta(requiredInput,base,[210004])!;
+ assert.deepEqual(required.validationSummary.unstructuredReasonCodes,[]);
+ const violation=required.structuredViolations.find(v=>v.severity==='REQUIRED')!;
+ assert.equal(violation.ruleCode,'RESOURCE_REQUIRED_PRESENCE_VIOLATION');assert.deepEqual(violation.affectedResourceIds,[204002]);
+ assert.equal(input.resourcePresenceConcentrationPolicies![204002],'PREFERRED');
+});
+
 test('A2 causal replay distinguishes complete S10, complete C04 Draft and truncated Draft',()=>{
  assert.equal(base.tasks.length,266);assert.equal(base.operationalMeals!.length,8);assert.equal(base.roundPreparations!.length,17);assert.equal(base.setupPreparations!.length,1);assert.equal(fp(base),fixture.fingerprint);
  const a=validateManualAssistedDelta(input,base,[10048])!;
@@ -53,14 +91,16 @@ test('A2 causal replay distinguishes complete S10, complete C04 Draft and trunca
  assert.equal(mealReplay.completeForScope,true);assert.deepEqual(mealReplay.validationSummary.reasonCodes,[]);
  const b=validateManualAssistedDelta(input,moved,[10048])!;
  assert.deepEqual(b.validationSummary.reasonCodes,['AVAILABILITY_VIOLATION','TRANSPORT_GROUPING_VIOLATION']);
- assert.deepEqual(b.validationSummary.unstructuredReasonCodes,['TRANSPORT_GROUPING_VIOLATION']);
- assert.deepEqual(b.structuredViolations.map(v=>[v.ruleCode,v.affectedTaskIds,v.affectedSpaceIds,v.details]),[['AVAILABILITY_VIOLATION',[10048],[3023],{dimensions:{start:1140,end:1145}}]]);
+ assert.deepEqual(b.validationSummary.unstructuredReasonCodes,[]);
+ assert.deepEqual(b.structuredViolations.filter(v=>v.ruleCode==='AVAILABILITY_VIOLATION').map(v=>[v.ruleCode,v.affectedTaskIds,v.affectedSpaceIds,v.details]),[['AVAILABILITY_VIOLATION',[10048],[3023],{dimensions:{start:1140,end:1145}}]]);
+ assert.equal(b.structuredViolations.length,2);
+ assert.equal((b.structuredViolations.find(v=>v.ruleCode==='TRANSPORT_GROUPING_VIOLATION')?.details.dimensions as any).kind,'GROUP_GAP');
  const {roundPreparations:_round,setupPreparations:_setup,...truncated}=moved;
  const c=validateManualAssistedDelta(input,truncated,[10048])!;
- assert.deepEqual(c.validationSummary.unstructuredReasonCodes,['ROUND_PREPARATION_VIOLATION','SECONDARY_CONTINUITY_VIOLATION','SETUP_PREPARATION_VIOLATION','TRANSPORT_GROUPING_VIOLATION']);
+ assert.deepEqual(c.validationSummary.unstructuredReasonCodes,['ROUND_PREPARATION_VIOLATION','SECONDARY_CONTINUITY_VIOLATION','SETUP_PREPARATION_VIOLATION']);
  assert.deepEqual(input,historicalInput,'validation leaves historical input immutable');
  const unknown={...base,tasks:base.tasks.map(t=>t.taskId===10048?{...t,taskId:999999}:t)};
- assert.equal(validateManualAssistedDelta(input,unknown,[10001]),null,'never silently drops a placed product identity');
+ assert.throws(()=>validateManualAssistedDelta(input,unknown,[10001]),(error:any)=>error.phase==='SNAPSHOT'&&error.reasonCodes.includes('SNAPSHOT_TASK_UNREPRESENTABLE'));
 });
 
 test('isolated omissions causally explain all seven anonymous legacy families',()=>{
@@ -108,12 +148,13 @@ test('native patch rejects omission, mutation or insertion of any structural fie
  const row=(await db.query<any>('SELECT * FROM assisted_planning_sessions')).rows[0];assert.deepEqual(row.draft_snapshot_json,base);assert.equal(row.draft_fingerprint,fixture.fingerprint);assert.deepEqual(row.draft_scope_json,{});
 });
 
-test('real anonymous transport conflict blocks recording; rejecting/resetting leaves accepted S10 and daily tasks identical',async()=>{
+test('non-certifiable anchored accompaniment blocks recording with a specific diagnostic; reset preserves accepted material',async()=>{
  const {service,session,calls}=await harness();
  const before=(await db.query('SELECT * FROM assisted_planning_stages')).rows;
- await service.patchDraft(input.planId,fp(base),13,[{taskId:10048,startPlanned:'19:00',endPlanned:'19:05'}]);
- await assert.rejects(()=>service.validateDraft(input.planId,fp(moved),13),/ASSISTED_DELTA_VALIDATION_UNSUPPORTED/);
+ const anchored={...base,tasks:base.tasks.map(t=>t.taskId===10002?{...t,startPlanned:'12:15',endPlanned:'12:30'}:t)};
+ await service.patchDraft(input.planId,fp(base),13,[{taskId:10002,startPlanned:'12:15',endPlanned:'12:30'}]);
+ await assert.rejects(()=>service.validateDraft(input.planId,fp(anchored),13),(error:any)=>error.code==='ASSISTED_DELTA_VALIDATION_UNSUPPORTED'&&error.validationDiagnostics.reasonCodes.includes('ANCHORED_ACCOMPANIMENT_VIOLATION'));
  assert.deepEqual(calls,['assisted_patch_draft']);assert.equal((await db.query<any>('SELECT count(*) AS n FROM planning_stage_validations')).rows[0].n,0);
  assert.equal((await session()).draftValidationId,null);
- await service.resetDraft(input.planId,fp(moved),13);assert.deepEqual((await db.query('SELECT * FROM assisted_planning_stages')).rows,before);
+ await service.resetDraft(input.planId,fp(anchored),13);assert.deepEqual((await db.query('SELECT * FROM assisted_planning_stages')).rows,before);
 });

@@ -1,0 +1,184 @@
+{
+  "provenance": "Canonical A2 S10 generated through runA2Assist8Evidence at main 138900801c27fad3bd53e75ce83e86f884fda53c; not a remote Supabase export",
+  "fingerprint": "22d728894bd73c9cddc7acb5dbd1f518d60f36f910ec2895b3035f07be95d679",
+  "baseline": {
+    "hardValid": true,
+    "dependencyViolationCount": 0,
+    "overlapViolationCount": 0,
+    "transitionViolationCount": 0,
+    "availabilityViolationCount": 0,
+    "taskAvailabilityViolationCount": 0,
+    "blockViolationCount": 0,
+    "resourceAvailabilityViolationCount": 0,
+    "resourceOverlapViolationCount": 0,
+    "resourceTransitionViolationCount": 0,
+    "secondaryContinuityViolationCount": 0,
+    "setupViolationCount": 0,
+    "setupPreparationViolationCount": 0,
+    "roundSynchronizationViolationCount": 0,
+    "roundPreparationViolationCount": 0,
+    "jointGroupViolationCount": 0,
+    "transportGroupingViolationCount": 0,
+    "technicalOperationViolationCount": 0,
+    "technicalChainViolationCount": 0,
+    "spaceMealViolationCount": 0,
+    "mainFlowMealViolationCount": 0,
+    "anchoredAccompanimentViolationCount": 0,
+    "participantMealViolationCount": 0,
+    "resourceMealViolationCount": 0,
+    "operationalMealViolationCount": 0,
+    "itinerantUnitMealViolationCount": 0,
+    "reasonCodes": [],
+    "unstructuredReasonCodes": [],
+    "violations": []
+  },
+  "moved": {
+    "hardValid": false,
+    "dependencyViolationCount": 0,
+    "overlapViolationCount": 0,
+    "transitionViolationCount": 0,
+    "availabilityViolationCount": 1,
+    "taskAvailabilityViolationCount": 0,
+    "blockViolationCount": 0,
+    "resourceAvailabilityViolationCount": 0,
+    "resourceOverlapViolationCount": 0,
+    "resourceTransitionViolationCount": 0,
+    "secondaryContinuityViolationCount": 0,
+    "setupViolationCount": 0,
+    "setupPreparationViolationCount": 0,
+    "roundSynchronizationViolationCount": 0,
+    "roundPreparationViolationCount": 0,
+    "jointGroupViolationCount": 0,
+    "transportGroupingViolationCount": 1,
+    "technicalOperationViolationCount": 0,
+    "technicalChainViolationCount": 0,
+    "spaceMealViolationCount": 0,
+    "mainFlowMealViolationCount": 0,
+    "anchoredAccompanimentViolationCount": 0,
+    "participantMealViolationCount": 0,
+    "resourceMealViolationCount": 0,
+    "operationalMealViolationCount": 0,
+    "itinerantUnitMealViolationCount": 0,
+    "reasonCodes": [
+      "AVAILABILITY_VIOLATION",
+      "TRANSPORT_GROUPING_VIOLATION"
+    ],
+    "unstructuredReasonCodes": [],
+    "violations": [
+      {
+        "ruleCode": "AVAILABILITY_VIOLATION",
+        "severity": "HARD",
+        "affectedTaskIds": [
+          "task:10048"
+        ],
+        "affectedResourceIds": [],
+        "affectedSpaceIds": [
+          "space:3023"
+        ],
+        "dimensions": {
+          "start": 1140,
+          "end": 1145
+        }
+      },
+      {
+        "ruleCode": "TRANSPORT_GROUPING_VIOLATION",
+        "severity": "HARD",
+        "affectedTaskIds": [
+          "task:10048",
+          "task:10078",
+          "task:10136",
+          "task:10181",
+          "task:10208",
+          "task:10222"
+        ],
+        "affectedResourceIds": [],
+        "affectedSpaceIds": [],
+        "dimensions": {
+          "direction": "departure",
+          "kind": "GROUP_GAP",
+          "previousStart": 1135,
+          "previousEnd": 1140,
+          "start": 1140,
+          "end": 1145,
+          "previousTaskIds": [
+            "task:10078",
+            "task:10136",
+            "task:10181",
+            "task:10208",
+            "task:10222"
+          ],
+          "currentTaskIds": [
+            "task:10048"
+          ],
+          "actualGapMinutes": 5,
+          "minGapMinutes": 20
+        }
+      }
+    ]
+  },
+  "productViolations": [
+    {
+      "ruleCode": "AVAILABILITY_VIOLATION",
+      "severity": "HARD",
+      "affectedTaskIds": [
+        10048
+      ],
+      "affectedResourceIds": [],
+      "affectedSpaceIds": [
+        3023
+      ],
+      "details": {
+        "dimensions": {
+          "start": 1140,
+          "end": 1145
+        }
+      },
+      "inheritedAcceptedExceptionId": null,
+      "violationKey": "{\"ruleCode\":\"AVAILABILITY_VIOLATION\",\"taskIds\":[10048],\"resourceIds\":[],\"spaceIds\":[3023],\"dimensions\":{\"end\":1145,\"start\":1140}}"
+    },
+    {
+      "ruleCode": "TRANSPORT_GROUPING_VIOLATION",
+      "severity": "HARD",
+      "affectedTaskIds": [
+        10048,
+        10078,
+        10136,
+        10181,
+        10208,
+        10222
+      ],
+      "affectedResourceIds": [],
+      "affectedSpaceIds": [],
+      "details": {
+        "dimensions": {
+          "direction": "departure",
+          "kind": "GROUP_GAP",
+          "previousStart": 1135,
+          "previousEnd": 1140,
+          "start": 1140,
+          "end": 1145,
+          "previousTaskIds": [
+            "task:10078",
+            "task:10136",
+            "task:10181",
+            "task:10208",
+            "task:10222"
+          ],
+          "currentTaskIds": [
+            "task:10048"
+          ],
+          "actualGapMinutes": 5,
+          "minGapMinutes": 20
+        }
+      },
+      "inheritedAcceptedExceptionId": null,
+      "violationKey": "{\"ruleCode\":\"TRANSPORT_GROUPING_VIOLATION\",\"taskIds\":[10048,10078,10136,10181,10208,10222],\"resourceIds\":[],\"spaceIds\":[],\"dimensions\":{\"actualGapMinutes\":5,\"currentTaskIds\":[\"task:10048\"],\"direction\":\"departure\",\"end\":1145,\"kind\":\"GROUP_GAP\",\"minGapMinutes\":20,\"previousEnd\":1140,\"previousStart\":1135,\"previousTaskIds\":[\"task:10078\",\"task:10136\",\"task:10181\",\"task:10208\",\"task:10222\"],\"start\":1140}}"
+    }
+  ],
+  "truncatedReasons": [
+    "ROUND_PREPARATION_VIOLATION",
+    "SECONDARY_CONTINUITY_VIOLATION",
+    "SETUP_PREPARATION_VIOLATION"
+  ],
+  "decision": "TRANSPORT_IDENTITY_CERTIFIED_OTHER_FAMILIES_FAIL_CLOSED"
+}

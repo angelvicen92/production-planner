@@ -5,18 +5,22 @@ import { buildEffectivePlanConfigRevisionV1, projectEffectiveAuthoritiesFromEngi
 import { buildEffectivePlanConfigReplaySnapshotV1 } from "./assistedPlanningConfigRevision";
 import { buildAssistedPlanningSnapshotV1, rebuildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
 import { engineTimeToMinute } from "./assistedTime";
-import { validateManualAssistedDelta } from "./assistedProposalService";
+import { validateManualAssistedDelta, ManualValidationUnsupportedError } from "./assistedProposalService";
 import { applyPlanningBlockOperation, type PlanningBlockOperation } from "./assistedPlanningBlocks";
 import { assertPlanningBlockTemporalOrder } from "../shared/assistedPlanningTaskOrdering";
 import type { StageValidationReport } from "../shared/assistedStageValidation";
 import { affectedTasksUnchanged, resolveActiveStageLineage } from "./assistedAcceptedBaseline";
 import {recommendNextAssistedScope} from './assistedScopeOrchestrator';
+import {getUserRole} from './authz';
+import {newStageDeviationCounts} from '../shared/assistedStageValidation';
 
-export type AssistedPlanningErrorCode = "SESSION_NOT_FOUND" | "STALE_DRAFT" | "STALE_BASE_STAGE" | "STALE_CONFIG_REVISION" | "STALE_VALIDATION" | "VALIDATION_REQUIRED" | "VALIDATION_NOT_ACCEPTABLE" | "HARD_CONFIRMATION_REQUIRED" | "REQUIRED_CONFIRMATION_REQUIRED" | "RUN_RESULT_INVALID" | "UNSUPPORTED_ENGINE_INPUT" | "TASK_SET_MISMATCH" | "IMMUTABLE_TASK" | "UNSUPPORTED_MANUAL_FIELD" | "INVALID_MANUAL_DURATION" | "INVALID_MANUAL_RESET" | "INVALID_BLOCK_OPERATION" | "PLANNING_BLOCK_ORDER_CONFLICT" | "CORRUPT_EDIT_LEDGER" | "ASSISTED_DELTA_VALIDATION_UNSUPPORTED" | "INVALID_STAGE_TARGET" | "NO_REDO_AVAILABLE" | "NO_UNDO_AVAILABLE" | "CONCURRENT_ACCEPT" | "RESTART_PROTECTED_DAY" | "RESTART_RUNNING_PROPOSAL";
+export type AssistedPlanningErrorCode = "ASSISTED_ACCEPT_FORBIDDEN" | "HARD_ADMIN_AUTHORIZATION_REQUIRED" | "SESSION_NOT_FOUND" | "STALE_DRAFT" | "STALE_BASE_STAGE" | "STALE_CONFIG_REVISION" | "STALE_VALIDATION" | "VALIDATION_REQUIRED" | "VALIDATION_NOT_ACCEPTABLE" | "HARD_CONFIRMATION_REQUIRED" | "REQUIRED_CONFIRMATION_REQUIRED" | "RUN_RESULT_INVALID" | "UNSUPPORTED_ENGINE_INPUT" | "TASK_SET_MISMATCH" | "IMMUTABLE_TASK" | "UNSUPPORTED_MANUAL_FIELD" | "INVALID_MANUAL_DURATION" | "INVALID_MANUAL_RESET" | "INVALID_BLOCK_OPERATION" | "PLANNING_BLOCK_ORDER_CONFLICT" | "CORRUPT_EDIT_LEDGER" | "ASSISTED_DELTA_VALIDATION_UNSUPPORTED" | "INVALID_STAGE_TARGET" | "NO_REDO_AVAILABLE" | "NO_UNDO_AVAILABLE" | "CONCURRENT_ACCEPT" | "RESTART_PROTECTED_DAY" | "RESTART_RUNNING_PROPOSAL";
 export class AssistedPlanningError extends Error {
-  constructor(readonly code: AssistedPlanningErrorCode, readonly status: 404 | 409 | 422) { super(code); this.name = "AssistedPlanningError"; }
+  constructor(readonly code: AssistedPlanningErrorCode, readonly status: 403 | 404 | 409 | 422,
+    readonly validationDiagnostics?:{phase:string;reasonCodes:readonly string[]}) { super(code); this.name = "AssistedPlanningError"; }
 }
-const statuses: Record<AssistedPlanningErrorCode, 404 | 409 | 422> = {
+const statuses: Record<AssistedPlanningErrorCode, 403 | 404 | 409 | 422> = {
+  ASSISTED_ACCEPT_FORBIDDEN: 403, HARD_ADMIN_AUTHORIZATION_REQUIRED: 403,
   SESSION_NOT_FOUND: 404, STALE_DRAFT: 409, STALE_BASE_STAGE: 409, STALE_VALIDATION: 409,
   STALE_CONFIG_REVISION: 409, VALIDATION_REQUIRED: 422, VALIDATION_NOT_ACCEPTABLE: 422, RUN_RESULT_INVALID: 422, UNSUPPORTED_ENGINE_INPUT: 422, TASK_SET_MISMATCH: 409,
   RESTART_PROTECTED_DAY: 422, RESTART_RUNNING_PROPOSAL: 409,
@@ -37,6 +41,7 @@ function provenance(authority: string) { return { authority, authorityContractVe
 export type DraftChange = { taskId: number; startPlanned?: string | null; endPlanned?: string | null; zoneId?: number | null; spaceId?: number | null; locationLabel?: string | null; durationOverride?: number | null; camerasOverride?: number | null };
 type AssistedRpc = (name: string, parameters: Record<string, unknown>) => Promise<{ error: unknown }>;
 type AssistedPlanningServiceDependencies = {
+  lookupRole?: typeof getUserRole;
   buildInput?: typeof buildEngineInput;
   buildConfigRevision?: typeof buildEffectivePlanConfigRevisionV1;
   validateManual?: typeof validateManualAssistedDelta;
@@ -177,6 +182,21 @@ export class AssistedPlanningService {
   }
   async accept(planId: number, userId: string, expectedDraftFingerprint: string, expectedBaseStageId: number,
     confirmation: "NONE"|"REQUIRED_DEVIATIONS"|"HARD_EXCEPTIONS" = "NONE") {
+    const session = await this.storage.getActiveAssistedPlanningSession(planId);
+    const validation = session?.draftValidationId ? await this.storage.getPlanningStageValidation(session.draftValidationId) : null;
+    const current = session && validation && validation.sessionId === session.id && validation.planId === planId
+      && validation.draftFingerprint === session.draftFingerprint && validation.draftFingerprint === expectedDraftFingerprint
+      && validation.baseStageId === session.draftBaseStageId && validation.baseStageId === expectedBaseStageId
+      && validation.configRevisionId === session.currentConfigRevisionId;
+    // Re-read server authority immediately before the privileged RPC. Never
+    // authorize a critical decision from client state, a JWT role or middleware cache.
+    const role = await (this.dependencies.lookupRole ?? getUserRole)(userId);
+    if (role !== 'admin' && role !== 'production') throw new AssistedPlanningError('ASSISTED_ACCEPT_FORBIDDEN', 403);
+    // Until nominal delegation exists, only admin may supply the RPC's critical
+    // confirmation. This also closes a clean-report -> new-HARD race: the RPC
+    // rechecks its locked validation and cannot accept a new HARD with NONE/REQUIRED.
+    if (role !== 'admin' && (confirmation === 'HARD_EXCEPTIONS' || (current && newStageDeviationCounts(validation).newHardCount > 0)))
+      throw new AssistedPlanningError('HARD_ADMIN_AUTHORIZATION_REQUIRED', 403);
     const { error } = await this.rpc("assisted_accept_stage", { p_plan_id: planId, p_user_id: userId, p_expected_fingerprint: expectedDraftFingerprint, p_expected_base: expectedBaseStageId, p_confirmation: confirmation });
     if (error) dbError(error); return this.state(planId);
   }
@@ -214,18 +234,32 @@ export class AssistedPlanningService {
       return prior && (prior.startPlanned !== task.startPlanned || prior.endPlanned !== task.endPlanned);
     }).map(task => task.taskId).concat(((session.draftScopeJson as any)?.manualTouchedTaskIds ?? []) as number[]).filter((id,index,all)=>all.indexOf(id)===index).sort((a,b)=>a-b);
     if (touched.length === 0) throw new AssistedPlanningError("VALIDATION_REQUIRED", 422);
-    const evidence=(this.dependencies.validateManual??validateManualAssistedDelta)(input,draft,touched);
-    if(!evidence)throw new AssistedPlanningError("ASSISTED_DELTA_VALIDATION_UNSUPPORTED",422);
+    let evidence;
+    try{evidence=(this.dependencies.validateManual??validateManualAssistedDelta)(input,draft,touched);}
+    catch(error){
+      if(error instanceof ManualValidationUnsupportedError)throw new AssistedPlanningError('ASSISTED_DELTA_VALIDATION_UNSUPPORTED',422,{phase:error.phase,reasonCodes:error.reasonCodes});
+      throw error;
+    }
+    if(!evidence)throw new AssistedPlanningError("ASSISTED_DELTA_VALIDATION_UNSUPPORTED",422,{phase:'REPRESENTATION',reasonCodes:[]});
     const normalized=(evidence as any).structuredViolations as import("../shared/assistedStageValidation").StageViolation[];
-    if(!Array.isArray(normalized))throw new AssistedPlanningError("ASSISTED_DELTA_VALIDATION_UNSUPPORTED",422);
+    if(!Array.isArray(normalized))throw new AssistedPlanningError("ASSISTED_DELTA_VALIDATION_UNSUPPORTED",422,{phase:'STRUCTURED_REPORT',reasonCodes:[]});
     if(((evidence as any).validationSummary?.unstructuredReasonCodes?.length??0)>0)
-      throw new AssistedPlanningError("ASSISTED_DELTA_VALIDATION_UNSUPPORTED",422);
+      throw new AssistedPlanningError("ASSISTED_DELTA_VALIDATION_UNSUPPORTED",422,{phase:'RULE_IDENTITY',reasonCodes:evidence.validationSummary.unstructuredReasonCodes!});
     const lineage=resolveActiveStageLineage(await this.storage.listAssistedPlanningStages(session.id) as any,expectedBaseStageId);
     // The revision is immutable provenance, not an applicability gate. An untouched
     // placement remains grandfathered; exact violation identity below prevents a
     // materially different rule result from inheriting the old decision.
     const accepted=(await Promise.all(lineage.map(async origin=>(await this.storage.listPlanningAcceptedExceptions(origin.id)??[]).filter(item=>item.status==="ACTIVE"&&affectedTasksUnchanged(origin.snapshotJson,draft,item.affectedTaskIdsJson))))).flat();
-    const violations=normalized.map(violation=>{const inherited=accepted.find(item=>item.severity===violation.severity&&item.violationKey===violation.violationKey);return inherited?{...violation,inheritedAcceptedExceptionId:inherited.id}:violation;});
+    const draftById=new Map(draft.tasks.map(task=>[task.taskId,task]));
+    const violations=normalized.map(violation=>{
+      const inherited=accepted.find(item=>item.severity===violation.severity&&item.violationKey===violation.violationKey);
+      const taskChanges=violation.affectedTaskIds.flatMap(taskId=>{
+        const before=baseById.get(taskId),after=draftById.get(taskId);
+        return before&&after&&(before.startPlanned!==after.startPlanned||before.endPlanned!==after.endPlanned)
+          ?[{taskId,before:{start:before.startPlanned,end:before.endPlanned},after:{start:after.startPlanned,end:after.endPlanned}}]:[];
+      });
+      return {...violation,details:{...violation.details,taskChanges},inheritedAcceptedExceptionId:inherited?.id??null};
+    });
     const hardCount=violations.filter(item=>item.severity==="HARD").length,requiredCount=violations.filter(item=>item.severity==="REQUIRED").length;
     const newHardCount=violations.filter(item=>item.severity==="HARD"&&item.inheritedAcceptedExceptionId==null).length;
     const newRequiredCount=violations.filter(item=>item.severity==="REQUIRED"&&item.inheritedAcceptedExceptionId==null).length;

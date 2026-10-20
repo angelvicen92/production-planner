@@ -408,7 +408,9 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   const roundSynchronization = roundValidation.synchronizationViolationCount;
   const roundPreparation = roundValidation.preparationViolationCount;
   let jointGroup = 0;
-  const transportGrouping = validateTransportGrouping(problem, scheduled, participantMeals).violationCount;
+  const transportValidation = validateTransportGrouping(problem, scheduled, participantMeals);
+  const transportGrouping = transportValidation.violationCount;
+  violations.push(...transportValidation.violations);
   let technicalOperation = 0;
   let technicalChain = 0;
   let spaceMeal = 0;

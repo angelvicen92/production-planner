@@ -1,7 +1,18 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import {assistedValidationErrorMessage,transportViolationExplanation} from '../../lib/assisted-validation-messages';
 const source=await readFile(new URL("./assisted-planning-workspace.tsx",import.meta.url),"utf8");
+test('manual validation messages distinguish stale, uncertifiable, failure and a concrete transport conflict',()=>{
+ const unsupported=assistedValidationErrorMessage({code:'ASSISTED_DELTA_VALIDATION_UNSUPPORTED',payload:{validationDiagnostics:{phase:'RULE_IDENTITY',reasonCodes:['ANCHORED_ACCOMPANIMENT_VIOLATION']}}})!;
+ assert.match(unsupported,/acompañamientos y adyacencias/);assert.match(unsupported,/No se puede aceptar/);assert.doesNotMatch(unsupported,/obsoleta|ANCHORED/);
+ assert.match(assistedValidationErrorMessage({code:'STALE_VALIDATION'})!,/obsoleta/);
+ assert.match(assistedValidationErrorMessage({code:'ASSISTED_VALIDATION_FAILED'})!,/ha fallado/);
+ assert.match(assistedValidationErrorMessage({code:'HARD_ADMIN_AUTHORIZATION_REQUIRED'})!,/autorización administrativa/);
+ assert.match(assistedValidationErrorMessage({code:'ASSISTED_ACCEPT_FORBIDDEN'})!,/rol vigente/);
+ assert.equal(assistedValidationErrorMessage({code:'STALE_DRAFT'}),null);
+ assert.equal(transportViolationExplanation({ruleCode:'TRANSPORT_GROUPING_VIOLATION',details:{dimensions:{direction:'arrival',kind:'GROUP_SIZE',actualGroupSize:4,minimumGroupSize:1,maximumGroupSize:3}}}),'IN: grupo de 4 participantes; máximo permitido 3.');
+});
 test("scope requests use the pending selection and delegate prerequisite closure",()=>{assert.match(source,/taskIdsScopeSelector\(scopeTaskIds\)/);assert.match(source,/const selector=scopeSelector/);assert.match(source,/selector,includePrerequisites,\.\.\.guard\(\)/);assert.doesNotMatch(source,/dependsOnTaskIds|expandVisiblePrerequisites/);});
 test("preview is consent based and apply sends only guards",()=>{assert.match(source,/preview\?\.outcome!=="PROPOSAL"/);assert.match(source,/Aplicar al borrador/);assert.match(source,/proposals\/\$\{runId\}\/apply`,guard\(\)/);assert.match(source,/Descartar propuesta/);assert.doesNotMatch(source,/daily-tasks/);});
 test("assisted timeline edits only the draft while accept and rollback alone refresh product state",()=>{assert.match(source,/accept-stage`,\{\.\.\.guard\(\),confirmation\}\),true/);assert.match(source,/assisted\/rollback.*targetStageId/s);assert.match(source,/mode:viewAuthority==="accepted"\?"accepted":"assisted-draft"/);assert.match(source,/onApplyManualEdits:viewAuthority==="draft"&&authorized.current&&busy!=="autopilot"\?applyTimelineEdits/);assert.match(source,/assisted\/draft/);assert.doesNotMatch(source,/onGeneratePlan|onPinTask|daily-tasks/);});

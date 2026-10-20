@@ -1,0 +1,222 @@
+TAP version 13
+# Subtest: production cannot accept a new HARD with NONE; no privileged RPC
+not ok 1 - production cannot accept a new HARD with NONE; no privileged RPC
+  ---
+  duration_ms: 3.711752
+  type: 'test'
+  location: '/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:1:1847'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected rejection.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: [Function (anonymous)]
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:24:3)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+  ...
+# Subtest: production cannot accept a new HARD with REQUIRED_DEVIATIONS; no privileged RPC
+not ok 2 - production cannot accept a new HARD with REQUIRED_DEVIATIONS; no privileged RPC
+  ---
+  duration_ms: 0.461394
+  type: 'test'
+  location: '/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:1:1847'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected rejection.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: [Function (anonymous)]
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:24:3)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: production cannot accept a new HARD with HARD_EXCEPTIONS; no privileged RPC
+not ok 3 - production cannot accept a new HARD with HARD_EXCEPTIONS; no privileged RPC
+  ---
+  duration_ms: 0.329679
+  type: 'test'
+  location: '/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:1:1847'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected rejection.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: [Function (anonymous)]
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:24:3)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: admin accepts a new HARD only after a current server role lookup
+not ok 4 - admin accepts a new HARD only after a current server role lookup
+  ---
+  duration_ms: 0.706937
+  type: 'test'
+  location: '/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:1:2171'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+
+    0 !== 1
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:30:9)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: production preserves clean acceptance
+not ok 5 - production preserves clean acceptance
+  ---
+  duration_ms: 0.341086
+  type: 'test'
+  location: '/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:1:2625'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+
+    0 !== 1
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:38:41)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: production preserves REQUIRED acceptance
+not ok 6 - production preserves REQUIRED acceptance
+  ---
+  duration_ms: 0.376878
+  type: 'test'
+  location: '/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:1:2625'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+
+    0 !== 1
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:38:41)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: production preserves intact inherited HARD acceptance
+not ok 7 - production preserves intact inherited HARD acceptance
+  ---
+  duration_ms: 0.248138
+  type: 'test'
+  location: '/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:1:2625'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+
+    0 !== 1
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:38:41)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: production preserves inherited HARD and new REQUIRED acceptance
+not ok 8 - production preserves inherited HARD and new REQUIRED acceptance
+  ---
+  duration_ms: 0.178485
+  type: 'test'
+  location: '/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:1:2625'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+
+    0 !== 1
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:38:41)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: revocation after validation is read at acceptance and forbids every write
+not ok 9 - revocation after validation is read at acceptance and forbids every write
+  ---
+  duration_ms: 0.450177
+  type: 'test'
+  location: '/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:1:2854'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected rejection.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: [Function (anonymous)]
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:44:3)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: a non-admin cannot preauthorize HARD_EXCEPTIONS on a clean or stale report
+not ok 10 - a non-admin cannot preauthorize HARD_EXCEPTIONS on a clean or stale report
+  ---
+  duration_ms: 0.435576
+  type: 'test'
+  location: '/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:1:3209'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected rejection.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: [Function (anonymous)]
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:51:3)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+# Subtest: a legacy report without new counts falls back to total HARD and remains protected
+not ok 11 - a legacy report without new counts falls back to total HARD and remains protected
+  ---
+  duration_ms: 0.286955
+  type: 'test'
+  location: '/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:1:3539'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected rejection.'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: [Function (anonymous)]
+  operator: 'rejects'
+  stack: |-
+    async TestContext.<anonymous> (/workspace/production-planner/server/assistedStageAcceptanceAuthorization.spec.ts:57:2)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 0
+# fail 11
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 474.577328

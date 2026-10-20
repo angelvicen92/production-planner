@@ -1,5 +1,5 @@
-export type AssistedDraftWarningKind = "AVAILABILITY"|"PARTICIPANT_OVERLAP"|"SPACE_OVERLAP"|"RESOURCE_OVERLAP"|"DIRECT_DEPENDENCY";
-export interface AssistedDraftWarning { readonly kind: AssistedDraftWarningKind; readonly taskIds: readonly number[]; }
+export type AssistedDraftWarningKind = "AVAILABILITY"|"PARTICIPANT_OVERLAP"|"SPACE_OVERLAP"|"RESOURCE_OVERLAP"|"DIRECT_DEPENDENCY"|"TRANSPORT_GROUP_SIZE";
+export interface AssistedDraftWarning { readonly kind: AssistedDraftWarningKind; readonly taskIds: readonly number[]; readonly actualGroupSize?:number; readonly maximumGroupSize?:number; }
 export interface AssistedWarningConfiguration {
   readonly taskOperations?: readonly {taskId:number;operationalRole?:string;jointGroupId?:string;blocksSpace?:boolean}[];
   readonly arrivalMaximumGroupSize?:number;
@@ -20,10 +20,18 @@ export function collectAssistedDraftWarnings(tasks:readonly any[],workday?:{star
     if(left?.jointGroupId&&left.jointGroupId===right?.jointGroupId)return true;
     const role=left?.operationalRole;
     if(!role||role!==right?.operationalRole||!['transport_arrival','transport_departure'].includes(role))return false;
-    const maximum=role==='transport_arrival'?configuration?.arrivalMaximumGroupSize:configuration?.departureMaximumGroupSize;
-    const count=tasks.filter(task=>operations.get(Number(task.id))?.operationalRole===role&&minute(task.startPlanned)===minute(a.startPlanned)&&minute(task.endPlanned)===minute(a.endPlanned)).length;
-    return Number.isInteger(maximum)&&maximum!>0&&count<=maximum!;
+    return true;
   };
+  const transportGroups=new Map<string,any[]>();
+  for(const task of tasks){const role=operations.get(Number(task.id))?.operationalRole,start=minute(task.startPlanned),end=minute(task.endPlanned);
+    if(!role||!['transport_arrival','transport_departure'].includes(role)||start===null||end===null)continue;
+    const key=`${role}:${start}:${end}`;transportGroups.set(key,[...transportGroups.get(key)??[],task]);
+  }
+  for(const group of transportGroups.values()){
+    const role=operations.get(Number(group[0].id))!.operationalRole;
+    const maximum=role==='transport_arrival'?configuration?.arrivalMaximumGroupSize:configuration?.departureMaximumGroupSize;
+    if(Number.isInteger(maximum)&&maximum!>0&&group.length>maximum!)warnings.push({kind:'TRANSPORT_GROUP_SIZE',taskIds:group.map(task=>Number(task.id)),actualGroupSize:group.length,maximumGroupSize:maximum});
+  }
   for(const task of tasks){
     const start=minute(task.startPlanned),end=minute(task.endPlanned),dayStart=minute(workday?.start),dayEnd=minute(workday?.end);
     if(start!==null&&end!==null&&((dayStart!==null&&start<dayStart)||(dayEnd!==null&&end>dayEnd))) warnings.push({kind:"AVAILABILITY",taskIds:[Number(task.id)]});

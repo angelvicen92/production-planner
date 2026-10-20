@@ -192,8 +192,11 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
   pass('admin atomic rollback to S0 and redo to final accepted Stage');
   if(preferenceJourney)await verifyMainFlowPreferenceAfterStages({db,planId,pass},preferenceJourney);
   if(process.argv.includes("--assisted-history")){const {runAssistedActiveHistory}=await import("./smokeAssistedActiveHistory");diagnostics.activeHistory=await runAssistedActiveHistory({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics},page);}
-  if(full)diagnostics.viewsHistory=await (process.argv.includes("--day-workspace")?runDayWorkspaceJourney:runA2ViewsHistoryJourney)({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics},page);
-  if(full)diagnostics.manualSnapshotFidelity=await runA2ManualSnapshotJourney({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics});
+  if(process.argv.includes('--manual-validation')){const {runManualDraftValidationProbe}=await import('./smokeManualDraftValidation');diagnostics.manualValidation=await runManualDraftValidationProbe({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics},page);}
+  else if(full){
+   diagnostics.viewsHistory=await (process.argv.includes("--day-workspace")?runDayWorkspaceJourney:runA2ViewsHistoryJourney)({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics},page);
+   diagnostics.manualSnapshotFidelity=await runA2ManualSnapshotJourney({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics});
+  }
   return {roleMatrix,s0:'PASS',stages,completed:stages.at(-1)!.completed,pageErrors,secondBrowserSession:'PASS',rollbackRedo:'PASS',searchPoliciesUnchanged:true,persistedCanonical};
  }catch(error){
   // Preserve the actual SQL run outcome before the disposable database is

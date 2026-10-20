@@ -1,0 +1,441 @@
+{
+  "scope": "All current P9 text/JSON and decompressed GZIP contents, excluding this self-referential report; manual review of retained operational labels and workspace-only screenshots",
+  "authorizedFixture": "plan 27003, EngineInput + historical snapshot + effective configuration",
+  "files": [
+    {
+      "file": "docs/evidence/P9-manual-validation/README.md",
+      "sha256": "b564a7ac8589e6bf6a6f51c74d1fb62fc4db017745636e69dfd7a537e7dc6e76",
+      "decompressedBytes": 9392,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/README.md",
+      "sha256": "0264c2c57f86d8ace370cde51bc2821769570ccfe6188740c5864549bc9dc39c",
+      "decompressedBytes": 9095,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/benchmark-roles.log",
+      "sha256": "b440a6721d1df0c2f47b44412d57cd566811baec15ff2ce80413d8c904e661fe",
+      "decompressedBytes": 508,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/build.log",
+      "sha256": "853687749b240f126885eaed0d835173d200f02830ba51eba5251e8c8bd996fd",
+      "decompressedBytes": 1261,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/check-benchmark-roles.log",
+      "sha256": "a46a017a03ccbce6a11785073fc6ba6904936107ceda838d08b2b4b7f356a7df",
+      "decompressedBytes": 34,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/check.log",
+      "sha256": "0fedab01a35ca9fca53fe6fd66268f14af56d83677404c554d736f962da99fb3",
+      "decompressedBytes": 243,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/focal.log",
+      "sha256": "584e23ce74f45f273a3a4883a05f1e3ed3d1c64c10432d834e22c3bb180f43e0",
+      "decompressedBytes": 14893,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/integration-check.log",
+      "sha256": "76162e465989f3f070a9de8db711fbf358e53b74d09ce1bbdb57c727e4c4a16d",
+      "decompressedBytes": 208,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/integration.json.gz",
+      "sha256": "82dee8966845be28ae9899a51278b5f2293593444ec88d9a75ceca0b64487117",
+      "decompressedBytes": 222247,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/migrations.log",
+      "sha256": "ff532ae45c1c57184ba31d7e8b5361f488c48ad00e3973bf326e61e9909e84d9",
+      "decompressedBytes": 282,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/native.json",
+      "sha256": "4aee41cfd8ed86603ee1bb4f1a05b68103ae1df6fffd798aebe38ff73815d2c9",
+      "decompressedBytes": 102802,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/native.log",
+      "sha256": "df26eedbc3dc25c7a927db18e888e4cc697f124fb30995190ee291e1862293b0",
+      "decompressedBytes": 2736,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/p4-scroll-pass-1.log",
+      "sha256": "bdfc5bb9abac2e1fe4ee442216dbc6b1ebea5291a80915cc8065849f81aa575c",
+      "decompressedBytes": 1169,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/p4-scroll-pass-2.log",
+      "sha256": "bdfc5bb9abac2e1fe4ee442216dbc6b1ebea5291a80915cc8065849f81aa575c",
+      "decompressedBytes": 1169,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/p4-scroll.json",
+      "sha256": "86773d55c7a3271dfe2e0fa6898ad44b176f0c0113b6be123e3e2ad7ee1001f4",
+      "decompressedBytes": 1070,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/p8-comparison.json",
+      "sha256": "7b4165d6909159cffb8c64c00d348e11e3593f3a331544136a7a9205e3b8d167",
+      "decompressedBytes": 737,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/p8-integration.json.gz",
+      "sha256": "9109e5f8740d5dd0026fddc5f6c9eff6172a43de7cc552f5f37020c6bf8a4f0a",
+      "decompressedBytes": 43732,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/red-authorization.log",
+      "sha256": "8f433a49ca2d6365fec25da1a3be52f808b97d5ffe58a7d3dbcfb22b62427ae5",
+      "decompressedBytes": 8523,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/required-integration.json.gz",
+      "sha256": "1e35961c1d41fd0241eebc183bfc09d86f3cfc374fa08bca34a6c33fb316d0cf",
+      "decompressedBytes": 50614,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/required.json",
+      "sha256": "d682575f96219c6d5122deb1229c1c59d4dcfb4a0eadb08c53331c1965c8e979",
+      "decompressedBytes": 20888,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/required.log",
+      "sha256": "2bb42d6c936886192226f56ff62dc3a353b0a01db1d4357e5d16b84485948a37",
+      "decompressedBytes": 961,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/authorization/validation.json",
+      "sha256": "de62f1a2f6bd08f565b726b078746892a60a653e6be7161f0662b3c3d0de84ee",
+      "decompressedBytes": 14657,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/build.log",
+      "sha256": "416db7a142b3cda89d8afd054620250d4dd8e336355dad56f42d595bdb065e69",
+      "decompressedBytes": 1260,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/check.log",
+      "sha256": "0fedab01a35ca9fca53fe6fd66268f14af56d83677404c554d736f962da99fb3",
+      "decompressedBytes": 243,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/exact-green.json",
+      "sha256": "6f73f6890d200f59f81ff8ce8b52d3368c4c81a3931cd085469fa442942ab9ce",
+      "decompressedBytes": 5400,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/exact-red-test.log",
+      "sha256": "521c435f263c613a836e112a5f349c0177682186c8e2830c8083194768d01bc6",
+      "decompressedBytes": 1119,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/exact-red.json",
+      "sha256": "89ddc1491cf0c9dce532b495bde1097eeaf1530c21987939c20ee4b9ce237ae1",
+      "decompressedBytes": 1610,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/http-red.json",
+      "sha256": "557b3223d731d2e5741aa051c5d1df53924d4a3cd3e19e6d8bb6323e8e533ec4",
+      "decompressedBytes": 11542,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/integration-check.log",
+      "sha256": "76162e465989f3f070a9de8db711fbf358e53b74d09ce1bbdb57c727e4c4a16d",
+      "decompressedBytes": 208,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/integration.json.gz",
+      "sha256": "a790756f5da5572a97751407853a9970d0d499e4895850eb94cfa9ae0df2dc06",
+      "decompressedBytes": 214006,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/legacy-replay-summary.json",
+      "sha256": "7094c41a01ec26d7ae8b0cbdc6a93052cf119a06b396cfceece97ad020ba3a2b",
+      "decompressedBytes": 5827,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/migrations.log",
+      "sha256": "ff532ae45c1c57184ba31d7e8b5361f488c48ad00e3973bf326e61e9909e84d9",
+      "decompressedBytes": 282,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/native.json",
+      "sha256": "3389251ad4ea4832182b752a83108c59580b908d35bb29871195e2e3ebb4c89f",
+      "decompressedBytes": 97752,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/native.log",
+      "sha256": "aec30ee5aa3f4f720a8d9c2feeff5bde549f76d88fb59f8b4fe68301162aec88",
+      "decompressedBytes": 2682,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/prior-view-limit.log",
+      "sha256": "ab3e10fe88b9b4ecedcf04bbcef7c6b90222002c6e23e6d6a9a6358648699e2a",
+      "decompressedBytes": 3047,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/probes-check.log",
+      "sha256": "76162e465989f3f070a9de8db711fbf358e53b74d09ce1bbdb57c727e4c4a16d",
+      "decompressedBytes": 208,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/regression.log",
+      "sha256": "7d90ff611e5e2fc237b6597c05450b6043a183494bd684a3972e5b0b4b7dacf4",
+      "decompressedBytes": 36781,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "docs/evidence/P9-manual-validation/validation.json",
+      "sha256": "ee492134053ba303cf7434674f0e5c403ef0be86c41b32ae16234215f1f015cd",
+      "decompressedBytes": 25778,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    },
+    {
+      "file": "server/fixtures/assistedP9A2.json.gz",
+      "sha256": "43aa5b0e7a0701518cce561f4565e48076f8929c45362e12336836793869d99a",
+      "decompressedBytes": 382074,
+      "findings": {
+        "email": 0,
+        "JWT": 0,
+        "privateKey": 0,
+        "assignedSecret": 0
+      }
+    }
+  ],
+  "credentialsOrContactsFound": false,
+  "fixtureChanged": false,
+  "snapshotFingerprint": "fce80b7b43f349d725a0cda58dd2332ee127f61027da7afb5fb4ded2f757a068",
+  "configurationFingerprint": "f4cf7a83e9c4a23b4fc1995a2d34fa1d8034244b4ec9eadb5e03b8b77964d72a",
+  "retainedOperationalIdentityReason": "Catalog labels and meal policy identifiers are part of signed A2 authorities and snapshot material; renaming them changes historical fingerprints. No contact or Auth account data is retained.",
+  "newScreenshots": "Workspace-only capture excludes synthetic account email in sidebar."
+}

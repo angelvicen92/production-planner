@@ -143,7 +143,7 @@ export async function runA2Assist8Evidence(options: A2Assist8Options = {}) {
     finish: async (_plan, id, result) => { Object.assign(runs.get(id), { result_json: result }); return { error: null }; },
     apply: async p => { const run = runs.get(Number(p.p_run_id)); session = { ...session, draftSnapshotJson: run.result_json.proposedDraftSnapshot, draftFingerprint: run.result_json.proposedDraftFingerprint, draftScopeJson: { ...run.scope_json, resolvedTaskIds: run.scope_task_ids_json, proposalRunId: run.id }, draftValidationId: null }; return { error: null }; },
   };
-  const dependencies = { buildInput: async () => options.rebuildInputFromPersistence?options.rebuildInputFromPersistence():structuredClone(input), buildConfigRevision: () => ({ contractVersion: 1, planId, components: [], configurationFingerprint: configFingerprint }) as any };
+  const dependencies = { lookupRole: async () => 'production' as const, buildInput: async () => options.rebuildInputFromPersistence?options.rebuildInputFromPersistence():structuredClone(input), buildConfigRevision: () => ({ contractVersion: 1, planId, components: [], configurationFingerprint: configFingerprint }) as any };
   const proposals = new AssistedProposalService(storage, () => {}, runAccess, undefined, dependencies);
   const planning = new AssistedPlanningService(storage, rpc as any, dependencies);
   const iterations: any[] = [];

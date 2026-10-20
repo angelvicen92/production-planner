@@ -155,11 +155,14 @@ try {
   state.readFault = false; await page.reload(); await filter(/^Todas/).waitFor();
   pass('400/403/409/503 preserve observed status with explicit errors; offline/read error block actions and reliable late labels');
   await page.goto(`${origin}/my-day?plan=1#agenda-task-${tasks[2].id}`); await card(2,false).waitFor();
-  await page.waitForFunction(() => window.scrollY > 0);
-  await page.evaluate(() => window.scrollTo(0,0));
+  await page.waitForFunction(() => window.scrollY > 0 || document.querySelector('main')?.scrollTop > 0);
+  // Layout scrolls main independently from the viewport. Reset both before
+  // clicking; otherwise Playwright must scroll the offscreen refresh button.
+  await page.evaluate(() => { document.querySelector('main')?.scrollTo(0,0); window.scrollTo(0,0); });
   const refreshed = page.waitForResponse(response => response.url().endsWith('/api/plans/1/tasks'));
   await page.getByRole('button',{name:'Actualizar',exact:true}).click(); await refreshed;
-  assert.equal(await page.evaluate(() => window.scrollY),0);
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  assert.deepEqual(await page.evaluate(() => ({viewport:window.scrollY,workspace:document.querySelector('main')?.scrollTop ?? 0})),{viewport:0,workspace:0});
   pass('Explicit task fragment navigates once; refresh/polling does not repeat automatic scrolling');
   for (let i=10;i<40;i++) tasks[i].startPlanned='08:00';
   await reload(); await page.getByTestId('operational-late').waitFor();

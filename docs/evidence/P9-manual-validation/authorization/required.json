@@ -1,0 +1,765 @@
+{
+  "status": "PASS",
+  "mode": "IMMUTABLE_REQUIRED_DAY_FIXTURE",
+  "generatedPlan": false,
+  "draftSeed": "RECORDED_GEOMETRY_ONLY_UNCERTIFIED",
+  "remoteWrites": 0,
+  "sourceSha256": "6ad9734002e4f8fdcfe0476e28235c2a1a74f8cf2075d7f83297126be022f797",
+  "configuredBeforeInsert": true,
+  "report": {
+    "mode": "MANUAL_STAGE_VALIDATION_V1",
+    "work": {},
+    "hardCount": 0,
+    "hardValid": true,
+    "violations": [
+      {
+        "details": {
+          "dimensions": {
+            "policy": "REQUIRED"
+          },
+          "taskChanges": [
+            {
+              "after": {
+                "end": "14:20",
+                "start": "14:10"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10001
+            },
+            {
+              "after": {
+                "end": "11:50",
+                "start": "11:40"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10016
+            },
+            {
+              "after": {
+                "end": "16:45",
+                "start": "16:40"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10020
+            },
+            {
+              "after": {
+                "end": "17:30",
+                "start": "17:25"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10026
+            },
+            {
+              "after": {
+                "end": "14:40",
+                "start": "14:30"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10030
+            },
+            {
+              "after": {
+                "end": "12:50",
+                "start": "12:40"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10042
+            },
+            {
+              "after": {
+                "end": "13:20",
+                "start": "13:10"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10055
+            },
+            {
+              "after": {
+                "end": "16:40",
+                "start": "16:35"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10059
+            },
+            {
+              "after": {
+                "end": "17:25",
+                "start": "17:20"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10066
+            },
+            {
+              "after": {
+                "end": "12:30",
+                "start": "12:20"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10071
+            },
+            {
+              "after": {
+                "end": "16:35",
+                "start": "16:30"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10075
+            },
+            {
+              "after": {
+                "end": "14:10",
+                "start": "14:00"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10087
+            },
+            {
+              "after": {
+                "end": "16:30",
+                "start": "16:25"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10091
+            },
+            {
+              "after": {
+                "end": "17:15",
+                "start": "17:10"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10097
+            },
+            {
+              "after": {
+                "end": "13:50",
+                "start": "13:40"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10101
+            },
+            {
+              "after": {
+                "end": "12:40",
+                "start": "12:30"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10115
+            },
+            {
+              "after": {
+                "end": "16:25",
+                "start": "16:20"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10119
+            },
+            {
+              "after": {
+                "end": "17:40",
+                "start": "17:35"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10126
+            },
+            {
+              "after": {
+                "end": "14:30",
+                "start": "14:20"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10130
+            },
+            {
+              "after": {
+                "end": "16:20",
+                "start": "16:15"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10134
+            },
+            {
+              "after": {
+                "end": "17:20",
+                "start": "17:15"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10141
+            },
+            {
+              "after": {
+                "end": "14:50",
+                "start": "14:40"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10146
+            },
+            {
+              "after": {
+                "end": "17:35",
+                "start": "17:30"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10156
+            },
+            {
+              "after": {
+                "end": "12:00",
+                "start": "11:50"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10160
+            },
+            {
+              "after": {
+                "end": "12:20",
+                "start": "12:10"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10174
+            },
+            {
+              "after": {
+                "end": "16:15",
+                "start": "16:10"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10178
+            },
+            {
+              "after": {
+                "end": "17:10",
+                "start": "17:05"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10185
+            },
+            {
+              "after": {
+                "end": "13:10",
+                "start": "13:00"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10189
+            },
+            {
+              "after": {
+                "end": "13:00",
+                "start": "12:50"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10202
+            },
+            {
+              "after": {
+                "end": "17:05",
+                "start": "17:00"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10212
+            },
+            {
+              "after": {
+                "end": "14:00",
+                "start": "13:50"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10217
+            },
+            {
+              "after": {
+                "end": "13:40",
+                "start": "13:30"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10228
+            },
+            {
+              "after": {
+                "end": "16:10",
+                "start": "16:05"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10232
+            },
+            {
+              "after": {
+                "end": "12:10",
+                "start": "12:00"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10242
+            },
+            {
+              "after": {
+                "end": "17:00",
+                "start": "16:55"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10251
+            },
+            {
+              "after": {
+                "end": "13:30",
+                "start": "13:20"
+              },
+              "before": {
+                "end": null,
+                "start": null
+              },
+              "taskId": 10255
+            }
+          ]
+        },
+        "ruleCode": "RESOURCE_REQUIRED_PRESENCE_VIOLATION",
+        "severity": "REQUIRED",
+        "violationKey": "{\"ruleCode\":\"RESOURCE_REQUIRED_PRESENCE_VIOLATION\",\"taskIds\":[10001,10016,10020,10026,10030,10042,10055,10059,10066,10071,10075,10087,10091,10097,10101,10115,10119,10126,10130,10134,10141,10146,10156,10160,10174,10178,10185,10189,10202,10212,10217,10228,10232,10242,10251,10255],\"resourceIds\":[4002],\"spaceIds\":[],\"dimensions\":{\"policy\":\"REQUIRED\"}}",
+        "affectedTaskIds": [
+          10001,
+          10016,
+          10020,
+          10026,
+          10030,
+          10042,
+          10055,
+          10059,
+          10066,
+          10071,
+          10075,
+          10087,
+          10091,
+          10097,
+          10101,
+          10115,
+          10119,
+          10126,
+          10130,
+          10134,
+          10141,
+          10146,
+          10156,
+          10160,
+          10174,
+          10178,
+          10185,
+          10189,
+          10202,
+          10212,
+          10217,
+          10228,
+          10232,
+          10242,
+          10251,
+          10255
+        ],
+        "affectedSpaceIds": [],
+        "affectedResourceIds": [
+          4002
+        ],
+        "inheritedAcceptedExceptionId": null
+      }
+    ],
+    "fingerprint": "d77077d5115b22c91117ff1f56b8502deaff4ca51d056f10017b520270387c0f",
+    "reasonCodes": [
+      "RESOURCE_REQUIRED_PRESENCE_VIOLATION:plan-resource:4002"
+    ],
+    "newHardCount": 0,
+    "requiredCount": 1,
+    "changedTaskIds": [
+      10001,
+      10002,
+      10003,
+      10004,
+      10005,
+      10006,
+      10007,
+      10008,
+      10009,
+      10010,
+      10011,
+      10012,
+      10013,
+      10014,
+      10015,
+      10016,
+      10017,
+      10018,
+      10019,
+      10020,
+      10021,
+      10022,
+      10023,
+      10024,
+      10025,
+      10026,
+      10027,
+      10028,
+      10029,
+      10030,
+      10031,
+      10032,
+      10033,
+      10034,
+      10035,
+      10036,
+      10037,
+      10038,
+      10039,
+      10040,
+      10041,
+      10042,
+      10043,
+      10044,
+      10045,
+      10046,
+      10047,
+      10048,
+      10049,
+      10050,
+      10051,
+      10052,
+      10053,
+      10054,
+      10055,
+      10056,
+      10057,
+      10058,
+      10059,
+      10060,
+      10061,
+      10062,
+      10063,
+      10064,
+      10065,
+      10066,
+      10067,
+      10068,
+      10069,
+      10070,
+      10071,
+      10072,
+      10073,
+      10074,
+      10075,
+      10076,
+      10077,
+      10078,
+      10079,
+      10080,
+      10081,
+      10082,
+      10083,
+      10084,
+      10085,
+      10086,
+      10087,
+      10088,
+      10089,
+      10090,
+      10091,
+      10092,
+      10093,
+      10094,
+      10095,
+      10096,
+      10097,
+      10098,
+      10099,
+      10100,
+      10101,
+      10102,
+      10103,
+      10104,
+      10105,
+      10106,
+      10107,
+      10108,
+      10109,
+      10110,
+      10111,
+      10112,
+      10113,
+      10114,
+      10115,
+      10116,
+      10117,
+      10118,
+      10119,
+      10120,
+      10121,
+      10122,
+      10123,
+      10124,
+      10125,
+      10126,
+      10127,
+      10128,
+      10129,
+      10130,
+      10131,
+      10132,
+      10133,
+      10134,
+      10135,
+      10136,
+      10137,
+      10138,
+      10139,
+      10140,
+      10141,
+      10142,
+      10143,
+      10144,
+      10145,
+      10146,
+      10147,
+      10148,
+      10149,
+      10150,
+      10151,
+      10152,
+      10153,
+      10154,
+      10155,
+      10156,
+      10157,
+      10158,
+      10159,
+      10160,
+      10161,
+      10162,
+      10163,
+      10164,
+      10165,
+      10166,
+      10167,
+      10168,
+      10169,
+      10170,
+      10171,
+      10172,
+      10173,
+      10174,
+      10175,
+      10176,
+      10177,
+      10178,
+      10179,
+      10180,
+      10181,
+      10182,
+      10183,
+      10184,
+      10185,
+      10186,
+      10187,
+      10188,
+      10189,
+      10190,
+      10191,
+      10192,
+      10193,
+      10194,
+      10195,
+      10196,
+      10197,
+      10198,
+      10199,
+      10200,
+      10201,
+      10202,
+      10203,
+      10204,
+      10205,
+      10206,
+      10207,
+      10208,
+      10209,
+      10210,
+      10211,
+      10212,
+      10213,
+      10214,
+      10215,
+      10216,
+      10217,
+      10218,
+      10219,
+      10220,
+      10221,
+      10222,
+      10223,
+      10224,
+      10225,
+      10226,
+      10227,
+      10228,
+      10229,
+      10230,
+      10231,
+      10232,
+      10233,
+      10234,
+      10235,
+      10236,
+      10237,
+      10238,
+      10239,
+      10240,
+      10241,
+      10242,
+      10243,
+      10244,
+      10245,
+      10246,
+      10247,
+      10248,
+      10249,
+      10250,
+      10251,
+      10252,
+      10253,
+      10254,
+      10255,
+      10256,
+      10257,
+      10258,
+      10259,
+      10260,
+      10261,
+      10262,
+      10263,
+      10264,
+      10265,
+      10266
+    ],
+    "preferredCount": 0,
+    "contractVersion": 1,
+    "completeForScope": true,
+    "newRequiredCount": 1,
+    "supportingTaskIds": [],
+    "preferredAssessment": "NOT_CLASSIFIED",
+    "futureFullDayFeasibility": "NOT_CERTIFIED",
+    "supportingReasonByTaskId": {},
+    "protectedPlacementsPreserved": true
+  },
+  "confirmation": "REQUIRED_DEVIATIONS",
+  "confirmationText": "Este borrador contiene 1 desviación(es) operativas nuevas.\nLa presencia requerida del recurso no queda agrupada de forma operativa.\nCROMA (C01, p15-croma): 14:10–14:20\nCROMA (C02, p15-croma): 11:40–11:50\nESTRELLAS (C02, p15-estrellas-sillon): 16:40–16:45\nSILLON (C02, p15-estrellas-sillon): 17:25–17:30\nCROMA (C03, p15-croma): 14:30–14:40\nCROMA (C04, p15-croma): 12:40–12:50\nCROMA (C05, p15-croma): 13:10–13:20\nESTRELLAS (C05, p15-estrellas-sillon): 16:35–16:40\nSILLON (C05, p15-estrellas-sillon): 17:20–17:25\nCROMA (C06, p15-croma): 12:20–12:30\nESTRELLAS (C06, p15-estrellas-sillon): 16:30–16:35\nCROMA (C07, p15-croma): 14:00–14:10\nESTRELLAS (C07, p15-estrellas-sillon): 16:25–16:30\nSILLON (C07, p15-estrellas-sillon): 17:10–17:15\nCROMA (C08, p15-croma): 13:40–13:50\nCROMA (C09, p15-croma): 12:30–12:40\nESTRELLAS (C09, p15-estrellas-sillon): 16:20–16:25\nSILLON (C09, p15-estrellas-sillon): 17:35–17:40\nCROMA (C10, p15-croma): 14:20–14:30\nESTRELLAS (C10, p15-estrellas-sillon): 16:15–16:20\nSILLON (C10, p15-estrellas-sillon): 17:15–17:20\nCROMA (C11, p15-croma): 14:40–14:50\nSILLON (C11, p15-estrellas-sillon): 17:30–17:35\nCROMA (C12, p15-croma): 11:50–12:00\nCROMA (C13, p15-croma): 12:10–12:20\nESTRELLAS (C13, p15-estrellas-sillon): 16:10–16:15\nSILLON (C13, p15-estrellas-sillon): 17:05–17:10\nCROMA (C14, p15-croma): 13:00–13:10\nCROMA (C15, p15-croma): 12:50–13:00\nSILLON (C15, p15-estrellas-sillon): 17:00–17:05\nCROMA (C16, p15-croma): 13:50–14:00\nCROMA (C17, p15-croma): 13:30–13:40\nESTRELLAS (C17, p15-estrellas-sillon): 16:05–16:10\nCROMA (C18, p15-croma): 12:00–12:10\nSILLON (C18, p15-estrellas-sillon): 16:55–17:00\nCROMA (C19, p15-croma): 13:20–13:30\nCROMA (C01, p15-croma): antes sin inicio–sin fin; después 14:10–14:20.\nCROMA (C02, p15-croma): antes sin inicio–sin fin; después 11:40–11:50.\nESTRELLAS (C02, p15-estrellas-sillon): antes sin inicio–sin fin; después 16:40–16:45.\nSILLON (C02, p15-estrellas-sillon): antes sin inicio–sin fin; después 17:25–17:30.\nCROMA (C03, p15-croma): antes sin inicio–sin fin; después 14:30–14:40.\nCROMA (C04, p15-croma): antes sin inicio–sin fin; después 12:40–12:50.\nCROMA (C05, p15-croma): antes sin inicio–sin fin; después 13:10–13:20.\nESTRELLAS (C05, p15-estrellas-sillon): antes sin inicio–sin fin; después 16:35–16:40.\nSILLON (C05, p15-estrellas-sillon): antes sin inicio–sin fin; después 17:20–17:25.\nCROMA (C06, p15-croma): antes sin inicio–sin fin; después 12:20–12:30.\nESTRELLAS (C06, p15-estrellas-sillon): antes sin inicio–sin fin; después 16:30–16:35.\nCROMA (C07, p15-croma): antes sin inicio–sin fin; después 14:00–14:10.\nESTRELLAS (C07, p15-estrellas-sillon): antes sin inicio–sin fin; después 16:25–16:30.\nSILLON (C07, p15-estrellas-sillon): antes sin inicio–sin fin; después 17:10–17:15.\nCROMA (C08, p15-croma): antes sin inicio–sin fin; después 13:40–13:50.\nCROMA (C09, p15-croma): antes sin inicio–sin fin; después 12:30–12:40.\nESTRELLAS (C09, p15-estrellas-sillon): antes sin inicio–sin fin; después 16:20–16:25.\nSILLON (C09, p15-estrellas-sillon): antes sin inicio–sin fin; después 17:35–17:40.\nCROMA (C10, p15-croma): antes sin inicio–sin fin; después 14:20–14:30.\nESTRELLAS (C10, p15-estrellas-sillon): antes sin inicio–sin fin; después 16:15–16:20.\nSILLON (C10, p15-estrellas-sillon): antes sin inicio–sin fin; después 17:15–17:20.\nCROMA (C11, p15-croma): antes sin inicio–sin fin; después 14:40–14:50.\nSILLON (C11, p15-estrellas-sillon): antes sin inicio–sin fin; después 17:30–17:35.\nCROMA (C12, p15-croma): antes sin inicio–sin fin; después 11:50–12:00.\nCROMA (C13, p15-croma): antes sin inicio–sin fin; después 12:10–12:20.\nESTRELLAS (C13, p15-estrellas-sillon): antes sin inicio–sin fin; después 16:10–16:15.\nSILLON (C13, p15-estrellas-sillon): antes sin inicio–sin fin; después 17:05–17:10.\nCROMA (C14, p15-croma): antes sin inicio–sin fin; después 13:00–13:10.\nCROMA (C15, p15-croma): antes sin inicio–sin fin; después 12:50–13:00.\nSILLON (C15, p15-estrellas-sillon): antes sin inicio–sin fin; después 17:00–17:05.\nCROMA (C16, p15-croma): antes sin inicio–sin fin; después 13:50–14:00.\nCROMA (C17, p15-croma): antes sin inicio–sin fin; después 13:30–13:40.\nESTRELLAS (C17, p15-estrellas-sillon): antes sin inicio–sin fin; después 16:05–16:10.\nCROMA (C18, p15-croma): antes sin inicio–sin fin; después 12:00–12:10.\nSILLON (C18, p15-estrellas-sillon): antes sin inicio–sin fin; después 16:55–17:00.\nCROMA (C19, p15-croma): antes sin inicio–sin fin; después 13:20–13:30.\nQuedarán registradas con tu usuario en el historial. Los conflictos críticos heredados mantienen su indicador. ¿Aceptar conscientemente?",
+  "actorRole": "production",
+  "acceptedStageId": 2,
+  "configurationRevisionId": 1,
+  "decisions": [
+    {
+      "severity": "REQUIRED",
+      "rule_code": "RESOURCE_REQUIRED_PRESENCE_VIOLATION",
+      "accepted_by": "dc146598-601d-4782-aed5-b4ca80b9627e",
+      "snapshot_fingerprint": "d77077d5115b22c91117ff1f56b8502deaff4ca51d056f10017b520270387c0f"
+    }
+  ],
+  "tasks": 266
+}

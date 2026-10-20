@@ -66,7 +66,8 @@ export async function registerRoutes(
     catch (error) {
       const configurationFailure=planningConfigurationFailure(error);
       if(configurationFailure)return res.status(configurationFailure.status).json(configurationFailure.body);
-      if (error instanceof AssistedPlanningError) return res.status(error.status).json({ code: error.code, message: error.code });
+      if (error instanceof AssistedPlanningError) return res.status(error.status).json({ code: error.code, message: error.code,
+        ...(error.validationDiagnostics?{validationDiagnostics:error.validationDiagnostics}:{}) });
       if (error instanceof AssistedProposalError) return res.status(error.status).json({ code: error.code, message: error.code });
       if (error instanceof AssistedConfigRefreshError) return res.status(error.status).json({ code: error.code, message: error.code });
       throw error;
@@ -3287,8 +3288,20 @@ function mapDeleteError(err: any, fallback: string) {
     z.object({ kind:z.literal("MOVE_BLOCK"),blockId:z.string().min(1),deltaMinutes:z.number().int() }).strict(),
   ]);
   app.post("/api/plans/:id/assisted/draft/blocks", async (req,res)=>assistedAction(res,()=>{const body=assistedExpected.extend({operation:planningBlockOperation}).parse(req.body);return assistedPlanning.editPlanningBlocks(assistedPlanId(req.params.id),body.expectedDraftFingerprint,body.expectedBaseStageId,body.operation);}));
-  app.post("/api/plans/:id/assisted/validate", async (req, res) => assistedAction(res, () => { const body = assistedExpected.parse(req.body); return assistedPlanning.validateDraft(assistedPlanId(req.params.id), body.expectedDraftFingerprint, body.expectedBaseStageId); }));
-  app.post("/api/plans/:id/assisted/accept-stage", async (req, res) => assistedAction(res, () => { const body = assistedExpected.extend({confirmation:z.enum(["NONE","REQUIRED_DEVIATIONS","HARD_EXCEPTIONS"]).default("NONE")}).parse(req.body); return assistedPlanning.accept(assistedPlanId(req.params.id), (req as any).user.id, body.expectedDraftFingerprint, body.expectedBaseStageId,body.confirmation); }));
+  app.post("/api/plans/:id/assisted/validate", async (req, res) => {
+    try{return await assistedAction(res, () => { const body = assistedExpected.parse(req.body); return assistedPlanning.validateDraft(assistedPlanId(req.params.id), body.expectedDraftFingerprint, body.expectedBaseStageId); });}
+    catch(error){
+      if(error instanceof z.ZodError)throw error;
+      console.error('Assisted draft validation failed',error);
+      return res.status(500).json({code:'ASSISTED_VALIDATION_FAILED',message:'ASSISTED_VALIDATION_FAILED'});
+    }
+  });
+  app.post("/api/plans/:id/assisted/accept-stage", async (req, res) => {
+    const parsed=assistedExpected.extend({confirmation:z.enum(["NONE","REQUIRED_DEVIATIONS","HARD_EXCEPTIONS"]).default("NONE")}).safeParse(req.body);
+    if(!parsed.success)return res.status(400).json({code:'INVALID_ACCEPT_REQUEST',message:'La solicitud de aceptación no es válida.'});
+    const body=parsed.data;
+    return assistedAction(res,()=>assistedPlanning.accept(assistedPlanId(req.params.id),(req as any).user.id,body.expectedDraftFingerprint,body.expectedBaseStageId,body.confirmation));
+  });
   app.post("/api/plans/:id/assisted/restart", async (req, res) => assistedAction(res, () => { const body = assistedExpected.extend({ confirmation: z.literal("RESTART_BOOTSTRAP") }).parse(req.body); return assistedPlanning.restart(assistedPlanId(req.params.id), body.expectedDraftFingerprint, body.expectedBaseStageId); }));
   app.post("/api/plans/:id/assisted/rollback", async (req, res) => assistedAction(res, () => { const body = z.object({ targetStageId: z.number().int().positive() }).strict().parse(req.body); return assistedPlanning.rollback(assistedPlanId(req.params.id), body.targetStageId); }));
   app.post("/api/plans/:id/assisted/redo", async (req, res) => assistedAction(res, () => assistedPlanning.redo(assistedPlanId(req.params.id))));

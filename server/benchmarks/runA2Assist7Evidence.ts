@@ -142,7 +142,7 @@ export async function runA2Assist7Evidence() {
     return rebuilt;
   };
   const manualHarness = createManualDeltaValidationHarness(validationProblem, identity);
-  const planning = new AssistedPlanningService(storage, rpc as any, { buildInput, buildConfigRevision: ({ planId: id }) => ({ contractVersion: 1, planId: id, components: [], configurationFingerprint: configFingerprint() }), validateManual: manualHarness as any });
+  const planning = new AssistedPlanningService(storage, rpc as any, { lookupRole: async () => 'admin', buildInput, buildConfigRevision: ({ planId: id }) => ({ contractVersion: 1, planId: id, components: [], configurationFingerprint: configFingerprint() }), validateManual: manualHarness as any });
   const runAccess: AssistedProposalRunAccess = {
     create: async values => { const id = nextRunId++; runs.set(id, { id, ...values }); return { data: { id }, error: null }; },
     find: async (_plan, id) => ({ data: runs.get(id), error: null }), fail: async () => ({ error: null }),

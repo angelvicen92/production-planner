@@ -1,0 +1,66 @@
+{
+  "base": "0e7442e4b5ccf4fde6756841b7908b27e87fe1db",
+  "remoteReadOnly": true,
+  "remoteValidationAttempted": false,
+  "source": {
+    "planId": 27003,
+    "sessionId": 5,
+    "historicalOrdinal": 24,
+    "stageId": 104,
+    "configRevisionId": 7,
+    "snapshotFingerprint": "fce80b7b43f349d725a0cda58dd2332ee127f61027da7afb5fb4ded2f757a068"
+  },
+  "authorityProof": {
+    "stored": "f4cf7a83e9c4a23b4fc1995a2d34fa1d8034244b4ec9eadb5e03b8b77964d72a",
+    "actual": "f4cf7a83e9c4a23b4fc1995a2d34fa1d8034244b4ec9eadb5e03b8b77964d72a",
+    "match": true
+  },
+  "liveSessionAtRead": {
+    "base": 47,
+    "active": 47,
+    "draftValidationId": null
+  },
+  "delta": {
+    "taskId": 210221,
+    "before": [
+      "12:00",
+      "12:05"
+    ],
+    "after": [
+      "11:30",
+      "11:35"
+    ],
+    "groupTaskIds": [
+      210150,
+      210221,
+      210233,
+      210259
+    ],
+    "maximumGroupSize": 3
+  },
+  "baseline": {
+    "hardValid": true,
+    "reasonCodes": [],
+    "unstructuredReasonCodes": []
+  },
+  "draft": {
+    "hardValid": false,
+    "reasonCodes": [
+      "TRANSPORT_GROUPING_VIOLATION"
+    ],
+    "unstructuredReasonCodes": [
+      "TRANSPORT_GROUPING_VIOLATION"
+    ],
+    "structuredViolations": [],
+    "fingerprint": "1e03f785d7440dbe6f3cf44d85ef71847dca9c77dd2f954a495e9650a2abfd9b"
+  },
+  "occupations": {
+    "tasks": 266,
+    "productive": 247,
+    "participantMeals": 19,
+    "operationalMeals": 8,
+    "setup": 1,
+    "round": 17
+  },
+  "conclusion": "Exact fourth IN detected, transport identity absent; service rejects before recording validation. Remote HTTP status unobserved."
+}

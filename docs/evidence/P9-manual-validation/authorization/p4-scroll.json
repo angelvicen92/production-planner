@@ -1,0 +1,32 @@
+{
+  "status": "PASS",
+  "scope": "P4 browser harness only; My Day product and Layout unchanged",
+  "ciFailures": [
+    "https://github.com/angelvicen92/production-planner/actions/runs/39381156861/job/118490332828",
+    "https://github.com/angelvicen92/production-planner/actions/runs/39381156861/job/118492003318"
+  ],
+  "diagnostic": {
+    "viewportAfterManualReset": 0,
+    "mainScrollTopStill": 3103,
+    "refreshButtonViewportY": -2769.9921875,
+    "viewportHeight": 1180,
+    "documentHeight": 1249,
+    "observedCiViewportScroll": 69
+  },
+  "cause": "Resetting window alone left main scrolled and the refresh button offscreen; Playwright correctly scrolled to click it.",
+  "correction": "Reset both containers before clicking, wait for response/render, assert viewport=0 and main=0. No tolerance or assertion removed.",
+  "runs": [
+    {
+      "checks": 8,
+      "errors": [],
+      "mode": "INTERCEPTED_HTTP_UI",
+      "remoteWrites": 0
+    },
+    {
+      "checks": 8,
+      "errors": [],
+      "mode": "INTERCEPTED_HTTP_UI",
+      "remoteWrites": 0
+    }
+  ]
+}

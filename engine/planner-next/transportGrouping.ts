@@ -1,4 +1,4 @@
-import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledTask, Task, TransportGroupingPolicy } from "./contracts";
+import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledTask, Task, TransportGroupingPolicy, ValidationViolationDetail } from "./contracts";
 import { canPlaceTask } from "./placement";
 import { createHash } from "node:crypto";
 
@@ -558,6 +558,7 @@ export function transportGroupStarts(
 export interface TransportValidation {
   violationCount: number;
   groupsByDirection: Readonly<Record<TransportDirection, readonly ScheduledTask[][]>>;
+  violations: ValidationViolationDetail[];
 }
 
 function participantBoundaryViolation(
@@ -584,16 +585,29 @@ export function validateTransportGrouping(
   participantMeals: readonly ScheduledParticipantMeal[] = [],
 ): TransportValidation {
   const groupsByDirection = { arrival: [] as ScheduledTask[][], departure: [] as ScheduledTask[][] };
+  const violations:ValidationViolationDetail[]=[];
   let violationCount = 0;
-  if (!problem.transportPolicy) return { violationCount, groupsByDirection };
+  if (!problem.transportPolicy) return { violationCount, groupsByDirection, violations };
   for (const direction of ["arrival", "departure"] as const) {
+    const detail=(kind:string,taskIds:readonly string[],dimensions:Record<string,unknown>)=>violations.push({
+      ruleCode:'TRANSPORT_GROUPING_VIOLATION',severity:'HARD',affectedTaskIds:[...new Set(taskIds)].sort(),
+      affectedResourceIds:[],affectedSpaceIds:[],dimensions:{direction,kind,...dimensions},
+    });
     const policy = problem.transportPolicy[direction];
     const expected = [...policy.taskIds].sort();
-    const actual = scheduled.filter((task) => expected.includes(task.id));
+    const actual = scheduled.filter((task) => expected.includes(task.id)).sort((a,b)=>a.id.localeCompare(b.id)||a.start-b.start||a.end-b.end);
     if (actual.length !== expected.length
-      || expected.some((id) => actual.filter((task) => task.id === id).length !== 1)) violationCount += 1;
+      || expected.some((id) => actual.filter((task) => task.id === id).length !== 1)) {
+      violationCount += 1;
+      const defective=expected.filter(id=>actual.filter(t=>t.id===id).length!==1);
+      detail('TASK_COVERAGE',defective,{tasks:defective.map(taskId=>({taskId,expectedCount:1,placements:actual.filter(t=>t.id===taskId).map(({start,end})=>({start,end}))}))});
+    }
     if (actual.some((task) => !task.participantId)
-      || new Set(actual.map((task) => task.participantId)).size !== actual.length) violationCount += 1;
+      || new Set(actual.map((task) => task.participantId)).size !== actual.length) {
+      violationCount += 1;
+      const defective=actual.filter(t=>!t.participantId||actual.filter(other=>other.participantId===t.participantId).length>1);
+      detail('PARTICIPANT_IDENTITY',defective.map(t=>t.id),{tasks:defective.map(({id,participantId,start,end})=>({taskId:id,participantId:participantId??null,start,end}))});
+    }
     const byInterval = new Map<string, ScheduledTask[]>();
     for (const task of actual) {
       const key = `${task.start}:${task.end}`;
@@ -603,14 +617,32 @@ export function validateTransportGrouping(
       .map((group) => group.sort((left, right) => left.id.localeCompare(right.id)))
       .sort((left, right) => left[0]!.start - right[0]!.start || left[0]!.id.localeCompare(right[0]!.id));
     groupsByDirection[direction].push(...groups);
-    if (groups.some((group) => group.length < policy.minimumGroupSize || group.length > policy.maximumGroupSize
-      || group.some((task) => task.start !== group[0]!.start || task.end !== group[0]!.end))) violationCount += 1;
+    const invalidGroups=groups.filter((group) => group.length < policy.minimumGroupSize || group.length > policy.maximumGroupSize
+      || group.some((task) => task.start !== group[0]!.start || task.end !== group[0]!.end));
+    if (invalidGroups.length) violationCount += 1;
+    for(const group of invalidGroups)detail('GROUP_SIZE',group.map(t=>t.id),{start:group[0]!.start,end:group[0]!.end,
+      actualGroupSize:group.length,minimumGroupSize:policy.minimumGroupSize,maximumGroupSize:policy.maximumGroupSize});
     for (let index = 1; index < groups.length; index += 1) {
-      if (groups[index]![0]!.start - groups[index - 1]![0]!.start < policy.minGapMinutes) violationCount += 1;
+      const previous=groups[index-1]!,current=groups[index]!;
+      if (current[0]!.start - previous[0]!.start < policy.minGapMinutes) {
+        violationCount += 1;
+        detail('GROUP_GAP',[...previous,...current].map(t=>t.id),{previousStart:previous[0]!.start,previousEnd:previous[0]!.end,
+          start:current[0]!.start,end:current[0]!.end,previousTaskIds:previous.map(t=>t.id),currentTaskIds:current.map(t=>t.id),
+          actualGapMinutes:current[0]!.start-previous[0]!.start,minGapMinutes:policy.minGapMinutes});
+      }
     }
-    if (actual.some((task) => participantBoundaryViolation(direction, task, scheduled, participantMeals))) violationCount += 1;
+    const invalidBoundaries=actual.filter(task=>participantBoundaryViolation(direction,task,scheduled,participantMeals));
+    if (invalidBoundaries.length) violationCount += 1;
+    for(const task of invalidBoundaries){
+      const obligations=[...scheduled.filter(other=>other.participantId===task.participantId&&other.id!==task.id).map(other=>({taskId:other.id,start:other.start,end:other.end})),
+        ...participantMeals.filter(meal=>meal.participantId===task.participantId).map(meal=>({taskId:meal.sourceTaskId,start:meal.start,end:meal.end}))]
+        .filter(other=>direction==='arrival'?other.start<task.end:other.end>task.start)
+        .sort((a,b)=>a.taskId.localeCompare(b.taskId)||a.start-b.start||a.end-b.end);
+      detail('PARTICIPANT_BOUNDARY',[task.id,...obligations.map(other=>other.taskId)],{transportTaskId:task.id,
+        participantId:task.participantId??null,start:task.start,end:task.end,obligations});
+    }
   }
-  return { violationCount, groupsByDirection };
+  return { violationCount, groupsByDirection, violations };
 }
 
 export function synchronizedTransportTasks(
