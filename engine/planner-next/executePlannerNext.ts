@@ -36,7 +36,7 @@ export type PlannerNextExecution =
       result: ExactItinerantPlanResult;
     };
 
-export function executePlannerNext(problem: PlannerNextProblem, options:{checkpoint?:()=>void;causalDiagnostic?:boolean;acceptsValidation?:(validation:import("./contracts").ValidationSummary)=>boolean;fixedPlacements?:readonly ScheduledTask[];fixedPlacementsAsContext?:boolean;fixedSetupPreparations?:readonly ScheduledSetupPreparation[];fixedRoundPreparations?:readonly ScheduledRoundPreparation[];priorFutureStructuralWitnesses?:readonly import("./anonymousPipelineWitness").FutureStructuralWitness[];priorFutureStructuralWitness?:Extract<import("./anonymousPipelineWitness").FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>}={}): PlannerNextExecution {
+export function executePlannerNext(problem: PlannerNextProblem, options:{nominalEntryTaskIds?:readonly string[];checkpoint?:()=>void;causalDiagnostic?:boolean;acceptsValidation?:(validation:import("./contracts").ValidationSummary)=>boolean;fixedPlacements?:readonly ScheduledTask[];fixedPlacementsAsContext?:boolean;fixedSetupPreparations?:readonly ScheduledSetupPreparation[];fixedRoundPreparations?:readonly ScheduledRoundPreparation[];priorFutureStructuralWitnesses?:readonly import("./anonymousPipelineWitness").FutureStructuralWitness[];priorFutureStructuralWitness?:Extract<import("./anonymousPipelineWitness").FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>}={}): PlannerNextExecution {
   const policyResolution = resolvePlannerSearchPolicy(problem);
 
   if (!policyResolution.compatible) {
@@ -54,6 +54,6 @@ export function executePlannerNext(problem: PlannerNextProblem, options:{checkpo
   return {
     kind: "EXACT_CONSTRUCTIVE",
     policyResolution,
-      result: withParticipantMeals(problem, constructExactItinerantPlan(problem,options.causalDiagnostic,options.acceptsValidation,options.fixedPlacements,options.fixedPlacementsAsContext,options.fixedSetupPreparations,options.fixedRoundPreparations,options.priorFutureStructuralWitnesses??options.priorFutureStructuralWitness,options.checkpoint)),
+      result: withParticipantMeals(problem, constructExactItinerantPlan(problem,options.causalDiagnostic,options.acceptsValidation,options.fixedPlacements,options.fixedPlacementsAsContext,options.fixedSetupPreparations,options.fixedRoundPreparations,options.priorFutureStructuralWitnesses??options.priorFutureStructuralWitness,options.checkpoint,options.nominalEntryTaskIds)),
   };
 }

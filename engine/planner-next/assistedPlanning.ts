@@ -203,7 +203,7 @@ export interface AssistedPlanningEvidence {
   readonly firstSharedCapacityPass?: unknown;
   readonly sharedCapacityFingerprint?: string | null;
   readonly standaloneDiagnostic?: Pick<ExactItinerantPlanEvidence,
-    "transportPartitionFailures" | "standaloneBranchesByDepth" | "standaloneSelectionsByTaskId" | "standaloneCandidateStartsByTaskId"
+    "earlyEntryMaterialization" | "transportPartitionFailures" | "standaloneBranchesByDepth" | "standaloneSelectionsByTaskId" | "standaloneCandidateStartsByTaskId"
     | "standaloneMaximumDepth" | "standaloneCompleteLeafCount" | "terminalTransportMaterializationAttempts"
     | "macroCandidateCausalTraces" | "macroCandidateCausalReconciliation"
     | "roundSynchronizationSharedOperationalMealPolicyIds" | "roundSynchronizationBreakVariantsConsidered"
@@ -637,6 +637,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     return exactAcceptedFixedBaseline&&(summary.unstructuredReasonCodes?.length??0)===0;
   };
   const execution = executePlannerNext(searchProblem, { causalDiagnostic: true, acceptsValidation,checkpoint,
+    nominalEntryTaskIds:input.scope.resolvedTaskIds,
     fixedPlacements:input.protectedPlacements, fixedPlacementsAsContext:true,
     fixedSetupPreparations:input.protectedSetupPreparations, fixedRoundPreparations:input.protectedRoundPreparations,
     priorFutureStructuralWitnesses:input.priorFutureStructuralWitnesses??(input.priorFutureStructuralWitness?[input.priorFutureStructuralWitness]:[]) });
@@ -690,7 +691,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     : !searchHardValid ? "ASSISTED_HARD_VALIDATION_FAILED" : "ASSISTED_SCOPE_COMPLETE");
   const evidenceRecord = result && "evidence" in result ? result.evidence as unknown as Record<string, unknown> : {};
   const metricsRecord = result && "metrics" in result ? result.metrics as unknown as Record<string, unknown> : {};
-  const standaloneKeys = ["transportPartitionFailures","bundleContinuationDeferrals","bundleContinuationResumptions","bundlePendingContinuations",
+  const standaloneKeys = ["earlyEntryMaterialization","transportPartitionFailures","bundleContinuationDeferrals","bundleContinuationResumptions","bundlePendingContinuations",
     "standaloneBranchesByDepth","standaloneSelectionsByTaskId","standaloneCandidateStartsByTaskId",
     "standaloneMaximumDepth","standaloneCompleteLeafCount","terminalTransportMaterializationAttempts",
     "macroCandidateCausalTraces","macroCandidateCausalReconciliation",

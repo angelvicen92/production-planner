@@ -1,0 +1,6 @@
+{
+  "extends": "../../../tsconfig.json",
+  "include": ["./*.ts", "../../../engine/planner-next/earlyEntryMaterialization.spec.ts"],
+  "exclude": [],
+  "compilerOptions": { "incremental": false }
+}
