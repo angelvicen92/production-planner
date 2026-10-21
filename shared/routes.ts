@@ -18,6 +18,75 @@ import {
   spaces,
 } from "./schema";
 
+export const updateTaskTemplateSchema = z
+        .object({
+          name: z.string().min(1).optional(),
+          defaultDuration: z.number().int().positive().optional(),
+          defaultCameras: z.number().int().min(0).optional(),
+          abbrev: z.string().max(32).nullable().optional(),
+          defaultComment1Color: z.string().nullable().optional(),
+          defaultComment2Color: z.string().nullable().optional(),
+          // PostgreSQL integer minutes; null inherits, zero is explicit.
+          participantMarginBeforeMinutes: z.number().int().min(0).max(2147483647).nullable().optional(),
+          participantMarginAfterMinutes: z.number().int().min(0).max(2147483647).nullable().optional(),
+
+          requiresAuxiliar: z.boolean().optional(),
+          requiresCoach: z.boolean().optional(),
+          requiresPresenter: z.boolean().optional(),
+          exclusiveAuxiliar: z.boolean().optional(),
+          setupId: z.number().int().positive().nullable().optional(),
+          rulesJson: z.any().optional(),
+          resourceRequirements: z.any().nullable().optional(),
+          // ✅ NUEVO: color hex (o null)
+          uiColor: z
+            .string()
+            .regex(/^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/)
+            .nullable()
+            .optional(),
+          uiColorSecondary: z
+            .string()
+            .regex(/^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/)
+            .nullable()
+            .optional(),
+
+          // ✅ Dependencias (multi)
+          dependsOnTemplateIds: z.array(z.number().int().positive()).optional(),
+
+          // legacy (optional)
+          hasDependency: z.boolean().optional(),
+          dependsOnTemplateId: z
+            .number()
+            .int()
+            .positive()
+            .nullable()
+            .optional(),
+
+      // ✅ NUEVO: equipo itinerante requerido
+      itinerantTeamRequirement: z.enum(["none", "any", "specific"]).optional(),
+      itinerantTeamId: z.number().int().positive().nullable().optional(),
+
+      zoneId: z.number().int().positive().nullable().optional(),
+      spaceId: z.number().int().positive().nullable().optional(),
+      autoCreateOnContestantCreate: z.boolean().optional(),
+      })
+      .strict();
+
+const templateIdSchema = z.number().int().positive().max(2147483647);
+const uniqueTemplateIds = z.array(templateIdSchema).refine(ids => new Set(ids).size === ids.length, "IDs de plantilla duplicados");
+export const atomicTaskTemplateSchema = z.object({
+  patch: updateTaskTemplateSchema,
+  expectedTemplates: z.array(z.object({ id: templateIdSchema, revision: z.number().int().min(0).max(2147483647) }).strict()).min(1),
+  addedInverseIds: uniqueTemplateIds,
+  removedInverseIds: uniqueTemplateIds,
+}).strict().superRefine((value, context) => {
+  const ids = value.expectedTemplates.map(row => row.id);
+  if (new Set(ids).size !== ids.length || value.addedInverseIds.some(id => value.removedInverseIds.includes(id)))
+    context.addIssue({code: z.ZodIssueCode.custom, message: "IDs de plantilla duplicados"});
+  const deps = value.patch.dependsOnTemplateIds;
+  if (deps && new Set(deps).size !== deps.length) context.addIssue({code: z.ZodIssueCode.custom, message: "Dependencias duplicadas"});
+});
+export type AtomicTaskTemplateInput = z.infer<typeof atomicTaskTemplateSchema>;
+
 const canonicalResourceAvailabilityTime = z.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/);
 
 function validateWorkdayPair(
@@ -1557,62 +1626,22 @@ export const api = {
     update: {
       method: "PATCH" as const,
       path: "/api/ta/:id",
-      input: z
-        .object({
-          name: z.string().min(1).optional(),
-          defaultDuration: z.number().int().positive().optional(),
-          defaultCameras: z.number().int().min(0).optional(),
-          abbrev: z.string().max(32).nullable().optional(),
-          defaultComment1Color: z.string().nullable().optional(),
-          defaultComment2Color: z.string().nullable().optional(),
-          // PostgreSQL integer minutes; null inherits, zero is explicit.
-          participantMarginBeforeMinutes: z.number().int().min(0).max(2147483647).nullable().optional(),
-          participantMarginAfterMinutes: z.number().int().min(0).max(2147483647).nullable().optional(),
-
-          requiresAuxiliar: z.boolean().optional(),
-          requiresCoach: z.boolean().optional(),
-          requiresPresenter: z.boolean().optional(),
-          exclusiveAuxiliar: z.boolean().optional(),
-          setupId: z.number().int().positive().nullable().optional(),
-          rulesJson: z.any().optional(),
-          resourceRequirements: z.any().nullable().optional(),
-          // ✅ NUEVO: color hex (o null)
-          uiColor: z
-            .string()
-            .regex(/^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/)
-            .nullable()
-            .optional(),
-          uiColorSecondary: z
-            .string()
-            .regex(/^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/)
-            .nullable()
-            .optional(),
-
-          // ✅ Dependencias (multi)
-          dependsOnTemplateIds: z.array(z.number().int().positive()).optional(),
-
-          // legacy (optional)
-          hasDependency: z.boolean().optional(),
-          dependsOnTemplateId: z
-            .number()
-            .int()
-            .positive()
-            .nullable()
-            .optional(),
-
-      // ✅ NUEVO: equipo itinerante requerido
-      itinerantTeamRequirement: z.enum(["none", "any", "specific"]).optional(),
-      itinerantTeamId: z.number().int().positive().nullable().optional(),
-
-      zoneId: z.number().int().positive().nullable().optional(),
-      spaceId: z.number().int().positive().nullable().optional(),
-      autoCreateOnContestantCreate: z.boolean().optional(),
-      })
-      .strict(),
+      input: updateTaskTemplateSchema,
       responses: {
         200: z.custom<typeof taskTemplates.$inferSelect>(),
         400: errorSchemas.validation,
         404: errorSchemas.notFound,
+      },
+    },
+
+    updateWithInverse: {
+      method: "POST" as const,
+      path: "/api/task-templates/:id/save-with-inverse",
+      input: atomicTaskTemplateSchema,
+      responses: {
+        200: z.custom<typeof taskTemplates.$inferSelect>(),
+        400: errorSchemas.validation,
+        409: errorSchemas.validation,
       },
     },
 

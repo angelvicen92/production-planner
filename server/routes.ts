@@ -1,3 +1,4 @@
+import { registerAtomicTaskTemplateRoutes } from "./atomicTaskTemplate";
 import { registerAdminInviteRoutes } from "./adminInvites";
 import { userAccessStatus } from "../shared/adminInvites";
 import { transportBoundsSchema } from "../shared/transportPolicy";
@@ -3534,6 +3535,8 @@ function mapDeleteError(err: any, fallback: string) {
       return res.status(400).json({ message: err?.message || "Cannot delete contestant" });
     }
   });
+
+  registerAtomicTaskTemplateRoutes(app, (name, args) => supabaseAdmin.rpc(name, args));
 
   // Task Templates
   app.get(api.taskTemplates.list.path, async (req, res) => {

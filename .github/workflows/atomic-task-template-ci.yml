@@ -1,0 +1,57 @@
+name: Atomic task template save
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - client/src/hooks/use-tasks.ts
+      - client/src/pages/settings.tsx
+      - server/atomicTaskTemplate*
+      - server/taskTemplateMapping.ts
+      - server/storage.ts
+      - server/routes.ts
+      - server/apiAuthorization*
+      - shared/routes.ts
+      - shared/schema.ts
+      - supabase/migrations/**
+      - script/demo/smokeAtomicTaskTemplate.ts
+      - script/demo/smokeA2Integration.ts
+      - script/demo/tsconfig.atomic-template.json
+      - package*.json
+      - .github/workflows/atomic-task-template-ci.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: atomic-task-template-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  atomic-task-template:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: npm run check:migrations
+      - run: npm run check
+      - run: npm run build
+      - run: npx --no-install tsc -p script/demo/tsconfig.atomic-template.json
+      - run: node --import tsx --test server/atomicTaskTemplate.spec.ts server/taskTemplateContract.spec.ts server/apiAuthorization.spec.ts server/taskTemplateSnapshot.spec.ts engine/buildInput.taskTemplateSnapshot.spec.ts
+      - name: Real PostgreSQL rollback, concurrency, Auth, HTTP and browser
+        run: npm run demo:a2:smoke -- work/atomic-template --historical-topology --atomic-template
+      - name: Sanitized Evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: atomic-task-template
+          path: |
+            work/atomic-template/integration.json
+            work/atomic-template/atomic-template.json
+            work/atomic-template/atomic-template-conflict.png

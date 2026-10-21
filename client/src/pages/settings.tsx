@@ -2476,6 +2476,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
 
   const [editData, setEditData] = useState<any | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [editConflict, setEditConflict] = useState(false);
 
   const spacesByZone = new Map<number, any[]>();
   (spaces as any[]).forEach((s: any) => {
@@ -2617,9 +2618,12 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
   const getColorPickerValue = (value: unknown): string =>
     (normalizeColorToHex(value) ?? "#94A3B8").slice(0, 7);
 
-  const startEdit = (tpl: any) => {
+  const startEdit = (tpl: any, catalog = templates) => {
     setEditingId(Number(tpl.id));
+    setEditConflict(false);
     const draft = {
+      // Capture versions at editor opening, never from a later cache refresh.
+      expectedTemplates: (catalog ?? []).map((row: any) => ({ id: row.id, revision: row.revision })),
       id: Number(tpl.id),
       name: String(tpl.name ?? ""),
       abbrev: String(tpl.abbrev ?? ""),
@@ -2660,10 +2664,10 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
       ),
       hasDependency: Boolean(tpl.hasDependency ?? tpl.has_dependency ?? false),
       dependsOnTemplateIds: getTemplateDependencyIds(tpl),
-      inverseDepsOriginal: (dependentsByTemplateId.get(Number(tpl.id)) ?? [])
+      inverseDepsOriginal: (catalog ?? []).filter((row: any) => getTemplateDependencyIds(row).includes(Number(tpl.id)))
         .map((dependent: any) => Number(dependent?.id))
         .filter((id: number) => Number.isFinite(id) && id > 0 && id !== Number(tpl.id)),
-      inverseDepsDraft: (dependentsByTemplateId.get(Number(tpl.id)) ?? [])
+      inverseDepsDraft: (catalog ?? []).filter((row: any) => getTemplateDependencyIds(row).includes(Number(tpl.id)))
         .map((dependent: any) => Number(dependent?.id))
         .filter((id: number) => Number.isFinite(id) && id > 0 && id !== Number(tpl.id)),
       itinerantTeamRequirement:
@@ -2916,6 +2920,14 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
 
       await updateTask.mutateAsync({
         id: editingId,
+        ...(canEditDependencies && addedInverse.length + removedInverse.length > 0 ? {
+          inverse: {
+            addedInverseIds: addedInverse,
+            removedInverseIds: removedInverse,
+            expectedTemplates: editData.expectedTemplates.filter((row: any) =>
+              row.id === editingId || addedInverse.includes(row.id) || removedInverse.includes(row.id)),
+          },
+        } : {}),
         patch: {
           name: editData.name === editData.initial.name ? editData.name : String(editData.name ?? "").trim(),
           ...(editData.abbrev !== editData.initial.abbrev ? { abbrev: String(editData.abbrev ?? "").trim() || null } : {}),
@@ -2951,53 +2963,11 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
         },
       });
 
-      if (canEditDependencies) {
-        for (const dependentId of [...addedInverse, ...removedInverse]) {
-          const dependentTemplate = (templates ?? []).find(
-            (rawTemplate: any) => Number(rawTemplate?.id) === Number(dependentId),
-          );
-          if (!dependentTemplate) continue;
-
-          const currentDeps = new Set<number>(
-            getTemplateDependencyIds(dependentTemplate).filter(
-              (depId) => depId > 0 && depId !== Number(dependentId),
-            ),
-          );
-
-          if (addedInverse.includes(dependentId)) currentDeps.add(Number(editingId));
-          if (removedInverse.includes(dependentId)) currentDeps.delete(Number(editingId));
-
-          const nextDeps = Array.from(currentDeps).filter(
-            (depId) => depId > 0 && depId !== Number(dependentId),
-          );
-
-          try {
-            await apiRequest(
-              "PATCH",
-              buildUrl(api.taskTemplates.update.path, { id: Number(dependentId) }),
-              {
-                hasDependency: nextDeps.length > 0,
-                dependsOnTemplateIds: nextDeps,
-                dependsOnTemplateId: nextDeps[0] ?? null,
-              },
-            );
-          } catch (error: any) {
-            const dependentName =
-              String(dependentTemplate?.name ?? "").trim() ||
-              `Template #${dependentId}`;
-            toast({
-              title: "No se pudieron guardar dependencias inversas",
-              description:
-                `Falló al actualizar ${dependentName}: ${error?.message || "error desconocido"}`,
-              variant: "destructive",
-            });
-            return;
-          }
-        }
-      }
-
       await qc.invalidateQueries({ queryKey: [api.taskTemplates.list.path] });
       cancelEdit();
+    } catch (error: any) {
+      if (error?.status === 409) setEditConflict(true);
+      // The mutation reports the error; retain the editor for review/reload.
     } finally {
       setIsSavingEdit(false);
     }
@@ -3231,9 +3201,15 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                   <div className="flex gap-1.5 shrink-0">
                     {isEditing ? (
                       <>
-                        <Button size="sm" onClick={saveEdit} disabled={isSavingEdit || updateTask.isPending}>
+                        <Button size="sm" onClick={saveEdit} disabled={editConflict || isSavingEdit || updateTask.isPending}>
                           Guardar
                         </Button>
+                        {editConflict && <Button size="sm" variant="outline" onClick={async () => {
+                          const result = await qc.fetchQuery({ queryKey: [api.taskTemplates.list.path], queryFn: () => apiRequest<any[]>("GET", api.taskTemplates.list.path), staleTime: 0 });
+                          const fresh = result.find(row => Number(row.id) === editingId);
+                          if (fresh) startEdit(fresh, result);
+                          else cancelEdit();
+                        }}>Recargar</Button>}
                         <Button size="sm" variant="ghost" onClick={cancelEdit} disabled={isSavingEdit || updateTask.isPending}>
                           Cancelar
                         </Button>
