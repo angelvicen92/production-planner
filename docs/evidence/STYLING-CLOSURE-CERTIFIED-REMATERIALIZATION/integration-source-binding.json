@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "sourceBase": "78fc59b2e980ec3d86a27eaef95e5c77d3035f93",
+  "integrationStartedAt": "2026-10-21T08:02:20.729Z",
+  "allRuntimeFilesUnchangedSinceBeforeIntegration": true,
+  "runtimeHashes": {
+    "engine/planner-next/earlyClosureMaterialization.ts": "d4d12ea18dd8d4cddc1a8fa08738d29569620fcc72ab972adaf60f792e09e87f",
+    "engine/planner-next/exactItinerantPlan.ts": "7cdce2bea2088ba21851a74443f8c569431a09e5d803672cffccd467ba2844c2",
+    "engine/planner-next/assistedPlanning.ts": "bbee7d709f74898337f25510dd89f0b5a3488ee6dcc5ffb845f27f16109b899b",
+    "engine/planner-next/executePlannerNext.ts": "05325b49fc4afd5deef9615bf2552b38529f9c1211522f281c1afc9f531de9c0",
+    "engine/planner-next/futureCollectiveParticipantClosure.ts": "9ec90ccb438373f4d7f1c52e506304544d284be96544e5a5c948976290e5029f",
+    "engine/planner-next/transportGrouping.ts": "0249ade710630278361ed9356fbcb78b16f7a2167d1476ebb2f96c09a9764308"
+  }
+}

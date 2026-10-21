@@ -48,6 +48,8 @@ export interface DetailedTransportMaterialization {
 
 export interface TransportMaterializationOptions {
   consumeFallbackBranch?: () => boolean;
+  /** Opt-in cooperative accounting for nominal rematerialization. */
+  consumeIntervalBranch?: () => boolean;
   onEvidence?: (evidence: TransportMaterializationEvidence) => void;
   /** Internal recursion guard. Existing violations remain for independent
    * validation/AcceptedException; this never authorizes a new violation. */
@@ -420,19 +422,20 @@ export function exactIntervalCapacityAssignment(domains:readonly (readonly numbe
 }
 
 function solveIntervalDirection(problem:PlannerNextProblem,direction:TransportDirection,tasks:readonly Task[],fixed:readonly ScheduledTask[],
-  policy:Readonly<TransportGroupingPolicy>,boundary:(task:Task)=>number): {supported:boolean;scheduled:ScheduledTask[]|null;groups:Task[][];starts:number[];candidateStarts:number;states:number;checks:number;traversals:number} {
+  policy:Readonly<TransportGroupingPolicy>,boundary:(task:Task)=>number,consume?:()=>boolean): {supported:boolean;scheduled:ScheduledTask[]|null;groups:Task[][];starts:number[];candidateStarts:number;states:number;checks:number;traversals:number;budgetExhausted:boolean} {
   const domains=tasks.map(task=>new Set(transportGroupStarts(problem,[task],fixed,[],policy).filter(start=>direction==="arrival"?start+task.duration<=boundary(task):start>=boundary(task))));
   const supported=tasks.every(task=>task.duration===tasks[0]?.duration)&&domains.every(domain=>{const values=[...domain].sort((a,b)=>a-b);return values.every((value,index)=>index===0||value-values[index-1]===5);});
   const candidates=[...new Set(domains.flatMap(domain=>[...domain]))].filter(start=>domains.filter(domain=>domain.has(start)).length>=policy.minimumGroupSize).sort((a,b)=>a-b);
-  let states=0,checks=0,traversals=0;if(!supported)return {supported,scheduled:null,groups:[],starts:[],candidateStarts:candidates.length,states,checks,traversals};
+  let states=0,checks=0,traversals=0,budgetExhausted=false;if(!supported)return {supported,scheduled:null,groups:[],starts:[],candidateStarts:candidates.length,states,checks,traversals,budgetExhausted};
   const minGroups=Math.ceil(tasks.length/policy.maximumGroupSize),maxGroups=Math.floor(tasks.length/policy.minimumGroupSize);
   const target=Math.max(policy.minimumGroupSize,Math.min(policy.targetGroupSize??1,policy.maximumGroupSize));
   const counts=Array.from({length:maxGroups-minGroups+1},(_,i)=>minGroups+i).sort((a,b)=>Math.abs(tasks.length/a-target)-Math.abs(tasks.length/b-target)||b-a);
   for(const count of counts){const selected:number[]=[];let found:number[]|null=null;
-    const choose=(from:number):boolean=>{states++;if(selected.length===count){checks++;const match=intervalCapacityMatching(domains,selected,policy.minimumGroupSize,policy.maximumGroupSize);traversals+=match.traversals;if(match.assignment){found=match.assignment;return true;}return false;}for(let i=from;i<candidates.length;i++){if(selected.length&&candidates[i]!-selected.at(-1)!<policy.minGapMinutes)continue;if(candidates.length-i<count-selected.length)break;selected.push(candidates[i]!);if(choose(i+1))return true;selected.pop();}return false;};
-    if(choose(0)&&found){const assignment=found as number[];const groups=selected.map((_,slot)=>tasks.filter((__,index)=>assignment[index]===slot));return {supported,scheduled:groups.flatMap((group,index)=>scheduleTransportGroup(group,selected[index]!)),groups,starts:[...selected],candidateStarts:candidates.length,states,checks,traversals};}
+    const choose=(from:number):boolean=>{if(consume&&!consume()){budgetExhausted=true;return false;}states++;if(selected.length===count){checks++;const match=intervalCapacityMatching(domains,selected,policy.minimumGroupSize,policy.maximumGroupSize);traversals+=match.traversals;if(match.assignment){found=match.assignment;return true;}return false;}for(let i=from;i<candidates.length;i++){if(selected.length&&candidates[i]!-selected.at(-1)!<policy.minGapMinutes)continue;if(candidates.length-i<count-selected.length)break;selected.push(candidates[i]!);if(choose(i+1))return true;selected.pop();if(budgetExhausted)return false;}return false;};
+    if(choose(0)&&found){const assignment=found as number[];const groups=selected.map((_,slot)=>tasks.filter((__,index)=>assignment[index]===slot));return {supported,scheduled:groups.flatMap((group,index)=>scheduleTransportGroup(group,selected[index]!)),groups,starts:[...selected],candidateStarts:candidates.length,states,checks,traversals,budgetExhausted};}
+    if(budgetExhausted)break;
   }
-  return {supported,scheduled:null,groups:[],starts:[],candidateStarts:candidates.length,states,checks,traversals};
+  return {supported,scheduled:null,groups:[],starts:[],candidateStarts:candidates.length,states,checks,traversals,budgetExhausted};
 }
 
 /** Exact contiguous scheduling for interchangeable identities, retaining membership fallback otherwise. */
@@ -530,10 +533,10 @@ export function materializeTerminalTransportDetailed(
       placed.push(...solved.scheduled);
       continue;
     }
-    const interval=solveIntervalDirection(problem,direction,tasks,[...substantive,...participantMeals.map(meal=>({...meal,kind:"auxiliary" as const,spaceId:"",dependencies:[]})),...placed],policy,boundary);
+    const interval=solveIntervalDirection(problem,direction,tasks,[...substantive,...participantMeals.map(meal=>({...meal,kind:"auxiliary" as const,spaceId:"",dependencies:[]})),...placed],policy,boundary,options.consumeIntervalBranch);
     if(interval.supported){
-      const item:TransportMaterializationDirectionEvidence={direction,orderedTaskIds:tasks.map(({id})=>id),orderedParticipantIds:tasks.map(({participantId})=>participantId!),orderedDeadlines:tasks.map(boundary),packetSizes:interval.groups.map(group=>group.length),packetMembers:interval.groups.map(group=>group.map(({id})=>id)),starts:interval.starts,minGapMinutes:policy.minGapMinutes,construction:"interval-exact",alternativesExplored:0,classification:classified.classification,classificationBreakers:classified.breakers,contiguousStatesExplored:0,membershipFallbackEntered:false,...detailedFields(tasks,"INTERVAL_CAPACITY_MATCHING"),candidateStartCount:interval.candidateStarts,statesExplored:interval.states,matchingChecks:interval.checks,matchingTraversals:interval.traversals,failureCause:interval.scheduled?null:"INFEASIBLE"};
-      directionEvidence.push(item);if(!interval.scheduled){const evidence={directions:directionEvidence,fingerprint:createHash("sha256").update(JSON.stringify(directionEvidence)).digest("hex")};options.onEvidence?.(evidence);return {status:"INFEASIBLE",scheduled:null,evidence};}placed.push(...interval.scheduled);continue;
+      const item:TransportMaterializationDirectionEvidence={direction,orderedTaskIds:tasks.map(({id})=>id),orderedParticipantIds:tasks.map(({participantId})=>participantId!),orderedDeadlines:tasks.map(boundary),packetSizes:interval.groups.map(group=>group.length),packetMembers:interval.groups.map(group=>group.map(({id})=>id)),starts:interval.starts,minGapMinutes:policy.minGapMinutes,construction:"interval-exact",alternativesExplored:0,classification:classified.classification,classificationBreakers:classified.breakers,contiguousStatesExplored:0,membershipFallbackEntered:false,...detailedFields(tasks,"INTERVAL_CAPACITY_MATCHING"),candidateStartCount:interval.candidateStarts,statesExplored:interval.states,matchingChecks:interval.checks,matchingTraversals:interval.traversals,budgetExhausted:interval.budgetExhausted,failureCause:interval.budgetExhausted?"BUDGET_EXHAUSTED":interval.scheduled?null:"INFEASIBLE"};
+      directionEvidence.push(item);if(!interval.scheduled){const evidence={directions:directionEvidence,fingerprint:createHash("sha256").update(JSON.stringify(directionEvidence)).digest("hex")};options.onEvidence?.(evidence);return {status:interval.budgetExhausted?"BUDGET_EXHAUSTED":"INFEASIBLE",scheduled:null,evidence};}placed.push(...interval.scheduled);continue;
     }
     let alternativesExplored = 0;
     const partitions = function* (remaining: readonly Task[], groups: Task[][] = []): Generator<Task[][]> {
