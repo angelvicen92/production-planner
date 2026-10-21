@@ -1,6 +1,7 @@
 import { mainFlowPreferenceSchema } from "./mainFlowPreference";
 import { z } from "zod";
 import { transportParametersSchema } from "./transportPolicy";
+import { configRevisionIdSchema, roundPreparationEditSchema, roundPreparationTargetSchema } from "./roundPreparation";
 
 export const dayConfigSourceSchema = z.enum(["INHERITED", "DAY_OVERRIDE", "LEGACY_BACKFILL"]);
 export type DayConfigSource = z.infer<typeof dayConfigSourceSchema>;
@@ -40,10 +41,18 @@ export const dayConfigEditSchema = z.object({
     if(!parsed.success)for(const issue of parsed.error.issues)ctx.addIssue({...issue,path:['transport',...issue.path]});
   }).optional(),
   participantTransitionMinutes: z.number().int().min(0).optional(),
-}).strict().refine(value => value.mainFlowPreference !== undefined || value.workday !== undefined || value.meal !== undefined || value.optimizer !== undefined || value.participantTransitionMinutes !== undefined, "At least one capability is required");
+  roundPreparation: roundPreparationEditSchema.optional(),
+  expectedRevisionId: configRevisionIdSchema.optional(),
+}).strict().refine(value => value.roundPreparation !== undefined || value.mainFlowPreference !== undefined || value.workday !== undefined || value.meal !== undefined || value.optimizer !== undefined || value.participantTransitionMinutes !== undefined, "At least one capability is required")
+  .refine(value => value.roundPreparation === undefined ? value.expectedRevisionId === undefined
+    : value.expectedRevisionId !== undefined && Object.keys(value).every(key => key === "roundPreparation" || key === "expectedRevisionId"),
+  "La preparación se edita por carril con la revisión consultada, sin mezclar otras categorías.");
 
 export const dayConfigCapabilitySchema = z.enum(["WORKDAY_WINDOW", "GLOBAL_MEAL_BREAK", "PARTICIPANT_TRANSITION", "OPTIMIZATION", "BLOCK_COUNT_POLICY"]);
-export const dayConfigRestoreSchema = z.object({ capability: dayConfigCapabilitySchema }).strict();
+export const dayConfigRestoreSchema = z.union([
+  z.object({ capability: dayConfigCapabilitySchema }).strict(),
+  z.object({ capability: z.literal("SYNCHRONIZED_ROUNDS"), roundPreparation: roundPreparationTargetSchema, expectedRevisionId: configRevisionIdSchema }).strict(),
+]);
 export const dayConfigRefreshSchema = z.object({
   capabilities: z.array(dayConfigCapabilitySchema).min(1).max(5).transform(values => [...new Set(values)]),
   legacyTreatment: z.enum(["KEEP_LEGACY", "ADOPT_GENERAL_AS_INHERITED"]).default("KEEP_LEGACY"),

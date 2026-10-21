@@ -40,6 +40,8 @@ on:
       - "shared/mainFlowPreference*"
       - "shared/transportPolicy*"
       - "shared/dayConfig*"
+      - "shared/roundPreparation*"
+      - "client/src/components/round-preparation-editor.tsx"
       - "client/src/components/transport-settings-card.tsx"
       - "client/src/components/transport-policy-fields.tsx"
       - "client/src/components/effective-configuration.tsx"
@@ -77,8 +79,8 @@ jobs:
       - run: npm ci
       - run: npx --no-install playwright install --with-deps chromium
       - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
-      - run: node --import tsx --test --test-concurrency=1 engine/planner-next/transportGrouping.spec.ts engine/planner-next/transportConfigIntegrity.spec.ts server/transportConfigIntegrity.spec.ts server/assistedManualSnapshotFidelity.spec.ts server/assistedStageAcceptanceAuthorization.spec.ts shared/assistedStageValidation.test.ts client/src/lib/assisted-draft-warnings.test.ts client/src/components/planning/assisted-planning-workspace.test.ts
-      - run: npm run demo:a2:smoke -- work/manual-draft-validation --full --manual-validation --transport-policy
+      - run: node --import tsx --test --test-concurrency=1 engine/planner-next/transportGrouping.spec.ts engine/planner-next/transportConfigIntegrity.spec.ts server/transportConfigIntegrity.spec.ts server/roundPreparation.spec.ts server/roundPreparationSql.spec.ts server/assistedManualSnapshotFidelity.spec.ts server/assistedStageAcceptanceAuthorization.spec.ts shared/assistedStageValidation.test.ts client/src/lib/assisted-draft-warnings.test.ts client/src/components/planning/assisted-planning-workspace.test.ts
+      - run: npm run demo:a2:smoke -- work/manual-draft-validation --full --manual-validation --transport-policy --round-preparation
       - name: Production REQUIRED acceptance in a separate immutable day fixture
         run: npm run demo:a2:smoke -- work/manual-required --manual-required-replay=work/manual-draft-validation/manual-validation-baseline.json
       - uses: actions/upload-artifact@v4
@@ -91,6 +93,8 @@ jobs:
             work/manual-draft-validation/p9-*.png
             work/manual-draft-validation/transport-policy.json
             work/manual-draft-validation/p10-*.png
+            work/manual-draft-validation/round-preparation.json
+            work/manual-draft-validation/u06a-*.png
             work/manual-required/integration.json
             work/manual-required/required-acceptance.json
             work/manual-required/p9-*.png

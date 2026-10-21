@@ -155,6 +155,11 @@ test("planner-next remains isolated from legacy and production", () => {
     "server/assistedManualSnapshotFidelity.spec.ts",
     "server/assistedProposalService.ts",
     "server/assistedScopeResolver.ts",
+    // U06a consumes the existing preflight/grid and proves the daily round
+    // projection. These boundaries never dispatch search from configuration.
+    "server/dayConfigurationService.ts",
+    "server/effectiveConfigurationView.ts",
+    "server/roundPreparation.spec.ts",
   ]);
   // Historical server-side evidence runners are diagnostics, not production
   // entry points. Keep their existing boundary explicit; new Planner Next probes

@@ -1,6 +1,8 @@
 import { effectiveTransportDirection } from "../shared/transportPolicy";
 import { mainFlowPreferenceFromRow } from "../shared/mainFlowPreference";
 import { mainFlowPreferenceGeometry } from "./mainFlowPreference";
+import { roundPreparationValues } from "./roundPreparation";
+import { PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES } from "../engine/planner-next/integration/plannerNextCapabilities";
 import type { EngineInput } from "../engine/types";
 import { buildEngineInput } from "../engine/buildInput";
 import { configurabilityCounts, configurabilityRegistry, type ConfigurabilityCapability } from "../shared/configurability";
@@ -66,5 +68,5 @@ export async function buildEffectiveConfigurationView(storage:IStorage,planId:nu
   const revision=revisions.at(-1); const rawPlan=plan as any; const general=generalResult.data??{};
   const geometry=mainFlowPreferenceGeometry(input);
   const values=configurabilityRegistry.map(c=>projected(c,input,rawPlan,general,Number(rawPlan.current_config_revision_id??revision?.id) || undefined,revision?.fingerprint,optimizer,optimizerStateResult.data,geometry));
-  return Object.freeze({contractVersion:2,planId,generatedFrom:"PRODUCTIVE_AUTHORITIES",mainFlowPreference:{value:mainFlowPreferenceFromRow(rawPlan),baseline:mainFlowPreferenceFromRow(rawPlan,"main_baseline_"),defaultGeneral:mainFlowPreferenceFromRow(general),...geometry},values:Object.freeze(values),readiness:deriveReadiness(values),productCoverage:configurabilityCounts});
+  return Object.freeze({contractVersion:2,planId,generatedFrom:"PRODUCTIVE_AUTHORITIES",roundPreparations:{revisionId:rawPlan.current_config_revision_id == null ? null : Number(rawPlan.current_config_revision_id),timeGridMinutes:input.plannerNext?.timeGridMinutes ?? PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES,lanes:roundPreparationValues(input,rawPlan)},mainFlowPreference:{value:mainFlowPreferenceFromRow(rawPlan),baseline:mainFlowPreferenceFromRow(rawPlan,"main_baseline_"),defaultGeneral:mainFlowPreferenceFromRow(general),...geometry},values:Object.freeze(values),readiness:deriveReadiness(values),productCoverage:configurabilityCounts});
 }

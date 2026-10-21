@@ -1,4 +1,5 @@
 import { applyEffectiveMainFlowPreference } from "../server/mainFlowPreference";
+import { applyEffectiveRoundPreparations } from "../server/roundPreparation";
 import type { IStorage } from "../server/storage";
 import type { EngineInput, PlanResourceItemInput, PlanSpaceAvailabilityInput, PlanZoneAvailabilityInput, ResourceRequirementsInput } from "./types";
 import { adaptPlanOptimizerSnapshotToLegacyEngineV1 } from "./planOptimizerSnapshotLegacyAdapter";
@@ -995,5 +996,5 @@ export async function buildEngineInput(
       lockedResourceId: l.locked_resource_id ?? l.lockedResourceId ?? null,
     })),
   };
-  return applyEffectiveMainFlowPreference(applyPlanPlannerNextConfiguration(input,p.planner_next_configuration??p.plannerNextConfiguration),p);
+  return applyEffectiveRoundPreparations(applyEffectiveMainFlowPreference(applyPlanPlannerNextConfiguration(input,p.planner_next_configuration??p.plannerNextConfiguration),p),p);
 }

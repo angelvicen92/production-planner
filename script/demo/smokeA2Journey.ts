@@ -80,6 +80,7 @@ export async function runA2BrowserJourney({appUrl,url,anon,users,db,planId,direc
   const again=await api(path+'/session','POST',{},'admin');assert.equal(again.status,200);assert.equal(Number(again.data.activeStage.id),s0Id);assert.deepEqual(await databaseMaterial(),s0Material);
   await page.reload();await page.getByTestId('assisted-workspace').waitFor();assert.equal(Number((await state()).activeStage.id),s0Id);
   pass('S0 creation from UI, all 19 contestant names, idempotence with admin, native persistence and reload');
+  if(process.argv.includes('--round-preparation')){const {runRoundPreparationJourney}=await import('./smokeRoundPreparationJourney');diagnostics.roundPreparation=await runRoundPreparationJourney({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics},page);}
   const daily=async()=>(await db.query('SELECT id,start_planned,end_planned,zone_id,space_id,location_label,duration_override,cameras_override,assigned_resource_ids FROM public.daily_tasks WHERE plan_id=$1 ORDER BY id',[planId])).rows.map(row=>({...row,id:Number(row.id),zone_id:row.zone_id==null?null:Number(row.zone_id),space_id:row.space_id==null?null:Number(row.space_id)}));
   const beforeS1=await daily();
   const preferenceJourney=process.argv.includes("--main-flow-preference")?await configureMainFlowPreferenceJourney({appUrl,url,anon,users,db,planId,directory,full,pass,buildInput,diagnostics},page):null;
