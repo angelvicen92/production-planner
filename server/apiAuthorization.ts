@@ -12,8 +12,8 @@ export function apiRequiredRoles(method:string,path:string):readonly AppRole[]|n
  if(/^\/tasks\/[^/]+\/(?:status|real-time)\/?$/i.test(path))return ['admin','production','aux'];
  if(/^\/tasks\/[^/]+\/reset\/?$/.test(path))return ['admin','production'];
  const catalogs=['/settings','/program-settings','/optimizer-settings','/task-templates','/zones','/spaces','/resource-types','/resource-items','/resource-pools','/staff-people','/staff-defaults','/itinerant-teams'];
- // Template updates use /ta; match both template paths with Express's default casing semantics.
- if(catalogs.some(within)||/^\/(?:ta|task-templates)(?:\/|$)/i.test(path))return method==='GET'?['admin','production','aux','viewer']:['admin'];
+ // Match these catalog routes with Express's default casing semantics and segment limits.
+ if(catalogs.some(within)||/^\/(?:ta|task-templates|zones|spaces)(?:\/|$)/i.test(path)||/^\/vocal-coach-rules\/?$/i.test(path))return method==='GET'?['admin','production','aux','viewer']:['admin'];
  if(['/plans','/locks','/daily-tasks'].some(within))return method==='GET'?['admin','production','aux','viewer']:['admin','production'];
  return null;
 }
