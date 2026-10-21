@@ -1,14 +1,14 @@
 import { useMemo, useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, RefreshCw, Sparkles } from "lucide-react";
+import { AlertTriangle, CalendarDays, RefreshCw } from "lucide-react";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { usePlans, useGeneratePlan } from "@/hooks/use-plans";
+import { usePlans } from "@/hooks/use-plans";
 import { useDefaultPlanId } from "@/hooks/use-default-plan-id";
 import { usePlanOpsData } from "@/hooks/usePlanOpsData";
 import { useExecutionContext } from "@/hooks/use-execution-context";
@@ -67,7 +67,7 @@ export default function DashboardPage() {
   const [locationDialogTask, setLocationDialogTask] = useState<any | null>(null);
   const [selectedZoneId, setSelectedZoneId] = useState<string>("");
   const [selectedSpaceId, setSelectedSpaceId] = useState<string>("");
-  const generate = useGeneratePlan();
+  const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const confirm = useConfirm();
@@ -422,8 +422,8 @@ export default function DashboardPage() {
             </Select>
             <Button asChild variant="outline"><Link href={`/plans/${selectedPlan?.id || ""}`}>Abrir plan</Link></Button>
             {role && role !== 'viewer' && <Button variant="outline" onClick={() => createIncidentAndGo()} disabled={!selectedPlan?.id}>Crear incidencia</Button>}
-            <Button onClick={() => selectedPlan?.id && generate.mutate({ id: selectedPlan.id, mode: "full" })} disabled={!selectedPlan?.id || generate.isPending}>
-              <Sparkles className="mr-2 h-4 w-4" /> Generar/Recalcular
+            <Button onClick={() => selectedPlan?.id && setLocation(`/plans/${selectedPlan.id}?tab=planning`)} disabled={!selectedPlan?.id}>
+              <CalendarDays className="mr-2 h-4 w-4" /> Abrir planning
             </Button>
             <Button variant="outline" onClick={() => refetch()} disabled={!selectedPlan?.id}>
               <RefreshCw className="mr-2 h-4 w-4" /> Refrescar
