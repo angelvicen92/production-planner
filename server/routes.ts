@@ -1,3 +1,5 @@
+import { registerAdminInviteRoutes } from "./adminInvites";
+import { userAccessStatus } from "../shared/adminInvites";
 import { transportBoundsSchema } from "../shared/transportPolicy";
 import { mainFlowPreferenceFromRow } from "../shared/mainFlowPreference";
 import { registerIncidentRoutes } from './incidents';
@@ -144,6 +146,7 @@ function mapDeleteError(err: any, fallback: string) {
 
   // Authentication + coarse-grained authorization for all API endpoints
   app.use('/api',createApiAuthorization({authenticate:requireAuth,lookupRole:getUserRole,authorizeTask:canExecuteTask}));
+  registerAdminInviteRoutes(app, supabaseAdmin);
   registerIncidentRoutes(app);
   registerPlanningHeaderNotesRoutes(app, supabaseAdmin);
 
@@ -177,16 +180,9 @@ function mapDeleteError(err: any, fallback: string) {
 
       if (existingRoleError) throw existingRoleError;
 
-      const existingRoleKey = (existingRole as any)?.roles?.key as string | undefined;
-
-      if (targetRoleKey === "admin") {
-        if (existingRole?.role_id !== roleRow.id) {
-          const { error: upsertError } = await supabaseAdmin
-            .from("user_roles")
-            .upsert({ user_id: userId, role_id: roleRow.id }, { onConflict: "user_id" });
-          if (upsertError) throw upsertError;
-        }
-      } else if (!existingRoleKey) {
+      // An existing server-assigned role always wins, including ADMIN_EMAIL.
+      // Ignore concurrent inserts rather than overwriting an invitation/admin edit.
+      if (!existingRole?.role_id) {
         const { error: insertError } = await supabaseAdmin
           .from("user_roles")
           .insert({ user_id: userId, role_id: roleRow.id });
@@ -194,7 +190,8 @@ function mapDeleteError(err: any, fallback: string) {
       }
 
       const role = await getUserRole(userId);
-      return res.json({ role: role ?? "viewer" });
+      if (!role) throw new Error("Role assignment could not be confirmed");
+      return res.json({ role });
     } catch (err: any) {
       console.error("[BOOTSTRAP ROLE]", err);
       return res.status(500).json({ message: err?.message || "Failed to bootstrap role" });
@@ -335,7 +332,7 @@ function mapDeleteError(err: any, fallback: string) {
           .in("user_id", userIds);
         if (roleErr) throw roleErr;
         for (const row of roleRows ?? []) {
-          rolesMap.set(String((row as any).user_id), String((row as any).roles?.key ?? "viewer"));
+          rolesMap.set(String((row as any).user_id), String((row as any).roles?.key ?? ""));
         }
       }
 
@@ -365,7 +362,8 @@ function mapDeleteError(err: any, fallback: string) {
         email: user.email ?? "",
         createdAt: user.created_at ?? null,
         lastSignInAt: user.last_sign_in_at ?? null,
-        roleKey: (rolesMap.get(user.id) as any) || "viewer",
+        accessStatus: userAccessStatus(user),
+        roleKey: rolesMap.get(user.id) || null,
         links: linksMap.get(user.id) ?? { staffPersonId: null, resourceItemId: null },
       }));
 

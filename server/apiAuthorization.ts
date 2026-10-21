@@ -4,6 +4,7 @@ import type {RequestHandler} from 'express';
 // Supabase service_role bypasses RLS; every API handler needs this boundary.
 export function apiRequiredRoles(method:string,path:string):readonly AppRole[]|null {
  const within=(prefix:string)=>path===prefix||path.startsWith(`${prefix}/`);
+ if(/^\/admin(?:\/|$)/i.test(path))return ['admin'];
  if(within('/debug'))return ['admin'];
  if(/^\/plans\/[^/]+\/execution\/reset\/?$/i.test(path))return ['admin'];
  if(/^\/plans\/[^/]+\/header-notes(?:\/|$)/i.test(path))return method==='GET'||method==='HEAD'?['admin','production','aux','viewer']:['admin','production'];

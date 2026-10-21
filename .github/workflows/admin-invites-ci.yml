@@ -1,0 +1,56 @@
+name: Admin Invites CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - client/src/App.tsx
+      - client/src/components/settings/users-admin.tsx
+      - client/src/pages/login.tsx
+      - client/src/hooks/use-auth.tsx
+      - client/src/lib/supabaseClient.ts
+      - shared/adminInvites.ts
+      - server/adminInvites*
+      - server/routes.ts
+      - server/authz.ts
+      - server/apiAuthorization*
+      - server/middleware/requireAuth.ts
+      - server/supabase.ts
+      - script/demo/smokeAdminInvite*
+      - script/demo/tsconfig.admin-invites.json
+      - supabase/migrations/**
+      - package*.json
+      - .github/workflows/admin-invites-ci.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: admin-invites-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  admin-invites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: npx --no-install tsc -p script/demo/tsconfig.admin-invites.json
+      - run: node --import tsx --test server/adminInvites.spec.ts server/apiAuthorization.spec.ts server/catalogAuthorization.spec.ts
+      - name: Native Auth, captured SMTP, API, role persistence and browser activation
+        run: node --import tsx script/demo/smokeAdminInvites.ts work/admin-invites
+      - name: Sanitized Evidence (no tokens, links, passwords or private logs)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-invites
+          path: |
+            work/admin-invites/integration.json
+            work/admin-invites/browser.json
+            work/admin-invites/*.png

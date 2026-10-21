@@ -14,6 +14,9 @@ y reinicia el Repl.`;
 if (!supabaseUrl) throw new Error(missing("VITE_SUPABASE_URL"));
 if (!supabaseAnonKey) throw new Error(missing("VITE_SUPABASE_ANON_KEY"));
 
+// Capture before Supabase consumes the callback hash during initialization.
+export const initialAuthCallbackType = new URLSearchParams(window.location.hash.slice(1)).get("type");
+
 // Cliente ÚNICO para el navegador (React)
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
