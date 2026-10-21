@@ -1,3 +1,4 @@
+import { useConfirm, type ConfirmOptions } from "@/components/ui/confirm-dialog";
 import { DayCollapsibleSection } from "@/components/day-workspace/day-collapsible-section";
 import { useDaySection } from "@/hooks/use-day-section";
 import { PlanningStageToolbar } from "./planning-stage-toolbar";
@@ -88,21 +89,38 @@ export const AssistedPlanningWorkspace = memo(function AssistedPlanningWorkspace
   const assistedPlan=useMemo(()=>displayDraft?{...plan,dailyTasks:buildAssistedPlanningView(plan.dailyTasks??[],displayDraft)}:plan,[plan,displayDraft]);
   const composedOperations=useMemo(()=>projectAnchoredOperations(plan.plannerNextConfiguration?.anchoredAccompaniments??[],assistedPlan.dailyTasks??[]),[plan.plannerNextConfiguration,assistedPlan]);
   const localWarnings=useMemo(()=>collectAssistedDraftWarnings(assistedPlan.dailyTasks??[],{start:plan.workStart??plan.startTime??plan.workdayStart,end:plan.workEnd??plan.endTime??plan.workdayEnd},plan.plannerNextConfiguration),[assistedPlan,plan]);
+  const confirm=useConfirm();
+  const deciding=useRef(false);
+  const decisionGeneration=useRef(0);
+  useEffect(()=>()=>{decisionGeneration.current++;},[planId]);
+  const currentDecision=useRef({planId,state,busy,pendingTimelineEdits,role});
+  currentDecision.current={planId,state,busy,pendingTimelineEdits,role};
+  const requestConsent=async(options:ConfirmOptions)=>{
+    if(deciding.current)return false;
+    deciding.current=true;
+    const before=currentDecision.current;
+    const generation=decisionGeneration.current;
+    try {
+      const accepted=await confirm(options);
+      const after=currentDecision.current;
+      return accepted&&generation===decisionGeneration.current&&authorized.current&&!after.busy&&!autopilot.current&&before.planId===after.planId&&before.role===after.role&&before.pendingTimelineEdits===after.pendingTimelineEdits&&before.state?.draftFingerprint===after.state?.draftFingerprint&&before.state?.draftBaseStageId===after.state?.draftBaseStageId&&before.state?.currentConfigRevisionId===after.state?.currentConfigRevisionId&&before.state?.validation===after.state?.validation;
+    } finally {deciding.current=false;}
+  };
   const guard=()=>({expectedDraftFingerprint:state.draftFingerprint,expectedBaseStageId:Number(state.draftBaseStageId)});
   const refresh=async(planToo=false)=>{await client.invalidateQueries({queryKey:key(planId)});await stateQ.refetch();if(planToo){await client.invalidateQueries({queryKey:planQueryKey(planId)});await client.refetchQueries({queryKey:planQueryKey(planId)});}};
   const clearProposal=()=>{setPreview(null);setRunId(null);};
   const mutate=async(label:string,work:()=>Promise<any>,planToo=false)=>{if(autopilot.current||!authorized.current||busy)return false;setBusy(label);setMessage(null);setAutopilotProgress(null);setAutopilotCheckpoint(null);try{await work();clearProposal();await refresh(planToo);return true;}catch(e:any){setMessage(operatorError(e));if(e?.status===403)await refetchRole();if(isAssistedConflict(e)){clearProposal();await refresh();}return false;}finally{setBusy(null);}};
-  const restart=()=>{
+  const restart=async()=>{
     if(busy||!authorized.current||autopilot.current)return;
-    if(!window.confirm("Volverás al estado inicial de esta sesión (Etapa 0). Se descartarán los cambios del borrador y se restaurará el planning inicial. Las etapas posteriores permanecerán en el historial; la configuración vigente se conservará. ¿Reiniciar Asistida?"))return;
+    if(!await requestConsent({title:"Reiniciar Asistida",description:"Se descartará el borrador y se restaurará el planning inicial de esta sesión.",secondaryText:"Las etapas posteriores seguirán en el historial y se conservará la configuración vigente.",confirmText:"Reiniciar",destructive:true}))return;
     void mutate("restart",async()=>{
       await apiRequest("POST",`/api/plans/${planId}/assisted/restart`,{...guard(),confirmation:"RESTART_BOOTSTRAP"});
       setSelected([]);setSelectedSpaces([]);setIncludePrerequisites(false);setAutopilotProgress(null);setConfigPreview(null);setConfigSelection([]);
     },true);
   };
-  const startAutopilot=()=>{
+  const startAutopilot=async()=>{
     if(autopilot.current||busy||pendingTimelineEdits>0||!authorized.current||!isAutopilotClean(state))return;
-    if(!window.confirm("Delegas la aceptación automática exclusivamente de etapas con propuesta completa y certificada, validación sin conflictos críticos ni desviaciones y sin alertas pendientes de decisión. Las etapas aceptadas se conservarán. Mantén esta pestaña abierta; puedes detenerte entre etapas. ¿Completar automáticamente?"))return;
+    if(!await requestConsent({title:"Completar planificación",description:"OptiPlan aceptará automáticamente las etapas válidas y se detendrá cuando necesite tu decisión.",secondaryText:"Puedes detener el proceso entre etapas. Mantén esta pestaña abierta.",details:"Solo se aceptarán propuestas completas y certificadas, sin conflictos críticos, desviaciones ni alertas pendientes de decisión. Las etapas aceptadas se conservarán.",confirmText:"Completar automáticamente"}))return;
     clearProposal();setAutopilotCheckpoint(null);setViewAuthority("accepted");setBusy("autopilot");setMessage(null);
     setMaximizeRequest(value=>value+1);
     const checkpoints=observeAutopilotCheckpoints(assistedAutopilotApi(planId,apiRequest),(accepted,acceptedPlan)=>{
@@ -124,12 +142,17 @@ export const AssistedPlanningWorkspace = memo(function AssistedPlanningWorkspace
   const validationReport:any=validationCurrent?state.validation.reportJson:null;
   const {newHardCount,newRequiredCount}=newStageDeviationCounts(validationCurrent?state.validation:null);
   const requiresAdminAuthorization=validationCurrent&&newHardCount>0&&role!=="admin";
-  const acceptStage=()=>{let confirmation="NONE";
+  const acceptStage=async()=>{let confirmation="NONE";
     if(!validationCurrent){setMessage(assistedValidationErrorMessage({code:'STALE_VALIDATION'}));return;}
     if(requiresAdminAuthorization){setMessage(assistedValidationErrorMessage({code:'HARD_ADMIN_AUTHORIZATION_REQUIRED'}));return;}
     const newViolations=(validationReport?.violations??[]).filter((v:any)=>v.inheritedAcceptedExceptionId==null);
-    if(newHardCount>0){if(!window.confirm(`Este borrador contiene ${newHardCount} conflicto(s) críticos nuevos y ${newRequiredCount} desviación(es) operativas nuevas.\n${newViolations.map(violationDecisionText).join('\n')}\nSe registrarán las excepciones con tu usuario administrador. El planning conservará el indicador crítico: aceptar no elimina la infracción HARD ni lo convierte en un planning libre de conflictos. ¿Aceptar conscientemente?`))return;confirmation="HARD_EXCEPTIONS";}
-    else if(newRequiredCount>0){if(!window.confirm(`Este borrador contiene ${newRequiredCount} desviación(es) operativas nuevas.\n${newViolations.map(violationDecisionText).join('\n')}\nQuedarán registradas con tu usuario en el historial. Los conflictos críticos heredados mantienen su indicador. ¿Aceptar conscientemente?`))return;confirmation="REQUIRED_DEVIATIONS";}
+    if(newHardCount>0){
+      if(!await requestConsent({title:"Aceptar conflictos críticos",description:`Hay ${newHardCount} ${newHardCount===1?"conflicto crítico nuevo":"conflictos críticos nuevos"} y ${newRequiredCount} ${newRequiredCount===1?"desviación operativa nueva":"desviaciones operativas nuevas"}. Se registrarán como excepciones con tu usuario administrador.`,secondaryText:"El planning conservará el indicador crítico: aceptar no elimina las infracciones ni lo convierte en un planning libre de conflictos.",details:newViolations.map(violationDecisionText).join('\n\n'),confirmText:"Aceptar con conflictos críticos",destructive:true}))return;
+      confirmation="HARD_EXCEPTIONS";
+    } else if(newRequiredCount>0){
+      if(!await requestConsent({title:"Aceptar desviaciones operativas",description:`Hay ${newRequiredCount} ${newRequiredCount===1?"desviación operativa nueva":"desviaciones operativas nuevas"}. La decisión quedará registrada con tu usuario en el historial.`,secondaryText:"Los conflictos críticos heredados mantienen su indicador.",details:newViolations.map(violationDecisionText).join('\n\n'),confirmText:"Aceptar con desviaciones"}))return;
+      confirmation="REQUIRED_DEVIATIONS";
+    }
     return mutate("accept",()=>apiRequest("POST",`/api/plans/${planId}/assisted/accept-stage`,{...guard(),confirmation}),true);};
   const modified=Boolean(draft&&isAssistedDraftModified(draft,base));
   const touchedTaskCount=draft?assistedDraftTouchedTaskIds(draft,base).length:0;

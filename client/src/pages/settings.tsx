@@ -86,7 +86,7 @@ import { useTranslation } from "react-i18next";
 import { UsersAdminSettings } from "@/components/settings/users-admin";
 import { useAuth } from "@/hooks/use-auth";
 import { QueryGuard } from "@/components/QueryGuard";
-import { useConfirm } from "@/components/ui/confirm-dialog";
+import { useDialogInput, useConfirm } from "@/components/ui/confirm-dialog";
 
 export default function SettingsPage() {
   const { t } = useTranslation();
@@ -999,6 +999,7 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
   const qc = useQueryClient();
   const { toast } = useToast();
   const confirmDialog = useConfirm();
+  const requestInput = useDialogInput();
 
   const programSettingsQ = useQuery({
     queryKey: [api.programSettings.get.path],
@@ -1293,6 +1294,23 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
     priorityLevel: number;
   } | null>(null);
 
+  useEffect(() => {
+    const next: Record<number, string> = {};
+    for (const z of (zones ?? []) as any[]) {
+      const zid = Number(z?.id);
+      if (!Number.isFinite(zid)) continue;
+      const raw = z?.uiOrderIndex ?? z?.ui_order_index;
+      next[zid] = raw === null || raw === undefined ? "" : String(Number(raw));
+    }
+    setZoneOrderDraft(next);
+
+    const ps = (programSettingsQ.data ?? {}) as any;
+    const it = ps.uiItinerantGroupOrderIndex ?? ps.ui_itinerant_group_order_index;
+    const un = ps.uiUnlocatedGroupOrderIndex ?? ps.ui_unlocated_group_order_index;
+    setItinerantGroupOrderDraft(it === null || it === undefined ? "" : String(Number(it)));
+    setUnlocatedGroupOrderDraft(un === null || un === undefined ? "" : String(Number(un)));
+  }, [zones, programSettingsQ.data]);
+
   if (zonesLoading || spacesLoading) {
     return (
       <div className="flex items-center justify-center h-48">
@@ -1384,22 +1402,7 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
     setExpandedZoneIds(next);
   };
 
-  useEffect(() => {
-    const next: Record<number, string> = {};
-    for (const z of allZones) {
-      const zid = Number(z?.id);
-      if (!Number.isFinite(zid)) continue;
-      const raw = z?.uiOrderIndex ?? z?.ui_order_index;
-      next[zid] = raw === null || raw === undefined ? "" : String(Number(raw));
-    }
-    setZoneOrderDraft(next);
 
-    const ps = (programSettingsQ.data ?? {}) as any;
-    const it = ps.uiItinerantGroupOrderIndex ?? ps.ui_itinerant_group_order_index;
-    const un = ps.uiUnlocatedGroupOrderIndex ?? ps.ui_unlocated_group_order_index;
-    setItinerantGroupOrderDraft(it === null || it === undefined ? "" : String(Number(it)));
-    setUnlocatedGroupOrderDraft(un === null || un === undefined ? "" : String(Number(un)));
-  }, [allZones, programSettingsQ.data]);
 
   const toNullableOrderIndex = (value: string): number | null => {
     const trimmed = String(value ?? "").trim();
@@ -1565,10 +1568,10 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                 onClick={() => {
                   // level: 0=root, 1=child, 2=grandchild
                   // Si level >= 2, el siguiente sería nivel 4 => lo bloqueamos en UI
-                  const name = prompt("Nombre del subespacio:");
-                  if (!name?.trim()) return;
-
-                  createSpace.mutate(
+                  void requestInput({
+                    title: "Crear subespacio", label: "Nombre del subespacio", confirmText: "Crear subespacio",
+                    validate: value => value.trim() ? null : "Escribe un nombre para el subespacio.",
+                    onSubmit: async name => { await createSpace.mutateAsync(
                     {
                       name: name.trim(),
                       zoneId: node.zoneId,
@@ -1584,7 +1587,8 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                         }));
                       },
                     },
-                  );
+                  ); },
+                  });
                 }}
               >
                 + Subespacio
@@ -1895,15 +1899,17 @@ function ZonesSpacesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          const name = prompt("Nombre del espacio:");
-                          if (!name?.trim()) return;
-                          createSpace.mutate({
+                          void requestInput({
+                            title: "Crear espacio", label: "Nombre del espacio", confirmText: "Crear espacio",
+                            validate: value => value.trim() ? null : "Escribe un nombre para el espacio.",
+                            onSubmit: async name => { await createSpace.mutateAsync({
                             name: name.trim(),
                             zoneId: z.id,
                             priorityLevel: 1,
                             parentSpaceId: null,
                           });
-                          setExpandedZoneIds((p) => ({ ...p, [z.id]: true }));
+                          setExpandedZoneIds((p) => ({ ...p, [z.id]: true })); },
+                          });
                         }}
                       >
                         + Espacio raíz

@@ -174,7 +174,7 @@ export function ResourcesList() {
     try {
       await apiRequest("PATCH", `/api/resource-items/${itemId}`, { name });
     } catch (e: any) {
-      alert(e?.message || "Error guardando nombre");
+      toast({ title: "No se pudo guardar el nombre", description: "Revisa el nombre e inténtalo de nuevo.", variant: "destructive" });
       return;
     } finally {
       setPendingWrites((n) => n - 1);

@@ -33,7 +33,7 @@ import { useProductionClock } from "@/hooks/use-production-clock";
 import { usePlanningGeometry, usePlanningDensity } from "@/components/planning/fullscreen-planning-panel";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
-import { useConfirm } from "@/components/ui/confirm-dialog";
+import { useDialogInput, useConfirm } from "@/components/ui/confirm-dialog";
 import { countRenderedPlanningTasks, type RenderedPlanningCounts } from "@/lib/planning-ready-gate";
 
 const operationalStatusLabels:Record<string,string>={pending:"Pendiente",in_progress:"En curso",done:"Completada",interrupted:"Interrumpida",cancelled:"Cancelada"};
@@ -354,6 +354,7 @@ function TaskStatusMenuTrigger({
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const confirm = useConfirm();
+  const requestInput = useDialogInput();
   const suppressNextClickRef = useRef(false);
   const actions = !task.operationalMealPolicyId && onTaskStatusChange && (!canExecuteTask || canExecuteTask(task)) ? taskActionsForStatus(task.status ?? "pending") : [];
 
@@ -512,22 +513,15 @@ function TaskStatusMenuTrigger({
                     const startMin = timeToMinutes(startPlanned || "00:00");
                     const endMin = timeToMinutes(endPlanned || "00:00");
                     const currentDuration = Math.max(5, endMin - startMin || 30);
-                    const raw = window.prompt("Nueva duración (min)", String(currentDuration));
-                    if (!raw) return;
-                    const durationMinutes = Math.round(Number(raw));
-                    if (!Number.isFinite(durationMinutes) || durationMinutes < 5) {
-                      toast({ title: "Duración inválida", description: "Usa un número de al menos 5 minutos.", variant: "destructive" });
-                      return;
-                    }
-                    Promise.resolve(onSetManualBlockDuration(task, durationMinutes))
-                      .then(() => setOpen(false))
-                      .catch((error) => {
-                        toast({
-                          title: "No se pudo cambiar la duración",
-                          description: error instanceof Error ? error.message : "Inténtalo de nuevo.",
-                          variant: "destructive",
-                        });
-                      });
+                    void requestInput({
+                      title: "Cambiar duración", label: "Duración (minutos)", defaultValue: String(currentDuration), inputMode: "decimal",
+                      description: "Indica la duración del bloqueo manual. El mínimo es de 5 minutos.",
+                      validate: raw => raw.trim() && Number.isFinite(Number(raw)) && Math.round(Number(raw)) >= 5 ? null : "Usa un número de al menos 5 minutos.",
+                      onSubmit: async raw => {
+                        await onSetManualBlockDuration(task, Math.round(Number(raw)));
+                        setOpen(false);
+                      },
+                    });
                   }}
                 >
                   Cambiar duración (min)

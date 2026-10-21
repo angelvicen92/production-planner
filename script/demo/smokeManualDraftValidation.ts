@@ -136,12 +136,23 @@ export async function runManualDraftValidationProbe(options:Parameters<typeof ru
  await adminPage.goto(`${appUrl}/login`);await adminPage.getByLabel('Email',{exact:true}).fill(users.admin.email);await adminPage.getByLabel('Contraseña (opcional para enlace)',{exact:true}).fill(users.admin.password);
  await adminPage.getByRole('button',{name:'Entrar con contraseña',exact:true}).click();await adminPage.waitForURL('**/dashboard');await adminPage.goto(`${appUrl}/plans/${planId}?tab=planning`);
  await adminPage.getByTestId('stage-validation-report').waitFor();
- const cancel=adminPage.waitForEvent('dialog');const cancelClick=adminPage.getByRole('button',{name:'Aceptar etapa',exact:true}).click();
- const cancelled=await cancel;assert.match(cancelled.message(),/grupo de 4 participantes/);await cancelled.dismiss();await cancelClick;await assertConsolidated(base);
+ // Consent now uses OptiPlan's own AlertDialog, not the browser's native dialog event.
+ const consentDialog=adminPage.getByRole('alertdialog');
+ await adminPage.getByRole('button',{name:'Aceptar etapa',exact:true}).click();
+ await consentDialog.waitFor();
+ await consentDialog.locator('summary').click();
+ assert.match(await consentDialog.innerText(),/grupo de 4 participantes/);
+ await consentDialog.getByRole('button',{name:'Cancelar',exact:true}).click();
+ await consentDialog.waitFor({state:'hidden'});
+ await assertConsolidated(base);
  const acceptedResponse=adminPage.waitForResponse(r=>r.url().endsWith('/assisted/accept-stage')&&r.request().method()==='POST');
- const consent=adminPage.waitForEvent('dialog');const acceptClick=adminPage.getByRole('button',{name:'Aceptar etapa',exact:true}).click();
- const dialog=await consent,confirmationText=dialog.message();await dialog.accept();await acceptClick;
+ await adminPage.getByRole('button',{name:'Aceptar etapa',exact:true}).click();
+ await consentDialog.waitFor();
+ await consentDialog.locator('summary').click();
+ const confirmationText=await consentDialog.innerText();
  assert.match(confirmationText,/antes 12:00–12:05; después 11:30–11:35/);assert.match(confirmationText,/usuario administrador/);assert.match(confirmationText,/indicador crítico/);
+ await consentDialog.getByRole('button',{name:'Aceptar con conflictos críticos',exact:true}).click();
+ await consentDialog.waitFor({state:'hidden'});
  const acceptanceHttp=await acceptedResponse;assert.equal(acceptanceHttp.status(),200);
  const acceptanceRequest=acceptanceHttp.request().postDataJSON();assert.equal(acceptanceRequest.confirmation,'HARD_EXCEPTIONS');
  trace.push({suffix:'/accept-stage',method:'POST',role:'admin',source:'Chromium',request:acceptanceRequest,response:{status:200}});
@@ -242,8 +253,14 @@ export async function runRequiredDeviationAcceptance(options:Parameters<typeof r
   await page.getByRole('button',{name:'Entrar con contraseña',exact:true}).click();await page.waitForURL('**/dashboard');await page.goto(`${appUrl}/plans/${planId}?tab=planning`);
   await page.getByTestId('stage-validation-report').waitFor();assert.equal(await page.getByTestId('assisted-hard-admin-required').count(),0);
   const response=page.waitForResponse(r=>r.url().endsWith('/assisted/accept-stage')&&r.request().method()==='POST');
-  const consent=page.waitForEvent('dialog');const click=page.getByRole('button',{name:'Aceptar etapa',exact:true}).click();
-  const dialog=await consent;confirmationText=dialog.message();assert.match(confirmationText,/desviación\(es\) operativas nuevas/);await dialog.accept();await click;
+  await page.getByRole('button',{name:'Aceptar etapa',exact:true}).click();
+  const consent=page.getByRole('alertdialog');await consent.waitFor();
+  confirmationText=await consent.innerText();
+  assert.match(confirmationText,/desviaciones operativas nuevas|desviación operativa nueva/);
+  await consent.locator('summary').click();
+  assert.ok((await consent.innerText()).includes('Aceptar') || (await consent.innerText()).includes('desviación'));
+  await consent.getByRole('button',{name:'Aceptar con desviaciones',exact:true}).click();
+  await consent.waitFor({state:'hidden'});
   const http=await response;assert.equal(http.status(),200);assert.equal(http.request().postDataJSON().confirmation,'REQUIRED_DEVIATIONS');
   await page.getByTestId('stage-validation-report').waitFor({state:'detached'});await page.getByTestId('assisted-workspace').screenshot({path:`${directory}/p9-required-accepted.png`});
  }finally{await browser.close();}

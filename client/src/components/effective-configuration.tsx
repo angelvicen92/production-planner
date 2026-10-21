@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { PersistedDaySection } from "./day-workspace/day-collapsible-section";
 import type { DaySection } from "@/lib/day-section-preferences";
 import { MainFlowPreferenceEditor } from "./main-flow-preference-editor";
@@ -23,6 +24,11 @@ const restoreCapability = (id: string): DayConfigRestore["capability"] => id ===
 const editableIds = new Set(["WORKDAY_WINDOW", "GLOBAL_MEAL_BREAK", "TRANSITIONS", "OPTIMIZATION", "BLOCK_COUNT_POLICY"]);
 export function DayConfiguration({planId,onNavigate}:{planId:number;onNavigate?:(tab:DayTab)=>void}) {
   const queryClient=useQueryClient(); const {role}=useUserRole(); const canEdit=role==="admin"||role==="production";
+  const confirm=useConfirm();
+  const decision=React.useRef(false);
+  const decisionGeneration=React.useRef(0);
+  React.useEffect(()=>()=>{decisionGeneration.current++;},[planId]);
+  const latest=React.useRef({canEdit,pending:false,planId});
   const [notice,setNotice]=React.useState<string|null>(null);
   const query=useQuery<EffectiveConfigurationView>({queryKey:["effective-configuration",planId],queryFn:()=>apiRequest<EffectiveConfigurationView>("GET",`/api/plans/${planId}/effective-configuration`)});
   const operation=useMutation({
@@ -30,10 +36,17 @@ export function DayConfiguration({planId,onNavigate}:{planId:number;onNavigate?:
     onSuccess:async()=>{setNotice("Configuración guardada. Este cambio requiere volver a validar el borrador.");await Promise.all([queryClient.invalidateQueries({queryKey:["effective-configuration",planId]}),queryClient.invalidateQueries({queryKey:["assisted-planning",planId]}),queryClient.invalidateQueries({queryKey:planQueryKey(planId)})]);},
   });
   const edit=(payload:DayConfigEdit)=>{if(canEdit&&!operation.isPending)operation.mutate({method:"PUT",path:"",payload});};
-  const restore=(id:string)=>{if(canEdit&&!operation.isPending&&window.confirm("Se retirará la modificación de esta jornada y se restaurará su valor heredado. Será necesario volver a validar el borrador. ¿Continuar?"))operation.mutate({method:"POST",path:"/restore",payload:{capability:restoreCapability(id)}});};
-  const refresh=(value:EffectiveConfigurationValue)=>{
-    if(!canEdit||operation.isPending)return;
-    if(window.confirm(`Se actualizará la herencia de «${value.label}» desde la configuración habitual. Los overrides diarios se conservarán; los valores migrados adoptarán explícitamente la configuración general. Será necesario volver a validar. ¿Continuar?`))operation.mutate({method:"POST",path:"/refresh",payload:{capabilities:[restoreCapability(value.capabilityId)],legacyTreatment:"ADOPT_GENERAL_AS_INHERITED"}});
+  latest.current={canEdit,pending:operation.isPending,planId};
+  const consent=async(options:Parameters<typeof confirm>[0])=>{
+    if(!canEdit||operation.isPending||decision.current)return false;
+    decision.current=true;
+    const generation=decisionGeneration.current;
+    try {return await confirm(options)&&generation===decisionGeneration.current&&latest.current.canEdit&&!latest.current.pending&&latest.current.planId===planId;}
+    finally {decision.current=false;}
+  };
+  const restore=async(id:string)=>{if(await consent({title:"Restaurar configuración heredada",description:"Se retirará la modificación de esta jornada y se restaurará su valor heredado. Será necesario volver a validar el borrador.",confirmText:"Restaurar"}))operation.mutate({method:"POST",path:"/restore",payload:{capability:restoreCapability(id)}});};
+  const refresh=async(value:EffectiveConfigurationValue)=>{
+    if(await consent({title:"Actualizar herencia",description:`Se actualizará «${value.label}» desde la configuración habitual. Será necesario volver a validar el borrador.`,secondaryText:"Se conservarán las modificaciones diarias; los valores migrados adoptarán la configuración general.",confirmText:"Actualizar herencia"}))operation.mutate({method:"POST",path:"/refresh",payload:{capabilities:[restoreCapability(value.capabilityId)],legacyTreatment:"ADOPT_GENERAL_AS_INHERITED"}});
   };
   if(query.isLoading)return <div role="status" className="animate-pulse rounded-xl border bg-muted/30 p-8">Cargando configuración efectiva…</div>;
   if(query.error||!query.data){const error=query.error as Error&{status?:number;code?:string};return <section className="space-y-3 rounded-xl border border-destructive/30 bg-card p-6" role="alert"><h2 className="text-lg font-semibold">No se pudo consultar la configuración del día</h2><p className="text-sm text-muted-foreground">{error?.status===403?"Tu perfil no tiene acceso a esta configuración.":error?.status===401?"La sesión ha caducado. Vuelve a iniciar sesión.":"La consulta no ha devuelto una configuración verificable. Reintenta para comprobar la conexión y el estado de esta jornada."}</p><Button variant="outline" disabled={query.isFetching} onClick={()=>void query.refetch()}>Reintentar configuración</Button>{role==="admin"?<details className="text-xs"><summary>Detalles de la petición fallida</summary><p className="mt-2 break-all">GET /api/plans/{planId}/effective-configuration · HTTP {error?.status??"sin respuesta"}</p><p>{error?.message??"Respuesta sin datos"}</p></details>:null}</section>;}
