@@ -328,6 +328,9 @@
     {"name":"zones_id_seq","role":"service_role","privileges":[],"owned_by":"zones"}
   ],
   "functions": [
+    {"signature":"apply_day_config_operation(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)","role":"anon","execute":false},
+    {"signature":"apply_day_config_operation(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)","role":"authenticated","execute":false},
+    {"signature":"apply_day_config_operation(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)","role":"service_role","execute":true},
     {"signature":"apply_day_config_operation_v2(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)","role":"anon","execute":false},
     {"signature":"apply_day_config_operation_v2(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)","role":"authenticated","execute":false},
     {"signature":"apply_day_config_operation_v2(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)","role":"service_role","execute":true},
@@ -337,9 +340,6 @@
     {"signature":"apply_day_config_operation_v4(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)","role":"anon","execute":false},
     {"signature":"apply_day_config_operation_v4(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)","role":"authenticated","execute":false},
     {"signature":"apply_day_config_operation_v4(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)","role":"service_role","execute":true},
-    {"signature":"apply_day_config_operation(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)","role":"anon","execute":false},
-    {"signature":"apply_day_config_operation(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)","role":"authenticated","execute":false},
-    {"signature":"apply_day_config_operation(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)","role":"service_role","execute":true},
     {"signature":"assisted_accept_stage(integer,uuid,text,bigint,text)","role":"anon","execute":false},
     {"signature":"assisted_accept_stage(integer,uuid,text,bigint,text)","role":"authenticated","execute":false},
     {"signature":"assisted_accept_stage(integer,uuid,text,bigint,text)","role":"service_role","execute":true},
