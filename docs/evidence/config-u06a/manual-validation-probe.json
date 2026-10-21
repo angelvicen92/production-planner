@@ -1,0 +1,3970 @@
+{
+  "mode": "P9_NATIVE_MANUAL_VALIDATION",
+  "remoteReads": 0,
+  "remoteWrites": 0,
+  "remoteCaseReproduced": false,
+  "baselineFingerprint": "4216287469c4257030c72acfc2ba3b5bbcd3d5396874a73b6d0db2ba533d4122",
+  "baseline": {
+    "scopeTaskCount": 1,
+    "scopeTaskIds": [
+      "task:10135"
+    ],
+    "supportingTaskIds": [],
+    "supportingReasonByTaskId": {},
+    "protectedPlacementCount": 247,
+    "protectedPlacementsPreserved": true,
+    "proposalCount": 1,
+    "completeForScope": true,
+    "hardValid": true,
+    "requiredValid": true,
+    "fingerprint": "4216287469c4257030c72acfc2ba3b5bbcd3d5396874a73b6d0db2ba533d4122",
+    "work": {},
+    "causalDiagnostic": null,
+    "reasonCodes": [],
+    "validationSummary": {
+      "hardValid": true,
+      "dependencyViolationCount": 0,
+      "overlapViolationCount": 0,
+      "transitionViolationCount": 0,
+      "availabilityViolationCount": 0,
+      "taskAvailabilityViolationCount": 0,
+      "blockViolationCount": 0,
+      "resourceAvailabilityViolationCount": 0,
+      "resourceOverlapViolationCount": 0,
+      "resourceTransitionViolationCount": 0,
+      "secondaryContinuityViolationCount": 0,
+      "setupViolationCount": 0,
+      "setupPreparationViolationCount": 0,
+      "roundSynchronizationViolationCount": 0,
+      "roundPreparationViolationCount": 0,
+      "jointGroupViolationCount": 0,
+      "transportGroupingViolationCount": 0,
+      "technicalOperationViolationCount": 0,
+      "technicalChainViolationCount": 0,
+      "spaceMealViolationCount": 0,
+      "mainFlowMealViolationCount": 0,
+      "anchoredAccompanimentViolationCount": 0,
+      "participantMealViolationCount": 0,
+      "resourceMealViolationCount": 0,
+      "operationalMealViolationCount": 0,
+      "itinerantUnitMealViolationCount": 0,
+      "reasonCodes": [],
+      "unstructuredReasonCodes": [],
+      "violations": []
+    },
+    "structuredViolations": []
+  },
+  "move": {
+    "before": {
+      "taskId": 10135,
+      "zoneId": 6022,
+      "spaceId": 3022,
+      "endPlanned": "12:05",
+      "startPlanned": "12:00",
+      "locationLabel": null,
+      "camerasOverride": null,
+      "durationOverride": 5,
+      "assignedResourceIds": []
+    },
+    "after": {
+      "taskId": 10135,
+      "startPlanned": "11:30",
+      "endPlanned": "11:35"
+    },
+    "targetIds": [
+      10150,
+      10233,
+      10259
+    ]
+  },
+  "fourIN": {
+    "evidence": {
+      "scopeTaskCount": 1,
+      "scopeTaskIds": [
+        "task:10135"
+      ],
+      "supportingTaskIds": [],
+      "supportingReasonByTaskId": {},
+      "protectedPlacementCount": 247,
+      "protectedPlacementsPreserved": true,
+      "proposalCount": 0,
+      "completeForScope": true,
+      "hardValid": false,
+      "requiredValid": false,
+      "fingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+      "work": {},
+      "causalDiagnostic": null,
+      "reasonCodes": [
+        "TRANSPORT_GROUPING_VIOLATION"
+      ],
+      "validationSummary": {
+        "hardValid": false,
+        "dependencyViolationCount": 0,
+        "overlapViolationCount": 0,
+        "transitionViolationCount": 0,
+        "availabilityViolationCount": 0,
+        "taskAvailabilityViolationCount": 0,
+        "blockViolationCount": 0,
+        "resourceAvailabilityViolationCount": 0,
+        "resourceOverlapViolationCount": 0,
+        "resourceTransitionViolationCount": 0,
+        "secondaryContinuityViolationCount": 0,
+        "setupViolationCount": 0,
+        "setupPreparationViolationCount": 0,
+        "roundSynchronizationViolationCount": 0,
+        "roundPreparationViolationCount": 0,
+        "jointGroupViolationCount": 0,
+        "transportGroupingViolationCount": 1,
+        "technicalOperationViolationCount": 0,
+        "technicalChainViolationCount": 0,
+        "spaceMealViolationCount": 0,
+        "mainFlowMealViolationCount": 0,
+        "anchoredAccompanimentViolationCount": 0,
+        "participantMealViolationCount": 0,
+        "resourceMealViolationCount": 0,
+        "operationalMealViolationCount": 0,
+        "itinerantUnitMealViolationCount": 0,
+        "reasonCodes": [
+          "TRANSPORT_GROUPING_VIOLATION"
+        ],
+        "unstructuredReasonCodes": [],
+        "violations": [
+          {
+            "ruleCode": "TRANSPORT_GROUPING_VIOLATION",
+            "severity": "HARD",
+            "affectedTaskIds": [
+              "task:10135",
+              "task:10150",
+              "task:10233",
+              "task:10259"
+            ],
+            "affectedResourceIds": [],
+            "affectedSpaceIds": [],
+            "dimensions": {
+              "direction": "arrival",
+              "kind": "GROUP_SIZE",
+              "start": 690,
+              "end": 695,
+              "actualGroupSize": 4,
+              "minimumGroupSize": 1,
+              "maximumGroupSize": 3
+            }
+          }
+        ]
+      },
+      "structuredViolations": [
+        {
+          "ruleCode": "TRANSPORT_GROUPING_VIOLATION",
+          "severity": "HARD",
+          "affectedTaskIds": [
+            10135,
+            10150,
+            10233,
+            10259
+          ],
+          "affectedResourceIds": [],
+          "affectedSpaceIds": [],
+          "details": {
+            "dimensions": {
+              "direction": "arrival",
+              "kind": "GROUP_SIZE",
+              "start": 690,
+              "end": 695,
+              "actualGroupSize": 4,
+              "minimumGroupSize": 1,
+              "maximumGroupSize": 3
+            }
+          },
+          "inheritedAcceptedExceptionId": null,
+          "violationKey": "{\"ruleCode\":\"TRANSPORT_GROUPING_VIOLATION\",\"taskIds\":[10135,10150,10233,10259],\"resourceIds\":[],\"spaceIds\":[],\"dimensions\":{\"actualGroupSize\":4,\"direction\":\"arrival\",\"end\":695,\"kind\":\"GROUP_SIZE\",\"maximumGroupSize\":3,\"minimumGroupSize\":1,\"start\":690}}"
+        }
+      ]
+    },
+    "validation": {
+      "status": 200,
+      "body": {
+        "current": true,
+        "mode": "MANUAL_STAGE_VALIDATION_V1",
+        "validation": {
+          "id": 13,
+          "planId": 27001,
+          "sessionId": 1,
+          "baseStageId": 12,
+          "draftFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+          "configRevisionId": 8,
+          "hardCount": 1,
+          "requiredCount": 0,
+          "preferredCount": 0,
+          "reportJson": {
+            "mode": "MANUAL_STAGE_VALIDATION_V1",
+            "work": {},
+            "hardCount": 1,
+            "hardValid": false,
+            "violations": [
+              {
+                "details": {
+                  "dimensions": {
+                    "end": 695,
+                    "kind": "GROUP_SIZE",
+                    "start": 690,
+                    "direction": "arrival",
+                    "actualGroupSize": 4,
+                    "maximumGroupSize": 3,
+                    "minimumGroupSize": 1
+                  },
+                  "taskChanges": [
+                    {
+                      "after": {
+                        "end": "11:35",
+                        "start": "11:30"
+                      },
+                      "before": {
+                        "end": "12:05",
+                        "start": "12:00"
+                      },
+                      "taskId": 10135
+                    }
+                  ]
+                },
+                "ruleCode": "TRANSPORT_GROUPING_VIOLATION",
+                "severity": "HARD",
+                "violationKey": "{\"ruleCode\":\"TRANSPORT_GROUPING_VIOLATION\",\"taskIds\":[10135,10150,10233,10259],\"resourceIds\":[],\"spaceIds\":[],\"dimensions\":{\"actualGroupSize\":4,\"direction\":\"arrival\",\"end\":695,\"kind\":\"GROUP_SIZE\",\"maximumGroupSize\":3,\"minimumGroupSize\":1,\"start\":690}}",
+                "affectedTaskIds": [
+                  10135,
+                  10150,
+                  10233,
+                  10259
+                ],
+                "affectedSpaceIds": [],
+                "affectedResourceIds": [],
+                "inheritedAcceptedExceptionId": null
+              }
+            ],
+            "fingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+            "reasonCodes": [
+              "TRANSPORT_GROUPING_VIOLATION"
+            ],
+            "newHardCount": 1,
+            "requiredCount": 0,
+            "changedTaskIds": [
+              10135
+            ],
+            "preferredCount": 0,
+            "contractVersion": 1,
+            "completeForScope": true,
+            "newRequiredCount": 0,
+            "supportingTaskIds": [],
+            "preferredAssessment": "NOT_CLASSIFIED",
+            "futureFullDayFeasibility": "NOT_CERTIFIED",
+            "supportingReasonByTaskId": {},
+            "protectedPlacementsPreserved": true
+          },
+          "createdAt": "2026-10-21T10:27:16.523757+00:00"
+        }
+      }
+    },
+    "draftFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+    "draftValidationId": 13,
+    "transport": {
+      "violationCount": 1,
+      "groupsByDirection": {
+        "arrival": [
+          [
+            {
+              "id": "task:10021",
+              "duration": 5,
+              "spaceId": "space:3022",
+              "blocksSpace": false,
+              "dependencies": [],
+              "kind": "auxiliary",
+              "participantId": "participant:202",
+              "start": 540,
+              "end": 545
+            },
+            {
+              "id": "task:10034",
+              "duration": 5,
+              "spaceId": "space:3022",
+              "blocksSpace": false,
+              "dependencies": [],
+              "kind": "auxiliary",
+              "participantId": "participant:203",
+              "start": 540,
+              "end": 545
+            },
+            {
+              "id": "task:10105",
+              "duration": 5,
+              "spaceId": "space:3022",
+              "blocksSpace": false,
+              "dependencies": [],
+              "kind": "auxiliary",
+              "participantId": "participant:208",
+              "start": 540,
+              "end": 545
+            }
+          ],
+          [
+            {
+              "id": "task:10047",
+              "duration": 5,
+              "spaceId": "space:3022",
+              "blocksSpace": false,
+              "dependencies": [],
+              "kind": "auxiliary",
+              "participantId": "participant:204",
+              "start": 570,
+              "end": 575
+            },
+            {
+              "id": "task:10060",
+              "duration": 5,
+              "spaceId": "space:3022",
+              "blocksSpace": false,
+              "dependencies": [],
+              "kind": "auxiliary",
+              "participantId": "participant:205",
+              "start": 570,
+              "end": 575
+            },
+            {
+              "id": "task:10120",
+              "duration": 5,
+              "spaceId": "space:3022",
+              "blocksSpace": false,
+              "dependencies": [],
+              "kind": "auxiliary",
+              "participantId": "participant:209",
+              "start": 570,
+              "end": 575
+            }
+          ],
+          [
+            {
+              "id": "task:10006",
+              "duration": 5,
+              "spaceId": "space:3022",
+              "blocksSpace": false,
+              "dependencies": [],
+              "kind": "auxiliary",
+              "participantId": "participant:201",
+              "start": 600,
+              "end": 605
+            },
+            {
+              "id": "task:10165",
+              "duration": 5,
+              "spaceId": "space:3022",
+              "blocksSpace": false,
+              "dependencies": [],
+              "kind": "auxiliary",
+              "participantId": "participant:212",
+              "start": 600,
+              "end": 605
+            },
+            {
+              "id": "task:10246",
+              "duration": 5,
+              "spaceId": "space:3022",
+              "blocksSpace": false,
+              "dependencies": [],
+              "kind": "auxiliary",
+              "participantId": "participant:218",
+              "start": 600,
+              "end": 605
+            }
+          ],
+          [
+            {
+              "id": "task:10077",
+              "duration": 5,
+              "spaceId": "space:3022",
+              "blocksSpace": false,
+              "dependencies": [],
+              "kind": "auxiliary",
+              "participantId": "participant:206",
+              "start": 630,
+              "end": 635
+            },
+            {
+              "id": "task:10180",
+              "duration": 5,
+              "spaceId": "space:3022",
+              "blocksSpace": false,
+              "dependencies": [],
+              "kind": "auxiliary",
+              "participantId": "participant:213",
+              "start": 630,
+              "end": 635
+            },
+            {
+              "id": "task:10194",
+              "duration": 5,
+              "spaceId": "space:3022",
+              "blocksSpace": false,
+              "dependencies": [],
+              "kind": "auxiliary",
+              "participantId": "participant:214",
+              "start": 630,
+              "end": 635
+            }
+          ],
+          [
+            {
+              "id": "task:10092",
+              "duration": 5,
+              "spaceId": "space:3022",
+              "blocksSpace": false,
+              "dependencies": [],
+              "kind": "auxiliary",
+              "participantId": "participant:207",
+              "start": 660,
+              "end": 665
+            },
+            {
+              "id": "task:10207",
+              "duration": 5,
+              "spaceId": "space:3022",
+              "blocksSpace": false,
+              "dependencies": [],
+              "kind": "auxiliary",
+              "participantId": "participant:215",
+              "start": 660,
+              "end": 665
+            },
+            {
+              "id": "task:10221",
+              "duration": 5,
+              "spaceId": "space:3022",
+              "blocksSpace": false,
+              "dependencies": [],
+              "kind": "auxiliary",
+              "participantId": "participant:216",
+              "start": 660,
+              "end": 665
+            }
+          ],
+          [
+            {
+              "id": "task:10135",
+              "duration": 5,
+              "spaceId": "space:3022",
+              "blocksSpace": false,
+              "dependencies": [],
+              "kind": "auxiliary",
+              "participantId": "participant:210",
+              "start": 690,
+              "end": 695
+            },
+            {
+              "id": "task:10150",
+              "duration": 5,
+              "spaceId": "space:3022",
+              "blocksSpace": false,
+              "dependencies": [],
+              "kind": "auxiliary",
+              "participantId": "participant:211",
+              "start": 690,
+              "end": 695
+            },
+            {
+              "id": "task:10233",
+              "duration": 5,
+              "spaceId": "space:3022",
+              "blocksSpace": false,
+              "dependencies": [],
+              "kind": "auxiliary",
+              "participantId": "participant:217",
+              "start": 690,
+              "end": 695
+            },
+            {
+              "id": "task:10259",
+              "duration": 5,
+              "spaceId": "space:3022",
+              "blocksSpace": false,
+              "dependencies": [],
+              "kind": "auxiliary",
+              "participantId": "participant:219",
+              "start": 690,
+              "end": 695
+            }
+          ]
+        ],
+        "departure": [
+          [
+            {
+              "id": "task:10007",
+              "duration": 5,
+              "spaceId": "space:3023",
+              "blocksSpace": false,
+              "dependencies": [
+                "task:10003",
+                "task:10004"
+              ],
+              "participantMarginBeforeMinutes": 0,
+              "kind": "auxiliary",
+              "participantId": "participant:201",
+              "start": 870,
+              "end": 875
+            }
+          ],
+          [
+            {
+              "id": "task:10035",
+              "duration": 5,
+              "spaceId": "space:3023",
+              "blocksSpace": false,
+              "dependencies": [
+                "task:10032",
+                "task:10033"
+              ],
+              "participantMarginBeforeMinutes": 0,
+              "kind": "auxiliary",
+              "participantId": "participant:203",
+              "start": 890,
+              "end": 895
+            }
+          ],
+          [
+            {
+              "id": "task:10106",
+              "duration": 5,
+              "spaceId": "space:3023",
+              "blocksSpace": false,
+              "dependencies": [
+                "task:10103",
+                "task:10104"
+              ],
+              "participantMarginBeforeMinutes": 0,
+              "kind": "auxiliary",
+              "participantId": "participant:208",
+              "start": 980,
+              "end": 985
+            }
+          ],
+          [
+            {
+              "id": "task:10260",
+              "duration": 5,
+              "spaceId": "space:3023",
+              "blocksSpace": false,
+              "dependencies": [
+                "task:10257",
+                "task:10258"
+              ],
+              "participantMarginBeforeMinutes": 0,
+              "kind": "auxiliary",
+              "participantId": "participant:219",
+              "start": 1000,
+              "end": 1005
+            }
+          ],
+          [
+            {
+              "id": "task:10247",
+              "duration": 5,
+              "spaceId": "space:3023",
+              "blocksSpace": false,
+              "dependencies": [
+                "task:10244",
+                "task:10245"
+              ],
+              "participantMarginBeforeMinutes": 0,
+              "kind": "auxiliary",
+              "participantId": "participant:218",
+              "start": 1030,
+              "end": 1035
+            }
+          ],
+          [
+            {
+              "id": "task:10061",
+              "duration": 5,
+              "spaceId": "space:3023",
+              "blocksSpace": false,
+              "dependencies": [
+                "task:10057",
+                "task:10058"
+              ],
+              "participantMarginBeforeMinutes": 0,
+              "kind": "auxiliary",
+              "participantId": "participant:205",
+              "start": 1055,
+              "end": 1060
+            }
+          ],
+          [
+            {
+              "id": "task:10022",
+              "duration": 5,
+              "spaceId": "space:3023",
+              "blocksSpace": false,
+              "dependencies": [
+                "task:10018",
+                "task:10019"
+              ],
+              "participantMarginBeforeMinutes": 0,
+              "kind": "auxiliary",
+              "participantId": "participant:202",
+              "start": 1075,
+              "end": 1080
+            },
+            {
+              "id": "task:10093",
+              "duration": 5,
+              "spaceId": "space:3023",
+              "blocksSpace": false,
+              "dependencies": [
+                "task:10089",
+                "task:10090"
+              ],
+              "participantMarginBeforeMinutes": 0,
+              "kind": "auxiliary",
+              "participantId": "participant:207",
+              "start": 1075,
+              "end": 1080
+            },
+            {
+              "id": "task:10195",
+              "duration": 5,
+              "spaceId": "space:3023",
+              "blocksSpace": false,
+              "dependencies": [
+                "task:10191",
+                "task:10192"
+              ],
+              "participantMarginBeforeMinutes": 0,
+              "kind": "auxiliary",
+              "participantId": "participant:214",
+              "start": 1075,
+              "end": 1080
+            },
+            {
+              "id": "task:10234",
+              "duration": 5,
+              "spaceId": "space:3023",
+              "blocksSpace": false,
+              "dependencies": [
+                "task:10230",
+                "task:10231"
+              ],
+              "participantMarginBeforeMinutes": 0,
+              "kind": "auxiliary",
+              "participantId": "participant:217",
+              "start": 1075,
+              "end": 1080
+            }
+          ],
+          [
+            {
+              "id": "task:10048",
+              "duration": 5,
+              "spaceId": "space:3023",
+              "blocksSpace": false,
+              "dependencies": [
+                "task:10044",
+                "task:10045"
+              ],
+              "participantMarginBeforeMinutes": 0,
+              "kind": "auxiliary",
+              "participantId": "participant:204",
+              "start": 1095,
+              "end": 1100
+            },
+            {
+              "id": "task:10121",
+              "duration": 5,
+              "spaceId": "space:3023",
+              "blocksSpace": false,
+              "dependencies": [
+                "task:10117",
+                "task:10118"
+              ],
+              "participantMarginBeforeMinutes": 0,
+              "kind": "auxiliary",
+              "participantId": "participant:209",
+              "start": 1095,
+              "end": 1100
+            },
+            {
+              "id": "task:10151",
+              "duration": 5,
+              "spaceId": "space:3023",
+              "blocksSpace": false,
+              "dependencies": [
+                "task:10148",
+                "task:10149"
+              ],
+              "participantMarginBeforeMinutes": 0,
+              "kind": "auxiliary",
+              "participantId": "participant:211",
+              "start": 1095,
+              "end": 1100
+            },
+            {
+              "id": "task:10166",
+              "duration": 5,
+              "spaceId": "space:3023",
+              "blocksSpace": false,
+              "dependencies": [
+                "task:10162",
+                "task:10163"
+              ],
+              "participantMarginBeforeMinutes": 0,
+              "kind": "auxiliary",
+              "participantId": "participant:212",
+              "start": 1095,
+              "end": 1100
+            }
+          ],
+          [
+            {
+              "id": "task:10181",
+              "duration": 5,
+              "spaceId": "space:3023",
+              "blocksSpace": false,
+              "dependencies": [
+                "task:10176",
+                "task:10177"
+              ],
+              "participantMarginBeforeMinutes": 0,
+              "kind": "auxiliary",
+              "participantId": "participant:213",
+              "start": 1115,
+              "end": 1120
+            }
+          ],
+          [
+            {
+              "id": "task:10078",
+              "duration": 5,
+              "spaceId": "space:3023",
+              "blocksSpace": false,
+              "dependencies": [
+                "task:10073",
+                "task:10074"
+              ],
+              "participantMarginBeforeMinutes": 0,
+              "kind": "auxiliary",
+              "participantId": "participant:206",
+              "start": 1135,
+              "end": 1140
+            },
+            {
+              "id": "task:10136",
+              "duration": 5,
+              "spaceId": "space:3023",
+              "blocksSpace": false,
+              "dependencies": [
+                "task:10132",
+                "task:10133"
+              ],
+              "participantMarginBeforeMinutes": 0,
+              "kind": "auxiliary",
+              "participantId": "participant:210",
+              "start": 1135,
+              "end": 1140
+            },
+            {
+              "id": "task:10208",
+              "duration": 5,
+              "spaceId": "space:3023",
+              "blocksSpace": false,
+              "dependencies": [
+                "task:10204",
+                "task:10205"
+              ],
+              "participantMarginBeforeMinutes": 0,
+              "kind": "auxiliary",
+              "participantId": "participant:215",
+              "start": 1135,
+              "end": 1140
+            },
+            {
+              "id": "task:10222",
+              "duration": 5,
+              "spaceId": "space:3023",
+              "blocksSpace": false,
+              "dependencies": [
+                "task:10219",
+                "task:10220"
+              ],
+              "participantMarginBeforeMinutes": 0,
+              "kind": "auxiliary",
+              "participantId": "participant:216",
+              "start": 1135,
+              "end": 1140
+            }
+          ]
+        ]
+      },
+      "violations": [
+        {
+          "ruleCode": "TRANSPORT_GROUPING_VIOLATION",
+          "severity": "HARD",
+          "affectedTaskIds": [
+            "task:10135",
+            "task:10150",
+            "task:10233",
+            "task:10259"
+          ],
+          "affectedResourceIds": [],
+          "affectedSpaceIds": [],
+          "dimensions": {
+            "direction": "arrival",
+            "kind": "GROUP_SIZE",
+            "start": 690,
+            "end": 695,
+            "actualGroupSize": 4,
+            "minimumGroupSize": 1,
+            "maximumGroupSize": 3
+          }
+        }
+      ]
+    }
+  },
+  "valid": {
+    "change": {
+      "taskId": 10013,
+      "startPlanned": "13:20",
+      "endPlanned": "14:00"
+    },
+    "validation": {
+      "status": 200,
+      "body": {
+        "current": true,
+        "mode": "MANUAL_STAGE_VALIDATION_V1",
+        "validation": {
+          "id": 14,
+          "planId": 27001,
+          "sessionId": 1,
+          "baseStageId": 12,
+          "draftFingerprint": "4c7926fbe09c571946a4931c34c6439e8c82ad21c623f31a51facb0b98b68c9e",
+          "configRevisionId": 8,
+          "hardCount": 0,
+          "requiredCount": 0,
+          "preferredCount": 0,
+          "reportJson": {
+            "mode": "MANUAL_STAGE_VALIDATION_V1",
+            "work": {},
+            "hardCount": 0,
+            "hardValid": true,
+            "violations": [],
+            "fingerprint": "4c7926fbe09c571946a4931c34c6439e8c82ad21c623f31a51facb0b98b68c9e",
+            "reasonCodes": [],
+            "newHardCount": 0,
+            "requiredCount": 0,
+            "changedTaskIds": [
+              10013,
+              10135
+            ],
+            "preferredCount": 0,
+            "contractVersion": 1,
+            "completeForScope": true,
+            "newRequiredCount": 0,
+            "supportingTaskIds": [],
+            "preferredAssessment": "NOT_CLASSIFIED",
+            "futureFullDayFeasibility": "NOT_CERTIFIED",
+            "supportingReasonByTaskId": {},
+            "protectedPlacementsPreserved": true
+          },
+          "createdAt": "2026-10-21T10:27:19.264687+00:00"
+        }
+      }
+    },
+    "status": "ACCEPTED_AND_ROLLED_BACK"
+  },
+  "trace": [
+    {
+      "suffix": "/draft",
+      "method": "PATCH",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "4216287469c4257030c72acfc2ba3b5bbcd3d5396874a73b6d0db2ba533d4122",
+        "expectedBaseStageId": 12,
+        "changes": [
+          {
+            "taskId": 10135,
+            "startPlanned": "11:30",
+            "endPlanned": "11:35"
+          }
+        ]
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "suffix": "/validate",
+      "method": "POST",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+        "expectedBaseStageId": 12
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "current": true,
+          "mode": "MANUAL_STAGE_VALIDATION_V1",
+          "validation": {
+            "id": 13,
+            "planId": 27001,
+            "sessionId": 1,
+            "baseStageId": 12,
+            "draftFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+            "configRevisionId": 8,
+            "hardCount": 1,
+            "requiredCount": 0,
+            "preferredCount": 0,
+            "reportJson": {
+              "mode": "MANUAL_STAGE_VALIDATION_V1",
+              "work": {},
+              "hardCount": 1,
+              "hardValid": false,
+              "violations": [
+                {
+                  "details": {
+                    "dimensions": {
+                      "end": 695,
+                      "kind": "GROUP_SIZE",
+                      "start": 690,
+                      "direction": "arrival",
+                      "actualGroupSize": 4,
+                      "maximumGroupSize": 3,
+                      "minimumGroupSize": 1
+                    },
+                    "taskChanges": [
+                      {
+                        "after": {
+                          "end": "11:35",
+                          "start": "11:30"
+                        },
+                        "before": {
+                          "end": "12:05",
+                          "start": "12:00"
+                        },
+                        "taskId": 10135
+                      }
+                    ]
+                  },
+                  "ruleCode": "TRANSPORT_GROUPING_VIOLATION",
+                  "severity": "HARD",
+                  "violationKey": "{\"ruleCode\":\"TRANSPORT_GROUPING_VIOLATION\",\"taskIds\":[10135,10150,10233,10259],\"resourceIds\":[],\"spaceIds\":[],\"dimensions\":{\"actualGroupSize\":4,\"direction\":\"arrival\",\"end\":695,\"kind\":\"GROUP_SIZE\",\"maximumGroupSize\":3,\"minimumGroupSize\":1,\"start\":690}}",
+                  "affectedTaskIds": [
+                    10135,
+                    10150,
+                    10233,
+                    10259
+                  ],
+                  "affectedSpaceIds": [],
+                  "affectedResourceIds": [],
+                  "inheritedAcceptedExceptionId": null
+                }
+              ],
+              "fingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+              "reasonCodes": [
+                "TRANSPORT_GROUPING_VIOLATION"
+              ],
+              "newHardCount": 1,
+              "requiredCount": 0,
+              "changedTaskIds": [
+                10135
+              ],
+              "preferredCount": 0,
+              "contractVersion": 1,
+              "completeForScope": true,
+              "newRequiredCount": 0,
+              "supportingTaskIds": [],
+              "preferredAssessment": "NOT_CLASSIFIED",
+              "futureFullDayFeasibility": "NOT_CERTIFIED",
+              "supportingReasonByTaskId": {},
+              "protectedPlacementsPreserved": true
+            },
+            "createdAt": "2026-10-21T10:27:16.523757+00:00"
+          }
+        }
+      }
+    },
+    {
+      "suffix": "/draft/reset",
+      "method": "POST",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+        "expectedBaseStageId": 12
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "suffix": "/draft",
+      "method": "PATCH",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "4216287469c4257030c72acfc2ba3b5bbcd3d5396874a73b6d0db2ba533d4122",
+        "expectedBaseStageId": 12,
+        "changes": [
+          {
+            "taskId": 10013,
+            "startPlanned": "13:20",
+            "endPlanned": "14:00"
+          }
+        ]
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "suffix": "/validate",
+      "method": "POST",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "4c7926fbe09c571946a4931c34c6439e8c82ad21c623f31a51facb0b98b68c9e",
+        "expectedBaseStageId": 12
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "current": true,
+          "mode": "MANUAL_STAGE_VALIDATION_V1",
+          "validation": {
+            "id": 14,
+            "planId": 27001,
+            "sessionId": 1,
+            "baseStageId": 12,
+            "draftFingerprint": "4c7926fbe09c571946a4931c34c6439e8c82ad21c623f31a51facb0b98b68c9e",
+            "configRevisionId": 8,
+            "hardCount": 0,
+            "requiredCount": 0,
+            "preferredCount": 0,
+            "reportJson": {
+              "mode": "MANUAL_STAGE_VALIDATION_V1",
+              "work": {},
+              "hardCount": 0,
+              "hardValid": true,
+              "violations": [],
+              "fingerprint": "4c7926fbe09c571946a4931c34c6439e8c82ad21c623f31a51facb0b98b68c9e",
+              "reasonCodes": [],
+              "newHardCount": 0,
+              "requiredCount": 0,
+              "changedTaskIds": [
+                10013,
+                10135
+              ],
+              "preferredCount": 0,
+              "contractVersion": 1,
+              "completeForScope": true,
+              "newRequiredCount": 0,
+              "supportingTaskIds": [],
+              "preferredAssessment": "NOT_CLASSIFIED",
+              "futureFullDayFeasibility": "NOT_CERTIFIED",
+              "supportingReasonByTaskId": {},
+              "protectedPlacementsPreserved": true
+            },
+            "createdAt": "2026-10-21T10:27:19.264687+00:00"
+          }
+        }
+      }
+    },
+    {
+      "suffix": "/accept-stage",
+      "method": "POST",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "4c7926fbe09c571946a4931c34c6439e8c82ad21c623f31a51facb0b98b68c9e",
+        "expectedBaseStageId": 12,
+        "confirmation": "NONE"
+      },
+      "response": {
+        "status": 403,
+        "body": {
+          "type": "permission_denied",
+          "message": "No tienes permisos para esta acción."
+        }
+      }
+    },
+    {
+      "suffix": "/accept-stage",
+      "method": "POST",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "4c7926fbe09c571946a4931c34c6439e8c82ad21c623f31a51facb0b98b68c9e",
+        "expectedBaseStageId": 12,
+        "confirmation": "NONE"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "suffix": "/rollback",
+      "method": "POST",
+      "role": "admin",
+      "request": {
+        "targetStageId": 12
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "suffix": "/draft",
+      "method": "PATCH",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "4216287469c4257030c72acfc2ba3b5bbcd3d5396874a73b6d0db2ba533d4122",
+        "expectedBaseStageId": 12,
+        "changes": [
+          {
+            "taskId": 10135,
+            "startPlanned": "11:30",
+            "endPlanned": "11:35"
+          }
+        ]
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "suffix": "/validate",
+      "method": "POST",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+        "expectedBaseStageId": 12
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "current": true,
+          "mode": "MANUAL_STAGE_VALIDATION_V1",
+          "validation": {
+            "id": 15,
+            "planId": 27001,
+            "sessionId": 1,
+            "baseStageId": 12,
+            "draftFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+            "configRevisionId": 8,
+            "hardCount": 1,
+            "requiredCount": 0,
+            "preferredCount": 0,
+            "reportJson": {
+              "mode": "MANUAL_STAGE_VALIDATION_V1",
+              "work": {},
+              "hardCount": 1,
+              "hardValid": false,
+              "violations": [
+                {
+                  "details": {
+                    "dimensions": {
+                      "end": 695,
+                      "kind": "GROUP_SIZE",
+                      "start": 690,
+                      "direction": "arrival",
+                      "actualGroupSize": 4,
+                      "maximumGroupSize": 3,
+                      "minimumGroupSize": 1
+                    },
+                    "taskChanges": [
+                      {
+                        "after": {
+                          "end": "11:35",
+                          "start": "11:30"
+                        },
+                        "before": {
+                          "end": "12:05",
+                          "start": "12:00"
+                        },
+                        "taskId": 10135
+                      }
+                    ]
+                  },
+                  "ruleCode": "TRANSPORT_GROUPING_VIOLATION",
+                  "severity": "HARD",
+                  "violationKey": "{\"ruleCode\":\"TRANSPORT_GROUPING_VIOLATION\",\"taskIds\":[10135,10150,10233,10259],\"resourceIds\":[],\"spaceIds\":[],\"dimensions\":{\"actualGroupSize\":4,\"direction\":\"arrival\",\"end\":695,\"kind\":\"GROUP_SIZE\",\"maximumGroupSize\":3,\"minimumGroupSize\":1,\"start\":690}}",
+                  "affectedTaskIds": [
+                    10135,
+                    10150,
+                    10233,
+                    10259
+                  ],
+                  "affectedSpaceIds": [],
+                  "affectedResourceIds": [],
+                  "inheritedAcceptedExceptionId": null
+                }
+              ],
+              "fingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+              "reasonCodes": [
+                "TRANSPORT_GROUPING_VIOLATION"
+              ],
+              "newHardCount": 1,
+              "requiredCount": 0,
+              "changedTaskIds": [
+                10135
+              ],
+              "preferredCount": 0,
+              "contractVersion": 1,
+              "completeForScope": true,
+              "newRequiredCount": 0,
+              "supportingTaskIds": [],
+              "preferredAssessment": "NOT_CLASSIFIED",
+              "futureFullDayFeasibility": "NOT_CERTIFIED",
+              "supportingReasonByTaskId": {},
+              "protectedPlacementsPreserved": true
+            },
+            "createdAt": "2026-10-21T10:27:20.451231+00:00"
+          }
+        }
+      }
+    },
+    {
+      "suffix": "/accept-stage",
+      "method": "POST",
+      "role": "viewer",
+      "request": {
+        "expectedDraftFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+        "expectedBaseStageId": 12,
+        "confirmation": "HARD_EXCEPTIONS"
+      },
+      "response": {
+        "status": 403,
+        "body": {
+          "type": "permission_denied",
+          "message": "No tienes permisos para esta acción."
+        }
+      }
+    },
+    {
+      "suffix": "/accept-stage",
+      "method": "POST",
+      "role": "aux",
+      "request": {
+        "expectedDraftFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+        "expectedBaseStageId": 12,
+        "confirmation": "HARD_EXCEPTIONS"
+      },
+      "response": {
+        "status": 403,
+        "body": {
+          "type": "permission_denied",
+          "message": "No tienes permisos para esta acción."
+        }
+      }
+    },
+    {
+      "suffix": "/accept-stage",
+      "method": "POST",
+      "role": "norole",
+      "request": {
+        "expectedDraftFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+        "expectedBaseStageId": 12,
+        "confirmation": "HARD_EXCEPTIONS"
+      },
+      "response": {
+        "status": 403,
+        "body": {
+          "type": "permission_denied",
+          "message": "No tienes permisos para esta acción."
+        }
+      }
+    },
+    {
+      "suffix": "/accept-stage",
+      "method": "POST",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+        "expectedBaseStageId": 12,
+        "confirmation": "NONE"
+      },
+      "response": {
+        "status": 403,
+        "body": {
+          "code": "HARD_ADMIN_AUTHORIZATION_REQUIRED",
+          "message": "HARD_ADMIN_AUTHORIZATION_REQUIRED"
+        }
+      }
+    },
+    {
+      "suffix": "/accept-stage",
+      "method": "POST",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+        "expectedBaseStageId": 12,
+        "confirmation": "REQUIRED_DEVIATIONS"
+      },
+      "response": {
+        "status": 403,
+        "body": {
+          "code": "HARD_ADMIN_AUTHORIZATION_REQUIRED",
+          "message": "HARD_ADMIN_AUTHORIZATION_REQUIRED"
+        }
+      }
+    },
+    {
+      "suffix": "/accept-stage",
+      "method": "POST",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+        "expectedBaseStageId": 12,
+        "confirmation": "HARD_EXCEPTIONS"
+      },
+      "response": {
+        "status": 403,
+        "body": {
+          "code": "HARD_ADMIN_AUTHORIZATION_REQUIRED",
+          "message": "HARD_ADMIN_AUTHORIZATION_REQUIRED"
+        }
+      }
+    },
+    {
+      "suffix": "/accept-stage",
+      "method": "POST",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+        "expectedBaseStageId": 12,
+        "confirmation": "HARD_EXCEPTIONS",
+        "userId": "a580f3c1-8b2c-4d8b-90eb-36afe577f118",
+        "userRole": "admin",
+        "reportJson": {
+          "newHardCount": 0
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "code": "INVALID_ACCEPT_REQUEST",
+          "message": "La solicitud de aceptación no es válida."
+        }
+      }
+    },
+    {
+      "suffix": "/accept-stage",
+      "method": "POST",
+      "role": "admin",
+      "request": {
+        "expectedDraftFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+        "expectedBaseStageId": 12,
+        "confirmation": "HARD_EXCEPTIONS"
+      },
+      "response": {
+        "status": 403,
+        "body": {
+          "code": "HARD_ADMIN_AUTHORIZATION_REQUIRED",
+          "message": "HARD_ADMIN_AUTHORIZATION_REQUIRED"
+        }
+      }
+    },
+    {
+      "suffix": "/accept-stage",
+      "method": "POST",
+      "role": "admin",
+      "request": {
+        "expectedDraftFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+        "expectedBaseStageId": 12,
+        "confirmation": "NONE"
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "code": "HARD_CONFIRMATION_REQUIRED",
+          "message": "HARD_CONFIRMATION_REQUIRED"
+        }
+      }
+    },
+    {
+      "suffix": "/validate",
+      "method": "POST",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+        "expectedBaseStageId": 12
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "code": "STALE_DRAFT",
+          "message": "STALE_DRAFT"
+        }
+      }
+    },
+    {
+      "suffix": "/validate",
+      "method": "POST",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+        "expectedBaseStageId": 10012
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "code": "STALE_BASE_STAGE",
+          "message": "STALE_BASE_STAGE"
+        }
+      }
+    },
+    {
+      "suffix": "/validate",
+      "method": "POST",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+        "expectedBaseStageId": 12
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "code": "STALE_CONFIG_REVISION",
+          "message": "STALE_CONFIG_REVISION"
+        }
+      }
+    },
+    {
+      "suffix": "/accept-stage",
+      "method": "POST",
+      "role": "admin",
+      "request": {
+        "expectedDraftFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+        "expectedBaseStageId": 12,
+        "confirmation": "HARD_EXCEPTIONS"
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "code": "STALE_VALIDATION",
+          "message": "STALE_VALIDATION"
+        }
+      }
+    },
+    {
+      "suffix": "/accept-stage",
+      "method": "POST",
+      "role": "admin",
+      "source": "Chromium",
+      "request": {
+        "expectedDraftFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+        "expectedBaseStageId": 12,
+        "confirmation": "HARD_EXCEPTIONS"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "suffix": "/draft",
+      "method": "PATCH",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+        "expectedBaseStageId": 14,
+        "changes": [
+          {
+            "taskId": 10013,
+            "startPlanned": "13:20",
+            "endPlanned": "14:00"
+          }
+        ]
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "suffix": "/validate",
+      "method": "POST",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "8032dec4977b0806237023ec396e095708ac05b389966cb5b33346338d77370f",
+        "expectedBaseStageId": 14
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "current": true,
+          "mode": "MANUAL_STAGE_VALIDATION_V1",
+          "validation": {
+            "id": 16,
+            "planId": 27001,
+            "sessionId": 1,
+            "baseStageId": 14,
+            "draftFingerprint": "8032dec4977b0806237023ec396e095708ac05b389966cb5b33346338d77370f",
+            "configRevisionId": 8,
+            "hardCount": 1,
+            "requiredCount": 0,
+            "preferredCount": 0,
+            "reportJson": {
+              "mode": "MANUAL_STAGE_VALIDATION_V1",
+              "work": {},
+              "hardCount": 1,
+              "hardValid": false,
+              "violations": [
+                {
+                  "details": {
+                    "dimensions": {
+                      "end": 695,
+                      "kind": "GROUP_SIZE",
+                      "start": 690,
+                      "direction": "arrival",
+                      "actualGroupSize": 4,
+                      "maximumGroupSize": 3,
+                      "minimumGroupSize": 1
+                    },
+                    "taskChanges": []
+                  },
+                  "ruleCode": "TRANSPORT_GROUPING_VIOLATION",
+                  "severity": "HARD",
+                  "violationKey": "{\"ruleCode\":\"TRANSPORT_GROUPING_VIOLATION\",\"taskIds\":[10135,10150,10233,10259],\"resourceIds\":[],\"spaceIds\":[],\"dimensions\":{\"actualGroupSize\":4,\"direction\":\"arrival\",\"end\":695,\"kind\":\"GROUP_SIZE\",\"maximumGroupSize\":3,\"minimumGroupSize\":1,\"start\":690}}",
+                  "affectedTaskIds": [
+                    10135,
+                    10150,
+                    10233,
+                    10259
+                  ],
+                  "affectedSpaceIds": [],
+                  "affectedResourceIds": [],
+                  "inheritedAcceptedExceptionId": 1
+                }
+              ],
+              "fingerprint": "8032dec4977b0806237023ec396e095708ac05b389966cb5b33346338d77370f",
+              "reasonCodes": [
+                "TRANSPORT_GROUPING_VIOLATION"
+              ],
+              "newHardCount": 0,
+              "requiredCount": 0,
+              "changedTaskIds": [
+                10013
+              ],
+              "preferredCount": 0,
+              "contractVersion": 1,
+              "completeForScope": true,
+              "newRequiredCount": 0,
+              "supportingTaskIds": [],
+              "preferredAssessment": "NOT_CLASSIFIED",
+              "futureFullDayFeasibility": "NOT_CERTIFIED",
+              "supportingReasonByTaskId": {},
+              "protectedPlacementsPreserved": true
+            },
+            "createdAt": "2026-10-21T10:27:42.049179+00:00"
+          }
+        }
+      }
+    },
+    {
+      "suffix": "/accept-stage",
+      "method": "POST",
+      "role": "production",
+      "source": "Chromium",
+      "request": {
+        "expectedDraftFingerprint": "8032dec4977b0806237023ec396e095708ac05b389966cb5b33346338d77370f",
+        "expectedBaseStageId": 14,
+        "confirmation": "NONE"
+      },
+      "response": {
+        "status": 200
+      },
+      "dialogs": 0
+    },
+    {
+      "suffix": "/draft",
+      "method": "PATCH",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "8032dec4977b0806237023ec396e095708ac05b389966cb5b33346338d77370f",
+        "expectedBaseStageId": 15,
+        "changes": [
+          {
+            "taskId": 10135,
+            "startPlanned": "11:35",
+            "endPlanned": "11:40"
+          }
+        ]
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "suffix": "/validate",
+      "method": "POST",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "ad8ab55c3397a4bab2d452ad5ae31f0ae109fe18e0059b1c4d84d49e16a459ef",
+        "expectedBaseStageId": 15
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "current": true,
+          "mode": "MANUAL_STAGE_VALIDATION_V1",
+          "validation": {
+            "id": 17,
+            "planId": 27001,
+            "sessionId": 1,
+            "baseStageId": 15,
+            "draftFingerprint": "ad8ab55c3397a4bab2d452ad5ae31f0ae109fe18e0059b1c4d84d49e16a459ef",
+            "configRevisionId": 8,
+            "hardCount": 1,
+            "requiredCount": 0,
+            "preferredCount": 0,
+            "reportJson": {
+              "mode": "MANUAL_STAGE_VALIDATION_V1",
+              "work": {},
+              "hardCount": 1,
+              "hardValid": false,
+              "violations": [
+                {
+                  "details": {
+                    "dimensions": {
+                      "end": 700,
+                      "kind": "GROUP_GAP",
+                      "start": 695,
+                      "direction": "arrival",
+                      "previousEnd": 695,
+                      "minGapMinutes": 30,
+                      "previousStart": 690,
+                      "currentTaskIds": [
+                        "task:10135"
+                      ],
+                      "previousTaskIds": [
+                        "task:10150",
+                        "task:10233",
+                        "task:10259"
+                      ],
+                      "actualGapMinutes": 5
+                    },
+                    "taskChanges": [
+                      {
+                        "after": {
+                          "end": "11:40",
+                          "start": "11:35"
+                        },
+                        "before": {
+                          "end": "11:35",
+                          "start": "11:30"
+                        },
+                        "taskId": 10135
+                      }
+                    ]
+                  },
+                  "ruleCode": "TRANSPORT_GROUPING_VIOLATION",
+                  "severity": "HARD",
+                  "violationKey": "{\"ruleCode\":\"TRANSPORT_GROUPING_VIOLATION\",\"taskIds\":[10135,10150,10233,10259],\"resourceIds\":[],\"spaceIds\":[],\"dimensions\":{\"actualGapMinutes\":5,\"currentTaskIds\":[\"task:10135\"],\"direction\":\"arrival\",\"end\":700,\"kind\":\"GROUP_GAP\",\"minGapMinutes\":30,\"previousEnd\":695,\"previousStart\":690,\"previousTaskIds\":[\"task:10150\",\"task:10233\",\"task:10259\"],\"start\":695}}",
+                  "affectedTaskIds": [
+                    10135,
+                    10150,
+                    10233,
+                    10259
+                  ],
+                  "affectedSpaceIds": [],
+                  "affectedResourceIds": [],
+                  "inheritedAcceptedExceptionId": null
+                }
+              ],
+              "fingerprint": "ad8ab55c3397a4bab2d452ad5ae31f0ae109fe18e0059b1c4d84d49e16a459ef",
+              "reasonCodes": [
+                "TRANSPORT_GROUPING_VIOLATION"
+              ],
+              "newHardCount": 1,
+              "requiredCount": 0,
+              "changedTaskIds": [
+                10135
+              ],
+              "preferredCount": 0,
+              "contractVersion": 1,
+              "completeForScope": true,
+              "newRequiredCount": 0,
+              "supportingTaskIds": [],
+              "preferredAssessment": "NOT_CLASSIFIED",
+              "futureFullDayFeasibility": "NOT_CERTIFIED",
+              "supportingReasonByTaskId": {},
+              "protectedPlacementsPreserved": true
+            },
+            "createdAt": "2026-10-21T10:27:49.191977+00:00"
+          }
+        }
+      }
+    },
+    {
+      "suffix": "/accept-stage",
+      "method": "POST",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "ad8ab55c3397a4bab2d452ad5ae31f0ae109fe18e0059b1c4d84d49e16a459ef",
+        "expectedBaseStageId": 15,
+        "confirmation": "HARD_EXCEPTIONS"
+      },
+      "response": {
+        "status": 403,
+        "body": {
+          "code": "HARD_ADMIN_AUTHORIZATION_REQUIRED",
+          "message": "HARD_ADMIN_AUTHORIZATION_REQUIRED"
+        }
+      }
+    },
+    {
+      "suffix": "/accept-stage",
+      "method": "POST",
+      "role": "admin",
+      "request": {
+        "expectedDraftFingerprint": "ad8ab55c3397a4bab2d452ad5ae31f0ae109fe18e0059b1c4d84d49e16a459ef",
+        "expectedBaseStageId": 15,
+        "confirmation": "NONE"
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "code": "HARD_CONFIRMATION_REQUIRED",
+          "message": "HARD_CONFIRMATION_REQUIRED"
+        }
+      }
+    },
+    {
+      "suffix": "/accept-stage",
+      "method": "POST",
+      "role": "admin",
+      "request": {
+        "expectedDraftFingerprint": "ad8ab55c3397a4bab2d452ad5ae31f0ae109fe18e0059b1c4d84d49e16a459ef",
+        "expectedBaseStageId": 15,
+        "confirmation": "HARD_EXCEPTIONS"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "suffix": "/rollback",
+      "method": "POST",
+      "role": "admin",
+      "request": {
+        "targetStageId": 12
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "suffix": "/draft",
+      "method": "PATCH",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "4216287469c4257030c72acfc2ba3b5bbcd3d5396874a73b6d0db2ba533d4122",
+        "expectedBaseStageId": 12,
+        "changes": [
+          {
+            "taskId": 10002,
+            "startPlanned": "12:15",
+            "endPlanned": "12:30"
+          }
+        ]
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "suffix": "/validate",
+      "method": "POST",
+      "role": "production",
+      "source": "Chromium",
+      "request": {
+        "expectedDraftFingerprint": "2cce20fc392fd0becf81ab8ca4f8390b841c28593b9df6180228cb846781f503",
+        "expectedBaseStageId": 12
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "code": "ASSISTED_DELTA_VALIDATION_UNSUPPORTED",
+          "message": "ASSISTED_DELTA_VALIDATION_UNSUPPORTED",
+          "validationDiagnostics": {
+            "phase": "RULE_IDENTITY",
+            "reasonCodes": [
+              "ANCHORED_ACCOMPANIMENT_VIOLATION"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "suffix": "/accept-stage",
+      "method": "POST",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "2cce20fc392fd0becf81ab8ca4f8390b841c28593b9df6180228cb846781f503",
+        "expectedBaseStageId": 12,
+        "confirmation": "NONE"
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "code": "STALE_VALIDATION",
+          "message": "STALE_VALIDATION"
+        }
+      }
+    },
+    {
+      "suffix": "/draft/reset",
+      "method": "POST",
+      "role": "production",
+      "request": {
+        "expectedDraftFingerprint": "2cce20fc392fd0becf81ab8ca4f8390b841c28593b9df6180228cb846781f503",
+        "expectedBaseStageId": 12
+      },
+      "response": {
+        "status": 200
+      }
+    }
+  ],
+  "acceptedMaterial": "EXACT_DELTA_AND_ROLLBACK",
+  "confirmationText": "Aceptar conflictos críticos\n\nHay 1 conflicto crítico nuevo y 0 desviaciones operativas nuevas. Se registrarán como excepciones con tu usuario administrador.\n\nEl planning conservará el indicador crítico: aceptar no elimina las infracciones ni lo convierte en un planning libre de conflictos.\n\nVer detalles y consecuencias\n\nIN: grupo de 4 participantes; máximo permitido 3.\nIN (C10, transport-in): 11:30–11:35\nIN (C11, transport-in): 11:30–11:35\nIN (C17, transport-in): 11:30–11:35\nIN (C19, transport-in): 11:30–11:35\nIN (C10, transport-in): antes 12:00–12:05; después 11:30–11:35.\n\nCancelar\nAceptar con conflictos críticos",
+  "lifecycle": {
+    "hardAcceptedStageId": 14,
+    "exceptionId": "1",
+    "acceptedException": {
+      "ruleCode": "TRANSPORT_GROUPING_VIOLATION",
+      "severity": "HARD",
+      "violationKey": "{\"ruleCode\":\"TRANSPORT_GROUPING_VIOLATION\",\"taskIds\":[10135,10150,10233,10259],\"resourceIds\":[],\"spaceIds\":[],\"dimensions\":{\"actualGroupSize\":4,\"direction\":\"arrival\",\"end\":695,\"kind\":\"GROUP_SIZE\",\"maximumGroupSize\":3,\"minimumGroupSize\":1,\"start\":690}}",
+      "snapshotFingerprint": "7faf509c42785036bd9d1b79430a1d8d6101afdf6793efb2b93e86cafdcd5f15",
+      "configRevisionId": 8,
+      "affectedTaskIds": [
+        10135,
+        10150,
+        10233,
+        10259
+      ],
+      "details": {
+        "dimensions": {
+          "end": 695,
+          "kind": "GROUP_SIZE",
+          "start": 690,
+          "direction": "arrival",
+          "actualGroupSize": 4,
+          "maximumGroupSize": 3,
+          "minimumGroupSize": 1
+        },
+        "taskChanges": [
+          {
+            "after": {
+              "end": "11:35",
+              "start": "11:30"
+            },
+            "before": {
+              "end": "12:05",
+              "start": "12:00"
+            },
+            "taskId": 10135
+          }
+        ]
+      },
+      "acceptedBy": "a580f3c1-8b2c-4d8b-90eb-36afe577f118",
+      "acceptedAt": "2026-10-21T10:27:39.321Z",
+      "statusAtAcceptance": "ACTIVE",
+      "actorRole": "admin"
+    },
+    "inheritedStageId": 15,
+    "newHardCountAfterMemberEdit": 1,
+    "oldExceptionAfterReconfirmation": "SUPERSEDED",
+    "unsupported": {
+      "code": "ASSISTED_DELTA_VALIDATION_UNSUPPORTED",
+      "message": "ASSISTED_DELTA_VALIDATION_UNSUPPORTED",
+      "validationDiagnostics": {
+        "phase": "RULE_IDENTITY",
+        "reasonCodes": [
+          "ANCHORED_ACCOMPANIMENT_VIOLATION"
+        ]
+      }
+    }
+  },
+  "authorization": {
+    "newHard": "ADMIN_ONLY",
+    "productionClean": true,
+    "requiredAcceptance": "SEPARATE_IMMUTABLE_FIXTURE",
+    "productionInheritedWithoutConsent": true,
+    "inheritedDialogs": [],
+    "rpcBoundary": [
+      {
+        "role": "admin",
+        "status": 403,
+        "spoofedActor": "admin",
+        "writes": 0
+      },
+      {
+        "role": "production",
+        "status": 403,
+        "spoofedActor": "admin",
+        "writes": 0
+      },
+      {
+        "role": "viewer",
+        "status": 403,
+        "spoofedActor": "admin",
+        "writes": 0
+      },
+      {
+        "role": "aux",
+        "status": 403,
+        "spoofedActor": "admin",
+        "writes": 0
+      },
+      {
+        "role": "norole",
+        "status": 403,
+        "spoofedActor": "admin",
+        "writes": 0
+      }
+    ],
+    "rpcPrivileges": [
+      {
+        "anon": false,
+        "authenticated": false,
+        "service": true
+      }
+    ],
+    "revocation": {
+      "productionToViewer": 403,
+      "adminToProduction": 403
+    },
+    "rejectionsWriteNothing": true
+  },
+  "shape": {
+    "tasks": 266,
+    "meals": 8,
+    "setup": 1,
+    "round": 17
+  },
+  "identityMap": [
+    {
+      "namespace": "anchored-operation",
+      "sourceId": "anchored.reality-plato.C01",
+      "canonicalId": "anchored-operation:anchored.reality-plato.C01"
+    },
+    {
+      "namespace": "anchored-operation",
+      "sourceId": "anchored.reality-plato.C05",
+      "canonicalId": "anchored-operation:anchored.reality-plato.C05"
+    },
+    {
+      "namespace": "anchored-operation",
+      "sourceId": "anchored.reality-plato.C08",
+      "canonicalId": "anchored-operation:anchored.reality-plato.C08"
+    },
+    {
+      "namespace": "break",
+      "sourceId": "coach-jose-maria",
+      "canonicalId": "break:coach-jose-maria"
+    },
+    {
+      "namespace": "break",
+      "sourceId": "coach-lucia",
+      "canonicalId": "break:coach-lucia"
+    },
+    {
+      "namespace": "break",
+      "sourceId": "main-flow",
+      "canonicalId": "break:main-flow"
+    },
+    {
+      "namespace": "break",
+      "sourceId": "p14-operations",
+      "canonicalId": "break:p14-operations"
+    },
+    {
+      "namespace": "break",
+      "sourceId": "p15-operations",
+      "canonicalId": "break:p15-operations"
+    },
+    {
+      "namespace": "break",
+      "sourceId": "reality-a",
+      "canonicalId": "break:reality-a"
+    },
+    {
+      "namespace": "break",
+      "sourceId": "reality-b",
+      "canonicalId": "break:reality-b"
+    },
+    {
+      "namespace": "break",
+      "sourceId": "totales-operations",
+      "canonicalId": "break:totales-operations"
+    },
+    {
+      "namespace": "itinerant-team",
+      "sourceId": "5001",
+      "canonicalId": "itinerant-team:5001"
+    },
+    {
+      "namespace": "itinerant-team",
+      "sourceId": "5002",
+      "canonicalId": "itinerant-team:5002"
+    },
+    {
+      "namespace": "itinerant-team",
+      "sourceId": "5003",
+      "canonicalId": "itinerant-team:5003"
+    },
+    {
+      "namespace": "joint-group",
+      "sourceId": "joint.alfombra-roja.C06-C10",
+      "canonicalId": "joint-group:joint.alfombra-roja.C06-C10"
+    },
+    {
+      "namespace": "joint-group",
+      "sourceId": "joint.totales-post.C06-C10",
+      "canonicalId": "joint-group:joint.totales-post.C06-C10"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "201",
+      "canonicalId": "participant:201"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "202",
+      "canonicalId": "participant:202"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "203",
+      "canonicalId": "participant:203"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "204",
+      "canonicalId": "participant:204"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "205",
+      "canonicalId": "participant:205"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "206",
+      "canonicalId": "participant:206"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "207",
+      "canonicalId": "participant:207"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "208",
+      "canonicalId": "participant:208"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "209",
+      "canonicalId": "participant:209"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "210",
+      "canonicalId": "participant:210"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "211",
+      "canonicalId": "participant:211"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "212",
+      "canonicalId": "participant:212"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "213",
+      "canonicalId": "participant:213"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "214",
+      "canonicalId": "participant:214"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "215",
+      "canonicalId": "participant:215"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "216",
+      "canonicalId": "participant:216"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "217",
+      "canonicalId": "participant:217"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "218",
+      "canonicalId": "participant:218"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "219",
+      "canonicalId": "participant:219"
+    },
+    {
+      "namespace": "plan-resource",
+      "sourceId": "4001",
+      "canonicalId": "plan-resource:4001"
+    },
+    {
+      "namespace": "plan-resource",
+      "sourceId": "4002",
+      "canonicalId": "plan-resource:4002"
+    },
+    {
+      "namespace": "plan-resource",
+      "sourceId": "4003",
+      "canonicalId": "plan-resource:4003"
+    },
+    {
+      "namespace": "plan-resource",
+      "sourceId": "4004",
+      "canonicalId": "plan-resource:4004"
+    },
+    {
+      "namespace": "plan-resource",
+      "sourceId": "4005",
+      "canonicalId": "plan-resource:4005"
+    },
+    {
+      "namespace": "plan-resource",
+      "sourceId": "4006",
+      "canonicalId": "plan-resource:4006"
+    },
+    {
+      "namespace": "plan-resource",
+      "sourceId": "4007",
+      "canonicalId": "plan-resource:4007"
+    },
+    {
+      "namespace": "plan-resource",
+      "sourceId": "4008",
+      "canonicalId": "plan-resource:4008"
+    },
+    {
+      "namespace": "plan-resource",
+      "sourceId": "4009",
+      "canonicalId": "plan-resource:4009"
+    },
+    {
+      "namespace": "plan-resource",
+      "sourceId": "4010",
+      "canonicalId": "plan-resource:4010"
+    },
+    {
+      "namespace": "plan-resource",
+      "sourceId": "4011",
+      "canonicalId": "plan-resource:4011"
+    },
+    {
+      "namespace": "plan",
+      "sourceId": "27001",
+      "canonicalId": "plan:27001"
+    },
+    {
+      "namespace": "resource-item",
+      "sourceId": "7001",
+      "canonicalId": "resource-item:7001"
+    },
+    {
+      "namespace": "resource-item",
+      "sourceId": "7002",
+      "canonicalId": "resource-item:7002"
+    },
+    {
+      "namespace": "resource-item",
+      "sourceId": "7003",
+      "canonicalId": "resource-item:7003"
+    },
+    {
+      "namespace": "resource-item",
+      "sourceId": "7004",
+      "canonicalId": "resource-item:7004"
+    },
+    {
+      "namespace": "resource-item",
+      "sourceId": "7005",
+      "canonicalId": "resource-item:7005"
+    },
+    {
+      "namespace": "resource-item",
+      "sourceId": "7006",
+      "canonicalId": "resource-item:7006"
+    },
+    {
+      "namespace": "resource-item",
+      "sourceId": "7007",
+      "canonicalId": "resource-item:7007"
+    },
+    {
+      "namespace": "resource-item",
+      "sourceId": "7008",
+      "canonicalId": "resource-item:7008"
+    },
+    {
+      "namespace": "resource-item",
+      "sourceId": "7009",
+      "canonicalId": "resource-item:7009"
+    },
+    {
+      "namespace": "resource-item",
+      "sourceId": "7010",
+      "canonicalId": "resource-item:7010"
+    },
+    {
+      "namespace": "resource-item",
+      "sourceId": "7011",
+      "canonicalId": "resource-item:7011"
+    },
+    {
+      "namespace": "resource-type",
+      "sourceId": "8001",
+      "canonicalId": "resource-type:8001"
+    },
+    {
+      "namespace": "resource-type",
+      "sourceId": "8002",
+      "canonicalId": "resource-type:8002"
+    },
+    {
+      "namespace": "resource-type",
+      "sourceId": "8003",
+      "canonicalId": "resource-type:8003"
+    },
+    {
+      "namespace": "resource-type",
+      "sourceId": "8004",
+      "canonicalId": "resource-type:8004"
+    },
+    {
+      "namespace": "resource-type",
+      "sourceId": "8005",
+      "canonicalId": "resource-type:8005"
+    },
+    {
+      "namespace": "resource-type",
+      "sourceId": "8006",
+      "canonicalId": "resource-type:8006"
+    },
+    {
+      "namespace": "resource-type",
+      "sourceId": "8007",
+      "canonicalId": "resource-type:8007"
+    },
+    {
+      "namespace": "resource-type",
+      "sourceId": "8008",
+      "canonicalId": "resource-type:8008"
+    },
+    {
+      "namespace": "resource-type",
+      "sourceId": "8009",
+      "canonicalId": "resource-type:8009"
+    },
+    {
+      "namespace": "resource-type",
+      "sourceId": "8010",
+      "canonicalId": "resource-type:8010"
+    },
+    {
+      "namespace": "resource-type",
+      "sourceId": "8011",
+      "canonicalId": "resource-type:8011"
+    },
+    {
+      "namespace": "round-synchronization",
+      "sourceId": "a2-totales-rounds",
+      "canonicalId": "round-synchronization:a2-totales-rounds"
+    },
+    {
+      "namespace": "setup-family",
+      "sourceId": "3009:estrellas",
+      "canonicalId": "setup-family:3009:estrellas"
+    },
+    {
+      "namespace": "setup-family",
+      "sourceId": "3009:sillon",
+      "canonicalId": "setup-family:3009:sillon"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3001",
+      "canonicalId": "space:3001"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3002",
+      "canonicalId": "space:3002"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3003",
+      "canonicalId": "space:3003"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3004",
+      "canonicalId": "space:3004"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3005",
+      "canonicalId": "space:3005"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3006",
+      "canonicalId": "space:3006"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3007",
+      "canonicalId": "space:3007"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3008",
+      "canonicalId": "space:3008"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3009",
+      "canonicalId": "space:3009"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3010",
+      "canonicalId": "space:3010"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3011",
+      "canonicalId": "space:3011"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3012",
+      "canonicalId": "space:3012"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3013",
+      "canonicalId": "space:3013"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3014",
+      "canonicalId": "space:3014"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3015",
+      "canonicalId": "space:3015"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3016",
+      "canonicalId": "space:3016"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3017",
+      "canonicalId": "space:3017"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3018",
+      "canonicalId": "space:3018"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3019",
+      "canonicalId": "space:3019"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3020",
+      "canonicalId": "space:3020"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3021",
+      "canonicalId": "space:3021"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3022",
+      "canonicalId": "space:3022"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3023",
+      "canonicalId": "space:3023"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3024",
+      "canonicalId": "space:3024"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10001",
+      "canonicalId": "task:10001"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10002",
+      "canonicalId": "task:10002"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10003",
+      "canonicalId": "task:10003"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10004",
+      "canonicalId": "task:10004"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10005",
+      "canonicalId": "task:10005"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10006",
+      "canonicalId": "task:10006"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10007",
+      "canonicalId": "task:10007"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10008",
+      "canonicalId": "task:10008"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10009",
+      "canonicalId": "task:10009"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10010",
+      "canonicalId": "task:10010"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10011",
+      "canonicalId": "task:10011"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10012",
+      "canonicalId": "task:10012"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10013",
+      "canonicalId": "task:10013"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10014",
+      "canonicalId": "task:10014"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10015",
+      "canonicalId": "task:10015"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10016",
+      "canonicalId": "task:10016"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10017",
+      "canonicalId": "task:10017"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10018",
+      "canonicalId": "task:10018"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10019",
+      "canonicalId": "task:10019"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10020",
+      "canonicalId": "task:10020"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10021",
+      "canonicalId": "task:10021"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10022",
+      "canonicalId": "task:10022"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10023",
+      "canonicalId": "task:10023"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10024",
+      "canonicalId": "task:10024"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10025",
+      "canonicalId": "task:10025"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10026",
+      "canonicalId": "task:10026"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10027",
+      "canonicalId": "task:10027"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10028",
+      "canonicalId": "task:10028"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10029",
+      "canonicalId": "task:10029"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10030",
+      "canonicalId": "task:10030"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10031",
+      "canonicalId": "task:10031"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10032",
+      "canonicalId": "task:10032"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10033",
+      "canonicalId": "task:10033"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10034",
+      "canonicalId": "task:10034"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10035",
+      "canonicalId": "task:10035"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10036",
+      "canonicalId": "task:10036"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10037",
+      "canonicalId": "task:10037"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10038",
+      "canonicalId": "task:10038"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10039",
+      "canonicalId": "task:10039"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10040",
+      "canonicalId": "task:10040"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10041",
+      "canonicalId": "task:10041"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10042",
+      "canonicalId": "task:10042"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10043",
+      "canonicalId": "task:10043"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10044",
+      "canonicalId": "task:10044"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10045",
+      "canonicalId": "task:10045"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10046",
+      "canonicalId": "task:10046"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10047",
+      "canonicalId": "task:10047"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10048",
+      "canonicalId": "task:10048"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10049",
+      "canonicalId": "task:10049"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10050",
+      "canonicalId": "task:10050"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10051",
+      "canonicalId": "task:10051"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10052",
+      "canonicalId": "task:10052"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10053",
+      "canonicalId": "task:10053"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10054",
+      "canonicalId": "task:10054"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10055",
+      "canonicalId": "task:10055"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10056",
+      "canonicalId": "task:10056"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10057",
+      "canonicalId": "task:10057"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10058",
+      "canonicalId": "task:10058"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10059",
+      "canonicalId": "task:10059"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10060",
+      "canonicalId": "task:10060"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10061",
+      "canonicalId": "task:10061"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10062",
+      "canonicalId": "task:10062"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10063",
+      "canonicalId": "task:10063"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10064",
+      "canonicalId": "task:10064"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10065",
+      "canonicalId": "task:10065"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10066",
+      "canonicalId": "task:10066"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10067",
+      "canonicalId": "task:10067"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10068",
+      "canonicalId": "task:10068"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10069",
+      "canonicalId": "task:10069"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10070",
+      "canonicalId": "task:10070"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10071",
+      "canonicalId": "task:10071"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10072",
+      "canonicalId": "task:10072"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10073",
+      "canonicalId": "task:10073"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10074",
+      "canonicalId": "task:10074"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10075",
+      "canonicalId": "task:10075"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10076",
+      "canonicalId": "task:10076"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10077",
+      "canonicalId": "task:10077"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10078",
+      "canonicalId": "task:10078"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10079",
+      "canonicalId": "task:10079"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10080",
+      "canonicalId": "task:10080"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10081",
+      "canonicalId": "task:10081"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10082",
+      "canonicalId": "task:10082"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10083",
+      "canonicalId": "task:10083"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10084",
+      "canonicalId": "task:10084"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10085",
+      "canonicalId": "task:10085"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10086",
+      "canonicalId": "task:10086"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10087",
+      "canonicalId": "task:10087"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10088",
+      "canonicalId": "task:10088"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10089",
+      "canonicalId": "task:10089"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10090",
+      "canonicalId": "task:10090"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10091",
+      "canonicalId": "task:10091"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10092",
+      "canonicalId": "task:10092"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10093",
+      "canonicalId": "task:10093"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10094",
+      "canonicalId": "task:10094"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10095",
+      "canonicalId": "task:10095"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10096",
+      "canonicalId": "task:10096"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10097",
+      "canonicalId": "task:10097"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10098",
+      "canonicalId": "task:10098"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10099",
+      "canonicalId": "task:10099"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10100",
+      "canonicalId": "task:10100"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10101",
+      "canonicalId": "task:10101"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10102",
+      "canonicalId": "task:10102"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10103",
+      "canonicalId": "task:10103"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10104",
+      "canonicalId": "task:10104"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10105",
+      "canonicalId": "task:10105"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10106",
+      "canonicalId": "task:10106"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10107",
+      "canonicalId": "task:10107"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10108",
+      "canonicalId": "task:10108"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10109",
+      "canonicalId": "task:10109"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10110",
+      "canonicalId": "task:10110"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10111",
+      "canonicalId": "task:10111"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10112",
+      "canonicalId": "task:10112"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10113",
+      "canonicalId": "task:10113"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10114",
+      "canonicalId": "task:10114"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10115",
+      "canonicalId": "task:10115"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10116",
+      "canonicalId": "task:10116"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10117",
+      "canonicalId": "task:10117"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10118",
+      "canonicalId": "task:10118"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10119",
+      "canonicalId": "task:10119"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10120",
+      "canonicalId": "task:10120"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10121",
+      "canonicalId": "task:10121"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10122",
+      "canonicalId": "task:10122"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10123",
+      "canonicalId": "task:10123"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10124",
+      "canonicalId": "task:10124"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10125",
+      "canonicalId": "task:10125"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10126",
+      "canonicalId": "task:10126"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10127",
+      "canonicalId": "task:10127"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10128",
+      "canonicalId": "task:10128"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10129",
+      "canonicalId": "task:10129"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10130",
+      "canonicalId": "task:10130"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10131",
+      "canonicalId": "task:10131"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10132",
+      "canonicalId": "task:10132"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10133",
+      "canonicalId": "task:10133"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10134",
+      "canonicalId": "task:10134"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10135",
+      "canonicalId": "task:10135"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10136",
+      "canonicalId": "task:10136"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10137",
+      "canonicalId": "task:10137"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10138",
+      "canonicalId": "task:10138"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10139",
+      "canonicalId": "task:10139"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10140",
+      "canonicalId": "task:10140"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10141",
+      "canonicalId": "task:10141"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10142",
+      "canonicalId": "task:10142"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10143",
+      "canonicalId": "task:10143"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10144",
+      "canonicalId": "task:10144"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10145",
+      "canonicalId": "task:10145"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10146",
+      "canonicalId": "task:10146"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10147",
+      "canonicalId": "task:10147"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10148",
+      "canonicalId": "task:10148"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10149",
+      "canonicalId": "task:10149"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10150",
+      "canonicalId": "task:10150"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10151",
+      "canonicalId": "task:10151"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10152",
+      "canonicalId": "task:10152"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10153",
+      "canonicalId": "task:10153"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10154",
+      "canonicalId": "task:10154"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10155",
+      "canonicalId": "task:10155"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10156",
+      "canonicalId": "task:10156"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10157",
+      "canonicalId": "task:10157"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10158",
+      "canonicalId": "task:10158"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10159",
+      "canonicalId": "task:10159"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10160",
+      "canonicalId": "task:10160"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10161",
+      "canonicalId": "task:10161"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10162",
+      "canonicalId": "task:10162"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10163",
+      "canonicalId": "task:10163"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10164",
+      "canonicalId": "task:10164"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10165",
+      "canonicalId": "task:10165"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10166",
+      "canonicalId": "task:10166"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10167",
+      "canonicalId": "task:10167"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10168",
+      "canonicalId": "task:10168"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10169",
+      "canonicalId": "task:10169"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10170",
+      "canonicalId": "task:10170"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10171",
+      "canonicalId": "task:10171"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10172",
+      "canonicalId": "task:10172"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10173",
+      "canonicalId": "task:10173"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10174",
+      "canonicalId": "task:10174"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10175",
+      "canonicalId": "task:10175"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10176",
+      "canonicalId": "task:10176"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10177",
+      "canonicalId": "task:10177"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10178",
+      "canonicalId": "task:10178"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10179",
+      "canonicalId": "task:10179"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10180",
+      "canonicalId": "task:10180"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10181",
+      "canonicalId": "task:10181"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10182",
+      "canonicalId": "task:10182"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10183",
+      "canonicalId": "task:10183"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10184",
+      "canonicalId": "task:10184"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10185",
+      "canonicalId": "task:10185"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10186",
+      "canonicalId": "task:10186"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10187",
+      "canonicalId": "task:10187"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10188",
+      "canonicalId": "task:10188"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10189",
+      "canonicalId": "task:10189"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10190",
+      "canonicalId": "task:10190"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10191",
+      "canonicalId": "task:10191"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10192",
+      "canonicalId": "task:10192"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10193",
+      "canonicalId": "task:10193"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10194",
+      "canonicalId": "task:10194"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10195",
+      "canonicalId": "task:10195"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10196",
+      "canonicalId": "task:10196"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10197",
+      "canonicalId": "task:10197"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10198",
+      "canonicalId": "task:10198"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10199",
+      "canonicalId": "task:10199"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10200",
+      "canonicalId": "task:10200"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10201",
+      "canonicalId": "task:10201"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10202",
+      "canonicalId": "task:10202"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10203",
+      "canonicalId": "task:10203"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10204",
+      "canonicalId": "task:10204"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10205",
+      "canonicalId": "task:10205"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10206",
+      "canonicalId": "task:10206"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10207",
+      "canonicalId": "task:10207"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10208",
+      "canonicalId": "task:10208"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10209",
+      "canonicalId": "task:10209"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10210",
+      "canonicalId": "task:10210"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10211",
+      "canonicalId": "task:10211"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10212",
+      "canonicalId": "task:10212"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10213",
+      "canonicalId": "task:10213"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10214",
+      "canonicalId": "task:10214"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10215",
+      "canonicalId": "task:10215"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10216",
+      "canonicalId": "task:10216"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10217",
+      "canonicalId": "task:10217"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10218",
+      "canonicalId": "task:10218"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10219",
+      "canonicalId": "task:10219"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10220",
+      "canonicalId": "task:10220"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10221",
+      "canonicalId": "task:10221"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10222",
+      "canonicalId": "task:10222"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10223",
+      "canonicalId": "task:10223"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10224",
+      "canonicalId": "task:10224"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10225",
+      "canonicalId": "task:10225"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10226",
+      "canonicalId": "task:10226"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10227",
+      "canonicalId": "task:10227"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10228",
+      "canonicalId": "task:10228"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10229",
+      "canonicalId": "task:10229"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10230",
+      "canonicalId": "task:10230"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10231",
+      "canonicalId": "task:10231"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10232",
+      "canonicalId": "task:10232"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10233",
+      "canonicalId": "task:10233"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10234",
+      "canonicalId": "task:10234"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10235",
+      "canonicalId": "task:10235"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10236",
+      "canonicalId": "task:10236"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10237",
+      "canonicalId": "task:10237"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10238",
+      "canonicalId": "task:10238"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10239",
+      "canonicalId": "task:10239"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10240",
+      "canonicalId": "task:10240"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10241",
+      "canonicalId": "task:10241"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10242",
+      "canonicalId": "task:10242"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10243",
+      "canonicalId": "task:10243"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10244",
+      "canonicalId": "task:10244"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10245",
+      "canonicalId": "task:10245"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10246",
+      "canonicalId": "task:10246"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10247",
+      "canonicalId": "task:10247"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10248",
+      "canonicalId": "task:10248"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10249",
+      "canonicalId": "task:10249"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10250",
+      "canonicalId": "task:10250"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10251",
+      "canonicalId": "task:10251"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10252",
+      "canonicalId": "task:10252"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10253",
+      "canonicalId": "task:10253"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10254",
+      "canonicalId": "task:10254"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10255",
+      "canonicalId": "task:10255"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10256",
+      "canonicalId": "task:10256"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10257",
+      "canonicalId": "task:10257"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10258",
+      "canonicalId": "task:10258"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10259",
+      "canonicalId": "task:10259"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10260",
+      "canonicalId": "task:10260"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10261",
+      "canonicalId": "task:10261"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10262",
+      "canonicalId": "task:10262"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10263",
+      "canonicalId": "task:10263"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10264",
+      "canonicalId": "task:10264"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10265",
+      "canonicalId": "task:10265"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "10266",
+      "canonicalId": "task:10266"
+    },
+    {
+      "namespace": "technical-chain",
+      "sourceId": "continuity.reality-c-eva-alfombra",
+      "canonicalId": "technical-chain:continuity.reality-c-eva-alfombra"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20001",
+      "canonicalId": "template:20001"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20002",
+      "canonicalId": "template:20002"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20003",
+      "canonicalId": "template:20003"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20004",
+      "canonicalId": "template:20004"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20005",
+      "canonicalId": "template:20005"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20006",
+      "canonicalId": "template:20006"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20007",
+      "canonicalId": "template:20007"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20008",
+      "canonicalId": "template:20008"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20009",
+      "canonicalId": "template:20009"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20010",
+      "canonicalId": "template:20010"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20011",
+      "canonicalId": "template:20011"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20012",
+      "canonicalId": "template:20012"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20013",
+      "canonicalId": "template:20013"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20014",
+      "canonicalId": "template:20014"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20015",
+      "canonicalId": "template:20015"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20016",
+      "canonicalId": "template:20016"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20017",
+      "canonicalId": "template:20017"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20018",
+      "canonicalId": "template:20018"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20019",
+      "canonicalId": "template:20019"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20020",
+      "canonicalId": "template:20020"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20021",
+      "canonicalId": "template:20021"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20022",
+      "canonicalId": "template:20022"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20023",
+      "canonicalId": "template:20023"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20024",
+      "canonicalId": "template:20024"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20025",
+      "canonicalId": "template:20025"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20026",
+      "canonicalId": "template:20026"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20027",
+      "canonicalId": "template:20027"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20028",
+      "canonicalId": "template:20028"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20029",
+      "canonicalId": "template:20029"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20030",
+      "canonicalId": "template:20030"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "20031",
+      "canonicalId": "template:20031"
+    },
+    {
+      "namespace": "zone",
+      "sourceId": "6001",
+      "canonicalId": "zone:6001"
+    },
+    {
+      "namespace": "zone",
+      "sourceId": "6002",
+      "canonicalId": "zone:6002"
+    },
+    {
+      "namespace": "zone",
+      "sourceId": "6004",
+      "canonicalId": "zone:6004"
+    },
+    {
+      "namespace": "zone",
+      "sourceId": "6005",
+      "canonicalId": "zone:6005"
+    },
+    {
+      "namespace": "zone",
+      "sourceId": "6008",
+      "canonicalId": "zone:6008"
+    },
+    {
+      "namespace": "zone",
+      "sourceId": "6010",
+      "canonicalId": "zone:6010"
+    },
+    {
+      "namespace": "zone",
+      "sourceId": "6011",
+      "canonicalId": "zone:6011"
+    },
+    {
+      "namespace": "zone",
+      "sourceId": "6018",
+      "canonicalId": "zone:6018"
+    },
+    {
+      "namespace": "zone",
+      "sourceId": "6019",
+      "canonicalId": "zone:6019"
+    },
+    {
+      "namespace": "zone",
+      "sourceId": "6022",
+      "canonicalId": "zone:6022"
+    },
+    {
+      "namespace": "zone",
+      "sourceId": "6024",
+      "canonicalId": "zone:6024"
+    }
+  ]
+}

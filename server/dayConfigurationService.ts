@@ -11,6 +11,8 @@ import { storage } from "./storage";
 import { supabaseAdmin } from "./supabase";
 import { normalizePlanOptimizerSnapshotV1, type PlanOptimizerSnapshotV1 } from "./planOptimizerSnapshot";
 import { buildPlanOptimizerRefreshPreviewV1 } from "./planOptimizerSnapshotRefreshPreview";
+import { candidateRoundPreparations } from "./roundPreparation";
+import { preflightEngineInputForPlannerNext } from "../engine/planner-next/integration/engineInputPreflight";
 
 type Operation = "EDIT" | "RESTORE" | "REFRESH";
 type OperationPayload = DayConfigEdit | DayConfigRestore | DayConfigRefresh;
@@ -126,6 +128,12 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
   if (planError || !plan) throw Object.assign(new Error("PLAN_NOT_FOUND"), { status: 404, cause: planError });
   if (generalError || !general) throw generalError;
   if (optimizerStateError || !optimizerState) throw optimizerStateError;
+  const roundEdit = operation === "EDIT" ? (payload as DayConfigEdit).roundPreparation : undefined;
+  const roundRestore = operation === "RESTORE" && (payload as DayConfigRestore).capability === "SYNCHRONIZED_ROUNDS"
+    ? payload as Extract<DayConfigRestore, { capability: "SYNCHRONIZED_ROUNDS" }> : undefined;
+  const expectedRevision = plan.current_config_revision_id == null ? null : Number(plan.current_config_revision_id);
+  if ((roundEdit || roundRestore) && (payload as DayConfigEdit).expectedRevisionId !== expectedRevision)
+    throw Object.assign(new Error("STALE_CONFIG_REVISION"), { status: 409 });
   const mainPreferenceBaseline=operation==="REFRESH"&&(payload as DayConfigRefresh).capabilities.includes("BLOCK_COUNT_POLICY")
     ?mainFlowPreferenceFromRow(general):undefined;
   const current = await buildCanonicalPlanConfig(planId, repository);
@@ -158,15 +166,21 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
   }});
   const optimizerInput = optimizerSelected ? await buildEngineInput(planId,candidateRepository) : current.input;
   transportBoundsSchema.parse(optimizerInput);
-  const candidate = await buildCanonicalPlanConfig(planId, repository, candidateInput(optimizerInput, plan, general, operation, payload), effectiveOptimizer);
-  const { data, error } = await supabaseAdmin.rpc("apply_day_config_operation_v3", {
+  let nextInput = candidateInput(optimizerInput, plan, general, operation, payload);
+  if (roundEdit || roundRestore) {
+    nextInput = candidateRoundPreparations(nextInput, plan, (roundEdit ?? roundRestore!.roundPreparation), roundEdit?.preparationMinutesBetweenRounds, actorId);
+    const readiness = preflightEngineInputForPlannerNext(nextInput);
+    if (readiness.status !== "SUPPORTED") throw Object.assign(new Error(`La preparación no es representable con la configuración efectiva (rejilla de ${nextInput.plannerNext?.timeGridMinutes} minutos). ${readiness.reasonCodes.join(", ")}`), { status: 422 });
+  }
+  const candidate = await buildCanonicalPlanConfig(planId, repository, nextInput, effectiveOptimizer);
+  const { data, error } = await supabaseAdmin.rpc("apply_day_config_operation_v4", {
     p_plan_id: planId, p_actor: actorId, p_operation: operation, p_payload: {...payload,...(optimizerBaseline?{optimizerBaseline}: {}),...(mainPreferenceBaseline?{mainPreferenceBaseline}: {})},
     p_expected_revision: plan.current_config_revision_id == null ? null : Number(plan.current_config_revision_id),
     p_expected_identity: current.identity, p_expected_replay: current.replay,
     p_candidate_identity: candidate.identity, p_candidate_replay: candidate.replay,
     p_diff: { operation, payload,...(mainPreferenceBaseline?{mainPreferenceBaseline}: {}) },
   });
-  if (error) throw error;
+  if (error) throw Object.assign(error, { status: error.message.includes("PERMISSION_DENIED") ? 403 : /STALE_|ROUND_PREPARATION/.test(error.message) ? 409 : 500 });
   const { data: updated, error: updatedError } = await supabaseAdmin.from("plans").select("*").eq("id", planId).single();
   if (updatedError || !updated) throw updatedError;
   return { ...mapPlan(updated), revisionId: Number(data) };

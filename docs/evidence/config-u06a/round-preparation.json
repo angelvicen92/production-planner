@@ -1,0 +1,331 @@
+{
+  "status": "PASS",
+  "remoteWrites": 0,
+  "policyId": "a2-totales-rounds",
+  "baselineMinutes": 5,
+  "editedMinutes": 10,
+  "zero": "EXPLICIT",
+  "lanes": 2,
+  "revisionRows": [
+    {
+      "id": "1",
+      "source": "ASSISTED_BOOTSTRAP",
+      "fingerprint": "a646d0e06fe1e945d685d3fa821ff626bfa7ebcd38eadbed2a8dbbf2e7107f5f",
+      "diff_json": null
+    },
+    {
+      "id": "2",
+      "source": "CANONICAL_MATERIALIZATION",
+      "fingerprint": "a646d0e06fe1e945d685d3fa821ff626bfa7ebcd38eadbed2a8dbbf2e7107f5f",
+      "diff_json": {
+        "reason": "legacy-or-stale-current-revision"
+      }
+    },
+    {
+      "id": "3",
+      "source": "EDIT",
+      "fingerprint": "cb8d14691a19ef46d00212d926e50efb8909f2d59738f3d500d6989b490a4610",
+      "diff_json": {
+        "payload": {
+          "roundPreparation": {
+            "spaceId": 3019,
+            "policyId": "a2-totales-rounds",
+            "preparationMinutesBetweenRounds": 10
+          },
+          "expectedRevisionId": null
+        },
+        "operation": "EDIT"
+      }
+    },
+    {
+      "id": "4",
+      "source": "EDIT",
+      "fingerprint": "a798a2641dfb1d2913186f7e3362492b8229ee67edb0dc46c7d7a3c443d0d3f6",
+      "diff_json": {
+        "payload": {
+          "roundPreparation": {
+            "spaceId": 3020,
+            "policyId": "a2-totales-rounds",
+            "preparationMinutesBetweenRounds": 10
+          },
+          "expectedRevisionId": 3
+        },
+        "operation": "EDIT"
+      }
+    },
+    {
+      "id": "5",
+      "source": "EDIT",
+      "fingerprint": "8179ed753601e6014694393da19b1d9e9298b46c6adbe9395cab5efb2576e351",
+      "diff_json": {
+        "payload": {
+          "roundPreparation": {
+            "spaceId": 3019,
+            "policyId": "a2-totales-rounds",
+            "preparationMinutesBetweenRounds": 0
+          },
+          "expectedRevisionId": 4
+        },
+        "operation": "EDIT"
+      }
+    },
+    {
+      "id": "6",
+      "source": "EDIT",
+      "fingerprint": "8779e22f04432eaafc531aca7ed6f851a763d5069c6ac9f5596910fd756a69b5",
+      "diff_json": {
+        "payload": {
+          "roundPreparation": {
+            "spaceId": 3020,
+            "policyId": "a2-totales-rounds",
+            "preparationMinutesBetweenRounds": 0
+          },
+          "expectedRevisionId": 5
+        },
+        "operation": "EDIT"
+      }
+    },
+    {
+      "id": "7",
+      "source": "RESTORE",
+      "fingerprint": "a4df2a0ba85e19e3ccf92e7ce06a0a4ed7770550a22dc2e72c7e3c72158e46f8",
+      "diff_json": {
+        "payload": {
+          "capability": "SYNCHRONIZED_ROUNDS",
+          "roundPreparation": {
+            "spaceId": 3019,
+            "policyId": "a2-totales-rounds"
+          },
+          "expectedRevisionId": 6
+        },
+        "operation": "RESTORE"
+      }
+    },
+    {
+      "id": "8",
+      "source": "RESTORE",
+      "fingerprint": "a646d0e06fe1e945d685d3fa821ff626bfa7ebcd38eadbed2a8dbbf2e7107f5f",
+      "diff_json": {
+        "payload": {
+          "capability": "SYNCHRONIZED_ROUNDS",
+          "roundPreparation": {
+            "spaceId": 3020,
+            "policyId": "a2-totales-rounds"
+          },
+          "expectedRevisionId": 7
+        },
+        "operation": "RESTORE"
+      }
+    }
+  ],
+  "baselineProposalRunId": 1,
+  "editedProposalRunId": 2,
+  "staleProposal": 409,
+  "staleEdit": 409,
+  "occupations": [
+    {
+      "id": "round-preparation:round-synchronization:a2-totales-rounds:space:3019:10",
+      "end": 1060,
+      "kind": "round-preparation",
+      "start": 1050,
+      "spaceId": "space:3019",
+      "duration": 10,
+      "roundIndex": 10,
+      "synchronizationId": "round-synchronization:a2-totales-rounds"
+    },
+    {
+      "id": "round-preparation:round-synchronization:a2-totales-rounds:space:3019:2",
+      "end": 665,
+      "kind": "round-preparation",
+      "start": 655,
+      "spaceId": "space:3019",
+      "duration": 10,
+      "roundIndex": 2,
+      "synchronizationId": "round-synchronization:a2-totales-rounds"
+    },
+    {
+      "id": "round-preparation:round-synchronization:a2-totales-rounds:space:3019:3",
+      "end": 705,
+      "kind": "round-preparation",
+      "start": 695,
+      "spaceId": "space:3019",
+      "duration": 10,
+      "roundIndex": 3,
+      "synchronizationId": "round-synchronization:a2-totales-rounds"
+    },
+    {
+      "id": "round-preparation:round-synchronization:a2-totales-rounds:space:3019:4",
+      "end": 745,
+      "kind": "round-preparation",
+      "start": 735,
+      "spaceId": "space:3019",
+      "duration": 10,
+      "roundIndex": 4,
+      "synchronizationId": "round-synchronization:a2-totales-rounds"
+    },
+    {
+      "id": "round-preparation:round-synchronization:a2-totales-rounds:space:3019:5",
+      "end": 785,
+      "kind": "round-preparation",
+      "start": 775,
+      "spaceId": "space:3019",
+      "duration": 10,
+      "roundIndex": 5,
+      "synchronizationId": "round-synchronization:a2-totales-rounds"
+    },
+    {
+      "id": "round-preparation:round-synchronization:a2-totales-rounds:space:3019:6",
+      "end": 900,
+      "kind": "round-preparation",
+      "start": 890,
+      "spaceId": "space:3019",
+      "duration": 10,
+      "roundIndex": 6,
+      "synchronizationId": "round-synchronization:a2-totales-rounds"
+    },
+    {
+      "id": "round-preparation:round-synchronization:a2-totales-rounds:space:3019:7",
+      "end": 940,
+      "kind": "round-preparation",
+      "start": 930,
+      "spaceId": "space:3019",
+      "duration": 10,
+      "roundIndex": 7,
+      "synchronizationId": "round-synchronization:a2-totales-rounds"
+    },
+    {
+      "id": "round-preparation:round-synchronization:a2-totales-rounds:space:3019:8",
+      "end": 980,
+      "kind": "round-preparation",
+      "start": 970,
+      "spaceId": "space:3019",
+      "duration": 10,
+      "roundIndex": 8,
+      "synchronizationId": "round-synchronization:a2-totales-rounds"
+    },
+    {
+      "id": "round-preparation:round-synchronization:a2-totales-rounds:space:3019:9",
+      "end": 1020,
+      "kind": "round-preparation",
+      "start": 1010,
+      "spaceId": "space:3019",
+      "duration": 10,
+      "roundIndex": 9,
+      "synchronizationId": "round-synchronization:a2-totales-rounds"
+    },
+    {
+      "id": "round-preparation:round-synchronization:a2-totales-rounds:space:3020:2",
+      "end": 665,
+      "kind": "round-preparation",
+      "start": 655,
+      "spaceId": "space:3020",
+      "duration": 10,
+      "roundIndex": 2,
+      "synchronizationId": "round-synchronization:a2-totales-rounds"
+    },
+    {
+      "id": "round-preparation:round-synchronization:a2-totales-rounds:space:3020:3",
+      "end": 705,
+      "kind": "round-preparation",
+      "start": 695,
+      "spaceId": "space:3020",
+      "duration": 10,
+      "roundIndex": 3,
+      "synchronizationId": "round-synchronization:a2-totales-rounds"
+    },
+    {
+      "id": "round-preparation:round-synchronization:a2-totales-rounds:space:3020:4",
+      "end": 745,
+      "kind": "round-preparation",
+      "start": 735,
+      "spaceId": "space:3020",
+      "duration": 10,
+      "roundIndex": 4,
+      "synchronizationId": "round-synchronization:a2-totales-rounds"
+    },
+    {
+      "id": "round-preparation:round-synchronization:a2-totales-rounds:space:3020:5",
+      "end": 785,
+      "kind": "round-preparation",
+      "start": 775,
+      "spaceId": "space:3020",
+      "duration": 10,
+      "roundIndex": 5,
+      "synchronizationId": "round-synchronization:a2-totales-rounds"
+    },
+    {
+      "id": "round-preparation:round-synchronization:a2-totales-rounds:space:3020:6",
+      "end": 900,
+      "kind": "round-preparation",
+      "start": 890,
+      "spaceId": "space:3020",
+      "duration": 10,
+      "roundIndex": 6,
+      "synchronizationId": "round-synchronization:a2-totales-rounds"
+    },
+    {
+      "id": "round-preparation:round-synchronization:a2-totales-rounds:space:3020:7",
+      "end": 940,
+      "kind": "round-preparation",
+      "start": 930,
+      "spaceId": "space:3020",
+      "duration": 10,
+      "roundIndex": 7,
+      "synchronizationId": "round-synchronization:a2-totales-rounds"
+    },
+    {
+      "id": "round-preparation:round-synchronization:a2-totales-rounds:space:3020:8",
+      "end": 980,
+      "kind": "round-preparation",
+      "start": 970,
+      "spaceId": "space:3020",
+      "duration": 10,
+      "roundIndex": 8,
+      "synchronizationId": "round-synchronization:a2-totales-rounds"
+    },
+    {
+      "id": "round-preparation:round-synchronization:a2-totales-rounds:space:3020:9",
+      "end": 1020,
+      "kind": "round-preparation",
+      "start": 1010,
+      "spaceId": "space:3020",
+      "duration": 10,
+      "roundIndex": 9,
+      "synchronizationId": "round-synchronization:a2-totales-rounds"
+    }
+  ],
+  "independentValidation": {
+    "hardValid": true,
+    "dependencyViolationCount": 0,
+    "overlapViolationCount": 0,
+    "transitionViolationCount": 0,
+    "availabilityViolationCount": 0,
+    "taskAvailabilityViolationCount": 0,
+    "blockViolationCount": 0,
+    "resourceAvailabilityViolationCount": 0,
+    "resourceOverlapViolationCount": 0,
+    "resourceTransitionViolationCount": 0,
+    "secondaryContinuityViolationCount": 0,
+    "setupViolationCount": 0,
+    "setupPreparationViolationCount": 0,
+    "roundSynchronizationViolationCount": 0,
+    "roundPreparationViolationCount": 0,
+    "jointGroupViolationCount": 0,
+    "transportGroupingViolationCount": 0,
+    "technicalOperationViolationCount": 0,
+    "technicalChainViolationCount": 0,
+    "spaceMealViolationCount": 0,
+    "mainFlowMealViolationCount": 0,
+    "anchoredAccompanimentViolationCount": 0,
+    "participantMealViolationCount": 0,
+    "resourceMealViolationCount": 0,
+    "operationalMealViolationCount": 0,
+    "itinerantUnitMealViolationCount": 0,
+    "reasonCodes": [],
+    "unstructuredReasonCodes": [],
+    "violations": []
+  },
+  "restoredInputIdentical": true,
+  "protectedMaterialUnchanged": true,
+  "failedWriteAtomic": true
+}

@@ -177,6 +177,8 @@ Disponibilidades efectivas se derivan en `effectivePlanSpatialAvailability.ts`. 
 
 El adapter es la frontera de wiring y `validatePlan` tiene contadores separados de bloques, continuidad, setup/preparación y round/preparación. Evidence: SPEC10-018 y SPEC10-020, sus benchmarks, `mainFlowPatterns.spec.ts`, `secondaryContinuity.spec.ts` y `roundSynchronization.spec.ts`. Assisted mantiene spaces y policies globales, pero al filtrar tasks puede convertir un contexto global en un problema local distinto; por eso setup y round son `PARTIAL` en esa dimensión.
 
+U06a añade la edición diaria de **minutos de preparación de carriles existentes**: `RoundPreparationEditor` → `dayConfigurationService`/RPC v4 → `plans.round_preparation_overrides` → `buildEngineInput`. El original protegido por 088 permanece como baseline; EDIT/RESTORE reutilizan revisiones, replay y stale checks. La proyección existente ya lleva el valor a adapter, búsqueda y validador. Evidence y límites: `docs/evidence/config-u06a/`. SPA-06 y `SYNCHRONIZED_ROUNDS` conservan `PARTIAL`: no se añade catálogo general, creación de políticas, edición de miembros/carriles ni severidad.
+
 La cantidad y el reparto PREFERRED del flujo principal tienen contrato productivo
 `MainFlowPreference`: configuración general → baseline/override diario versionado
 → `buildEngineInput` → adapter → exploradores existentes → Evidence del run → UI,

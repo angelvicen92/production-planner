@@ -1,0 +1,77 @@
+{
+  "status": "PASS_FOR_U06A_SCOPE",
+  "base": "a6ab898a0d443be17e3ef4a33d09a5e1cdbe456a",
+  "remoteWrites": 0,
+  "checks": {
+    "typescript": "PASS: npm run check",
+    "integrationTypes": "PASS: tsc -p script/demo/tsconfig.integration.json",
+    "build": "PASS: npm run build (existing bundle-size/Browserslist warnings)",
+    "migrations": "PASS: npm run check:migrations; native full ledger including 102",
+    "newGenericContractProjectionDeterminismTests": {
+      "pass": 4,
+      "fail": 0
+    },
+    "newPostgresAtomicityRoleReferenceRestoreTest": {
+      "pass": 1,
+      "fail": 0
+    },
+    "configurationAndPreflightFiles": {
+      "pass": 6,
+      "fail": 0
+    },
+    "authorizationRevisionAssistedTests": {
+      "pass": 58,
+      "fail": 0
+    },
+    "plannerNextSuite": {
+      "pass": 1269,
+      "fail": 0,
+      "skipped": 0
+    },
+    "native": {
+      "status": "PASS",
+      "checks": 29,
+      "profile": "--full --manual-validation --transport-policy --round-preparation",
+      "canonicalTasks": 266,
+      "stages": 11
+    },
+    "protectedFiles": "UNCHANGED (hashes in baseline.json)",
+    "baseRevisionWriter": "exact 099 body except recognizing SYNCHRONIZED_ROUNDS RESTORE",
+    "diffWhitespace": "PASS"
+  },
+  "effectiveChange": {
+    "baselineMinutes": 5,
+    "editedMinutes": 10,
+    "lanes": 2,
+    "preparationCount": 17,
+    "editedPreparationOccupationMinutes": 170,
+    "independentHardValid": true,
+    "independentViolations": [],
+    "restoredInputIdentical": true,
+    "restoreFingerprintEqualsOriginal": true,
+    "editsChangeFingerprint": true,
+    "newStageAt10Accepted": false,
+    "canonicalStagesAt5Accepted": 11
+  },
+  "knownBaselineFailures": {
+    "file": "shared/configurability.test.ts",
+    "pass": 2,
+    "fail": 2,
+    "reproducedFromExactBase": true,
+    "tests": [
+      "documentary Evidence is checked against the canonical registry",
+      "future contracts keep AUTO, fixed count, run overrides and causal outcomes distinct"
+    ]
+  },
+  "priorAuxiliaryVisualRun": {
+    "status": "FAIL",
+    "coreNativeChecksPassed": 27,
+    "failure": "smokeA2ViewsHistoryJourney waits for Orden por tarea after U06a and canonical completion; no product visual changes made"
+  },
+  "limits": [
+    "Local disposable environment; no remote Supabase or Replit certification",
+    "10-minute proposal and Draft validated; Stage acceptance certified with canonical restored value 5",
+    "SYNCHRONIZED_ROUNDS remains PARTIAL; full policy/catalog/member editor excluded",
+    "No merge or deploy; migration 102 prepared only"
+  ]
+}

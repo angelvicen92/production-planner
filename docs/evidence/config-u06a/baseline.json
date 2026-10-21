@@ -1,0 +1,19 @@
+{
+  "base": "a6ab898a0d443be17e3ef4a33d09a5e1cdbe456a",
+  "baseTree": "f56478e8c7a73a8dddcfb1a5675e8613d8d9eb28",
+  "targetBranch": "codex/u06-round-preparation-day-editor",
+  "remoteTargetAtStart": "3c703910cb3525a339b0bfdcedcbd8651206016c",
+  "baseIncludes": [
+    1168,
+    1169
+  ],
+  "cause": "roundSynchronizations and preparationMinutesBetweenRounds are consumed, but no daily minute editor or versioned override existed.",
+  "protectedHashes": {
+    "supabase/migrations/088_plan_planner_next_configuration.sql": "7a346ad5be956a0798a79508bb32bb8dc02b0ec84853190d3ee4fd3275321f1b",
+    "engine/planner-next/roundSynchronization.ts": "6c66c260c926931d391f35775f0a03d486f8593e35c855dfdf83feb333ddcfc5",
+    "engine/planner-next/exactRoundSynchronization.ts": "cc9391fc9dd7a2a14f69603eec6a5cdcc75c5cec3a1a044bf2af3871fcbbd34a",
+    "engine/planner-next/validate.ts": "70014220093eb06608bb69eab77a3ec28c51642c3f047023691073342f1efc5d",
+    "client/src/components/planning-timeline.tsx": "068a49d24decd220ce386e47a56a4a02fc9bf720baaa8901a58f4eca47169836",
+    "client/src/components/planning/planning-execution-status.tsx": "ab108805db91834a6567279582e5a1eef30c2fd4461ec95c417667ababc0a5b9"
+  }
+}

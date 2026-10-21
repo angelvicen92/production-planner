@@ -12,6 +12,7 @@ export const daySectionDefaults = {
   "configuration-workday": true,
   "configuration-flow": true,
   "configuration-rules": true,
+  "configuration-rounds": true,
   "configuration-optimization": true,
   "configuration-complementary": false,
   "configuration-capabilities": false,

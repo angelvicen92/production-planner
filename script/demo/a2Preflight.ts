@@ -6,8 +6,13 @@ import {latestAssistedSQLContracts,assistedStageProposalGuardBody} from './assis
 export const securityTables=['spaces','daily_tasks','resource_pools','plan_resource_pools','resource_types','resource_items','plan_resource_items','space_resource_defaults','plan_space_resource_assignments','zone_resource_type_defaults','space_resource_type_defaults','plan_zone_resource_type_requirements','plan_space_resource_type_requirements','plan_vocal_coach_rules','vocal_coach_rules'];
 type Catalog={format:number;columns:any[];tables:any[];policies:any[];functions:any[];roles:any[];grants:any[];triggers:any[];sequences:any[];constraints:any[]};
 function body(definition:string){const match=definition.match(/\bAS\s+(\$\w*\$)([\s\S]*)/i);if(!match)return null;return match[2].slice(0,match[2].indexOf(match[1])).replaceAll('\r\n','\n').trim();}
-export function requiredFunctionBodies(){
+export function requiredFunctionBodies(roundPreparation=false){
  const bodies=new Map([...latestAssistedSQLContracts()].map(([name,c])=>[name,c.body]));
+ if(roundPreparation){
+  const sql=readFileSync('supabase/migrations/102_round_preparation_day_override.sql','utf8');
+  for(const match of sql.matchAll(/CREATE(?: OR REPLACE)? FUNCTION public\.([a-z_][a-z0-9_]*)\s*\([\s\S]*?\bAS\s*\$\$([\s\S]*?)\$\$;/gi))
+   if(['apply_day_config_operation','apply_day_config_operation_v4','effective_round_preparations'].includes(match[1]))bodies.set(match[1],match[2].replaceAll('\r\n','\n').trim());
+ }
  bodies.set('guard_assisted_stage_proposal_plan',assistedStageProposalGuardBody());
  return bodies;
 }
@@ -24,13 +29,13 @@ export function inspectA2Catalog(catalog:Catalog,date:string){
  for(const table of dataset.order)for(const column of [...new Set(dataset.tables[table].flatMap(Object.keys))])if(!catalog.columns?.some(c=>c.table_name===table&&c.column_name===column))issues.push(`MISSING_COLUMN:${table}.${column}`);
  for(const table of dataset.order)if(!catalog.columns?.some(c=>c.table_name===table&&c.column_name==='id'&&c.sequence))issues.push(`MISSING_ID_SEQUENCE:${table}`);
  for(const [table,columns] of Object.entries({program_settings:['default_participant_transition_minutes'],task_templates:['participant_margin_before_minutes','participant_margin_after_minutes']}))for(const column of columns)if(!catalog.columns?.some(c=>c.table_name===table&&c.column_name===column))issues.push(`MISSING_COLUMN:${table}.${column}`);
- for(const [name,expected] of requiredFunctionBodies()){
+ for(const [name,expected] of requiredFunctionBodies(catalog.columns?.some(c=>c.table_name==='plans'&&c.column_name==='round_preparation_overrides'))){
   const candidates=catalog.functions?.filter(f=>f.name===name)??[];
   const matching=candidates.find(f=>body(f.definition)===expected);
   if(!matching)issues.push(`RPC_BODY_DRIFT:${name}`);
   else if(name!=='assisted_apply_snapshot'&&name!=='guard_assisted_stage_proposal_plan'&&!matching.serviceExecute)issues.push(`RPC_SERVER_DENIED:${name}`);
  }
- for(const f of catalog.functions??[])if((f.name.startsWith('assisted_')||['apply_day_config_operation','apply_day_config_operation_v2','initialize_day_config_revision'].includes(f.name))&&(f.anonExecute||f.authenticatedExecute))issues.push(`RPC_CLIENT_WRITE_GRANT:${f.name}`);
+ for(const f of catalog.functions??[])if((f.name.startsWith('assisted_')||['apply_day_config_operation','apply_day_config_operation_v2','apply_day_config_operation_v3','apply_day_config_operation_v4','effective_round_preparations','initialize_day_config_revision'].includes(f.name))&&(f.anonExecute||f.authenticatedExecute))issues.push(`RPC_CLIENT_WRITE_GRANT:${f.name}`);
  if(!catalog.roles?.some(r=>r.name==='service_role'&&r.bypassRLS))issues.push('SERVER_ROLE_RLS_INCOMPATIBLE');
  for(const table of securityTables){
   if(!catalog.tables?.some(t=>t.name===table&&t.rls))issues.push(`RLS_DISABLED:${table}`);

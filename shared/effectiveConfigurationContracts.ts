@@ -1,4 +1,5 @@
 import type { MainFlowPreference } from "./mainFlowPreference";
+import type { RoundPreparationValue } from "./roundPreparation";
 import type { CapabilityStatus, ConfigurationCategory } from "./configurability";
 
 export type EffectiveValueAvailability = "AVAILABLE" | "UNKNOWN" | "UNAVAILABLE";
@@ -23,5 +24,6 @@ export interface EffectiveConfigurationView {
   readiness:{status:ReadinessStatus;issues:readonly ReadinessIssue[]};
   mainFlowPreference?:{value:MainFlowPreference;baseline:MainFlowPreference;defaultGeneral:MainFlowPreference;
     available:boolean;mealApplicable:boolean;zeroBeforeRepresentable:boolean;counts:number[]};
+  roundPreparations?: { revisionId: number | null; timeGridMinutes: number; lanes: RoundPreparationValue[] };
   productCoverage:Record<CapabilityStatus,number>;
 }
