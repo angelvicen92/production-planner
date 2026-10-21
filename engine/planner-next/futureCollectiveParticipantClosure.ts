@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import type { PlannerNextProblem, ScheduledParticipantMeal, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { canPlaceTask, diagnoseTaskPlacement, exactTaskStartDomain, prepareTaskPlacementAuthority,
   type PreparedTaskPlacementAuthority } from "./placement";
-import { materializeTerminalTransportDetailed, validateCertifiedArrivalSchedule } from "./transportGrouping";
+import { materializeTerminalTransportDetailed, validateCertifiedArrivalSchedule, type TransportMaterializationOptions } from "./transportGrouping";
 import { analyticParticipantMealDomain, participantMealCandidates } from "./participantMeals";
 import { participantGapMinutes } from "./participantTransition";
 import { anchoredSequence, materializeAnchoredOperation } from "./anchoredAccompaniment";
@@ -83,7 +83,8 @@ export class PreparedFutureCollectiveParticipantClosure {
   private readonly fixedBaseRows:Map<string,string>;
   private readonly fixedPlacementCache=new Map<string,Map<Task,{authority:PreparedTaskPlacementAuthority;edges:Map<number,boolean>}>>();
 
-  constructor(problem: PlannerNextProblem,fixedBase:readonly ScheduledTask[]=[]) {
+  constructor(problem: PlannerNextProblem,fixedBase:readonly ScheduledTask[]=[],
+    private readonly transportOptions: TransportMaterializationOptions = {}) {
     this.fixedBase=structuredClone([...fixedBase]);
     this.fixedBaseRows=new Map(this.fixedBase.map(task=>[task.id,JSON.stringify(task)]));
     const projection = problem.analyticalFutureParticipantClosure;
@@ -417,7 +418,7 @@ export class PreparedFutureCollectiveParticipantClosure {
         return finish("ABSTAIN", "MEALS_PENDING");
     }
     const transport = materializeTerminalTransportDetailed(this.source, [...fixed, ...scheduled], meals,
-      { consumeFallbackBranch: charge });
+      { ...this.transportOptions, consumeFallbackBranch: charge });
     if (transport.status === "BUDGET_EXHAUSTED") return finish("ABSTAIN", "BUDGET_EXHAUSTED");
     // Failure of this witness is not proof that every matching fails.
     if (transport.status !== "FEASIBLE") return finish("ABSTAIN", "DEPARTURE_CONTINUATION");

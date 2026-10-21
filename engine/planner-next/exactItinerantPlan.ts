@@ -50,6 +50,7 @@ import { authorizedPipelineArchitectureMaterializations, materializeFirstNominal
   type PipelineWitnessObservation } from "./anonymousPipelineWitness";
 import { materializeItinerantUnitAssignment } from "./itinerantUnitAssignment";
 import { revalidateJointCompletionWitness, fingerprintJointCompletionWitness, jointCompletionCanonicalJson } from "./jointCompletionWitness";
+import { materializeEarlyClosure, type EarlyClosureMaterializationEvidence } from "./earlyClosureMaterialization";
 import { materializeEarlyEntries, type EarlyEntryMaterializationEvidence } from "./earlyEntryMaterialization";
 import { itinerantAgendaStructuralFrontier } from "./itinerantAgendaAuthority";
 import { certifyFutureStructuralWitnessSet, createFutureWitnessSetEvidence, type FutureWitnessContext,
@@ -272,6 +273,7 @@ export interface ExactItinerantPlanEvidence extends FutureCollectiveClosureEvide
   priorJointCompletionRevalidation?:"PASS"|"STALE"|"BUDGET_EXHAUSTED";
   priorJointCompletionReused?:boolean;
   earlyEntryMaterialization?:EarlyEntryMaterializationEvidence;
+  earlyClosureMaterialization?:EarlyClosureMaterializationEvidence;
   branchesExplored: number;
   coreBranches: number;
   standaloneBranches: number;
@@ -2110,8 +2112,8 @@ export interface ExactItinerantPlanSearchOptions {
   ledger?:ExactSearchLedger;
   /** Reuse the existing terminal replay gates without starting construction. */
   priorJointCompletionOnly?:boolean;
-  /** Explicit visible obligations eligible for nominal entry materialization. */
-  nominalEntryTaskIds?:readonly string[];
+  /** Explicit visible obligations eligible for nominal materialization. */
+  nominalTaskIds?:readonly string[];
   onMainFlowFamilyEntered?:(blocks:number,explorer:"STRUCTURAL"|"RESIDUAL")=>void;
   /** Cooperative runtime control, never a negative feasibility certificate. */
   checkpoint?:()=>void;
@@ -2367,14 +2369,23 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
       const unitMeals=materializeScheduledItinerantUnitMeals(problem);
       let closure=new PreparedFutureCollectiveParticipantClosure(source).evaluate(priorJoint.tasks,priorJoint.participantMeals,()=>ledger.consume("STANDALONE"));
       if(closure.certified&&validatePlan(problem,tasks,preparations,[...priorJoint.spaceMeals],meals,resourceMeals,unitMeals,rounds,[...priorJoint.operationalMeals]).hardValid){
-        if(options.nominalEntryTaskIds?.length){
-          const materialized=materializeEarlyEntries(source,priorJoint,closure,options.nominalEntryTaskIds,
+        if(options.nominalTaskIds?.length){
+          const materialized=materializeEarlyEntries(source,priorJoint,closure,options.nominalTaskIds,
             options.fixedPlacements??[],ledger,candidate=>validatePlan(problem,candidate.tasks.filter(task=>ids.has(task.id)),
               preparations,[...candidate.spaceMeals],meals,resourceMeals,unitMeals,rounds,[...candidate.operationalMeals]).hardValid);
           selectedJoint=materialized.witness;closure=materialized.closure;
           tasks=selectedJoint.tasks.filter(task=>ids.has(task.id));
           if(materialized.evidence.taskOrder.length||materialized.evidence.stopReason!=="COMPLETE")
             evidence.earlyEntryMaterialization=materialized.evidence;
+        }
+        if(options.nominalTaskIds?.length){
+          const materialized=materializeEarlyClosure(source,selectedJoint,closure,options.nominalTaskIds,
+            options.fixedPlacements??[],ledger,candidate=>validatePlan(problem,candidate.tasks.filter(task=>ids.has(task.id)),
+              preparations,[...candidate.spaceMeals],meals,resourceMeals,unitMeals,rounds,[...candidate.operationalMeals]).hardValid);
+          selectedJoint=materialized.witness;closure=materialized.closure;
+          tasks=selectedJoint.tasks.filter(task=>ids.has(task.id));
+          if(materialized.evidence.departureTaskIds.length)
+            evidence.earlyClosureMaterialization=materialized.evidence;
         }
         evidence.lastExhaustionPhase=ledger.lastExhaustionPhase;
         if(options.ledger)evidence.priorJointCompletionReused=true;
@@ -3230,13 +3241,13 @@ export function constructFirstHardValidExactItinerantPlan(problem: PlannerNextPr
 }
 
 /** AUTO keeps its accepted path; SOFT constructs the requested family first. */
-export function constructExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false,fixedSetupPreparations?:readonly ScheduledSetupPreparation[],fixedRoundPreparations?:readonly ScheduledRoundPreparation[],prior?:readonly import("./anonymousPipelineWitness").FutureStructuralWitness[]|Extract<import("./anonymousPipelineWitness").FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>,checkpoint?:()=>void,nominalEntryTaskIds?:readonly string[]): ExactItinerantPlanResult {
+export function constructExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false,fixedSetupPreparations?:readonly ScheduledSetupPreparation[],fixedRoundPreparations?:readonly ScheduledRoundPreparation[],prior?:readonly import("./anonymousPipelineWitness").FutureStructuralWitness[]|Extract<import("./anonymousPipelineWitness").FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>,checkpoint?:()=>void,nominalTaskIds?:readonly string[]): ExactItinerantPlanResult {
   if(transportPartitionFailures(problem,fixedPlacements).length)
     return runExactItinerantPlanSearch(problem,{fixedPlacements,acceptsValidation,checkpoint});
   const requested=problem.mainFlow?.preferredBlockCount;
   if(requested===undefined||!Number.isSafeInteger(requested)||requested<1)
     return constructConfiguredExactItinerantPlan(problem,causalDiagnostic,acceptsValidation,fixedPlacements,fixedPlacementsAsContext,
-      fixedSetupPreparations,fixedRoundPreparations,prior,checkpoint,undefined,false,undefined,nominalEntryTaskIds);
+      fixedSetupPreparations,fixedRoundPreparations,prior,checkpoint,undefined,false,undefined,nominalTaskIds);
   const ledger=createExactSearchLedger(problem.budget.maxBranchExpansions,checkpoint);
   const witnesses=prior?(Array.isArray(prior)?prior:[prior]):[];
   const mains=problem.tasks.filter(task=>task.kind==="main"),fixedIds=new Set((fixedPlacements??[]).map(task=>task.id));
@@ -3284,7 +3295,7 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
   // Revalidation is paid once. A stale witness never launches an AUTO search.
   if(witnesses.some(item=>item.kind==="JOINT_COMPLETION")&&problem.analyticalFutureCollectiveContinuation){
     const before=totals();
-    replay=runExactItinerantPlanSearch(problem,{ledger,checkpoint,causalDiagnostic,acceptsValidation,onMainFlowFamilyEntered,nominalEntryTaskIds,
+    replay=runExactItinerantPlanSearch(problem,{ledger,checkpoint,causalDiagnostic,acceptsValidation,onMainFlowFamilyEntered,nominalTaskIds,
       fixedPlacements,fixedPlacementsAsContext,fixedSetupPreparations,fixedRoundPreparations,
       priorFutureStructuralWitnesses:witnesses,priorJointCompletionOnly:true});
     revalidation=phase(replay,before);
@@ -3297,7 +3308,7 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
     // Ephemeral completions/pipelines cannot freeze a still-modifiable geometry.
     const constructiveWitnesses=witnesses.filter(item=>item.kind!=="JOINT_COMPLETION"&&item.kind!=="FIXED_SUPPORTING_PIPELINE");
     searched=constructConfiguredExactItinerantPlan(problem,causalDiagnostic,acceptsValidation,fixedPlacements,fixedPlacementsAsContext,
-      fixedSetupPreparations,fixedRoundPreparations,constructiveWitnesses,checkpoint,ledger,true,onMainFlowFamilyEntered,nominalEntryTaskIds);
+      fixedSetupPreparations,fixedRoundPreparations,constructiveWitnesses,checkpoint,ledger,true,onMainFlowFamilyEntered,nominalTaskIds);
     search=phase(searched,before);firstComplete??=completion(searched);
   }
   let selected=searched??replay!;
@@ -3345,7 +3356,7 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
       branches:{...totals(),limit:ledger.limit},runtime:null,hardCertificate,stopReason}}};
 }
 
-function constructConfiguredExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false,fixedSetupPreparations?:readonly ScheduledSetupPreparation[],fixedRoundPreparations?:readonly ScheduledRoundPreparation[],prior?:readonly import("./anonymousPipelineWitness").FutureStructuralWitness[]|Extract<import("./anonymousPipelineWitness").FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>,checkpoint?:()=>void,ledger?:ExactSearchLedger,firstComplete=false,onMainFlowFamilyEntered?:ExactItinerantPlanSearchOptions["onMainFlowFamilyEntered"],nominalEntryTaskIds?:readonly string[]): ExactItinerantPlanResult {
+function constructConfiguredExactItinerantPlan(problem: PlannerNextProblem, causalDiagnostic=false, acceptsValidation?:ExactItinerantPlanSearchOptions["acceptsValidation"],fixedPlacements?:readonly ScheduledTask[],fixedPlacementsAsContext=false,fixedSetupPreparations?:readonly ScheduledSetupPreparation[],fixedRoundPreparations?:readonly ScheduledRoundPreparation[],prior?:readonly import("./anonymousPipelineWitness").FutureStructuralWitness[]|Extract<import("./anonymousPipelineWitness").FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>,checkpoint?:()=>void,ledger?:ExactSearchLedger,firstComplete=false,onMainFlowFamilyEntered?:ExactItinerantPlanSearchOptions["onMainFlowFamilyEntered"],nominalTaskIds?:readonly string[]): ExactItinerantPlanResult {
   const priorFutureStructuralWitnesses=prior?(Array.isArray(prior)?prior:[prior]):undefined;
   // SOFT enters the budgeted residual/structural explorers directly;
   // repeating AUTO's legacy eager nominal construction would add uncharged work.
@@ -3369,7 +3380,7 @@ function constructConfiguredExactItinerantPlan(problem: PlannerNextProblem, caus
   const coreIds = new Set(problem.tasks.filter(({ kind }) => kind === "main" || kind === "vocal").map(({ id }) => id));
   for (const id of anchoredTaskIds(problem)) coreIds.add(id);
   const standaloneTasks = problem.tasks.filter(({ id }) => !coreIds.has(id));
-  if (standaloneTasks.length === 0) return runExactItinerantPlanSearch(problem,{ledger,checkpoint,causalDiagnostic,acceptsValidation,onMainFlowFamilyEntered,nominalEntryTaskIds,
+  if (standaloneTasks.length === 0) return runExactItinerantPlanSearch(problem,{ledger,checkpoint,causalDiagnostic,acceptsValidation,onMainFlowFamilyEntered,nominalTaskIds,
     fixedPlacements,fixedPlacementsAsContext,fixedSetupPreparations,fixedRoundPreparations,priorFutureStructuralWitnesses,preferredArchitecture,preferredBundleCandidate:matchedBundles??undefined,
     repairPreferredBundleCandidate});
   const orderer = createResidualObligationMainOrderer(problem, standaloneTasks);
@@ -3379,7 +3390,7 @@ function constructConfiguredExactItinerantPlan(problem: PlannerNextProblem, caus
     // hard-valid completion around it; spending the full residual budget on
     // incumbent domination cannot improve the human-protected placements.
     standaloneCompletionSelection: fixedPlacementsAsContext||firstComplete ? "FIRST_HARD_VALID" : "BEST_DOMINATING_WITHIN_BUDGET",
-    ledger, checkpoint, causalDiagnostic, acceptsValidation, onMainFlowFamilyEntered, nominalEntryTaskIds, fixedPlacements, fixedPlacementsAsContext, fixedSetupPreparations, fixedRoundPreparations, priorFutureStructuralWitnesses, preferredArchitecture,
+    ledger, checkpoint, causalDiagnostic, acceptsValidation, onMainFlowFamilyEntered, nominalTaskIds, fixedPlacements, fixedPlacementsAsContext, fixedSetupPreparations, fixedRoundPreparations, priorFutureStructuralWitnesses, preferredArchitecture,
     preferredBundleCandidate:matchedBundles??undefined,repairPreferredBundleCandidate,
   });
 }
