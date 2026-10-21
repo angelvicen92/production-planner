@@ -1,0 +1,26 @@
+{
+  "checks": [
+    "contestants: five states, physical/itinerant/unlocated, original colours, full text opacity, no synthetic status",
+    "contestants: PDF density, Draft separation and all-pending day",
+    "spaces: five states, physical/itinerant/unlocated, original colours, full text opacity, no synthetic status",
+    "compact space lists and 5-minute / 10px cards retain each active glyph inside the card",
+    "spaces: PDF density, Draft separation and all-pending day",
+    "resources: five states, physical/itinerant/unlocated, original colours, full text opacity, no synthetic status",
+    "resources: PDF density, Draft separation and all-pending day",
+    "menu Start/Finish/Interrupt/Cancel, supplied reset, keyboard menu and time-lock action without reload or geometry/data changes",
+    "Draft pointer interaction, dark theme, 390px viewport, print glyphs and zero operational HTTP writes"
+  ],
+  "screenshots": [
+    "after-contestants.png",
+    "after-contestants-pdf.png",
+    "after-spaces.png",
+    "after-spaces-list.png",
+    "after-spaces-pdf.png",
+    "after-resources.png",
+    "after-resources-pdf.png",
+    "after-dark.png",
+    "after-mobile.png",
+    "after-print.png"
+  ],
+  "status": "PASS"
+}
