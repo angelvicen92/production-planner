@@ -4,6 +4,10 @@ Este archivo es un **mapa estable**, no una enciclopedia. El prompt de cada tare
 
 Cuando una tarea llega a Codex, ChatGPT ya ha definido objetivo, alcance y criterios de aceptación y ha elegido Codex porque su entorno de código/ejecución es adecuado para esa unidad. No reabras por defecto la estrategia global, pero comprueba las dependencias locales necesarias y reporta cualquier incompatibilidad material que descubras en el código real.
 
+## Adecuación integral y objetivos de producto
+
+Ante peticiones sobre rumbo, parametrización, funcionalidades pendientes, estado global, prioridades o inicio de un nuevo chat, consultar `docs/governance/OPTIPLAN_MASTER_ADECUACION_APP.md` junto con las Fuentes 00–07 y el `main`/Evidence vigentes. Es un mapa vivo **no normativo** de decisiones humanas, brechas de UI/configuración, Planner/Assisted, ejecución y analítica; sus tablas de PR y despliegues son fotografías y **nunca** sustituyen la comprobación en vivo.
+
 ## Despliegues y continuidad operativa
 
 Ante cualquier petición de **backup, migración de Supabase, sincronización o publicación de Replit**, consulta primero `docs/operations/OptiPlan_Guia_Replit_Supabase.md` y `script/deploy/optiplan_preparar_release.sh` del `main` vigente. La guía es **procedimiento operativo, no Fuente normativa**. Verifica commit aprobado, CI, Evidence, backup recuperable, ledger de migraciones y estado real de Replit antes de actuar; no supongas que ya está desplegado. No ejecutar cambios productivos desde Codex salvo autorización expresa: ChatGPT orquesta las migraciones y publicación mediante las herramientas correspondientes.
