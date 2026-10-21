@@ -6,6 +6,20 @@
 
 > **Orden para un chat nuevo:** antes de proponer trabajo, leer este documento, Fuente 00 y Fuente 07 vigentes, AGENTS.md y las Fuentes especializadas; reconstruir GitHub main/PR/CI/Evidence/benchmark y, si procede, estado Replit/Supabase. Este registro es histórico: autoridad oficial por ámbito y evidencia real del HEAD prevalecen. No pedir información ya accesible.
 
+## DECISIÓN DE PRODUCTO P0 — JORNADAS NUEVAS REALMENTE PLANIFICABLES (22/10/2026)
+
+**Prioridad absoluta número 1, establecida expresamente por el responsable de producción.** OptiPlan NO tiene como producto «planificar el A2»: debe permitir a producción **crear desde la aplicación cualquier jornada con sus propios participantes, plantillas, tareas y reglas operativas soportadas, y obtener propuestas válidas con Planner Next/Assisted hasta completar todas sus obligaciones factibles, sin código ni JSON preparados para ese día**. El A2 es un benchmark exigente de regresión y calidad, nunca la condición de entrada al motor ni la definición del producto. «Cualquier» describe **cualquier configuración válida dentro de las capacidades declaradas**, no promete solución a restricciones físicamente incompatibles: cuando no haya solución o no se represente un contrato, el sistema debe explicarlo con diagnóstico verificable, nunca inventar una propuesta ni esconder límites de búsqueda.
+
+**Brecha P0 demostrada en main al 22/10/2026:** «Crear día» materializa snapshots de plantillas, espacios, recursos y optimización, pero no genera por sí mismo `plans.planner_next_configuration` ni las autoridades estructuradas completas. `buildEngineInput` sólo aplica esa configuración cuando existe; el preflight Planner Next exige explícitamente `searchPolicy`, `searchBudget` y `mainFlow` válidos. Las jornadas A2 configuradas de antemano sí los tienen. Por tanto, **no está validado el recorrido crear día nuevo desde UI → Planner Next → Stages**, aunque crear participantes/tareas y planificar A2 funcionen. Esta brecha prevalece en prioridad sobre otra optimización de horarios A2 o nuevos editores parciales.
+
+**Objetivo de cierre P0:** el flujo normal (no importación, script, SQL manual ni fixture A2) es configurar catálogo y plantillas → **crear una jornada nueva** → crear participantes y tareas/instancias propias o autogeneradas → revisar un **readiness y preflight reales**, con requisitos faltantes legibles y acciones para completarlos → construir `EngineInput` y configuración Next desde autoridades genéricas, con identidad y herencia explícitas → solicitar propuesta Assisted → validarla → aceptar Stage(s) → completar obligaciones factibles; conservar Draft, snapshots, revisión/fingerprint, permisos e historial. La configuración estructural debe poder definirse y reutilizarse desde la app. Un día sin cierto tipo de operación no debe requerir identidades A2 ficticias ni un flujo principal inventado: determinar primero el contrato admitido por el motor/preflight y desarrollar únicamente lo necesario de forma causal.
+
+**Gate de aceptación P0 (no sustituible por tests verdes):** al menos dos escenarios independientes de A2, creados desde cero mediante UI/API real y base descartable, con número diferente de participantes, plantillas/tareas, relaciones, espacios y recursos (uno pequeño y otro con dependencias/equipos o bloques). Comprobar creación → snapshot/revisión → readiness sin falsos READY → `EngineInput`/preflight `SUPPORTED` → propuesta real → Draft → validación → Stages → completitud de todas las obligaciones factibles, con cero infracciones HARD/REQUIRED nuevas, determinismo y coste registrado. Probar también configuración inválida/inviable, error accionable, roles, histórico intacto y segundo día con configuración diferente. La regresión A2 266/266 y 11 Stages es gate adicional, **no prueba suficiente de P0**. No imponer 266, 19 concursantes, cuatro bloques ni actividades especiales a días distintos.
+
+**Orden operativo:** terminar/revisar los dos hilos ya comprometidos (continuidad configurable U06c y composición itinerante U04a; al corte existe PR #1175 U04a) sin abrir ampliaciones; inmediatamente después, **todos los nuevos esfuerzos de desarrollo** se concentran en la autoconfiguración de nuevas jornadas y el gate end-to-end descrito. El primer delta de esa línea requerirá auditoría focal del camino crear día → snapshots → `buildEngineInput` → preflight/adapter → Assisted para identificar la primera autoridad ausente, antes de codificar. No abrir otros frentes de optimización del A2, equipos, rondas o interfaz general hasta demostrar P0 o un prerrequisito causal ineludible. Actualizar esta prioridad al cerrar el gate con Evidence verificable, no por promesas.
+
+---
+
 ## 1. La aplicación que queremos tener
 
 OptiPlan debe convertirse en el **sistema operativo de una jornada de producción audiovisual**, no simplemente en un generador de horarios. Según la Fuente 01, abarca el ciclo completo:
@@ -183,19 +197,19 @@ Unidades ya identificadas: **U02** plantillas/márgenes, **U03a** permisos, **U0
 
 **Orden obligatorio, sin improvisar:** revisar **docs/operations/OptiPlan_Guia_Replit_Supabase.md** y **script/deploy/optiplan_preparar_release.sh** de main vigente; autorizar commit con CI/Evidence, generar **backup íntegro PostgreSQL 17 verificable** antes de migrar, comparar ledger, aplicar sólo pendientes por conector, verificar grants/RLS/RPC y contadores, publicar Replit de app existente, comprobar status success **y SHA real + navegación/UI**. No probar escritura destructiva sobre A2 histórico. Codex no migra ni publica.
 
-## 10. Backlog de adecuación y pasos siguientes
+## 10. Backlog de adecuación y pasos siguientes — orden vigente 22/10/2026
 
-**P0 — riesgo y publicación:** CI/revisión/merge #1166, analizar otras entradas legacy sólo si se demuestra el riesgo. Preparar release segura con migración 101 cuando main esté estable. Revalidar permisos de plantilla antes de habilitar nuevos editores.
+**P0 ABSOLUTO — nueva jornada genérica planificable desde UI hasta Stages.** Rige la decisión inicial de este documento: arreglar el recorrido normal de creación/configuración, readiness veraz, materialización de autoridades Next, propuesta Assisted y aceptación, y demostrarlo en dos días no A2 con tests E2E. Este gate prevalece sobre mejoras incrementales del A2 y sobre nuevos controles que no desbloqueen el recorrido.
 
-**P1 — cerrar los dos frentes activos:** PR de Estilismo salida + OUT: validar agrupación real y 266/266, mejora de permanencia y branches; PR de estados visuales: probar cinco estados, todos los layouts y autoridad de ejecución. Corregir en mismo PR antes de nuevas unidades.
+**Trabajos ya iniciados: cerrar sin ampliarlos.** U04a composición itinerante: PR #1175 abierto al corte; U06c continuidad/agrupación: rama en progreso, sin PR observado al corte. Cada uno necesita revisión independiente de diff/Fuentes/CI/Evidence/benchmark, corrección en el mismo PR si corresponde y merge sólo con gate superado. Estos trabajos no alteran que P0 sea la **siguiente unidad nueva obligatoria**.
 
-**P2 — autoconfiguración de verdad:** U03a/U02 y U06 por familias concretas (continuidad/agrupación, rondas/minutos de preparación, setups/cadenas), seguido de U07/U08/U09; probar una nueva actividad/plató con políticas desde UI sin cambio de código.
+**P1 — sólo tras el gate P0:** cerrar sucesivamente otras brechas de configurabilidad tipada detectadas por escenarios nuevos: sincronizaciones, setups, cadenas, comidas, transporte, capacidades físicas y recursos, por unidad causal y según bloqueo demostrado. A2 es baseline de regresión.
 
-**P3 — replanificación y gobierno del día:** reacción controlada a ejecución real, restablecimiento seguro del planning/Assisted si el producto lo exige, coherencia de vistas y comunicación.
+**P2 — producción real y replanning:** gestión de ejecución, incidencias, replanificación protegida, control operativo y comunicación.
 
-**P4 — aprendizaje:** certificar datos reales, KPIs comparables, informes y acciones de mejora. No montar paneles cosméticos sin trazabilidad.
+**P3 — aprendizaje medible:** integridad del dato, informes previstos/reales, KPI y mejora continua.
 
-Prioridades sujetas a blockers, Source 07 y realidad de main; nunca perder 266/266 por una mejora local o visual. No perseguir complejidad adicional sin ganancia causal demostrada.
+No promover P1/P2/P3 por tener un PR sencillo ni declarar P0 cumplido por 266/266 A2, un botón funcional, preflight aislado o un demo cargado por SQL. Si el gate P0 encuentra una restricción no representable, registrar causa y alcance; no ocultarla con defaults especiales.
 
 ## 11. Definición de terminado para cada capacidad
 
@@ -207,7 +221,7 @@ Para una nueva opción configurable exigir: valor/origen/autoridad, guarda y rec
 
 1. Leer Fuente 00/07, AGENTS.md y este documento, después 01–06 según ámbito.
 2. Consultar main SHA, últimos merges, todos los PR activos/relevantes, ramas reales/head/base, CI, Evidence y benchmark. Nunca pedir al usuario un diff/SHA accesible.
-3. Reconstruir el baseline A2 266/266/11 Stages y calidad/branches/tiempo, incluyendo diferencias de configuración y Source 07 §4.4 antes de otra implementación Planner.
+3. P0 primero: verificar el recorrido de creación de días nuevos desde UI a Planner Next/Assisted/Stages y su Evidence; además reconstruir baseline A2 266/266/11 Stages como regresión, con calidad/branches/tiempo y Gate de Fuente 07 §4.4 antes de otra implementación Planner.
 4. Contrastar docs/audit/configuration-p1/ con código actual y distinguir editor, motor, validación y despliegue.
 5. Cuando afecte a Replit/Supabase, leer runbook/script antes de operaciones; diferenciar status success de versión servida.
 6. Mantener dos desarrollos paralelos sólo si son independientes; un PR verde requiere revisión independiente y puede exigir varias iteraciones.
@@ -218,7 +232,7 @@ Para una nueva opción configurable exigir: valor/origen/autoridad, guarda y rec
 
 **Texto para empezar chat nuevo:**
 
-> Continúa OptiPlan desde docs/governance/OPTIPLAN_MASTER_ADECUACION_APP.md y las Fuentes 00–07 vigentes. Reconstruye main, PR, CI, Evidence A2, estado de configuración y deployment real. Separa DEFINIDA/IMPLEMENTADA/VALIDADA/PUBLICADA/OPERATIVA. Cierra primero PR abiertos con auditoría causal independiente, mantén dos frentes sin hardcodes A2 y prioriza la app como sistema de planificación, ejecución y mejora continua.
+> Continúa OptiPlan desde docs/governance/OPTIPLAN_MASTER_ADECUACION_APP.md y Fuentes 00–07. PRIORIDAD ABSOLUTA P0: crear desde la UI jornadas nuevas con cualquier conjunto válido de participantes, tareas y reglas soportadas y planificarlas con Planner Next/Assisted hasta Stages, sin JSON ni fixtures A2. A2 266/266 es regresión, NO objetivo suficiente. Reconstruye main/PR/CI/Evidence y verifica si U04a PR #1175 y U06c siguen activos; revísalos y ciérralos con gate antes de iniciar P0. Audita causalmente crear día → snapshots/config Next → buildInput → preflight → Assisted y demuestra dos jornadas nuevas E2E. Prioriza P0 sobre nuevas mejoras A2; no infieras estados de snapshots históricos.
 
 ---
 
