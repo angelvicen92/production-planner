@@ -5,6 +5,22 @@ import {apiRequiredRoles,createApiAuthorization} from './apiAuthorization';
 import type {AppRole} from './authz';
 import {api,buildUrl} from '../shared/routes';
 
+test('itinerant catalog writes require ADMIN for Express casing and trailing slash variants',async()=>{
+ const app=express();let writes=0;
+ app.use('/api',createApiAuthorization({authenticate:(req,res,next)=>{const role=req.header('x-test-user');if(!role)return void res.sendStatus(401);(req as any).user={id:role};next();},lookupRole:async role=>role==='norole'?null:role as AppRole}));
+ app.all('/api/itinerant-teams/:id',(_req,res)=>{writes++;res.json({ok:true});});
+ const server=app.listen(0,'127.0.0.1');await new Promise<void>(resolve=>server.once('listening',resolve));
+ const address=server.address();assert.ok(address&&typeof address!=='string');
+ try {
+  for(const method of ['PUT','DELETE'])for(const role of [undefined,'norole','viewer','aux','production','admin'])for(const path of ['/api/itinerant-teams/1','/API/ITINERANT-TEAMS/1/']){
+   const before=writes;
+   const response:Response=await fetch(`http://127.0.0.1:${address.port}${path}`,{method,headers:role?{'x-test-user':role}:{}});
+   assert.equal(response.status,role==null?401:role==='admin'?200:403);
+   assert.equal(writes,before+(role==='admin'?1:0));
+  }
+ }finally{await new Promise<void>(resolve=>server.close(()=>resolve()));}
+});
+
 test('real HTTP middleware blocks anonymous/debug and task writes while preserving authorized application flows',async()=>{
  const app=express();let writes=0;
  app.use('/api',createApiAuthorization({authenticate:(req,res,next)=>{const id=req.header('x-test-user');if(!id)return void res.sendStatus(401);(req as any).user={id};next();},lookupRole:async id=>id==='norole'?null:id as AppRole,authorizeTask:async(id,user)=>user==='admin'||user==='production'||(user==='aux'&&id===10001)}));

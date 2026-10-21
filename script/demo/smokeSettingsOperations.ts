@@ -55,12 +55,13 @@ export async function runSettingsOperations(page: Page, db: pg.Client, userProbe
     await fields.nth(1).fill('UI03C CRUD team');
     await fold('teams');
     assert.equal(await fields.nth(1).inputValue(), 'UI03C CRUD team');
+    await teams.getByRole('checkbox',{name:/Integrante /}).first().check();
     const teamCreated = response('POST', '/api/itinerant-teams');
-    await teams.getByRole('button', { name: /añadir|add/i, exact: true }).click();
+    await teams.getByRole('button', { name: 'Crear composición', exact: true }).click();
     const teamResponse = await teamCreated;
     assert.equal(teamResponse.status(), 201);
     const team = await teamResponse.json();
-    const teamRow = teams.locator('div.border').filter({ has: page.getByText('UI03C CRUD team', { exact: true }) }).last();
+    const teamRow = teams.getByTestId('itinerant-composition').filter({hasText:'UI03C CRUD team'});
     await teamRow.getByRole('button', { name: 'Eliminar', exact: true }).click();
     const teamDeleted = response('DELETE', `/api/itinerant-teams/${team.id}`);
     await confirm();

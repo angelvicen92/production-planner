@@ -1,0 +1,53 @@
+name: Itinerant physical composition
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**/*itinerant*'
+      - '**/*Itinerant*'
+      - 'engine/buildInput.ts'
+      - 'engine/planner-next/integration/**'
+      - 'server/storage.ts'
+      - 'server/routes.ts'
+      - 'server/apiAuthorization*'
+      - 'server/effective*'
+      - 'shared/routes.ts'
+      - 'shared/schema.ts'
+      - 'shared/effectiveConfigurationContracts.ts'
+      - 'client/src/pages/settings.tsx'
+      - 'client/src/components/effective-configuration.tsx'
+      - 'supabase/migrations/**'
+      - 'script/demo/smokeA2Integration.ts'
+      - 'script/demo/fixtures/data-api-privileges.json'
+      - '.github/workflows/itinerant-composition-ci.yml'
+permissions:
+  contents: read
+concurrency:
+  group: itinerant-composition-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  composition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: npm run check:migrations
+      - run: npm run check
+      - run: npm run build
+      - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
+      - run: node --import tsx --test server/itinerantComposition.spec.ts server/apiAuthorization.spec.ts server/effectivePlanConfigRevision.spec.ts engine/buildInput.taskTemplateSnapshot.spec.ts engine/planner-next/integration/engineInputAdapter.spec.ts engine/planner-next/itinerantUnitMeals.spec.ts
+      - run: npm run demo:a2:smoke -- work/itinerant-composition --restricted-data-api --historical-topology --itinerant-composition --production-runtime
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: itinerant-composition
+          path: |
+            work/itinerant-composition/integration.json
+            work/itinerant-composition/itinerant-composition.json
+            work/itinerant-composition/u04a-*.png

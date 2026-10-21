@@ -1465,6 +1465,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       && task && task.status !== "cancelled") requireResource(lock.lockedResourceId, undefined, lock.id);
   });
 
+  (input.itinerantTeamAvailability ?? []).forEach(unit=>unit.planResourceItemIds?.forEach(id=>requireResource(id)));
   const resourceById = new Map(input.planResourceItems.map((resource) => [resource.id, resource]));
   const effectiveAvailabilityById = new Map<number, ReturnType<typeof resolveEffectivePlanResourceAvailability>>();
   let usableRequiredPlanResourceCount = 0;

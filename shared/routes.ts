@@ -1,3 +1,4 @@
+import { itinerantCompositionInput, itinerantCompositionUpdate, itinerantTeamSchema } from './itinerantComposition';
 import { mainFlowPreferenceSchema } from "./mainFlowPreference";
 import { createIncidentSchema, updateIncidentSchema, transitionIncidentSchema, incidentSchema, incidentDetailSchema, incidentContextSchema } from './incidents';
 import { z } from "zod";
@@ -426,34 +427,20 @@ export const api = {
       method: "GET" as const,
       path: "/api/itinerant-teams",
       responses: {
-        200: z.array(
-          z.object({
-            id: z.number(),
-            code: z.string(),
-            name: z.string(),
-            isActive: z.boolean(),
-            orderIndex: z.number(),
-          }),
-        ),
+        200: z.array(itinerantTeamSchema),
       },
     },
     create: {
       method: "POST" as const,
       path: "/api/itinerant-teams",
-      input: z.object({
-        code: z.string().min(1),
-        name: z.string().min(1),
-        orderIndex: z.number().optional(),
-      }).strict(),
-      responses: {
-        201: z.object({
-          id: z.number(),
-          code: z.string(),
-          name: z.string(),
-          isActive: z.boolean(),
-          orderIndex: z.number(),
-        }),
-      },
+      input: itinerantCompositionInput,
+      responses: {201: itinerantTeamSchema},
+    },
+    update: {
+      method: "PUT" as const,
+      path: "/api/itinerant-teams/:id",
+      input: itinerantCompositionUpdate,
+      responses: {200: itinerantTeamSchema, 409: errorSchemas.validation},
     },
     delete: {
       method: "DELETE" as const,

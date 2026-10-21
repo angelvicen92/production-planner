@@ -301,6 +301,9 @@ export interface EngineInputItinerantTeamAvailabilityInput {
 }
 
 export interface EngineInput {
+  /** Only new days carry an explicit, immutable catalog-to-day composition map. */
+  itinerantCompositionSnapshot?: {contractVersion: 1; units: import('../shared/itinerantComposition').DailyItinerantUnit[]};
+
   planId: number;
   /** Derived from the authoritative per-plan task-template snapshot catalog. */
   taskTemplateSnapshotContractVersion?: 2;

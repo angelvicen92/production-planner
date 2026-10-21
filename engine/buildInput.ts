@@ -1,3 +1,4 @@
+import { applyDailyItinerantComposition, ItinerantCompositionError } from '../server/itinerantComposition';
 import { applyEffectiveMainFlowPreference } from "../server/mainFlowPreference";
 import { applyEffectiveRoundPreparations } from "../server/roundPreparation";
 import type { IStorage } from "../server/storage";
@@ -996,5 +997,10 @@ export async function buildEngineInput(
       lockedResourceId: l.locked_resource_id ?? l.lockedResourceId ?? null,
     })),
   };
-  return applyEffectiveRoundPreparations(applyEffectiveMainFlowPreference(applyPlanPlannerNextConfiguration(input,p.planner_next_configuration??p.plannerNextConfiguration),p),p);
+  let effectiveInput = applyPlanPlannerNextConfiguration(input,p.planner_next_configuration??p.plannerNextConfiguration);
+  if ((p.itinerant_composition_version ?? p.itinerantCompositionVersion) === 1) {
+    if ((p.planner_next_configuration ?? p.plannerNextConfiguration) != null) throw new ItinerantCompositionError('autoridades históricas y heredadas incompatibles');
+    effectiveInput = applyDailyItinerantComposition(effectiveInput, await storage.getPlanItinerantUnitSnapshots(planId), planId);
+  }
+  return applyEffectiveRoundPreparations(applyEffectiveMainFlowPreference(effectiveInput,p),p);
 }

@@ -1,3 +1,4 @@
+import { ItinerantCompositionSettings } from '@/components/itinerant-composition-settings';
 import { useSettingsSection } from "@/hooks/use-settings-section";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { Layout } from "@/components/layout";
@@ -409,131 +410,8 @@ function StaffPeopleSettings() {
 }
 
 function ItinerantTeamsSettings() {
-  const { t } = useTranslation();
-  const qc = useQueryClient();
-  const { toast } = useToast();
-  const confirmDialog = useConfirm();
-
-  const { data: teams = [], isLoading, error } = useItinerantTeams();
-  const deleteTeam = useDeleteItinerantTeam();
-
-  const [code, setCode] = useState("");
-  const [name, setName] = useState("");
-
-  const createTeam = useMutation({
-    mutationFn: async (payload: any) =>
-      apiRequest("POST", api.itinerantTeams.create.path, payload),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: [api.itinerantTeams.list.path] });
-      setCode("");
-      setName("");
-      toast({ title: t("settings.itinerantTeams.teamCreatedToast") });
-    },
-    onError: (err: any) => {
-      toast({
-        title: t("common.error"),
-        description:
-          err?.message || t("settings.itinerantTeams.createErrorToast"),
-        variant: "destructive",
-      });
-    },
-  });
-
-  const rows = (teams ?? []) as any[];
-
-  return (
-    <SettingsSection section="teams" title={t("settings.itinerantTeams.title")} busy={createTeam.isPending || deleteTeam.isPending} error={error || createTeam.error || deleteTeam.error}>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="space-y-1">
-            <Label>{t("settings.itinerantTeams.codeLabel")}</Label>
-            <Input
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder={t("settings.itinerantTeams.codePlaceholder")}
-            />
-          </div>
-
-          <div className="space-y-1">
-            <Label>{t("common.name")}</Label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t("settings.itinerantTeams.namePlaceholder")}
-            />
-          </div>
-
-          <div className="flex items-end">
-            <Button
-              disabled={!code.trim() || !name.trim() || createTeam.isPending}
-              onClick={() =>
-                createTeam.mutate({
-                  code: code.trim(),
-                  name: name.trim(),
-                })
-              }
-            >
-              {createTeam.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {t("common.creating")}
-                </>
-              ) : (
-                t("common.add")
-              )}
-            </Button>
-          </div>
-        </div>
-
-        <QueryGuard isLoading={isLoading} isError={Boolean(error)} error={error} loadingText={t("common.loading")} errorTitle={t("settings.itinerantTeams.loadError")}>
-          {rows.length === 0 ? (
-          <div className="text-sm text-muted-foreground">
-            {t("settings.itinerantTeams.empty")}
-          </div>
-          ) : (
-          <div className="space-y-2">
-            {rows.map((t: any) => (
-              <div
-                key={t.id}
-                className="flex items-center justify-between border rounded-md px-3 py-2"
-              >
-                <div>
-                  <div className="font-medium text-sm">{t.name}</div>
-                  <div className="text-xs text-muted-foreground">{t.code}</div>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={deleteTeam.isPending}
-                  title="Eliminar"
-                  onClick={async () => {
-                    const ok = await confirmDialog({
-                      title: "Eliminar equipo",
-                      description: `¿Eliminar ${String(t?.name ?? "este elemento")}? Esta acción no se puede deshacer`,
-                      confirmText: "Eliminar",
-                    });
-                    if (!ok) return;
-                    deleteTeam.mutate(Number(t.id), {
-                      onSuccess: () => toast({ title: "Eliminado" }),
-                      onError: (err: any) =>
-                        toast({
-                          title: "No se pudo eliminar",
-                          description: err?.message || "Error desconocido",
-                          variant: "destructive",
-                        }),
-                    });
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
-          )}
-        </QueryGuard>
-      </CardContent>
-    </SettingsSection>
-  );
+  const {t} = useTranslation();
+  return <SettingsSection section="teams" title={t("settings.itinerantTeams.title")}><ItinerantCompositionSettings/></SettingsSection>;
 }
 
 function StaffDefaultsSettings() {
@@ -2792,6 +2670,10 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
         )
       : [];
 
+    if (Boolean(editData.requiresItinerantTeam) && normalizedAllowedTeamIds.length === 0) {
+      toast({title:"Selecciona al menos un equipo itinerante",description:"El requisito necesita una unidad específica o alternativas explícitas.",variant:"destructive"});
+      return;
+    }
     const itinerantTeamRequirement =
       normalizedAllowedTeamIds.length === 0
         ? "none"
@@ -2800,14 +2682,6 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
           : "any";
     const itinerantTeamId =
       normalizedAllowedTeamIds.length === 1 ? normalizedAllowedTeamIds[0] : null;
-
-    if (itinerantChanged && normalizedAllowedTeamIds.length > 1) {
-      toast({
-        title: "Restricción parcial en espera",
-        description:
-          "El motor aún no restringe por subconjunto; se guardará para futura compatibilidad.",
-      });
-    }
 
     const previousRules =
       editData.rulesJsonData && typeof editData.rulesJsonData === "object"
@@ -3433,7 +3307,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                           <div className="rounded-md border p-3 space-y-2">
                             <p className="text-xs text-muted-foreground">Selecciona 1 para fijar equipo específico; selecciona varios para permitir alternativas.</p>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                              {(itinerantTeams as any[]).map((team: any) => {
+                              {(itinerantTeams as any[]).filter((team:any)=>team.isActive!==false||(editData?.allowedItinerantTeamIds??[]).includes(Number(team.id))).map((team: any) => {
                                 const teamId = Number(team?.id);
                                 const checked = (editData?.allowedItinerantTeamIds ?? []).includes(teamId);
                                 return (

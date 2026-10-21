@@ -1,3 +1,4 @@
+import { ItinerantCompositionError } from './itinerantComposition';
 import { z } from 'zod';
 import type { EngineInput } from '../engine/types';
 
@@ -10,6 +11,7 @@ export class PlanPlannerNextConfigurationError extends Error {
  }
 }
 export function planningConfigurationFailure(error:unknown){
+ if(error instanceof ItinerantCompositionError)return {status:409 as const,body:{code:error.code,message:error.message}};
  if(!(error instanceof PlanPlannerNextConfigurationError))return null;
  // Only fixed categories and aggregate counts are logged, never the raw cause.
  console.error('[planning-configuration]',{code:error.code,reasonCode:error.reasonCode,...error.counts});

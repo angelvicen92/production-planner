@@ -25,5 +25,6 @@ export interface EffectiveConfigurationView {
   mainFlowPreference?:{value:MainFlowPreference;baseline:MainFlowPreference;defaultGeneral:MainFlowPreference;
     available:boolean;mealApplicable:boolean;zeroBeforeRepresentable:boolean;counts:number[]};
   roundPreparations?: { revisionId: number | null; timeGridMinutes: number; lanes: RoundPreparationValue[] };
+  itinerantComposition?: {units: NonNullable<import('../engine/types').EngineInput['itinerantTeamAvailability']>; resources:{id:number;name:string}[]; labels?:{id:number;name:string}[]; presencePolicies?:Record<number,'OFF'|'PREFERRED'|'REQUIRED'>};
   productCoverage:Record<CapabilityStatus,number>;
 }

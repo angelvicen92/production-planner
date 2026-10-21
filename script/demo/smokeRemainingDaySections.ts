@@ -54,7 +54,7 @@ export async function runRemainingDaySections({ appUrl, baselineUrl, users, db, 
     // Setup only disposable operational data through the existing public writers.
     const added = await api("/plans/27001/resource-items", "POST", { typeId: (await api("/plans/27001/resource-items"))[0].typeId, name: "UI03B recurso temporal" });
     await api("/staff-people", "POST", { name: "UI03B responsable", roleType: "production", isActive: true }, "admin");
-    const team = await api("/itinerant-teams", "POST", { code: "UI03B", name: "UI03B equipo Reality", orderIndex: 900 }, "admin");
+    const team = await api("/itinerant-teams", "POST", { code: "UI03B", name: "UI03B equipo Reality", orderIndex: 900, resourceItemIds: [(await api("/resource-types-with-items"))[0].items[0].id], availabilityWindows:null, transitionMinutes:null, isActive:true }, "admin");
     report.setup = { additionalResource: added.id, staffPerson: "UI03B responsable", realityTeamId: team.id, target: "disposable localhost only" };
     await login(page, baselineUrl!); await page.goto(`${baselineUrl}/plans/27001?tab=resources`);
     for (const id of tabs) { await tab(id); await capture(`before-${id}`); }

@@ -1,3 +1,4 @@
+import { ItinerantCompositionError, mapItinerantTeam, registerItinerantCompositionRoutes } from './itinerantComposition';
 import { registerAtomicTaskTemplateRoutes } from "./atomicTaskTemplate";
 import { registerAdminInviteRoutes } from "./adminInvites";
 import { userAccessStatus } from "../shared/adminInvites";
@@ -680,20 +681,14 @@ function mapDeleteError(err: any, fallback: string) {
     try {
       const { data, error } = await supabaseAdmin
         .from("itinerant_teams")
-        .select("id, code, name, is_active, order_index")
+        .select("id, code, name, is_active, order_index, revision, availability_windows, transition_minutes, itinerant_team_members(resource_item_id)")
         .order("order_index", { ascending: true })
         .order("name", { ascending: true });
 
       if (error) throw error;
 
       return res.json(
-        (data ?? []).map((r: any) => ({
-          id: Number(r.id),
-          code: String(r.code ?? ""),
-          name: String(r.name ?? ""),
-          isActive: Boolean(r.is_active),
-          orderIndex: Number(r.order_index ?? 0),
-        })),
+        (data ?? []).map(mapItinerantTeam),
       );
     } catch (err: any) {
       return res
@@ -702,36 +697,7 @@ function mapDeleteError(err: any, fallback: string) {
     }
   });
 
-  app.post(api.itinerantTeams.create.path, async (req, res) => {
-    try {
-      const input = api.itinerantTeams.create.input.parse(req.body);
-
-      const { data, error } = await supabaseAdmin
-        .from("itinerant_teams")
-        .insert({
-          code: input.code.trim(),
-          name: input.name.trim(),
-          order_index: input.orderIndex ?? 0,
-          is_active: true,
-        })
-        .select("id, code, name, is_active, order_index")
-        .single();
-
-      if (error) throw error;
-
-      return res.status(201).json({
-        id: Number(data.id),
-        code: String(data.code ?? ""),
-        name: String(data.name ?? ""),
-        isActive: Boolean(data.is_active),
-        orderIndex: Number(data.order_index ?? 0),
-      });
-
-    } catch (err: any) {
-      return res.status(400).json({ message: err?.message || "Cannot create itinerant team" });
-    }
-  });
-
+  registerItinerantCompositionRoutes(app, (name, args) => supabaseAdmin.rpc(name, args));
 
   app.delete(api.itinerantTeams.delete.path, async (req, res) => {
     try {
@@ -3168,6 +3134,7 @@ function mapDeleteError(err: any, fallback: string) {
       const plan = await storage.createPlan({...input, configurationActorId:String((req as any).user.id)});
       res.status(201).json(plan);
     } catch (err: any) {
+      if (err instanceof ItinerantCompositionError) return res.status(409).json({code:err.code,message:err.message});
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });
       }
