@@ -1,0 +1,229 @@
+# OptiPlan — Documento maestro de adecuación integral de la aplicación
+
+**Naturaleza:** documento vivo de visión, decisiones, brechas, seguimiento y continuidad. **No es una Fuente oficial 00–07** ni autoriza despliegues.  
+**Corte inicial:** 21/10/2026. **Repositorio:** https://github.com/angelvicen92/production-planner  
+**Principio rector:** **la producción tiene que salir**.
+
+> **Orden para un chat nuevo:** antes de proponer trabajo, leer este documento, Fuente 00 y Fuente 07 vigentes, AGENTS.md y las Fuentes especializadas; reconstruir GitHub main/PR/CI/Evidence/benchmark y, si procede, estado Replit/Supabase. Este registro es histórico: autoridad oficial por ámbito y evidencia real del HEAD prevalecen. No pedir información ya accesible.
+
+## 1. La aplicación que queremos tener
+
+OptiPlan debe convertirse en el **sistema operativo de una jornada de producción audiovisual**, no simplemente en un generador de horarios. Según la Fuente 01, abarca el ciclo completo:
+
+1. **Pre-día:** catálogos y configuración editable; jornada, plantillas, espacios, participantes, recursos, equipos, comidas, descansos, transiciones, coordinación, preparación y permisos.
+2. **Planificación Assisted:** propuestas completas y válidas según scope, análisis de alternativas, ajuste humano, Draft, aceptación de Stages y publicación humana de OfficialPlan.
+3. **Día en vivo:** hora prevista y realidad, estados y marcas reales, incidencias, respuesta a retrasos, protección de tareas en curso/terminadas, replanificación autorizada, comunicación a equipos.
+4. **Centro de Control:** saber qué ocurre, quién está ocupado, próximos riesgos y decisiones necesarias. No ejecutar motores legacy inadvertidamente.
+5. **Post-día y mejora continua:** comparar previsto/real, medir duraciones, capacidad, esperas, incidencias y fiabilidad, detectar patrones y producir **conclusiones y acciones de mejora**.
+
+**Decisión expresa del responsable:** «No quiero que solo planifique automáticamente; quiero aprovechar el dato digital para sacar informes, conclusiones y acciones de mejora». También debe poder **dar de alta o cambiar cualquier actividad, plató, equipo y política desde la app**, sin pagar nuevos desarrollos por particularidades operativas.
+
+**Orden de producto:** la Fuente 01 prioriza el MVP de preparación, Assisted, ejecución y vistas operativas. Informes avanzados, analítica predictiva y planificación multi-día no deben retrasarlo; la captura rigurosa de datos sí es requisito de base.
+
+## 2. Autoridad y cinco estados distintos
+
+**Normas:** Fuente 00 e índice del corpus oficial 01–07 en docs/source/official/; los dos PDFs A2 son referencia humana subordinada a interpretaciones/correcciones de Fuente 06, nunca seed, hint o lock. **Código:** main. **Validación:** CI, tests, Evidence y benchmarks del mismo head/configuración. **Producción real:** ledger/esquema de Supabase y artefacto publicado de Replit. Este archivo, AGENTS.md y auditorías son guías, no una Fuente 08.
+
+| Hito | Evidencia |
+|---|---|
+| DEFINIDA | Contrato en Fuente oficial o decisión humana explícita pendiente de consolidación normativa. |
+| IMPLEMENTADA | Código integrado en main; un PR creado no cuenta. |
+| VALIDADA | Tests/CI/Evidence representativos del commit, con comparación baseline. |
+| PUBLICADA | Migraciones aplicadas y commit publicado realmente verificado; Replit success aislado no basta. |
+| OPERATIVA | Recorrido de usuario/rol probado en la aplicación pública sin escrituras destructivas en jornadas históricas. |
+
+**Reglas:** PR creado ≠ aprobado; verde ≠ operativo u óptimo; mergeado ≠ desplegado; selector visible ≠ capacidad configurada/productiva. Conservar siempre alcance y fecha de la prueba.
+
+## 3. No hardcodes: cada singularidad A2 debe ser un parámetro
+
+**Decisión permanente del responsable:** particularidades como continuidad de Estilismo, minutos de cambio de micro en Totales, paquetes de transporte, comida de un plató o composición de un equipo NO se codifican según el nombre, tipo, ID o color del A2. Deben ser **datos estructurados editables en la app**, gobernados por contratos genéricos. Una nueva jornada o plató puede cambiar esas reglas sin Codex. Se mantienen invariantes reales HARD del dominio, seguridad y validación; no se construye un lenguaje opaco universal de reglas.
+
+**Cadena obligatoria de una capacidad PRODUCTIVA:** catálogo general / plantilla → snapshot del día → override de día o instancia → autorización/API/persistencia/revisión/provenance/fingerprint → EngineInput/preflight → motor → validador y Evidence → propuesta/Draft/Stage/replay → prueba de sensibilidad en UI real. Null/heredado NO equivale a 0 explícito. El cambio general posterior no modifica silenciosamente días históricos. EDIT, RESTORE y REFRESH tienen funciones distintas.
+
+### 3.1 Continuidad y agrupación
+
+El jefe de producción debe poder indicar, cuando el contrato lo admita, **sin continuidad / agrupación preferida / continuidad requerida**, precisando **qué grupo de actividades, espacio, unidad o recurso** queda sometido a esa política. No equivale a poner un booleano aislado sobre cada tarea.
+
+- **Estilismo A2:** mismo espacio de capacidad HARD=1, **sin continuidad requerida**. Las entradas y salidas pueden intercalarse; no introducir hueco-penalty sin Fuente.
+- **Flujo principal:** bloques, continuidad y preferencia separada de cantidad/reparto SOFT; la continuidad REQUIRED no se convierte en simple preferencia.
+- **Setups por familia, cadenas técnicas, operaciones conjuntas/ancladas, recursos itinerantes y concentración de presencia:** contratos distintos que requieren editores y autoridades específicas.
+- **PREFERRED/OFF/REQUIRED** describe opciones deseadas únicamente allí donde el contrato de la familia las admite; no inventar opciones o severidades sin formalización normativa.
+
+**Estado:** existen contratos Next, pero NO un editor general→día→motor completo para todas esas políticas. El control heredado «Máximo cambios de tarea (agrupación)» en ajustes de plató no certifica continuidad Next. Referencias: docs/audit/configuration-p1/, shared/configurability.ts, Fuente 04 y U06.
+
+### 3.2 Los cinco minutos de Totales no son código especial
+
+El A2 humano muestra **5 min para cambio de microfonía entre rondas Totales**. Planner Next tiene **roundSynchronizations** y la propiedad **preparationMinutesBetweenRounds** por carril; el valor debe venir de configuración del A2, nunca del nombre «Totales». **Gap:** editor completo desde la app para seleccionar carriles/espacios/tareas elegibles, sincronización, preparación, severidad, origen y override del día, con persistencia y prueba end-to-end. Debe funcionar igual con otro número y otros espacios.
+
+No mezclar:
+
+- **Margen de participante:** default general/día y before/after por plantilla/instancia. Entre A→B se usa el mayor de los overrides explícitos presentes; sin ellos, default. Un cero explícito sustituye el default, no se suman valores.
+- **Preparación/cambio de setup entre actividades o rondas:** ocupación derivada de las entidades configuradas, no falsa duración productiva.
+- **Hold posterior de tarea:** bloqueo propio de espacio, participante o recursos, duración y severidad; contrato Fuente 04, superficie parcial.
+- **Transición de coach/recurso/equipo:** distinta de margen de participante.
+- **Comida/descanso:** duración, ventana, entidad/ámbito y validación separados; no comida global ficticia ni doble contabilidad.
+- **Coordinación multi-espacio:** compartir zona no fusiona espacios ni supone sincronización.
+
+### 3.3 Catálogos y operaciones futuras
+
+Deben ser gestionables desde UI, con valor general, snapshot, excepciones y pruebas:
+
+- IN/OUT: minimumGroupSize y maximumGroupSize **HARD**, targetGroupSize **PREFERRED**, minGapMinutes entre **inicios** de grupos, no parrilla fija; capacidad del vehículo independiente del máximo de grupo.
+- Espacios/platós: capacidad, exclusividad, ocupación física/no física, ventanas, asignaciones y coordinación. blocksSpace=false no significa capacidad genérica mayor que 1.
+- Recursos y equipos: necesidades exactas vs alternativas autorizadas, composición real de unidades itinerantes, disponibilidad, desplazamientos y recursos compartidos, sin sustitución por nombre.
+- Plantillas: duración, zona/espacio, roles, dependencias, márgenes, recursos, setups y reglas aplicables, sin pérdida al guardar/crear.
+- Estructuras: sincronización de rondas, cadenas técnicas de fases parcialmente ordenadas, anclajes y agrupación por familias, sin imponer el orden del PDF humano.
+- Optimización: sólo controles con consumidor demostrado de Planner Next; no sliders legacy sin efecto real.
+
+**Prueba de salida:** editar la regla desde una pantalla autorizada, guardar/reabrir, crear un día nuevo, construir propuesta/validación/Stage y demostrar resultado diferencial con **otra tarea u otro plató creados desde la app**, sin código nuevo, manteniendo históricos/protecciones y permisos.
+
+## 4. Planner/Assisted: 266/266 es un comienzo, no la meta completa
+
+Producto oficial: **WorkingPlan → PlanningScope → ScopeProposal → Draft editable → validación → Stage aceptado/protegido → publicación humana OfficialPlan**. El motor propone; no publica ni escribe la decisión humana automáticamente. AutomaticProtection no es lock. AcceptedException no desactiva una regla HARD/REQUIRED ni permite falsear hardValid.
+
+**Benchmark A2:** 19 participantes, 266 obligaciones canónicas, completitud Assisted demostrada en **11 Stages**. Los PDFs humanos son referencia de viabilidad/calidad y no se copian como horarios. Completitud no significa mínimo de permanencia, buena distribución, robustez general o parametrización completa para cualquier producción.
+
+### Lecciones causales y mejoras
+
+- **PR #1164 (auditoría):** algunas horas nominales de Estilismo entrada eran heredadas del witness conjunto S1 y quedaban protegidas luego sin reconsideración. Contrafactual C03 **11:25→09:10**, válido 266/266 sin mover otras tareas, demostrando alternativa no intentada, no poda errónea.
+- **PR #1165 (motor):** rematerialización temprana certificada antes de aceptar apertura. Evidence: **cuatro entradas adelantadas; −320 min de espera agregada IN→Estilismo; 266/266; 11 Stages; +1.214 ramas (+4,86 %) contabilizadas**. Fusionado con CI completa.
+- **IN:** construir grupos tempranos desde el primer inicio HARD-válido para proteger libertad futura. Canon A2 target 3, máximo 3 y gap 30; NO hacer del target 3 un mínimo HARD.
+- **Salida:** contrafactual de C03 demuestra Estilismo salida **17:25→14:45** y OUT **17:30→14:50**, presencia **515→355 min** con 266/266. Adelantar sólo Estilismo sin OUT no libera al participante. **Este contrafactual no acredita aún una implementación productiva del cierre en main.**
+
+### Aclaración operativa expresa sobre posibles retrasos
+
+**No retener artificialmente un participante al final por un riesgo abstracto de retrasos.** Los márgenes y descansos autorizados proporcionan flexibilidad; el jefe adelanta o retrasa trabajo durante la ejecución y registra hechos e incidencias. La salida de Estilismo debe ir pronto tras obligaciones; OUT debe respetar su configuración de grupos/disponibilidad/ventanas. **Medir holgura está bien; inventar un HARD o penalización por «robustez» que retrasaría Estilismo salida NO está autorizado.** La preferencia de permanencia y sus tradeoffs se evalúan con las Fuentes reales.
+
+### Gate causal ineludible Fuente 07 §4.4
+
+Después de cada PR, benchmark o cambio material del Planner/Assisted, y siempre antes de otro prompt Codex, reconstruir estado de entrada/protegidos/scope, arquitectura/geometría, matching/materialización y supporting, Future Feasibility/validación, ramas/poda/backtracking/agotamiento, y decisión donde se perdió una alternativa. Contrastar producción y código, baseline/configuración exactos, regresión vs validación más correcta vs agotamiento. Sólo implementar al poder formular: **«X ocurre por Y y produce Z; W debe cambiarlo y esperamos M»**. Si no se demuestra, diagnóstico focal. No subir budgets/timeouts por reflejo.
+
+## 5. Ejecución real y gestión de desviaciones
+
+**Estados oficiales:** pending, in_progress, done, interrupted, cancelled. Mostrar planificado frente a real sin inferir estados por reloj. Start/Finish/Interrupt y correcciones autorizadas necesitan trazabilidad, permisos y datos fiables; producción manda sobre el horario inicial.
+
+- Jefe de producción puede iniciar antes/después, terminar, interrumpir y reaccionar a imprevistos. Replanning conserva done/in_progress, Stages, locks y ocupaciones; sólo mueve tareas permitidas, sin reescribir historia.
+- En planning por concursantes, espacios y recursos, tarjetas horizontales, verticales, listas y móvil, los **cinco estados** han de ser visualmente claros y accesibles, sin depender exclusivamente del color ni borrar el color original de la actividad.
+- **Reset de ejecución masivo ADMIN (PR #1162):** atómico, auditado, preserva planning e historial y otras jornadas. **No confundir** con reinicio de Assisted.
+- **Reset de planning/Assisted:** necesidad futura distinta, con análisis de Draft/Stages/sesiones/rollback/redo, tareas en curso/completadas, locks y seguridad. No resolver mediante DELETE masivo ni ocultando un historial.
+- Control Room, Mi Día, War Room y Planning deben reflejar estados coherentes, distinguiendo datos stale/offline.
+
+### Botón heredado y error de cancelación observados por el usuario
+
+En el Centro de Control, **Generar/Recalcular** llamaba a **useGeneratePlan({mode: full})**, motor legacy, y el usuario observó una ejecución larga que fallaba al intentar cancelar. **PR #1166** cambia **sólo el botón del dashboard** por «Abrir planning» y navega a la pestaña **tab=planning** del plan seleccionado; elimina esa invocación legacy en dicha pantalla.
+
+**No inferir** que el PR repara la cancelación legacy en todo el producto, ni que retira los motores heredados de otras pantallas. Es una corrección de ruta UI localizada que debe validarse y publicarse.
+
+## 6. Datos de ejecución, estadísticas e informes para mejora continua
+
+El objetivo explícito es **usar la verdad digital para adoptar mejores decisiones**: comparar horas y duraciones previstas/realizadas, localizar demoras recurrentes, detectar cuellos y cambiar reglas/plantillas. La Fuente 01 exige registrar bien primero y construir métricas después.
+
+| Indicador a construir/verificar | Decisión que debería facilitar |
+|---|---|
+| Duración por plantilla y operación | Actualizar duraciones y preparación de tareas sistemáticamente subestimadas. |
+| Inicio y fin previsto vs real | Cuánto se adelanta/retrasa, qué retraso se absorbe y cuál se propaga. |
+| Utilización por espacio/plató | Tiempo productivo, parado, bloqueado, setups, espera, continuidad. |
+| Equipo/recurso/coach | Saturación, cambios de ubicación, esperas e infrautilización. |
+| Concursante | Presencia, esperas terminales, huecos, salida efectiva. |
+| Fiabilidad del plan | % tareas en hora, replanificaciones, locks, tareas no realizadas. |
+| Incidencias recurrentes | Causas por tipo/espacio/recurso/franja y propuestas de acción. |
+| Comparación entre jornadas/configuraciones | Comprobar qué cambio produjo una mejora, con revision/fingerprint. |
+
+Conservar identidad, plan previsto original, revisiones del planning, ejecución real, correcciones, causas, incidencias y configuración efectiva; explicar sesgos y no atribuir injustamente fallos a personas. Después: informes por rol, conclusiones, medidas propuestas, responsable de acción y seguimiento.
+
+**Estado:** contratos oficiales y eventos de ejecución sí; **la disponibilidad funcional de informes avanzados no está certificada** en el producto publicado. Auditar cobertura/integridad del dato antes de otro dashboard. La analítica predictiva no debe bloquear MVP.
+
+## 7. Brechas reales documentadas de autoconfigurabilidad
+
+La auditoría **docs/audit/configuration-p1/** inspeccionó 27 capacidades: 3 PRODUCTIVE, 15 PARTIAL, 3 MISSING, 5 BLOCKED, 1 NOT_APPLICABLE a 15/10; es **un corte histórico** y algunas descripciones del registry ya eran antiguas. Contrastar cada hallazgo con HEAD y seguridad live antes de usarlo.
+
+| Área | Existe | Falta |
+|---|---|---|
+| Continuidad de flujo, Estilismo, concentración | Policies Next y algunas preferencias | Editor tipado por operación/espacio/ámbito y severidad válida, general→día→motor. |
+| Totales y cambio de micro | roundSynchronizations, preparationMinutesBetweenRounds | Editor de rondas/carriles/duración/elegibilidad/provenance. |
+| Plantillas y dependencias | Catálogo, snapshots, APIs parciales | Guardado completo de márgenes/alta y dependencias inversas atómicas. |
+| Seguridad plantillas | Auth y rutas | Reverificar alias real **PATCH /api/ta/:id** frente a mapa de roles; auditar matriz autorizada antes de nuevos editores. |
+| Equipos itinerantes y recursos | Catálogos, snapshots, opciones de Next | Editor de miembros, alternativas, disponibilidad, identidad/reconciliación. |
+| Espacios y capacidad | Jerarquía, disponibilidad parcial, blocksSpace | Editor/contrato genérico de capacidad y ventanas, prueba de representabilidad. |
+| Setups, anclajes, cadenas y sincronía | Contratos y validadores Next | Edición reutilizable lossless por familia, Stage/replay. |
+| Comidas, transiciones, holds, presencia | Resolvers parciales | Reglas efectivas por ámbito y edición productiva. |
+| IN/OUT | Mín/máx/target/gap por dirección | General/día completo y capacidad de vehículo independiente. |
+| Controles de optimización | Algunos Next; sliders legacy | Quitar falsas promesas: enseñar sólo consumidores y preferencias efectivos. |
+| Post-día | Estados/eventos, Fuentes | Datos fiables, KPIs verificables, informes y mejora continua. |
+
+Unidades ya identificadas: **U02** plantillas/márgenes, **U03a** permisos, **U06** coordinación en subunidades, **U07/U08** ventanas, comidas y transiciones, **U09** transporte, **U05** fidelidad de UI y **U12** capacidades no representables. No construir un framework universal ni mezclar todos los gaps en un PR.
+
+## 8. PR y trabajos paralelos (fotografía 21/10/2026)
+
+**HEAD main observado:** 78fc59b2e980ec3d86a27eaef95e5c77d3035f93. Verificar en cada chat.
+
+| Trabajo | PR / rama | Situación al corte |
+|---|---|---|
+| Reset masivo ADMIN **de ejecución** | #1162 | **MERGED**, migración 101 pendiente de aplicar/publicar. |
+| Diálogos propios UI | #1163 | **MERGED** tras varias iteraciones y CI integral. |
+| Auditoría causal de Estilismo | #1164 | **MERGED**; Evidence contrafactual. |
+| Rematerialización Estilismo entrada | #1165 | **MERGED**, 266/266 y mejora cuantificada. |
+| Centro de Control «Abrir planning» | #1166 | **ABIERTO, CI en curso al corte**; no merge ni deploy aún. |
+| Estilismo salida + OUT | codex/early-styling-exit-out-certification | Prompt enviado en hilo nuevo; no había PR confirmado. |
+| Estados visuales ejecución | codex/execution-planning-status-visuals | Prompt enviado en otro hilo nuevo; no había PR confirmado. |
+| Drafts históricos apilados | #1085 / #1104 / #1106 | No dar por válidos ni fusionar sin auditar vigencia. |
+| Reset planning/Assisted | — | Objetivo futuro diferente del reset de ejecución. |
+| Configuración UI completa | Auditoría P1/U02/U03/U06… | Pendiente por unidades causales. |
+| Analítica post-día | Fuente 01 | Objetivo definido, implementación integral no certificada. |
+
+**Gobierno:** como máximo **dos hilos Codex de desarrollo en paralelo**, siempre con unidades independientes; GitHub/ChatGPT puede revisar, documentar o corregir un diff pequeño aparte. Si existe PR, revisión independiente de diff/base/head/CI/Evidence/Fuentes y benchmark. Defecto de misma unidad → **segunda o posteriores iteraciones en el mismo PR/hilo**. Sólo cerrar/fusionar tras gate.
+
+## 9. Publicación real: GitHub, Replit y Supabase son estados distintos
+
+**Verificado al corte:**
+
+- Supabase **planificador_audiovisual**, project ref **dyqusivzgxebkxkwohwn**, ACTIVE_HEALTHY, PostgreSQL 17.6. Última migración **100_data_api_explicit_grants**. **101_admin_bulk_execution_reset no aplicada**; la RPC reset_plan_execution aún no estaba instalada. Lecturas: 7 planes, 1.131 tareas, 104 Stages (sólo fotografía).
+- Replit app **Code Architect Tool**: https://code-architect-tool--avmb.replit.app, status **success**; **NO se comprobó SHA real publicado**, por tanto no garantizar que tenga todos los merges.
+- El botón legacy se vio en la aplicación por captura; corregir GitHub no actualiza automáticamente el deployment.
+
+**Orden obligatorio, sin improvisar:** revisar **docs/operations/OptiPlan_Guia_Replit_Supabase.md** y **script/deploy/optiplan_preparar_release.sh** de main vigente; autorizar commit con CI/Evidence, generar **backup íntegro PostgreSQL 17 verificable** antes de migrar, comparar ledger, aplicar sólo pendientes por conector, verificar grants/RLS/RPC y contadores, publicar Replit de app existente, comprobar status success **y SHA real + navegación/UI**. No probar escritura destructiva sobre A2 histórico. Codex no migra ni publica.
+
+## 10. Backlog de adecuación y pasos siguientes
+
+**P0 — riesgo y publicación:** CI/revisión/merge #1166, analizar otras entradas legacy sólo si se demuestra el riesgo. Preparar release segura con migración 101 cuando main esté estable. Revalidar permisos de plantilla antes de habilitar nuevos editores.
+
+**P1 — cerrar los dos frentes activos:** PR de Estilismo salida + OUT: validar agrupación real y 266/266, mejora de permanencia y branches; PR de estados visuales: probar cinco estados, todos los layouts y autoridad de ejecución. Corregir en mismo PR antes de nuevas unidades.
+
+**P2 — autoconfiguración de verdad:** U03a/U02 y U06 por familias concretas (continuidad/agrupación, rondas/minutos de preparación, setups/cadenas), seguido de U07/U08/U09; probar una nueva actividad/plató con políticas desde UI sin cambio de código.
+
+**P3 — replanificación y gobierno del día:** reacción controlada a ejecución real, restablecimiento seguro del planning/Assisted si el producto lo exige, coherencia de vistas y comunicación.
+
+**P4 — aprendizaje:** certificar datos reales, KPIs comparables, informes y acciones de mejora. No montar paneles cosméticos sin trazabilidad.
+
+Prioridades sujetas a blockers, Source 07 y realidad de main; nunca perder 266/266 por una mejora local o visual. No perseguir complejidad adicional sin ganancia causal demostrada.
+
+## 11. Definición de terminado para cada capacidad
+
+Registrar en PR/Evidence: **necesidad humana → Fuente/contrato → baseline/call path causal → delta mínimo → prueba de UI/API/DB/configuración/EngineInput/motor/validador/Stage proporcional → protección de historial/locks/tareas reales → CI/benchmark/tiempos/branches/determinismo → resultado operativo → merge → estado publicado**.
+
+Para una nueva opción configurable exigir: valor/origen/autoridad, guarda y recarga, permisos, herencia/restore/refresh, efecto en propuesta y validación, histórico inalterado. Ninguna excepción A2 por ID/nombre.
+
+## 12. Protocolo de continuidad y coste de Codex
+
+1. Leer Fuente 00/07, AGENTS.md y este documento, después 01–06 según ámbito.
+2. Consultar main SHA, últimos merges, todos los PR activos/relevantes, ramas reales/head/base, CI, Evidence y benchmark. Nunca pedir al usuario un diff/SHA accesible.
+3. Reconstruir el baseline A2 266/266/11 Stages y calidad/branches/tiempo, incluyendo diferencias de configuración y Source 07 §4.4 antes de otra implementación Planner.
+4. Contrastar docs/audit/configuration-p1/ con código actual y distinguir editor, motor, validación y despliegue.
+5. Cuando afecte a Replit/Supabase, leer runbook/script antes de operaciones; diferenciar status success de versión servida.
+6. Mantener dos desarrollos paralelos sólo si son independientes; un PR verde requiere revisión independiente y puede exigir varias iteraciones.
+7. **Antes de cada prompt Codex:** verificar rama remota exacta en GitHub y mostrar fuera del bloque **Rama Codex: nombre**; proporcionar **un solo bloque Markdown**, una unidad lógica, validación y modelo/esfuerzo.
+8. Acuerdo de créditos: **GPT-6.1 Sol Medio/Alto** para UX/deltas acotados, **Sol Muy alto** para motor/causalidad; **GPT-6 Astra Alto/Muy alto** sólo cuando Evidence demuestre valor suficiente. No usar Astra automáticamente.
+9. Explicar hechos, conclusión causal, decisión y siguiente paso; no solicitar permiso reiterado si el avance está claro.
+10. Actualizar este documento tras cambios **materiales** de visión, decisión, capability o prioridad, sin duplicar Fuentes. Toda regla nueva debe consolidarse en la Fuente competente mediante Fuente 00.
+
+**Texto para empezar chat nuevo:**
+
+> Continúa OptiPlan desde docs/governance/OPTIPLAN_MASTER_ADECUACION_APP.md y las Fuentes 00–07 vigentes. Reconstruye main, PR, CI, Evidence A2, estado de configuración y deployment real. Separa DEFINIDA/IMPLEMENTADA/VALIDADA/PUBLICADA/OPERATIVA. Cierra primero PR abiertos con auditoría causal independiente, mantén dos frentes sin hardcodes A2 y prioriza la app como sistema de planificación, ejecución y mejora continua.
+
+---
+
+## 13. Mantenimiento y horizonte
+
+Este maestro es mapa de adecuación y decisiones, **no una Fuente 08 ni un ledger automático**. Se actualiza al cambiar visión, prioridad o capacidad probada; registrar cada trabajo en su PR y Evidence, cada release en ledger/runbook, cada nueva norma en su Fuente. Si se corrige o descarta una decisión, dejar motivo y prueba.
+
+**Horizonte:** el usuario puede añadir o cambiar actividad, plató, recurso y política desde la app; el planificador cumple todas sus obligaciones con criterio operativo, el jefe controla y ajusta la ejecución real y los datos sirven para mejorar la siguiente jornada.
