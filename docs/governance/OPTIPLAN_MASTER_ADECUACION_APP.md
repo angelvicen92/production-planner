@@ -222,7 +222,29 @@ Para una nueva opción configurable exigir: valor/origen/autoridad, guarda y rec
 
 ---
 
-## 13. Mantenimiento y horizonte
+## 13. Decisiones nuevas: acceso por invitación y paralelismo vocal (21/10/2026)
+
+### Acceso de usuarios: autorregistro desactivado
+
+**Decisión expresa de producción:** OptiPlan será de **acceso restringido mediante alta/invitación administrativa**; no ofrecer el autorregistro público como vía operativa. Se ha observado en Supabase Auth que «Allow new users to sign up» está OFF, «Confirm email» ON, Site URL es `https://code-architect-tool--avmb.replit.app` y Redirect URLs incluyen `/dashboard` y `/login`. Estas capturas acreditan ajustes visibles en ese momento, **no** una prueba nativa de invitación exitosa. No asumir que crear cuenta o aparecer en Usuarios implica email confirmado.
+
+**Ruta transitoria viable:** administrador crea/invita desde Supabase Authentication → Users con la función de administración autorizada; comprobar que «Invite user» funciona con autorregistro cerrado, correo de invitación, plantilla y redirección, activación y login. La pantalla OptiPlan «Usuarios» actualmente **gestiona cuentas existentes** (roles/vínculos/borrado), no las crea ni invita. Código `/api/bootstrap-role`: a un usuario nuevo sin rol le asigna viewer, pero preserva el rol ya establecido; esto permite preparar permisos antes del primer login. No se deben compartir contraseñas temporales ni exponer service_role en navegador.
+
+**Gap de producto pendiente:** botón «Invitar usuario» sólo ADMIN desde la app, endpoint backend privilegiado, confirmación/establecimiento de contraseña por el invitado, selección de rol/vinculación segura, estado «invitación pendiente / email confirmado» veraz, reenvío/caducidad, duplicados y revocación, pruebas de roles y del flujo end-to-end. Ocultar o deshabilitar «Registrarse» en UI cuando autorregistro está OFF para evitar un flujo fallido; no implementar esta unidad mientras esté en marcha una release crítica. Las URL de Auth correctas no reparan por sí solas un enlace `otp_expired` antiguo: no reutilizarlo.
+
+### Vocal Coaches: dos salas independientes pueden solaparse
+
+**Regla de producto (ya reflejada en Fuentes 04/06):** Caracola José María y Caracola Lucía son **espacios y coaches distintos**. Se permite que dos Pruebas Vocales ocurran a la vez si no hay participante, coach, recurso, ocupación, ventana o dependencia REAL compartidos. No crear una exclusión por nombre «Caracola», zona, grupo de Stages ni pertenencia al pipeline Estudio 7. Conjuntar una unidad operativa no significa serializarla por defecto. Tampoco imponer coincidencia forzada.
+
+**Prueba positiva read-only:** Supabase productivo, plan `27001`, espacios independientes `caracola-jose-maria` y `caracola-lucia`, tres pruebas simultáneas por sala durante **10:55–11:40**. Evidence `docs/evidence/STYLING-IN-OUT-CAUSAL-DIAGNOSTIC/schedule.csv` reproduce coincidencias 10:55–11:25. En el código, `placement.ts` y `validate.ts` sólo prohíben solape si se comparten participantes, coach, espacio físico o recursos explícitos; `exactFeederStartDomain` excluye blockers del mismo coach y el test `exactMainAndFeederCore.spec.ts` verifica paralelismo posible entre coaches diferentes. No existe regla general HARD de serialización intercoaches.
+
+**Observación del usuario:** en otra pantalla/día concreto las dos columnas parecían totalmente secuenciales. Eso **no prueba prohibición** ni demuestra qué decisión del motor produjo el orden. Para diagnosticar calidad: identificar plan/revisión/Stage/horarios, resolver recursos efectivos de ese snapshot, seguir scope → arquitectura de bloques main → feeder matching/start domains → selección nominal/witness → validación → replay. Comparar contrafactual que adelante pruebas y mejore duración/espera del día **sin degradar 266/266 ni otras autoridades**. Si hay secuencialidad evitable recurrente, plantear diagnóstico focal y sólo después un delta causal; no introducir una preferencia de paralelismo o una poda nueva sin medición/contrato.
+
+**Nota:** este registro de decisiones no modifica las Fuentes oficiales ni implica que todos los horarios sean óptimos.
+
+---
+
+## 14. Mantenimiento y horizonte
 
 Este maestro es mapa de adecuación y decisiones, **no una Fuente 08 ni un ledger automático**. Se actualiza al cambiar visión, prioridad o capacidad probada; registrar cada trabajo en su PR y Evidence, cada release en ledger/runbook, cada nueva norma en su Fuente. Si se corrige o descarta una decisión, dejar motivo y prueba.
 
