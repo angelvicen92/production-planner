@@ -431,6 +431,7 @@ export const planResourcePools = pgTable("plan_resource_pools", {
 
 // 6. task_templates
 export const taskTemplates = pgTable("task_templates", {
+  revision: integer("revision").notNull().default(0),
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   defaultDuration: integer("default_duration").notNull(), // minutes

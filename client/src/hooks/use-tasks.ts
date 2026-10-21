@@ -3,7 +3,7 @@ import type { z } from "zod";
 import { apiRequest } from "@/lib/api";
 import { DailyTask, Lock, TaskTemplate, InsertDailyTask } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-import { api, buildUrl, type CreateTaskTemplateInput, type UpdateTaskTemplateInput } from "@shared/routes";
+import { api, buildUrl, type CreateTaskTemplateInput, type UpdateTaskTemplateInput, type AtomicTaskTemplateInput } from "@shared/routes";
 import { contestantsQueryKey, planLocksQueryKey, planQueryKey, planTasksQueryKey } from "@/lib/plan-query-keys";
 
 export function useTaskTemplates() {
@@ -43,8 +43,12 @@ export function useUpdateTaskTemplate() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (args: { id: number; patch: UpdateTaskTemplateInput }) =>
-      apiRequest<TaskTemplate>(
+    mutationFn: (args: { id: number; patch: UpdateTaskTemplateInput; inverse?: Omit<AtomicTaskTemplateInput, "patch"> }) =>
+      args.inverse ? apiRequest<TaskTemplate>(
+        api.taskTemplates.updateWithInverse.method,
+        buildUrl(api.taskTemplates.updateWithInverse.path, { id: args.id }),
+        api.taskTemplates.updateWithInverse.input.parse({ patch: args.patch, ...args.inverse }),
+      ) : apiRequest<TaskTemplate>(
         "PATCH",
         buildUrl(api.taskTemplates.update.path, { id: args.id }),
         api.taskTemplates.update.input.parse(args.patch),

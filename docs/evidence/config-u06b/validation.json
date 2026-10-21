@@ -1,0 +1,48 @@
+{
+  "base": "a41c310ec9e00cc2edf9085f15fb474e267bf311",
+  "baseTree": "aa91a1e777caff1a2e225f6907c5ac856fdfb20d",
+  "branch": "codex/atomic-template-inverse-deps-u06b",
+  "node": "v24.19.0",
+  "postgres": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "checks": [
+    {
+      "command": "npm run check",
+      "result": "PASS",
+      "logSha256": "a3524d5e43d767e9b4be9b919cafac7158a8650a095963e00ef859ff7f4eaf27"
+    },
+    {
+      "command": "npm run build",
+      "result": "PASS",
+      "notes": "Existing nonblocking chunk-size warnings",
+      "logSha256": "7ee2faaa75faeb12b24c8448d8dd11f7773f3796c8f163826cc5ab748055d7a0"
+    },
+    {
+      "command": "npm run check:migrations",
+      "result": "PASS",
+      "logSha256": "07da9289e5de7ede7715321bcdc0749c743844a36628d0f5844c40f8ee4f472c"
+    },
+    {
+      "command": "npx --no-install tsc -p script/demo/tsconfig.atomic-template.json",
+      "result": "PASS",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "node --import tsx --test server/atomicTaskTemplate.spec.ts server/taskTemplateContract.spec.ts server/apiAuthorization.spec.ts server/taskTemplateSnapshot.spec.ts engine/buildInput.taskTemplateSnapshot.spec.ts",
+      "result": "PASS",
+      "tests": 24,
+      "failed": 0,
+      "logSha256": "51e751b53f64088c15ec9ad01433671832fda3237e62f23daf55015b44c1bbe0"
+    },
+    {
+      "command": "npm run demo:a2:smoke -- work/atomic-template --historical-topology --atomic-template",
+      "result": "PASS",
+      "evidence": "native.json, atomic-template.json",
+      "solverRuns": 0,
+      "logSha256": "cd8938b492a1705732413e484be8b2342318e9dde6bbed3af70668e5bc27f92b"
+    }
+  ],
+  "remoteDatabaseWrites": 0,
+  "replitPublished": false,
+  "merged": false,
+  "productionMigrationApplied": false
+}

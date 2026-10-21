@@ -45,6 +45,17 @@ export function assertPrivilegeContract(catalog:DataApiCatalog) {
     assert.equal(table.rls,true,`${table.name}: every public table, including future migrations, requires RLS`);
   assert.deepEqual(privilegeContract(catalog),JSON.parse(readFileSync(contractPath,'utf8')),
     'Data API contract changed: review every new object, required grant, column boundary and exposed role');
+  // 103 adds one column covered by the existing table grants. The compact JSON
+  // omits table-inherited column permissions, so verify this new column too.
+  for(const role of ['anon','authenticated','service_role']) {
+    const table=catalog.tables.find(t=>t.name==='task_templates'&&t.role===role);assert.ok(table);
+    assert.deepEqual(table.columns.revision,role==='service_role'?['SELECT','INSERT','UPDATE']:[],`103 revision effective privileges for ${role}`);
+    for(const signature of ['bump_task_template_revision()','save_task_template_with_inverse(bigint,uuid,jsonb,jsonb,bigint[],bigint[])']) {
+      const fn=catalog.functions.find(f=>f.signature===signature&&f.role===role);assert.ok(fn);
+      assert.equal(fn.definer,false,`${signature} must remain SECURITY INVOKER`);
+      assert.deepEqual(fn.settings,['search_path=""'],`${signature} must keep an empty search_path`);
+    }
+  }
 }
 
 export function assertSourcePrivileges(catalog:DataApiCatalog) {
@@ -134,6 +145,26 @@ export async function verifyDataApiGrants(options:{db:pg.Client;url:string;servi
     assert.throws(()=>assertPrivilegeContract(opened),/Data API contract changed/);
     assert.throws(()=>assertNoWidening(before,opened,legacy));
   }finally {await db.query('ROLLBACK');}
+  // Mutate real effective permissions, including PUBLIC inheritance and column
+  // grants. Every unauthorized delta must still fail the same strict gate.
+  const rpc='public.save_task_template_with_inverse(bigint,uuid,jsonb,jsonb,bigint[],bigint[])';
+  const negative103=[
+    `GRANT EXECUTE ON FUNCTION ${rpc} TO PUBLIC`,
+    `GRANT EXECUTE ON FUNCTION ${rpc} TO anon`,
+    `GRANT EXECUTE ON FUNCTION ${rpc} TO authenticated`,
+    `REVOKE EXECUTE ON FUNCTION ${rpc} FROM service_role`,
+    'GRANT EXECUTE ON FUNCTION public.bump_task_template_revision() TO service_role',
+    'GRANT SELECT(revision) ON public.task_templates TO anon',
+    'GRANT UPDATE(revision) ON public.task_templates TO authenticated',
+  ];
+  for(const mutation of negative103) {
+    await db.query('BEGIN');
+    try {
+      await db.query(mutation);
+      const changed=await dataApiCatalog(db);
+      assert.throws(()=>assertPrivilegeContract(changed),/Data API contract changed/,mutation);
+    }finally {await db.query('ROLLBACK');}
+  }
   // A real future table with correct RLS but no grant must fail natively. This
   // is also a control for SQLSTATE classification, independently of the contract.
   const probe='p11_gate_probe';
@@ -165,6 +196,7 @@ export async function verifyDataApiGrants(options:{db:pg.Client;url:string;servi
   return {tables:after.tables.length/3,sequences:after.sequences.length/3,functions:after.functions.length/3,
     sourceCalls:calls.length,nativeReads:reads,legacyEffectivePrivilegesUnchanged:true,
     rpcDefinitionsAndPoliciesUnchanged:true,allRebuiltTablesRlsEnabled:true,
+    migration103EffectivePrivilegesVerified:true,migration103NegativeMutationsDetected:negative103.length,
     missingGrantDetected:true,newTableWithoutGrantNative42501:true,grantVsRlsNativeControl:true,anonymousExpansionDetected:true};
 }
 

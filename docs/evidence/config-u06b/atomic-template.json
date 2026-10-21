@@ -1,0 +1,1303 @@
+{
+  "checks": [
+    "native Auth HTTP 401/403 and SQL anon/authenticated/actor denials, zero writes",
+    "invalid IDs, nonexistent rows/references, duplicates, self dependencies and arbitrary fields reject without writes",
+    "one HTTP save persists principal and inverse add/remove, preserves other fields/dependencies and null/zero; response equals GET",
+    "forced dependent SQL failure after main and first peer updates: all catalog rows and revisions exactly rolled back",
+    "stale principal, stale dependent and genuine overlapping writer all return 409 without overwriting",
+    "Chromium: one Save/one request, inverse add/remove persists after reload; unchanged inverse uses PATCH; conflict retains editor and explicit Recargar succeeds",
+    "all preexisting day snapshots, tasks, Stages, plans, revisions and locks have identical complete-table counts/hashes"
+  ],
+  "denials": [
+    {
+      "role": "anonymous",
+      "status": 401
+    },
+    {
+      "role": "invalid",
+      "status": 401
+    },
+    {
+      "role": "norole",
+      "status": 403
+    },
+    {
+      "role": "viewer",
+      "status": 403
+    },
+    {
+      "role": "aux",
+      "status": 403
+    },
+    {
+      "role": "production",
+      "status": 403
+    }
+  ],
+  "invalid": [
+    {
+      "input": {
+        "patch": {
+          "name": "U06 happy",
+          "participantMarginBeforeMinutes": 0,
+          "participantMarginAfterMinutes": null
+        },
+        "addedInverseIds": [
+          20033
+        ],
+        "removedInverseIds": [
+          20035
+        ],
+        "expectedTemplates": [
+          {
+            "id": 20033,
+            "revision": 0
+          },
+          {
+            "id": 20034,
+            "revision": 0
+          },
+          {
+            "id": 20035,
+            "revision": 0
+          }
+        ]
+      },
+      "status": 400
+    },
+    {
+      "input": {
+        "patch": {
+          "name": "U06 happy",
+          "participantMarginBeforeMinutes": 0,
+          "participantMarginAfterMinutes": null
+        },
+        "addedInverseIds": [
+          20034,
+          20034
+        ],
+        "removedInverseIds": [
+          20035
+        ],
+        "expectedTemplates": [
+          {
+            "id": 20033,
+            "revision": 0
+          },
+          {
+            "id": 20034,
+            "revision": 0
+          },
+          {
+            "id": 20035,
+            "revision": 0
+          }
+        ]
+      },
+      "status": 400
+    },
+    {
+      "input": {
+        "patch": {
+          "name": "U06 happy",
+          "participantMarginBeforeMinutes": 0,
+          "participantMarginAfterMinutes": null
+        },
+        "addedInverseIds": [
+          20034
+        ],
+        "removedInverseIds": [
+          20034
+        ],
+        "expectedTemplates": [
+          {
+            "id": 20033,
+            "revision": 0
+          },
+          {
+            "id": 20034,
+            "revision": 0
+          },
+          {
+            "id": 20035,
+            "revision": 0
+          }
+        ]
+      },
+      "status": 400
+    },
+    {
+      "input": {
+        "patch": {
+          "name": "U06 happy",
+          "participantMarginBeforeMinutes": 0,
+          "participantMarginAfterMinutes": null
+        },
+        "addedInverseIds": [
+          20034
+        ],
+        "removedInverseIds": [
+          20035
+        ],
+        "expectedTemplates": []
+      },
+      "status": 400
+    },
+    {
+      "input": {
+        "patch": {
+          "revision": 44
+        },
+        "addedInverseIds": [
+          20034
+        ],
+        "removedInverseIds": [
+          20035
+        ],
+        "expectedTemplates": [
+          {
+            "id": 20033,
+            "revision": 0
+          },
+          {
+            "id": 20034,
+            "revision": 0
+          },
+          {
+            "id": 20035,
+            "revision": 0
+          }
+        ]
+      },
+      "status": 400
+    },
+    {
+      "input": {
+        "patch": {
+          "dependsOnTemplateIds": [
+            20033
+          ]
+        },
+        "addedInverseIds": [
+          20034
+        ],
+        "removedInverseIds": [
+          20035
+        ],
+        "expectedTemplates": [
+          {
+            "id": 20033,
+            "revision": 0
+          },
+          {
+            "id": 20034,
+            "revision": 0
+          },
+          {
+            "id": 20035,
+            "revision": 0
+          }
+        ]
+      },
+      "status": 400
+    },
+    {
+      "input": {
+        "patch": {
+          "dependsOnTemplateIds": [
+            20032,
+            20032
+          ]
+        },
+        "addedInverseIds": [
+          20034
+        ],
+        "removedInverseIds": [
+          20035
+        ],
+        "expectedTemplates": [
+          {
+            "id": 20033,
+            "revision": 0
+          },
+          {
+            "id": 20034,
+            "revision": 0
+          },
+          {
+            "id": 20035,
+            "revision": 0
+          }
+        ]
+      },
+      "status": 400
+    },
+    {
+      "input": {
+        "patch": {
+          "dependsOnTemplateIds": [
+            2147483647
+          ]
+        },
+        "addedInverseIds": [
+          20034
+        ],
+        "removedInverseIds": [
+          20035
+        ],
+        "expectedTemplates": [
+          {
+            "id": 20033,
+            "revision": 0
+          },
+          {
+            "id": 20034,
+            "revision": 0
+          },
+          {
+            "id": 20035,
+            "revision": 0
+          }
+        ]
+      },
+      "status": 400
+    },
+    {
+      "input": {
+        "patch": {
+          "name": "U06 happy",
+          "participantMarginBeforeMinutes": 0,
+          "participantMarginAfterMinutes": null
+        },
+        "addedInverseIds": [
+          -1
+        ],
+        "removedInverseIds": [
+          20035
+        ],
+        "expectedTemplates": [
+          {
+            "id": 20033,
+            "revision": 0
+          },
+          {
+            "id": 20034,
+            "revision": 0
+          },
+          {
+            "id": 20035,
+            "revision": 0
+          }
+        ]
+      },
+      "status": 400
+    },
+    {
+      "input": {
+        "patch": {
+          "participantMarginBeforeMinutes": -1
+        },
+        "addedInverseIds": [
+          20034
+        ],
+        "removedInverseIds": [
+          20035
+        ],
+        "expectedTemplates": [
+          {
+            "id": 20033,
+            "revision": 0
+          },
+          {
+            "id": 20034,
+            "revision": 0
+          },
+          {
+            "id": 20035,
+            "revision": 0
+          }
+        ]
+      },
+      "status": 400
+    }
+  ],
+  "concurrency": [
+    {
+      "target": 20033,
+      "status": 409,
+      "message": "Otra sesión ha cambiado una plantilla afectada. No se ha guardado ningún cambio. Pulsa Recargar para revisar los datos actuales."
+    },
+    {
+      "target": 20034,
+      "status": 409,
+      "message": "Otra sesión ha cambiado una plantilla afectada. No se ha guardado ningún cambio. Pulsa Recargar para revisar los datos actuales."
+    },
+    {
+      "case": "RPC waited for concurrent writer commit",
+      "status": 409
+    }
+  ],
+  "browser": [
+    {
+      "status": 200,
+      "writes": [
+        {
+          "method": "POST",
+          "path": "/api/task-templates/20033/save-with-inverse",
+          "body": {
+            "patch": {
+              "name": "U06 happy",
+              "defaultDuration": 19,
+              "defaultCameras": 0,
+              "participantMarginBeforeMinutes": 0,
+              "participantMarginAfterMinutes": 7,
+              "requiresAuxiliar": false,
+              "exclusiveAuxiliar": false,
+              "zoneId": null,
+              "spaceId": null,
+              "autoCreateOnContestantCreate": false
+            },
+            "expectedTemplates": [
+              {
+                "id": 20035,
+                "revision": 1
+              },
+              {
+                "id": 20034,
+                "revision": 3
+              },
+              {
+                "id": 20033,
+                "revision": 4
+              }
+            ],
+            "addedInverseIds": [
+              20035
+            ],
+            "removedInverseIds": [
+              20034
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "writes": [
+        {
+          "method": "PATCH",
+          "path": "/api/ta/20033",
+          "body": {
+            "name": "U06 happy",
+            "defaultDuration": 19,
+            "defaultCameras": 0,
+            "participantMarginBeforeMinutes": null,
+            "participantMarginAfterMinutes": 0,
+            "requiresAuxiliar": false,
+            "exclusiveAuxiliar": false,
+            "zoneId": null,
+            "spaceId": null,
+            "autoCreateOnContestantCreate": false
+          }
+        }
+      ]
+    },
+    {
+      "status": 409,
+      "writes": [
+        {
+          "method": "POST",
+          "path": "/api/task-templates/20033/save-with-inverse",
+          "body": {
+            "patch": {
+              "name": "U06 happy",
+              "defaultDuration": 19,
+              "defaultCameras": 0,
+              "participantMarginBeforeMinutes": null,
+              "participantMarginAfterMinutes": 0,
+              "requiresAuxiliar": false,
+              "exclusiveAuxiliar": false,
+              "zoneId": null,
+              "spaceId": null,
+              "autoCreateOnContestantCreate": false
+            },
+            "expectedTemplates": [
+              {
+                "id": 20034,
+                "revision": 4
+              },
+              {
+                "id": 20033,
+                "revision": 6
+              }
+            ],
+            "addedInverseIds": [
+              20034
+            ],
+            "removedInverseIds": []
+          }
+        }
+      ]
+    },
+    {
+      "status": 200,
+      "writes": [
+        {
+          "method": "POST",
+          "path": "/api/task-templates/20033/save-with-inverse",
+          "body": {
+            "patch": {
+              "name": "U06 happy",
+              "defaultDuration": 19,
+              "defaultCameras": 0,
+              "participantMarginBeforeMinutes": null,
+              "participantMarginAfterMinutes": 0,
+              "requiresAuxiliar": false,
+              "exclusiveAuxiliar": false,
+              "zoneId": null,
+              "spaceId": null,
+              "autoCreateOnContestantCreate": false
+            },
+            "expectedTemplates": [
+              {
+                "id": 20033,
+                "revision": 6
+              },
+              {
+                "id": 20034,
+                "revision": 5
+              }
+            ],
+            "addedInverseIds": [
+              20034
+            ],
+            "removedInverseIds": []
+          }
+        }
+      ]
+    }
+  ],
+  "remoteWrites": 0,
+  "newSolverRuns": 0,
+  "protectedBefore": {
+    "plan_task_template_snapshots": {
+      "count": 62,
+      "hash": "2a00e3f6815e9a3de8be5636a13ea549"
+    },
+    "plans": {
+      "count": 3,
+      "hash": "b37e4c78945ebcd25a4081062b11680c"
+    },
+    "daily_tasks": {
+      "count": 865,
+      "hash": "1265d4fc283cff326ef57d66de04e995"
+    },
+    "locks": {
+      "count": 0,
+      "hash": "d751713988987e9331980363e24189ce"
+    },
+    "assisted_planning_stages": {
+      "count": 11,
+      "hash": "d06026585fdde923422ae2d122596ff3"
+    },
+    "plan_config_revisions": {
+      "count": 1,
+      "hash": "8bdd36b7144d37bca9ed8fdf785d9c25"
+    }
+  },
+  "happy": {
+    "input": {
+      "patch": {
+        "name": "U06 happy",
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": null
+      },
+      "addedInverseIds": [
+        20034
+      ],
+      "removedInverseIds": [
+        20035
+      ],
+      "expectedTemplates": [
+        {
+          "id": 20033,
+          "revision": 0
+        },
+        {
+          "id": 20034,
+          "revision": 0
+        },
+        {
+          "id": 20035,
+          "revision": 0
+        }
+      ]
+    },
+    "result": {
+      "status": 200,
+      "body": {
+        "id": 20033,
+        "revision": 1,
+        "name": "U06 happy",
+        "defaultDuration": 12,
+        "defaultCameras": 0,
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": null,
+        "autoCreateOnContestantCreate": false,
+        "abbrev": "U06",
+        "defaultComment1Color": "#aabbcc",
+        "defaultComment2Color": null,
+        "requiresAuxiliar": false,
+        "requiresCoach": false,
+        "requiresPresenter": false,
+        "exclusiveAuxiliar": false,
+        "setupId": null,
+        "rulesJson": {
+          "retained": [
+            0,
+            null,
+            "unchanged"
+          ]
+        },
+        "resourceRequirements": {
+          "byType": {},
+          "retained": {
+            "zero": 0
+          }
+        },
+        "uiColor": "#11223344",
+        "uiColorSecondary": null,
+        "itinerantTeamRequirement": "none",
+        "itinerantTeamId": null,
+        "zoneId": null,
+        "spaceId": null,
+        "dependsOnTemplateIds": [
+          20032
+        ],
+        "hasDependency": true,
+        "dependsOnTemplateId": 20032
+      }
+    },
+    "persisted": [
+      {
+        "id": 20032,
+        "revision": 0,
+        "name": "U06 anchor",
+        "abbrev": "U06",
+        "defaultComment1Color": "#aabbcc",
+        "defaultComment2Color": null,
+        "participantMarginBeforeMinutes": null,
+        "participantMarginAfterMinutes": 0,
+        "defaultDuration": 12,
+        "defaultCameras": 0,
+        "autoCreateOnContestantCreate": false,
+        "dependsOnTemplateIds": [],
+        "zoneId": null,
+        "spaceId": null,
+        "requiresAuxiliar": false,
+        "requiresCoach": false,
+        "requiresPresenter": false,
+        "exclusiveAuxiliar": false,
+        "setupId": null,
+        "rulesJson": {
+          "retained": [
+            0,
+            null,
+            "unchanged"
+          ]
+        },
+        "resourceRequirements": {
+          "byType": {},
+          "retained": {
+            "zero": 0
+          }
+        },
+        "uiColor": "#11223344",
+        "uiColorSecondary": null,
+        "itinerantTeamRequirement": "none",
+        "itinerantTeamId": null,
+        "hasDependency": false,
+        "dependsOnTemplateId": null
+      },
+      {
+        "id": 20033,
+        "revision": 1,
+        "name": "U06 happy",
+        "abbrev": "U06",
+        "defaultComment1Color": "#aabbcc",
+        "defaultComment2Color": null,
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": null,
+        "defaultDuration": 12,
+        "defaultCameras": 0,
+        "autoCreateOnContestantCreate": false,
+        "dependsOnTemplateIds": [
+          20032
+        ],
+        "zoneId": null,
+        "spaceId": null,
+        "requiresAuxiliar": false,
+        "requiresCoach": false,
+        "requiresPresenter": false,
+        "exclusiveAuxiliar": false,
+        "setupId": null,
+        "rulesJson": {
+          "retained": [
+            0,
+            null,
+            "unchanged"
+          ]
+        },
+        "resourceRequirements": {
+          "byType": {},
+          "retained": {
+            "zero": 0
+          }
+        },
+        "uiColor": "#11223344",
+        "uiColorSecondary": null,
+        "itinerantTeamRequirement": "none",
+        "itinerantTeamId": null,
+        "hasDependency": true,
+        "dependsOnTemplateId": 20032
+      },
+      {
+        "id": 20034,
+        "revision": 1,
+        "name": "U06 added",
+        "abbrev": "U06",
+        "defaultComment1Color": "#aabbcc",
+        "defaultComment2Color": null,
+        "participantMarginBeforeMinutes": null,
+        "participantMarginAfterMinutes": 0,
+        "defaultDuration": 12,
+        "defaultCameras": 0,
+        "autoCreateOnContestantCreate": false,
+        "dependsOnTemplateIds": [
+          20032,
+          20033
+        ],
+        "zoneId": null,
+        "spaceId": null,
+        "requiresAuxiliar": false,
+        "requiresCoach": false,
+        "requiresPresenter": false,
+        "exclusiveAuxiliar": false,
+        "setupId": null,
+        "rulesJson": {
+          "retained": [
+            0,
+            null,
+            "unchanged"
+          ]
+        },
+        "resourceRequirements": {
+          "byType": {},
+          "retained": {
+            "zero": 0
+          }
+        },
+        "uiColor": "#11223344",
+        "uiColorSecondary": null,
+        "itinerantTeamRequirement": "none",
+        "itinerantTeamId": null,
+        "hasDependency": true,
+        "dependsOnTemplateId": 20032
+      },
+      {
+        "id": 20035,
+        "revision": 1,
+        "name": "U06 removed",
+        "abbrev": "U06",
+        "defaultComment1Color": "#aabbcc",
+        "defaultComment2Color": null,
+        "participantMarginBeforeMinutes": null,
+        "participantMarginAfterMinutes": 0,
+        "defaultDuration": 12,
+        "defaultCameras": 0,
+        "autoCreateOnContestantCreate": false,
+        "dependsOnTemplateIds": [
+          20032
+        ],
+        "zoneId": null,
+        "spaceId": null,
+        "requiresAuxiliar": false,
+        "requiresCoach": false,
+        "requiresPresenter": false,
+        "exclusiveAuxiliar": false,
+        "setupId": null,
+        "rulesJson": {
+          "retained": [
+            0,
+            null,
+            "unchanged"
+          ]
+        },
+        "resourceRequirements": {
+          "byType": {},
+          "retained": {
+            "zero": 0
+          }
+        },
+        "uiColor": "#11223344",
+        "uiColorSecondary": null,
+        "itinerantTeamRequirement": "none",
+        "itinerantTeamId": null,
+        "hasDependency": true,
+        "dependsOnTemplateId": 20032
+      }
+    ]
+  },
+  "rollback": {
+    "input": {
+      "patch": {
+        "name": "U06 must rollback"
+      },
+      "addedInverseIds": [
+        20035
+      ],
+      "removedInverseIds": [
+        20034
+      ],
+      "expectedTemplates": [
+        {
+          "id": 20033,
+          "revision": 1
+        },
+        {
+          "id": 20034,
+          "revision": 1
+        },
+        {
+          "id": 20035,
+          "revision": 1
+        }
+      ]
+    },
+    "status": 500,
+    "attemptedUpdates": 3,
+    "before": [
+      {
+        "row": {
+          "id": 20032,
+          "name": "U06 anchor",
+          "abbrev": "U06",
+          "zone_id": null,
+          "revision": 0,
+          "setup_id": null,
+          "space_id": null,
+          "ui_color": "#11223344",
+          "rules_json": {
+            "retained": [
+              0,
+              null,
+              "unchanged"
+            ]
+          },
+          "has_dependency": false,
+          "requires_coach": false,
+          "default_cameras": 0,
+          "default_duration": 12,
+          "itinerant_team_id": null,
+          "requires_auxiliar": false,
+          "exclusive_auxiliar": false,
+          "requires_presenter": false,
+          "ui_color_secondary": null,
+          "resource_requirements": {
+            "byType": {},
+            "retained": {
+              "zero": 0
+            }
+          },
+          "default_comment1_color": "#aabbcc",
+          "default_comment2_color": null,
+          "depends_on_template_id": null,
+          "depends_on_template_ids": [],
+          "itinerant_team_requirement": "none",
+          "auto_create_on_contestant_create": false,
+          "participant_margin_after_minutes": 0,
+          "participant_margin_before_minutes": null
+        }
+      },
+      {
+        "row": {
+          "id": 20033,
+          "name": "U06 happy",
+          "abbrev": "U06",
+          "zone_id": null,
+          "revision": 1,
+          "setup_id": null,
+          "space_id": null,
+          "ui_color": "#11223344",
+          "rules_json": {
+            "retained": [
+              0,
+              null,
+              "unchanged"
+            ]
+          },
+          "has_dependency": true,
+          "requires_coach": false,
+          "default_cameras": 0,
+          "default_duration": 12,
+          "itinerant_team_id": null,
+          "requires_auxiliar": false,
+          "exclusive_auxiliar": false,
+          "requires_presenter": false,
+          "ui_color_secondary": null,
+          "resource_requirements": {
+            "byType": {},
+            "retained": {
+              "zero": 0
+            }
+          },
+          "default_comment1_color": "#aabbcc",
+          "default_comment2_color": null,
+          "depends_on_template_id": 20032,
+          "depends_on_template_ids": [
+            20032
+          ],
+          "itinerant_team_requirement": "none",
+          "auto_create_on_contestant_create": false,
+          "participant_margin_after_minutes": null,
+          "participant_margin_before_minutes": 0
+        }
+      },
+      {
+        "row": {
+          "id": 20034,
+          "name": "U06 added",
+          "abbrev": "U06",
+          "zone_id": null,
+          "revision": 1,
+          "setup_id": null,
+          "space_id": null,
+          "ui_color": "#11223344",
+          "rules_json": {
+            "retained": [
+              0,
+              null,
+              "unchanged"
+            ]
+          },
+          "has_dependency": true,
+          "requires_coach": false,
+          "default_cameras": 0,
+          "default_duration": 12,
+          "itinerant_team_id": null,
+          "requires_auxiliar": false,
+          "exclusive_auxiliar": false,
+          "requires_presenter": false,
+          "ui_color_secondary": null,
+          "resource_requirements": {
+            "byType": {},
+            "retained": {
+              "zero": 0
+            }
+          },
+          "default_comment1_color": "#aabbcc",
+          "default_comment2_color": null,
+          "depends_on_template_id": 20032,
+          "depends_on_template_ids": [
+            20032,
+            20033
+          ],
+          "itinerant_team_requirement": "none",
+          "auto_create_on_contestant_create": false,
+          "participant_margin_after_minutes": 0,
+          "participant_margin_before_minutes": null
+        }
+      },
+      {
+        "row": {
+          "id": 20035,
+          "name": "U06 removed",
+          "abbrev": "U06",
+          "zone_id": null,
+          "revision": 1,
+          "setup_id": null,
+          "space_id": null,
+          "ui_color": "#11223344",
+          "rules_json": {
+            "retained": [
+              0,
+              null,
+              "unchanged"
+            ]
+          },
+          "has_dependency": true,
+          "requires_coach": false,
+          "default_cameras": 0,
+          "default_duration": 12,
+          "itinerant_team_id": null,
+          "requires_auxiliar": false,
+          "exclusive_auxiliar": false,
+          "requires_presenter": false,
+          "ui_color_secondary": null,
+          "resource_requirements": {
+            "byType": {},
+            "retained": {
+              "zero": 0
+            }
+          },
+          "default_comment1_color": "#aabbcc",
+          "default_comment2_color": null,
+          "depends_on_template_id": 20032,
+          "depends_on_template_ids": [
+            20032
+          ],
+          "itinerant_team_requirement": "none",
+          "auto_create_on_contestant_create": false,
+          "participant_margin_after_minutes": 0,
+          "participant_margin_before_minutes": null
+        }
+      }
+    ],
+    "after": [
+      {
+        "row": {
+          "id": 20032,
+          "name": "U06 anchor",
+          "abbrev": "U06",
+          "zone_id": null,
+          "revision": 0,
+          "setup_id": null,
+          "space_id": null,
+          "ui_color": "#11223344",
+          "rules_json": {
+            "retained": [
+              0,
+              null,
+              "unchanged"
+            ]
+          },
+          "has_dependency": false,
+          "requires_coach": false,
+          "default_cameras": 0,
+          "default_duration": 12,
+          "itinerant_team_id": null,
+          "requires_auxiliar": false,
+          "exclusive_auxiliar": false,
+          "requires_presenter": false,
+          "ui_color_secondary": null,
+          "resource_requirements": {
+            "byType": {},
+            "retained": {
+              "zero": 0
+            }
+          },
+          "default_comment1_color": "#aabbcc",
+          "default_comment2_color": null,
+          "depends_on_template_id": null,
+          "depends_on_template_ids": [],
+          "itinerant_team_requirement": "none",
+          "auto_create_on_contestant_create": false,
+          "participant_margin_after_minutes": 0,
+          "participant_margin_before_minutes": null
+        }
+      },
+      {
+        "row": {
+          "id": 20033,
+          "name": "U06 happy",
+          "abbrev": "U06",
+          "zone_id": null,
+          "revision": 1,
+          "setup_id": null,
+          "space_id": null,
+          "ui_color": "#11223344",
+          "rules_json": {
+            "retained": [
+              0,
+              null,
+              "unchanged"
+            ]
+          },
+          "has_dependency": true,
+          "requires_coach": false,
+          "default_cameras": 0,
+          "default_duration": 12,
+          "itinerant_team_id": null,
+          "requires_auxiliar": false,
+          "exclusive_auxiliar": false,
+          "requires_presenter": false,
+          "ui_color_secondary": null,
+          "resource_requirements": {
+            "byType": {},
+            "retained": {
+              "zero": 0
+            }
+          },
+          "default_comment1_color": "#aabbcc",
+          "default_comment2_color": null,
+          "depends_on_template_id": 20032,
+          "depends_on_template_ids": [
+            20032
+          ],
+          "itinerant_team_requirement": "none",
+          "auto_create_on_contestant_create": false,
+          "participant_margin_after_minutes": null,
+          "participant_margin_before_minutes": 0
+        }
+      },
+      {
+        "row": {
+          "id": 20034,
+          "name": "U06 added",
+          "abbrev": "U06",
+          "zone_id": null,
+          "revision": 1,
+          "setup_id": null,
+          "space_id": null,
+          "ui_color": "#11223344",
+          "rules_json": {
+            "retained": [
+              0,
+              null,
+              "unchanged"
+            ]
+          },
+          "has_dependency": true,
+          "requires_coach": false,
+          "default_cameras": 0,
+          "default_duration": 12,
+          "itinerant_team_id": null,
+          "requires_auxiliar": false,
+          "exclusive_auxiliar": false,
+          "requires_presenter": false,
+          "ui_color_secondary": null,
+          "resource_requirements": {
+            "byType": {},
+            "retained": {
+              "zero": 0
+            }
+          },
+          "default_comment1_color": "#aabbcc",
+          "default_comment2_color": null,
+          "depends_on_template_id": 20032,
+          "depends_on_template_ids": [
+            20032,
+            20033
+          ],
+          "itinerant_team_requirement": "none",
+          "auto_create_on_contestant_create": false,
+          "participant_margin_after_minutes": 0,
+          "participant_margin_before_minutes": null
+        }
+      },
+      {
+        "row": {
+          "id": 20035,
+          "name": "U06 removed",
+          "abbrev": "U06",
+          "zone_id": null,
+          "revision": 1,
+          "setup_id": null,
+          "space_id": null,
+          "ui_color": "#11223344",
+          "rules_json": {
+            "retained": [
+              0,
+              null,
+              "unchanged"
+            ]
+          },
+          "has_dependency": true,
+          "requires_coach": false,
+          "default_cameras": 0,
+          "default_duration": 12,
+          "itinerant_team_id": null,
+          "requires_auxiliar": false,
+          "exclusive_auxiliar": false,
+          "requires_presenter": false,
+          "ui_color_secondary": null,
+          "resource_requirements": {
+            "byType": {},
+            "retained": {
+              "zero": 0
+            }
+          },
+          "default_comment1_color": "#aabbcc",
+          "default_comment2_color": null,
+          "depends_on_template_id": 20032,
+          "depends_on_template_ids": [
+            20032
+          ],
+          "itinerant_team_requirement": "none",
+          "auto_create_on_contestant_create": false,
+          "participant_margin_after_minutes": 0,
+          "participant_margin_before_minutes": null
+        }
+      }
+    ]
+  },
+  "rpcTransport": [
+    {
+      "path": "/rest/v1/rpc/save_task_template_with_inverse",
+      "method": "POST",
+      "contentLength": "234",
+      "receivedBytes": 234,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 400,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/save_task_template_with_inverse",
+      "method": "POST",
+      "contentLength": "302",
+      "receivedBytes": 302,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 400,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/save_task_template_with_inverse",
+      "method": "POST",
+      "contentLength": "312",
+      "receivedBytes": 312,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 400,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/save_task_template_with_inverse",
+      "method": "POST",
+      "contentLength": "322",
+      "receivedBytes": 322,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 400,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/save_task_template_with_inverse",
+      "method": "POST",
+      "contentLength": "312",
+      "receivedBytes": 312,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/save_task_template_with_inverse",
+      "method": "POST",
+      "contentLength": "242",
+      "receivedBytes": 242,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 400,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/save_task_template_with_inverse",
+      "method": "POST",
+      "contentLength": "234",
+      "receivedBytes": 234,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 400,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/save_task_template_with_inverse",
+      "method": "POST",
+      "contentLength": "234",
+      "receivedBytes": 234,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 400,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/save_task_template_with_inverse",
+      "method": "POST",
+      "contentLength": "242",
+      "receivedBytes": 242,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 400,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/save_task_template_with_inverse",
+      "method": "POST",
+      "contentLength": "185",
+      "receivedBytes": 185,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/save_task_template_with_inverse",
+      "method": "POST",
+      "contentLength": "185",
+      "receivedBytes": 185,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/save_task_template_with_inverse",
+      "method": "POST",
+      "contentLength": "476",
+      "receivedBytes": 476,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/save_task_template_with_inverse",
+      "method": "POST",
+      "contentLength": "448",
+      "receivedBytes": 448,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 400,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/save_task_template_with_inverse",
+      "method": "POST",
+      "contentLength": "448",
+      "receivedBytes": 448,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    }
+  ],
+  "protectedAfter": {
+    "plan_task_template_snapshots": {
+      "count": 62,
+      "hash": "2a00e3f6815e9a3de8be5636a13ea549"
+    },
+    "plans": {
+      "count": 3,
+      "hash": "b37e4c78945ebcd25a4081062b11680c"
+    },
+    "daily_tasks": {
+      "count": 865,
+      "hash": "1265d4fc283cff326ef57d66de04e995"
+    },
+    "locks": {
+      "count": 0,
+      "hash": "d751713988987e9331980363e24189ce"
+    },
+    "assisted_planning_stages": {
+      "count": 11,
+      "hash": "d06026585fdde923422ae2d122596ff3"
+    },
+    "plan_config_revisions": {
+      "count": 1,
+      "hash": "8bdd36b7144d37bca9ed8fdf785d9c25"
+    }
+  },
+  "status": "PASS"
+}
