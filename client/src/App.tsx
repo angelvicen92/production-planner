@@ -121,11 +121,13 @@ function AppLifecycleEffects() {
 }
 
 function Router() {
-  const { session, authLoading } = useAuth();
+  const { session, authLoading, passwordSetupRequired } = useAuth();
 
   if (authLoading) {
     return <AuthLoadingFallback />;
   }
+
+  if (session && passwordSetupRequired) return <LoginPage />;
 
   return (
     <Switch>

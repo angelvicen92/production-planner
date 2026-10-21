@@ -1,0 +1,63 @@
+{
+  "base": "d4fe022b92196912e8997e7a9249854808a09de7",
+  "nodeVersion": "v24.19.0",
+  "checks": [
+    {
+      "command": "npm run check",
+      "exitCode": 0,
+      "logSha256": "0fedab01a35ca9fca53fe6fd66268f14af56d83677404c554d736f962da99fb3"
+    },
+    {
+      "command": "npm run check:migrations",
+      "exitCode": 0,
+      "logSha256": "f47598fbde822886bff3ff8a051ea0b5b2b1475f1eeb4ffbe077b72d9d8f3e5a"
+    },
+    {
+      "command": "npx --no-install tsc -p script/demo/tsconfig.admin-invites.json",
+      "exitCode": 0,
+      "logSha256": "76162e465989f3f070a9de8db711fbf358e53b74d09ce1bbdb57c727e4c4a16d"
+    },
+    {
+      "command": "node --import tsx --test server/adminInvites.spec.ts server/apiAuthorization.spec.ts server/catalogAuthorization.spec.ts",
+      "exitCode": 0,
+      "logSha256": "2121e981345f0336e6bcfb83177b01fdca5bd19c0f18e448eddf4f56e12c8350"
+    },
+    {
+      "command": "VITE_SUPABASE_URL=http://127.0.0.1:54321 VITE_SUPABASE_ANON_KEY=disposable-build-anon npm run build",
+      "exitCode": 0,
+      "logSha256": "fe43fad98c0b54670122040bd9c8b0267025a1d6f84982be861cb87b23cce838"
+    },
+    {
+      "command": "ADMIN_INVITE_CHROMIUM_PATH=/usr/bin/chromium node --import tsx script/demo/smokeAdminInvites.ts work/admin-invites",
+      "exitCode": 0,
+      "logSha256": "89c092731553fcda5cf4c9a4bc0d5c35010aa10f993a5aa05d64dce1d503f2f2"
+    }
+  ],
+  "focalTests": {
+    "passed": 10,
+    "failed": 0
+  },
+  "nativeChecks": 15,
+  "sourceSha256": {
+    "client/src/App.tsx": "67dd5bd8ec27adbfb8381ca577bc4880fee8b852d26ec136a0d801c8841a2c38",
+    "client/src/components/settings/users-admin.tsx": "035012e9366f09e64527a7b7e55100b66f428c45997c3aae5d5d22a27158aba6",
+    "client/src/hooks/use-auth.tsx": "c4acdc888cedd413b147085f93470750a9bc8213050b5a5b1ca235378ac3b977",
+    "client/src/lib/supabaseClient.ts": "a60672a624cd280e58551a6a8df32bd3b79afc31ff8efaad7049ae27b8ea5a00",
+    "client/src/pages/login.tsx": "bf3a51ed53c175d1ac4219f88dcc8af81ad803fe5fecc0cd650d76495601e1bd",
+    "server/apiAuthorization.ts": "51fdf6d147e291e57c6ac16dd41bc49aa219ebb82a9de953a34c596d03ab81b2",
+    "server/routes.ts": "886e2d6bde2581d00dc1c811e91c28a5c52bcd2ef29aac435dc131391c1c0172",
+    "shared/adminInvites.ts": "ab794332613ec64381a70dde77f30875d8d1f0f9072ae01c35a114ff6781d506",
+    "server/adminInvites.ts": "5eb11690991ddca38f1b08ee0f98f64dcc425a7e3cc1b41d26037cc8e98a8e09",
+    "server/adminInvites.spec.ts": "8abd0d0cf970406d001d4b5a25e42c7002f602da8b90230a9447c41949944da2",
+    "script/demo/smokeAdminInvites.ts": "12954010bafaee128705b7f9c50126910fcc512882854a68f05f000515128788",
+    "script/demo/smokeAdminInviteBrowser.ts": "df3a57bac9f3c4516cad9abf1947bcc2414e58a709080c3589b27a650d798302",
+    "script/demo/tsconfig.admin-invites.json": "93166fbaff0fd0f2dd992cf2aa4d8da4ba01ba88cb60b88be67e1eaaf8546e70",
+    ".github/workflows/admin-invites-ci.yml": "6012e1a5f7a0c1f2d6fe38dc0f5fea435512d69315ab4245de8dce27daa2c85a"
+  },
+  "remoteWrites": 0,
+  "limitations": [
+    "CI results are authoritative in the PR; this file records local verification.",
+    "Local Node 24; CI configured for Node 20.",
+    "Build emitted existing bundle-size and Browserslist age notices."
+  ]
+}

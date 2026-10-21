@@ -1,3 +1,6 @@
+import { inviteUserSchema, userAccessLabels } from "@shared/adminInvites";
+import { useUserRole } from "@/hooks/use-user-role";
+import { Label } from "@/components/ui/label";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -20,7 +23,8 @@ type AdminUser = {
   email: string;
   createdAt: string | null;
   lastSignInAt?: string | null;
-  roleKey: RoleKey;
+  roleKey: RoleKey | null;
+  accessStatus: keyof typeof userAccessLabels;
   links: {
     staffPersonId?: number | null;
     resourceItemId?: number | null;
@@ -30,13 +34,18 @@ type AdminUser = {
 const roleOptions: RoleKey[] = ["admin", "production", "aux", "viewer"];
 
 type RowDraft = {
-  roleKey: RoleKey;
+  roleKey: RoleKey | "";
   staffPersonId: string;
   resourceItemId: string;
 };
 
 export function UsersAdminSettings({ currentUserId }: { currentUserId?: string | null }) {
   const qc = useQueryClient();
+  const { role } = useUserRole();
+  const canInvite = role === "admin";
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<RoleKey>("viewer");
+  const [inviteNotice, setInviteNotice] = useState<string | null>(null);
   const { toast } = useToast();
   const confirm = useConfirm();
   const [search, setSearch] = useState("");
@@ -59,6 +68,20 @@ export function UsersAdminSettings({ currentUserId }: { currentUserId?: string |
   const resourceQ = useQuery<any[]>({
     queryKey: ["/api/resource-types-with-items"],
     queryFn: () => apiRequest("GET", "/api/resource-types-with-items"),
+  });
+
+  const inviteUser = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/admin/users/invite", inviteUserSchema.parse({ email: inviteEmail, roleKey: inviteRole })),
+    onSuccess: async () => {
+      setInviteNotice("Se ha aceptado la solicitud de envío. La invitación está pendiente de activación; comprueba el estado en Usuarios. Los vínculos con staff o recursos se editan en la tabla actual.");
+      setInviteEmail("");
+      setSearch(""); setRoleFilter("all"); setOnlyUnlinked(false); setPage(1);
+      await qc.invalidateQueries({ queryKey: ["adminUsers"] });
+    },
+    onError: async () => {
+      setInviteNotice(null);
+      await qc.invalidateQueries({ queryKey: ["adminUsers"] });
+    },
   });
 
   const saveRow = useMutation({
@@ -147,7 +170,7 @@ export function UsersAdminSettings({ currentUserId }: { currentUserId?: string |
   }, [resourceQ.data]);
 
   const getDraft = (user: AdminUser): RowDraft => drafts[user.id] ?? {
-    roleKey: user.roleKey,
+    roleKey: user.roleKey ?? "",
     staffPersonId: user.links?.staffPersonId ? String(user.links.staffPersonId) : "none",
     resourceItemId: user.links?.resourceItemId ? String(user.links.resourceItemId) : "none",
   };
@@ -158,9 +181,26 @@ export function UsersAdminSettings({ currentUserId }: { currentUserId?: string |
   };
 
   return (
-    <SettingsSection section="users" title="Usuarios" busy={saveRow.isPending || deleteUser.isPending} error={usersQ.error || saveRow.error || deleteUser.error}>
+    <SettingsSection section="users" title="Usuarios" busy={saveRow.isPending || deleteUser.isPending || inviteUser.isPending} error={usersQ.error || saveRow.error || deleteUser.error}>
 
       <CardContent className="space-y-4">
+        {canInvite && <form className="space-y-3 rounded-lg border p-4" aria-label="Invitar usuario" onSubmit={event => {
+          event.preventDefault();
+          if (!canInvite || inviteUser.isPending) return;
+          setInviteNotice(null);
+          inviteUser.mutate();
+        }}>
+          <h3 className="font-medium">Invitar usuario</h3>
+          <p className="text-sm text-muted-foreground">El usuario recibirá un enlace para activar su acceso. El rol se guarda antes de solicitar el envío.</p>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-2"><Label htmlFor="invite-email">Email de invitación</Label><Input id="invite-email" type="email" required maxLength={254} value={inviteEmail} onChange={event => { setInviteEmail(event.target.value); inviteUser.reset(); setInviteNotice(null); }} disabled={inviteUser.isPending} /></div>
+            <div className="space-y-2"><Label htmlFor="invite-role">Rol inicial</Label><Select value={inviteRole} onValueChange={(value: RoleKey) => { setInviteRole(value); inviteUser.reset(); setInviteNotice(null); }} disabled={inviteUser.isPending}><SelectTrigger id="invite-role" className="w-[180px]"><SelectValue /></SelectTrigger><SelectContent>{roleOptions.map(role => <SelectItem key={role} value={role}>{role}</SelectItem>)}</SelectContent></Select></div>
+            <Button type="submit" disabled={inviteUser.isPending || !inviteUserSchema.safeParse({ email: inviteEmail, roleKey: inviteRole }).success}>{inviteUser.isPending ? "Preparando invitación…" : "Enviar invitación"}</Button>
+          </div>
+          {inviteNotice && <p role="status" className="text-sm">{inviteNotice}</p>}
+          {inviteUser.error && <p role="alert" className="text-sm text-destructive">{(inviteUser.error as Error).message} Si la petición se interrumpió, actualiza Usuarios antes de reintentar.</p>}
+        </form>}
+
         <div className="flex flex-wrap gap-2">
           <Input placeholder="Buscar por email" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
           <Select value={roleFilter} onValueChange={setRoleFilter}>
@@ -181,20 +221,21 @@ export function UsersAdminSettings({ currentUserId }: { currentUserId?: string |
           <TableHeader>
             <TableRow>
               <TableHead>Email</TableHead>
+              <TableHead>Acceso</TableHead>
               <TableHead>Rol</TableHead>
               <TableHead>Vincular a Staff</TableHead>
               <TableHead>Vincular a Recurso</TableHead>
               <TableHead>Último login</TableHead>
-              <TableHead>Estado</TableHead>
+              <TableHead>Cambios</TableHead>
               <TableHead>Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredRows.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-sm text-muted-foreground">Sin resultados</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-sm text-muted-foreground">Sin resultados</TableCell></TableRow>
             ) : filteredRows.map((user) => {
               const draft = getDraft(user);
-              const dirty = draft.roleKey !== user.roleKey
+              const dirty = draft.roleKey !== (user.roleKey ?? "")
                 || draft.staffPersonId !== (user.links?.staffPersonId ? String(user.links.staffPersonId) : "none")
                 || draft.resourceItemId !== (user.links?.resourceItemId ? String(user.links.resourceItemId) : "none");
               const isSaving = saveRow.isPending && saveRow.variables?.userId === user.id;
@@ -202,9 +243,10 @@ export function UsersAdminSettings({ currentUserId }: { currentUserId?: string |
               return (
                 <TableRow key={user.id}>
                   <TableCell>{user.email || "Sin email"}</TableCell>
+                  <TableCell><Badge variant="outline">{userAccessLabels[user.accessStatus] ?? "Estado no disponible"}</Badge></TableCell>
                   <TableCell>
                     <Select value={draft.roleKey} onValueChange={(value: RoleKey) => setDraft(user, { roleKey: value })}>
-                      <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="w-[160px]"><SelectValue placeholder="Sin rol asignado" /></SelectTrigger>
                       <SelectContent>{roleOptions.map((role) => <SelectItem key={role} value={role}>{role}</SelectItem>)}</SelectContent>
                     </Select>
                   </TableCell>
@@ -233,7 +275,7 @@ export function UsersAdminSettings({ currentUserId }: { currentUserId?: string |
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
-                        disabled={!dirty || isSaving}
+                        disabled={!dirty || !draft.roleKey || isSaving}
                         onClick={async () => {
                           if (currentUserId && user.id === currentUserId && draft.roleKey !== "admin") {
                             const ok = await confirm({

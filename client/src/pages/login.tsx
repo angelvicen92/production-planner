@@ -8,18 +8,17 @@ import { Label } from "@/components/ui/label";
 import { Loader2, AlertCircle, Mail, KeyRound } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-type AuthView = "login" | "signup" | "forgot" | "reset";
+type AuthView = "login" | "forgot" | "reset";
 
 export default function LoginPage() {
   const {
     user,
+    passwordSetupRequired,
     isLoading,
     signInWithMagicLink,
     isSendingMagicLink,
     signInWithPassword,
     isSigningInWithPassword,
-    signUpWithPassword,
-    isSigningUpWithPassword,
     sendPasswordResetEmail,
     isSendingPasswordResetEmail,
     updatePassword,
@@ -28,7 +27,7 @@ export default function LoginPage() {
   const [location, setLocation] = useLocation();
   const search = useMemo(() => new URLSearchParams(window.location.search), [location]);
   const hashSearch = useMemo(() => new URLSearchParams(window.location.hash.replace(/^#/, "")), [location]);
-  const isRecoveryFlow = search.get("type") === "recovery" || hashSearch.get("type") === "recovery";
+  const isRecoveryFlow = passwordSetupRequired || search.get("type") === "recovery" || hashSearch.get("type") === "recovery";
 
   const [view, setView] = useState<AuthView>(isRecoveryFlow ? "reset" : "login");
   const [email, setEmail] = useState("");
@@ -63,7 +62,6 @@ export default function LoginPage() {
   const isBusy =
     isSendingMagicLink ||
     isSigningInWithPassword ||
-    isSigningUpWithPassword ||
     isSendingPasswordResetEmail ||
     isUpdatingPassword;
 
@@ -127,23 +125,6 @@ export default function LoginPage() {
     await handleLoginSubmit("auto");
   };
 
-  const handleSignUp = async () => {
-    resetMessages();
-
-    if (!password.trim()) {
-      setError("Introduce una contraseña para crear tu cuenta.");
-      return;
-    }
-
-    try {
-      await signUpWithPassword({ email: trimmedEmail, password });
-      setSent("Cuenta creada. Si tu proyecto requiere confirmación, revisa tu correo para activarla.");
-      setView("login");
-    } catch (err: any) {
-      setError(err?.message || "No se pudo crear la cuenta.");
-    }
-  };
-
   const handleForgotPassword = async () => {
     resetMessages();
 
@@ -175,7 +156,6 @@ export default function LoginPage() {
   };
 
   const showLogin = view === "login";
-  const showSignUp = view === "signup";
   const showForgot = view === "forgot";
   const showReset = view === "reset";
 
@@ -190,15 +170,14 @@ export default function LoginPage() {
           <CardDescription className="text-base">
             {showReset
               ? "Establecer nueva contraseña"
-              : showSignUp
-                ? "Crea tu cuenta con email y contraseña"
-                : showForgot
+              : showForgot
                   ? "Recupera acceso a tu cuenta"
                   : "Inicia sesión con email y contraseña o enlace mágico"}
           </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-4 pt-4">
+          {showLogin && <p className="text-sm text-muted-foreground">Acceso mediante invitación de un administrador. Si aún no tienes acceso, contacta con administración.</p>}
           {showLogin && (
             <form onSubmit={handleLoginFormSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -260,41 +239,11 @@ export default function LoginPage() {
               </Button>
 
               <div className="flex items-center justify-between text-sm pt-2">
-                <button type="button" className="text-primary hover:underline" onClick={() => setView("signup")}>
-                  Crear cuenta
-                </button>
                 <button type="button" className="text-primary hover:underline" onClick={() => setView("forgot")}>
                   ¿Olvidaste tu contraseña?
                 </button>
               </div>
             </form>
-          )}
-
-          {showSignUp && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="name@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Contraseña</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Crea tu contraseña"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-            </>
           )}
 
           {showForgot && (
@@ -338,13 +287,6 @@ export default function LoginPage() {
             </Alert>
           )}
 
-          {showSignUp && (
-            <Button type="button" className="w-full" onClick={handleSignUp} disabled={!trimmedEmail || isBusy}>
-              {isSigningUpWithPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Crear cuenta
-            </Button>
-          )}
-
           {showForgot && (
             <Button type="button" className="w-full" onClick={handleForgotPassword} disabled={!trimmedEmail || isBusy}>
               {isSendingPasswordResetEmail && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -353,7 +295,7 @@ export default function LoginPage() {
           )}
 
           {showReset && (
-            <Button type="button" className="w-full" onClick={handleUpdatePassword} disabled={!newPassword.trim() || isBusy}>
+            <Button type="button" className="w-full" onClick={handleUpdatePassword} disabled={!user || !newPassword.trim() || isBusy}>
               {isUpdatingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Actualizar contraseña
             </Button>

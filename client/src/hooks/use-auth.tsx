@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { getSupabaseClient } from "@/lib/supabaseClient";
+import { getSupabaseClient, initialAuthCallbackType } from "@/lib/supabaseClient";
 import type { Session, User } from "@supabase/supabase-js";
 import { apiRequest } from "@/lib/api";
 
@@ -21,6 +21,7 @@ function getRecoveryRedirectUrl() {
 }
 
 type AuthContextValue = {
+  passwordSetupRequired: boolean;
   session: Session | null;
   user: User | null;
   authLoading: boolean;
@@ -30,8 +31,6 @@ type AuthContextValue = {
   isSendingMagicLink: boolean;
   signInWithPassword: ({ email, password }: { email: string; password: string }) => Promise<{ ok: true }>;
   isSigningInWithPassword: boolean;
-  signUpWithPassword: ({ email, password }: { email: string; password: string }) => Promise<{ ok: true }>;
-  isSigningUpWithPassword: boolean;
   sendPasswordResetEmail: ({ email }: { email: string }) => Promise<{ ok: true }>;
   isSendingPasswordResetEmail: boolean;
   updatePassword: ({ password }: { password: string }) => Promise<{ ok: true }>;
@@ -44,6 +43,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
+  const [passwordSetupRequired, setPasswordSetupRequired] = useState(initialAuthCallbackType === "invite" || initialAuthCallbackType === "recovery");
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
@@ -74,6 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             queryClient.removeQueries({ queryKey: ['/api/me/role'] });
             actorId = updatedSession?.user.id;
           }
+          if (_event === "PASSWORD_RECOVERY") setPasswordSetupRequired(true);
+          if (_event === "SIGNED_OUT") setPasswordSetupRequired(false);
           setSession(updatedSession ?? null);
           setAuthLoading(false);
 
@@ -106,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         options: {
           emailRedirectTo: getMagicLinkRedirectUrl(),
+          shouldCreateUser: false,
         },
       });
       if (error) throw error;
@@ -117,21 +120,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
       const supabase = await getSupabaseClient();
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      return { ok: true as const };
-    },
-  });
-
-  const signUpWithPassword = useMutation({
-    mutationFn: async ({ email, password }: { email: string; password: string }) => {
-      const supabase = await getSupabaseClient();
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: getMagicLinkRedirectUrl(),
-        },
-      });
       if (error) throw error;
       return { ok: true as const };
     },
@@ -153,6 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const supabase = await getSupabaseClient();
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
+      setPasswordSetupRequired(false);
       return { ok: true as const };
     },
   });
@@ -167,6 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AuthContextValue>(
     () => ({
+      passwordSetupRequired,
       session,
       user: session?.user ?? null,
       authLoading,
@@ -176,8 +166,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isSendingMagicLink: signInWithMagicLink.isPending,
       signInWithPassword: signInWithPassword.mutateAsync,
       isSigningInWithPassword: signInWithPassword.isPending,
-      signUpWithPassword: signUpWithPassword.mutateAsync,
-      isSigningUpWithPassword: signUpWithPassword.isPending,
       sendPasswordResetEmail: sendPasswordResetEmail.mutateAsync,
       isSendingPasswordResetEmail: sendPasswordResetEmail.isPending,
       updatePassword: updatePassword.mutateAsync,
@@ -186,14 +174,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isSigningOut: signOut.isPending,
     }),
     [
+      passwordSetupRequired,
       session,
       authLoading,
       signInWithMagicLink.mutateAsync,
       signInWithMagicLink.isPending,
       signInWithPassword.mutateAsync,
       signInWithPassword.isPending,
-      signUpWithPassword.mutateAsync,
-      signUpWithPassword.isPending,
       sendPasswordResetEmail.mutateAsync,
       sendPasswordResetEmail.isPending,
       updatePassword.mutateAsync,

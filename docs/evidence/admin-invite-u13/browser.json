@@ -1,0 +1,11 @@
+{
+  "mode": "REAL_DISPOSABLE_BROWSER",
+  "httpInterception": false,
+  "errors": [],
+  "screenshots": [
+    "login-recovery.png",
+    "invitation-pending.png",
+    "invitation-activated.png",
+    "invitation-duplicate.png"
+  ]
+}
