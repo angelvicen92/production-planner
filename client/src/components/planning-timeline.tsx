@@ -6,6 +6,7 @@ import { usePlanningHeaderNotes } from "@/hooks/use-planning-header-notes";
 import { usePlanningHeaderHeights } from "@/hooks/use-planning-header-heights";
 import { headerScopeKey, type HeaderScope } from "@shared/planningHeaderNotes";
 import { SpaceTaskContent } from "@/components/planning/space-task-content";
+import { planningExecutionStatus, planningExecutionLabels, PlanningExecutionMarker, PlanningExecutionLegend, type PlanningExecutionStatus } from "@/components/planning/planning-execution-status";
 import { spaceParticipantNames, spaceHeadingColor, spaceForeground, type SpaceTaskOperation } from "@/lib/planning-space-presentation";
 import { planningGroupOrder, planningFilterIds, effectivePlanningResourceIds } from "@/lib/planning-view-policy";
 import { operationalMealVisualTasks, resolvePlanningOperationalMeals, type PlanningOperationalMeals, type OperationalMealConfiguration } from "@/lib/planning-operational-meals";
@@ -35,8 +36,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { useDialogInput, useConfirm } from "@/components/ui/confirm-dialog";
 import { countRenderedPlanningTasks, type RenderedPlanningCounts } from "@/lib/planning-ready-gate";
-
-const operationalStatusLabels:Record<string,string>={pending:"Pendiente",in_progress:"En curso",done:"Completada",interrupted:"Interrumpida",cancelled:"Cancelada"};
 
 interface Task extends TaskOperationScope {
   blocksSpace?: boolean;
@@ -108,6 +107,8 @@ function PlanningMinuteClock({planId,date,onChange}:{planId?:number;date?:string
 }
 
 export interface PlanningTimelineProps {
+  /** False for simulated/preview placements that are not the accepted daily plan. */
+  showExecutionStatus?: boolean;
   canEditHeaders?: boolean;
   headerLocationScopes?: { zone: number[]; space: number[] };
   assignmentsStatus?: "ready" | "loading" | "error";
@@ -303,6 +304,7 @@ function computeCascadeEdits(params: {
 
 function TaskStatusMenuTrigger({
   task,
+  executionStatus,
   contestantName,
   locationLabel,
   onTaskStatusChange,
@@ -326,6 +328,7 @@ function TaskStatusMenuTrigger({
   onSetManualBlockDuration,
 }: {
   task: Task;
+  executionStatus: PlanningExecutionStatus | null;
   contestantName: string;
   locationLabel: string;
   canExecuteTask?: (task: Task) => boolean;
@@ -357,6 +360,7 @@ function TaskStatusMenuTrigger({
   const requestInput = useDialogInput();
   const suppressNextClickRef = useRef(false);
   const actions = !task.operationalMealPolicyId && onTaskStatusChange && (!canExecuteTask || canExecuteTask(task)) ? taskActionsForStatus(task.status ?? "pending") : [];
+  const accessibleLabel = `${contestantName && contestantName !== "—" ? `${contestantName} · ` : ""}${task.manualTitle ?? task.template?.name ?? "Tarea"} · ${task.startPlanned ?? "—"}–${task.endPlanned ?? "—"}${executionStatus ? ` · ${planningExecutionLabels[executionStatus]}` : ""}`;
 
   useEffect(() => {
     if (manualMode && open) setOpen(false);
@@ -384,8 +388,10 @@ function TaskStatusMenuTrigger({
       data-planning-team-id={task.itinerantTeamId ?? ""}
       data-planning-space-id={task.spaceId ?? ""}
       data-planning-start={task.startPlanned ?? ""}
-      title={`${contestantName && contestantName !== "—" ? `${contestantName} · ` : ""}${task.manualTitle ?? task.template?.name ?? "Tarea"} · ${task.startPlanned ?? "—"}–${task.endPlanned ?? "—"}`}
-      className={cn(className, "group text-left")}
+      data-execution-status={executionStatus ?? undefined}
+      aria-label={accessibleLabel}
+      title={accessibleLabel}
+      className={cn(className, "group text-left planning-execution-task", executionStatus && executionStatus !== "pending" && "planning-execution-marked")}
       style={style}
       onClick={handleCardClick}
       onPointerDown={(event) => {
@@ -399,6 +405,7 @@ function TaskStatusMenuTrigger({
       }}
     >
       {children}
+      <PlanningExecutionMarker status={executionStatus} />
     </button>
   );
 
@@ -591,6 +598,7 @@ function TaskStatusMenuTrigger({
 }
 
   export function PlanningTimeline({
+    showExecutionStatus = true,
     canEditHeaders = false,
     headerLocationScopes,
     assignmentsStatus = "ready",
@@ -700,6 +708,7 @@ function TaskStatusMenuTrigger({
 
   const taskPrefixIcon = (task: Task) => {
     if (task.isManualBlock) return "🗒";
+    if (task.breakKind || task.operationalMealPolicyId) return null;
     if (task.status === "in_progress" || task.status === "done") return "🔒";
     if (hasTimeLock(task)) return "📌";
     return null;
@@ -712,6 +721,8 @@ function TaskStatusMenuTrigger({
 
   const [manualMode, setManualMode] = useState(false);
   const assistedDraftMode = mode === "assisted-draft";
+  const executionStatusForTask = (task: Task) => showExecutionStatus ? planningExecutionStatus(task, mode) : null;
+  const executionLegend = dailyTasks.some(task => executionStatusForTask(task)) ? <PlanningExecutionLegend /> : null;
   useEffect(() => { setManualMode(assistedDraftMode && !readOnly); }, [assistedDraftMode, readOnly]);
   const assistedVisualClass = (task: Task) => {
     if (!assistedDraftMode) return "";
@@ -1767,6 +1778,7 @@ function TaskStatusMenuTrigger({
                 <div className="planning-timeline-shell min-h-0 flex flex-1 flex-col border rounded-xl bg-card shadow-sm" data-tall-headers={headerHeights.tall} style={{ "--planning-zone-header-height": `${headerHeights.zone}px`, "--planning-space-header-height": `${headerHeights.space}px` } as CSSProperties}>
                       <div ref={scrollRef} className="planning-scroll-viewport" tabIndex={0} role="region" aria-label="Timeline de espacios">
                         <div className="w-max min-w-full" data-planning-canvas data-fixed-width="96" data-fixed-height={headerHeight}>
+                          {executionLegend}
               {lanesToShow.length === 0 ? (
                 <Card className="planning-scroll-viewport p-4 text-center bg-muted/50">
                   <p className="text-muted-foreground">
@@ -2109,7 +2121,7 @@ function TaskStatusMenuTrigger({
                                             return (
                                               <TaskStatusMenuTrigger
                                                 key={task.id}
-                                                task={task}
+                                                task={task} executionStatus={executionStatusForTask(task)}
                                                 contestantName={spaceParticipantsByTaskId.get(Number(task.id))?.join(" + ") || "—"}
                                                 locationLabel={getTaskLocationLabel(task)}
                                                 onTaskStatusChange={onTaskStatusChange}
@@ -2132,12 +2144,6 @@ function TaskStatusMenuTrigger({
                                                   spaceVerticalMode === "list" ? "left-1 right-1 rounded-none shadow-none px-1 py-0.5" : "left-2 right-2 rounded-lg shadow-sm px-2 py-1",
                                                   task.isManualBlock ? "border-dashed border-sky-500/80" : "",
                                                   manualDrag?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
-                                                  task.status === "in_progress"
-                                                    ? "ring-2 ring-green-500"
-                                                    : "",
-                                                  task.status === "done"
-                                                    ? "opacity-80"
-                                                    : "",
                                                 )}
                                                 style={{
                                                   top,
@@ -2148,9 +2154,7 @@ function TaskStatusMenuTrigger({
                                                   backgroundColor:
                                                     taskBaseColor(task),
                                                   borderColor:
-                                                    task.status === "in_progress"
-                                                      ? "rgb(34 197 94)"
-                                                      : taskBaseColor(task),
+                                                    taskBaseColor(task),
                                                 }}
                                               >
                                                 <SpaceTaskContent
@@ -2199,7 +2203,7 @@ function TaskStatusMenuTrigger({
                                               const top = (tStart - startMin) * pxPerMin;
                                               const height = (tEnd - tStart) * pxPerMin;
                                               return (
-                                                <TaskStatusMenuTrigger key={task.id} task={task}
+                                                <TaskStatusMenuTrigger key={task.id} task={task} executionStatus={executionStatusForTask(task)}
                                                   contestantName={spaceParticipantsByTaskId.get(Number(task.id))?.join(" + ") || "—"}
                                                   locationLabel={getTaskLocationLabel(task)}
                                                   onTaskStatusChange={onTaskStatusChange}
@@ -2217,8 +2221,8 @@ function TaskStatusMenuTrigger({
                                                   canOpenMenuFromCard={manualDrag === null}
                                                   onEditManualBlock={(task) => setManualBlockEditor({ task, title: task.manualTitle ?? task.template?.name ?? "Bloqueo", color: task.manualColor ?? "#38BDF8", durationMinutes: Math.max(5, timeToMinutes(task.endPlanned ?? "00:30") - timeToMinutes(task.startPlanned ?? "00:00") || 30) })}
                                                   onClick={(event) => handleTaskCardClick(event, task)}
-                                                  className={cn("absolute border overflow-hidden cursor-pointer z-10", spaceVerticalMode === "list" ? "left-1 right-1 rounded-none shadow-none px-1 py-0.5" : "left-2 right-2 rounded-lg shadow-sm px-2 py-1", task.isManualBlock ? "border-dashed border-sky-500/80" : "", assistedVisualClass(task), manualDrag?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "", task.status === "in_progress" ? "ring-2 ring-green-500" : "", task.status === "done" ? "opacity-80" : "", isApplying ? "pointer-events-none opacity-85" : "")}
-                                                  style={{ top, height, paddingTop: height < 32 ? 0 : undefined, paddingBottom: height < 32 ? 0 : undefined, color: spaceForeground(taskBaseColor(task)), backgroundColor: taskBaseColor(task), borderColor: task.status === "in_progress" ? "rgb(34 197 94)" : taskBaseColor(task) }}
+                                                  className={cn("absolute border overflow-hidden cursor-pointer z-10", spaceVerticalMode === "list" ? "left-1 right-1 rounded-none shadow-none px-1 py-0.5" : "left-2 right-2 rounded-lg shadow-sm px-2 py-1", task.isManualBlock ? "border-dashed border-sky-500/80" : "", assistedVisualClass(task), manualDrag?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "", isApplying ? "pointer-events-none opacity-85" : "")}
+                                                  style={{ top, height, paddingTop: height < 32 ? 0 : undefined, paddingBottom: height < 32 ? 0 : undefined, color: spaceForeground(taskBaseColor(task)), backgroundColor: taskBaseColor(task), borderColor: taskBaseColor(task) }}
                                                 >
                                                   <SpaceTaskContent
                                                     participants={spaceParticipantsByTaskId.get(Number(task.id))}
@@ -2274,7 +2278,7 @@ function TaskStatusMenuTrigger({
                                         return (
                                           <TaskStatusMenuTrigger
                                             key={task.id}
-                                            task={task}
+                                            task={task} executionStatus={executionStatusForTask(task)}
                                             contestantName={spaceParticipantsByTaskId.get(Number(task.id))?.join(" + ") || "—"}
                                             locationLabel={getTaskLocationLabel(task)}
                                             onTaskStatusChange={onTaskStatusChange}
@@ -2297,9 +2301,6 @@ function TaskStatusMenuTrigger({
                                                   spaceVerticalMode === "list" ? "left-1 right-1 rounded-none shadow-none px-1 py-0.5" : "left-2 right-2 rounded-lg shadow-sm px-2 py-1",
                                                   task.isManualBlock ? "border-dashed border-sky-500/80" : "",
                                                   manualDrag?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
-                                              task.status === "in_progress"
-                                                ? "ring-2 ring-green-500"
-                                                : "",
                                               isOverdueTask(task) ? "ring-2 ring-red-500/80" : "",
                                               isRunningLateTask(task) ? "border-red-500" : "",
                               isApplying ? "pointer-events-none opacity-85" : "",
@@ -2313,9 +2314,7 @@ function TaskStatusMenuTrigger({
                                               backgroundColor:
                                                 taskBaseColor(task),
                                               borderColor:
-                                                task.status === "in_progress"
-                                                  ? "rgb(34 197 94)"
-                                                  : taskBaseColor(task),
+                                                taskBaseColor(task),
                                             }}
                                           >
                                             <SpaceTaskContent
@@ -2426,6 +2425,7 @@ function TaskStatusMenuTrigger({
         <div className="planning-timeline-shell min-h-0 flex flex-1 flex-col border rounded-xl bg-card shadow-sm">
           <div ref={scrollRef} className="planning-scroll-viewport" tabIndex={0} role="region" aria-label="Agenda de recursos">
             <div className="p-2 w-full min-w-0" data-planning-canvas>
+              {executionLegend}
               <div className="planning-resource-grid grid items-start gap-4" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${resourceColumnWidth(geometry.zoomX)}px), 1fr))` }}>
               {selectedResourceKeys.map((resourceKey) => {
                 const option = resourceSelectableById.get(resourceKey);
@@ -2452,7 +2452,7 @@ function TaskStatusMenuTrigger({
                         {tasksForResource.map((task) => (
                           <TaskStatusMenuTrigger
                             key={`${resourceKey}-${task.id}`}
-                            task={task}
+                            task={task} executionStatus={executionStatusForTask(task)}
                             contestantName={
                               contestantNameById[Number(task.contestantId)] ?? "—"
                             }
@@ -2476,16 +2476,12 @@ function TaskStatusMenuTrigger({
                               "planning-resource-task w-full min-w-0 rounded-lg border shadow-sm px-3 py-2 cursor-pointer",
                               task.isManualBlock ? "border-dashed border-sky-500/80" : "",
                                                   manualDrag?.taskId === Number(task.id) ? "ring-2 ring-blue-600" : "",
-                              task.status === "in_progress" ? "ring-2 ring-green-500" : "",
-                              task.status === "done" ? "opacity-80" : "",
                             )}
                             style={{
                               minHeight: Math.max(88, 88 * zoomY),
                               backgroundColor: taskBaseColor(task),
                               borderColor:
-                                task.status === "in_progress"
-                                  ? "rgb(34 197 94)"
-                                  : taskBaseColor(task),
+                                taskBaseColor(task),
                               color: taskTextColor(task),
                               pointerEvents: "auto",
                             }}
@@ -2502,9 +2498,9 @@ function TaskStatusMenuTrigger({
                                   {getTaskLocationLabel(task)} · {contestantNameById[Number(task.contestantId)] ?? "Sin concursante"}
                                 </div>
                               </div>
-                              <Badge variant="outline" className="shrink-0 text-[10px]">
-                                {task.operationalMealPolicyId ? operationalMeals.authority === "accepted" ? "Aceptada" : "Borrador" : operationalStatusLabels[task.status] ?? "Estado por revisar"}
-                              </Badge>
+                              {task.operationalMealPolicyId || assistedDraftMode || executionStatusForTask(task) ? <Badge variant="outline" className="shrink-0 text-[10px]">
+                                {task.operationalMealPolicyId ? operationalMeals.authority === "accepted" ? "Aceptada" : "Borrador" : assistedDraftMode ? "Borrador" : planningExecutionLabels[executionStatusForTask(task)!]}
+                              </Badge> : null}
                             </div>
                           </TaskStatusMenuTrigger>
                         ))}
@@ -2529,6 +2525,7 @@ function TaskStatusMenuTrigger({
         <div ref={scrollRef} className="planning-scroll-viewport" tabIndex={0} role="region" aria-label="Timeline de concursantes">
           <div>
             <div className="relative pb-4" style={{ width: `calc(var(--planning-label-width, 192px) + ${duration * 2 * zoomX}px)` }} data-planning-canvas data-fit-width={duration * 2} data-fit-height={lanes.length * (isPdf ? 36 : 48)}>
+              {executionLegend}
               {/* Timeline Header */}
               <div className="flex border-b sticky top-0 bg-card z-40">
                 <div className="planning-row-label shrink-0 sticky left-0 z-30 p-3 border-r font-semibold text-sm bg-card planning-density-row">
@@ -3036,7 +3033,7 @@ function TaskStatusMenuTrigger({
 
                       return (
                         <TaskStatusMenuTrigger key={task.id}
-                            task={task}
+                            task={task} executionStatus={executionStatusForTask(task)}
                             contestantName={
                               contestantNameById[Number(task.contestantId)] ?? "—"
                             }
@@ -3108,10 +3105,6 @@ function TaskStatusMenuTrigger({
                               viewMode === "contestants"
                                 ? (isPdf ? "top-0 h-full rounded-none" : "top-0.5 bottom-0.5 rounded-md")
                                 : "top-4 h-12 rounded-lg",
-                              task.status === "in_progress"
-                                ? "ring-2 ring-green-500"
-                                : "",
-                              task.status === "done" ? "opacity-80" : "",
                               isOverdueTask(task) ? "ring-2 ring-red-500/80" : "",
                               isRunningLateTask(task) ? "border-red-500" : "",
                               isApplying ? "pointer-events-none opacity-85" : "",
@@ -3124,9 +3117,7 @@ function TaskStatusMenuTrigger({
                               borderColor:
                                 wrapInner
                                   ? "transparent"
-                                  : task.status === "in_progress"
-                                    ? "rgb(34 197 94)"
-                                    : taskBaseColor(task),
+                                  : taskBaseColor(task),
                               color: taskTextColor(task),
                               pointerEvents: isBackgroundTask ? "none" : "auto",
                               touchAction: manualMode && canSelectManualTask(task) ? "none" : "auto",

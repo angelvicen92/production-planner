@@ -1,0 +1,6 @@
+{
+  "extends": "../../../tsconfig.json",
+  "include": ["../../../script/demo/smokePlanningExecutionVisuals.ts"],
+  "exclude": [],
+  "compilerOptions": { "incremental": false }
+}

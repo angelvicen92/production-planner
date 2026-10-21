@@ -17,6 +17,61 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Execution decorates the activity colour; it never fades text or disables a card. */
+.planning-execution-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .4rem 1rem;
+  padding: .5rem .75rem;
+  color: hsl(var(--muted-foreground));
+  font-size: 11px;
+  line-height: 16px;
+  max-width: calc(100vw - 4rem);
+}
+.planning-execution-sample { position: relative; width: 20px; height: 18px; border: 1px solid #94a3b8; border-radius: 4px; background: #dbeafe; }
+.planning-resource-task { position: relative; }
+.planning-execution-marked > :not(.planning-execution-marker):not(.absolute) { margin-inline-end: 15px; }
+[data-execution-status="in_progress"] { --execution-stroke: #15803d; }
+[data-execution-status="interrupted"] { --execution-stroke: #b45309; }
+[data-execution-status="cancelled"] { --execution-stroke: #64748b; }
+.planning-execution-task:is([data-execution-status="in_progress"], [data-execution-status="interrupted"], [data-execution-status="cancelled"]),
+.planning-execution-sample:is([data-execution-status="in_progress"], [data-execution-status="interrupted"], [data-execution-status="cancelled"]) {
+  border-color: var(--execution-stroke) !important;
+  outline: 2px solid var(--execution-stroke);
+  outline-offset: -2px;
+}
+.planning-execution-task[data-execution-status="done"] {
+  background-image: linear-gradient(rgb(128 128 128 / .18), rgb(128 128 128 / .18));
+}
+.planning-execution-marker {
+  position: absolute;
+  inset-block-start: 1px;
+  inset-inline-end: 1px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  max-width: calc(100% - 2px);
+  max-height: calc(100% - 2px);
+  overflow: hidden;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  color: #15803d;
+  background: #fff;
+  pointer-events: none;
+}
+.planning-execution-marker svg { width: 100%; height: 100%; }
+[data-execution-marker="interrupted"] { color: #b45309; background: #fffbeb; }
+[data-execution-marker="cancelled"] { color: #475569; background: #f8fafc; }
+.planning-execution-task:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+@media print {
+  .planning-execution-task, .planning-execution-marker, .planning-execution-sample { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .planning-execution-marker { border-color: currentColor !important; }
+}
+
 :root {
   --font-sans: 'Plus Jakarta Sans', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
