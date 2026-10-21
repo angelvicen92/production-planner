@@ -1,0 +1,55 @@
+name: Catalog Authorization CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - server/apiAuthorization*
+      - server/catalogAuthorization.spec.ts
+      - server/authz.ts
+      - server/middleware/requireAuth.ts
+      - server/routes.ts
+      - server/storage.ts
+      - shared/routes.ts
+      - script/demo/smokeCatalogAuthorization.ts
+      - script/demo/smokeA2Integration.ts
+      - .github/workflows/catalog-authorization-ci.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: catalog-authorization-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  catalog-authorization:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
+      - name: Unchanged catalog authorization baseline
+        run: |
+          git fetch --no-tags --depth=1 origin a6ab898a0d443be17e3ef4a33d09a5e1cdbe456a
+          git worktree add --detach work/catalog-authz-baseline a6ab898a0d443be17e3ef4a33d09a5e1cdbe456a
+          ln -s "$PWD/node_modules" work/catalog-authz-baseline/node_modules
+      - name: Real Auth, HTTP handlers, PostgREST and PostgreSQL; baseline versus candidate
+        env:
+          CATALOG_AUTHORIZATION_BASELINE_ROOT: work/catalog-authz-baseline
+        run: npm run demo:a2:smoke -- work/catalog-authorization --historical-topology --catalog-authorization
+      - name: Middleware, roles, templates, daily execution and Assisted contracts
+        run: node --import tsx --test server/apiAuthorization.spec.ts server/catalogAuthorization.spec.ts server/taskTemplateContract.spec.ts server/assistedStageAcceptanceAuthorization.spec.ts server/liveExecution.spec.ts server/liveExecutionDateIntegrity.spec.ts server/executionTimeCorrections.spec.ts server/bulkExecutionReset.spec.ts
+      - name: Evidence from disposable services
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalog-authorization
+          path: |
+            work/catalog-authorization/integration.json
+            work/catalog-authorization/catalog-authorization.json

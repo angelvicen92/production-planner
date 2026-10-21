@@ -1,0 +1,56 @@
+✖ catalog HTTP role matrix denies before handlers, including Express casing and trailing slash (131.17579ms)
+✖ segment limits do not capture neighbors or change plan-local, daily, Assisted or U03a authority (2.150308ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2337.497755
+
+✖ failing tests:
+
+test at server/catalogAuthorization.spec.ts:1:597
+✖ catalog HTTP role matrix denies before handlers, including Express casing and trailing slash (131.17579ms)
+  AssertionError [ERR_ASSERTION]: reuse role lookup only after successful authentication
+
+  0 !== 1
+
+      at TestContext.<anonymous> (/workspace/production-planner/server/catalogAuthorization.spec.ts:29:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at server/catalogAuthorization.spec.ts:1:2511
+✖ segment limits do not capture neighbors or change plan-local, daily, Assisted or U03a authority (2.150308ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+  + null
+  - [
+  -   'admin'
+  - ]
+
+      at TestContext.<anonymous> (/workspace/production-planner/server/catalogAuthorization.spec.ts:42:125)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: [ 'admin' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

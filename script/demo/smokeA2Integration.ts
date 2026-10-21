@@ -38,6 +38,7 @@ if(process.argv.includes('--app')){
  await import('../../server/index');
 }else{
  const restrictedDataApi=process.argv.includes('--restricted-data-api');
+ const catalogAuthorization=process.argv.includes('--catalog-authorization')||process.argv.includes('--catalog-authorization-baseline');
  const templateAuthorization=process.argv.includes('--template-authorization');
  const settingsSections=process.argv.includes('--settings-sections');
  const templateCreation=process.argv.includes('--template-creation');
@@ -107,6 +108,7 @@ if(process.argv.includes('--app')){
  if(autopilot)runtimeFiles.push('shared/assistedAutopilot.ts','client/src/lib/assisted-autopilot.ts','script/demo/smokeA2AutopilotJourney.ts');
  if(settingsSections)runtimeFiles.push('script/demo/smokeSettingsSections.ts','script/demo/smokeSettingsOperations.ts','client/src/pages/settings.tsx','client/src/components/settings/settings-section.tsx','client/src/hooks/use-settings-section.ts','client/src/lib/settings-section-preferences.ts','client/src/components/general-program-settings.tsx','client/src/components/general-optimizer-settings.tsx','client/src/components/control-room-settings.tsx','client/src/components/transport-settings-card.tsx','client/src/components/resources-list.tsx','client/src/components/create-resource-pool.tsx','client/src/components/settings/users-admin.tsx');
  if(templateCreation)runtimeFiles.push('script/demo/smokeTemplateCreation.ts','server/apiAuthorization.ts','server/middleware/requireAuth.ts','server/authz.ts','shared/routes.ts','shared/schema.ts','client/src/pages/settings.tsx');
+ if(catalogAuthorization)runtimeFiles.push('script/demo/smokeCatalogAuthorization.ts','server/apiAuthorization.ts','server/middleware/requireAuth.ts','server/authz.ts','shared/routes.ts');
  if(templateAuthorization)runtimeFiles.push('script/demo/smokeTemplateAuthorization.ts','server/apiAuthorization.ts','server/middleware/requireAuth.ts','server/authz.ts','shared/routes.ts','client/src/hooks/use-tasks.ts','client/src/pages/settings.tsx');
  if(configurationReadRecovery)runtimeFiles.push('script/demo/smokeA2ConfigurationReadRecovery.ts','script/demo/fixtures/a2-27002-legacy-breaks.json','server/planPlannerNextConfiguration.ts','shared/assistedAutopilot.ts');
  if(operationalMeals)runtimeFiles.push('script/demo/seedOperationalMealRehearsal.ts','script/demo/smokeOperationalMealJourney.ts','script/demo/fixtures/ui05-a2-s22.json.gz','script/demo/fixtures/a2-27002-legacy-breaks.json','client/src/lib/planning-operational-meals.ts');
@@ -162,7 +164,7 @@ if(process.argv.includes('--app')){
    if(req.method==='OPTIONS'){res.writeHead(204);res.end();return;}
    const path=req.url??'/',isAuth=path.startsWith('/auth/v1/'),isRest=path.startsWith('/rest/v1/');
    if(!isAuth&&!isRest){res.writeHead(404);res.end();return;}
-   const trace=path.startsWith('/rest/v1/rpc/')?{path,method:req.method,contentLength:req.headers['content-length']??null,receivedBytes:0,requestEnded:false,upstreamFinished:false,responseStatus:null as number|null,error:null as string|null}:null;
+   const trace=(path.startsWith('/rest/v1/rpc/')||(catalogAuthorization&&isRest))?{path,method:req.method,contentLength:req.headers['content-length']??null,receivedBytes:0,requestEnded:false,upstreamFinished:false,responseStatus:null as number|null,error:null as string|null}:null;
    if(trace){transport.push(trace);req.on('data',chunk=>trace.receivedBytes+=chunk.length);req.once('end',()=>trace.requestEnded=true);}
    const port=isAuth?authPort:restPort,prefix=isAuth?'/auth/v1':'/rest/v1';
    const upstream=http.request({hostname:'127.0.0.1',port,path:path.slice(prefix.length),method:req.method,headers:{...req.headers,host:`127.0.0.1:${port}`}},response=>{if(trace)trace.responseStatus=response.statusCode??502;for(const [k,v] of Object.entries(response.headers))if(v!==undefined)res.setHeader(k,v);res.writeHead(response.statusCode??502);response.pipe(res);});
@@ -253,7 +255,7 @@ if(process.argv.includes('--app')){
   const appLog=createWriteStream(`${directory}/app-private.log`,{mode:0o600});
   app=spawn(process.execPath,['--import','tsx',resolve('script/demo/smokeA2Integration.ts'),'--app'],{env:localEnv,stdio:['ignore','pipe','pipe']});app.stdout!.pipe(appLog);app.stderr!.pipe(appLog);
   await eventually(async()=>{assert.equal(app!.exitCode,null,'product server exited');const r=await fetch(`${appUrl}/api/plans/${dataset.input.planId}`,{headers:{Authorization:`Bearer ${users.production.token}`}});assert.equal(r.status,200);});
-  const requestedBaseline=assistedStageCycle?process.env.P8_BASELINE_ROOT:realityScope?process.env.REALITY_BASELINE_ROOT:headerNotes?process.env.UI06_BASELINE_ROOT:operationalMeals?process.env.UI05_BASELINE_ROOT:settingsSections?process.env.SETTINGS_SECTIONS_BASELINE_ROOT:collapsibleSections?process.env.SECTIONS_BASELINE_ROOT:templateCreation?process.env.TEMPLATE_CREATION_BASELINE_ROOT:templateAuthorization?process.env.TEMPLATE_AUTHORIZATION_BASELINE_ROOT:configurationReadRecovery?process.env.CONFIG_READ_BASELINE_ROOT:controlRoom?process.env.CONTROL_ROOM_BASELINE_ROOT:undefined;
+  const requestedBaseline=catalogAuthorization?process.env.CATALOG_AUTHORIZATION_BASELINE_ROOT:assistedStageCycle?process.env.P8_BASELINE_ROOT:realityScope?process.env.REALITY_BASELINE_ROOT:headerNotes?process.env.UI06_BASELINE_ROOT:operationalMeals?process.env.UI05_BASELINE_ROOT:settingsSections?process.env.SETTINGS_SECTIONS_BASELINE_ROOT:collapsibleSections?process.env.SECTIONS_BASELINE_ROOT:templateCreation?process.env.TEMPLATE_CREATION_BASELINE_ROOT:templateAuthorization?process.env.TEMPLATE_AUTHORIZATION_BASELINE_ROOT:configurationReadRecovery?process.env.CONFIG_READ_BASELINE_ROOT:controlRoom?process.env.CONTROL_ROOM_BASELINE_ROOT:undefined;
   if(requestedBaseline){
    const baselineRoot=resolve(requestedBaseline),baselinePort=await freePort();baselineUrl=`http://127.0.0.1:${baselinePort}`;
    const baselineLog=createWriteStream(`${directory}/baseline-private.log`,{mode:0o600});
@@ -266,7 +268,11 @@ if(process.argv.includes('--app')){
    pass('native complete object/role matrix, invalid Auth, same-JWT role change/revocation and admin user cleanup');
   }
   const {storage}=await import('../../server/storage');const {buildEngineInput}=await import('../../engine/buildInput');const {adaptEngineInputToPlannerNextProblem}=await import('../../engine/planner-next/integration/engineInputAdapter');
-  if(headerNotes){
+  if(catalogAuthorization){
+   const {runCatalogAuthorization}=await import('./smokeCatalogAuthorization');
+   report.requestedStages=0;
+   report.catalogAuthorization=await runCatalogAuthorization({appUrl,baselineUrl,db,users,directory,pass,transport,baselineOnly:process.argv.includes('--catalog-authorization-baseline')});
+  }else if(headerNotes){
    const {runPlanningHeaderJourney}=await import('./smokePlanningHeaderJourney');
    report.headerNotes=await runPlanningHeaderJourney({appUrl,baselineUrl,db,users,directory,planId:27002,pass,restUrl:url,anon});
   }else if(operationalMeals){
