@@ -23,8 +23,14 @@ export async function runTemplateCreation(options:{appUrl:string;baselineUrl?:st
  const read=async(id:number)=>(await request(appUrl,api.taskTemplates.list.path,'GET')).data.find((t:{id:number})=>t.id===Number(id));
  // A nonempty explicit lock makes preservation assertions meaningful.
  const lock=(await db.query("INSERT INTO public.locks(plan_id,task_id,lock_type,created_by,reason) SELECT plan_id,id,'full','U02 disposable probe','U02 preservation probe' FROM public.daily_tasks WHERE plan_id=26999 ORDER BY id LIMIT 1 RETURNING id")).rows[0];assert.ok(lock);
- const original=await fingerprints(),report:any={baseline:[],candidate:[],denials:[],invalid:[],snapshots:[],original};
+ const original=await fingerprints(),report:any={baseline:[],candidate:[],denials:[],invalid:[],snapshots:[],revisions:[],original};
  const save=()=>writeFileSync(directory+'/template-creation.json',JSON.stringify(report,null,2));
+ const assertUpdated=async(id:number,before:any,patch:Record<string,unknown>)=>{
+  const after=await read(id);
+  assert.deepEqual(after,{...before,...patch,revision:before.revision+1},'successful UPDATE increments revision exactly once and preserves every other field');
+  report.revisions.push({id,before:before.revision,after:after.revision,patch});
+  return after;
+ };
  const ids:number[]=[],planIds:number[]=[];
  const fixture=(await db.query("INSERT INTO public.task_templates(name,default_duration,default_cameras,abbrev,participant_margin_before_minutes,participant_margin_after_minutes) VALUES ('U02 edit probe',10,0,'U02',0,15) RETURNING id")).rows[0];
  ids.push(Number(fixture.id));
@@ -82,8 +88,9 @@ export async function runTemplateCreation(options:{appUrl:string;baselineUrl?:st
    hasDependency:true,dependsOnTemplateIds:[result.data.id],dependsOnTemplateId:result.data.id,itinerantTeamRequirement:'any',itinerantTeamId:null,
    defaultComment1Color:'#123456',defaultComment2Color:'#abcdef',uiColor:'#aabbcc88',uiColorSecondary:'#11223344',
    rulesJson:{retained:{value:0}},resourceRequirements:{byType:{3:2},byItem:{4:1},anyOf:[]},participantMarginBeforeMinutes:0,participantMarginAfterMinutes:15};
+  const beforeComplete=await read(fixture.id);
   assert.equal((await request(appUrl,editPath,'PATCH','admin',complete)).status,200);
-  const full=await read(fixture.id);report.candidate.push({operation:'HTTP full PATCH',value:full});
+  const full=await assertUpdated(fixture.id,beforeComplete,complete);report.candidate.push({operation:'HTTP full PATCH',value:full});
   assert.ok(full);for(const [key,value] of Object.entries(complete))assert.deepEqual(full[key],value,key);
   await page.reload();await page.getByRole('tab',{name:/plantillas|templates/i}).click();await card(page).getByRole('button',{name:'Editar',exact:true}).click();
   const beforeInput=page.getByRole('spinbutton',{name:'Margen antes (vacío = heredado)',exact:true});
@@ -93,14 +100,15 @@ export async function runTemplateCreation(options:{appUrl:string;baselineUrl?:st
   await page.getByRole('button',{name:'Guardar',exact:true}).click();const editedResponse=await edited;
   assert.equal(editedResponse.status(),200);const editedBody=editedResponse.request().postDataJSON();
   assert.equal(editedBody.participantMarginBeforeMinutes,0);assert.equal(editedBody.participantMarginAfterMinutes,20);
-  assert.deepEqual(await read(fixture.id),{...full,participantMarginAfterMinutes:20});
+  await assertUpdated(fixture.id,full,{participantMarginAfterMinutes:20});
   for(const values of [[null,0],[5,null],[0,20]] as const){
    await page.reload();await page.getByRole('tab',{name:/plantillas|templates/i}).click();await card(page).getByRole('button',{name:'Editar',exact:true}).click();
    const current=await read(fixture.id);assert.equal(await beforeInput.inputValue(),current.participantMarginBeforeMinutes==null?'':String(current.participantMarginBeforeMinutes));
    assert.equal(await afterInput.inputValue(),current.participantMarginAfterMinutes==null?'':String(current.participantMarginAfterMinutes));
    await beforeInput.fill(values[0]==null?'':String(values[0]));await afterInput.fill(values[1]==null?'':String(values[1]));
    const saved=page.waitForResponse(r=>new URL(r.url()).pathname===editPath&&r.request().method()==='PATCH');await page.getByRole('button',{name:'Guardar',exact:true}).click();assert.equal((await saved).status(),200);
-   assert.deepEqual(await read(fixture.id),{...full,participantMarginBeforeMinutes:values[0],participantMarginAfterMinutes:values[1]});
+   const after=await assertUpdated(fixture.id,current,{participantMarginBeforeMinutes:values[0],participantMarginAfterMinutes:values[1]});
+   assert.deepEqual(after,{...full,participantMarginBeforeMinutes:values[0],participantMarginAfterMinutes:values[1],revision:current.revision+1});
   }
   await page.reload();await page.getByRole('tab',{name:/plantillas|templates/i}).click();await card(page).getByRole('button',{name:'Editar',exact:true}).click();
   let invalidWrites=0;page.on('request',r=>{if(r.method()==='PATCH'&&new URL(r.url()).pathname===editPath)invalidWrites++;});
@@ -155,12 +163,15 @@ export async function runTemplateCreation(options:{appUrl:string;baselineUrl?:st
   const snapshot=async(planId:number)=>(await db.query('SELECT * FROM public.plan_task_template_snapshots WHERE plan_id=$1 AND source_template_id=$2',[planId,newTemplate.data.id])).rows[0];
   const oldSnapshot=await snapshot(oldPlan);
   const newPath=buildUrl(api.taskTemplates.update.path,{id:newTemplate.data.id});
-  const beforeGlobalEdit=await fingerprints();
+  const beforeGlobalEdit=await fingerprints(),beforeFirstUpdate=await read(newTemplate.data.id);
   assert.equal((await request(appUrl,newPath,'PATCH','admin',{participantMarginBeforeMinutes:20,participantMarginAfterMinutes:0})).status,200);
+  await assertUpdated(newTemplate.data.id,beforeFirstUpdate,{participantMarginBeforeMinutes:20,participantMarginAfterMinutes:0});
   const afterGlobalEdit=await fingerprints();for(const table of tables.filter(t=>t!=='task_templates'))assert.deepEqual(afterGlobalEdit[table],beforeGlobalEdit[table]);
   const nextPlan=await newPlan('2026-11-21');assert.deepEqual(await snapshot(oldPlan),oldSnapshot);
   const nextSnapshot=await snapshot(nextPlan);assert.equal(oldSnapshot.participant_margin_before_minutes,0);assert.equal(oldSnapshot.participant_margin_after_minutes,15);assert.equal(nextSnapshot.participant_margin_before_minutes,20);assert.equal(nextSnapshot.participant_margin_after_minutes,0);
+  const beforeNullUpdate=await read(newTemplate.data.id);
   assert.equal((await request(appUrl,newPath,'PATCH','admin',{participantMarginBeforeMinutes:null,participantMarginAfterMinutes:null})).status,200);
+  await assertUpdated(newTemplate.data.id,beforeNullUpdate,{participantMarginBeforeMinutes:null,participantMarginAfterMinutes:null});
   const nullPlan=await newPlan('2026-11-22');assert.deepEqual(await snapshot(oldPlan),oldSnapshot);assert.deepEqual(await snapshot(nextPlan),nextSnapshot);
   for(const planId of [oldPlan,nextPlan,nullPlan]){
    const task=await request(appUrl,api.dailyTasks.create.path,'POST','admin',{planId,templateId:newTemplate.data.id});assert.equal(task.status,201,JSON.stringify(task.data));

@@ -1,0 +1,824 @@
+{
+  "baseline": [
+    {
+      "operation": "real UI create",
+      "status": 400,
+      "payload": {
+        "name": "U02 baseline create",
+        "abbrev": "U02-UI",
+        "defaultDuration": 30,
+        "defaultCameras": 0,
+        "zoneId": null,
+        "spaceId": null,
+        "uiColor": "#94a3b8",
+        "uiColorSecondary": null,
+        "hasDependency": false,
+        "dependsOnTemplateIds": [],
+        "itinerantTeamRequirement": "none",
+        "itinerantTeamId": null,
+        "autoCreateOnContestantCreate": false,
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 10
+      },
+      "data": {
+        "message": "Unrecognized key(s) in object: 'participantMarginBeforeMinutes', 'participantMarginAfterMinutes'"
+      }
+    },
+    {
+      "operation": "real UI full PATCH",
+      "status": 400,
+      "payload": {
+        "name": "U02 edit probe",
+        "abbrev": "U02",
+        "defaultDuration": 17,
+        "defaultCameras": 0,
+        "autoCreateOnContestantCreate": false,
+        "zoneId": null,
+        "spaceId": null,
+        "uiColor": null,
+        "uiColorSecondary": null,
+        "requiresAuxiliar": false,
+        "requiresCoach": false,
+        "exclusiveAuxiliar": false,
+        "hasDependency": false,
+        "dependsOnTemplateIds": [],
+        "dependsOnTemplateId": null,
+        "itinerantTeamRequirement": "none",
+        "itinerantTeamId": null,
+        "rulesJson": {
+          "itinerantTeamAllowedIds": []
+        },
+        "resourceRequirements": {
+          "byType": {},
+          "byItem": {}
+        }
+      },
+      "error": {
+        "message": "Could not find the 'location_label' column of 'task_templates' in the schema cache"
+      }
+    },
+    {
+      "operation": "HTTP margin PATCH",
+      "status": 400,
+      "data": {
+        "message": "Unrecognized key(s) in object: 'participantMarginBeforeMinutes', 'participantMarginAfterMinutes'"
+      }
+    }
+  ],
+  "candidate": [
+    {
+      "operation": "real UI create",
+      "status": 201,
+      "payload": {
+        "name": "U02 candidate create",
+        "defaultDuration": 30,
+        "defaultCameras": 0,
+        "abbrev": "U02-UI",
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 10,
+        "uiColor": "#94a3b8",
+        "uiColorSecondary": null,
+        "dependsOnTemplateIds": [],
+        "hasDependency": false,
+        "itinerantTeamRequirement": "none",
+        "itinerantTeamId": null,
+        "zoneId": null,
+        "spaceId": null,
+        "autoCreateOnContestantCreate": false
+      },
+      "data": {
+        "id": 20033,
+        "revision": 0,
+        "name": "U02 candidate create",
+        "defaultDuration": 30,
+        "defaultCameras": 0,
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 10,
+        "autoCreateOnContestantCreate": false,
+        "abbrev": "U02-UI",
+        "defaultComment1Color": null,
+        "defaultComment2Color": null,
+        "zoneId": null,
+        "spaceId": null,
+        "requiresAuxiliar": false,
+        "requiresCoach": false,
+        "requiresPresenter": false,
+        "exclusiveAuxiliar": false,
+        "setupId": null,
+        "rulesJson": null,
+        "resourceRequirements": null,
+        "uiColor": "#94a3b8",
+        "uiColorSecondary": null,
+        "itinerantTeamRequirement": "none",
+        "itinerantTeamId": null,
+        "dependsOnTemplateIds": [],
+        "hasDependency": false,
+        "dependsOnTemplateId": null
+      }
+    },
+    {
+      "operation": "HTTP full PATCH",
+      "value": {
+        "id": 20032,
+        "revision": 1,
+        "name": "U02 edit probe",
+        "abbrev": "U02",
+        "defaultComment1Color": "#123456",
+        "defaultComment2Color": "#abcdef",
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 15,
+        "defaultDuration": 10,
+        "defaultCameras": 0,
+        "autoCreateOnContestantCreate": false,
+        "dependsOnTemplateIds": [
+          20033
+        ],
+        "zoneId": null,
+        "spaceId": null,
+        "requiresAuxiliar": false,
+        "requiresCoach": true,
+        "requiresPresenter": true,
+        "exclusiveAuxiliar": true,
+        "setupId": 7,
+        "rulesJson": {
+          "retained": {
+            "value": 0
+          }
+        },
+        "resourceRequirements": {
+          "anyOf": [],
+          "byItem": {
+            "4": 1
+          },
+          "byType": {
+            "3": 2
+          }
+        },
+        "uiColor": "#aabbcc88",
+        "uiColorSecondary": "#11223344",
+        "itinerantTeamRequirement": "any",
+        "itinerantTeamId": null,
+        "hasDependency": true,
+        "dependsOnTemplateId": 20033
+      }
+    },
+    {
+      "operation": "HTTP complete create and GET",
+      "beforeMargin": null,
+      "afterMargin": null,
+      "status": 201
+    },
+    {
+      "operation": "HTTP complete create and GET",
+      "beforeMargin": null,
+      "afterMargin": 0,
+      "status": 201
+    },
+    {
+      "operation": "HTTP complete create and GET",
+      "beforeMargin": null,
+      "afterMargin": 15,
+      "status": 201
+    },
+    {
+      "operation": "HTTP complete create and GET",
+      "beforeMargin": 0,
+      "afterMargin": null,
+      "status": 201
+    },
+    {
+      "operation": "HTTP complete create and GET",
+      "beforeMargin": 0,
+      "afterMargin": 0,
+      "status": 201
+    },
+    {
+      "operation": "HTTP complete create and GET",
+      "beforeMargin": 0,
+      "afterMargin": 15,
+      "status": 201
+    },
+    {
+      "operation": "HTTP complete create and GET",
+      "beforeMargin": 5,
+      "afterMargin": null,
+      "status": 201
+    },
+    {
+      "operation": "HTTP complete create and GET",
+      "beforeMargin": 5,
+      "afterMargin": 0,
+      "status": 201
+    },
+    {
+      "operation": "HTTP complete create and GET",
+      "beforeMargin": 5,
+      "afterMargin": 15,
+      "status": 201
+    }
+  ],
+  "denials": [
+    {
+      "role": "production",
+      "method": "POST",
+      "path": "/api/task-templates",
+      "status": 403
+    },
+    {
+      "role": "production",
+      "method": "PATCH",
+      "path": "/api/ta/20032",
+      "status": 403
+    },
+    {
+      "role": "production",
+      "method": "PATCH",
+      "path": "/API/tA/20032/",
+      "status": 403
+    },
+    {
+      "role": "production",
+      "method": "DELETE",
+      "path": "/api/task-templates/20032",
+      "status": 403
+    },
+    {
+      "role": "aux",
+      "method": "POST",
+      "path": "/api/task-templates",
+      "status": 403
+    },
+    {
+      "role": "aux",
+      "method": "PATCH",
+      "path": "/api/ta/20032",
+      "status": 403
+    },
+    {
+      "role": "aux",
+      "method": "PATCH",
+      "path": "/API/tA/20032/",
+      "status": 403
+    },
+    {
+      "role": "aux",
+      "method": "DELETE",
+      "path": "/api/task-templates/20032",
+      "status": 403
+    },
+    {
+      "role": "viewer",
+      "method": "POST",
+      "path": "/api/task-templates",
+      "status": 403
+    },
+    {
+      "role": "viewer",
+      "method": "PATCH",
+      "path": "/api/ta/20032",
+      "status": 403
+    },
+    {
+      "role": "viewer",
+      "method": "PATCH",
+      "path": "/API/tA/20032/",
+      "status": 403
+    },
+    {
+      "role": "viewer",
+      "method": "DELETE",
+      "path": "/api/task-templates/20032",
+      "status": 403
+    },
+    {
+      "role": "norole",
+      "method": "POST",
+      "path": "/api/task-templates",
+      "status": 403
+    },
+    {
+      "role": "norole",
+      "method": "PATCH",
+      "path": "/api/ta/20032",
+      "status": 403
+    },
+    {
+      "role": "norole",
+      "method": "PATCH",
+      "path": "/API/tA/20032/",
+      "status": 403
+    },
+    {
+      "role": "norole",
+      "method": "DELETE",
+      "path": "/api/task-templates/20032",
+      "status": 403
+    },
+    {
+      "role": "anonymous",
+      "method": "POST",
+      "path": "/api/task-templates",
+      "status": 401
+    },
+    {
+      "role": "anonymous",
+      "method": "PATCH",
+      "path": "/api/ta/20032",
+      "status": 401
+    },
+    {
+      "role": "anonymous",
+      "method": "PATCH",
+      "path": "/API/tA/20032/",
+      "status": 401
+    },
+    {
+      "role": "anonymous",
+      "method": "DELETE",
+      "path": "/api/task-templates/20032",
+      "status": 401
+    },
+    {
+      "role": "invalid-token",
+      "method": "POST",
+      "path": "/api/task-templates",
+      "status": 401
+    },
+    {
+      "role": "invalid-token",
+      "method": "PATCH",
+      "path": "/api/ta/20032",
+      "status": 401
+    },
+    {
+      "role": "invalid-token",
+      "method": "PATCH",
+      "path": "/API/tA/20032/",
+      "status": 401
+    },
+    {
+      "role": "invalid-token",
+      "method": "DELETE",
+      "path": "/api/task-templates/20032",
+      "status": 401
+    },
+    {
+      "role": "production",
+      "operation": "real UI settings route denied",
+      "writes": 0
+    },
+    {
+      "role": "aux",
+      "operation": "real UI settings route denied",
+      "writes": 0
+    },
+    {
+      "role": "viewer",
+      "operation": "real UI settings route denied",
+      "writes": 0
+    }
+  ],
+  "invalid": [
+    {
+      "operation": "real UI invalid edit",
+      "cases": 6,
+      "writes": 0
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginBeforeMinutes",
+      "value": -1,
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginBeforeMinutes",
+      "value": -1,
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginBeforeMinutes",
+      "value": 1.5,
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginBeforeMinutes",
+      "value": 1.5,
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginBeforeMinutes",
+      "value": "5",
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginBeforeMinutes",
+      "value": "5",
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginBeforeMinutes",
+      "value": "",
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginBeforeMinutes",
+      "value": "",
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginBeforeMinutes",
+      "value": true,
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginBeforeMinutes",
+      "value": true,
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginBeforeMinutes",
+      "value": {},
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginBeforeMinutes",
+      "value": {},
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginBeforeMinutes",
+      "value": 2147483648,
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginBeforeMinutes",
+      "value": 2147483648,
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginAfterMinutes",
+      "value": -1,
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginAfterMinutes",
+      "value": -1,
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginAfterMinutes",
+      "value": 1.5,
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginAfterMinutes",
+      "value": 1.5,
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginAfterMinutes",
+      "value": "5",
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginAfterMinutes",
+      "value": "5",
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginAfterMinutes",
+      "value": "",
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginAfterMinutes",
+      "value": "",
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginAfterMinutes",
+      "value": true,
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginAfterMinutes",
+      "value": true,
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginAfterMinutes",
+      "value": {},
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginAfterMinutes",
+      "value": {},
+      "status": 400
+    },
+    {
+      "method": "POST",
+      "key": "participantMarginAfterMinutes",
+      "value": 2147483648,
+      "status": 400
+    },
+    {
+      "method": "PATCH",
+      "key": "participantMarginAfterMinutes",
+      "value": 2147483648,
+      "status": 400
+    }
+  ],
+  "snapshots": [
+    {
+      "planId": 27003,
+      "snapshot": {
+        "id": "109074",
+        "plan_id": 27003,
+        "source_template_id": 20043,
+        "contract_version": 2,
+        "source": "inherited",
+        "template_name": "U02 snapshot probe",
+        "default_duration": 10,
+        "default_cameras": 0,
+        "default_zone_id": null,
+        "default_space_id": null,
+        "auto_create_on_contestant_create": false,
+        "requires_auxiliar": false,
+        "requires_coach": false,
+        "requires_presenter": false,
+        "exclusive_auxiliar": false,
+        "has_dependency": false,
+        "dependency_template_ids": [],
+        "resource_requirements": null,
+        "itinerant_team_requirement": "none",
+        "itinerant_team_id": null,
+        "allowed_itinerant_team_ids": [],
+        "setup_id": null,
+        "created_at": "2026-10-21T18:15:06.290Z",
+        "updated_at": "2026-10-21T18:15:06.290Z",
+        "participant_margin_before_minutes": 0,
+        "participant_margin_after_minutes": 15
+      },
+      "projected": {
+        "before": 0,
+        "after": 15
+      }
+    },
+    {
+      "planId": 27004,
+      "snapshot": {
+        "id": "109117",
+        "plan_id": 27004,
+        "source_template_id": 20043,
+        "contract_version": 2,
+        "source": "inherited",
+        "template_name": "U02 snapshot probe",
+        "default_duration": 10,
+        "default_cameras": 0,
+        "default_zone_id": null,
+        "default_space_id": null,
+        "auto_create_on_contestant_create": false,
+        "requires_auxiliar": false,
+        "requires_coach": false,
+        "requires_presenter": false,
+        "exclusive_auxiliar": false,
+        "has_dependency": false,
+        "dependency_template_ids": [],
+        "resource_requirements": null,
+        "itinerant_team_requirement": "none",
+        "itinerant_team_id": null,
+        "allowed_itinerant_team_ids": [],
+        "setup_id": null,
+        "created_at": "2026-10-21T18:15:06.815Z",
+        "updated_at": "2026-10-21T18:15:06.815Z",
+        "participant_margin_before_minutes": 20,
+        "participant_margin_after_minutes": 0
+      },
+      "projected": {
+        "before": 20,
+        "after": 0
+      }
+    },
+    {
+      "planId": 27005,
+      "snapshot": {
+        "id": "109160",
+        "plan_id": 27005,
+        "source_template_id": 20043,
+        "contract_version": 2,
+        "source": "inherited",
+        "template_name": "U02 snapshot probe",
+        "default_duration": 10,
+        "default_cameras": 0,
+        "default_zone_id": null,
+        "default_space_id": null,
+        "auto_create_on_contestant_create": false,
+        "requires_auxiliar": false,
+        "requires_coach": false,
+        "requires_presenter": false,
+        "exclusive_auxiliar": false,
+        "has_dependency": false,
+        "dependency_template_ids": [],
+        "resource_requirements": null,
+        "itinerant_team_requirement": "none",
+        "itinerant_team_id": null,
+        "allowed_itinerant_team_ids": [],
+        "setup_id": null,
+        "created_at": "2026-10-21T18:15:07.092Z",
+        "updated_at": "2026-10-21T18:15:07.092Z",
+        "participant_margin_before_minutes": null,
+        "participant_margin_after_minutes": null
+      },
+      "projected": {
+        "before": null,
+        "after": null
+      }
+    }
+  ],
+  "revisions": [
+    {
+      "id": "20032",
+      "before": 0,
+      "after": 1,
+      "patch": {
+        "name": "U02 edit probe",
+        "abbrev": "U02",
+        "defaultDuration": 10,
+        "defaultCameras": 0,
+        "autoCreateOnContestantCreate": false,
+        "zoneId": null,
+        "spaceId": null,
+        "uiColor": "#aabbcc88",
+        "uiColorSecondary": "#11223344",
+        "requiresAuxiliar": false,
+        "requiresCoach": true,
+        "exclusiveAuxiliar": true,
+        "hasDependency": true,
+        "dependsOnTemplateIds": [
+          20033
+        ],
+        "dependsOnTemplateId": 20033,
+        "itinerantTeamRequirement": "any",
+        "itinerantTeamId": null,
+        "rulesJson": {
+          "retained": {
+            "value": 0
+          }
+        },
+        "resourceRequirements": {
+          "byType": {
+            "3": 2
+          },
+          "byItem": {
+            "4": 1
+          },
+          "anyOf": []
+        },
+        "requiresPresenter": true,
+        "setupId": 7,
+        "defaultComment1Color": "#123456",
+        "defaultComment2Color": "#abcdef",
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 15
+      }
+    },
+    {
+      "id": "20032",
+      "before": 1,
+      "after": 2,
+      "patch": {
+        "participantMarginAfterMinutes": 20
+      }
+    },
+    {
+      "id": "20032",
+      "before": 2,
+      "after": 3,
+      "patch": {
+        "participantMarginBeforeMinutes": null,
+        "participantMarginAfterMinutes": 0
+      }
+    },
+    {
+      "id": "20032",
+      "before": 3,
+      "after": 4,
+      "patch": {
+        "participantMarginBeforeMinutes": 5,
+        "participantMarginAfterMinutes": null
+      }
+    },
+    {
+      "id": "20032",
+      "before": 4,
+      "after": 5,
+      "patch": {
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 20
+      }
+    },
+    {
+      "id": 20043,
+      "before": 0,
+      "after": 1,
+      "patch": {
+        "participantMarginBeforeMinutes": 20,
+        "participantMarginAfterMinutes": 0
+      }
+    },
+    {
+      "id": 20043,
+      "before": 1,
+      "after": 2,
+      "patch": {
+        "participantMarginBeforeMinutes": null,
+        "participantMarginAfterMinutes": null
+      }
+    }
+  ],
+  "original": {
+    "task_templates": {
+      "count": 31,
+      "hash": "1a0779cb983c740822d3bc3a67927ea1"
+    },
+    "plan_task_template_snapshots": {
+      "count": 62,
+      "hash": "c05357ed8c008bdb107211efd11327cc"
+    },
+    "plans": {
+      "count": 3,
+      "hash": "7c522c8686127b3a44bb5facd1fb9d90"
+    },
+    "daily_tasks": {
+      "count": 865,
+      "hash": "fe9938976ea5f49f1a0c018353026769"
+    },
+    "locks": {
+      "count": 1,
+      "hash": "4e8ac6440422248d2d2d5a5942bf52de"
+    },
+    "assisted_planning_stages": {
+      "count": 11,
+      "hash": "c1039dbb08556c397941130f0feef78c"
+    },
+    "plan_config_revisions": {
+      "count": 1,
+      "hash": "f9b0fdf99ed6a141e6f4ebfd38a153ec"
+    }
+  },
+  "final": {
+    "task_templates": {
+      "count": 31,
+      "hash": "1a0779cb983c740822d3bc3a67927ea1"
+    },
+    "plan_task_template_snapshots": {
+      "count": 62,
+      "hash": "c05357ed8c008bdb107211efd11327cc"
+    },
+    "plans": {
+      "count": 3,
+      "hash": "7c522c8686127b3a44bb5facd1fb9d90"
+    },
+    "daily_tasks": {
+      "count": 865,
+      "hash": "fe9938976ea5f49f1a0c018353026769"
+    },
+    "locks": {
+      "count": 1,
+      "hash": "4e8ac6440422248d2d2d5a5942bf52de"
+    },
+    "assisted_planning_stages": {
+      "count": 11,
+      "hash": "c1039dbb08556c397941130f0feef78c"
+    },
+    "plan_config_revisions": {
+      "count": 1,
+      "hash": "f9b0fdf99ed6a141e6f4ebfd38a153ec"
+    }
+  }
+}

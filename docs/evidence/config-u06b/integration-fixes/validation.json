@@ -1,0 +1,66 @@
+{
+  "continuationBase": "96cd18b989089b312c0d4a151b79410eeb643885",
+  "checks": [
+    {
+      "command": "npm run check",
+      "status": "PASS",
+      "logSha256": "a3524d5e43d767e9b4be9b919cafac7158a8650a095963e00ef859ff7f4eaf27"
+    },
+    {
+      "command": "npm run build",
+      "status": "PASS",
+      "logSha256": "a21a97393a65a13fe670cebd62b74c818f9cd66d67b62f66da20adcf647af7a9"
+    },
+    {
+      "command": "npm run check:migrations",
+      "status": "PASS",
+      "logSha256": "07da9289e5de7ede7715321bcdc0749c743844a36628d0f5844c40f8ee4f472c"
+    },
+    {
+      "command": "npx --no-install tsc -p script/demo/tsconfig.integration.json",
+      "status": "PASS",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "54 focal tests, U02/U06b/snapshots/authorization/execution",
+      "status": "PASS",
+      "logSha256": "546eaa2db15b5bb61336d5a5e31051584ed9668fba0027d98d929d04c35c4383"
+    },
+    {
+      "command": "native restricted Data API + U06b rollback/concurrency/legacy",
+      "status": "PASS",
+      "logSha256": "62ccabda4fd48a000a7cf0abd0e49dbb1454e1d4f8a599fb83e0ae073a96d0b9"
+    },
+    {
+      "command": "native U02 versus historical baseline",
+      "status": "PASS",
+      "logSha256": "b8a7ab10ebbd4cccd9f01361c4e2a71df3e1dc8f335d28eb0cb497b27c53fb3f"
+    },
+    {
+      "command": "native restricted Data API + whole-day execution",
+      "status": "PASS",
+      "logSha256": "67efc9fe6bbd8c46043efb59cfcbb7ba9bf55ec9afbe43ddf5e5a35e4e6cc601"
+    }
+  ],
+  "tests": 54,
+  "failedTests": 0,
+  "failedNavigationAttempts": [
+    {
+      "status": "FAIL",
+      "error": "locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('tab', { name: /plantillas|templates/i })\u001b[22m\n\n    at runTemplateCreation (/workspace/production-planner/script/demo/smokeTemplateCreation.ts:113:82)\n    at async <anonymous> (/workspace/production-planner/script/demo/smokeA2Integration.ts:294:28)",
+      "subsequentIsolatedRun": "PASS",
+      "assertionsAndTimeoutsUnchanged": true
+    },
+    {
+      "status": "FAIL",
+      "error": "locator.fill: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByLabel('Email', { exact: true })\u001b[22m\n\n    at dataApiCallSheet (/workspace/production-planner/script/demo/dataApiCallSheet.ts:18:49)\n    at async verifyDataApiActors (/workspace/production-planner/script/demo/dataApiGrantsGate.ts:259:19)\n    at async <anonymous> (/workspace/production-planner/script/demo/smokeA2Integration.ts:271:25)",
+      "subsequentIsolatedRun": "PASS",
+      "assertionsAndTimeoutsUnchanged": true
+    }
+  ],
+  "ciFinal": "Recorded with the validated head and run links in PR #1174 description after all checks finish",
+  "remoteDatabaseWrites": 0,
+  "hostedMigrationApplied": false,
+  "replitPublished": false,
+  "merged": false
+}

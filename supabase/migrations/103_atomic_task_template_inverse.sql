@@ -65,7 +65,9 @@ BEGIN
     deps := CASE WHEN main.has_dependency AND main.depends_on_template_id IS NOT NULL
       THEN jsonb_build_array(main.depends_on_template_id) ELSE '[]'::jsonb END;
   ELSE
-    deps := coalesce(main.depends_on_template_ids,
+    -- Like the UI reader, fall back to legacy for stored NULL/empty arrays.
+    -- An explicitly supplied empty array above still means clear dependencies.
+    deps := coalesce(nullif(main.depends_on_template_ids,'[]'::jsonb),
       CASE WHEN main.depends_on_template_id IS NOT NULL THEN jsonb_build_array(main.depends_on_template_id) ELSE '[]'::jsonb END);
   END IF;
   IF deps IS NULL OR jsonb_typeof(deps)<>'array' THEN RAISE EXCEPTION 'TEMPLATE_INVALID'; END IF;
@@ -112,7 +114,7 @@ BEGIN
 
   FOR dep_id IN SELECT unnest(p_added || p_removed) ORDER BY 1 LOOP
     SELECT * INTO dependent FROM public.task_templates WHERE id=dep_id;
-    deps := coalesce(dependent.depends_on_template_ids,
+    deps := coalesce(nullif(dependent.depends_on_template_ids,'[]'::jsonb),
       CASE WHEN dependent.depends_on_template_id IS NOT NULL THEN jsonb_build_array(dependent.depends_on_template_id) ELSE '[]'::jsonb END);
     IF jsonb_typeof(deps)<>'array' THEN RAISE EXCEPTION 'TEMPLATE_INVALID'; END IF;
     IF EXISTS (SELECT 1 FROM jsonb_array_elements(deps) v WHERE jsonb_typeof(v)<>'number' OR v::text !~ '^[0-9]+$') THEN

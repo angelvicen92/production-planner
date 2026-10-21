@@ -4,6 +4,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import type pg from 'pg';
 import { chromium, type Page } from 'playwright';
 import { api, buildUrl } from '../../shared/routes';
+import ts from 'typescript';
+import { runInNewContext } from 'node:vm';
 
 type User = {id:string;email:string;password:string;token:string};
 export async function runAtomicTaskTemplate({appUrl,url,anon,service,db,users,directory,pass,transport}: {
@@ -132,6 +134,54 @@ export async function runAtomicTaskTemplate({appUrl,url,anon,service,db,users,di
     assert.equal((await request(path,'POST',await input({},[cleared],[]))).status,200);
     assert.equal((await request(path,'POST',await input({},[],[cleared]))).status,200);
     const empty=(await read()).find(row=>row.id===cleared);assert.deepEqual(empty.dependsOnTemplateIds,[]);assert.equal(empty.hasDependency,false);assert.equal(empty.dependsOnTemplateId,null);
+
+    // Execute the actual UI reader in an isolated test context, rather than
+    // copying its legacy-fallback rules into another implementation.
+    const settings = ts.createSourceFile('settings.tsx',readFileSync('client/src/pages/settings.tsx','utf8'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
+    let readerSource = '';
+    const visit = (node: ts.Node) => {
+      if(ts.isVariableDeclaration(node)&&node.name.getText(settings)==='getTemplateDependencyIds')readerSource=node.initializer!.getText(settings);
+      ts.forEachChild(node,visit);
+    };
+    visit(settings);assert.ok(readerSource);
+    const uiReader = runInNewContext(ts.transpile(`(${readerSource})`)) as (row: unknown) => number[];
+    const uiDependencies = (row: unknown): number[] => JSON.parse(JSON.stringify(uiReader(row)));
+    report.legacyFallback=[];
+    for(const storedArray of [[],null]) {
+      const legacyMain=await create('U06 legacy main'),legacyPeer=await create('U06 legacy peer');
+      const raw = async(id: number, legacy: number) => db.query('UPDATE task_templates SET depends_on_template_ids=$1::jsonb,depends_on_template_id=$2,has_dependency=true WHERE id=$3',[storedArray===null?null:JSON.stringify(storedArray),legacy,id]);
+      const saveLegacy = async(patch: Record<string,unknown>,add: boolean) => {
+        const before=(await read()).filter(row=>[legacyMain,legacyPeer].includes(row.id));
+        const payload={patch,addedInverseIds:add?[legacyPeer]:[],removedInverseIds:add?[]:[legacyPeer],expectedTemplates:before.map(row=>({id:row.id,revision:row.revision}))};
+        const saved=await request(buildUrl(api.taskTemplates.updateWithInverse.path,{id:legacyMain}),'POST',payload);assert.equal(saved.status,200,JSON.stringify(saved));
+        const after=(await read()).filter(row=>[legacyMain,legacyPeer].includes(row.id));
+        for(const previous of before) {
+          const current=after.find(row=>row.id===previous.id);
+          assert.deepEqual(current,{...previous,...(previous.id===legacyMain?patch:{}),revision:previous.revision+1,
+            dependsOnTemplateIds:current.dependsOnTemplateIds,hasDependency:current.hasDependency,dependsOnTemplateId:current.dependsOnTemplateId});
+          assert.equal(current.hasDependency,current.dependsOnTemplateIds.length>0);
+          assert.equal(current.dependsOnTemplateId,current.dependsOnTemplateIds[0]??null);
+        }
+        return {before,after};
+      };
+      await raw(legacyMain,anchor);await raw(legacyPeer,anchor);
+      const before=await read();for(const id of [legacyMain,legacyPeer])assert.deepEqual(uiDependencies(before.find(row=>row.id===id)),[anchor]);
+      const addedResult=await saveLegacy({participantMarginBeforeMinutes:0},true);
+      assert.deepEqual(addedResult.after.find(row=>row.id===legacyMain).dependsOnTemplateIds,[anchor],'principal must retain the effective legacy relation shown by UI');
+      assert.deepEqual(addedResult.after.find(row=>row.id===legacyPeer).dependsOnTemplateIds,[anchor,legacyMain],'adding must retain an unrelated legacy relation');
+      await raw(legacyPeer,anchor);
+      const removedUnrelated=await saveLegacy({},false);
+      assert.deepEqual(removedUnrelated.after.find(row=>row.id===legacyPeer).dependsOnTemplateIds,[anchor]);
+      await raw(legacyPeer,legacyMain);
+      const removedLegacy=await saveLegacy({},false);
+      assert.deepEqual(removedLegacy.after.find(row=>row.id===legacyPeer).dependsOnTemplateIds,[]);
+      // Explicitly clearing direct dependencies still wins over the stored legacy.
+      await raw(legacyMain,anchor);
+      const cleared=await saveLegacy({dependsOnTemplateIds:[]},true);
+      assert.deepEqual(cleared.after.find(row=>row.id===legacyMain).dependsOnTemplateIds,[]);
+      report.legacyFallback.push({storedArray,addedResult,removedUnrelated,removedLegacy,explicitClear:cleared});
+    }
+    check('empty and NULL persisted arrays match actual UI legacy fallback: main/add/remove preserve unrelated relations; explicit direct clear still clears');
 
     browser=await chromium.launch({headless:true});const page=await browser.newPage();
     await page.goto(appUrl+'/login');await page.getByLabel('Email',{exact:true}).fill(users.admin.email);

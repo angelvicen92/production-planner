@@ -1,5 +1,7 @@
 # U06b — guardado atómico de plantilla y dependencias inversas
 
+La [continuación de integración del PR #1174](integration-fixes/README.md) registra la corrección del contrato Data API, las aserciones U02 de revisión y el fallback legacy de la migración 103. Los resultados que siguen documentan el head inicial `96cd18b`.
+
 21 de octubre de 2026 · Europe/Madrid. Repositorio `angelvicen92/production-planner`, rama remota `codex/atomic-template-inverse-deps-u06b`, base exacta `a41c310ec9e00cc2edf9085f15fb474e267bf311`, árbol `aa91a1e777caff1a2e225f6907c5ac856fdfb20d`. El checkout inicial era su padre; se recuperó la rama y se avanzó mediante fast-forward antes de editar.
 
 ## Causa y cambio

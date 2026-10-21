@@ -14,6 +14,9 @@ on:
       - shared/routes.ts
       - shared/schema.ts
       - supabase/migrations/**
+      - script/demo/dataApiCatalog.ts
+      - script/demo/dataApiGrantsGate.ts
+      - script/demo/fixtures/data-api-privileges.json
       - script/demo/smokeAtomicTaskTemplate.ts
       - script/demo/smokeA2Integration.ts
       - script/demo/tsconfig.atomic-template.json
@@ -45,7 +48,7 @@ jobs:
       - run: npx --no-install tsc -p script/demo/tsconfig.atomic-template.json
       - run: node --import tsx --test server/atomicTaskTemplate.spec.ts server/taskTemplateContract.spec.ts server/apiAuthorization.spec.ts server/taskTemplateSnapshot.spec.ts engine/buildInput.taskTemplateSnapshot.spec.ts
       - name: Real PostgreSQL rollback, concurrency, Auth, HTTP and browser
-        run: npm run demo:a2:smoke -- work/atomic-template --historical-topology --atomic-template
+        run: npm run demo:a2:smoke -- work/atomic-template --restricted-data-api --historical-topology --atomic-template
       - name: Sanitized Evidence
         if: always()
         uses: actions/upload-artifact@v4

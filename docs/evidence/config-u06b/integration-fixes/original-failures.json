@@ -1,0 +1,125 @@
+{
+  "head": "96cd18b989089b312c0d4a151b79410eeb643885",
+  "ci": [
+    {
+      "name": "Data API grants",
+      "runId": 39644052446,
+      "result": "failure",
+      "jobs": 6
+    },
+    {
+      "name": "Live day execution",
+      "runId": 39644052424,
+      "result": "failure"
+    },
+    {
+      "name": "Template creation and margins",
+      "runId": 39644052453,
+      "result": "failure"
+    }
+  ],
+  "local": [
+    {
+      "command": "npm run demo:a2:smoke -- /tmp/u06-original-grants --restricted-data-api --historical-topology --atomic-template",
+      "status": "FAIL",
+      "error": "AssertionError [ERR_ASSERTION]: Data API contract changed: review every new object, required grant, column boundary and exposed role\n+ actual - expected\n... Skipped lines\n\n  {\n    functions: [\n      {\n        execute: false,\n        role: 'anon',\n...\n        role: 'anon',\n+       signature: 'bump_task_template_revision()'\n+     },\n+     {\n+       execute: false,\n+       role: 'authenticated',\n+       signature: 'bump_task_template_revision()'\n+     },\n+     {\n+       execute: false,\n+       role: 'service_role',\n+       signature: 'bump_task_template_revision()'\n+     },\n+     {\n+       execute: false,\n+       role: 'anon',\n        signature: 'correct_task_execution_time(bigint,uuid,text,text,text,integer)'\n      },\n      {\n        execute: false,\n        role: 'authenticated',\n...\n        role: 'anon',\n+       signature: 'save_task_template_with_inverse(bigint,uuid,jsonb,jsonb,bigint[],bigint[])'\n+     },\n+     {\n+       execute: false,\n+       role: 'authenticated',\n+       signature: 'save_task_template_with_inverse(bigint,uuid,jsonb,jsonb,bigint[],bigint[])'\n+     },\n+     {\n+       execute: true,\n+       role: 'service_role',\n+       signature: 'save_task_template_with_inverse(bigint,uuid,jsonb,jsonb,bigint[],bigint[])'\n+     },\n+     {\n+       execute: false,\n+       role: 'anon',\n        signature: 'set_resource_bundle_updated_at()'\n      },\n      {\n        execute: false,\n        role: 'authenticated',\n\n    at assertPrivilegeContract (/workspace/production-planner/script/demo/dataApiGrantsGate.ts:46:10)\n    at verifyDataApiGrants (/workspace/production-planner/script/demo/dataApiGrantsGate.ts:114:43)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async <anonymous> (/workspace/production-planner/script/demo/smokeA2Integration.ts:200:19)",
+      "observedNewFunctions": [
+        {
+          "signature": "bump_task_template_revision()",
+          "definer": false,
+          "settings": [
+            "search_path=\"\""
+          ],
+          "result": "trigger",
+          "role": "anon",
+          "execute": false,
+          "definition_hash": "d16fd07512e22c317fe56cb748b505c2"
+        },
+        {
+          "signature": "bump_task_template_revision()",
+          "definer": false,
+          "settings": [
+            "search_path=\"\""
+          ],
+          "result": "trigger",
+          "role": "authenticated",
+          "execute": false,
+          "definition_hash": "d16fd07512e22c317fe56cb748b505c2"
+        },
+        {
+          "signature": "bump_task_template_revision()",
+          "definer": false,
+          "settings": [
+            "search_path=\"\""
+          ],
+          "result": "trigger",
+          "role": "service_role",
+          "execute": false,
+          "definition_hash": "d16fd07512e22c317fe56cb748b505c2"
+        },
+        {
+          "signature": "save_task_template_with_inverse(bigint,uuid,jsonb,jsonb,bigint[],bigint[])",
+          "definer": false,
+          "settings": [
+            "search_path=\"\""
+          ],
+          "result": "jsonb",
+          "role": "anon",
+          "execute": false,
+          "definition_hash": "c68e1969aaa00da5414995addd59067b"
+        },
+        {
+          "signature": "save_task_template_with_inverse(bigint,uuid,jsonb,jsonb,bigint[],bigint[])",
+          "definer": false,
+          "settings": [
+            "search_path=\"\""
+          ],
+          "result": "jsonb",
+          "role": "authenticated",
+          "execute": false,
+          "definition_hash": "c68e1969aaa00da5414995addd59067b"
+        },
+        {
+          "signature": "save_task_template_with_inverse(bigint,uuid,jsonb,jsonb,bigint[],bigint[])",
+          "definer": false,
+          "settings": [
+            "search_path=\"\""
+          ],
+          "result": "jsonb",
+          "role": "service_role",
+          "execute": true,
+          "definition_hash": "c68e1969aaa00da5414995addd59067b"
+        }
+      ],
+      "revisionEffectivePrivileges": [
+        {
+          "role": "anon",
+          "privileges": []
+        },
+        {
+          "role": "authenticated",
+          "privileges": []
+        },
+        {
+          "role": "service_role",
+          "privileges": [
+            "SELECT",
+            "INSERT",
+            "UPDATE"
+          ]
+        }
+      ]
+    },
+    {
+      "command": "TEMPLATE_CREATION_BASELINE_ROOT=/tmp/u06-u02-base npm run demo:a2:smoke -- /tmp/u06-original-u02 --historical-topology --template-creation",
+      "status": "FAIL",
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    abbrev: 'U02',\n    autoCreateOnContestantCreate: false,\n    defaultCameras: 0,\n    defaultComment1Color: '#123456',\n...\n    },\n+   revision: 2,\n-   revision: 1,\n    rulesJson: {\n      retained: {\n        value: 0\n      }\n    },\n\n    at runTemplateCreation (/workspace/production-planner/script/demo/smokeTemplateCreation.ts:96:10)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async <anonymous> (/workspace/production-planner/script/demo/smokeA2Integration.ts:294:28)"
+    },
+    {
+      "command": "new legacy regression against original migration 103, prior to normalization correction",
+      "status": "FAIL",
+      "error": "AssertionError [ERR_ASSERTION]: principal must retain the effective legacy relation shown by UI\n+ actual - expected\n\n+ []\n- [\n-   20032\n- ]\n\n    at runAtomicTaskTemplate (/workspace/production-planner/script/demo/smokeAtomicTaskTemplate.ts:170:14)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async <anonymous> (/workspace/production-planner/script/demo/smokeA2Integration.ts:278:26)",
+      "sqlSha256": "6974f913ec55ff873dcb1681715e22300028353e4e0cb4266831697c9420b460"
+    }
+  ]
+}
