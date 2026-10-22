@@ -5,10 +5,11 @@ import { buildEffectiveConfigurationView, deriveReadiness } from "./effectiveCon
 
 const input = (optimizerSnapshotSource:"INHERITED"|"DAY_OVERRIDE"|"LEGACY_BACKFILL"="INHERITED") => ({planId:27,workDay:{start:"08:00",end:"18:00"},meal:{start:"13:00",end:"14:00"},camerasAvailable:2,tasks:[],locks:[],zoneResourceAssignments:{},spaceResourceAssignments:{},zoneResourceTypeRequirements:{},spaceResourceTypeRequirements:{},planResourceItems:[],resourceItemComponents:{},groupingZoneIds:[],optimizerSnapshotSource,optimizerSnapshotEditingMode:"BASIC"}) as any;
 
-test("effective values without auditable provenance stay usable and do not degrade readiness",async()=>{
+test("effective values stay readable but absent Next authorities cannot report READY",async()=>{
   const storage={getPlan:async()=>({id:27}),getActiveAssistedPlanningSession:async()=>null} as any;
   const view=await buildEffectiveConfigurationView(storage,27,async()=>input());
-  assert.equal(view.planId,27); assert.equal(view.readiness.status,"READY");
+  assert.equal(view.planId,27); assert.equal(view.readiness.status,"INCOMPLETE");
+  assert.ok(view.readiness.issues.some(issue=>issue.capabilityId==="MISSING_SEARCH_POLICY_CONFIGURATION"));
   const blocks=view.values.find(v=>v.capabilityId==="BLOCK_COUNT_POLICY");
   assert.deepEqual({availability:blocks?.availability,value:blocks?.value,validation:blocks?.validationStatus},{availability:"UNAVAILABLE",value:null,validation:"UNSUPPORTED"});
   for(const id of ["WORKDAY_WINDOW","GLOBAL_MEAL_BREAK"]){

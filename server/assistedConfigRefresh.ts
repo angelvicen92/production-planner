@@ -96,7 +96,9 @@ export class AssistedConfigRefreshService {
     const optimizerSnapshot=refreshingOptimizer&&candidate.currentReplay.optimizerSnapshot.source!=="DAY_OVERRIDE"?optimizerBaseline!:candidate.currentReplay.optimizerSnapshot;
     const groupChanged=candidate.preview.changes.some(change=>selected.has(change.key)&&change.authority==="task_templates"
       && JSON.stringify((change.currentValue as any)?.continuityGroup??null)!==JSON.stringify((change.candidateValue as any)?.continuityGroup??null));
-    if(groupChanged){
+    const operationalTemplatesChanged=candidate.preview.changes.some(change=>selected.has(change.key)&&change.authority==="task_templates"
+      && ((change.currentValue as any)?.plannerNextOperation!=null||(change.candidateValue as any)?.plannerNextOperation!=null));
+    if(groupChanged||operationalTemplatesChanged){
       const persisted=await this.storage.getPlanTaskTemplateSnapshots(planId);
       const selectedTemplates=[...templates.values()].map(template=>{
         const prior=persisted.find(snapshot=>snapshot.sourceTemplateId===template.sourceTemplateId);

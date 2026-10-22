@@ -10,7 +10,7 @@ test("reusable configuration components expose Spanish text, not internal codes"
   assert.equal(sourceLabels.DAY_SNAPSHOT,"Valor materializado del día");
   assert.equal(sourceLabels.UNKNOWN,"Origen desconocido");
   const html=renderToStaticMarkup(<><SourceBadge source="INHERITED"/><SourceBadge source="DAY_OVERRIDE"/><SourceBadge source="LEGACY_BACKFILL"/><SourceBadge source="UNKNOWN"/><SeverityBadge severity="REQUIRED"/><CapabilityStatus value={value}/><EffectiveValueField value={value}/><ReadinessSummary readiness={{status:"READY",issues:[]}}/></>);
-  for(const text of ["Heredado","Modificado para este día","Migrado de configuración anterior","Origen desconocido","Obligatorio","Aún no disponible","Esta capacidad aún no tiene un valor productivo","Revisa sólo las excepciones del día"])assert.match(html,new RegExp(text));
+  for(const text of ["Heredado","Modificado para este día","Migrado de configuración anterior","Origen desconocido","Obligatorio","Aún no disponible","Esta capacidad aún no tiene un valor productivo","El preflight productivo admite esta jornada"])assert.match(html,new RegExp(text));
   assert.doesNotMatch(html,/UNSUPPORTED|DAY_OVERRIDE|PRODUCTIVE|PARTIAL|BLOCKED|daily_tasks|buildEngineInput/);
 });
 

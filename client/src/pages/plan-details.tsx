@@ -1916,7 +1916,7 @@ ${reasonMessage}` : message,
                     value={newCoachPriId}
                     onValueChange={setNewCoachPriId}
                   >
-                    <SelectTrigger className="md:col-span-1">
+                    <SelectTrigger className="md:col-span-1" aria-label="Vocal Coach del nuevo concursante">
                       <SelectValue placeholder="Vocal Coach (opcional)" />
                     </SelectTrigger>
                     <SelectContent>
