@@ -1,3 +1,4 @@
+import {SetupFamiliesEditor} from "./setup-families-editor";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { newDayPlannerConfigurationSchema, type NewDayPlannerConfiguration } from "@shared/newDayPlannerConfiguration";
@@ -38,7 +39,7 @@ export function NewDayPlannerEditor() {
   const main=(key:string,field:unknown)=>{setSaved(false);setValue(previous=>previous.scenario==="MAIN_WITH_VOCAL_FEEDER"?({...previous,mainFlow:{...previous.mainFlow,[key]:field}}):previous);};
   return <Card><CardHeader><CardTitle>Planner Next para nuevas jornadas</CardTitle></CardHeader><CardContent className="space-y-4">
     <p className="text-sm">Cada día conserva su configuración original. El perfil con flujo principal admite un flujo principal real, una preparación vocal previa y un coach asignado por participante, más actividades auxiliares y técnicas. Declara los roles, espacios y dependencias en las plantillas.</p>
-    <p className="text-sm text-muted-foreground">STANDALONE_ONLY permite actividades auxiliares y técnicas sin flujo principal ni coach obligatorio. Transporte y montajes requieren otras capacidades. La comida utiliza la configuración del día; no se crean tareas de comida ni salas adicionales.</p>
+    <p className="text-sm text-muted-foreground">STANDALONE_ONLY permite actividades auxiliares y técnicas sin flujo principal ni coach obligatorio. Las familias de montaje se admiten en auxiliares con participante y espacio físico exclusivo. Transporte requiere otras capacidades. La comida utiliza la configuración del día; no se crean tareas de comida ni salas adicionales.</p>
     {value.scenario==="MAIN_WITH_VOCAL_FEEDER"?<p className="text-sm text-muted-foreground">Si hay una pausa global de comida, el fin preferido del flujo principal debe ser anterior o igual a su inicio.</p>:null}
     {query.isError?<p role="alert">No se pudo cargar la configuración. <Button variant="outline" onClick={()=>void query.refetch()}>Reintentar</Button></p>:null}
     <fieldset disabled={role!=="admin"||query.isLoading||query.isError||save.isPending} className="grid gap-3 sm:grid-cols-2">
@@ -60,8 +61,13 @@ export function NewDayPlannerEditor() {
       <label>Máximo de bloques por coach<Input aria-label="Máximo de bloques por coach" type="number" min={1} value={value.mainFlow.maxBlocksByKey} onChange={event=>main("maxBlocksByKey",Number(event.target.value))}/></label>
       <label>Mínimo de tareas por bloque<Input aria-label="Mínimo de tareas por bloque" type="number" min={1} value={value.mainFlow.minTasksPerBlock} onChange={event=>main("minTasksPerBlock",Number(event.target.value))}/></label>
       </>:null}
+      <label className="sm:col-span-2">Montajes<select aria-label="Montajes" className="block w-full rounded border bg-background p-2" value={value.setup} onChange={event=>{
+        setSaved(false);const {setupFamilies:_,...rest}=value;
+        setValue(event.target.value==="FAMILIES"?{...rest,setup:"FAMILIES",searchPolicy:"EXACT_CONSTRUCTIVE",setupFamilies:{families:[],policies:[]}}:{...rest,setup:"NONE"});
+      }}><option value="NONE">Sin montajes</option><option value="FAMILIES">Familias y políticas por espacio</option></select></label>
+      {value.setup==="FAMILIES"?<div className="sm:col-span-2"><SetupFamiliesEditor value={value.setupFamilies!} spaces={spaces} onChange={setupFamilies=>{setSaved(false);setValue({...value,setupFamilies});}}/></div>:null}
       <details className="sm:col-span-2"><summary>Parámetros técnicos de Planner Next</summary><div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <label>Política de búsqueda<select aria-label="Política de búsqueda" value={value.searchPolicy} onChange={event=>setValue(previous=>previous.scenario==="MAIN_WITH_VOCAL_FEEDER"?{...previous,searchPolicy:event.target.value as NewDayPlannerConfiguration["searchPolicy"]}:previous)}><option value="EXACT_CONSTRUCTIVE">Construcción exacta</option><option disabled={value.scenario==="STANDALONE_ONLY"} value="COMPATIBILITY_PRESERVING">Compatibilidad</option></select></label>
+        <label>Política de búsqueda<select aria-label="Política de búsqueda" value={value.searchPolicy} onChange={event=>setValue(previous=>previous.scenario==="MAIN_WITH_VOCAL_FEEDER"?{...previous,searchPolicy:event.target.value as NewDayPlannerConfiguration["searchPolicy"]}:previous)}><option value="EXACT_CONSTRUCTIVE">Construcción exacta</option><option disabled={value.scenario==="STANDALONE_ONLY"||value.setup==="FAMILIES"} value="COMPATIBILITY_PRESERVING">Compatibilidad</option></select></label>
         <label>Transición entre recursos (min)<Input aria-label="Transición entre recursos" type="number" min={0} step={5} value={value.resourceTransitionMinutes} onChange={event=>setValue({...value,resourceTransitionMinutes:Number(event.target.value)})}/></label>
         {([ ["bestK","Mejores candidatos"],["maxBacktracks","Retrocesos máximos"],["maxPatterns","Patrones máximos"],["maxBranchExpansions","Ramas máximas"] ] as const).map(([key,label])=><label key={key}>{label}<Input aria-label={label} type="number" min={1} max={key==="maxBranchExpansions"?100000:undefined} value={value.searchBudget[key]} onChange={event=>setValue({...value,searchBudget:{...value.searchBudget,[key]:Number(event.target.value)}})}/></label>)}
       </div></details>

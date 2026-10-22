@@ -1,0 +1,350 @@
+TAP version 13
+# Subtest: STANDALONE profile consumes auxiliary daily compositions through the same Assisted pipeline
+ok 1 - STANDALONE profile consumes auxiliary daily compositions through the same Assisted pipeline
+  ---
+  duration_ms: 524.828667
+  ...
+# Subtest: STANDALONE profile consumes technical daily compositions through the same Assisted pipeline
+ok 2 - STANDALONE profile consumes technical daily compositions through the same Assisted pipeline
+  ---
+  duration_ms: 102.753601
+  ...
+# Subtest: MAIN profile consumes auxiliary daily compositions through the same Assisted pipeline
+ok 3 - MAIN profile consumes auxiliary daily compositions through the same Assisted pipeline
+  ---
+  duration_ms: 347.070917
+  ...
+# Subtest: MAIN profile consumes technical daily compositions through the same Assisted pipeline
+ok 4 - MAIN profile consumes technical daily compositions through the same Assisted pipeline
+  ---
+  duration_ms: 263.443224
+  ...
+# Subtest: specific technical members enter domains and a dependent chain before scheduling
+ok 5 - specific technical members enter domains and a dependent chain before scheduling
+  ---
+  duration_ms: 335.642728
+  ...
+# Subtest: inferred technical dependencies with alternatives use one itinerant agenda and materialize both choices
+ok 6 - inferred technical dependencies with alternatives use one itinerant agenda and materialize both choices
+  ---
+  duration_ms: 76.486856
+  ...
+# Subtest: allowing auxiliary consumption never suppresses invalid composition or missing resource diagnostics
+ok 7 - allowing auxiliary consumption never suppresses invalid composition or missing resource diagnostics
+  ---
+  duration_ms: 9.052571
+  ...
+# Subtest: main and vocal consumption remain outside the new-day profile compatibility boundary
+ok 8 - main and vocal consumption remain outside the new-day profile compatibility boundary
+  ---
+  duration_ms: 11.57365
+  ...
+# Subtest: new day STANDALONE uses existing setup blocks with explicit order
+ok 9 - new day STANDALONE uses existing setup blocks with explicit order
+  ---
+  duration_ms: 1534.462708
+  ...
+# Subtest: new day STANDALONE uses existing setup blocks with flexible order
+ok 10 - new day STANDALONE uses existing setup blocks with flexible order
+  ---
+  duration_ms: 703.85861
+  ...
+# Subtest: new day MAIN uses existing setup blocks with explicit order
+ok 11 - new day MAIN uses existing setup blocks with explicit order
+  ---
+  duration_ms: 794.999409
+  ...
+# Subtest: new day MAIN uses existing setup blocks with flexible order
+ok 12 - new day MAIN uses existing setup blocks with flexible order
+  ---
+  duration_ms: 955.18937
+  ...
+# Subtest: unknown/incomplete policies and roles fail without silently materializing setup
+ok 13 - unknown/incomplete policies and roles fail without silently materializing setup
+  ---
+  duration_ms: 28.854056
+  ...
+# Subtest: contract rejects missing references, invalid order, duplicate IDs, zero/off-grid preparation and incompatible search
+ok 14 - contract rejects missing references, invalid order, duplicate IDs, zero/off-grid preparation and incompatible search
+  ---
+  duration_ms: 62.734047
+  ...
+# Subtest: frozen references survive persistence, renaming and revision identity; NONE retains its original shape
+ok 15 - frozen references survive persistence, renaming and revision identity; NONE retains its original shape
+  ---
+  duration_ms: 13.506371
+  ...
+# Subtest: permitted inactive families do not create fictitious entries or initial preparations
+ok 16 - permitted inactive families do not create fictitious entries or initial preparations
+  ---
+  duration_ms: 93.986108
+  ...
+# Subtest: itinerant catalog writes require ADMIN for Express casing and trailing slash variants
+ok 17 - itinerant catalog writes require ADMIN for Express casing and trailing slash variants
+  ---
+  duration_ms: 243.990727
+  ...
+# Subtest: real HTTP middleware blocks anonymous/debug and task writes while preserving authorized application flows
+ok 18 - real HTTP middleware blocks anonymous/debug and task writes while preserving authorized application flows
+  ---
+  duration_ms: 157.424555
+  ...
+# Subtest: template aliases and Express casing use the catalog admin authority before any handler
+ok 19 - template aliases and Express casing use the catalog admin authority before any handler
+  ---
+  duration_ms: 143.639906
+  ...
+# Subtest: time correction and history share execution role boundaries including Express casing
+ok 20 - time correction and history share execution role boundaries including Express casing
+  ---
+  duration_ms: 2.278609
+  ...
+# Subtest: bulk execution reset requires ADMIN through real HTTP including casing and trailing slash
+ok 21 - bulk execution reset requires ADMIN through real HTTP including casing and trailing slash
+  ---
+  duration_ms: 38.821635
+  ...
+# Subtest: preview is read-only and exposes a local override
+ok 22 - preview is read-only and exposes a local override
+  ---
+  duration_ms: 4.195952
+  ...
+# Subtest: selective apply creates one versioned atomic request and stale/no-op fail closed
+ok 23 - selective apply creates one versioned atomic request and stale/no-op fail closed
+  ---
+  duration_ms: 30.784585
+  ...
+# Subtest: migration preserves accepted history and placements while invalidating only draft validation
+ok 24 - migration preserves accepted history and placements while invalidating only draft validation
+  ---
+  duration_ms: 0.993483
+  ...
+# Subtest: migration verifies every materialized replay group before creating a revision
+ok 25 - migration verifies every materialized replay group before creating a revision
+  ---
+  duration_ms: 0.542383
+  ...
+# Subtest: migration compares resource requirements as canonical JSONB objects and preserves SQL NULL
+ok 26 - migration compares resource requirements as canonical JSONB objects and preserves SQL NULL
+  ---
+  duration_ms: 10.395626
+  ...
+# Subtest: template refresh compares operational semantics independently from provenance
+ok 27 - template refresh compares operational semantics independently from provenance
+  ---
+  duration_ms: 0.725891
+  ...
+# Subtest: local template provenance remains visible without manufacturing a semantic change
+ok 28 - local template provenance remains visible without manufacturing a semantic change
+  ---
+  duration_ms: 0.953191
+  ...
+# Subtest: optimizer refresh uses canonical semantic diff while keeping DAY_OVERRIDE provenance visible
+ok 29 - optimizer refresh uses canonical semantic diff while keeping DAY_OVERRIDE provenance visible
+  ---
+  duration_ms: 0.651615
+  ...
+# Subtest: unsupported coverage is operator-facing and prevents a false fully-current claim
+ok 30 - unsupported coverage is operator-facing and prevents a false fully-current claim
+  ---
+  duration_ms: 1.118668
+  ...
+# Subtest: persisted RPC failure retains the diagnostic instead of object coercion
+ok 31 - persisted RPC failure retains the diagnostic instead of object coercion
+  ---
+  duration_ms: 3.586815
+  ...
+# Subtest: request requires an ACTIVE session before creating or scheduling a run
+ok 32 - request requires an ACTIVE session before creating or scheduling a run
+  ---
+  duration_ms: 1.159205
+  ...
+# Subtest: stage proposalRunId recovers its structural witness for the runner
+ok 33 - stage proposalRunId recovers its structural witness for the runner
+  ---
+  duration_ms: 158.987469
+  ...
+# Subtest: accepted run lineage recovers a joint witness from result_json after configuration refresh
+ok 34 - accepted run lineage recovers a joint witness from result_json after configuration refresh
+  ---
+  duration_ms: 21.537366
+  ...
+# Subtest: a stage prefers its V2 structural witness while retaining V1 compatibility
+ok 35 - a stage prefers its V2 structural witness while retaining V1 compatibility
+  ---
+  duration_ms: 17.782216
+  ...
+# Subtest: the nearest stage witness takes precedence and the parent is the fallback
+ok 36 - the nearest stage witness takes precedence and the parent is the fallback
+  ---
+  duration_ms: 81.46963
+  ...
+# Subtest: lineage never combines an itinerary with a different newer supporting pipeline
+ok 37 - lineage never combines an itinerary with a different newer supporting pipeline
+  ---
+  duration_ms: 11.744848
+  ...
+# Subtest: lineage retains an uncoupled itinerary when no supporting pipeline exists
+ok 38 - lineage retains an uncoupled itinerary when no supporting pipeline exists
+  ---
+  duration_ms: 7.102734
+  ...
+# Subtest: request captures the exact assisted authorities, creates one run, and schedules one deferred job without product writes
+ok 39 - request captures the exact assisted authorities, creates one run, and schedules one deferred job without product writes
+  ---
+  duration_ms: 6.364221
+  ...
+# Subtest: a deferred execution failure marks the returned run failed exactly once and makes no product write
+ok 40 - a deferred execution failure marks the returned run failed exactly once and makes no product write
+  ---
+  duration_ms: 43.655268
+  ...
+# Subtest: run fails closed on a stale effective config before invoking Planner Next or finish
+ok 41 - run fails closed on a stale effective config before invoking Planner Next or finish
+  ---
+  duration_ms: 1.836979
+  ...
+# Subtest: run derives protected placements only from the base stage and preserves their exact identity and interval
+ok 42 - run derives protected placements only from the base stage and preserves their exact identity and interval
+  ---
+  duration_ms: 202.984748
+  ...
+# Subtest: product proposal round-trips protected and newly selected round preparations without duplicates
+ok 43 - product proposal round-trips protected and newly selected round preparations without duplicates
+  ---
+  duration_ms: 122.312858
+  ...
+# Subtest: material participant meals update their source row and restore as fixed meal context
+ok 44 - material participant meals update their source row and restore as fixed meal context
+  ---
+  duration_ms: 33.64552
+  ...
+# Subtest: operational meals consolidate only after all space/resource/coach consumers, preserving accepted intervals on replay
+ok 45 - operational meals consolidate only after all space/resource/coach consumers, preserving accepted intervals on replay
+  ---
+  duration_ms: 110.926207
+  ...
+# Subtest: run grandfathers an unchanged ACTIVE exception from an earlier config revision into the runner baseline
+ok 46 - run grandfathers an unchanged ACTIVE exception from an earlier config revision into the runner baseline
+  ---
+  duration_ms: 44.981029
+  ...
+# Subtest: NO_PROPOSAL and UNSUPPORTED each persist one causal result without product writes
+ok 47 - NO_PROPOSAL and UNSUPPORTED each persist one causal result without product writes
+  ---
+  duration_ms: 183.712931
+  ...
+# Subtest: a real runtime interruption persists NO_PROPOSAL with its time reason and no partial draft
+ok 48 - a real runtime interruption persists NO_PROPOSAL with its time reason and no partial draft
+  ---
+  duration_ms: 65.240997
+  ...
+# Subtest: apply performs one RPC, sends only optimistic guards, and propagates stale without lateral writes
+ok 49 - apply performs one RPC, sends only optimistic guards, and propagates stale without lateral writes
+  ---
+  duration_ms: 0.462845
+  ...
+# Subtest: get rejects a run belonging to another plan or execution kind as RUN_NOT_FOUND
+ok 50 - get rejects a run belonging to another plan or execution kind as RUN_NOT_FOUND
+  ---
+  duration_ms: 2.153864
+  ...
+# Subtest: canonical violation projection is lossless and fails closed for every missing identity namespace
+ok 51 - canonical violation projection is lossless and fails closed for every missing identity namespace
+  ---
+  duration_ms: 29.374494
+  ...
+# Subtest: proposal eligibility grandfathers only exact structured identities and rejects every anonymous or new HARD
+ok 52 - proposal eligibility grandfathers only exact structured identities and rejects every anonymous or new HARD
+  ---
+  duration_ms: 0.626876
+  ...
+# Subtest: projects resource violations from adapter plan-resource identities
+ok 53 - projects resource violations from adapter plan-resource identities
+  ---
+  duration_ms: 0.387212
+  ...
+# Subtest: future analytical authority selects exactly pending and interrupted canonical tasks
+ok 54 - future analytical authority selects exactly pending and interrupted canonical tasks
+  ---
+  duration_ms: 0.25397
+  ...
+# Subtest: accepted itinerant direct assignment survives into the next stage without swallowing inherited resources
+ok 55 - accepted itinerant direct assignment survives into the next stage without swallowing inherited resources
+  ---
+  duration_ms: 97.249288
+  ...
+# Subtest: daily composition persists declared byItem resources with the selected unit, leaving location inheritance in configuration
+ok 56 - daily composition persists declared byItem resources with the selected unit, leaving location inheritance in configuration
+  ---
+  duration_ms: 9.40874
+  ...
+# Subtest: effective values stay readable but absent Next authorities cannot report READY
+ok 57 - effective values stay readable but absent Next authorities cannot report READY
+  ---
+  duration_ms: 60.065997
+  ...
+# Subtest: optimizer exposes only the provenance carried by its authoritative snapshot
+ok 58 - optimizer exposes only the provenance carried by its authoritative snapshot
+  ---
+  duration_ms: 5.245905
+  ...
+# Subtest: readiness categories follow demonstrated causal validation only
+ok 59 - readiness categories follow demonstrated causal validation only
+  ---
+  duration_ms: 0.190924
+  ...
+# Subtest: historical input and fingerprints retain their exact shape without opt-in
+ok 60 - historical input and fingerprints retain their exact shape without opt-in
+  ---
+  duration_ms: 19.597208
+  ...
+# Subtest: roles and prerequisites come from the frozen templates, never names or current catalog
+ok 61 - roles and prerequisites come from the frozen templates, never names or current catalog
+  ---
+  duration_ms: 5.117663
+  ...
+# Subtest: task additions rematerialize dependencies and change effective configuration identity
+ok 62 - task additions rematerialize dependencies and change effective configuration identity
+  ---
+  duration_ms: 1.893239
+  ...
+# Subtest: a missing prerequisite is blocking instead of silently erased
+ok 63 - a missing prerequisite is blocking instead of silently erased
+  ---
+  duration_ms: 58.489175
+  ...
+# Subtest: invalid operational role declarations fail the product write contract
+ok 64 - invalid operational role declarations fail the product write contract
+  ---
+  duration_ms: 5.790583
+  ...
+# Subtest: a persisted template round trip preserves prerequisites and role identity
+ok 65 - a persisted template round trip preserves prerequisites and role identity
+  ---
+  duration_ms: 0.906825
+  ...
+# Subtest: standalone snapshots omit mainFlow and never manufacture participants, tasks or coaches
+ok 66 - standalone snapshots omit mainFlow and never manufacture participants, tasks or coaches
+  ---
+  duration_ms: 4.656927
+  ...
+# Subtest: standalone rejects contradictory roles and preserves declared dependency/resource requirements
+ok 67 - standalone rejects contradictory roles and preserves declared dependency/resource requirements
+  ---
+  duration_ms: 0.663981
+  ...
+# Subtest: structural profiles are strict and retain the main profile contract
+ok 68 - structural profiles are strict and retain the main profile contract
+  ---
+  duration_ms: 0.489126
+  ...
+1..68
+# tests 68
+# suites 0
+# pass 68
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 30607.628543

@@ -7,6 +7,7 @@ on:
       - 'server/**'
       - 'shared/**'
       - 'client/src/components/new-day-planner-editor.tsx'
+      - 'client/src/components/setup-families-editor.tsx'
       - 'client/src/components/effective-configuration.tsx'
       - 'client/src/pages/settings.tsx'
       - 'client/src/pages/plan-details.tsx'
@@ -36,11 +37,12 @@ jobs:
       - run: npm ci
       - run: npm run check && npm run check:migrations && npm run build
       - run: npx --no-install tsc -p script/demo/tsconfig.new-day.json
-      - run: node --import tsx --test --test-concurrency=1 engine/planner-next/standaloneOnly.spec.ts engine/planner-next/integration/standaloneOnly.spec.ts server/assistedBootstrapAdditions.spec.ts server/newDayPlannerConfiguration.spec.ts engine/planner-next/integration/newDayItinerantConsumption.spec.ts server/taskTemplateSnapshot.spec.ts server/effectiveConfigurationView.spec.ts server/assistedConfigRefresh.spec.ts server/apiAuthorization.spec.ts
+      - run: node --import tsx --test --test-concurrency=1 engine/planner-next/standaloneOnly.spec.ts engine/planner-next/integration/standaloneOnly.spec.ts server/assistedBootstrapAdditions.spec.ts server/newDayPlannerConfiguration.spec.ts engine/planner-next/integration/newDayItinerantConsumption.spec.ts engine/planner-next/integration/newDaySetupFamilies.spec.ts server/taskTemplateSnapshot.spec.ts server/effectiveConfigurationView.spec.ts server/assistedConfigRefresh.spec.ts server/apiAuthorization.spec.ts
       - run: npx --no-install playwright install --with-deps chromium
       - run: node --import tsx script/demo/smokeNewDayIntegration.ts work/new-day-planner --post-bootstrap-additions
       - run: node --import tsx script/demo/smokeNewDayIntegration.ts work/standalone-day-planner --standalone-only --post-bootstrap-additions
       - run: node --import tsx script/demo/smokeNewDayIntegration.ts work/itinerant-new-day-planner --itinerant-consumption
+      - run: node --import tsx script/demo/smokeNewDayIntegration.ts work/setup-new-day-planner --setup-families
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -52,3 +54,5 @@ jobs:
             work/standalone-day-planner/*.png
             work/itinerant-new-day-planner/*.json
             work/itinerant-new-day-planner/*.png
+            work/setup-new-day-planner/*.json
+            work/setup-new-day-planner/*.png

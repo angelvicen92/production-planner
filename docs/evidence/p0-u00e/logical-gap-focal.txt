@@ -1,0 +1,75 @@
+TAP version 13
+# Subtest: new day STANDALONE uses existing setup blocks with explicit order
+ok 1 - new day STANDALONE uses existing setup blocks with explicit order
+  ---
+  duration_ms: 609.045197
+  ...
+# Subtest: new day STANDALONE uses existing setup blocks with flexible order
+ok 2 - new day STANDALONE uses existing setup blocks with flexible order
+  ---
+  duration_ms: 713.068263
+  ...
+# Subtest: new day MAIN uses existing setup blocks with explicit order
+ok 3 - new day MAIN uses existing setup blocks with explicit order
+  ---
+  duration_ms: 866.543067
+  ...
+# Subtest: new day MAIN uses existing setup blocks with flexible order
+ok 4 - new day MAIN uses existing setup blocks with flexible order
+  ---
+  duration_ms: 584.805062
+  ...
+# Subtest: unknown/incomplete policies and roles fail without silently materializing setup
+ok 5 - unknown/incomplete policies and roles fail without silently materializing setup
+  ---
+  duration_ms: 5.229699
+  ...
+# Subtest: contract rejects missing references, invalid order, duplicate IDs, zero/off-grid preparation and incompatible search
+ok 6 - contract rejects missing references, invalid order, duplicate IDs, zero/off-grid preparation and incompatible search
+  ---
+  duration_ms: 4.779741
+  ...
+# Subtest: frozen references survive persistence, renaming and revision identity; NONE retains its original shape
+ok 7 - frozen references survive persistence, renaming and revision identity; NONE retains its original shape
+  ---
+  duration_ms: 3.919207
+  ...
+# Subtest: permitted inactive families do not create fictitious entries or initial preparations
+ok 8 - permitted inactive families do not create fictitious entries or initial preparations
+  ---
+  duration_ms: 37.736655
+  ...
+# Subtest: a wait inside one setup family is not reentry or a temporal continuity requirement
+not ok 9 - a wait inside one setup family is not reentry or a temporal continuity requirement
+  ---
+  duration_ms: 48.951014
+  location: '/workspace/production-planner/engine/planner-next/integration/newDaySetupFamilies.spec.ts:1:8659'
+  failureType: 'testCodeFailure'
+  error: |-
+    {"hardValid":false,"dependencyViolationCount":0,"overlapViolationCount":0,"transitionViolationCount":0,"availabilityViolationCount":0,"taskAvailabilityViolationCount":0,"blockViolationCount":0,"resourceAvailabilityViolationCount":0,"resourceOverlapViolationCount":0,"resourceTransitionViolationCount":0,"secondaryContinuityViolationCount":1,"setupViolationCount":0,"setupPreparationViolationCount":0,"jointGroupViolationCount":0,"technicalOperationViolationCount":0,"technicalChainViolationCount":0,"spaceMealViolationCount":0,"mainFlowMealViolationCount":0,"anchoredAccompanimentViolationCount":0,"participantMealViolationCount":0,"resourceMealViolationCount":0,"itinerantUnitMealViolationCount":0,"reasonCodes":["SECONDARY_CONTINUITY_VIOLATION"],"unstructuredReasonCodes":["SECONDARY_CONTINUITY_VIOLATION"],"violations":[]}
+
+    false !== true
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/workspace/production-planner/engine/planner-next/integration/newDaySetupFamilies.spec.ts:108:81)
+    Test.runInAsyncScope (node:async_hooks:206:9)
+    Test.run (node:internal/test_runner/test:796:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:526:18)
+    Test.postRun (node:internal/test_runner/test:889:19)
+    Test.run (node:internal/test_runner/test:835:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 8
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5099.861049

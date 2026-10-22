@@ -279,3 +279,9 @@ Para una nueva opción configurable exigir: valor/origen/autoridad, guarda y rec
 Este maestro es mapa de adecuación y decisiones, **no una Fuente 08 ni un ledger automático**. Se actualiza al cambiar visión, prioridad o capacidad probada; registrar cada trabajo en su PR y Evidence, cada release en ledger/runbook, cada nueva norma en su Fuente. Si se corrige o descarta una decisión, dejar motivo y prueba.
 
 **Horizonte:** el usuario puede añadir o cambiar actividad, plató, recurso y política desde la app; el planificador cumple todas sus obligaciones con criterio operativo, el jefe controla y ajusta la ejecución real y los datos sirven para mejorar la siguiente jornada.
+
+### P0-U00e — borrador bloqueado: montajes y familias de setup en jornadas nuevas
+
+Sobre U00d integrado (`037500b`), el perfil permite configurar familias estables y políticas por espacio; las plantillas se vinculan desde UI con `setupId`. Se reutilizan setup blocks, matching, preparaciones y validación existentes, limitados a auxiliares físicas con participante en espacios compatibles. La autoridad queda congelada al crear el día; no se adopta configuración nueva sobre Stages históricos. [Evidence y límites](../evidence/p0-u00e/README.md). Sin cambios productivos, migraciones nuevas, publicación Replit ni merge; no cierra P0 general.
+
+**Bloqueo U00e:** la equivalencia implementada setup → continuidad temporal REQUIRED contradice el bloque lógico de Fuente 03 §16.5. Adapter, preflight y los dos generadores existentes impiden un caso sin reentrada pero con espera interna. Wiring compacto 4/4 y 6/6 no certifica esta unidad; conservar el test fallido y resolver el prerrequisito causal antes de integrar. No se amplía búsqueda ni se relaja validación en esta entrega.

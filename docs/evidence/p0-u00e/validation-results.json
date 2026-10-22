@@ -1,0 +1,48 @@
+{
+  "status": "NOT_CERTIFIED",
+  "authorizedBase": "037500b139d43bf5f82c1087db4fe6ed90fc8074",
+  "productTypeScript": "PASS",
+  "harnessTypeScript": "PASS",
+  "build": "PASS",
+  "migrations": "PASS",
+  "focal": {
+    "passed": 68,
+    "failed": 0
+  },
+  "setupAcceptance": {
+    "passed": 8,
+    "failed": 1,
+    "reason": "SECONDARY_CONTINUITY_VIOLATION on internal wait without setup reentry"
+  },
+  "compactNative": "PASS (exploratory source-hashed run, 4/4 and 6/6)",
+  "nativeRepetition": {
+    "status": "TIMEOUT",
+    "phase": "initial login page load under concurrent build/suite/A2",
+    "timeoutUnchangedMs": 30000
+  },
+  "a2Base": {
+    "status": "PASS",
+    "completed": 266,
+    "stages": 11,
+    "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d"
+  },
+  "a2CandidateConcurrent": {
+    "status": "NOT_CERTIFIED",
+    "reason": "SEARCH_TIME_LIMIT_REACHED at the existing 300000ms while global tests/build also ran; 20827 branches, S0. Not an infeasibility proof or a certified regression comparison."
+  },
+  "a2Repeat": "Stopped after the timed-out concurrent candidate; isolated repeat pending",
+  "mergeGate": {
+    "status": "STOPPED_INCOMPLETE",
+    "lastFinishedTest": [
+      "1321",
+      "A2-ASSIST-6 executes validation, atomic acceptance and inherited proposal"
+    ],
+    "observedFailures": [],
+    "reason": "The known acceptance blocker prevents certification; do not continue a premature merge gate or interpret partial results as PASS."
+  },
+  "u00aThroughU00d": "Full new UI regression runs/fingerprint comparisons pending; original checked-in Evidence unchanged",
+  "noSolverOrValidatorChanges": true,
+  "noBudgetOrTimeoutIncrease": true,
+  "productionWrites": 0,
+  "merged": false
+}
