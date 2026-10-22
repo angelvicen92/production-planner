@@ -58,7 +58,7 @@ export async function runA2Assist7Evidence() {
   const validationProblem = structuredClone(adapted.problem);
   const conflictIds = new Set(adapted.identityMap.filter(item => item.namespace === "task" && [first.id, second.id].includes(Number(item.sourceId))).map(item => item.canonicalId));
   validationProblem.tasks = validationProblem.tasks.filter(task => conflictIds.has(task.id)).map(task => ({ ...task, kind: "auxiliary", dependencies: [], blockKey: undefined })) as any;
-  validationProblem.mainFlow = { ...validationProblem.mainFlow, spaceId: validationProblem.spaces.find(space => !validationProblem.tasks.some(task => task.spaceId === space.id))!.id };
+  validationProblem.mainFlow = { ...validationProblem.mainFlow!, spaceId: validationProblem.spaces.find(space => !validationProblem.tasks.some(task => task.spaceId === space.id))!.id };
   validationProblem.anchoredAccompaniments = undefined;
   validationProblem.technicalChains = undefined;
   validationProblem.roundSynchronizations = undefined;

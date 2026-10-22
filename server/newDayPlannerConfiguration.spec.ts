@@ -5,7 +5,7 @@ import { applyNewDayPlannerConfiguration } from "./newDayPlannerConfiguration";
 import { normalizeTaskTemplateCatalogEntry, projectTaskTemplateSnapshotRow, taskTemplateSnapshotToPersistenceRow } from "./taskTemplateSnapshot";
 import { projectEffectiveAuthoritiesFromEngineInputV1 } from "./effectivePlanConfigRevision";
 import { plannerReadiness } from "./plannerReadiness";
-import { templateRulesWithPlannerOperationSchema } from "../shared/newDayPlannerConfiguration";
+import { newDayPlannerConfigurationSchema, templateRulesWithPlannerOperationSchema } from "../shared/newDayPlannerConfiguration";
 
 const template=(id:number,kind?:"main"|"vocal",dependencies:number[]=[])=>normalizeTaskTemplateCatalogEntry({id,name:id===7?"IN":"Una actividad",defaultDuration:10,defaultCameras:0,requiresCoach:kind!=null,
   dependsOnTemplateIds:dependencies,rulesJson:kind?{plannerNextOperation:{contractVersion:1,kind}}:null},"inherited");
@@ -54,4 +54,32 @@ test("a persisted template round trip preserves prerequisites and role identity"
   const reloaded=projectTaskTemplateSnapshotRow({id:55,...taskTemplateSnapshotToPersistenceRow(12,original)});
   assert.deepEqual(reloaded.dependencyTemplateIds,[7]);assert.deepEqual(reloaded.plannerNextOperation,original.plannerNextOperation);
   assert.equal(reloaded.sourceFingerprint,original.sourceFingerprint);
+});
+
+const standaloneProfile=()=>{const {mainFlow:_,...common}=profile.configuration;return {...profile,configuration:{...common,scenario:"STANDALONE_ONLY"}};};
+test("standalone snapshots omit mainFlow and never manufacture participants, tasks or coaches",()=>{
+  const source=input();source.vocalCoachPlanResourceItemIdByContestantId={};
+  const templates=[template(7),template(8) ].map(t=>({...t,requiresCoach:false,plannerNextOperation:{contractVersion:1 as const,kind:"auxiliary" as const}}));
+  const result=applyNewDayPlannerConfiguration(source,standaloneProfile(),templates);
+  assert.equal(result.plannerNext?.profile,"STANDALONE_ONLY");assert.equal("mainFlow" in result.plannerNext!,false);
+  assert.deepEqual(result.tasks.map(t=>t.id),source.tasks.map(t=>t.id));assert.equal(result.planResourceItems.length,0);
+  assert.equal(result.plannerNextMaterializationIssues?.length,0);
+  assert.ok(result.tasks.every(t=>t.plannerNextKind==="auxiliary"&&!t.declaredResourceIds?.length));
+  assert.notDeepEqual(projectEffectiveAuthoritiesFromEngineInputV1(result),projectEffectiveAuthoritiesFromEngineInputV1(source));
+});
+test("standalone rejects contradictory roles and preserves declared dependency/resource requirements",()=>{
+  const source=input();source.tasks=source.tasks.slice(1);
+  const result=applyNewDayPlannerConfiguration(source,standaloneProfile(),[template(8,"main",[7])]);
+  assert.ok(result.plannerNextMaterializationIssues?.some(issue=>issue.code==="MISSING_DEPENDENCY_REFERENCE"));
+  assert.ok(result.plannerNextMaterializationIssues?.some(issue=>issue.code==="UNSUPPORTED_TASK_ROLE"));
+  const coach=applyNewDayPlannerConfiguration(source,standaloneProfile(),[{...template(8),requiresCoach:true,plannerNextOperation:{contractVersion:1,kind:"auxiliary"}}]);
+  assert.deepEqual(coach.tasks[0].declaredResourceIds,[90]);
+});
+test("structural profiles are strict and retain the main profile contract",()=>{
+  const standalone=standaloneProfile().configuration;
+  assert.ok(newDayPlannerConfigurationSchema.safeParse(standalone).success);
+  assert.equal(newDayPlannerConfigurationSchema.safeParse({...standalone,mainFlow:profile.configuration.mainFlow}).success,false);
+  assert.equal(newDayPlannerConfigurationSchema.safeParse({...standalone,searchPolicy:"COMPATIBILITY_PRESERVING"}).success,false);
+  const {mainFlow:_,...missing}=profile.configuration;
+  assert.equal(newDayPlannerConfigurationSchema.safeParse(missing).success,false);
 });

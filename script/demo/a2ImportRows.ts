@@ -29,7 +29,7 @@ export function buildA2ImportRows(date:string,offset=0,options?:{historicalCatal
   contestantAvailabilityById:mapRecord(source.contestantAvailabilityById!),vocalCoachPlanResourceItemIdByContestantId:mapRecord(source.vocalCoachPlanResourceItemIdByContestantId!,rid),coachResourceIds:arr(source.coachResourceIds!),
   planResourceItems:source.planResourceItems.map(r=>({...r,id:rid(r.id),typeId:rid(r.typeId),resourceItemId:rid(r.resourceItemId)})),spaceResourceAssignments:mapRecord(source.spaceResourceAssignments,arr),
   resourcePresenceConcentrationPolicies:mapRecord(source.resourcePresenceConcentrationPolicies!),mealTaskTemplateId:rid(source.mealTaskTemplateId!),
-  plannerNext:{...source.plannerNext!,mainFlow:{...source.plannerNext!.mainFlow,spaceId:rid(source.plannerNext!.mainFlow.spaceId)}},
+  plannerNext:{...source.plannerNext!,mainFlow:{...source.plannerNext!.mainFlow!,spaceId:rid(source.plannerNext!.mainFlow!.spaceId)}},
   anchoredAccompaniments:source.anchoredAccompaniments!.map(p=>({...p,anchorTaskId:rid(p.anchorTaskId),beforeTaskIds:arr(p.beforeTaskIds),afterTaskIds:arr(p.afterTaskIds)})),
   setupPolicies:source.setupPolicies!.map(p=>({...p,spaceId:rid(p.spaceId)})),roundSynchronizations:source.roundSynchronizations!.map(p=>({...p,lanes:p.lanes.map(l=>({...l,spaceId:rid(l.spaceId),taskIds:arr(l.taskIds)}))})),
   technicalChains:source.technicalChains!.map(p=>({...p,orderedTaskIds:arr(p.orderedTaskIds),phases:p.phases?.map(arr),requiredResourceIds:arr(p.requiredResourceIds)})),

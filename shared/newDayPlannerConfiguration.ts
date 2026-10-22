@@ -7,10 +7,9 @@ export const templatePlannerOperationSchema = z.object({
 }).strict();
 export type TemplatePlannerOperation = z.infer<typeof templatePlannerOperationSchema>;
 
-/** First supported product profile. No task identities or scheduled times. */
-export const newDayPlannerConfigurationSchema = z.object({
+/** Explicit structural profiles. No task identities or scheduled times. */
+const common = z.object({
   contractVersion: z.literal(1),
-  scenario: z.literal("MAIN_WITH_VOCAL_FEEDER"),
   transport: z.literal("NONE"),
   setup: z.literal("NONE"),
   meals: z.literal("DAY_CONFIGURATION"),
@@ -19,10 +18,15 @@ export const newDayPlannerConfigurationSchema = z.object({
     maxBranchExpansions:positive.max(100_000)}).strict(),
   timeGridMinutes: z.literal(5),
   resourceTransitionMinutes: z.number().int().nonnegative(),
+}).strict();
+export const newDayPlannerConfigurationSchema = z.discriminatedUnion("scenario", [
+  common.extend({scenario:z.literal("MAIN_WITH_VOCAL_FEEDER"),
   mainFlow: z.object({spaceId:positive,
     preferredEnd:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
     continuity:z.literal("REQUIRED"), maxBlocksByKey:positive, minTasksPerBlock:positive}).strict(),
-}).strict();
+}).strict(),
+  common.extend({scenario:z.literal("STANDALONE_ONLY"),searchPolicy:z.literal("EXACT_CONSTRUCTIVE")}).strict(),
+]);
 export type NewDayPlannerConfiguration = z.infer<typeof newDayPlannerConfigurationSchema>;
 export const newDayPlannerSnapshotSchema = z.object({contractVersion:z.literal(1),
   sourceRevision:z.number().int().nonnegative(), configuration:newDayPlannerConfigurationSchema.nullable()}).strict();

@@ -50,7 +50,7 @@ export function createSpec10019CoachRouteTransitionFixture(): EngineInput {
     participantTransitionMinutes: 10,
     resourceTransitionMinutes: 5,
     searchBudget: { bestK: 5, maxBacktracks: 100, maxPatterns: 100, maxBranchExpansions: 10000 },
-    mainFlow: { ...input.plannerNext!.mainFlow, preferredEnd: "11:00" },
+    mainFlow: { ...input.plannerNext!.mainFlow!, preferredEnd: "11:00" },
   };
   input.coachRouteTransitions = [{
     coachPlanResourceItemId: 501,
@@ -133,7 +133,7 @@ export function runSpec10019Probe(
   const boundaryProblem: PlannerNextProblem = {
     ...problem,
     tasks: boundaryTasks,
-    mainFlow: { ...problem.mainFlow, preferredEnd: 660 },
+    mainFlow: { ...problem.mainFlow!, preferredEnd: 660 },
     anchoredAccompaniments: undefined,
   };
   const boundaryVocal = boundaryTasks.find((task) => task.kind === "vocal");

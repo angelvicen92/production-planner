@@ -156,7 +156,7 @@ function runScopedMealPolicyProbe(expansion: ExpandedCanonicalFullA2Template): R
   const ownSpacePlaceableWithMeal = canPlaceTask(problem, ownTask, 620, [], [meal]);
   const crossSpaceControlPlaceableWithoutMeal = canPlaceTask(problem, crossSpaceTask, 620, [], []);
   const crossSpacePlaceableWithMeal = canPlaceTask(problem, crossSpaceTask, 620, [], [meal]);
-  const validationSpaces = problem.spaces.filter(({ id }) => [problem.mainFlow.spaceId, "meal-room", "cross-meal-room"].includes(id));
+  const validationSpaces = problem.spaces.filter(({ id }) => [problem.mainFlow!.spaceId, "meal-room", "cross-meal-room"].includes(id));
   const validationBase = { ...problem, participants: [], coaches: [], resources: problem.resources.filter(({ id }) => id === "assigned-meal-resource"), tasks: [crossSpaceTask], spaces: validationSpaces };
   const validationControlProblem = { ...validationBase, spaces: validationSpaces.map((space) => space.id === "meal-room" ? { id: space.id, availability: space.availability } : space) };
   const validationControl = validatePlan(validationControlProblem, [crossSpaceTask], [], []);

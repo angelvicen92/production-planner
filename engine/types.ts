@@ -224,7 +224,8 @@ export interface PlannerNextIntegrationConfigurationInput {
   timeGridMinutes: number;
   participantTransitionMinutes: number;
   resourceTransitionMinutes: number;
-  mainFlow: PlannerNextMainFlowInput;
+  profile?: "MAIN_WITH_VOCAL_FEEDER" | "STANDALONE_ONLY";
+  mainFlow?: PlannerNextMainFlowInput;
 }
 
 export interface EngineInputAnchoredAccompanimentInput {

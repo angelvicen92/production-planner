@@ -26,9 +26,10 @@ export function applyNewDayPlannerConfiguration(input:EngineInput,raw:unknown,
       dependsOnTaskIds:dependencies,dependsOnTaskId:dependencies[0]??null};
   });
   const {arrivalDepartureGrouping:_,...weights}=input.optimizerWeights??{};
-  return {...input,tasks,plannerNextMaterializationIssues:newDayConfigurationDefects(input,snapshots),plannerNext:{searchPolicy:config.searchPolicy,searchBudget:{...config.searchBudget},
+  return {...input,tasks,plannerNextMaterializationIssues:newDayConfigurationDefects(input,snapshots,config.scenario),plannerNext:{searchPolicy:config.searchPolicy,searchBudget:{...config.searchBudget},
       timeGridMinutes:config.timeGridMinutes,participantTransitionMinutes:input.defaultParticipantTransitionMinutes!,
-      resourceTransitionMinutes:config.resourceTransitionMinutes,mainFlow:{...config.mainFlow}},
+      resourceTransitionMinutes:config.resourceTransitionMinutes,
+      ...(config.scenario==="STANDALONE_ONLY"?{profile:"STANDALONE_ONLY" as const}:{mainFlow:{...config.mainFlow}})},
     // These capabilities are explicitly inapplicable in this versioned profile.
     transportSettings:undefined,transportSpaceId:undefined,transportVanCapacity:undefined,vanCapacity:undefined,
     arrivalTaskTemplateName:undefined,departureTaskTemplateName:undefined,
@@ -48,7 +49,7 @@ export function applyNewDayPlannerConfiguration(input:EngineInput,raw:unknown,
   };
 }
 
-export function newDayConfigurationDefects(input:EngineInput,snapshots:readonly TaskTemplateOperationalSnapshotV1[]):NonNullable<EngineInput["plannerNextMaterializationIssues"]> {
+export function newDayConfigurationDefects(input:EngineInput,snapshots:readonly TaskTemplateOperationalSnapshotV1[],scenario="MAIN_WITH_VOCAL_FEEDER"):NonNullable<EngineInput["plannerNextMaterializationIssues"]> {
   const templates=new Map(snapshots.map(snapshot=>[snapshot.sourceTemplateId,snapshot]));
   const active=input.tasks.filter(task=>task.status!=="cancelled");
   const issues=active.flatMap(task=>{
@@ -61,12 +62,16 @@ export function newDayConfigurationDefects(input:EngineInput,snapshots:readonly 
       ...(task.itinerantTeamRequirement!=="none" && task.itinerantTeamRequirement!=null?[{code:"UNSUPPORTED_TASK_ROLE" as const,taskId:task.id,message:`La tarea ${task.id} requiere una unidad itinerante. Este perfil admite operaciones físicas sin unidad itinerante.`}]:[]),
       ...(template?.requiresCoach && (task.contestantId==null || input.vocalCoachPlanResourceItemIdByContestantId?.[task.contestantId]==null)
         ?[{code:"MISSING_COACH_REFERENCE" as const,taskId:task.id,message:`La tarea ${task.id} requiere el coach asignado al participante. Completa esa asignación con un recurso real del día.`}]:[]),
-      ...((template?.plannerNextOperation?.kind==="main"||template?.plannerNextOperation?.kind==="vocal") && !template.requiresCoach
+      ...(scenario!=="STANDALONE_ONLY" && (template?.plannerNextOperation?.kind==="main"||template?.plannerNextOperation?.kind==="vocal") && !template.requiresCoach
         ?[{code:"MISSING_COACH_REFERENCE" as const,taskId:task.id,message:`La plantilla de la tarea ${task.id} debe declarar que requiere el coach del participante para usar este perfil.`}]:[]),
       ...(template?.requiresAuxiliar||template?.requiresPresenter?[{code:"UNSUPPORTED_RESOURCE_REQUIREMENT" as const,taskId:task.id,message:`La tarea ${task.id} requiere auxiliar o presentador por tipo. Este perfil todavía no materializa esa selección; no se ignorará el requisito.`}]:[]),
     ];
   });
-  if(active.length && !active.some(task=>templates.get(task.templateId)?.plannerNextOperation?.kind==="main"))
-    issues.push({code:"UNSUPPORTED_TASK_ROLE",taskId:active[0].id,message:"Este perfil necesita un flujo principal real. Las jornadas sin flujo principal requieren una capacidad posterior; no se inventará una sala ni una tarea."});
+  if(scenario!=="STANDALONE_ONLY" && active.length && !active.some(task=>templates.get(task.templateId)?.plannerNextOperation?.kind==="main"))
+    issues.push({code:"UNSUPPORTED_TASK_ROLE",taskId:active[0].id,message:"Este perfil necesita un flujo principal real. Configura STANDALONE_ONLY para crear una jornada sin flujo principal; no se inventará una sala ni una tarea."});
+  if(scenario==="STANDALONE_ONLY")for(const task of active){
+    const kind=templates.get(task.templateId)?.plannerNextOperation?.kind;
+    if(kind==="main"||kind==="vocal")issues.push({code:"UNSUPPORTED_TASK_ROLE",taskId:task.id,message:"STANDALONE_ONLY sólo admite tareas auxiliares o técnicas. Cambia el perfil para planificar tareas principales o vocales."});
+  }
   return issues;
 }

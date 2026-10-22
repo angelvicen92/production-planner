@@ -35,7 +35,7 @@ export function operationContinuityPreflight(problem: Pick<PlannerNextProblem, "
     seen.add(group.id);
     const tasks = group.taskIds.map(id => problem.tasks.find(task => task.id === id));
     const transportIds=[...(problem.transportPolicy?.arrival.taskIds??[]),...(problem.transportPolicy?.departure.taskIds??[])];
-    if (tasks.some(task => !task || task.kind !== "auxiliary" || task.spaceId === problem.mainFlow.spaceId
+    if (tasks.some(task => !task || task.kind !== "auxiliary" || task.spaceId === problem.mainFlow?.spaceId
       || transportIds.includes(task.id) || task.blocksSpace === false || task.jointGroupId !== undefined || task.setupFamilyId !== undefined)
       || new Set(tasks.map(task => task?.spaceId)).size !== 1 || group.taskIds.some(id => members.has(id)))
       return ["UNSUPPORTED_OPERATION_CONTINUITY_MEMBERS"];

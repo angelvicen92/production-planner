@@ -258,7 +258,7 @@ export function planCompatibilityPreserving(problem: PlannerNextProblem): PlanRe
   const mains = canonical(problem.tasks.filter(({ kind }) => kind === "main"));
   const requiredBlocks = buildRequiredCompositeBlocks(problem, mains);
   const duration = mains[0]?.duration;
-  if (duration === undefined || mains.length === 0) {
+  if (duration === undefined || mains.length === 0 || !problem.mainFlow) {
     return failure(problem, begun, "NO_COMPLETE_HARD_VALID_PLAN");
   }
   const mainStart = problem.mainFlow.preferredEnd - mains.length * duration;

@@ -93,7 +93,7 @@ export function recommendNextAssistedScope(
     union(present); for (const taskId of present) { const list = authorities.get(taskId) ?? []; list.push({ kind, id }); authorities.set(taskId, list); }
   };
 
-  const mainIds = tasks.filter(task => task.spaceId === input.plannerNext?.mainFlow.spaceId).map(task => task.id);
+  const mainIds = tasks.filter(task => task.spaceId === input.plannerNext?.mainFlow?.spaceId).map(task => task.id);
   attach(mainIds, "MAIN_PIPELINE", "plannerNext.mainFlow");
   // Anchored accompaniment closure is consumed by buildAssistedProblem; it is
   // deliberately not made visible in the first human scope.

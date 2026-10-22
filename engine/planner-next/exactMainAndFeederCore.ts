@@ -392,7 +392,7 @@ export interface ExactCoreLeafCandidate {
   meals: ScheduledSpaceMeal[];
   remainingTaskIds: string[];
   fingerprint: string;
-  source: "STRUCTURAL_FUTURE_CONDITIONED" | "PREFERRED_BUNDLE" | "ORDINARY_DFS";
+  source: "STRUCTURAL_FUTURE_CONDITIONED" | "PREFERRED_BUNDLE" | "ORDINARY_DFS" | "EMPTY_STANDALONE";
   architectureFingerprint?: string;
   geometryFingerprint?: string;
   reusedFutureStructuralWitness?: Extract<FutureStructuralWitness,{kind:"FIXED_SUPPORTING_PIPELINE"}>;
@@ -888,6 +888,7 @@ export function deriveArchitectureFromProtectedMains(problem:PlannerNextProblem,
   if(ordered.some(({fixed},index)=>index>0&&ordered[index-1]!.fixed![0]!.end>fixed![0]!.start))return null;
   const architecture={pattern:ordered.map(({main})=>main.blockKey??""),slots:ordered.map(({fixed})=>fixed![0]!.start)};
   if(architecture.pattern.some(key=>key.length===0))return null;
+  if(!problem.mainFlow)return null;
   const patterns=generateMainFlowPatterns(mains,problem.mainFlow.minTasksPerBlock,
     problem.mainFlow.maxBlocksByKey,problem.budget.maxPatterns,problem.resources).patterns;
   if(!patterns.some(pattern=>pattern.length===architecture.pattern.length&&pattern.every((key,index)=>key===architecture.pattern[index])))return null;
@@ -937,6 +938,27 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     return { status, complete: false, scheduledTasks: [], scheduledSpaceMeals: [],
       remainingTaskIds: allTaskIds.filter((id) => !coreIds.has(id)), evidence };
   };
+  // An intentional empty core is a single continuation, not another solver.
+  // All domains, backtracking, HARD validation and branch costs remain owned
+  // by the existing standalone completion under this same ledger.
+  if(problem.profile==="STANDALONE_ONLY"){
+    const reasons=preflight(problem);
+    if(reasons.length)return fail("PREFLIGHT_FAILED",reasons);
+    const tasks=canonical(protectedPlacements);
+    const coreIds=new Set(tasks.map(task=>task.id));
+    const remainingTaskIds=allTaskIds.filter(id=>!coreIds.has(id));
+    evidence.completeLeafCount=1;
+    const coreFingerprint=fingerprint(tasks,[],[]);
+    const outcome=options.onHardValidCoreLeaf?.({tasks,meals:[],remainingTaskIds,
+      fingerprint:coreFingerprint,source:"EMPTY_STANDALONE"})??"ACCEPT";
+    evidence.branchesExplored=ledger.branchesExplored;
+    if(outcome!=="ACCEPT")return fail(outcome==="BUDGET_EXHAUSTED"?"BRANCH_BUDGET_EXHAUSTED":"INFEASIBLE",
+      [outcome==="BUDGET_EXHAUSTED"?"SEARCH_BRANCH_BUDGET_EXHAUSTED":"NO_COMPLETE_HARD_VALID_STANDALONE_PLAN"],coreIds);
+    evidence.coreFingerprint=coreFingerprint;
+    return {status:"COMPLETE",complete:true,scheduledTasks:tasks,scheduledSpaceMeals:[],remainingTaskIds,evidence};
+  }
+  const mainFlow=problem.mainFlow;
+  if(!mainFlow)return fail("PREFLIGHT_FAILED",preflight(problem));
   // Fixed identity is input-authoritative. Structural obligations inferred from a
   // fixed main are still automatic variables, never accepted/fixed placements.
   const contextIds=new Set(protectedPlacements.map(({id})=>id));
@@ -998,8 +1020,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     return true;
   };
   const duration = mains[0]?.duration??0;
-  const patterns = generateMainFlowPatterns(mains, problem.mainFlow.minTasksPerBlock,
-    problem.mainFlow.maxBlocksByKey, problem.budget.maxPatterns, problem.resources, problem.mainFlow.preferredBlockCount);
+  const patterns = generateMainFlowPatterns(mains, mainFlow.minTasksPerBlock,
+    mainFlow.maxBlocksByKey, problem.budget.maxPatterns, problem.resources, mainFlow.preferredBlockCount);
   const preferredArchitecture=options.preferredArchitecture;
   const orderedPatterns=[...(preferredArchitecture?[preferredArchitecture.pattern as string[]]:[]),...patterns.patterns]
     .filter((pattern,index,all)=>all.findIndex(candidate=>candidate.join("\u0000")===pattern.join("\u0000"))===index);
@@ -1097,7 +1119,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       chain.orderedTaskIds.every(id=>expectedIds.has(id)));
     const reduced:PlannerNextProblem={...problem,tasks:reducedTasks,operationContinuityGroups:problem.operationContinuityGroups?.filter(group=>group.taskIds.every(id=>reducedTasks.some(task=>task.id===id))),technicalChains:reducedTechnicalChains,spaces:problem.spaces.map(space=>{
       const projected=deferredSetupSpaceIds.has(space.id)?{...space,secondaryContinuity:"OFF" as const,setupPolicy:undefined}:space;
-      return space.id===problem.mainFlow.spaceId&&mainMealAuthority?.source!=="OPERATIONAL_MEAL_POLICY"
+      return space.id===mainFlow.spaceId&&mainMealAuthority?.source!=="OPERATIONAL_MEAL_POLICY"
         &&mainMealAuthority&&!projected.mealPolicy
         ?{...projected,mealPolicy:{window:{...mainMealAuthority.window},duration:mainMealAuthority.duration}}:projected;
     }),anchoredAccompaniments:contracts,roundSynchronizations:undefined,participantMeals:undefined,
@@ -1109,7 +1131,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     const reducedPlaced=placed.map(task=>({...task,dependencies:task.dependencies.filter(id=>expectedIds.has(id))}));
     const fixedResourceMeals=(reduced.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,
       resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
-    const operationalMealStart=selectedMealStart??(mainMealAuthority?createMainFlowMeal(problem).start:problem.mainFlow.preferredEnd);
+    const operationalMealStart=selectedMealStart??(mainMealAuthority?createMainFlowMeal(problem).start:mainFlow.preferredEnd);
     const fixedOperationalMeals=materializeMainFlowOperationalMeals(problem,operationalMealStart)
       .filter(meal=>operationalMainMealPolicies.some(policy=>policy.id===meal.id));
     const validation=validatePlan(reduced,reducedPlaced,[...(options.fixedSetupPreparations??[])],mainMealAuthority?.source==="OPERATIONAL_MEAL_POLICY"?[]:[...meals],[],
@@ -1130,8 +1152,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const runs:Array<{key:string;tasks:ScheduledTask[]}>=[];
       for(const task of mains){const key=task.blockKey??"",prior=runs.at(-1);if(prior?.key===key)prior.tasks.push(task);else runs.push({key,tasks:[task]});}
       const counts=new Map<string,number>();for(const run of runs){counts.set(run.key,(counts.get(run.key)??0)+1);
-        if(run.tasks.length<problem.mainFlow.minTasksPerBlock)for(const task of run.tasks)affected.add(task.id);}
-      for(const [key,count] of counts)if(count>problem.mainFlow.maxBlocksByKey)
+        if(run.tasks.length<mainFlow.minTasksPerBlock)for(const task of run.tasks)affected.add(task.id);}
+      for(const [key,count] of counts)if(count>mainFlow.maxBlocksByKey)
         for(const run of runs.filter(candidate=>candidate.key===key))for(const task of run.tasks)affected.add(task.id);
     }
     if(ruleCode==="OPERATIONAL_MEAL_VIOLATION")for(const policy of problem.operationalMealPolicies??[]){
@@ -1417,7 +1439,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const operationalMainMealPolicies=mainMealAuthority?.source==="OPERATIONAL_MEAL_POLICY"
         ?(problem.operationalMealPolicies??[]).filter(policy=>mainMealAuthority.sourceIds.includes(policy.id)):[];
       const reduced:PlannerNextProblem={...problem,tasks:reducedTasks,operationContinuityGroups:problem.operationContinuityGroups?.filter(group=>group.taskIds.every(id=>reducedTasks.some(task=>task.id===id))),spaces:problem.spaces.map(space=>{
-        return space.id===problem.mainFlow.spaceId&&mainMealAuthority?.source!=="OPERATIONAL_MEAL_POLICY"
+        return space.id===mainFlow.spaceId&&mainMealAuthority?.source!=="OPERATIONAL_MEAL_POLICY"
           &&mainMealAuthority&&!space.mealPolicy
           ?{...space,mealPolicy:{window:{...mainMealAuthority.window},duration:mainMealAuthority.duration}}:space;
       }),anchoredAccompaniments:[...fixedMainContracts,...applicableContracts],roundSynchronizations:undefined,
@@ -1454,8 +1476,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       // A configured distribution uses the meal actually chosen by this
       // residual timeline, as the structural path already does. AUTO keeps its
       // historical closure; a preferred start is not a materialized meal.
-      const selectedMainMealStart=problem.mainFlow.mealSplitPreference
-        ?meals.find(meal=>meal.spaceId===problem.mainFlow.spaceId)?.start:undefined;
+      const selectedMainMealStart=mainFlow.mealSplitPreference
+        ?meals.find(meal=>meal.spaceId===mainFlow.spaceId)?.start:undefined;
       const ordered=hardGateCoreLeaf(placed,meals,coreIds,applicableContracts,false,selectedMainMealStart);
       if (ordered) {
         const orderedMeals = [...meals].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
@@ -2065,7 +2087,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           feeder:{duration:feeder.duration,spaceId:feeder.spaceId,availability:feeder.availability??null,
             dependencies:feeder.dependencies.map(dependencyProfile),resources:[...(feeder.requiredResourceIds??[])].sort(),
             transition:latestFeederEndBeforeMain(problem,feeder,firstParticipantObligationTask(task,problem),task.spaceId,anchor.start,anchor.start)-anchor.start},
-          future,continuity:problem.mainFlow.continuity,
+          future,continuity:mainFlow.continuity,
           analyticalFutureTechnicalChains:analyticalTechnicalChainProfile(problem,task.participantId),
         });
       };
@@ -2349,7 +2371,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
   const runCount=(pattern:readonly string[])=>pattern.reduce((count,key,index)=>count+(index===0||key!==pattern[index-1]?1:0),0);
   // AUTO retains its exact tier-first traversal. SOFT finishes all authorized
   // meal-cut tiers of a family before opening the next distance-ranked family.
-  const patternTiers=problem.mainFlow.preferredBlockCount===undefined
+  const patternTiers=mainFlow.preferredBlockCount===undefined
     ?timelineCutTiers.flatMap(candidateCutsForTier=>orderedPatterns.map(pattern=>({candidateCutsForTier,pattern})))
     :[...new Set(orderedPatterns.map(runCount))].flatMap(blocks=>timelineCutTiers.flatMap(candidateCutsForTier=>
       orderedPatterns.filter(pattern=>runCount(pattern)===blocks).map(pattern=>({candidateCutsForTier,pattern}))));
@@ -2396,17 +2418,17 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     for (const timeline of timelines) {
       const departureEnds = [...latestDepartureStart.values()];
       const historicalEnds = [...new Set([
-        problem.mainFlow.preferredEnd,
-        ...departureEnds.filter((deadline) => problem.mainFlow.preferredEnd < deadline && deadline <= problem.day.end)
+        mainFlow.preferredEnd,
+        ...departureEnds.filter((deadline) => mainFlow.preferredEnd < deadline && deadline <= problem.day.end)
           .sort((left, right) => left - right),
-        ...(problem.day.end > problem.mainFlow.preferredEnd ? [problem.day.end] : []),
-        ...departureEnds.filter((deadline) => deadline < problem.mainFlow.preferredEnd)
+        ...(problem.day.end > mainFlow.preferredEnd ? [problem.day.end] : []),
+        ...departureEnds.filter((deadline) => deadline < mainFlow.preferredEnd)
           .sort((left, right) => right - left),
       ])];
       let candidateEnds = timeline
-        ? [problem.mainFlow.preferredEnd]
+        ? [mainFlow.preferredEnd]
         : [...new Set([
-          problem.mainFlow.preferredEnd,
+          mainFlow.preferredEnd,
           problem.day.start + pattern.length * duration,
           // Accepted mains participate in the same canonical main-flow geometry
           // even though they are immutable context rather than search variables.
@@ -2481,11 +2503,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             });
           }).flat(),
           ...departureEnds
-            .filter((deadline) => problem.mainFlow.preferredEnd < deadline && deadline <= problem.day.end)
+            .filter((deadline) => mainFlow.preferredEnd < deadline && deadline <= problem.day.end)
             .sort((left, right) => left - right),
-          ...(problem.day.end > problem.mainFlow.preferredEnd ? [problem.day.end] : []),
+          ...(problem.day.end > mainFlow.preferredEnd ? [problem.day.end] : []),
           ...departureEnds
-            .filter((deadline) => deadline < problem.mainFlow.preferredEnd)
+            .filter((deadline) => deadline < mainFlow.preferredEnd)
             .sort((left, right) => right - left),
         ])];
       if(!timeline&&preferredArchitecture&&preferredArchitecture.pattern.join("\u0000")===pattern.join("\u0000")

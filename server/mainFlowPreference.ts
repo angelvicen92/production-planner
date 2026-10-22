@@ -5,7 +5,7 @@ export { mainFlowPreferenceGeometry } from './assistedScopeResolver';
 
 export function withMainFlowPreference(input:EngineInput,value:MainFlowPreference):EngineInput {
   const preference=mainFlowPreferenceSchema.parse(value);
-  if(!input.plannerNext){
+  if(!input.plannerNext?.mainFlow){
     if(preference.blockCountPolicy.mode==='SOFT_PREFER_N')throw Object.assign(new Error('El día no tiene un flujo principal Next configurado.'),{status:422});
     return input;
   }
