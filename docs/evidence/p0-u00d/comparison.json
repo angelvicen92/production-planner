@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "base": "e8f892719600d924e25ecaf56b7fca426204d5a2",
+  "newDayEffectiveInputIdenticalExceptProfileRejections": true,
+  "baselineReasonCodes": [
+    "UNSUPPORTED_TASK_ROLE"
+  ],
+  "completeA2ReportsIdenticalExceptDurations": true,
+  "allStageSnapshotsIdentical": true,
+  "canonicalObligations": 266,
+  "stages": 11,
+  "branches": 27049,
+  "presenceMinutes": 8465,
+  "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d"
+}

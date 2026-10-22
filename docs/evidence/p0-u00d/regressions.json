@@ -1,0 +1,48 @@
+{
+  "status": "PASS",
+  "base": "3bec719512ed4c30543460cb590c074c093bef91",
+  "days": [
+    {
+      "profile": "U00a",
+      "label": "first",
+      "obligations": 4,
+      "problemFingerprint": "3cf2f87808ba1fea4ed36fca31fe7e889e9f1eec9df55f841114830b5d0d0ae6",
+      "problemIdentical": true,
+      "placementsIdentical": true,
+      "hardCount": 0,
+      "requiredCount": 0
+    },
+    {
+      "profile": "U00a",
+      "label": "second",
+      "obligations": 9,
+      "problemFingerprint": "90c10079a8e6a5458a67271321c48a7b975b846182e07e605a0ae140bd0af096",
+      "problemIdentical": true,
+      "placementsIdentical": true,
+      "hardCount": 0,
+      "requiredCount": 0
+    },
+    {
+      "profile": "U00b",
+      "label": "first",
+      "obligations": 6,
+      "problemFingerprint": "c42e28e51b6d89678fe7aceb79968a860e7f2dc03856bf0df8dd519f2ff298c2",
+      "problemIdentical": true,
+      "placementsIdentical": true,
+      "hardCount": 0,
+      "requiredCount": 0
+    },
+    {
+      "profile": "U00b",
+      "label": "second",
+      "obligations": 3,
+      "problemFingerprint": "7cee41be5d8d075d8917ca80abaa2c28e7e70f43211b52bbe2e7089da7b9e3fe",
+      "problemIdentical": true,
+      "placementsIdentical": true,
+      "hardCount": 0,
+      "requiredCount": 0
+    }
+  ],
+  "authorizedBase": "e8f892719600d924e25ecaf56b7fca426204d5a2",
+  "comparisonEvidence": "docs/evidence/p0-u00b/u00a and native (integrated regression reference)"
+}

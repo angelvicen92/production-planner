@@ -1,0 +1,241 @@
+{
+  "identityMap": [
+    {
+      "namespace": "itinerant-team",
+      "sourceId": "4",
+      "canonicalId": "itinerant-team:4"
+    },
+    {
+      "namespace": "itinerant-team",
+      "sourceId": "5",
+      "canonicalId": "itinerant-team:5"
+    },
+    {
+      "namespace": "itinerant-team",
+      "sourceId": "6",
+      "canonicalId": "itinerant-team:6"
+    },
+    {
+      "namespace": "plan-resource",
+      "sourceId": "5",
+      "canonicalId": "plan-resource:5"
+    },
+    {
+      "namespace": "plan-resource",
+      "sourceId": "6",
+      "canonicalId": "plan-resource:6"
+    },
+    {
+      "namespace": "plan-resource",
+      "sourceId": "7",
+      "canonicalId": "plan-resource:7"
+    },
+    {
+      "namespace": "plan-resource",
+      "sourceId": "8",
+      "canonicalId": "plan-resource:8"
+    },
+    {
+      "namespace": "plan",
+      "sourceId": "2",
+      "canonicalId": "plan:2"
+    },
+    {
+      "namespace": "resource-item",
+      "sourceId": "1",
+      "canonicalId": "resource-item:1"
+    },
+    {
+      "namespace": "resource-item",
+      "sourceId": "2",
+      "canonicalId": "resource-item:2"
+    },
+    {
+      "namespace": "resource-item",
+      "sourceId": "3",
+      "canonicalId": "resource-item:3"
+    },
+    {
+      "namespace": "resource-item",
+      "sourceId": "4",
+      "canonicalId": "resource-item:4"
+    },
+    {
+      "namespace": "resource-type",
+      "sourceId": "1",
+      "canonicalId": "resource-type:1"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "1",
+      "canonicalId": "space:1"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "2",
+      "canonicalId": "space:2"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3",
+      "canonicalId": "space:3"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "4",
+      "canonicalId": "space:4"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "5",
+      "canonicalId": "space:5"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "6",
+      "canonicalId": "space:6"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "1",
+      "canonicalId": "task:1"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "2",
+      "canonicalId": "task:2"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "3",
+      "canonicalId": "task:3"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "4",
+      "canonicalId": "task:4"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "1",
+      "canonicalId": "template:1"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "2",
+      "canonicalId": "template:2"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "3",
+      "canonicalId": "template:3"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "4",
+      "canonicalId": "template:4"
+    },
+    {
+      "namespace": "zone",
+      "sourceId": "1",
+      "canonicalId": "zone:1"
+    }
+  ],
+  "diagnostics": {
+    "taskCount": 4,
+    "planifiableTaskCount": 4,
+    "protectedTaskCount": 0,
+    "cancelledTaskCount": 0,
+    "pendingPlanningDiscardCount": 0,
+    "lockCount": 0,
+    "participantCount": 0,
+    "coachReferenceCount": 0,
+    "missingCoachReferenceCount": 0,
+    "spaceCount": 6,
+    "referencedSpaceCount": 4,
+    "describedSpaceCount": 6,
+    "zoneCount": 1,
+    "planResourceCount": 4,
+    "requiredPlanResourceCount": 4,
+    "usableRequiredPlanResourceCount": 4,
+    "unusableRequiredPlanResourceCount": 0,
+    "protectedTaskResourceAvailabilityConflictCount": 0,
+    "requiredSpaceCount": 4,
+    "usableRequiredSpaceCount": 4,
+    "unusableRequiredSpaceCount": 0,
+    "requiredZoneCount": 1,
+    "protectedTaskSpatialAvailabilityConflictCount": 0,
+    "resourceItemCount": 4,
+    "resourceAssignmentReferenceCount": 1,
+    "resourceComponentReferenceCount": 0,
+    "missingResourceReferenceCount": 0,
+    "dependencyCount": 2,
+    "breakCount": 1,
+    "participantScopedMealCount": 0,
+    "supportedParticipantScopedMealCount": 0,
+    "unsupportedParticipantScopedMealCount": 0,
+    "transportConfigured": false,
+    "setupConfigurationDetected": false,
+    "integrationConfigurationPresent": true,
+    "mainFlowConfigurationComplete": false,
+    "searchPolicyConfigurationPresent": true,
+    "searchBudgetConfigurationComplete": true,
+    "timeGridVerifiable": true,
+    "transitionConfigurationComplete": true,
+    "anchoredOperationContractPresent": false,
+    "unresolvedTaskRoleCount": 0,
+    "missingDurationTaskCount": 0,
+    "missingAvailabilityCounts": {
+      "participants": 0,
+      "spaces": 0,
+      "resources": 0
+    },
+    "unsupportedCapabilityCodes": [
+      "UNSUPPORTED_TASK_ROLE"
+    ],
+    "readOnly": true
+  },
+  "issues": [
+    {
+      "code": "UNSUPPORTED_TASK_ROLE",
+      "entityKind": "task",
+      "entityId": "1",
+      "path": "tasks.1.templateSnapshot",
+      "message": "La tarea 1 requiere una unidad itinerante. Este perfil admite operaciones físicas sin unidad itinerante.",
+      "blocking": true
+    },
+    {
+      "code": "UNSUPPORTED_TASK_ROLE",
+      "entityKind": "task",
+      "entityId": "2",
+      "path": "tasks.2.templateSnapshot",
+      "message": "La tarea 2 requiere una unidad itinerante. Este perfil admite operaciones físicas sin unidad itinerante.",
+      "blocking": true
+    },
+    {
+      "code": "UNSUPPORTED_TASK_ROLE",
+      "entityKind": "task",
+      "entityId": "3",
+      "path": "tasks.3.templateSnapshot",
+      "message": "La tarea 3 requiere una unidad itinerante. Este perfil admite operaciones físicas sin unidad itinerante.",
+      "blocking": true
+    },
+    {
+      "code": "UNSUPPORTED_TASK_ROLE",
+      "entityKind": "task",
+      "entityId": "4",
+      "path": "tasks.4.templateSnapshot",
+      "message": "La tarea 4 requiere una unidad itinerante. Este perfil admite operaciones físicas sin unidad itinerante.",
+      "blocking": true
+    }
+  ],
+  "sourceFingerprint": "c05064daf802fb2ca971bd760ec402c810a982e99a1abb296f94a587b25f4d82",
+  "identityMapFingerprint": "059039e655d0c0231ab65152d9411506391e84f3811cb0747a1de9624715ae21",
+  "readOnly": true,
+  "status": "UNSUPPORTED",
+  "problem": null,
+  "reasonCodes": [
+    "UNSUPPORTED_TASK_ROLE"
+  ],
+  "problemFingerprint": null
+}

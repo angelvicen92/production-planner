@@ -1,3 +1,4 @@
+import { materializeItinerantUnitAssignment } from "../itinerantUnitAssignment";
 import { effectiveTransportDirection } from "../../../shared/transportPolicy";
 import { representableMainFlowBlockCounts } from "../mainFlowPatterns";
 import { mainFlowMealPolicy } from "../mainFlowMeal";
@@ -161,7 +162,16 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
   ));
   const requiredResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => [...projection.genericResourceIds]).concat([...mealResourceIds].filter(id=>!coachResourceIds.has(id)), (input.itinerantTeamAvailability ?? []).flatMap(unit=>unit.planResourceItemIds ?? [])));
 
-  const tasks: Task[] = activeTasks.map((source) => {
+  const itinerantUnits = [...(input.itinerantTeamAvailability ?? [])].sort((a, b) => a.itinerantTeamId - b.itinerantTeamId).map((availability) => {
+    const id = availability.itinerantTeamId;
+    return {
+      id: canonical("itinerant-team", id),
+      availability: availability.windows.map(window).sort((left, right) => left.start - right.start || left.end - right.end),
+      ...(availability.planResourceItemIds?.length?{resourceIds:[...new Set(availability.planResourceItemIds)].sort((a,b)=>a-b).map(value=>canonical("plan-resource",value))}:{}),
+      ...(availability.transitionMinutes == null ? {} : {transitionMinutes:availability.transitionMinutes}),
+    };
+  });
+  const projectedTasks: Task[] = activeTasks.map((source) => {
     const projection = projectionsByTaskId.get(source.id)!;
     const protectedInterval = source.status === "done" || source.status === "in_progress" ? resolveProtectedTaskInterval(source) : null;
     const fixedResolution = resolveEffectiveTaskFixedInterval(source, input.locks);
@@ -196,6 +206,15 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     return { ...base, kind: "auxiliary" as const, participantId: canonical("participant", source.contestantId!), ...(source.jointGroupId != null ? { jointGroupId: canonical("joint-group", source.jointGroupId) } : {}), ...(source.setupFamilyId != null ? { setupFamilyId: canonical("setup-family", `${source.spaceId}:${source.setupFamilyId}`) } : {}) };
   });
 
+  // A specific daily composition is already a selected assignment. Materialize
+  // its physical members before domains, matching and protected replay consume it.
+  const tasks = projectedTasks.map(task => {
+    if (!input.itinerantCompositionSnapshot || !task.itinerantUnitId) return task;
+    const selected = materializeItinerantUnitAssignment({itinerantUnits},task,task.itinerantUnitId);
+    if (!selected) throw new Error(`Preflight accepted invalid daily unit for ${task.id}`);
+    return selected;
+  });
+
   const participants = [...new Set([...activeTasks.filter((task) => task.plannerNextKind !== "technical").map((task) => task.contestantId!), ...flexibleParticipantMeals.obligations.map((meal) => Number(meal.participantId.split(":").at(-1)))])]
     .sort((a, b) => a - b).map((id) => ({ id: canonical("participant", id), availability: [...(participantMeals.availabilityByParticipantId.get(id) ?? [window(input.contestantAvailabilityById![id])])] }));
   const resources = [...requiredResourceIds].sort((a, b) => a - b).map((id) => {
@@ -211,15 +230,6 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     const availability = resolveEffectivePlanResourceAvailability(input.workDay, source);
     if (availability.status !== "AVAILABLE") throw new Error(`Preflight accepted unavailable coach ${id}`);
     return { id: canonical("plan-resource", id), availability: [...(resourceMealResolution.availabilityByResourceId.get(id)??[window(availability.effectiveWindow)])] };
-  });
-  const itinerantUnits = [...(input.itinerantTeamAvailability ?? [])].sort((a, b) => a.itinerantTeamId - b.itinerantTeamId).map((availability) => {
-    const id = availability.itinerantTeamId;
-    return {
-      id: canonical("itinerant-team", id),
-      availability: availability.windows.map(window).sort((left, right) => left.start - right.start || left.end - right.end),
-      ...(availability.planResourceItemIds?.length?{resourceIds:[...new Set(availability.planResourceItemIds)].sort((a,b)=>a-b).map(value=>canonical("plan-resource",value))}:{}),
-      ...(availability.transitionMinutes == null ? {} : {transitionMinutes:availability.transitionMinutes}),
-    };
   });
   const setupPoliciesBySpaceId = new Map((input.setupPolicies ?? []).map((policy) => [policy.spaceId, policy]));
   const spaces = [...requiredSpaceIds].sort((a, b) => a - b).map((id) => {

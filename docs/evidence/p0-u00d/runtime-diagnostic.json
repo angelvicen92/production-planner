@@ -1,0 +1,9 @@
+{
+  "base": "e8f892719600d924e25ecaf56b7fca426204d5a2",
+  "runtime": "Node 20.20.2",
+  "test": "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts",
+  "outcome": "FAIL_IN_AUTHORIZED_BASE",
+  "cause": "TypeError: Object.groupBy is not a function",
+  "sourceUnchanged": true,
+  "alreadyExcludedFromProductCI": true
+}

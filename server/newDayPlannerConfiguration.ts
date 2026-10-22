@@ -59,7 +59,12 @@ export function newDayConfigurationDefects(input:EngineInput,snapshots:readonly 
     return [
       ...(missing.length?[{code:"MISSING_DEPENDENCY_REFERENCE" as const,taskId:task.id,message:`La tarea ${task.id} necesita las instancias de sus plantillas previas (${missing.join(", ")}). Añádelas al mismo participante.`}]:[]),
       ...(template?.setupId!=null?[{code:"UNSUPPORTED_SETUP_MAPPING" as const,taskId:task.id,message:`La tarea ${task.id} declara un montaje. Este perfil todavía no materializa familias de montaje.`}]:[]),
-      ...(task.itinerantTeamRequirement!=="none" && task.itinerantTeamRequirement!=null?[{code:"UNSUPPORTED_TASK_ROLE" as const,taskId:task.id,message:`La tarea ${task.id} requiere una unidad itinerante. Este perfil admite operaciones físicas sin unidad itinerante.`}]:[]),
+      // Auxiliary/technical units are resolved by the daily composition authority
+      // after this profile. Preflight still validates its effective identities,
+      // members and domains; main/vocal unit consumption is not enabled here.
+      ...(task.itinerantTeamRequirement!=="none" && task.itinerantTeamRequirement!=null &&
+        template?.plannerNextOperation?.kind!=="auxiliary" && template?.plannerNextOperation?.kind!=="technical"
+        ?[{code:"UNSUPPORTED_TASK_ROLE" as const,taskId:task.id,message:`La tarea ${task.id} requiere una unidad itinerante. Este perfil sólo admite ese consumo en operaciones auxiliares o técnicas.`}]:[]),
       ...(template?.requiresCoach && (task.contestantId==null || input.vocalCoachPlanResourceItemIdByContestantId?.[task.contestantId]==null)
         ?[{code:"MISSING_COACH_REFERENCE" as const,taskId:task.id,message:`La tarea ${task.id} requiere el coach asignado al participante. Completa esa asignación con un recurso real del día.`}]:[]),
       ...(scenario!=="STANDALONE_ONLY" && (template?.plannerNextOperation?.kind==="main"||template?.plannerNextOperation?.kind==="vocal") && !template.requiresCoach

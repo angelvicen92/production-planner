@@ -19,6 +19,7 @@ import type {
 import { contains, overlaps } from "./time";
 import { occupationAvoidsProtectedMeal } from "./spaceMeals";
 import { effectiveResourceTransitionMinutes } from "./placement";
+import { materializeItinerantUnitAssignment } from "./itinerantUnitAssignment";
 import { continuityBridgesWithinSpan, hasRequiredSecondaryContinuity, requiredSecondarySpaces, secondaryTasks } from "./secondaryContinuity";
 import { preparationAvoidsMeal, preparationAvoidsOccupations, preparationWithinAvailability, preparationWithinDay, setupPreparationId, setupPreparationSequence, spaceOccupations } from "./setupPreparation";
 import { followsSetupPolicy, hasSetupReentry, setupBlockCounts, setupFamilySequence, setupSpaces, setupTasks } from "./setupGrouping";
@@ -647,13 +648,20 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   jointGroup=invalidGroupIds.size;
 
   const invalidTechnicalIds = new Set<string>();
+  const technicalAssignment = (expected:Task,actual:ScheduledTask):Task|null => actual.itinerantUnitId === undefined
+    ? expected : materializeItinerantUnitAssignment(problem,expected,actual.itinerantUnitId);
+  const assignedTechnicalIdentityMatches = (expected:Task,actual:ScheduledTask):boolean => {
+    const selected = technicalAssignment(expected,actual);
+    return selected !== null && technicalIdentityMatches(selected,actual);
+  };
   const expectedTechnical = technicalTasks(problem.tasks);
   const expectedTechnicalIds = new Set(expectedTechnical.map(({ id }) => id));
   for (const expected of expectedTechnical) {
     const matches = scheduled.filter(({ id }) => id === expected.id);
     const actual = matches[0];
-    if (matches.length !== 1 || !actual || !technicalIdentityMatches(expected, actual)
-      || !canPlaceTask(problem, expected, actual?.start ?? Number.NaN, scheduled.filter(({ id }) => id !== expected.id))) invalidTechnicalIds.add(expected.id);
+    const selected = actual ? technicalAssignment(expected,actual) : null;
+    if (matches.length !== 1 || !actual || !selected || !technicalIdentityMatches(selected, actual)
+      || !canPlaceTask(problem, selected, actual?.start ?? Number.NaN, scheduled.filter(({ id }) => id !== expected.id))) invalidTechnicalIds.add(expected.id);
   }
   for (const actual of scheduled.filter(({ kind }) => kind === "technical")) {
     if (!expectedTechnicalIds.has(actual.id) || problem.tasks.find(({ id }) => id === actual.id)?.kind !== "technical") invalidTechnicalIds.add(actual.id);
@@ -666,7 +674,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   const scheduledById=new Map(scheduled.map(task=>[task.id,task]));
   const scheduledCountById=new Map<string,number>();
   for(const task of scheduled)scheduledCountById.set(task.id,(scheduledCountById.get(task.id)??0)+1);
-  const chainIdentityMatches=(expected:Task,actual:ScheduledTask)=>expected.kind==="technical"?technicalIdentityMatches(expected,actual):
+  const chainIdentityMatches=(expected:Task,actual:ScheduledTask)=>expected.kind==="technical"?assignedTechnicalIdentityMatches(expected,actual):
     actual.id===expected.id&&actual.kind===expected.kind&&actual.spaceId===expected.spaceId&&actual.duration===expected.duration&&actual.end-actual.start===expected.duration
     &&actual.participantId===expected.participantId&&actual.coachId===expected.coachId&&actual.blockKey===expected.blockKey&&actual.setupFamilyId===expected.setupFamilyId
     &&actual.jointGroupId===expected.jointGroupId&&(actual.itinerantUnitId===expected.itinerantUnitId
