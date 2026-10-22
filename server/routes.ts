@@ -1,3 +1,4 @@
+import { registerOperationContinuityCatalog } from "./operationContinuityCatalog";
 import { registerAtomicTaskTemplateRoutes } from "./atomicTaskTemplate";
 import { registerAdminInviteRoutes } from "./adminInvites";
 import { userAccessStatus } from "../shared/adminInvites";
@@ -3536,6 +3537,7 @@ function mapDeleteError(err: any, fallback: string) {
     }
   });
 
+  registerOperationContinuityCatalog(app, supabaseAdmin);
   registerAtomicTaskTemplateRoutes(app, (name, args) => supabaseAdmin.rpc(name, args));
 
   // Task Templates

@@ -1,3 +1,4 @@
+import { continuityPenalty } from "./operationContinuity";
 import type { FutureJointCompletionWitnessV1 } from "./anonymousPipelineWitness";
 import type { PlannerNextProblem, ScheduledTask } from "./contracts";
 import { ExactSearchTimeLimitReached, type ExactSearchLedger } from "./exactMainAndFeederCore";
@@ -91,7 +92,7 @@ export function materializeEarlyClosure(source: PlannerNextProblem, original: Fu
               if (replay === "PASS") {
                 const nextClosure = authority.evaluate(candidate.tasks, candidate.participantMeals, consume, "CERTIFY", candidate.spaceMeals);
                 evidence.outcome = nextClosure.certified ? "PROJECTION_REJECTED" : `CLOSURE_${nextClosure.reason ?? nextClosure.status}`;
-                if (nextClosure.certified && acceptsProjection(candidate)) {
+                if (nextClosure.certified && continuityPenalty(source,candidate.tasks)<=continuityPenalty(source,witness.tasks) && acceptsProjection(candidate)) {
                   witness = candidate; closure = nextClosure;
                   evidence.outcome = "CERTIFIED"; evidence.moves = moves;
                 }

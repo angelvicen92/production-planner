@@ -1,3 +1,4 @@
+import { assessOperationContinuity, operationContinuityPreflight } from "./operationContinuity";
 import type {
   Person,
   PlannerNextProblem,
@@ -375,6 +376,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
 
   const mainDurations = new Set(tasks.filter(({ kind }) => kind === "main").map(({ duration }) => duration));
   if (mainDurations.size > 1) reasons.add("UNSUPPORTED_MAIN_DURATION_MIX");
+  operationContinuityPreflight(problem).forEach(reason => reasons.add(reason));
   return [...reasons].sort();
 }
 
@@ -775,6 +777,10 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     const presence = evaluateResourcePresence(resource, scheduled, meals,publishedResourceMeals,operationalMeals);
     if (!presence.requiredPolicySatisfied) { reasonCodes.push(`RESOURCE_REQUIRED_PRESENCE_VIOLATION:${resource.id}`); addViolation("RESOURCE_REQUIRED_PRESENCE_VIOLATION","REQUIRED",scheduled.filter(task=>(task.requiredResourceIds??[]).includes(resource.id)),[resource.id],[],{policy:resource.presenceConcentrationPolicy}); }
   }
+  const operationContinuity = assessOperationContinuity(problem, scheduled);
+  for (const group of operationContinuity.filter(group => !group.satisfied)) {
+    reasonCodes.push("OPERATION_CONTINUITY_REQUIRED");
+  }
   const scheduledIds=new Set(scheduled.map(task=>task.id));
   for(const task of problem.tasks.filter(task=>!scheduledIds.has(task.id)))addViolation("UNPLANNED_TASKS","HARD",[task as ScheduledTask],task.requiredResourceIds??[],[task.spaceId],{taskId:task.id});
   // Never manufacture an accept/grandfather identity from an aggregate counter.
@@ -783,6 +789,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   const structuredRules=new Set(violations.map(item=>item.ruleCode));
   const unstructuredReasonCodes=reasonCodes.filter(encoded=>!structuredRules.has(encoded.split(":",1)[0]!));
   return {
+    ...(problem.operationContinuityGroups?.length ? { operationContinuity } : {}),
     hardValid: reasonCodes.length === 0,
     dependencyViolationCount: dependency,
     overlapViolationCount: overlap,

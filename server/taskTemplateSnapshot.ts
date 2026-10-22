@@ -1,3 +1,4 @@
+import { continuityGroupSchema, type ContinuityGroup } from "../shared/operationContinuity";
 import { createHash } from "node:crypto";
 import type { ResourceRequirementsInput } from "../engine/types";
 import { immutableMapView } from "../shared/immutableMapView";
@@ -31,6 +32,7 @@ export interface TaskTemplateOperationalSnapshotV1 {
   readonly itinerantTeamId: number | null;
   readonly allowedItinerantTeamIds: readonly number[];
   readonly setupId: number | null;
+  readonly continuityGroup?: ContinuityGroup;
   readonly participantMarginBeforeMinutes: number | null;
   readonly participantMarginAfterMinutes: number | null;
 }
@@ -62,6 +64,7 @@ export interface TaskTemplateSnapshotPersistenceRow {
   readonly itinerant_team_id: number | null;
   readonly allowed_itinerant_team_ids: readonly number[];
   readonly setup_id: number | null;
+  readonly continuity_group?: ContinuityGroup;
   readonly participant_margin_before_minutes: number | null;
   readonly participant_margin_after_minutes: number | null;
 }
@@ -432,6 +435,7 @@ function normalizeSnapshot(
     itinerantTeamRequirement: requirement,
     itinerantTeamId: normalizedSpecificId,
     allowedItinerantTeamIds,
+    ...(readPresent(record, "continuityGroup", "continuity_group") == null ? {} : {continuityGroup:continuityGroupSchema.parse(readPresent(record, "continuityGroup", "continuity_group"))}),
     setupId: optionalPositiveInteger(readPresent(record, "setupId", "setup_id")),
     participantMarginBeforeMinutes: optionalNonNegativeInteger(readPresent(record, "participantMarginBeforeMinutes", "participant_margin_before_minutes"), "participantMarginBeforeMinutes"),
     participantMarginAfterMinutes: optionalNonNegativeInteger(readPresent(record, "participantMarginAfterMinutes", "participant_margin_after_minutes"), "participantMarginAfterMinutes"),
@@ -493,6 +497,7 @@ export function taskTemplateSnapshotToPersistenceRow(
     itinerant_team_id: snapshot.itinerantTeamId,
     allowed_itinerant_team_ids: snapshot.allowedItinerantTeamIds,
     setup_id: snapshot.setupId,
+    ...(snapshot.continuityGroup ? {continuity_group:snapshot.continuityGroup} : {}),
     participant_margin_before_minutes: snapshot.participantMarginBeforeMinutes,
     participant_margin_after_minutes: snapshot.participantMarginAfterMinutes,
   });
