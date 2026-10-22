@@ -2672,7 +2672,8 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
         )
       : [];
 
-    if (Boolean(editData.requiresItinerantTeam) && normalizedAllowedTeamIds.length === 0) {
+    // Preserve legacy requirements on edits that do not touch itinerant controls.
+    if (itinerantChanged && Boolean(editData.requiresItinerantTeam) && normalizedAllowedTeamIds.length === 0) {
       toast({title:"Selecciona al menos un equipo itinerante",description:"El requisito necesita una unidad específica o alternativas explícitas.",variant:"destructive"});
       return;
     }
