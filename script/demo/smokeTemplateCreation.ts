@@ -101,7 +101,8 @@ export async function runTemplateCreation(options:{appUrl:string;baselineUrl?:st
   page.on('response',r=>{if(new URL(r.url()).pathname===editPath)editResponses.push({status:r.status(),path:editPath});});
   const edited=page.waitForResponse(r=>new URL(r.url()).pathname===editPath&&r.request().method()==='PATCH');
   const editedResponse=await (async()=>{try{
-   await page.getByRole('button',{name:'Guardar',exact:true}).click();return await edited;
+   await page.getByRole('button',{name:'Guardar',exact:true}).click();
+   report.editUiAfterClick=await page.getByText('Selecciona al menos un equipo itinerante',{exact:true}).allTextContents();save();return await edited;
   }catch(error){report.editFailure={requests:editRequests,responses:editResponses,alerts:await page.getByRole('status').allTextContents()};save();throw error;}})();
   assert.equal(editedResponse.status(),200);const editedBody=editedResponse.request().postDataJSON();
   assert.equal('itinerantTeamRequirement' in editedBody,false);assert.equal('itinerantTeamId' in editedBody,false);

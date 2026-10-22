@@ -15,6 +15,7 @@ for (const i of [4, 5]) Object.assign(tasks[i], { status: 'in_progress', startPl
 Object.assign(tasks[6], { status: 'done' }); Object.assign(tasks[7], { status: 'interrupted' }); Object.assign(tasks[8], { status: 'cancelled' }); tasks[9].startPlanned = null;
 const state = { role: 'production', scope: [], now: '2026-10-30T07:59:00Z', fault: 0, readFault: false, mode: 'auto' };
 const actor = '00000000-0000-4000-8000-000000000002', checks = [], writes = [], errors = [], screenshots = [];
+const fragmentScroll = { node: process.version, viewport: { width: 820, height: 1180 } };
 const zones = [...new Set(tasks.map(t => t.zoneId).filter(Boolean))].map(id => ({ id, name: `Plató ${id}` }));
 const spaces = [...new Map(tasks.filter(t => t.spaceId).map(t => [t.spaceId, { id: t.spaceId, zoneId: t.zoneId, name: `Espacio ${t.spaceId}` }])).values()];
 const server = await createServer({ configFile: false, root: path.join(root, 'client'), cacheDir: path.join(root, 'work/vite-p4'), plugins: [react()],
@@ -166,10 +167,14 @@ try {
   }, `agenda-task-${tasks[2].id}`);
   // Layout scrolls main independently from the viewport. Reset both before
   // clicking; otherwise Playwright must scroll the offscreen refresh button.
-  await page.evaluate(() => { document.querySelector('main')?.scrollTo(0,0); window.scrollTo(0,0); });
+  fragmentScroll.reset = await page.evaluate(() => {
+    document.querySelector('main')?.scrollTo(0,0); window.scrollTo(0,0);
+    const refresh = [...document.querySelectorAll('button')].find(button => button.textContent.trim() === 'Actualizar');
+    return { viewport: scrollY, workspace: document.querySelector('main')?.scrollTop ?? 0, refresh: refresh?.getBoundingClientRect().toJSON(), active: document.activeElement?.tagName };
+  });
   const refreshed = page.waitForResponse(response => response.url().endsWith('/api/plans/1/tasks'));
   await page.getByRole('button',{name:'Actualizar',exact:true}).click(); await refreshed;
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  fragmentScroll.afterRefresh = await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve({ viewport: scrollY, workspace: document.querySelector('main')?.scrollTop ?? 0, active: document.activeElement?.tagName })))));
   assert.deepEqual(await page.evaluate(() => ({viewport:window.scrollY,workspace:document.querySelector('main')?.scrollTop ?? 0})),{viewport:0,workspace:0});
   pass('Explicit task fragment navigates once; refresh/polling does not repeat automatic scrolling');
   for (let i=10;i<40;i++) tasks[i].startPlanned='08:00';
@@ -186,9 +191,9 @@ try {
   assert.deepEqual(errors,[]);
   pass('Dozens of delayed tasks expand with exact remaining counts; manual clock remains authoritative; no JS errors');
 } catch (error) {
-  console.error({url:page.url(),body:(await page.locator('body').innerText()).slice(0,2200),errors});
+  console.error({fragmentScroll,url:page.url(),body:(await page.locator('body').innerText()).slice(0,2200),errors});
   await page.screenshot({path:path.join(output,'failure.png')}); throw error;
 } finally {
   await browser.close(); await server.close();
-  writeFileSync(path.join(output,'browser.json'),JSON.stringify({mode:'INTERCEPTED_HTTP_UI',checks,writes,screenshots,errors,acceptedTaskCount:266,remoteWrites:0,nativeAuthRls:false},null,2)+'\n');
+  writeFileSync(path.join(output,'browser.json'),JSON.stringify({mode:'INTERCEPTED_HTTP_UI',fragmentScroll,checks,writes,screenshots,errors,acceptedTaskCount:266,remoteWrites:0,nativeAuthRls:false},null,2)+'\n');
 }
