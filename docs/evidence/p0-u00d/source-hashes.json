@@ -1,0 +1,10 @@
+{
+  "base": "e8f892719600d924e25ecaf56b7fca426204d5a2",
+  "productionFiles": {
+    "server/newDayPlannerConfiguration.ts": "4e258f0c1b96937f3c4f42e418474fb191cdacd06221c22cc06e0ceba6ae34e6",
+    "server/assistedProposalService.ts": "59c59f0ec735ba4e6e645238c7ffe49c64d1a04eed5e3702eaf055c75a536989",
+    "engine/planner-next/integration/engineInputAdapter.ts": "04429a164b52f3c67688b9ed831fe50fec4ac1574a6fd54a21c503f16fddaaeb",
+    "engine/planner-next/exactItinerantPlan.ts": "a4dcbbf0edcd3267b93851f0a3d3c375af1237d3fa2af82a6e8dbcf5b3ca87c8",
+    "engine/planner-next/validate.ts": "c08588895facfbe7fb53eca9bddaf8757a9ac8a7ea5b5c0bb0e578be5d8ab786"
+  }
+}

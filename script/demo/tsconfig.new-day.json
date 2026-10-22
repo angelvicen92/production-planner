@@ -1,5 +1,5 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": { "incremental": false },
-  "include": ["smokeNewDayIntegration.ts", "smokeNewDayJourney.ts", "smokeStandaloneDayJourney.ts", "../../engine/planner-next/standaloneOnly.spec.ts", "../../engine/planner-next/integration/standaloneOnly.spec.ts"]
+  "include": ["smokeNewDayIntegration.ts", "smokeNewDayJourney.ts", "smokeStandaloneDayJourney.ts", "smokeNewDayItinerantJourney.ts", "../../engine/planner-next/integration/newDayItinerantConsumption.spec.ts", "../../engine/planner-next/standaloneOnly.spec.ts", "../../engine/planner-next/integration/standaloneOnly.spec.ts"]
 }

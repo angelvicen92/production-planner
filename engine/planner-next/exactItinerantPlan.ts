@@ -850,7 +850,10 @@ function unsupportedShapeReasons(problem: PlannerNextProblem, pending: Task[], c
   for (const task of [...pending].sort(byId)) {
     const space = problem.spaces.find(({ id }) => id === task.spaceId);
     const isSetupTask = task.setupFamilyId !== undefined;
-    if (task.kind !== "auxiliary" && !technicalChainIds.has(task.id)) reasons.push(`UNSUPPORTED_STANDALONE_TASK_KIND:${task.id}`);
+    const unitIds=task.itinerantUnitId?[task.itinerantUnitId]:task.allowedItinerantUnitIds??[];
+    const physicalTechnical=task.kind==="technical" && unitIds.length>0 && unitIds.every(id=>
+      problem.itinerantUnits?.some(unit=>unit.id===id && (unit.resourceIds?.length??0)>0));
+    if (task.kind !== "auxiliary" && !physicalTechnical && !technicalChainIds.has(task.id)) reasons.push(`UNSUPPORTED_STANDALONE_TASK_KIND:${task.id}`);
     if (anchoredIds.has(task.id)) reasons.push(`UNSUPPORTED_PENDING_ANCHORED_TASK:${task.id}`);
     if (isSetupTask && space?.setupPolicy === undefined) reasons.push(`UNSUPPORTED_STANDALONE_SETUP:${task.id}`);
     if (space?.secondaryContinuity === "REQUIRED" && !isSetupTask)
@@ -1655,7 +1658,15 @@ const directDeparturePrerequisiteCandidates=new Set(problem.tasks
   .filter(task=>departureIds.has(task.id))
   .flatMap(task=>task.dependencies)
   .filter(id=>pendingById.has(id)&&!dynamicTransportIds.has(id)));
-const technicalItems = getTechnicalChains(pending,problem.technicalChains).map((tasks) => ({ id: technicalChainWorkItemKey(tasks[0]!.id), kind: "TECHNICAL_CHAIN" as const, tasks }));
+const technicalItems = getTechnicalChains(pending,problem.technicalChains).filter(tasks=>{
+  // An inferred dependency chain has no adjacency/continuity policy of its own.
+  // Its physical alternatives belong to the existing itinerant agenda, which
+  // materializes a unit per operation. Do not give those tasks two macro owners.
+  const explicit=problem.technicalChains?.some(policy=>tasks.some(task=>policy.orderedTaskIds.includes(task.id)));
+  const physicalPool=tasks.some(task=>task.kind==="technical" && (task.allowedItinerantUnitIds?.length??0)>1 &&
+    task.allowedItinerantUnitIds!.every(id=>problem.itinerantUnits?.some(unit=>unit.id===id && (unit.resourceIds?.length??0)>0)));
+  return explicit || !physicalPool;
+}).map((tasks) => ({ id: technicalChainWorkItemKey(tasks[0]!.id), kind: "TECHNICAL_CHAIN" as const, tasks }));
 const technicalRepresentativeIds=new Set(technicalItems.flatMap(({tasks})=>tasks.map(({id})=>id)));
 const jointItems = jointGroupIds(pending).filter((id)=>!jointGroupMembers(pending,id).some(({id:taskId})=>technicalRepresentativeIds.has(taskId))).map((id) => ({ id: jointWorkItemKey(id), kind: "JOINT" as const, tasks: jointGroupMembers(pending, id) }));
 const coupledTaskIds = new Set([...jointItems, ...technicalItems].flatMap(({ tasks }) => tasks.flatMap((task) => task.jointGroupId ? jointGroupMembers(pending,task.jointGroupId).map(({id})=>id) : [task.id])));

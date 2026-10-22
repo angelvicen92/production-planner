@@ -628,3 +628,26 @@ test("accepted itinerant direct assignment survives into the next stage without 
   assert.deepEqual(dailyAssigned,[510,512],"rollback restores the prior direct assignment");
   assert.ok(finished);
 });
+
+test("daily composition persists declared byItem resources with the selected unit, leaving location inheritance in configuration",async()=>{
+  const source=createSupportedEngineInputAdapterFixture();
+  source.locks=[];
+  source.itinerantCompositionSnapshot={contractVersion:1,units:[]};
+  source.itinerantTeamAvailability=[{itinerantTeamId:7,windows:[source.workDay],planResourceItemIds:[502]},
+    {itinerantTeamId:8,windows:[source.workDay],planResourceItemIds:[503]}];
+  source.spaceResourceAssignments[303]=[504];
+  const task=source.tasks.find(task=>task.id===105)!;
+  Object.assign(task,{assignedResourceIds:[],declaredResourceIds:[502],itinerantTeamRequirement:'any',allowedItinerantTeamIds:[7,8]});
+  const pending=buildAssistedPlanningSnapshotV1(source.tasks.map(task=>({id:task.id,spaceId:task.spaceId,zoneId:task.zoneId,startPlanned:null,endPlanned:null})));
+  const service=new AssistedProposalService(storage({
+    getActiveAssistedPlanningSession:async()=>({...session,draftSnapshotJson:pending,draftFingerprint:fingerprintAssistedPlanningSnapshotV1(pending)}),
+    getPlanOptimizerSnapshot:async()=>({}),getPlanTaskTemplateSnapshots:async()=>[],getPlanConfigRevision:async()=>({planId,fingerprint:'B'}),
+    getAssistedPlanningStage:async()=>({...stage,snapshotJson:pending}),listAssistedPlanningStages:async()=>[{...stage,snapshotJson:pending}],listPlanningAcceptedExceptions:async()=>[],
+  },[]),queueMicrotask,access({find:async()=>({data:{...runRecord(),scope_task_ids_json:[105],scope_json:{selector:{kind:'TASK_IDS',taskIds:[105]}}},error:null}),finish:async()=>({error:null})}),problem=>{
+    const selected=materializeItinerantUnitAssignment(problem.problem,problem.problem.tasks.find(t=>t.id==='task:105')!,'itinerant-team:8')!;
+    assert.deepEqual(selected.requiredResourceIds,['plan-resource:502','plan-resource:503','plan-resource:504']);
+    return {proposal:[{...selected,start:600,end:630}],evidence:evidence(true)};
+  },{buildInput:async()=>source,buildConfigRevision:dependencies().buildConfigRevision});
+  const result=await service.run(planId,9);
+  assert.deepEqual(result.proposedDraftSnapshot!.tasks.find(t=>t.taskId===105)!.assignedResourceIds,[502,503]);
+});

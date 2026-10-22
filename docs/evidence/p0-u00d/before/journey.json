@@ -1,0 +1,1413 @@
+{
+  "remoteWrites": 0,
+  "days": [],
+  "checks": [
+    "physical resources and A=CAM_A, B=CAM_B, C=CAM_A+SON_1 created in the normal catalog UI",
+    "baseline rejects UI-created tasks before considering valid daily compositions"
+  ],
+  "startedAt": "2026-10-22T16:38:25.861Z",
+  "teams": [
+    {
+      "id": 1,
+      "code": "U00D_0",
+      "name": "Equipo A",
+      "isActive": true,
+      "orderIndex": 0,
+      "revision": 0,
+      "availabilityWindows": [
+        {
+          "end": "12:00",
+          "start": "09:00"
+        }
+      ],
+      "transitionMinutes": 3,
+      "resourceItemIds": [
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "code": "U00D_1",
+      "name": "Equipo B",
+      "isActive": true,
+      "orderIndex": 0,
+      "revision": 0,
+      "availabilityWindows": [
+        {
+          "end": "12:00",
+          "start": "09:00"
+        }
+      ],
+      "transitionMinutes": 3,
+      "resourceItemIds": [
+        2
+      ]
+    },
+    {
+      "id": 3,
+      "code": "U00D_2",
+      "name": "Equipo C",
+      "isActive": true,
+      "orderIndex": 0,
+      "revision": 0,
+      "availabilityWindows": [
+        {
+          "end": "12:00",
+          "start": "10:00"
+        }
+      ],
+      "transitionMinutes": 3,
+      "resourceItemIds": [
+        1,
+        3
+      ]
+    }
+  ],
+  "members": [
+    {
+      "id": 1,
+      "type_id": 1,
+      "name": "CAM_A",
+      "is_active": true,
+      "default_availability_start": null,
+      "default_availability_end": null
+    },
+    {
+      "id": 2,
+      "type_id": 1,
+      "name": "CAM_B",
+      "is_active": true,
+      "default_availability_start": null,
+      "default_availability_end": null
+    },
+    {
+      "id": 3,
+      "type_id": 1,
+      "name": "SON_1",
+      "is_active": true,
+      "default_availability_start": null,
+      "default_availability_end": null
+    },
+    {
+      "id": 4,
+      "type_id": 1,
+      "name": "KIT_INDEPENDIENTE",
+      "is_active": true,
+      "default_availability_start": null,
+      "default_availability_end": null
+    }
+  ],
+  "firstIdentity": {
+    "snapshot": {
+      "contractVersion": 1,
+      "units": [
+        {
+          "id": 4,
+          "plan_id": 2,
+          "source_team_id": 1,
+          "source_revision": 0,
+          "code": "U00D_0",
+          "name": "Equipo A",
+          "availability_windows": [
+            {
+              "start": "09:00",
+              "end": "12:00"
+            }
+          ],
+          "transition_minutes": 3,
+          "members": [
+            {
+              "resourceItemId": 1,
+              "planResourceItemId": 5
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "plan_id": 2,
+          "source_team_id": 2,
+          "source_revision": 0,
+          "code": "U00D_1",
+          "name": "Equipo B",
+          "availability_windows": [
+            {
+              "start": "09:00",
+              "end": "12:00"
+            }
+          ],
+          "transition_minutes": 3,
+          "members": [
+            {
+              "resourceItemId": 2,
+              "planResourceItemId": 6
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "plan_id": 2,
+          "source_team_id": 3,
+          "source_revision": 0,
+          "code": "U00D_2",
+          "name": "Equipo C",
+          "availability_windows": [
+            {
+              "start": "10:00",
+              "end": "12:00"
+            }
+          ],
+          "transition_minutes": 3,
+          "members": [
+            {
+              "resourceItemId": 1,
+              "planResourceItemId": 5
+            },
+            {
+              "resourceItemId": 3,
+              "planResourceItemId": 7
+            }
+          ]
+        }
+      ]
+    },
+    "tasks": [
+      {
+        "id": 1,
+        "planId": 2,
+        "templateId": 1,
+        "templateName": "Operar cámara A",
+        "resourceRequirements": null,
+        "zoneId": 1,
+        "spaceId": 1,
+        "_invalidSpaceId": null,
+        "_unplannedHint": null,
+        "contestantId": null,
+        "contestantName": null,
+        "status": "pending",
+        "itinerantTeamId": 4,
+        "allowedItinerantTeamIds": [
+          4
+        ],
+        "itinerantTeamRequirement": "specific",
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "hasDependency": false,
+        "dependsOnTemplateIds": [],
+        "dependsOnTaskIds": [],
+        "dependsOnTemplateId": null,
+        "dependsOnTaskId": null,
+        "durationOverrideMin": 10,
+        "camerasOverride": 0,
+        "startPlanned": null,
+        "endPlanned": null,
+        "lockedStart": null,
+        "lockedEnd": null,
+        "lockType": null,
+        "startReal": null,
+        "endReal": null,
+        "assignedResourceIds": null,
+        "plannerNextKind": "technical",
+        "operationalRole": "productive_task"
+      },
+      {
+        "id": 2,
+        "planId": 2,
+        "templateId": 2,
+        "templateName": "Operar cámara B",
+        "resourceRequirements": null,
+        "zoneId": 1,
+        "spaceId": 2,
+        "_invalidSpaceId": null,
+        "_unplannedHint": null,
+        "contestantId": null,
+        "contestantName": null,
+        "status": "pending",
+        "itinerantTeamId": 5,
+        "allowedItinerantTeamIds": [
+          5
+        ],
+        "itinerantTeamRequirement": "specific",
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "hasDependency": false,
+        "dependsOnTemplateIds": [],
+        "dependsOnTaskIds": [],
+        "dependsOnTemplateId": null,
+        "dependsOnTaskId": null,
+        "durationOverrideMin": 10,
+        "camerasOverride": 0,
+        "startPlanned": null,
+        "endPlanned": null,
+        "lockedStart": null,
+        "lockedEnd": null,
+        "lockType": null,
+        "startReal": null,
+        "endReal": null,
+        "assignedResourceIds": null,
+        "plannerNextKind": "technical",
+        "operationalRole": "productive_task"
+      },
+      {
+        "id": 3,
+        "planId": 2,
+        "templateId": 3,
+        "templateName": "Operar composición C",
+        "resourceRequirements": null,
+        "zoneId": 1,
+        "spaceId": 3,
+        "_invalidSpaceId": null,
+        "_unplannedHint": null,
+        "contestantId": null,
+        "contestantName": null,
+        "status": "pending",
+        "itinerantTeamId": 6,
+        "allowedItinerantTeamIds": [
+          6
+        ],
+        "itinerantTeamRequirement": "specific",
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "hasDependency": true,
+        "dependsOnTemplateIds": [
+          1
+        ],
+        "dependsOnTaskIds": [
+          1
+        ],
+        "dependsOnTemplateId": 1,
+        "dependsOnTaskId": 1,
+        "durationOverrideMin": 10,
+        "camerasOverride": 0,
+        "startPlanned": null,
+        "endPlanned": null,
+        "lockedStart": null,
+        "lockedEnd": null,
+        "lockType": null,
+        "startReal": null,
+        "endReal": null,
+        "assignedResourceIds": null,
+        "plannerNextKind": "technical",
+        "operationalRole": "productive_task"
+      },
+      {
+        "id": 4,
+        "planId": 2,
+        "templateId": 4,
+        "templateName": "Elegir cámara alternativa",
+        "resourceRequirements": {
+          "byItem": {
+            "4": 1
+          }
+        },
+        "zoneId": 1,
+        "spaceId": 4,
+        "_invalidSpaceId": null,
+        "_unplannedHint": null,
+        "contestantId": null,
+        "contestantName": null,
+        "status": "pending",
+        "itinerantTeamId": null,
+        "allowedItinerantTeamIds": [
+          4,
+          5
+        ],
+        "itinerantTeamRequirement": "any",
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "hasDependency": true,
+        "dependsOnTemplateIds": [
+          2
+        ],
+        "dependsOnTaskIds": [
+          2
+        ],
+        "dependsOnTemplateId": 2,
+        "dependsOnTaskId": 2,
+        "durationOverrideMin": 10,
+        "camerasOverride": 0,
+        "startPlanned": null,
+        "endPlanned": null,
+        "lockedStart": null,
+        "lockedEnd": null,
+        "lockType": null,
+        "startReal": null,
+        "endReal": null,
+        "assignedResourceIds": null,
+        "plannerNextKind": "technical",
+        "operationalRole": "productive_task",
+        "declaredResourceIds": [
+          8
+        ]
+      }
+    ],
+    "adapter": {
+      "identityMap": [
+        {
+          "namespace": "itinerant-team",
+          "sourceId": "4",
+          "canonicalId": "itinerant-team:4"
+        },
+        {
+          "namespace": "itinerant-team",
+          "sourceId": "5",
+          "canonicalId": "itinerant-team:5"
+        },
+        {
+          "namespace": "itinerant-team",
+          "sourceId": "6",
+          "canonicalId": "itinerant-team:6"
+        },
+        {
+          "namespace": "plan-resource",
+          "sourceId": "5",
+          "canonicalId": "plan-resource:5"
+        },
+        {
+          "namespace": "plan-resource",
+          "sourceId": "6",
+          "canonicalId": "plan-resource:6"
+        },
+        {
+          "namespace": "plan-resource",
+          "sourceId": "7",
+          "canonicalId": "plan-resource:7"
+        },
+        {
+          "namespace": "plan-resource",
+          "sourceId": "8",
+          "canonicalId": "plan-resource:8"
+        },
+        {
+          "namespace": "plan",
+          "sourceId": "2",
+          "canonicalId": "plan:2"
+        },
+        {
+          "namespace": "resource-item",
+          "sourceId": "1",
+          "canonicalId": "resource-item:1"
+        },
+        {
+          "namespace": "resource-item",
+          "sourceId": "2",
+          "canonicalId": "resource-item:2"
+        },
+        {
+          "namespace": "resource-item",
+          "sourceId": "3",
+          "canonicalId": "resource-item:3"
+        },
+        {
+          "namespace": "resource-item",
+          "sourceId": "4",
+          "canonicalId": "resource-item:4"
+        },
+        {
+          "namespace": "resource-type",
+          "sourceId": "1",
+          "canonicalId": "resource-type:1"
+        },
+        {
+          "namespace": "space",
+          "sourceId": "1",
+          "canonicalId": "space:1"
+        },
+        {
+          "namespace": "space",
+          "sourceId": "2",
+          "canonicalId": "space:2"
+        },
+        {
+          "namespace": "space",
+          "sourceId": "3",
+          "canonicalId": "space:3"
+        },
+        {
+          "namespace": "space",
+          "sourceId": "4",
+          "canonicalId": "space:4"
+        },
+        {
+          "namespace": "space",
+          "sourceId": "5",
+          "canonicalId": "space:5"
+        },
+        {
+          "namespace": "space",
+          "sourceId": "6",
+          "canonicalId": "space:6"
+        },
+        {
+          "namespace": "task",
+          "sourceId": "1",
+          "canonicalId": "task:1"
+        },
+        {
+          "namespace": "task",
+          "sourceId": "2",
+          "canonicalId": "task:2"
+        },
+        {
+          "namespace": "task",
+          "sourceId": "3",
+          "canonicalId": "task:3"
+        },
+        {
+          "namespace": "task",
+          "sourceId": "4",
+          "canonicalId": "task:4"
+        },
+        {
+          "namespace": "template",
+          "sourceId": "1",
+          "canonicalId": "template:1"
+        },
+        {
+          "namespace": "template",
+          "sourceId": "2",
+          "canonicalId": "template:2"
+        },
+        {
+          "namespace": "template",
+          "sourceId": "3",
+          "canonicalId": "template:3"
+        },
+        {
+          "namespace": "template",
+          "sourceId": "4",
+          "canonicalId": "template:4"
+        },
+        {
+          "namespace": "zone",
+          "sourceId": "1",
+          "canonicalId": "zone:1"
+        }
+      ],
+      "diagnostics": {
+        "taskCount": 4,
+        "planifiableTaskCount": 4,
+        "protectedTaskCount": 0,
+        "cancelledTaskCount": 0,
+        "pendingPlanningDiscardCount": 0,
+        "lockCount": 0,
+        "participantCount": 0,
+        "coachReferenceCount": 0,
+        "missingCoachReferenceCount": 0,
+        "spaceCount": 6,
+        "referencedSpaceCount": 4,
+        "describedSpaceCount": 6,
+        "zoneCount": 1,
+        "planResourceCount": 4,
+        "requiredPlanResourceCount": 4,
+        "usableRequiredPlanResourceCount": 4,
+        "unusableRequiredPlanResourceCount": 0,
+        "protectedTaskResourceAvailabilityConflictCount": 0,
+        "requiredSpaceCount": 4,
+        "usableRequiredSpaceCount": 4,
+        "unusableRequiredSpaceCount": 0,
+        "requiredZoneCount": 1,
+        "protectedTaskSpatialAvailabilityConflictCount": 0,
+        "resourceItemCount": 4,
+        "resourceAssignmentReferenceCount": 1,
+        "resourceComponentReferenceCount": 0,
+        "missingResourceReferenceCount": 0,
+        "dependencyCount": 2,
+        "breakCount": 1,
+        "participantScopedMealCount": 0,
+        "supportedParticipantScopedMealCount": 0,
+        "unsupportedParticipantScopedMealCount": 0,
+        "transportConfigured": false,
+        "setupConfigurationDetected": false,
+        "integrationConfigurationPresent": true,
+        "mainFlowConfigurationComplete": false,
+        "searchPolicyConfigurationPresent": true,
+        "searchBudgetConfigurationComplete": true,
+        "timeGridVerifiable": true,
+        "transitionConfigurationComplete": true,
+        "anchoredOperationContractPresent": false,
+        "unresolvedTaskRoleCount": 0,
+        "missingDurationTaskCount": 0,
+        "missingAvailabilityCounts": {
+          "participants": 0,
+          "spaces": 0,
+          "resources": 0
+        },
+        "unsupportedCapabilityCodes": [
+          "UNSUPPORTED_TASK_ROLE"
+        ],
+        "readOnly": true
+      },
+      "issues": [
+        {
+          "code": "UNSUPPORTED_TASK_ROLE",
+          "entityKind": "task",
+          "entityId": "1",
+          "path": "tasks.1.templateSnapshot",
+          "message": "La tarea 1 requiere una unidad itinerante. Este perfil admite operaciones físicas sin unidad itinerante.",
+          "blocking": true
+        },
+        {
+          "code": "UNSUPPORTED_TASK_ROLE",
+          "entityKind": "task",
+          "entityId": "2",
+          "path": "tasks.2.templateSnapshot",
+          "message": "La tarea 2 requiere una unidad itinerante. Este perfil admite operaciones físicas sin unidad itinerante.",
+          "blocking": true
+        },
+        {
+          "code": "UNSUPPORTED_TASK_ROLE",
+          "entityKind": "task",
+          "entityId": "3",
+          "path": "tasks.3.templateSnapshot",
+          "message": "La tarea 3 requiere una unidad itinerante. Este perfil admite operaciones físicas sin unidad itinerante.",
+          "blocking": true
+        },
+        {
+          "code": "UNSUPPORTED_TASK_ROLE",
+          "entityKind": "task",
+          "entityId": "4",
+          "path": "tasks.4.templateSnapshot",
+          "message": "La tarea 4 requiere una unidad itinerante. Este perfil admite operaciones físicas sin unidad itinerante.",
+          "blocking": true
+        }
+      ],
+      "sourceFingerprint": "c05064daf802fb2ca971bd760ec402c810a982e99a1abb296f94a587b25f4d82",
+      "identityMapFingerprint": "059039e655d0c0231ab65152d9411506391e84f3811cb0747a1de9624715ae21",
+      "readOnly": true,
+      "status": "UNSUPPORTED",
+      "problem": null,
+      "reasonCodes": [
+        "UNSUPPORTED_TASK_ROLE"
+      ],
+      "problemFingerprint": null
+    }
+  },
+  "blocked": {
+    "contractVersion": 2,
+    "planId": 2,
+    "generatedFrom": "PRODUCTIVE_AUTHORITIES",
+    "plannerProfile": {
+      "sourceRevision": 1,
+      "configured": true
+    },
+    "itinerantComposition": {
+      "units": [
+        {
+          "itinerantTeamId": 4,
+          "windows": [
+            {
+              "start": "09:00",
+              "end": "12:00"
+            }
+          ],
+          "planResourceItemIds": [
+            5
+          ],
+          "transitionMinutes": 3
+        },
+        {
+          "itinerantTeamId": 5,
+          "windows": [
+            {
+              "start": "09:00",
+              "end": "12:00"
+            }
+          ],
+          "planResourceItemIds": [
+            6
+          ],
+          "transitionMinutes": 3
+        },
+        {
+          "itinerantTeamId": 6,
+          "windows": [
+            {
+              "start": "10:00",
+              "end": "12:00"
+            }
+          ],
+          "planResourceItemIds": [
+            5,
+            7
+          ],
+          "transitionMinutes": 3
+        }
+      ],
+      "resources": [
+        {
+          "id": 5,
+          "name": "CAM_A"
+        },
+        {
+          "id": 6,
+          "name": "CAM_B"
+        },
+        {
+          "id": 7,
+          "name": "SON_1"
+        },
+        {
+          "id": 8,
+          "name": "KIT_INDEPENDIENTE"
+        }
+      ],
+      "labels": [
+        {
+          "id": 4,
+          "name": "Equipo A"
+        },
+        {
+          "id": 5,
+          "name": "Equipo B"
+        },
+        {
+          "id": 6,
+          "name": "Equipo C"
+        }
+      ]
+    },
+    "operationContinuity": {
+      "revisionId": 2,
+      "groups": []
+    },
+    "roundPreparations": {
+      "revisionId": 2,
+      "timeGridMinutes": 5,
+      "lanes": []
+    },
+    "mainFlowPreference": {
+      "value": {
+        "blockCountPolicy": {
+          "mode": "AUTO_MIN_FEASIBLE"
+        },
+        "mealSplitPreference": {
+          "mode": "OFF"
+        }
+      },
+      "baseline": {
+        "blockCountPolicy": {
+          "mode": "AUTO_MIN_FEASIBLE"
+        },
+        "mealSplitPreference": {
+          "mode": "OFF"
+        }
+      },
+      "defaultGeneral": {
+        "blockCountPolicy": {
+          "mode": "AUTO_MIN_FEASIBLE"
+        },
+        "mealSplitPreference": {
+          "mode": "OFF"
+        }
+      },
+      "available": false,
+      "mealApplicable": false,
+      "zeroBeforeRepresentable": false,
+      "counts": []
+    },
+    "values": [
+      {
+        "capabilityId": "WORKDAY_WINDOW",
+        "label": "Horario de la jornada",
+        "category": "Jornada y comidas",
+        "unit": "HH:mm",
+        "effectiveRevision": 2,
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "PRODUCTIVE",
+        "blockers": [],
+        "requiredForDay": false,
+        "value": {
+          "start": "09:00",
+          "end": "18:00"
+        },
+        "baseline": {
+          "start": "09:00",
+          "end": "18:00"
+        },
+        "defaultGeneral": {
+          "start": "09:00",
+          "end": "18:00"
+        },
+        "canRestoreInherited": false,
+        "overrideMetadata": {
+          "createdBy": null,
+          "createdAt": null
+        },
+        "fingerprint": "540accf2ac16b0cbc90482ef67fbda760eff2d93e6c8f5aab8cd41c6da02244a",
+        "availability": "AVAILABLE",
+        "source": "INHERITED",
+        "validationStatus": "VALID"
+      },
+      {
+        "capabilityId": "TIME_GRID",
+        "label": "Granularidad temporal",
+        "category": "Jornada y comidas",
+        "value": null,
+        "availability": "UNKNOWN",
+        "unit": "minutos",
+        "source": "UNKNOWN",
+        "validationStatus": "UNKNOWN",
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "PARTIAL",
+        "blockers": [
+          "El intervalo de jornada existe, pero no hay contrato productivo end-to-end para una granularidad de grid independiente."
+        ],
+        "requiredForDay": false
+      },
+      {
+        "capabilityId": "GLOBAL_MEAL_BREAK",
+        "label": "Pausa global de comida",
+        "category": "Jornada y comidas",
+        "unit": "HH:mm",
+        "effectiveRevision": 2,
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "PRODUCTIVE",
+        "blockers": [],
+        "requiredForDay": false,
+        "value": {
+          "mode": "global_hard_break",
+          "window": {
+            "start": "13:00",
+            "end": "14:00"
+          }
+        },
+        "baseline": {
+          "start": "13:00",
+          "end": "14:00",
+          "mode": "global_hard_break"
+        },
+        "defaultGeneral": {
+          "start": "13:00",
+          "end": "14:00",
+          "mode": "global_hard_break"
+        },
+        "canRestoreInherited": false,
+        "overrideMetadata": {
+          "createdBy": null,
+          "createdAt": null
+        },
+        "fingerprint": "540accf2ac16b0cbc90482ef67fbda760eff2d93e6c8f5aab8cd41c6da02244a",
+        "availability": "AVAILABLE",
+        "source": "INHERITED",
+        "validationStatus": "VALID"
+      },
+      {
+        "capabilityId": "OPERATIONAL_MEAL_POLICIES",
+        "label": "Comidas por participante/ámbito",
+        "category": "Jornada y comidas",
+        "value": null,
+        "availability": "UNKNOWN",
+        "unit": "minutos",
+        "source": "UNKNOWN",
+        "validationStatus": "UNKNOWN",
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "PARTIAL",
+        "blockers": [
+          "operationalMealPolicies no tiene recorrido productivo completo ni provenance diaria demostrable."
+        ],
+        "requiredForDay": false
+      },
+      {
+        "capabilityId": "PARTICIPANTS",
+        "label": "Participantes y disponibilidad",
+        "category": "Participantes",
+        "unit": "personas / HH:mm",
+        "effectiveRevision": 2,
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "BLOCKED",
+        "blockers": [
+          "daily_tasks participa en la proyección y tiene RLS desactivada."
+        ],
+        "requiredForDay": false,
+        "value": {
+          "count": 0,
+          "availabilityRules": 0
+        },
+        "availability": "AVAILABLE",
+        "source": "MIXED",
+        "validationStatus": "VALID"
+      },
+      {
+        "capabilityId": "TASKS_DEPENDENCIES",
+        "label": "Tareas y dependencias",
+        "category": "Tareas",
+        "unit": "tareas / minutos",
+        "effectiveRevision": 2,
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "BLOCKED",
+        "blockers": [
+          "daily_tasks tiene RLS desactivada."
+        ],
+        "requiredForDay": false,
+        "value": {
+          "tasks": 4,
+          "dependencies": 2
+        },
+        "availability": "AVAILABLE",
+        "source": "MIXED",
+        "fingerprint": "8f1af17f0ff4b356fe90c94655c89530b1e54f4a78ffa6784764d017d9d5933a",
+        "validationStatus": "VALID"
+      },
+      {
+        "capabilityId": "SPATIAL_AVAILABILITY",
+        "label": "Espacios, zonas y disponibilidad",
+        "category": "Platós y espacios",
+        "unit": "espacios / HH:mm",
+        "effectiveRevision": 2,
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "BLOCKED",
+        "blockers": [
+          "spaces tiene RLS desactivada."
+        ],
+        "requiredForDay": false,
+        "value": {
+          "zones": 1,
+          "spaces": 6
+        },
+        "availability": "AVAILABLE",
+        "source": "DAY_SNAPSHOT",
+        "validationStatus": "VALID"
+      },
+      {
+        "capabilityId": "SPACE_CAPACITY",
+        "label": "Capacidad de espacios",
+        "category": "Platós y espacios",
+        "value": null,
+        "availability": "UNAVAILABLE",
+        "unit": "personas",
+        "source": "UNKNOWN",
+        "validationStatus": "UNSUPPORTED",
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "MISSING",
+        "blockers": [
+          "La base de datos productiva no persiste capacidad espacial."
+        ],
+        "requiredForDay": false
+      },
+      {
+        "capabilityId": "RESOURCE_CATALOG",
+        "label": "Catálogo y disponibilidad de recursos",
+        "category": "Recursos",
+        "value": null,
+        "availability": "UNKNOWN",
+        "unit": "unidades",
+        "source": "UNKNOWN",
+        "validationStatus": "UNKNOWN",
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "BLOCKED",
+        "blockers": [
+          "resource_items tiene RLS desactivada."
+        ],
+        "requiredForDay": false
+      },
+      {
+        "capabilityId": "PLAN_RESOURCE_ASSIGNMENTS",
+        "label": "Asignaciones y necesidades de recursos",
+        "category": "Recursos",
+        "unit": "unidades",
+        "effectiveRevision": 2,
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "BLOCKED",
+        "blockers": [
+          "plan_resource_items tiene RLS desactivada."
+        ],
+        "requiredForDay": false,
+        "value": {
+          "items": 4,
+          "taskRequirements": 1
+        },
+        "availability": "AVAILABLE",
+        "source": "MIXED",
+        "validationStatus": "VALID"
+      },
+      {
+        "capabilityId": "ITINERANT_UNITS",
+        "label": "Unidades itinerantes",
+        "category": "Recursos",
+        "value": null,
+        "availability": "UNKNOWN",
+        "unit": "unidades / HH:mm",
+        "source": "UNKNOWN",
+        "validationStatus": "UNKNOWN",
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "PARTIAL",
+        "blockers": [
+          "buildEngineInput no proyecta itinerantTeamAvailability desde autoridades productivas."
+        ],
+        "requiredForDay": false
+      },
+      {
+        "capabilityId": "TRANSPORT_TARGET_GROUP_SIZE",
+        "label": "Tamaño objetivo preferido de agrupación",
+        "category": "Transporte",
+        "value": null,
+        "availability": "UNKNOWN",
+        "unit": "personas",
+        "source": "UNKNOWN",
+        "validationStatus": "UNKNOWN",
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "PARTIAL",
+        "blockers": [
+          "Planner Next distingue objetivo PREFERRED y mínimo HARD; la cobertura de motores legacy no está certificada."
+        ],
+        "requiredForDay": false
+      },
+      {
+        "capabilityId": "TRANSPORT_MAXIMUM_GROUP_SIZE",
+        "label": "Máximo de agrupación",
+        "category": "Transporte",
+        "value": null,
+        "availability": "UNKNOWN",
+        "unit": "personas",
+        "source": "UNKNOWN",
+        "validationStatus": "UNKNOWN",
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "PARTIAL",
+        "blockers": [
+          "maximumGroupSize procede del límite diario, pero el soporte consumidor no es universal."
+        ],
+        "requiredForDay": false
+      },
+      {
+        "capabilityId": "TRANSPORT_VEHICLE_CAPACITY",
+        "label": "Capacidad física del vehículo",
+        "category": "Transporte",
+        "value": null,
+        "availability": "UNAVAILABLE",
+        "unit": "personas/vehículo",
+        "source": "UNKNOWN",
+        "validationStatus": "UNSUPPORTED",
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "MISSING",
+        "blockers": [
+          "No existe autoridad productiva independiente para vehicleCapacity."
+        ],
+        "requiredForDay": false
+      },
+      {
+        "capabilityId": "TRANSITIONS",
+        "label": "Transiciones de participante y recurso",
+        "category": "Reglas de planificación",
+        "unit": "minutos",
+        "effectiveRevision": 2,
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "PARTIAL",
+        "blockers": [
+          "El margen general y overrides de participante tienen recorrido productivo; la transición de recursos sigue pendiente."
+        ],
+        "requiredForDay": false,
+        "value": {
+          "participantTransitionMinutes": 5
+        },
+        "baseline": {
+          "participantTransitionMinutes": 5
+        },
+        "defaultGeneral": {
+          "participantTransitionMinutes": 5
+        },
+        "canRestoreInherited": false,
+        "overrideMetadata": {
+          "createdBy": null,
+          "createdAt": null
+        },
+        "availability": "AVAILABLE",
+        "source": "INHERITED",
+        "validationStatus": "VALID"
+      },
+      {
+        "capabilityId": "MAIN_FLOW",
+        "label": "Flujo principal",
+        "category": "Reglas de planificación",
+        "unit": "política",
+        "effectiveRevision": 2,
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "PARTIAL",
+        "blockers": [
+          "No hay una superficie diaria lossless para todas las reglas de flujo."
+        ],
+        "requiredForDay": false,
+        "value": {
+          "profile": "STANDALONE_ONLY"
+        },
+        "source": "DAY_SNAPSHOT",
+        "availability": "UNAVAILABLE",
+        "validationStatus": "VALID"
+      },
+      {
+        "capabilityId": "BLOCK_COUNT_POLICY",
+        "label": "Número y distribución preferida de bloques",
+        "category": "Reglas de planificación",
+        "unit": "bloques",
+        "effectiveRevision": 2,
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "PRODUCTIVE",
+        "blockers": [],
+        "requiredForDay": false,
+        "value": {
+          "profile": "STANDALONE_ONLY"
+        },
+        "source": "DAY_SNAPSHOT",
+        "availability": "UNAVAILABLE",
+        "validationStatus": "VALID"
+      },
+      {
+        "capabilityId": "SETUPS",
+        "label": "Setups",
+        "category": "Operaciones y coordinación",
+        "value": null,
+        "availability": "UNKNOWN",
+        "unit": "familias / minutos",
+        "source": "UNKNOWN",
+        "validationStatus": "UNKNOWN",
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "PARTIAL",
+        "blockers": [
+          "Existe capacidad de motor sin edición diaria productiva completa."
+        ],
+        "requiredForDay": false
+      },
+      {
+        "capabilityId": "ANCHORED_OPERATIONS",
+        "label": "Operaciones ancladas",
+        "category": "Operaciones y coordinación",
+        "value": null,
+        "availability": "UNKNOWN",
+        "unit": "operaciones",
+        "source": "UNKNOWN",
+        "validationStatus": "UNKNOWN",
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "PARTIAL",
+        "blockers": [
+          "Falta configuración productiva end-to-end."
+        ],
+        "requiredForDay": false
+      },
+      {
+        "capabilityId": "JOINT_OPERATIONS",
+        "label": "Operaciones conjuntas",
+        "category": "Operaciones y coordinación",
+        "value": null,
+        "availability": "UNKNOWN",
+        "unit": "grupos",
+        "source": "UNKNOWN",
+        "validationStatus": "UNKNOWN",
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "PARTIAL",
+        "blockers": [
+          "Falta configuración productiva end-to-end."
+        ],
+        "requiredForDay": false
+      },
+      {
+        "capabilityId": "SYNCHRONIZED_ROUNDS",
+        "label": "Rondas sincronizadas",
+        "category": "Operaciones y coordinación",
+        "value": null,
+        "availability": "UNKNOWN",
+        "unit": "rondas",
+        "source": "UNKNOWN",
+        "validationStatus": "UNKNOWN",
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "PARTIAL",
+        "blockers": [
+          "U06a permite editar y restaurar los minutos de carriles existentes. Quedan pendientes el catálogo general y la edición de políticas, miembros y carriles."
+        ],
+        "requiredForDay": false
+      },
+      {
+        "capabilityId": "TECHNICAL_CHAINS",
+        "label": "Cadenas técnicas",
+        "category": "Operaciones y coordinación",
+        "value": null,
+        "availability": "UNKNOWN",
+        "unit": "cadenas",
+        "source": "UNKNOWN",
+        "validationStatus": "UNKNOWN",
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "PARTIAL",
+        "blockers": [
+          "Falta configuración productiva end-to-end."
+        ],
+        "requiredForDay": false
+      },
+      {
+        "capabilityId": "OPTIMIZATION",
+        "label": "Optimización",
+        "category": "Reglas de planificación",
+        "unit": "niveles/pesos",
+        "effectiveRevision": 2,
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "PARTIAL",
+        "blockers": [
+          "Restore inherited ya es lossless y auditable en backend, pero falta una superficie diaria para crear/editar DAY_OVERRIDE y una comparación/confirmación de refresh General→día antes de declarar el recorrido UI end-to-end."
+        ],
+        "requiredForDay": false,
+        "value": {
+          "contractVersion": 1,
+          "source": "INHERITED",
+          "editingMode": "BASIC",
+          "mainZoneId": null,
+          "heuristics": {
+            "MAIN_ZONE_PRIORITY": {
+              "basicLevel": 0,
+              "advancedValue": 0,
+              "effectiveWeight": 0
+            },
+            "MAIN_ZONE_FINISH_EARLY": {
+              "basicLevel": 0,
+              "advancedValue": 0,
+              "effectiveWeight": 0
+            },
+            "MAIN_ZONE_KEEP_BUSY": {
+              "basicLevel": 0,
+              "advancedValue": 0,
+              "effectiveWeight": 0
+            },
+            "CONTESTANT_COMPACT": {
+              "basicLevel": 0,
+              "advancedValue": 0,
+              "effectiveWeight": 0
+            },
+            "GROUP_BY_SPACE_TEMPLATE_MATCH": {
+              "basicLevel": 2,
+              "advancedValue": 0,
+              "effectiveWeight": 6
+            },
+            "GROUP_BY_SPACE_ACTIVE": {
+              "basicLevel": 2,
+              "advancedValue": 0,
+              "effectiveWeight": 6
+            },
+            "CONTESTANT_STAY_IN_ZONE": {
+              "basicLevel": 0,
+              "advancedValue": 0,
+              "effectiveWeight": 0
+            },
+            "CONTESTANT_TOTAL_SPAN": {
+              "basicLevel": 0,
+              "advancedValue": 0,
+              "effectiveWeight": 0
+            },
+            "ARRIVAL_DEPARTURE_GROUPING": {
+              "basicLevel": 0,
+              "advancedValue": 0,
+              "effectiveWeight": 0
+            }
+          },
+          "groupingZoneIds": [],
+          "transport": {
+            "arrivalPlanTemplateSnapshotId": null,
+            "departurePlanTemplateSnapshotId": null,
+            "arrivalGroupingTarget": 0,
+            "departureGroupingTarget": 0,
+            "arrivalMinGapMinutes": 0,
+            "departureMinGapMinutes": 0,
+            "vanCapacity": 0,
+            "groupingWeight": 0
+          },
+          "nearHardBreaksMax": 0,
+          "configurationFingerprint": "4b770099c9e87063d68e2fbef0ad2fcce91e364d9e03b2fc8967ee74ca4a422f",
+          "effectiveTransport": {
+            "arrivalMinimumGroupSize": 1,
+            "arrivalGroupingTarget": 0,
+            "departureMinimumGroupSize": 1,
+            "departureGroupingTarget": 0
+          },
+          "transportSources": {
+            "arrivalGroupingTarget": "Snapshot heredado del día",
+            "arrivalMinGapMinutes": "Snapshot heredado del día",
+            "arrivalMinimumGroupSize": "Compatibilidad histórica: mínimo HARD 1",
+            "arrivalMaximumGroupSize": "Capacidad de vehículo del snapshot del día",
+            "departureGroupingTarget": "Snapshot heredado del día",
+            "departureMinGapMinutes": "Snapshot heredado del día",
+            "departureMinimumGroupSize": "Compatibilidad histórica: mínimo HARD 1",
+            "departureMaximumGroupSize": "Capacidad de vehículo del snapshot del día"
+          }
+        },
+        "baseline": {
+          "source": "INHERITED",
+          "transport": {
+            "vanCapacity": 0,
+            "groupingWeight": 0,
+            "arrivalMinGapMinutes": 0,
+            "arrivalGroupingTarget": 0,
+            "departureMinGapMinutes": 0,
+            "departureGroupingTarget": 0,
+            "arrivalPlanTemplateSnapshotId": null,
+            "departurePlanTemplateSnapshotId": null
+          },
+          "heuristics": {
+            "CONTESTANT_COMPACT": {
+              "basicLevel": 0,
+              "advancedValue": 0,
+              "effectiveWeight": 0
+            },
+            "MAIN_ZONE_PRIORITY": {
+              "basicLevel": 0,
+              "advancedValue": 0,
+              "effectiveWeight": 0
+            },
+            "MAIN_ZONE_KEEP_BUSY": {
+              "basicLevel": 0,
+              "advancedValue": 0,
+              "effectiveWeight": 0
+            },
+            "CONTESTANT_TOTAL_SPAN": {
+              "basicLevel": 0,
+              "advancedValue": 0,
+              "effectiveWeight": 0
+            },
+            "GROUP_BY_SPACE_ACTIVE": {
+              "basicLevel": 2,
+              "advancedValue": 0,
+              "effectiveWeight": 6
+            },
+            "MAIN_ZONE_FINISH_EARLY": {
+              "basicLevel": 0,
+              "advancedValue": 0,
+              "effectiveWeight": 0
+            },
+            "CONTESTANT_STAY_IN_ZONE": {
+              "basicLevel": 0,
+              "advancedValue": 0,
+              "effectiveWeight": 0
+            },
+            "ARRIVAL_DEPARTURE_GROUPING": {
+              "basicLevel": 0,
+              "advancedValue": 0,
+              "effectiveWeight": 0
+            },
+            "GROUP_BY_SPACE_TEMPLATE_MATCH": {
+              "basicLevel": 2,
+              "advancedValue": 0,
+              "effectiveWeight": 6
+            }
+          },
+          "mainZoneId": null,
+          "editingMode": "BASIC",
+          "contractVersion": 1,
+          "groupingZoneIds": [],
+          "nearHardBreaksMax": 0,
+          "configurationFingerprint": "4b770099c9e87063d68e2fbef0ad2fcce91e364d9e03b2fc8967ee74ca4a422f"
+        },
+        "canRestoreInherited": false,
+        "overrideMetadata": {
+          "createdBy": null,
+          "createdAt": null
+        },
+        "availability": "AVAILABLE",
+        "source": "INHERITED",
+        "fingerprint": "4b770099c9e87063d68e2fbef0ad2fcce91e364d9e03b2fc8967ee74ca4a422f",
+        "validationStatus": "VALID"
+      },
+      {
+        "capabilityId": "SEARCH_POLICY_BUDGET",
+        "label": "Política y presupuesto de búsqueda",
+        "category": "Avanzado",
+        "value": null,
+        "availability": "UNKNOWN",
+        "unit": "nodos/intentos",
+        "source": "UNKNOWN",
+        "validationStatus": "UNKNOWN",
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "PARTIAL",
+        "blockers": [
+          "Falta contrato de producto general/día completo."
+        ],
+        "requiredForDay": false
+      },
+      {
+        "capabilityId": "ASSISTED_PROPOSAL_TIME_LIMIT",
+        "label": "Tiempo máximo por propuesta Assisted",
+        "category": "Avanzado",
+        "value": null,
+        "availability": "UNAVAILABLE",
+        "unit": "milisegundos",
+        "source": "UNKNOWN",
+        "validationStatus": "UNSUPPORTED",
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "MISSING",
+        "blockers": [
+          "No existe persistencia general/día ni RUN_OVERRIDE."
+        ],
+        "requiredForDay": false
+      },
+      {
+        "capabilityId": "EFFECTIVE_CONFIG_REVIEW",
+        "label": "Configuración y revisión efectiva",
+        "category": "Avanzado",
+        "value": null,
+        "availability": "UNKNOWN",
+        "unit": "revisión/fingerprint",
+        "source": "UNKNOWN",
+        "validationStatus": "UNKNOWN",
+        "requiresReplan": "UNKNOWN",
+        "implementationStatus": "PARTIAL",
+        "blockers": [
+          "La revisión efectiva sólo tiene revision cuando existe sesión Assisted."
+        ],
+        "requiredForDay": false
+      },
+      {
+        "capabilityId": "PROTECTED_STATE_LOCKS",
+        "label": "Locks y estado protegido",
+        "category": "Avanzado",
+        "unit": "decisiones",
+        "effectiveRevision": 2,
+        "requiresReplan": "NO",
+        "implementationStatus": "NOT_APPLICABLE",
+        "blockers": [
+          "Es un invariante hard, no una opción configurable."
+        ],
+        "requiredForDay": false,
+        "value": {
+          "locks": 0,
+          "protectedTasks": 0
+        },
+        "availability": "AVAILABLE",
+        "source": "PROTECTED",
+        "validationStatus": "VALID"
+      }
+    ],
+    "readiness": {
+      "status": "UNSUPPORTED",
+      "issues": [
+        {
+          "capabilityId": "UNSUPPORTED_TASK_ROLE",
+          "category": "Reglas de planificación",
+          "status": "UNSUPPORTED",
+          "message": "UNSUPPORTED_TASK_ROLE · tasks.1.templateSnapshot: La tarea 1 requiere una unidad itinerante. Este perfil admite operaciones físicas sin unidad itinerante.",
+          "navigationTarget": "/plans/2?tab=tasks"
+        },
+        {
+          "capabilityId": "UNSUPPORTED_TASK_ROLE",
+          "category": "Reglas de planificación",
+          "status": "UNSUPPORTED",
+          "message": "UNSUPPORTED_TASK_ROLE · tasks.2.templateSnapshot: La tarea 2 requiere una unidad itinerante. Este perfil admite operaciones físicas sin unidad itinerante.",
+          "navigationTarget": "/plans/2?tab=tasks"
+        },
+        {
+          "capabilityId": "UNSUPPORTED_TASK_ROLE",
+          "category": "Reglas de planificación",
+          "status": "UNSUPPORTED",
+          "message": "UNSUPPORTED_TASK_ROLE · tasks.3.templateSnapshot: La tarea 3 requiere una unidad itinerante. Este perfil admite operaciones físicas sin unidad itinerante.",
+          "navigationTarget": "/plans/2?tab=tasks"
+        },
+        {
+          "capabilityId": "UNSUPPORTED_TASK_ROLE",
+          "category": "Reglas de planificación",
+          "status": "UNSUPPORTED",
+          "message": "UNSUPPORTED_TASK_ROLE · tasks.4.templateSnapshot: La tarea 4 requiere una unidad itinerante. Este perfil admite operaciones físicas sin unidad itinerante.",
+          "navigationTarget": "/plans/2?tab=tasks"
+        }
+      ]
+    },
+    "productCoverage": {
+      "PRODUCTIVE": 3,
+      "PARTIAL": 15,
+      "MISSING": 3,
+      "BLOCKED": 5,
+      "NOT_APPLICABLE": 1
+    }
+  }
+}

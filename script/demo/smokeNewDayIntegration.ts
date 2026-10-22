@@ -34,7 +34,11 @@ if(process.argv.includes("--app")) {
  const owned:string[]=[];let network=false,gateway:http.Server|undefined,app:ChildProcess|undefined,db:pg.Client|undefined;
 
  const report:any={mode:"REAL_DISPOSABLE_NEW_DAY_UI",remoteWrites:0,images,checks:[],startedAt:new Date().toISOString(),
-   sourceCommit:execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim()};
+   sourceHashes:Object.fromEntries(['server/newDayPlannerConfiguration.ts','server/assistedProposalService.ts',
+     'engine/planner-next/integration/engineInputAdapter.ts','engine/planner-next/exactItinerantPlan.ts','engine/planner-next/validate.ts',
+     'script/demo/smokeNewDayIntegration.ts','script/demo/smokeNewDayItinerantJourney.ts'].map(file=>[file,createHash('sha256').update(readFileSync(file)).digest('hex')])),
+   sourceCommit:(()=>{try{return execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8",stdio:['ignore','pipe','ignore']}).trim();}
+     catch{return null; /* git archive has no repository metadata; sourceHashes remain exact. */}})()};
  const pass=(name:string)=>{report.checks.push(name);console.log(`PASS ${name}`);};
  try {
   docker('info','--format','{{.ServerVersion}}');docker('network','create',id);network=true;
@@ -101,7 +105,9 @@ if(process.argv.includes("--app")) {
   app.stdout!.pipe(log);app.stderr!.pipe(log);
   await eventually(async()=>{assert.equal(app!.exitCode,null);assert.equal((await fetch(`${appUrl}/api/health`)).status,200);});
   Object.assign(process.env,{SUPABASE_URL:url,SUPABASE_ANON_KEY:anon,SUPABASE_SERVICE_ROLE_KEY:service});
-  const {runNewDayJourney}=process.argv.includes("--standalone-only")
+  const {runNewDayJourney}=process.argv.includes("--itinerant-consumption")
+    ?{runNewDayJourney:(await import("./smokeNewDayItinerantJourney")).runNewDayItinerantJourney}
+    :process.argv.includes("--standalone-only")
     ?{runNewDayJourney:(await import("./smokeStandaloneDayJourney")).runStandaloneDayJourney}
     :await import("./smokeNewDayJourney");
   report.journey=await runNewDayJourney({appUrl,url,anon,service,users,db,directory,pass});

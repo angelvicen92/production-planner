@@ -1,0 +1,115 @@
+{
+  "status": "PASS",
+  "days": [
+    {
+      "label": "technical",
+      "hardValid": true,
+      "obligations": 4,
+      "occupations": [
+        {
+          "taskId": "task:1",
+          "resourceId": 5,
+          "name": "CAM_A",
+          "unitId": "itinerant-team:4",
+          "start": 570,
+          "end": 580
+        },
+        {
+          "taskId": "task:2",
+          "resourceId": 6,
+          "name": "CAM_B",
+          "unitId": "itinerant-team:5",
+          "start": 570,
+          "end": 580
+        },
+        {
+          "taskId": "task:3",
+          "resourceId": 5,
+          "name": "CAM_A",
+          "unitId": "itinerant-team:6",
+          "start": 600,
+          "end": 610
+        },
+        {
+          "taskId": "task:3",
+          "resourceId": 7,
+          "name": "SON_1",
+          "unitId": "itinerant-team:6",
+          "start": 600,
+          "end": 610
+        },
+        {
+          "taskId": "task:4",
+          "resourceId": 6,
+          "name": "CAM_B",
+          "unitId": "itinerant-team:5",
+          "start": 600,
+          "end": 610
+        },
+        {
+          "taskId": "task:4",
+          "resourceId": 8,
+          "name": "KIT_INDEPENDIENTE",
+          "unitId": "itinerant-team:5",
+          "start": 600,
+          "end": 610
+        }
+      ]
+    },
+    {
+      "label": "auxiliary",
+      "hardValid": true,
+      "obligations": 4,
+      "occupations": [
+        {
+          "taskId": "task:5",
+          "resourceId": 9,
+          "name": "CAM_A",
+          "unitId": "itinerant-team:7",
+          "start": 630,
+          "end": 640
+        },
+        {
+          "taskId": "task:6",
+          "resourceId": 11,
+          "name": "SON_1",
+          "unitId": "itinerant-team:9",
+          "start": 655,
+          "end": 665
+        },
+        {
+          "taskId": "task:6",
+          "resourceId": 9,
+          "name": "CAM_A",
+          "unitId": "itinerant-team:9",
+          "start": 655,
+          "end": 665
+        },
+        {
+          "taskId": "task:7",
+          "resourceId": 9,
+          "name": "CAM_A",
+          "unitId": "itinerant-team:7",
+          "start": 640,
+          "end": 650
+        },
+        {
+          "taskId": "task:8",
+          "resourceId": 11,
+          "name": "SON_1",
+          "unitId": "itinerant-team:9",
+          "start": 665,
+          "end": 675
+        },
+        {
+          "taskId": "task:8",
+          "resourceId": 9,
+          "name": "CAM_A",
+          "unitId": "itinerant-team:9",
+          "start": 665,
+          "end": 675
+        }
+      ]
+    }
+  ]
+}

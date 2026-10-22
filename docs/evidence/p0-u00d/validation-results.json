@@ -1,0 +1,155 @@
+{
+  "status": "PASS",
+  "productTests": 3088,
+  "passed": 3088,
+  "failed": 0,
+  "runtime": "Node 20.20.2",
+  "excludedHistoricalDiagnostics": [
+    "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts",
+    "server/benchmarks/runA2Assist7Evidence.spec.ts"
+  ],
+  "logs": {
+    "product-gate": {
+      "sha256": "177f2e5640980c414d5b380f63019d24589aeb1c277ece5cc82e9660ef609fa9",
+      "bytes": 620090,
+      "tail": [
+        "  ...",
+        "1..3023",
+        "# tests 3088",
+        "# suites 9",
+        "# pass 3088",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0",
+        "# duration_ms 599327.222579"
+      ]
+    },
+    "check": {
+      "sha256": "a3524d5e43d767e9b4be9b919cafac7158a8650a095963e00ef859ff7f4eaf27",
+      "bytes": 35,
+      "tail": [
+        "",
+        "> rest-express@1.0.0 check",
+        "> tsc",
+        ""
+      ]
+    },
+    "harness-tsc": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "tail": []
+    },
+    "integration-tsc": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "tail": []
+    },
+    "migrations": {
+      "sha256": "0a0dad39b3a915667cfc6bb1d2fe12559ed585c7af88baa4dea32347e1a03564",
+      "bytes": 327,
+      "tail": [
+        "",
+        "> rest-express@1.0.0 check:migrations",
+        "> node script/check-migration-sequence.mjs",
+        "",
+        "Migration sequence valid: 73 historical files; post-cutoff 071, 072, 073, 074, 075, 076, 077, 078, 079, 080, 081, 082, 083, 084, 085, 086, 087, 088, 089, 090, 091, 092, 093, 094, 095, 096, 097, 098, 099, 100, 101, 102, 103, 104, 105, 106, 107."
+      ]
+    },
+    "build-final": {
+      "sha256": "42ad21cc32cb3c1ec9cbd16c2c6225554d0a912303ac296639180fc03aca3f35",
+      "bytes": 1054,
+      "tail": [
+        "(!) Some chunks are larger than 500 kB after minification. Consider:",
+        "- Using dynamic import() to code-split the application",
+        "- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks",
+        "- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.",
+        "\u2713 built in 30.29s",
+        "building server...",
+        "",
+        "  dist/index.cjs  3.5mb \u26a0\ufe0f",
+        "",
+        "\u26a1 Done in 1648ms"
+      ]
+    },
+    "final-focal": {
+      "sha256": "9dd382a84b924159f1e9577d706617bde3133aa849a8a4b55a9df956a1a3388a",
+      "bytes": 9560,
+      "tail": [
+        "  ...",
+        "1..42",
+        "# tests 42",
+        "# suites 0",
+        "# pass 42",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0",
+        "# duration_ms 10467.84988"
+      ]
+    },
+    "routing-focal": {
+      "sha256": "b51f7f8343d9887172d778ca49f2fbc5559dbf93b60696558928828e243c537f",
+      "bytes": 22357,
+      "tail": [
+        "  ...",
+        "1..100",
+        "# tests 100",
+        "# suites 0",
+        "# pass 100",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0",
+        "# duration_ms 13675.559729"
+      ]
+    },
+    "certified": {
+      "sha256": "2bf3708b9c223803451e5d813487fa2497140369fc87203f9ff00363a8d9d0fd",
+      "bytes": 902,
+      "tail": [
+        "PASS entire native application migration ledger",
+        "PASS real password login for five Auth identities",
+        "PASS physical resources and A=CAM_A, B=CAM_B, C=CAM_A+SON_1 created in the normal catalog UI",
+        "PASS real proposal selects B alongside C, A+B run simultaneously and Stage reserves exactly the selected members plus the independent kit",
+        "PASS existing placement/preflight authorities reject shared CAM_A, forbidden alternatives, missing/ambiguous mappings, out-of-window operations and insufficient physical transitions",
+        "PASS four auxiliary tasks with two participants, template dependencies and daily team mappings complete a second UI-created day without changing the first",
+        "PASS an independent resource with insufficient availability prevents a proposal and preserves S0/Draft",
+        "{\"status\":\"PASS\",\"evidence\":\"/tmp/p0-u00d/certified-native/integration.json\",\"remoteWrites\":0}",
+        "{\"status\":\"PASS\",\"obligations\":[4,4]}"
+      ]
+    },
+    "regressions": {
+      "sha256": "556295c81416a74f109eca174d373df24ff153dac78353ce1cd26a663382f142",
+      "bytes": 2391,
+      "tail": [
+        "{\"status\":\"PASS\",\"evidence\":\"/tmp/p0-u00d/regression-main/integration.json\",\"remoteWrites\":0}",
+        "PASS entire native application migration ledger",
+        "PASS real password login for five Auth identities",
+        "PASS six auxiliary tasks, three participants without coaches, two templates/spaces and dependencies reach an accepted Stage through the UI",
+        "PASS general CAS and roles, immutable day snapshot and exact isolation after changing general configuration",
+        "PASS U00c UI: explicit review and confirmation, new coherent S0, immutable prior Stage, audit lineage and one active session",
+        "PASS three technical operations with no participants, shared physical resource, dependencies and distinct spatial/resource windows reach Stage through the UI",
+        "PASS incompatible roles block readiness; physically infeasible resource window gives an explicit NO_PROPOSAL without partial Draft or Stage",
+        "{\"status\":\"PASS\",\"evidence\":\"/tmp/p0-u00d/regression-standalone/integration.json\",\"remoteWrites\":0}",
+        "{\"status\":\"PASS\",\"obligations\":[4,9,6,3]}"
+      ]
+    },
+    "a2-final": {
+      "sha256": "700f2f345235ef7f97082555ea073f817241bf0224c04693a877c724787dcb54",
+      "bytes": 1417,
+      "tail": [
+        "{\"completedObligationCount\":65,\"durationMs\":584}",
+        "{\"completedObligationCount\":73,\"durationMs\":590}",
+        "{\"completedObligationCount\":109,\"durationMs\":413}",
+        "{\"completedObligationCount\":151,\"durationMs\":780}",
+        "{\"completedObligationCount\":189,\"durationMs\":1605}",
+        "{\"completedObligationCount\":191,\"durationMs\":520}",
+        "{\"completedObligationCount\":209,\"durationMs\":455}",
+        "{\"completedObligationCount\":266,\"durationMs\":2825}",
+        "{\"status\":\"PASS\",\"stages\":11,\"completed\":266,\"fingerprint\":\"2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d\"}",
+        "{\"status\":\"PASS\",\"before\":8465,\"after\":8465,\"branches\":27049}"
+      ]
+    }
+  }
+}

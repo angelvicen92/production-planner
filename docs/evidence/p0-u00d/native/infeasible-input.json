@@ -1,0 +1,574 @@
+{
+  "planId": 4,
+  "taskTemplateSnapshotContractVersion": 2,
+  "taskTemplateSnapshotCount": 6,
+  "taskTemplateSnapshotSources": {
+    "inherited": 6,
+    "legacy_backfill": 0,
+    "ad_hoc_from_default": 0
+  },
+  "taskTemplateSnapshotFingerprint": "83410c43b4387f8cefd3e0ff83f51d39cc5a97401317222735e82d3c296d2a32",
+  "planZoneSettings": [
+    {
+      "id": 4,
+      "zoneId": 1,
+      "availabilityStart": null,
+      "availabilityEnd": null,
+      "source": "default",
+      "name": "Jornada con equipos reales",
+      "mealStartPreferred": null,
+      "mealEndPreferred": null,
+      "groupingLevel": 0,
+      "groupingMinChain": 4,
+      "maxTemplateChanges": 4,
+      "spaceMealBreakMinutes": null
+    }
+  ],
+  "planSpaceSettings": [
+    {
+      "id": 19,
+      "spaceId": 1,
+      "zoneId": 1,
+      "availabilityStart": null,
+      "availabilityEnd": null,
+      "source": "default",
+      "name": "Cámara A",
+      "parentSpaceId": null,
+      "priorityLevel": 1,
+      "groupingLevel": 0,
+      "groupingMinChain": 4,
+      "groupingApplyToDescendants": false
+    },
+    {
+      "id": 20,
+      "spaceId": 2,
+      "zoneId": 1,
+      "availabilityStart": null,
+      "availabilityEnd": null,
+      "source": "default",
+      "name": "Cámara B",
+      "parentSpaceId": null,
+      "priorityLevel": 1,
+      "groupingLevel": 0,
+      "groupingMinChain": 4,
+      "groupingApplyToDescendants": false
+    },
+    {
+      "id": 21,
+      "spaceId": 3,
+      "zoneId": 1,
+      "availabilityStart": null,
+      "availabilityEnd": null,
+      "source": "default",
+      "name": "Grabación compuesta",
+      "parentSpaceId": null,
+      "priorityLevel": 1,
+      "groupingLevel": 0,
+      "groupingMinChain": 4,
+      "groupingApplyToDescendants": false
+    },
+    {
+      "id": 22,
+      "spaceId": 4,
+      "zoneId": 1,
+      "availabilityStart": null,
+      "availabilityEnd": null,
+      "source": "default",
+      "name": "Alternativa física",
+      "parentSpaceId": null,
+      "priorityLevel": 1,
+      "groupingLevel": 0,
+      "groupingMinChain": 4,
+      "groupingApplyToDescendants": false
+    },
+    {
+      "id": 23,
+      "spaceId": 5,
+      "zoneId": 1,
+      "availabilityStart": null,
+      "availabilityEnd": null,
+      "source": "default",
+      "name": "Entrevista",
+      "parentSpaceId": null,
+      "priorityLevel": 1,
+      "groupingLevel": 0,
+      "groupingMinChain": 4,
+      "groupingApplyToDescendants": false
+    },
+    {
+      "id": 24,
+      "spaceId": 6,
+      "zoneId": 1,
+      "availabilityStart": null,
+      "availabilityEnd": null,
+      "source": "default",
+      "name": "Preparación",
+      "parentSpaceId": null,
+      "priorityLevel": 1,
+      "groupingLevel": 0,
+      "groupingMinChain": 4,
+      "groupingApplyToDescendants": false
+    }
+  ],
+  "workDay": {
+    "start": "09:00",
+    "end": "18:00"
+  },
+  "defaultParticipantTransitionMinutes": 5,
+  "mealMode": "global_hard_break",
+  "meal": {
+    "start": "13:00",
+    "end": "14:00"
+  },
+  "globalHardBreaks": [],
+  "protectedBreaks": [],
+  "mealTaskTemplateId": null,
+  "camerasAvailable": 0,
+  "taskTemplateNameById": {
+    "1": "Operar cámara A",
+    "2": "Operar cámara B",
+    "3": "Operar composición C",
+    "4": "Elegir cámara alternativa",
+    "5": "Entrevista itinerante",
+    "6": "Grabación itinerante"
+  },
+  "zoneResourceAssignments": {},
+  "spaceResourceAssignments": {},
+  "spaceParentById": {
+    "1": null,
+    "2": null,
+    "3": null,
+    "4": null,
+    "5": null,
+    "6": null
+  },
+  "spaceNameById": {
+    "1": "Cámara A",
+    "2": "Cámara B",
+    "3": "Grabación compuesta",
+    "4": "Alternativa física",
+    "5": "Entrevista",
+    "6": "Preparación"
+  },
+  "spaceCapacityById": {},
+  "spaceIsExclusiveById": {
+    "1": true,
+    "2": true,
+    "3": true,
+    "4": true,
+    "5": true,
+    "6": true
+  },
+  "spacePriorityById": {
+    "1": 1,
+    "2": 1,
+    "3": 1,
+    "4": 1,
+    "5": 1,
+    "6": 1
+  },
+  "zoneIdBySpaceId": {
+    "1": 1,
+    "2": 1,
+    "3": 1,
+    "4": 1,
+    "5": 1,
+    "6": 1
+  },
+  "spaceIdsByZoneId": {
+    "1": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ]
+  },
+  "groupingBySpaceId": {},
+  "minimizeChangesBySpace": {},
+  "zoneResourceTypeRequirements": {},
+  "spaceResourceTypeRequirements": {},
+  "planResourceItems": [
+    {
+      "id": 13,
+      "resourceItemId": 1,
+      "typeId": 1,
+      "typeCode": "new_day_physical",
+      "typeName": "Recursos de rodaje",
+      "name": "CAM_A",
+      "isAvailable": true,
+      "availabilityStart": null,
+      "availabilityEnd": null
+    },
+    {
+      "id": 14,
+      "resourceItemId": 2,
+      "typeId": 1,
+      "typeCode": "new_day_physical",
+      "typeName": "Recursos de rodaje",
+      "name": "CAM_B",
+      "isAvailable": true,
+      "availabilityStart": null,
+      "availabilityEnd": null
+    },
+    {
+      "id": 15,
+      "resourceItemId": 3,
+      "typeId": 1,
+      "typeCode": "new_day_physical",
+      "typeName": "Recursos de rodaje",
+      "name": "SON_1",
+      "isAvailable": true,
+      "availabilityStart": null,
+      "availabilityEnd": null
+    },
+    {
+      "id": 16,
+      "resourceItemId": 4,
+      "typeId": 1,
+      "typeCode": "new_day_physical",
+      "typeName": "Recursos de rodaje",
+      "name": "KIT_INDEPENDIENTE",
+      "isAvailable": true,
+      "availabilityStart": "09:00",
+      "availabilityEnd": "09:05"
+    }
+  ],
+  "coachResourceIds": [],
+  "vocalCoachPlanResourceItemIdByContestantId": {},
+  "resourceItemComponents": {},
+  "resourceBundles": [],
+  "resourceBundleComponents": [],
+  "resourceBundleSpaceAffinities": [],
+  "resourceBundleLoadWarnings": [],
+  "contestantAvailabilityById": {},
+  "optimizerSnapshotContractVersion": 1,
+  "optimizerSnapshotSource": "INHERITED",
+  "optimizerSnapshotEditingMode": "BASIC",
+  "optimizerSnapshotFingerprint": "4b770099c9e87063d68e2fbef0ad2fcce91e364d9e03b2fc8967ee74ca4a422f",
+  "optimizerLegacyAdapterVersion": 1,
+  "optimizerCompatibilityWarnings": [],
+  "optimizerIgnoredActiveHeuristics": [],
+  "optimizerMainZoneId": null,
+  "optimizerPrioritizeMainZone": false,
+  "optimizerGroupBySpaceAndTemplate": false,
+  "groupingZoneIds": [],
+  "maxTemplateChangesByZoneId": {},
+  "spaceMealBreakMinutesByZoneId": {},
+  "optimizerMainZonePriorityLevel": 0,
+  "optimizerGroupingLevel": 0,
+  "optimizerMainZoneOptFinishEarly": false,
+  "optimizerMainZoneOptKeepBusy": false,
+  "optimizerContestantCompactLevel": 0,
+  "optimizerContestantStayInZoneLevel": 0,
+  "optimizerNearHardBreaksMax": 0,
+  "optimizerWeights": {
+    "mainZoneFinishEarly": 0,
+    "mainZoneKeepBusy": 0,
+    "contestantCompact": 0,
+    "groupBySpaceTemplateMatch": 0,
+    "groupBySpaceActive": 0,
+    "contestantStayInZone": 0,
+    "contestantTotalSpan": 0
+  },
+  "tasks": [
+    {
+      "id": 9,
+      "planId": 4,
+      "templateId": 1,
+      "templateName": "Operar cámara A",
+      "resourceRequirements": null,
+      "zoneId": 1,
+      "spaceId": 1,
+      "_invalidSpaceId": null,
+      "_unplannedHint": null,
+      "contestantId": null,
+      "contestantName": null,
+      "status": "pending",
+      "itinerantTeamId": 10,
+      "allowedItinerantTeamIds": [
+        10
+      ],
+      "itinerantTeamRequirement": "specific",
+      "participantMarginBeforeMinutes": 0,
+      "participantMarginAfterMinutes": 0,
+      "hasDependency": false,
+      "dependsOnTemplateIds": [],
+      "dependsOnTaskIds": [],
+      "dependsOnTemplateId": null,
+      "dependsOnTaskId": null,
+      "durationOverrideMin": 10,
+      "camerasOverride": 0,
+      "startPlanned": null,
+      "endPlanned": null,
+      "lockedStart": null,
+      "lockedEnd": null,
+      "lockType": null,
+      "startReal": null,
+      "endReal": null,
+      "assignedResourceIds": null,
+      "plannerNextKind": "technical",
+      "operationalRole": "productive_task"
+    },
+    {
+      "id": 10,
+      "planId": 4,
+      "templateId": 2,
+      "templateName": "Operar cámara B",
+      "resourceRequirements": null,
+      "zoneId": 1,
+      "spaceId": 2,
+      "_invalidSpaceId": null,
+      "_unplannedHint": null,
+      "contestantId": null,
+      "contestantName": null,
+      "status": "pending",
+      "itinerantTeamId": 11,
+      "allowedItinerantTeamIds": [
+        11
+      ],
+      "itinerantTeamRequirement": "specific",
+      "participantMarginBeforeMinutes": 0,
+      "participantMarginAfterMinutes": 0,
+      "hasDependency": false,
+      "dependsOnTemplateIds": [],
+      "dependsOnTaskIds": [],
+      "dependsOnTemplateId": null,
+      "dependsOnTaskId": null,
+      "durationOverrideMin": 10,
+      "camerasOverride": 0,
+      "startPlanned": null,
+      "endPlanned": null,
+      "lockedStart": null,
+      "lockedEnd": null,
+      "lockType": null,
+      "startReal": null,
+      "endReal": null,
+      "assignedResourceIds": null,
+      "plannerNextKind": "technical",
+      "operationalRole": "productive_task"
+    },
+    {
+      "id": 11,
+      "planId": 4,
+      "templateId": 3,
+      "templateName": "Operar composición C",
+      "resourceRequirements": null,
+      "zoneId": 1,
+      "spaceId": 3,
+      "_invalidSpaceId": null,
+      "_unplannedHint": null,
+      "contestantId": null,
+      "contestantName": null,
+      "status": "pending",
+      "itinerantTeamId": 12,
+      "allowedItinerantTeamIds": [
+        12
+      ],
+      "itinerantTeamRequirement": "specific",
+      "participantMarginBeforeMinutes": 0,
+      "participantMarginAfterMinutes": 0,
+      "hasDependency": true,
+      "dependsOnTemplateIds": [
+        1
+      ],
+      "dependsOnTaskIds": [
+        9
+      ],
+      "dependsOnTemplateId": 1,
+      "dependsOnTaskId": 9,
+      "durationOverrideMin": 10,
+      "camerasOverride": 0,
+      "startPlanned": null,
+      "endPlanned": null,
+      "lockedStart": null,
+      "lockedEnd": null,
+      "lockType": null,
+      "startReal": null,
+      "endReal": null,
+      "assignedResourceIds": null,
+      "plannerNextKind": "technical",
+      "operationalRole": "productive_task"
+    },
+    {
+      "id": 12,
+      "planId": 4,
+      "templateId": 4,
+      "templateName": "Elegir cámara alternativa",
+      "resourceRequirements": {
+        "byItem": {
+          "4": 1
+        }
+      },
+      "zoneId": 1,
+      "spaceId": 4,
+      "_invalidSpaceId": null,
+      "_unplannedHint": null,
+      "contestantId": null,
+      "contestantName": null,
+      "status": "pending",
+      "itinerantTeamId": null,
+      "allowedItinerantTeamIds": [
+        10,
+        11
+      ],
+      "itinerantTeamRequirement": "any",
+      "participantMarginBeforeMinutes": 0,
+      "participantMarginAfterMinutes": 0,
+      "hasDependency": true,
+      "dependsOnTemplateIds": [
+        2
+      ],
+      "dependsOnTaskIds": [
+        10
+      ],
+      "dependsOnTemplateId": 2,
+      "dependsOnTaskId": 10,
+      "durationOverrideMin": 10,
+      "camerasOverride": 0,
+      "startPlanned": null,
+      "endPlanned": null,
+      "lockedStart": null,
+      "lockedEnd": null,
+      "lockType": null,
+      "startReal": null,
+      "endReal": null,
+      "assignedResourceIds": null,
+      "plannerNextKind": "technical",
+      "operationalRole": "productive_task",
+      "declaredResourceIds": [
+        16
+      ]
+    }
+  ],
+  "locks": [],
+  "plannerNextMaterializationIssues": [],
+  "plannerNext": {
+    "searchPolicy": "EXACT_CONSTRUCTIVE",
+    "searchBudget": {
+      "bestK": 3,
+      "maxBacktracks": 50,
+      "maxPatterns": 20,
+      "maxBranchExpansions": 10000
+    },
+    "timeGridMinutes": 5,
+    "participantTransitionMinutes": 5,
+    "resourceTransitionMinutes": 5,
+    "profile": "STANDALONE_ONLY"
+  },
+  "itinerantCompositionSnapshot": {
+    "contractVersion": 1,
+    "units": [
+      {
+        "id": 10,
+        "plan_id": 4,
+        "source_team_id": 1,
+        "source_revision": 0,
+        "code": "U00D_0",
+        "name": "Equipo A",
+        "availability_windows": [
+          {
+            "start": "09:00",
+            "end": "12:00"
+          }
+        ],
+        "transition_minutes": 3,
+        "members": [
+          {
+            "resourceItemId": 1,
+            "planResourceItemId": 13
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "plan_id": 4,
+        "source_team_id": 2,
+        "source_revision": 0,
+        "code": "U00D_1",
+        "name": "Equipo B",
+        "availability_windows": [
+          {
+            "start": "09:00",
+            "end": "12:00"
+          }
+        ],
+        "transition_minutes": 3,
+        "members": [
+          {
+            "resourceItemId": 2,
+            "planResourceItemId": 14
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "plan_id": 4,
+        "source_team_id": 3,
+        "source_revision": 0,
+        "code": "U00D_2",
+        "name": "Equipo C",
+        "availability_windows": [
+          {
+            "start": "10:00",
+            "end": "12:00"
+          }
+        ],
+        "transition_minutes": 3,
+        "members": [
+          {
+            "resourceItemId": 1,
+            "planResourceItemId": 13
+          },
+          {
+            "resourceItemId": 3,
+            "planResourceItemId": 15
+          }
+        ]
+      }
+    ]
+  },
+  "itinerantTeamAvailability": [
+    {
+      "itinerantTeamId": 10,
+      "windows": [
+        {
+          "start": "09:00",
+          "end": "12:00"
+        }
+      ],
+      "planResourceItemIds": [
+        13
+      ],
+      "transitionMinutes": 3
+    },
+    {
+      "itinerantTeamId": 11,
+      "windows": [
+        {
+          "start": "09:00",
+          "end": "12:00"
+        }
+      ],
+      "planResourceItemIds": [
+        14
+      ],
+      "transitionMinutes": 3
+    },
+    {
+      "itinerantTeamId": 12,
+      "windows": [
+        {
+          "start": "10:00",
+          "end": "12:00"
+        }
+      ],
+      "planResourceItemIds": [
+        13,
+        15
+      ],
+      "transitionMinutes": 3
+    }
+  ]
+}
