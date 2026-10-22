@@ -264,8 +264,9 @@ export class AssistedPlanningService {
     const newHardCount=violations.filter(item=>item.severity==="HARD"&&item.inheritedAcceptedExceptionId==null).length;
     const newRequiredCount=violations.filter(item=>item.severity==="REQUIRED"&&item.inheritedAcceptedExceptionId==null).length;
     const report:StageValidationReport={contractVersion:1,mode:"MANUAL_STAGE_VALIDATION_V1",changedTaskIds:touched,completeForScope:evidence.completeForScope,
-      protectedPlacementsPreserved:evidence.protectedPlacementsPreserved,hardValid:hardCount===0,hardCount,requiredCount,newHardCount,newRequiredCount,preferredCount:0,violations,
-      preferredAssessment:"NOT_CLASSIFIED",supportingTaskIds:evidence.supportingTaskIds,supportingReasonByTaskId:evidence.supportingReasonByTaskId,
+      protectedPlacementsPreserved:evidence.protectedPlacementsPreserved,hardValid:hardCount===0,hardCount,requiredCount,newHardCount,newRequiredCount,preferredCount:evidence.validationSummary?.operationContinuity?.filter(group=>group.policy==="PREFERRED"&&group.gapMinutes>0).length??0,violations,
+      preferredAssessment:evidence.validationSummary?.operationContinuity?"OPERATION_CONTINUITY_QUANTIFIED":"NOT_CLASSIFIED",
+      ...(evidence.validationSummary?.operationContinuity?{operationContinuity:evidence.validationSummary?.operationContinuity}:{}),supportingTaskIds:evidence.supportingTaskIds,supportingReasonByTaskId:evidence.supportingReasonByTaskId,
       reasonCodes:evidence.reasonCodes,work:evidence.work,fingerprint:evidence.fingerprint,futureFullDayFeasibility:"NOT_CERTIFIED"};
     const { error } = await this.rpc("assisted_record_stage_validation", { p_plan_id: planId,
       p_expected_fingerprint: expectedDraftFingerprint,p_expected_base:expectedBaseStageId,

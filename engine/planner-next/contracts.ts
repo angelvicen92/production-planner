@@ -200,6 +200,7 @@ export interface PlannerNextProblem {
   coachRouteTransitions?: CoachRouteTransition[];
   roundSynchronizations?: RoundSynchronizationPolicy[];
   technicalChains?: TechnicalChainPolicy[];
+  operationContinuityGroups?: Array<import("../../shared/operationContinuity").OperationContinuityGroup<string> & { declaredTaskCount?: number }>;
   budget: SearchBudget;
   auxiliaryPolicy?: { participantPresencePreference: PreferenceLevel };
   anchoredAccompaniments?: AnchoredAccompaniment[];
@@ -291,6 +292,7 @@ export interface ValidationSummary {
   resourceOverlapViolationCount: number;
   resourceTransitionViolationCount: number;
   secondaryContinuityViolationCount: number;
+  operationContinuity?: ReturnType<typeof import("./operationContinuity").assessOperationContinuity>;
   setupViolationCount: number;
   setupPreparationViolationCount: number;
   roundSynchronizationViolationCount?: number;

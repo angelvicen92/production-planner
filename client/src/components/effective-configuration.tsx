@@ -1,4 +1,5 @@
 import { DailyItinerantCompositions } from './daily-itinerant-compositions';
+import { DailyContinuityGroup } from "./operation-continuity-editor";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { PersistedDaySection } from "./day-workspace/day-collapsible-section";
 import type { DaySection } from "@/lib/day-section-preferences";
@@ -65,6 +66,11 @@ export function DayConfiguration({planId,onNavigate}:{planId:number;onNavigate?:
     {section("configuration-workday","Jornada y descansos",["WORKDAY_WINDOW","GLOBAL_MEAL_BREAK"])}
     {section("configuration-flow","Flujo principal y bloques",["MAIN_FLOW","BLOCK_COUNT_POLICY"])}
     {section("configuration-rules","Reglas y márgenes",["TRANSITIONS"])}
+    <PersistedDaySection planId={planId} section="configuration-continuity" title="Agrupación y continuidad">
+      {data.operationContinuity?.groups.length ? data.operationContinuity.groups.map(group=><DailyContinuityGroup key={`${group.id}:${data.operationContinuity!.revisionId}`} group={group} canEdit={canEdit} pending={operation.isPending}
+        onSave={operationContinuity=>edit({operationContinuity,expectedRevisionId:data.operationContinuity!.revisionId})}
+        onRestore={()=>operation.mutate({method:"POST",path:"/restore",payload:{capability:"OPERATION_CONTINUITY",operationContinuity:{groupId:group.id},expectedRevisionId:data.operationContinuity!.revisionId}})}/>) : <p className="text-sm text-muted-foreground">Esta jornada no tiene grupos de continuidad configurados.</p>}
+    </PersistedDaySection>
     <PersistedDaySection planId={planId} section="configuration-rounds" title="Preparación entre rondas" anchorIds={["config-SYNCHRONIZED_ROUNDS"]}><div id="config-SYNCHRONIZED_ROUNDS">{data.roundPreparations ? <RoundPreparationEditor key={`${planId}:${data.roundPreparations.revisionId}`} configuration={data.roundPreparations} canEdit={canEdit} pending={operation.isPending}
       onSave={(lane,minutes)=>edit({roundPreparation:{policyId:lane.policyId,spaceId:lane.spaceId,preparationMinutesBetweenRounds:minutes},expectedRevisionId:data.roundPreparations!.revisionId})}
       onRestore={async lane=>{if(await consent({title:"Restaurar preparación original",description:`Se recuperarán los ${lane.baselineMinutes} minutos del snapshot original de esta jornada para ${lane.spaceName}. Será necesario volver a validar el borrador.`,confirmText:"Restaurar"}))operation.mutate({method:"POST",path:"/restore",payload:{capability:"SYNCHRONIZED_ROUNDS",roundPreparation:{policyId:lane.policyId,spaceId:lane.spaceId},expectedRevisionId:data.roundPreparations!.revisionId}});}} /> : <p className="text-sm text-muted-foreground">No se pudo verificar la configuración de rondas de esta jornada.</p>}</div></PersistedDaySection>

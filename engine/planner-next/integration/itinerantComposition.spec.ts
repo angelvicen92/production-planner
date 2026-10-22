@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { applyDailyItinerantComposition } from './itinerantComposition';
-import { itinerantCompositionInput } from '../shared/itinerantComposition';
-import { createSupportedEngineInputAdapterFixture } from '../engine/planner-next/integration/engineInputAdapter.fixture';
-import { adaptEngineInputToPlannerNextProblem } from '../engine/planner-next/integration/engineInputAdapter';
-import { materializeItinerantUnitAssignment } from '../engine/planner-next/itinerantUnitAssignment';
-import { canPlaceTask } from '../engine/planner-next/placement';
-import { validatePlan } from '../engine/planner-next/validate';
+import { applyDailyItinerantComposition } from '../../../server/itinerantComposition';
+import { itinerantCompositionInput } from '../../../shared/itinerantComposition';
+import { createSupportedEngineInputAdapterFixture } from './engineInputAdapter.fixture';
+import { adaptEngineInputToPlannerNextProblem } from './engineInputAdapter';
+import { materializeItinerantUnitAssignment } from '../itinerantUnitAssignment';
+import { canPlaceTask } from '../placement';
+import { validatePlan } from '../validate';
 
 function fixture() {
   const input = createSupportedEngineInputAdapterFixture();

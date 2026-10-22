@@ -1,3 +1,4 @@
+import { continuityPenalty } from "./operationContinuity";
 import type { MainFlowPreferenceResultEvidence } from "../../shared/mainFlowPreference";
 import type { PlannerNextProblem, ScheduledItinerantUnitMeal, ScheduledOperationalMeal, ScheduledParticipantMeal, ScheduledResourceMeal, ScheduledRoundPreparation, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { createHash } from "node:crypto";
@@ -1342,7 +1343,8 @@ function searchStandaloneForCoreCandidate(sourceProblem: PlannerNextProblem, cor
         evidence.selectedCompleteFingerprint = candidateFingerprint; evidence.firstCompleteQuality = compact; evidence.selectedCompleteQuality = compact;foundFutureRoundWitnesses=futureRoundWitnesses;foundFutureItinerantWitnesses=futureItinerantWitnesses;
         foundFutureWitnessSet=structuredClone(evidence.futureWitnessSet.finalSet);
         foundPriorReusedIdentities=Object.entries(evidence.futureWitnessSet.byIdentity).filter(([,row])=>row.priorReused).map(([identity])=>identity);
-      } else if (compareCompleteParticipantQuality(compact, evidence.selectedCompleteQuality!) === 1) {
+      } else if (continuityPenalty(problem, candidate) < continuityPenalty(problem, found)
+        || continuityPenalty(problem, candidate) === continuityPenalty(problem, found) && compareCompleteParticipantQuality(compact, evidence.selectedCompleteQuality!) === 1) {
         found = candidate; foundPreparations = [...preparations]; foundRoundPreparations = [...roundPreparations]; foundOrder = selectionOrder; foundParticipantMeals=mealWitness; foundOperationalMeals=operationalMealWitness; evidence.completeIncumbentReplacements += 1;
         evidence.selectedCompleteFingerprint = candidateFingerprint; evidence.selectedCompleteQuality = compact;foundFutureRoundWitnesses=futureRoundWitnesses;foundFutureItinerantWitnesses=futureItinerantWitnesses;
         foundFutureWitnessSet=structuredClone(evidence.futureWitnessSet.finalSet);

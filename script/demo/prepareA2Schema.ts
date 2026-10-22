@@ -14,7 +14,8 @@ export function buildA2SchemaSQL(){
   .replace('ALTER TABLE public.plans ADD CONSTRAINT plans_participant_transition_provenance_check', 'ALTER TABLE public.plans DROP CONSTRAINT IF EXISTS plans_participant_transition_provenance_check;\nALTER TABLE public.plans ADD CONSTRAINT plans_participant_transition_provenance_check')
   .replace('UPDATE public.plan_task_template_snapshots SET contract_version = 2 WHERE contract_version = 1;','-- Preserve all existing v1 snapshots. The application normalizer supports v1 and v2.')
   .replace('CHECK (contract_version = 2);','CHECK (contract_version IN (1,2));');
- const rpcDefinitions=[...latestAssistedSQLContracts()].map(([name,c])=>`${c.definition}\nREVOKE ALL ON FUNCTION ${c.signature} FROM PUBLIC,anon,authenticated,service_role;\n${name==='assisted_apply_snapshot'?'':`GRANT EXECUTE ON FUNCTION ${c.signature} TO service_role;`}`).join('\n');
+ // This historical adoption bundle repairs through 099; later migrations remain a separate ledger operation.
+ const rpcDefinitions=[...latestAssistedSQLContracts(99)].map(([name,c])=>`${c.definition}\nREVOKE ALL ON FUNCTION ${c.signature} FROM PUBLIC,anon,authenticated,service_role;\n${name==='assisted_apply_snapshot'?'':`GRANT EXECUTE ON FUNCTION ${c.signature} TO service_role;`}`).join('\n');
  return `-- PREPARED ONLY. Requires specific authorization, backup and catalog preflight.
 -- Repairs the observed 076 drift, installs 086 RPCs and adopts 087 without rewriting existing snapshots.
 BEGIN;

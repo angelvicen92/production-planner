@@ -319,6 +319,7 @@ export interface EngineInput {
   defaultParticipantTransitionMinutes?: number;
   /** Explicit ordered Planner Next anchored-operation contract. */
   anchoredAccompaniments?: EngineInputAnchoredAccompanimentInput[];
+  operationContinuityGroups?: import("../shared/operationContinuity").OperationContinuityGroup[];
   /** Explicit setup-family grouping and preparation policies. */
   setupPolicies?: EngineInputSetupPolicyInput[];
   /** Explicit dynamic round synchronization across independent spaces. */

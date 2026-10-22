@@ -1,4 +1,5 @@
 import { ItinerantCompositionError } from './itinerantComposition';
+import { catalogContinuityGroup } from "./operationContinuity";
 import { mapTaskTemplatePatch, mapTaskTemplateRow } from "./taskTemplateMapping";
 import type { CreateTaskTemplateInput, UpdateTaskTemplateInput } from "@shared/routes";
 import { supabaseAdmin } from "./supabase";
@@ -2823,7 +2824,7 @@ export class SupabaseStorage implements IStorage {
 
     const { data: template, error: templateError } = await supabaseAdmin
       .from("task_templates")
-      .select("*")
+      .select("*, continuity_group:operation_continuity_groups(*)")
       .eq("id", templateId)
       .maybeSingle();
     if (templateError) throw templateError;
@@ -2835,7 +2836,7 @@ export class SupabaseStorage implements IStorage {
       );
     }
 
-    const snapshot = normalizeTaskTemplateCatalogEntry(template, "ad_hoc_from_default");
+    const snapshot = normalizeTaskTemplateCatalogEntry({...template, continuityGroup:catalogContinuityGroup(template.continuity_group,template.continuity_group_id)}, "ad_hoc_from_default");
     const row = taskTemplateSnapshotToPersistenceRow(planId, snapshot);
     const { error: insertError } = await supabaseAdmin
       .from("plan_task_template_snapshots")
@@ -2859,13 +2860,15 @@ export class SupabaseStorage implements IStorage {
   async getTaskTemplates(): Promise<TaskTemplate[]> {
     const { data, error } = await supabaseAdmin
       .from("task_templates")
-      .select("*");
+      .select("*, continuity_group:operation_continuity_groups(*)");
     if (error) throw error;
 
     // Normalizar a camelCase para el cliente
     return (data || []).map((t: any) => ({
       id: t.id,
       revision: t.revision,
+      continuityGroupId:t.continuity_group_id ?? null,
+      continuityGroup:catalogContinuityGroup(t.continuity_group,t.continuity_group_id),
       name: t.name,
       abbrev: t.abbrev ?? null,
       defaultComment1Color: t.default_comment1_color ?? null,
@@ -2941,6 +2944,7 @@ export class SupabaseStorage implements IStorage {
   async createTaskTemplate(template: CreateTaskTemplateInput): Promise<TaskTemplate> {
     // El cliente manda camelCase (por contrato shared). En BD es snake_case.
     const insert: any = {
+      continuity_group_id: template.continuityGroupId ?? null,
       name: template.name,
       default_duration: template.defaultDuration,
       resource_requirements: Object.prototype.hasOwnProperty.call(
@@ -3009,6 +3013,7 @@ export class SupabaseStorage implements IStorage {
     return {
       id: data.id,
       revision: data.revision,
+      continuityGroupId:data.continuity_group_id ?? null,
       name: data.name,
       defaultDuration: data.default_duration ?? null,
       defaultCameras: data.default_cameras ?? 0,

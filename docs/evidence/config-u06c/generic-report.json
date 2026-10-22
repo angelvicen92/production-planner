@@ -1,0 +1,29 @@
+{
+  "scenario": "three participants, two template families, one exclusive room; independent windows and an interleavable second group",
+  "baseCommit": "49d826c9a5ecdd3e0488a64d2b6a05dd3aad98b5",
+  "before": {
+    "status": "INCONCLUSIVE",
+    "reason": "JOINT_STYLING_FEEDER_MATCHING",
+    "starts": [],
+    "hardValid": null
+  },
+  "after": {
+    "status": "FEASIBLE",
+    "reason": null,
+    "starts": [
+      10,
+      40,
+      70
+    ],
+    "hardValid": true
+  },
+  "releasedCompleteAlternativeAlsoPassesOriginalValidator": true,
+  "policyCases": "engine/planner-next/operationContinuity.spec.ts",
+  "snapshotAndConsumerCases": "server/operationContinuity.spec.ts",
+  "nativeJourney": "script/demo/smokeOperationContinuityJourney.ts",
+  "distinctArrivalStarts": [
+    0,
+    5,
+    10
+  ]
+}

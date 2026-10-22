@@ -96,9 +96,16 @@ export async function runTemplateCreation(options:{appUrl:string;baselineUrl?:st
   const beforeInput=page.getByRole('spinbutton',{name:'Margen antes (vacío = heredado)',exact:true});
   const afterInput=page.getByRole('spinbutton',{name:'Margen después (vacío = heredado)',exact:true});
   await beforeInput.fill('0');await afterInput.fill('20');
+  const editRequests:{method:string;path:string}[]=[],editResponses:{status:number;path:string}[]=[];
+  page.on('request',r=>{if(new URL(r.url()).pathname===editPath)editRequests.push({method:r.method(),path:editPath});});
+  page.on('response',r=>{if(new URL(r.url()).pathname===editPath)editResponses.push({status:r.status(),path:editPath});});
   const edited=page.waitForResponse(r=>new URL(r.url()).pathname===editPath&&r.request().method()==='PATCH');
-  await page.getByRole('button',{name:'Guardar',exact:true}).click();const editedResponse=await edited;
+  const editedResponse=await (async()=>{try{
+   await page.getByRole('button',{name:'Guardar',exact:true}).click();return await edited;
+  }catch(error){report.editFailure={requests:editRequests,responses:editResponses,alerts:await page.getByRole('status').allTextContents()};save();throw error;}})();
   assert.equal(editedResponse.status(),200);const editedBody=editedResponse.request().postDataJSON();
+  assert.equal('itinerantTeamRequirement' in editedBody,false);assert.equal('itinerantTeamId' in editedBody,false);
+  report.candidate.push({operation:'real UI legacy itinerary margin PATCH',requests:editRequests,responses:editResponses,payload:editedBody});save();
   assert.equal(editedBody.participantMarginBeforeMinutes,0);assert.equal(editedBody.participantMarginAfterMinutes,20);
   await assertUpdated(fixture.id,full,{participantMarginAfterMinutes:20});
   for(const values of [[null,0],[5,null],[0,20]] as const){

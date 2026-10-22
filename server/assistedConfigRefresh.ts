@@ -94,6 +94,18 @@ export class AssistedConfigRefreshService {
     const refreshingOptimizer=selected.has("optimizer:settings");
     const optimizerBaseline=refreshingOptimizer?{...candidate.candidateReplay.optimizerSnapshot,source:"INHERITED" as const}:undefined;
     const optimizerSnapshot=refreshingOptimizer&&candidate.currentReplay.optimizerSnapshot.source!=="DAY_OVERRIDE"?optimizerBaseline!:candidate.currentReplay.optimizerSnapshot;
+    const groupChanged=candidate.preview.changes.some(change=>selected.has(change.key)&&change.authority==="task_templates"
+      && JSON.stringify((change.currentValue as any)?.continuityGroup??null)!==JSON.stringify((change.candidateValue as any)?.continuityGroup??null));
+    if(groupChanged){
+      const persisted=await this.storage.getPlanTaskTemplateSnapshots(planId);
+      const selectedTemplates=[...templates.values()].map(template=>{
+        const prior=persisted.find(snapshot=>snapshot.sourceTemplateId===template.sourceTemplateId);
+        return {...template,...(prior&&"planTemplateSnapshotId" in prior?{planTemplateSnapshotId:prior.planTemplateSnapshotId}:{})};
+      });
+      const repository=new Proxy(this.storage,{get:(target,key,receiver)=>key==="getPlanTaskTemplateSnapshots"?async()=>selectedTemplates:Reflect.get(target,key,receiver)});
+      const nextInput=await buildEngineInput(planId,repository);
+      replayAuthorities.plan_workday=projectEffectiveAuthoritiesFromEngineInputV1(nextInput).plan_workday;
+    }
     const replay=buildEffectivePlanConfigReplaySnapshotV1({taskTemplateSnapshots:[...templates.values()] as TaskTemplateOperationalSnapshotV1[],optimizerSnapshot,authorities:replayAuthorities});
     const identity=buildEffectivePlanConfigRevisionV1({planId,taskTemplateSnapshots:replay.taskTemplateSnapshots,optimizerSnapshot:replay.optimizerSnapshot,taskTemplateProvenance:provenance("plan_task_template_snapshots"),optimizerProvenance:provenance("plan_optimizer_snapshots"),authorities:Object.fromEntries(Object.entries(replay.authorities).map(([authority,semanticValue])=>[authority,{semanticValue,provenance:provenance(authority)}])) as any});
     const diff={contractVersion:1,selectedChanges:candidate.preview.changes.filter(x=>selected.has(x.key)),...(optimizerBaseline?{optimizerBaseline}: {})};

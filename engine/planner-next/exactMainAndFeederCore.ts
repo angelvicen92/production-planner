@@ -1095,7 +1095,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     // member is part of this intermediate core.
     const reducedTechnicalChains=problem.technicalChains?.filter(chain=>
       chain.orderedTaskIds.every(id=>expectedIds.has(id)));
-    const reduced:PlannerNextProblem={...problem,tasks:reducedTasks,technicalChains:reducedTechnicalChains,spaces:problem.spaces.map(space=>{
+    const reduced:PlannerNextProblem={...problem,tasks:reducedTasks,operationContinuityGroups:problem.operationContinuityGroups?.filter(group=>group.taskIds.every(id=>reducedTasks.some(task=>task.id===id))),technicalChains:reducedTechnicalChains,spaces:problem.spaces.map(space=>{
       const projected=deferredSetupSpaceIds.has(space.id)?{...space,secondaryContinuity:"OFF" as const,setupPolicy:undefined}:space;
       return space.id===problem.mainFlow.spaceId&&mainMealAuthority?.source!=="OPERATIONAL_MEAL_POLICY"
         &&mainMealAuthority&&!projected.mealPolicy
@@ -1416,7 +1416,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const mainMealAuthority=mainFlowMealPolicy(problem);
       const operationalMainMealPolicies=mainMealAuthority?.source==="OPERATIONAL_MEAL_POLICY"
         ?(problem.operationalMealPolicies??[]).filter(policy=>mainMealAuthority.sourceIds.includes(policy.id)):[];
-      const reduced:PlannerNextProblem={...problem,tasks:reducedTasks,spaces:problem.spaces.map(space=>{
+      const reduced:PlannerNextProblem={...problem,tasks:reducedTasks,operationContinuityGroups:problem.operationContinuityGroups?.filter(group=>group.taskIds.every(id=>reducedTasks.some(task=>task.id===id))),spaces:problem.spaces.map(space=>{
         return space.id===problem.mainFlow.spaceId&&mainMealAuthority?.source!=="OPERATIONAL_MEAL_POLICY"
           &&mainMealAuthority&&!space.mealPolicy
           ?{...space,mealPolicy:{window:{...mainMealAuthority.window},duration:mainMealAuthority.duration}}:space;

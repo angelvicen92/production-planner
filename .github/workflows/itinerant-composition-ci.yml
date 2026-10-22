@@ -41,7 +41,7 @@ jobs:
       - run: npm run check
       - run: npm run build
       - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
-      - run: node --import tsx --test server/itinerantComposition.spec.ts server/apiAuthorization.spec.ts server/effectivePlanConfigRevision.spec.ts engine/buildInput.taskTemplateSnapshot.spec.ts engine/planner-next/integration/engineInputAdapter.spec.ts engine/planner-next/itinerantUnitMeals.spec.ts
+      - run: node --import tsx --test engine/planner-next/integration/itinerantComposition.spec.ts server/apiAuthorization.spec.ts server/effectivePlanConfigRevision.spec.ts engine/buildInput.taskTemplateSnapshot.spec.ts engine/planner-next/integration/engineInputAdapter.spec.ts engine/planner-next/itinerantUnitMeals.spec.ts
       - run: npm run demo:a2:smoke -- work/itinerant-composition --restricted-data-api --historical-topology --itinerant-composition --production-runtime
       - uses: actions/upload-artifact@v4
         if: always()

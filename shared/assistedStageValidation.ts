@@ -20,7 +20,7 @@ export interface StageValidationReport {
   newHardCount?: number;
   newRequiredCount?: number;
   preferredCount: number;
-  preferredAssessment: "NOT_CLASSIFIED";
+  preferredAssessment: "NOT_CLASSIFIED" | "OPERATION_CONTINUITY_QUANTIFIED";
   violations: StageViolation[];
   [key: string]: unknown;
 }

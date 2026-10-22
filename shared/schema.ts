@@ -430,8 +430,14 @@ export const planResourcePools = pgTable("plan_resource_pools", {
   names: jsonb("names").$type<string[] | null>(),
 });
 
+export const operationContinuityGroups = pgTable("operation_continuity_groups", {
+  id: uuid("id").primaryKey(), name:text("name").notNull(), policy:text("policy").notNull(),
+  gapWeight:integer("gap_weight").notNull(), revision:integer("revision").notNull().default(0),
+});
+
 // 6. task_templates
 export const taskTemplates = pgTable("task_templates", {
+  continuityGroupId: uuid("continuity_group_id").references(()=>operationContinuityGroups.id),
   revision: integer("revision").notNull().default(0),
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -478,6 +484,7 @@ export const planTaskTemplateSnapshots = pgTable("plan_task_template_snapshots",
   id: bigint("id", { mode: "number" }).primaryKey(),
   planId: integer("plan_id").notNull().references(() => plans.id, { onDelete: "cascade" }),
   sourceTemplateId: integer("source_template_id").notNull(),
+  continuityGroup:jsonb("continuity_group").$type<import("./operationContinuity").ContinuityGroup>(),
   contractVersion: integer("contract_version").notNull().default(2),
   source: text("source").notNull(),
   templateName: text("template_name").notNull(),

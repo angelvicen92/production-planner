@@ -46,6 +46,7 @@ export const planPlannerNextConfigurationSchema=z.object({
   searchBudget:z.object({bestK:id,maxBacktracks:minutes,maxPatterns:id,maxBranchExpansions:id.max(100_000)}).strict(),
   timeGridMinutes:id,participantTransitionMinutes:minutes,resourceTransitionMinutes:minutes,
   mainFlow:z.object({spaceId:id,preferredEnd:hhmm,continuity:z.literal('REQUIRED'),maxBlocksByKey:id,minTasksPerBlock:id}).strict()}).strict(),
+ operationContinuityGroups:z.array(z.object({id:text,taskIds:ids,policy:z.enum(["OFF","PREFERRED","REQUIRED"]),gapWeight:id.max(1000)}).strict()).optional(),
  taskOperations:z.array(task),
  anchoredAccompaniments:z.array(z.object({id:text,anchorTaskId:id,beforeTaskIds:ids,afterTaskIds:ids,adjacency:z.literal('REQUIRED'),internalTransition:z.literal('INCLUDED'),resourceContinuity:z.literal('REQUIRED')}).strict()),
  setupPolicies:z.array(z.object({spaceId:id,families:z.array(text),oneBlockPerFamily:z.literal(true),orderConstraint:z.enum(['EXPLICIT','UNSPECIFIED']),familyOrder:z.array(text).optional(),reentry:z.literal('FORBIDDEN'),preparationMinutesBetweenFamilies:minutes}).strict()),

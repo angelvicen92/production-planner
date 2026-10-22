@@ -1,4 +1,5 @@
 import { applyDailyItinerantComposition, ItinerantCompositionError } from '../server/itinerantComposition';
+import { applyEffectiveOperationContinuity } from "../server/operationContinuity";
 import { applyEffectiveMainFlowPreference } from "../server/mainFlowPreference";
 import { applyEffectiveRoundPreparations } from "../server/roundPreparation";
 import type { IStorage } from "../server/storage";
@@ -1002,5 +1003,5 @@ export async function buildEngineInput(
     if ((p.planner_next_configuration ?? p.plannerNextConfiguration) != null) throw new ItinerantCompositionError('autoridades históricas y heredadas incompatibles');
     effectiveInput = applyDailyItinerantComposition(effectiveInput, await storage.getPlanItinerantUnitSnapshots(planId), planId);
   }
-  return applyEffectiveRoundPreparations(applyEffectiveMainFlowPreference(effectiveInput,p),p);
+  return applyEffectiveOperationContinuity(applyEffectiveRoundPreparations(applyEffectiveMainFlowPreference(effectiveInput,p),p),p,taskTemplateSnapshots);
 }

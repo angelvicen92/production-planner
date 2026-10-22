@@ -1,0 +1,41 @@
+{
+  "scope": "First authorized canonical A2 architecture, read-only generator; same input, ordering, budgets and certificate",
+  "beforeCommit": "b4642176b109c30d75d75495dbbd00620db33311",
+  "before": {
+    "node": "v24.19.0",
+    "sourceSha256": "8457de7910e022e28c1cd3f71c3094df29e9ac22276b9bb059a88608566934cc",
+    "durationMs": 14678,
+    "status": "FEASIBLE",
+    "arrivalAttempts": 28,
+    "uniqueArrivalInputs": 22,
+    "architectureFingerprint": "07be7c667f340bbc22b7af6729fcda1e90a956855415e4df7a1908ac3732c3b2",
+    "witnessFingerprint": "4f8b80eff7cfe7c9cb00285373d228c493f944b56a4557d2dc4b25f59b91a188",
+    "placementsFingerprint": "5379b8098acc182b1d071821cee41c9fc8d4332c346e48bb767b6d2d460b79a9",
+    "transportSourceSha256": "0249ade710630278361ed9356fbcb78b16f7a2167d1476ebb2f96c09a9764308"
+  },
+  "after": {
+    "node": "v24.19.0",
+    "sourceSha256": "ef1a76f28459aa6365adb81388b0f1cff4a2d5c8822a2458a134682a45dcaca5",
+    "durationMs": 8037,
+    "status": "FEASIBLE",
+    "arrivalAttempts": 22,
+    "uniqueArrivalInputs": 22,
+    "architectureFingerprint": "07be7c667f340bbc22b7af6729fcda1e90a956855415e4df7a1908ac3732c3b2",
+    "witnessFingerprint": "4f8b80eff7cfe7c9cb00285373d228c493f944b56a4557d2dc4b25f59b91a188",
+    "placementsFingerprint": "5379b8098acc182b1d071821cee41c9fc8d4332c346e48bb767b6d2d460b79a9",
+    "transportSourceSha256": "da337f4a0cc34d144b7cd1447118675f6783ae67c446032579c74f723a9b5b2d"
+  },
+  "cpuProfileBefore": {
+    "node": "v24.19.0",
+    "sampledTransportDirectionSelfMs": 16469,
+    "sampledPipelineBuilderInclusiveMs": 28819
+  },
+  "ciTrigger": {
+    "runId": 39721520819,
+    "jobId": 119635821636,
+    "failure": "GET /proposals/38 timed out after 180000 ms while S0 replay was running; initial 266/266 and both order pairs completed",
+    "baselineSuccessfulRunId": 39651400078,
+    "baselineS0ReplayObservedMs": 177152
+  },
+  "change": "Reuse exact geometric duplicates and architecture-invariant release domains; classify fixed transport peers once per start-domain enumeration. All placement checks and candidate ticks remain."
+}

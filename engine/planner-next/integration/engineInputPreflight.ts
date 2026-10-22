@@ -32,6 +32,7 @@ export type EngineInputPreflightReasonCode =
   | "INCOMPLETE_ANCHORED_OPERATION"
   | "INCONSISTENT_SPACE_ZONE_REFERENCE"
   | "INVALID_SEARCH_BUDGET"
+  | "INVALID_OPERATION_CONTINUITY_GROUP"
   | "INVALID_SEARCH_POLICY_CONFIGURATION"
   | "INVALID_TRANSITION_CONFIGURATION"
   | "CONFLICTING_PARTICIPANT_TRANSITION_CONFIGURATION"
@@ -213,7 +214,7 @@ const SET_ARRAY_KEYS = new Set([
   "groupingZoneIds", "resourceItemComponents", "spaceIdsByZoneId", "spaceResourceAssignments",
   "zoneResourceAssignments",
   "planZoneSettings", "planSpaceSettings", "setupPolicies", "families", "coachRouteTransitions",
-  "roundSynchronizations", "technicalChains", "operationalMealPolicies", "planResourceItemIds", "requiredResourceIds", "itinerantTeamAvailability", "windows",
+  "operationContinuityGroups", "roundSynchronizations", "technicalChains", "operationalMealPolicies", "planResourceItemIds", "requiredResourceIds", "itinerantTeamAvailability", "windows",
 ]);
 const ORDERED_ARRAY_KEYS = new Set(["beforeTaskIds", "afterTaskIds", "familyOrder", "orderedTaskIds", "phases"]);
 
@@ -396,6 +397,7 @@ function sourceProjection(input: EngineInput): unknown {
     anchoredAccompaniments,
     setupPolicies: Array.isArray(runtime.setupPolicies) && runtime.setupPolicies.length === 0 ? undefined : runtime.setupPolicies,
     roundSynchronizations: projectEngineInputRoundSynchronizations(input),
+    operationContinuityGroups: Array.isArray(runtime.operationContinuityGroups) && runtime.operationContinuityGroups.length===0 ? undefined : runtime.operationContinuityGroups,
     technicalChains: runtime.technicalChains,
     coachRouteTransitions: projectEngineInputCoachRouteTransitions(input),
   });
@@ -484,6 +486,28 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       ...(details ? { details: stableValue(details) as Record<string, unknown> } : {}),
     });
   };
+  if (input.operationContinuityGroups !== undefined) {
+    const groups = input.operationContinuityGroups;
+    const seen = new Set<string>(), members = new Set<number>();
+    if (!Array.isArray(groups)) addIssue("INVALID_OPERATION_CONTINUITY_GROUP", "plan", input.planId, "operationContinuityGroups", "Expected group policies.");
+    else for (const group of groups) {
+      const ids = group?.taskIds;
+      if (!group || typeof group.id !== "string" || !group.id || seen.has(group.id)
+        || !["OFF","PREFERRED","REQUIRED"].includes(group.policy) || !Number.isInteger(group.gapWeight) || group.gapWeight < 1 || group.gapWeight > 1000
+        || !Array.isArray(ids) || !ids.length || new Set(ids).size !== ids.length
+        || ids.some(id => !Number.isInteger(id) || members.has(id) || !input.tasks.some(task => task.id === id))) {
+        addIssue("INVALID_OPERATION_CONTINUITY_GROUP", "plan", input.planId, "operationContinuityGroups", "Invalid group identity, policy or membership.");
+      } else {
+        seen.add(group.id); ids.forEach(id => members.add(id));
+        const active=ids.map(id=>input.tasks.find(task=>task.id===id)!).filter(task=>task.status!=="cancelled");
+        if (active.some(task=>task.plannerNextKind!=="auxiliary" || task.blocksSpace===false || task.jointGroupId!=null || task.setupFamilyId!=null
+          || task.spaceId===input.plannerNext?.mainFlow.spaceId || task.operationalRole==="transport_arrival" || task.operationalRole==="transport_departure")
+          || new Set(active.map(task=>task.spaceId)).size>1)
+          addIssue("INVALID_OPERATION_CONTINUITY_GROUP", "plan", input.planId, "operationContinuityGroups", "Only independent physical secondary operations in one room are supported.");
+      }
+    }
+  }
+
 
   const addIdentity = (
     namespace: EngineInputIdentityNamespace,

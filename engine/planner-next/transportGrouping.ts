@@ -601,6 +601,19 @@ export function canPlaceTransportGroup(
   const first = tasks[0];
   const direction = first && transportDirectionForTask(problem,first.id);
   const peers = direction ? placed.filter(task=>transportDirectionForTask(problem,task.id)===direction) : [];
+  return canPlaceTransportGroupAgainstPeers(problem,tasks,start,placed,previousGroupStarts,policy,peers);
+}
+
+function canPlaceTransportGroupAgainstPeers(
+  problem: PlannerNextProblem,
+  tasks: readonly Task[],
+  start: number,
+  placed: readonly ScheduledTask[],
+  previousGroupStarts: readonly number[],
+  policy: Readonly<TransportGroupingPolicy>,
+  peers: readonly ScheduledTask[],
+): boolean {
+  const first = tasks[0];
   const simultaneous = peers.filter(task=>task.start===start);
   return first !== undefined
     && tasks.length + simultaneous.length <= policy.maximumGroupSize
@@ -626,8 +639,12 @@ export function transportGroupStarts(
 ): number[] {
   const duration = tasks[0]?.duration ?? 0;
   const starts: number[] = [];
+  // Membership is invariant across these starts. Keep every placement check,
+  // without repeatedly classifying the same external occupations for each tick.
+  const direction = tasks[0] && transportDirectionForTask(problem,tasks[0].id);
+  const peers = direction ? placed.filter(task=>transportDirectionForTask(problem,task.id)===direction) : [];
   for (let start = problem.day.start; start + duration <= problem.day.end; start += 5) {
-    if (canPlaceTransportGroup(problem, tasks, start, placed, previousGroupStarts, policy)) starts.push(start);
+    if (canPlaceTransportGroupAgainstPeers(problem, tasks, start, placed, previousGroupStarts, policy, peers)) starts.push(start);
   }
   return starts;
 }
