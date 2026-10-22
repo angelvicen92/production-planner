@@ -21,7 +21,7 @@ export function reconcileA2Topology(d:ReturnType<typeof buildA2ImportRows>,catal
  const input=d.input;
  input.planId=planId;
  input.tasks=input.tasks.map(task=>({...task,planId,...(task.spaceId==null?{}:{spaceId:sid(task.spaceId),zoneId:zid(task.spaceId)})}));
- input.plannerNext={...input.plannerNext!,mainFlow:{...input.plannerNext!.mainFlow,spaceId:sid(input.plannerNext!.mainFlow.spaceId)}};
+ input.plannerNext={...input.plannerNext!,mainFlow:{...input.plannerNext!.mainFlow!,spaceId:sid(input.plannerNext!.mainFlow!.spaceId)}};
  input.spaceResourceAssignments=Object.fromEntries(Object.entries(input.spaceResourceAssignments).map(([id,rs])=>[sid(Number(id)),rs]));
  input.setupPolicies=input.setupPolicies!.map(row=>({...row,spaceId:sid(row.spaceId)}));
  input.roundSynchronizations=input.roundSynchronizations!.map(row=>({...row,lanes:row.lanes.map(lane=>({...lane,spaceId:sid(lane.spaceId)}))}));

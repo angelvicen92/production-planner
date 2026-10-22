@@ -122,7 +122,7 @@ async function a2Worker(count:number|undefined,destination:string){
   const adapter=adaptEngineInputToPlannerNextProblem(input);assert.equal(adapter.status,'SUPPORTED');
   if(adapter.status!=='SUPPORTED')throw Error('A2 adapter unsupported');
   const source=structuredClone(adapter.problem);setPreference(source,count);
-  const resolution=resolveAssistedScope(input,adapter,{kind:'SPACE',spaceId:input.plannerNext!.mainFlow.spaceId});
+  const resolution=resolveAssistedScope(input,adapter,{kind:'SPACE',spaceId:input.plannerNext!.mainFlow!.spaceId});
   const prior=warm?JSON.parse(readFileSync(resolve(destination,'a2-AUTO-result.json'),'utf8')).evidence.futureStructuralWitnesses:[];
   const assisted=buildAssistedProblem(source,resolution.scope,[],analyticalFutureEligibleTaskIds(input,adapter.identityMap),[],[],[],[],prior);
   const before=JSON.stringify(assisted),started=performance.now(),result=executeAssistedPlanning(assisted);

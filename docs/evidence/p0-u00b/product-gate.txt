@@ -1,0 +1,15 @@
+Node 20.20.2; npm dependencies from the unchanged lockfile.
+Product command: the planner-engine-ci product suite, preserving both existing historical diagnostic exclusions.
+
+  ---
+  duration_ms: 388.554091
+  ...
+1..3011
+# tests 3076
+# suites 9
+# pass 3076
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 850649.198912

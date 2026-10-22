@@ -185,7 +185,9 @@ export interface PlannerNextProblem {
     tasks: Task[];
     prerequisiteTasks: Task[];
   }>;
-  mainFlow: {
+  /** Only an explicit STANDALONE_ONLY profile may omit the main flow. */
+  profile?: "MAIN_WITH_VOCAL_FEEDER" | "STANDALONE_ONLY";
+  mainFlow?: {
     spaceId: string;
     preferredEnd: Minute;
     continuity: "REQUIRED";

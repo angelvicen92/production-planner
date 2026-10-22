@@ -79,6 +79,14 @@ export function preflight(problem: PlannerNextProblem): string[] {
   if (problem.protectedMeal !== undefined && (!usableDay || invalidWindow(problem.protectedMeal, day))) {
     reasons.add("INVALID_PROTECTED_MEAL");
   }
+  const standaloneOnly=problem.profile==="STANDALONE_ONLY";
+  if(problem.profile!==undefined&&problem.profile!=="MAIN_WITH_VOCAL_FEEDER"&&!standaloneOnly)
+    reasons.add("UNSUPPORTED_PLANNING_PROFILE");
+  if(standaloneOnly){
+    if(problem.mainFlow!==undefined)reasons.add("STANDALONE_MAIN_FLOW_CONFLICT");
+    if(problem.tasks.some(task=>task.kind!=="auxiliary"&&task.kind!=="technical"))reasons.add("STANDALONE_TASK_KIND_UNSUPPORTED");
+    if(problem.searchPolicy!=="EXACT_CONSTRUCTIVE")reasons.add("STANDALONE_SEARCH_POLICY_UNSUPPORTED");
+  }else{
   const preferredEnd = problem.mainFlow?.preferredEnd;
   const preferredBlockCount=problem.mainFlow?.preferredBlockCount;
   if(preferredBlockCount!==undefined&&(!Number.isSafeInteger(preferredBlockCount)||preferredBlockCount<1))
@@ -87,11 +95,11 @@ export function preflight(problem: PlannerNextProblem): string[] {
   if(split&&(!Number.isSafeInteger(split.beforeMealBlocks)||!Number.isSafeInteger(split.afterMealBlocks)
     ||split.beforeMealBlocks<0||split.afterMealBlocks<0||split.beforeMealBlocks+split.afterMealBlocks!==preferredBlockCount))
     reasons.add("INVALID_MAIN_FLOW_MEAL_SPLIT_PREFERENCE");
-  if(split&&!problem.spaces.some(s=>s.id===problem.mainFlow.spaceId&&s.mealPolicy)
-    &&!(problem.operationalMealPolicies??[]).some(m=>m.spaceIds.includes(problem.mainFlow.spaceId)))
+  if(split&&!problem.spaces.some(s=>s.id===problem.mainFlow?.spaceId&&s.mealPolicy)
+    &&!(problem.operationalMealPolicies??[]).some(m=>m.spaceIds.includes(problem.mainFlow!.spaceId)))
     reasons.add("MAIN_FLOW_MEAL_SPLIT_WITHOUT_MEAL");
   if (!usableDay
-    || !Number.isFinite(preferredEnd)
+    || preferredEnd===undefined || !Number.isFinite(preferredEnd)
     || preferredEnd < day.start
     || preferredEnd > day.end
     || (problem.protectedMeal && preferredEnd > problem.protectedMeal.start)) {
@@ -99,6 +107,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
   }
   if (problem.mainFlow?.continuity !== "REQUIRED") {
     reasons.add("UNSUPPORTED_CONTINUITY");
+  }
   }
 
   const budget = problem.budget;
@@ -220,7 +229,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
     for(const id of meal.resourceIds){if(operationalMealResourceOwner.has(id))reasons.add("INVALID_OPERATIONAL_MEAL_POLICY");operationalMealResourceOwner.add(id);}
   }
   const mainSpacePolicy=spaces.find(space=>space.id===mainSpaceId)?.mealPolicy;
-  const mainOperationalPolicies=operationalMealPolicies.filter(meal=>meal.spaceIds.includes(mainSpaceId));
+  const mainOperationalPolicies=operationalMealPolicies.filter(meal=>mainSpaceId!==undefined&&meal.spaceIds.includes(mainSpaceId));
   const mainMealPolicies=[...(mainSpacePolicy?[mainSpacePolicy]:[]),...mainOperationalPolicies];
   const incompatibleMainMeals=mainMealPolicies.some(policy=>policy.duration!==mainMealPolicies[0]?.duration||policy.window.start!==mainMealPolicies[0]?.window.start||policy.window.end!==mainMealPolicies[0]?.window.end);
   if(incompatibleMainMeals)reasons.add("INCOMPATIBLE_MAIN_FLOW_MEAL_POLICIES");
@@ -235,7 +244,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
   const availableUnitIds=new Set(itinerantUnits.map(unit=>unit.id));
   if(tasks.some(task=>task.itinerantUnitId!==undefined&&!availableUnitIds.has(task.itinerantUnitId)||(task.allowedItinerantUnitIds??[]).some(id=>!availableUnitIds.has(id))))reasons.add("MISSING_ITINERANT_UNIT_AVAILABILITY");
   if(tasks.some(task=>task.itinerantUnitId!==undefined&&(task.requiredResourceIds??[]).includes(task.itinerantUnitId))||resources.some(resource=>usedUnitIds.has(resource.id)))reasons.add("ITINERANT_UNIT_RESOURCE_ALIAS_NOT_ALLOWED");
-  if (!mainSpaceId || !spaceIds.has(mainSpaceId)) reasons.add("MISSING_MAIN_FLOW_SPACE");
+  if (!standaloneOnly && (!mainSpaceId || !spaceIds.has(mainSpaceId))) reasons.add("MISSING_MAIN_FLOW_SPACE");
   for (const space of spaces) {
     if(Object.prototype.hasOwnProperty.call(space,"mealPolicy")){const p=(space as {mealPolicy?:unknown}).mealPolicy;const validObject=p!==null&&typeof p==="object"&&!Array.isArray(p);const policy=validObject?p as {window?:unknown;duration?:unknown}:undefined;const w=policy?.window as {start?:unknown;end?:unknown}|undefined;const duration=policy?.duration;const validWindow=w!==null&&typeof w==="object"&&Number.isFinite(w.start)&&Number.isInteger(w.start)&&Number.isFinite(w.end)&&Number.isInteger(w.end)&&(w.start as number)<(w.end as number)&&(w.start as number)>=day.start&&(w.end as number)<=day.end;const validDuration=typeof duration==="number"&&Number.isFinite(duration)&&Number.isInteger(duration)&&duration>0&&validWindow&&duration<=(w!.end as number)-(w!.start as number);const fits=validDuration&&Math.ceil((w!.start as number)/5)*5+duration<=(w!.end as number);const available=validWindow&&space.availability.some(a=>a.start<=(w!.start as number)&&(w!.end as number)<=a.end);if(!validObject||!validWindow||!validDuration||!fits||!available)reasons.add("INVALID_SPACE_MEAL_POLICY");if(space.id===mainSpaceId){if(!incompatibleMainMeals&&!mainFlowMealAligned(problem))reasons.add("MAIN_FLOW_MEAL_ALIGNMENT_INVALID");if(space.setupPolicy!==undefined||space.secondaryContinuity!==undefined&&space.secondaryContinuity!=="OFF")reasons.add("SPACE_MEAL_IN_STRUCTURED_SPACE_UNSUPPORTED");const own=tasks.filter(t=>t?.spaceId===space.id);if(own.some(t=>t.kind!=="main"||!t.participantId||!t.coachId||!t.blockKey))reasons.add("SPACE_MEAL_TASK_KIND_UNSUPPORTED");}else{if(space.setupPolicy!==undefined)reasons.add("SPACE_MEAL_IN_STRUCTURED_SPACE_UNSUPPORTED");const own=tasks.filter(t=>t?.spaceId===space.id),fixed=validDuration&&duration===(w!.end as number)-(w!.start as number);if(own.some(t=>{const auxiliary=t.kind==="auxiliary"&&t.jointGroupId===undefined&&t.setupFamilyId===undefined&&Array.isArray(t.dependencies)&&t.dependencies.length===0&&t.coachId===undefined;const exactFeeder=fixed&&t.kind==="vocal"&&t.participantId!==undefined&&t.coachId!==undefined&&Array.isArray(t.dependencies)&&t.dependencies.length===0;return !auxiliary&&!exactFeeder;})||(space.secondaryContinuity==="REQUIRED"&&own.length<2))reasons.add("SPACE_MEAL_TASK_KIND_UNSUPPORTED");}}
     if (space.setupPolicy !== undefined) {
@@ -524,15 +533,16 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   const mainFlowOccupations=[...mains];
   const lastMain = mains.at(-1);
   let mainFlowMeal = 0;
-  const mainPolicy = problem.spaces.find(x=>x.id===problem.mainFlow.spaceId)?.mealPolicy;
-  const ownMeals = meals.filter(x=>x.spaceId===problem.mainFlow.spaceId);
+  const mainFlow=problem.mainFlow;
+  const mainPolicy = mainFlow && problem.spaces.find(x=>x.id===mainFlow?.spaceId)?.mealPolicy;
+  const ownMeals = meals.filter(x=>x.spaceId===mainFlow?.spaceId);
   const mainFlowOperationalAuthority=mainFlowMealPolicy(problem);
   const mainFlowOperationalMeal=mainFlowOperationalAuthority?.source==="OPERATIONAL_MEAL_POLICY"
     ?operationalMeals.find(meal=>mainFlowOperationalAuthority.sourceIds.includes(meal.id)):undefined;
   if (mainPolicy) {
-    const meal=ownMeals[0], mealStart=meal?.start??problem.mainFlow.preferredEnd, mealEnd=meal?.end??mealStart+mainPolicy.duration, morning=mainFlowOccupations.filter(x=>x.end<=mealStart), afternoon=mainFlowOccupations.filter(x=>x.start>=mealEnd);
+    const meal=ownMeals[0], mealStart=meal?.start??mainFlow!.preferredEnd, mealEnd=meal?.end??mealStart+mainPolicy.duration, morning=mainFlowOccupations.filter(x=>x.end<=mealStart), afternoon=mainFlowOccupations.filter(x=>x.start>=mealEnd);
     const consecutive=(xs:ScheduledTask[])=>xs.slice(1).every((x,i)=>xs[i]?.end===x.start);
-    const morningMains=mains.filter(x=>x.end<=mealStart),afternoonMains=mains.filter(x=>x.start>=mealEnd);const globalMealMismatch=problem.protectedMeal!==undefined&&(meal?.start!==problem.protectedMeal.start||meal?.end!==problem.protectedMeal.end);const invalid=ownMeals.length!==1||!meal||meal.id!==spaceMealId(problem.mainFlow.spaceId)||meal.kind!=="space-meal"||meal.entryIndex!==1||meal.duration!==mainPolicy.duration||meal.start!==problem.mainFlow.preferredEnd||globalMealMismatch||!spaceMealWithinDay(problem,meal)||!spaceMealWithinAvailability(problem.spaces.find(x=>x.id===problem.mainFlow.spaceId)!,meal)||!spaceMealAvoidsTasks(meal,mainFlowOccupations)||morning.length===0||morning.at(-1)?.end!==meal.start||(afternoon.length>0&&afternoon[0]?.start!==meal.end)||!consecutive(morning)||!consecutive(afternoon)||(afternoonMains.length>0&&morningMains.at(-1)?.blockKey===afternoonMains[0]?.blockKey)||morning.length+afternoon.length!==mainFlowOccupations.length;
+    const morningMains=mains.filter(x=>x.end<=mealStart),afternoonMains=mains.filter(x=>x.start>=mealEnd);const globalMealMismatch=problem.protectedMeal!==undefined&&(meal?.start!==problem.protectedMeal.start||meal?.end!==problem.protectedMeal.end);const invalid=ownMeals.length!==1||!meal||meal.id!==spaceMealId(mainFlow?.spaceId)||meal.kind!=="space-meal"||meal.entryIndex!==1||meal.duration!==mainPolicy.duration||meal.start!==mainFlow!.preferredEnd||globalMealMismatch||!spaceMealWithinDay(problem,meal)||!spaceMealWithinAvailability(problem.spaces.find(x=>x.id===mainFlow?.spaceId)!,meal)||!spaceMealAvoidsTasks(meal,mainFlowOccupations)||morning.length===0||morning.at(-1)?.end!==meal.start||(afternoon.length>0&&afternoon[0]?.start!==meal.end)||!consecutive(morning)||!consecutive(afternoon)||(afternoonMains.length>0&&morningMains.at(-1)?.blockKey===afternoonMains[0]?.blockKey)||morning.length+afternoon.length!==mainFlowOccupations.length;
     if(invalid)mainFlowMeal=1;
   }
   if (mains.length > 0) {
@@ -557,9 +567,9 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     const counts = new Map<string, number>();
     for (const run of runs) {
       counts.set(run.key, (counts.get(run.key) ?? 0) + 1);
-      if (run.count < problem.mainFlow.minTasksPerBlock) block += 1;
+      if (run.count < mainFlow!.minTasksPerBlock) block += 1;
     }
-    if ([...counts.values()].some((count) => count > problem.mainFlow.maxBlocksByKey)) block += 1;
+    if ([...counts.values()].some((count) => count > mainFlow!.maxBlocksByKey)) block += 1;
   }
   for (const space of requiredSecondarySpaces(problem)) {
     const expected = secondaryTasks(problem.tasks, space.id);

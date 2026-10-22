@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "base": "be5d817c23aec2cf69029bd675edeed8c7d5c0d6",
+  "baselineEvidence": "docs/evidence/config-u04a/p0-integration/new-days",
+  "days": [
+    {
+      "label": "first",
+      "obligations": 4,
+      "problemFingerprint": "3cf2f87808ba1fea4ed36fca31fe7e889e9f1eec9df55f841114830b5d0d0ae6",
+      "problemIdentical": true,
+      "placementsIdentical": true,
+      "hardCount": 0,
+      "requiredCount": 0
+    },
+    {
+      "label": "second",
+      "obligations": 9,
+      "problemFingerprint": "90c10079a8e6a5458a67271321c48a7b975b846182e07e605a0ae140bd0af096",
+      "problemIdentical": true,
+      "placementsIdentical": true,
+      "hardCount": 0,
+      "requiredCount": 0
+    }
+  ]
+}

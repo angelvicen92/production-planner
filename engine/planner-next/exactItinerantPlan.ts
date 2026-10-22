@@ -3278,11 +3278,11 @@ export function constructExactItinerantPlan(problem: PlannerNextProblem, causalD
   const totals=()=>({total:ledger.branchesExplored,core:ledger.coreBranches,standalone:ledger.standaloneBranches});
   const joint=(result:ExactItinerantPlanResult)=>result.evidence.futureStructuralWitnesses.find(item=>item.kind==="JOINT_COMPLETION");
   const blocks=(result:ExactItinerantPlanResult)=>effectiveMainBlockCount(joint(result)?.tasks??result.scheduledTasks);
-  const splitPreference=problem.mainFlow.mealSplitPreference;
+  const splitPreference=problem.mainFlow?.mealSplitPreference;
   const distribution=(result:ExactItinerantPlanResult)=>{
     const witness=joint(result),meals=witness?[...witness.spaceMeals,...witness.operationalMeals]
       :[...result.scheduledSpaceMeals,...result.scheduledOperationalMeals];
-    const meal=meals.find(m=>("spaceId" in m?m.spaceId===problem.mainFlow.spaceId:m.spaceIds.includes(problem.mainFlow.spaceId)));
+    const meal=meals.find(m=>("spaceId" in m?m.spaceId===problem.mainFlow?.spaceId:m.spaceIds.includes(problem.mainFlow!.spaceId)));
     return mainFlowMealBlockDistribution(witness?.tasks??result.scheduledTasks,meal);
   };
   const splitAchieved=(result:ExactItinerantPlanResult)=>{const d=distribution(result);return !splitPreference
@@ -3362,7 +3362,7 @@ function constructConfiguredExactItinerantPlan(problem: PlannerNextProblem, caus
   const priorFutureStructuralWitnesses=prior?(Array.isArray(prior)?prior:[prior]):undefined;
   // SOFT enters the budgeted residual/structural explorers directly;
   // repeating AUTO's legacy eager nominal construction would add uncharged work.
-  const pipeline=fixedPlacementsAsContext&&!problem.analyticalFutureCollectiveContinuation&&problem.mainFlow.preferredBlockCount===undefined?materializeFirstNominalPipelineWitness(problem,(fixedPlacements?.length??0)>0):null;
+  const pipeline=problem.mainFlow&&fixedPlacementsAsContext&&!problem.analyticalFutureCollectiveContinuation&&problem.mainFlow.preferredBlockCount===undefined?materializeFirstNominalPipelineWitness(problem,(fixedPlacements?.length??0)>0):null;
   const preferredArchitecture=pipeline?.witness.status==="FEASIBLE"?{
     pattern:pipeline.witness.pattern,
     slots:[...pipeline.witness.mainSpots].sort((a,b)=>Number(a.id.slice(5))-Number(b.id.slice(5))).map(spot=>spot.start),

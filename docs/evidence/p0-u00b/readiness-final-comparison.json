@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "label": "first",
+      "problemUnchanged": true,
+      "acceptedSnapshotUnchanged": true
+    },
+    {
+      "label": "second",
+      "problemUnchanged": true,
+      "acceptedSnapshotUnchanged": true
+    }
+  ],
+  "note": "Final incompatible-profile readiness assertion passed in the repeated native journey."
+}

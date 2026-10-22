@@ -17,7 +17,7 @@ export function registerNewDayPlannerConfiguration(app:Express,database:any) {
     if((req as any).userRole!=="admin")return void res.status(403).json({message:"Solo ADMIN puede configurar nuevas jornadas."});
     try {
       const value=z.object({expectedRevision:z.number().int().nonnegative(),configuration:newDayPlannerConfigurationSchema.nullable()}).strict().parse(req.body);
-      if(value.configuration){
+      if(value.configuration?.scenario==="MAIN_WITH_VOCAL_FEEDER"){
         const {data,error}=await database.from("spaces").select("id").eq("id",value.configuration.mainFlow.spaceId).maybeSingle();
         if(error)throw error;
         if(!data)return void res.status(400).json({message:"Selecciona un espacio existente para el flujo principal."});

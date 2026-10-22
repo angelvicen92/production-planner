@@ -75,7 +75,7 @@ export async function runA2ConfigurationReadRecovery(o:Options){
  }
  const view=await request<any>('GET',configPath);assert.equal(view.planId,o.planId);
  const scope=await request<any>('GET',`${path}/next-scope`);assert.equal(scope.taskIds.length,19);
- assert.deepEqual(scope.selector,{kind:'SPACE',spaceId:cleanInput.plannerNext!.mainFlow.spaceId});
+ assert.deepEqual(scope.selector,{kind:'SPACE',spaceId:cleanInput.plannerNext!.mainFlow!.spaceId});
  assert.equal(scope.expectedDraftFingerprint,s0.draftFingerprint);
  assert.deepEqual(await state(),s0);assert.equal(await material('plan_breaks'),preservedBreaks);
  o.pass('52 observed legacy breaks: configuration reads, S0/266 recommendation and SUPPORTED native input without row changes');

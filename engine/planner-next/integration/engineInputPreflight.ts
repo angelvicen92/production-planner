@@ -387,6 +387,7 @@ function sourceProjection(input: EngineInput): unknown {
     arrivalTaskTemplateNamePresent: input.arrivalTaskTemplateName !== undefined,
     departureTaskTemplateNamePresent: input.departureTaskTemplateName !== undefined,
     plannerNext: plannerNextRecord ? {
+      ...(plannerNextRecord.profile!==undefined?{profile:plannerNextRecord.profile}:{}),
       searchPolicy: plannerNextRecord.searchPolicy,
       searchBudget: projectRecord(plannerNextRecord.searchBudget, ["bestK", "maxBacktracks", "maxPatterns", "maxBranchExpansions"]),
       timeGridMinutes: plannerNextRecord.timeGridMinutes,
@@ -505,7 +506,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
         seen.add(group.id); ids.forEach(id => members.add(id));
         const active=ids.map(id=>input.tasks.find(task=>task.id===id)!).filter(task=>task.status!=="cancelled");
         if (active.some(task=>task.plannerNextKind!=="auxiliary" || task.blocksSpace===false || task.jointGroupId!=null || task.setupFamilyId!=null
-          || task.spaceId===input.plannerNext?.mainFlow.spaceId || task.operationalRole==="transport_arrival" || task.operationalRole==="transport_departure")
+          || task.spaceId===input.plannerNext?.mainFlow?.spaceId || task.operationalRole==="transport_arrival" || task.operationalRole==="transport_departure")
           || new Set(active.map(task=>task.spaceId)).size>1)
           addIssue("INVALID_OPERATION_CONTINUITY_GROUP", "plan", input.planId, "operationContinuityGroups", "Only independent physical secondary operations in one room are supported.");
       }
@@ -764,6 +765,18 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   const integrationConfiguration = input.plannerNext as unknown;
   const integrationConfigurationRecord = integrationConfiguration && typeof integrationConfiguration === "object" && !Array.isArray(integrationConfiguration)
     ? integrationConfiguration as Record<string, unknown> : undefined;
+  const profile=integrationConfigurationRecord?.profile;
+  const standaloneOnly=profile==="STANDALONE_ONLY";
+  if(profile!==undefined&&profile!=="MAIN_WITH_VOCAL_FEEDER"&&!standaloneOnly)
+    addIssue("UNSUPPORTED_TASK_ROLE","plan",input.planId,"plannerNext.profile","Perfil estructural desconocido.");
+  if(standaloneOnly){
+    if(integrationConfigurationRecord?.mainFlow!==undefined)
+      addIssue("UNSUPPORTED_TASK_ROLE","plan",input.planId,"plannerNext.mainFlow","STANDALONE_ONLY no admite mainFlow. Elimina el flujo principal o cambia el perfil.");
+    if(integrationConfigurationRecord?.searchPolicy!=="EXACT_CONSTRUCTIVE")
+      addIssue("INVALID_SEARCH_POLICY_CONFIGURATION","plan",input.planId,"plannerNext.searchPolicy","STANDALONE_ONLY requiere EXACT_CONSTRUCTIVE.");
+    for(const task of input.tasks.filter(task=>task.status!=="cancelled"))if(task.plannerNextKind!=="auxiliary"&&task.plannerNextKind!=="technical")
+      addIssue("UNSUPPORTED_TASK_ROLE","task",task.id,`tasks.${task.id}.plannerNextKind`,"STANDALONE_ONLY sólo admite roles auxiliary y technical; cambia el perfil para usar main/vocal.");
+  }
   const mainFlowValue = integrationConfigurationRecord?.mainFlow;
   const mainFlow = mainFlowValue && typeof mainFlowValue === "object" && !Array.isArray(mainFlowValue)
     ? mainFlowValue as Record<string, unknown> : undefined;
@@ -1820,7 +1833,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   const mainFlowConfigurationComplete = Boolean(
     mainFlow && !mainFlowMissingKeys.length && !mainFlowInvalidKeys.length,
   );
-  if (!mainFlowConfigurationComplete) {
+  if (!standaloneOnly && !mainFlowConfigurationComplete) {
     addIssue("MISSING_MAIN_FLOW_CONFIGURATION", "plan", input.planId, "plannerNext.mainFlow", "Complete, valid Planner Next main-flow configuration is absent.", {
       invalidKeys: mainFlowInvalidKeys,
       missingKeys: mainFlowMissingKeys,

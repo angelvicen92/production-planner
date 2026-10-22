@@ -62,7 +62,7 @@ export function createSpec10017JointGroupEngineInputFixture(): EngineInput {
   const input = createSupportedEngineInputAdapterFixture();
   input.tasks = input.tasks.filter((task) => task.id !== 105);
   input.locks = input.locks.filter((lock) => lock.taskId !== 105);
-  input.plannerNext!.mainFlow.preferredEnd = "12:30";
+  input.plannerNext!.mainFlow!.preferredEnd = "12:30";
   input.plannerNext!.participantTransitionMinutes = 0;
   input.plannerNext!.searchBudget = { bestK: 5, maxBacktracks: 200, maxPatterns: 200, maxBranchExpansions: 10000 };
   if (!input.planSpaceSettings) throw new Error("fixture requires plan space settings");

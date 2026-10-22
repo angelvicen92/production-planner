@@ -1,0 +1,221 @@
+{
+  "identityMap": [
+    {
+      "namespace": "participant",
+      "sourceId": "2",
+      "canonicalId": "participant:2"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "3",
+      "canonicalId": "participant:3"
+    },
+    {
+      "namespace": "plan",
+      "sourceId": "2",
+      "canonicalId": "plan:2"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "1",
+      "canonicalId": "space:1"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "2",
+      "canonicalId": "space:2"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "3",
+      "canonicalId": "task:3"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "4",
+      "canonicalId": "task:4"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "5",
+      "canonicalId": "task:5"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "1",
+      "canonicalId": "template:1"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "2",
+      "canonicalId": "template:2"
+    },
+    {
+      "namespace": "zone",
+      "sourceId": "1",
+      "canonicalId": "zone:1"
+    }
+  ],
+  "diagnostics": {
+    "taskCount": 3,
+    "planifiableTaskCount": 3,
+    "protectedTaskCount": 0,
+    "cancelledTaskCount": 0,
+    "pendingPlanningDiscardCount": 0,
+    "lockCount": 0,
+    "participantCount": 2,
+    "coachReferenceCount": 0,
+    "missingCoachReferenceCount": 0,
+    "spaceCount": 2,
+    "referencedSpaceCount": 2,
+    "describedSpaceCount": 2,
+    "zoneCount": 1,
+    "planResourceCount": 0,
+    "requiredPlanResourceCount": 0,
+    "usableRequiredPlanResourceCount": 0,
+    "unusableRequiredPlanResourceCount": 0,
+    "protectedTaskResourceAvailabilityConflictCount": 0,
+    "requiredSpaceCount": 2,
+    "usableRequiredSpaceCount": 2,
+    "unusableRequiredSpaceCount": 0,
+    "requiredZoneCount": 1,
+    "protectedTaskSpatialAvailabilityConflictCount": 0,
+    "resourceItemCount": 0,
+    "resourceAssignmentReferenceCount": 0,
+    "resourceComponentReferenceCount": 0,
+    "missingResourceReferenceCount": 0,
+    "dependencyCount": 0,
+    "breakCount": 1,
+    "participantScopedMealCount": 0,
+    "supportedParticipantScopedMealCount": 0,
+    "unsupportedParticipantScopedMealCount": 0,
+    "transportConfigured": false,
+    "setupConfigurationDetected": false,
+    "integrationConfigurationPresent": true,
+    "mainFlowConfigurationComplete": true,
+    "searchPolicyConfigurationPresent": true,
+    "searchBudgetConfigurationComplete": true,
+    "timeGridVerifiable": true,
+    "transitionConfigurationComplete": true,
+    "anchoredOperationContractPresent": false,
+    "unresolvedTaskRoleCount": 0,
+    "missingDurationTaskCount": 0,
+    "missingAvailabilityCounts": {
+      "participants": 0,
+      "spaces": 0,
+      "resources": 0
+    },
+    "unsupportedCapabilityCodes": [],
+    "readOnly": true
+  },
+  "issues": [],
+  "sourceFingerprint": "a6be6914aa0608f2b11153f453b158a90cf1a21ffe6a557eae9321fb6303c8d6",
+  "identityMapFingerprint": "0296770dbb3a02d2e3d9133dd25437b1637298eb841b9e6ed5f171c5e552ce0d",
+  "readOnly": true,
+  "status": "SUPPORTED",
+  "problem": {
+    "day": {
+      "start": 540,
+      "end": 1080
+    },
+    "protectedMeal": {
+      "start": 780,
+      "end": 840
+    },
+    "spaces": [
+      {
+        "id": "space:1",
+        "availability": [
+          {
+            "start": 540,
+            "end": 1080
+          }
+        ]
+      },
+      {
+        "id": "space:2",
+        "availability": [
+          {
+            "start": 540,
+            "end": 1080
+          }
+        ]
+      }
+    ],
+    "resources": [],
+    "participants": [
+      {
+        "id": "participant:2",
+        "availability": [
+          {
+            "start": 540,
+            "end": 1020
+          }
+        ]
+      },
+      {
+        "id": "participant:3",
+        "availability": [
+          {
+            "start": 570,
+            "end": 990
+          }
+        ]
+      }
+    ],
+    "coaches": [],
+    "tasks": [
+      {
+        "id": "task:3",
+        "duration": 10,
+        "spaceId": "space:2",
+        "dependencies": [],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:2"
+      },
+      {
+        "id": "task:4",
+        "duration": 10,
+        "spaceId": "space:1",
+        "dependencies": [],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:2"
+      },
+      {
+        "id": "task:5",
+        "duration": 10,
+        "spaceId": "space:2",
+        "dependencies": [],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:3"
+      }
+    ],
+    "mainFlow": {
+      "spaceId": "space:1",
+      "preferredEnd": 720,
+      "continuity": "REQUIRED",
+      "maxBlocksByKey": 1,
+      "minTasksPerBlock": 1
+    },
+    "participantTransitionMinutes": 5,
+    "resourceTransitionMinutes": 0,
+    "budget": {
+      "bestK": 3,
+      "maxBacktracks": 50,
+      "maxPatterns": 20,
+      "maxBranchExpansions": 10000
+    },
+    "searchPolicy": "EXACT_CONSTRUCTIVE",
+    "auxiliaryPolicy": {
+      "participantPresencePreference": "OFF"
+    }
+  },
+  "reasonCodes": [],
+  "problemFingerprint": "f9ceddd61b1dfc1afdef97a2b90cfbf14c35aecee983749a3103768d5bb1136b"
+}

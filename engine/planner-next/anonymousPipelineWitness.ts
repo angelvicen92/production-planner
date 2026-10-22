@@ -807,7 +807,7 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
     ];
   });
   const selectedMealStart=architecture.mealStart??(mainFlowMealPolicy(problem as PlannerNextProblem)
-    ?createMainFlowMeal(problem as PlannerNextProblem).start:problem.mainFlow.preferredEnd);
+    ?createMainFlowMeal(problem as PlannerNextProblem).start:problem.mainFlow!.preferredEnd);
   const fixedMainMeals=materializeMainFlowOperationalMeals(problem as PlannerNextProblem,selectedMealStart);
   operationalMealPoliciesChecked=problem.operationalMealPolicies?.length??0;
   const operational=assessOperationalMealFutureFeasibility(problem as PlannerNextProblem,internalSchedule,
@@ -1168,16 +1168,18 @@ export function materializeFirstNominalPipelineWitness(problem:Readonly<PlannerN
 /** Deterministic architecture enumeration from the exact core's canonical authorities. */
 export function* mainFlowTimelineArchitectureFrontier(problem:Readonly<PlannerNextProblem>,patterns:readonly (readonly string[])[],duration:number):
   Generator<{architecture:MainFeederArchitecture;patternOrdinal:number}> {
+  const mainFlow=problem.mainFlow;
+  if(!mainFlow)return;
   const runCount=(pattern:readonly string[])=>pattern.reduce((count,key,index)=>count+(index===0||key!==pattern[index-1]?1:0),0);
   for(let familyStart=0;familyStart<patterns.length;){
     const familyRunCount=runCount(patterns[familyStart]!);let familyEnd=familyStart+1;
     while(familyEnd<patterns.length&&runCount(patterns[familyEnd]!)===familyRunCount)familyEnd++;
-    const tiers=problem.mainFlow.mealSplitPreference&&hasMainFlowMeal(problem)?mainFlowMealCutTiers(problem):[candidateCuts];
+    const tiers=mainFlow.mealSplitPreference&&hasMainFlowMeal(problem)?mainFlowMealCutTiers(problem):[candidateCuts];
     for(const tier of tiers){
     const family=patterns.slice(familyStart,familyEnd).map((pattern,offset)=>({pattern,ordinal:familyStart+offset+1,
       iterator:(function*():Generator<MainFeederArchitecture>{
         if(!hasMainFlowMeal(problem)){
-          for(const end of [problem.mainFlow.preferredEnd,problem.day.end].filter((value,index,values)=>values.indexOf(value)===index))
+          for(const end of [mainFlow.preferredEnd,problem.day.end].filter((value,index,values)=>values.indexOf(value)===index))
             yield {pattern,slots:pattern.map((_,index)=>end-pattern.length*duration+index*duration)};
           return;
         }
@@ -1215,7 +1217,7 @@ export interface PipelineArchitectureMaterializationOptions {
 export function* authorizedPipelineArchitectureMaterializations(problem:Readonly<PlannerNextProblem>,evidence?:PipelineArchitectureEnumerationEvidence,
   options:PipelineArchitectureMaterializationOptions={}):Generator<{architecture:MainFeederArchitecture;materialized:NominalPipelineMaterialization}> {
   const mains=problem.tasks.filter(task=>task.kind==="main");
-  if(!mains.length)return null;
+  if(!mains.length||!problem.mainFlow)return null;
   const feeders=new Map(mains.flatMap(main=>{const feeder=problem.tasks.find(task=>task.kind==="vocal"
     &&task.participantId===main.participantId);return feeder?[[main.id,feeder] as const]:[];}));
   const generated=generateMainFlowPatterns(mains,problem.mainFlow.minTasksPerBlock,

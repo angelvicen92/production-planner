@@ -154,7 +154,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
   ]);
   const coachResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => projection.coachResourceId === undefined ? [] : [projection.coachResourceId]).concat([...mealResourceIds].filter(id=>configuredCoachIds.has(id)), routeCoachIds));
   const requiredSpaceIds = new Set(activeTasks.map((task) => task.spaceId!).concat(
-    config.mainFlow.spaceId,
+    ...(config.mainFlow?[config.mainFlow.spaceId]:[]),
     sourceCoachRouteTransitions.flatMap((route) => [route.fromSpaceId, route.toSpaceId]),
     sourceRoundSynchronizations.flatMap((policy) => policy.lanes.map((lane) => lane.spaceId)),
     operationalMealPolicies.flatMap((policy) => [...policy.spaceIds]),
@@ -294,7 +294,8 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     ...(itinerantUnits.length ? { itinerantUnits } : {}),
     tasks,
     ...(input.operationContinuityGroups?.length ? {operationContinuityGroups: input.operationContinuityGroups.map(group => ({...group, id: group.id, taskIds: group.taskIds.filter(id=>activeTasks.some(task=>task.id===id)).map(id => canonical("task", id)).sort(compare)})).filter(group=>group.taskIds.length).sort((a,b)=>compare(a.id,b.id))} : {}),
-    mainFlow: {
+    ...(config.profile!==undefined?{profile:config.profile}:{}),
+    ...(config.mainFlow?{mainFlow: {
       spaceId: canonical("space", config.mainFlow.spaceId),
       preferredEnd: engineTimeToMinute(config.mainFlow.preferredEnd),
       continuity: config.mainFlow.continuity,
@@ -302,7 +303,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
       minTasksPerBlock: config.mainFlow.minTasksPerBlock,
       ...(config.mainFlow.preference?.blockCountPolicy.mode === "SOFT_PREFER_N" ? {preferredBlockCount:config.mainFlow.preference.blockCountPolicy.count} : {}),
       ...(config.mainFlow.preference?.mealSplitPreference.mode === "PREFERRED" ? {mealSplitPreference:{...config.mainFlow.preference.mealSplitPreference}} : {}),
-    },
+    }}:{}),
     participantTransitionMinutes: config.participantTransitionMinutes,
     resourceTransitionMinutes: config.resourceTransitionMinutes,
     ...(coachRouteTransitions.length ? { coachRouteTransitions } : {}),
@@ -352,6 +353,7 @@ export function mainFlowPreferenceGeometry(input:EngineInput) {
   const adapted=adaptEngineInputToPlannerNextProblem(input);
   if(adapted.status!=='SUPPORTED')return {available:false,mealApplicable:false,zeroBeforeRepresentable:false,counts:[] as number[]};
   const p=adapted.problem,mains=p.tasks.filter(t=>t.kind==='main');
+  if(!p.mainFlow)return {available:false,mealApplicable:false,zeroBeforeRepresentable:false,counts:[] as number[]};
   const counts=representableMainFlowBlockCounts(mains,p.mainFlow.minTasksPerBlock,p.mainFlow.maxBlocksByKey);
   const meal=mainFlowMealPolicy(p);
   return {available:mains.length>0&&p.searchPolicy==='EXACT_CONSTRUCTIVE',mealApplicable:!!meal,zeroBeforeRepresentable:meal?.source==='OPERATIONAL_MEAL_POLICY',counts};

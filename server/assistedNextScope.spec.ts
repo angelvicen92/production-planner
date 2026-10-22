@@ -13,7 +13,7 @@ test('suggestion uses the real persisted input, excludes accepted obligations an
   fixture.storage.getActiveAssistedPlanningSession=async()=>({draftSnapshotJson:draft,draftFingerprint:fingerprintAssistedPlanningSnapshotV1(draft),draftBaseStageId:1}) as any;
   let writes=0;const service=new AssistedPlanningService(fixture.storage,async()=>{writes++;throw Error('read-only recommendation cannot write');});
   const first=await service.recommendNextScope(dataset.input.planId);
-  assert.deepEqual(first.selector,{kind:'SPACE',spaceId:dataset.input.plannerNext!.mainFlow.spaceId});assert.equal(first.taskIds.length,19);
+  assert.deepEqual(first.selector,{kind:'SPACE',spaceId:dataset.input.plannerNext!.mainFlow!.spaceId});assert.equal(first.taskIds.length,19);
   const accepted=new Set(first.taskIds);
   draft={...draft,tasks:draft.tasks.map(t=>accepted.has(t.taskId)?{...t,startPlanned:'09:00',endPlanned:'09:15'}:t)};
   const next=await service.recommendNextScope(dataset.input.planId);assert.equal(next.selector?.kind,'TASK_IDS');assert.ok(next.taskIds.every(id=>!accepted.has(id)));assert.equal(next.taskIds.length,19);
