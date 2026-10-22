@@ -2937,13 +2937,13 @@ Si la agrupación permite abandonar B y regresar después, deberá preparar B de
 Para una familia activa:
 
 - la primera alternativa constructiva debe ser completamente compacta cuando exista;
-- si ningún miembro pendiente puede ocupar el siguiente slot por una autoridad hard, puede dejarse el **hueco interno mínimo necesario** y continuar con la misma familia;
+- si ningún miembro pendiente puede ocupar el siguiente slot por una autoridad hard, **y la continuidad temporal lo permite** (OFF/PREFERRED o pausa explícitamente autorizada bajo REQUIRED), puede dejarse el **hueco interno mínimo necesario** y continuar con la misma familia;
 - un hueco sin trabajo productivo no crea por sí solo un segundo bloque;
 - ejecutar otra familia y regresar posteriormente sí constituye reentrada y está prohibido cuando `reentry = FORBIDDEN`;
 - los huecos internos incrementan `span`/idle y deben minimizarse como preferencia de calidad;
 - la imposibilidad de lograr contigüidad absoluta nunca puede utilizarse por sí sola para declarar inviabilidad si sigue existiendo una solución de un único bloque lógico.
 
-La preparación para cambiar a la siguiente familia debe comenzar inmediatamente después de la última tarea de la familia saliente y terminar al comenzar la primera tarea de la familia entrante, salvo una interrupción hard explícitamente autorizada por otra regla.
+La preparación para cambiar a la siguiente familia debe ocupar físicamente el espacio y finalizar **antes** de la primera tarea de la familia entrante, también en una reentrada permitida con setup PREFERRED. Se prioriza la contigüidad con la última actividad saliente y la primera entrante, pero no se impone un puente sin huecos cuando la continuidad temporal es OFF/PREFERRED y una espera es hard-necesaria; una continuidad temporal REQUIRED sí exige que entre ocupaciones no exista un hueco no autorizado (la preparación física configurada cuenta como ocupación, no como tiempo ocioso). La preparación no se duplica por esperas internas sin cambio de familia.
 
 La asignación `participante → slot` puede usar matching para evitar permutaciones nominales únicamente cuando las identidades sean operacionalmente equivalentes bajo todas las autoridades activas y futuras ya demostrables. Si ventanas, dependencias, recursos, prerrequisitos, comidas u obligaciones pendientes distinguen dos participantes, las asignaciones materialmente distintas deben permanecer alcanzables mediante exploración o reparación exacta.
 
