@@ -1,9 +1,17 @@
 # OPTIPLAN — INTEGRACIÓN Y CONFIGURACIÓN OPERATIVA EFECTIVA
 
-**Versión:** 2.7<br>
-**Fecha:** 14 de octubre de 2026<br>
+**Versión:** 2.8<br>
+**Fecha:** 22 de octubre de 2026<br>
 **Estado:** Fuente oficial consolidada  
 **Absorbe:** SPEC-10, SPEC-11 y Addenda oficiales consolidados de dominio/operación.
+
+## Actualización v2.8 — dos políticas de espacio independientes (22/10/2026)
+
+La UI/configuración productiva distingue por espacio `continuityPolicy = OFF | PREFERRED | REQUIRED` (ocupación sin huecos) y `setupGroupingPolicy = OFF | PREFERRED | REQUIRED` (agrupación lógica y reentrada de familias). Son **nombres conceptuales**, no obligación de columnas nuevas: se puede reutilizar cualquier contrato tipado equivalente, con proyección lossless; donde no exista soporte, emitir UNSUPPORTED accionable. No derivar continuidad REQUIRED de setup activo, ni setup de continuidad.
+
+La configuración de preparaciones de cambio es independiente de la severidad soft/hard de agrupación. Si está activa, se materializa ocupación física hard antes de la primera actividad de **cada cambio o reentrada**; si exige montaje inicial, declararlo explícitamente. Una espera interna no requiere desmontar/remontar por sí sola. Setup OFF no genera por sí mismo montajes; los montajes técnicos declarados por otra autoridad permanecen.
+
+Proyectar ambas políticas, severidad, familia, preparación, origen, permisos y fingerprints a través de General → snapshot de día → revisión/override → EngineInput → preflight → solver/validador → Draft/Stage/replay. El front no ofrecerá PREFERRED sin consumidor real ni tratará una preferencia como violación REQUIRED. No adoptar sobre Stages pasados, locks ni A2 histórico. Proteger configuración productiva vigente durante la demo.
 
 ## Actualización v2.7 — autoridad versionada para preferencias de bloques
 

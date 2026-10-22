@@ -1,9 +1,15 @@
 # OPTIPLAN — VALIDACIÓN, CALIDAD Y BENCHMARK
 
-**Versión:** 2.7<br>
-**Fecha:** 14 de octubre de 2026<br>
+**Versión:** 2.8<br>
+**Fecha:** 22 de octubre de 2026<br>
 **Estado:** Fuente oficial consolidada  
 **Sustituye:** SPEC-05 como Fuente separada y Objetivo Maestro de Calidad/Benchmark A2 v1.0.
+
+## Actualización v2.8 — validación de la separación continuidad/setup (22/10/2026)
+
+Exigir pruebas sobre combinaciones relevantes de `continuity = OFF | PREFERRED | REQUIRED` y `setup = OFF | PREFERRED | REQUIRED`, con **dos espacios de reglas distintas**, configuración real y snapshots. Contrafactuales mínimos: hueco A→espera→A válido para setup REQUIRED pero incompatible con continuidad REQUIRED sin pausa autorizada; pausa de 5 minutos expresamente autorizada compatible con continuidad REQUIRED; A→B→A rechazado por setup REQUIRED pero viable/penalizado por PREFERRED y no limitado por OFF; preparación física real en todo cambio y reentrada permitida, sin preparación inicial implícita salvo autoridad expresa; scoring PREFERRED distinto de fallo HARD; órdenes/duraciones heterogéneas, identidades no equivalentes, ventanas, dependencias y montaje/espacio ocupado.
+
+El gate recorre UI → configuración/snapshot/plantilla/instancia → EngineInput → preflight/adapter → scope → geometría/matching/Future Feasibility → propuesta → Draft/validación/Stage/replay, incluidos errores de representabilidad, permisos, revisión, determinismo y ocupaciones derivadas. Una modalidad imposible de proyectar se marca UNSUPPORTED, no se convierte silenciosamente en otra. Regresión A2 aislada 266/266, 11 Stages, cero HARD/REQUIRED nuevos y regeneración automática preservada. Nunca ampliar presupuestos/timeouts ni publicar durante el congelamiento previo a demo.
 
 ## Actualización v2.7 — gates de cantidad y reparto PREFERRED
 

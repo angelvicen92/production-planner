@@ -94,7 +94,7 @@ Sé breve. Incluye únicamente:
 Los originales vigentes están en `docs/source/official/` del repositorio. Lee
 `docs/source/official/00_INDICE_Y_AUTORIDAD_FUENTES_OPTIPLAN_v2.13.md`
 para autoridad por ámbito, y
-`docs/source/official/07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.2.md`
+`docs/source/official/07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.3.md`
 para el método de trabajo y la auditoría causal. Según el alcance, consulta las
 Fuentes 01–06 y los dos PDFs A2. Si la Fuente 06 interpreta o corrige un PDF,
 prevalece la Fuente 06. El repositorio `main`, la CI y Evidence describen el

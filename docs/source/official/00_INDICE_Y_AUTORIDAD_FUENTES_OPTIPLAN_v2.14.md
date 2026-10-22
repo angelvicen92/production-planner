@@ -1,9 +1,13 @@
 # OPTIPLAN — ÍNDICE Y AUTORIDAD DE FUENTES
 
-**Versión:** 2.13<br>
-**Fecha:** 16 de octubre de 2026<br>
+**Versión:** 2.14<br>
+**Fecha:** 22 de octubre de 2026<br>
 **Estado:** Fuente oficial de gobierno documental  
 **Principio rector:** La producción tiene que salir.
+
+## Actualización v2.14 — decisión humana de continuidad y setup (22/10/2026)
+
+Eleva 01 v5.3, 03 v3.8, 04 v2.8, 05 v2.8 y 07 v2.3 (referencias del protocolo). **Continuidad temporal** (huecos entre actividades) y **setup** (cambios de familia) son políticas ortogonales por espacio, cada una `OFF | PREFERRED | REQUIRED`. Setup REQUIRED prohíbe reentrar, pero no exige ocupación temporal continua; setup PREFERRED permite reentradas penalizadas y exige toda preparación física configurada como hard en cada cambio real. El A2 canónico, sus 266 obligaciones y Stages históricos no se alteran ni adoptan automáticamente. La implementación productiva de las nueve combinaciones es trabajo pendiente de U00e y sólo puede declararse tras gate end-to-end.
 
 ## Actualización v2.13 — Reality: tres ámbitos independientes
 
@@ -39,13 +43,13 @@ Actualiza el corpus para incorporar el contrato genérico de márgenes específi
 
 ## 2. Corpus oficial único
 
-1. `01_PRODUCTO_DOMINIO_OPERACION_v5.2.md`
+1. `01_PRODUCTO_DOMINIO_OPERACION_v5.3.md`
 2. `02_ORC_CORE_CONSOLIDADO_v2.2.md`
-3. `03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.7.md`
-4. `04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.7.md`
-5. `05_VALIDACION_CALIDAD_BENCHMARK_v2.7.md`
+3. `03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.8.md`
+4. `04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.8.md`
+5. `05_VALIDACION_CALIDAD_BENCHMARK_v2.8.md`
 6. `06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.10.md`
-7. `07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.2.md`
+7. `07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.3.md`
 8. `ENSAYO_A2_LV.pdf`
 9. `ENSAYO_A2_LV 15 JUNIO 2025 -  DESGLOSE A2.pdf`
 10. Este índice.

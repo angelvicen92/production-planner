@@ -1,9 +1,17 @@
 # OPTIPLAN — CONSTRUCCIÓN, BÚSQUEDA Y PLANIFICACIÓN ASSISTED
 
-**Versión:** 3.7<br>
-**Fecha:** 14 de octubre de 2026<br>
+**Versión:** 3.8<br>
+**Fecha:** 22 de octubre de 2026<br>
 **Estado:** Fuente oficial consolidada  
 **Absorbe:** SPEC-06, SPEC-07 v2.2, SPEC-08 v1.1 y SPEC-09 v1.1.
+
+## Actualización v3.8 — continuidad temporal ≠ familia de setup (22/10/2026)
+
+Ambas políticas son **independientes por espacio** y admiten `OFF | PREFERRED | REQUIRED`. La continuidad temporal gobierna los **huecos entre actividades**: REQUIRED prohíbe huecos no autorizados dentro del tramo activo (pausas configuradas sí son admisibles); PREFERRED los penaliza; OFF no los considera. El setup gobierna los **cambios de familia y retornos**: REQUIRED exige una única permanencia lógica por familia sin reentrada; PREFERRED permite reentrada, pero penaliza cambios y prefiere agrupar; OFF no obliga ni prefiere agrupar. Una espera dentro de la misma familia nunca es un cambio de setup, pero puede incumplir una continuidad temporal REQUIRED. **No generar `secondaryContinuity=REQUIRED` sólo porque exista `setupPolicy`.**
+
+Toda preparación física configurada para una transición A→B debe ser **ocupación hard** antes de la primera B y se repite si se vuelve a A bajo PREFERRED. Una preparación no es una penalización soft ni puede omitirse en el plan para lograr completitud. El montaje inicial es exigible sólo cuando la configuración lo declare. El nivel OFF no exige agrupación ni crea preparaciones implícitas; prevalecen operaciones físicas explícitas independientes.
+
+La construcción explora primero geometrías compactas y con menos cambios, pero no descarta huecos hard-necesarios permitidos ni reentradas compatibles. Debe preservar matching materialmente distinto (ventanas, duraciones, identidades, recursos, dependencias y futuros), preparaciones, occupancy, búsqueda y validadores equivalentes. Un modo sin implementación no se finge como otro: readiness/preflight devuelve UNSUPPORTED con diagnóstico. Versionar herencia y preservar los perfiles/snapshots antiguos y el canon A2.
 
 ## Actualización v3.7 — cantidad SOFT y reparto preferido del flujo principal
 
@@ -2897,9 +2905,7 @@ se aplican estas reglas.
 
 ## 16.1 Orden
 
-Si el usuario define un orden, debe cumplirse.
-
-Si no lo define, el planificador podrá elegir el que produzca menor coste global.
+Si el usuario define un orden hard, debe cumplirse. La modalidad de setup determina independientemente si permite reentradas: REQUIRED no, PREFERRED sí con penalización y preparación física, OFF sin agrupación. Si no define orden hard, el planificador elige el de menor coste global.
 
 ## 16.2 Máximo de bloques
 
@@ -2922,11 +2928,11 @@ B2
 B3
 ```
 
-Si el sistema abandona B y regresa después, deberá preparar B de nuevo.
+Si la agrupación permite abandonar B y regresar después, deberá preparar B de nuevo cuando haya preparación de cambio configurada. Setup REQUIRED prohíbe esa reentrada; PREFERRED la permite con coste.
 
 ## 16.5 Semántica de bloque lógico, compactación y huecos internos
 
-`oneBlockPerFamily` y la prohibición de reentrada describen la **continuidad del estado de setup**, no una obligación de ocupar cada punto temporal sin espera.
+`oneBlockPerFamily` bajo setup **REQUIRED** describe la continuidad lógica de la familia, no contigüidad temporal. Setup PREFERRED admite reentradas penalizadas con su nueva preparación física obligatoria; setup OFF no agrupa. La política de continuidad temporal es independiente.
 
 Para una familia activa:
 

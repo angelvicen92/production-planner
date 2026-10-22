@@ -6,6 +6,10 @@
 
 > **Orden para un chat nuevo:** antes de proponer trabajo, leer este documento, Fuente 00 y Fuente 07 vigentes, AGENTS.md y las Fuentes especializadas; reconstruir GitHub main/PR/CI/Evidence/benchmark y, si procede, estado Replit/Supabase. Este registro es histórico: autoridad oficial por ámbito y evidencia real del HEAD prevalecen. No pedir información ya accesible.
 
+### Decisión de producción P0-U00e: continuidad y setup (22/10/2026)
+
+Continuidad temporal y agrupación por setup son **dos políticas independientes por espacio**, cada una OFF/PREFERRED/REQUIRED. Continuidad protege ausencia/minimización de huecos; setup REQUIRED prohíbe reentradas, PREFERRED permite regresos penalizados con preparación física hard en cada cambio, y OFF no gobierna agrupaciones. Huecos internos no cambian setup. Fuente 00 v2.14 y Fuentes 01 v5.3, 03 v3.8, 04 v2.8, 05 v2.8 gobiernan. U00e sigue en Draft hasta demostrar motor/UX/Stage real; preservar A2 y despliegue de demo.
+
 ## DECISIÓN DE PRODUCTO P0 — JORNADAS NUEVAS REALMENTE PLANIFICABLES (22/10/2026)
 
 **Prioridad absoluta número 1, establecida expresamente por el responsable de producción.** OptiPlan NO tiene como producto «planificar el A2»: debe permitir a producción **crear desde la aplicación cualquier jornada con sus propios participantes, plantillas, tareas y reglas operativas soportadas, y obtener propuestas válidas con Planner Next/Assisted hasta completar todas sus obligaciones factibles, sin código ni JSON preparados para ese día**. El A2 es un benchmark exigente de regresión y calidad, nunca la condición de entrada al motor ni la definición del producto. «Cualquier» describe **cualquier configuración válida dentro de las capacidades declaradas**, no promete solución a restricciones físicamente incompatibles: cuando no haya solución o no se represente un contrato, el sistema debe explicarlo con diagnóstico verificable, nunca inventar una propuesta ni esconder límites de búsqueda.

@@ -1,9 +1,19 @@
 # OPTIPLAN — PRODUCTO, DOMINIO Y OPERACIÓN
 
-**Versión:** 5.2  
-**Fecha:** 19 de septiembre de 2026  
+**Versión:** 5.3  
+**Fecha:** 22 de octubre de 2026  
 **Estado:** Fuente oficial consolidada  
 **Sustituye:** PRD v2.1, Especificación Maestra de Dominio y Operación v4, Documento de Operativa/UI/Inteligencia v0.1 y el contrato estable del Reenfoque Assisted v1.0.
+
+## Aclaración v5.3 — continuidad y setup independientes (22/10/2026)
+
+**Decisión explícita de producción:** cada espacio configura dos autoridades ortogonales, **continuidad temporal** y **agrupación por setup**, ambas con `OFF | PREFERRED | REQUIRED`.
+
+- Continuidad: `REQUIRED` exige que, desde la primera hasta la última actividad del tramo, no haya huecos internos salvo pausas operativas explícitamente autorizadas (por ejemplo cinco minutos entre actividades de Totales); `PREFERRED` minimiza y penaliza huecos sin declararlos inválidos; `OFF` es indiferente a los huecos. No obliga a ocupar antes del comienzo ni después del final.
+- Setup: es el **estado/familia de actividad del espacio**, no su contigüidad temporal. `REQUIRED` prohíbe cambiar a otra familia hasta terminar la anterior y prohíbe regresar; `PREFERRED` prefiere agrupar, pero **permite reentradas** con penalización de cambios; `OFF` no limita ni favorece agrupar por familia.
+- Preparación física: si se declara un montaje al cambiar de familia, ocupa el espacio antes de la primera tarea de **cada nueva entrada o reentrada permitida**, también en `PREFERRED`. La preparación es hard; la preferencia de orden no convierte el montaje en algo opcional. La primera entrada del día sólo lleva montaje previo si la configuración lo exige. `OFF` no inventa preparaciones por defecto y no elimina operaciones físicas independientes declaradas.
+- Una espera entre dos actividades de una misma familia **no es reentrada de setup**. Puede incumplir continuidad REQUIRED si no está autorizada, aunque el setup sea REQUIRED.
+- No inferir una autoridad a partir de otra. Mantener explícitas severidades, provenance, snapshots, validación y penalizaciones, sin reinterpretar silenciosamente días o Stages anteriores.
 
 ## 1. Misión de producto
 
