@@ -295,6 +295,8 @@ La revisión cruzó: contrato/config/snapshots/locks/status; dependency y operac
 
 ### P0-U00a — autoridad para jornadas nuevas
 
+U04a integra composición física reutilizable con catálogo ADMIN/CAS, snapshots diarios inmutables y mappings global→día explícitos. El adapter conserva miembros compartidos y recursos independientes al elegir alternativas. La [integración sobre main 7872b581](../evidence/config-u04a/p0-integration/README.md) acredita la unión con U06c y P0: ledger 105 P0 + 106 composición, ambos contratos efectivos, jornadas sin equipos 4/4 y 9/9 y A2 idéntico. No amplía el perfil P0 v1 a tareas consumidoras de unidades itinerantes ni habilita adopción histórica.
+
 El perfil general tipado/versionado `new_day_planner_configuration` tiene editor ADMIN y CAS. `createPlan` conserva `planner_next_profile` y los roles explícitos de las plantillas; `applyNewDayPlannerConfiguration` materializa operaciones/dependencias/coach contra los IDs efectivos al construir EngineInput. Readiness consulta el adapter/preflight productivos. La Evidence de [P0-U00a](../evidence/p0-u00a/README.md) demuestra dos jornadas nuevas desde UI hasta Stage (4/4 y 9/9), sin fixture A2 ni SQL operacional, y A2 266/266/11 con snapshots idénticos.
 
 Frontera: flujo principal real con feeder vocal y coach por participante, sin transporte/montajes en este perfil. Jornadas sin principal quedan UNSUPPORTED. Altas después de S0 invalidan la revisión y preservan el checkpoint; su reconciliación explícita sigue pendiente. El snapshot estructural del perfil no tiene editor diario ni adopción histórica. Esta capacidad parcial no cierra P0 general ni cambia las autoridades históricas de 088.

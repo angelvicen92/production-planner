@@ -1,0 +1,391 @@
+{
+  "auditedHead": "8e08d9e18c263c286b163b4e025e41f89aab3a20",
+  "main": {
+    "result": "PASS",
+    "marginEdit": {
+      "operation": "real UI legacy itinerary margin PATCH",
+      "requests": [
+        {
+          "method": "PATCH",
+          "path": "/api/ta/20032"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/ta/20032"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/ta/20032"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/ta/20032"
+        }
+      ],
+      "responses": [
+        {
+          "status": 200,
+          "path": "/api/ta/20032"
+        },
+        {
+          "status": 200,
+          "path": "/api/ta/20032"
+        },
+        {
+          "status": 200,
+          "path": "/api/ta/20032"
+        },
+        {
+          "status": 200,
+          "path": "/api/ta/20032"
+        }
+      ],
+      "payload": {
+        "name": "U02 edit probe",
+        "defaultDuration": 10,
+        "defaultCameras": 0,
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 20,
+        "requiresAuxiliar": false,
+        "exclusiveAuxiliar": true,
+        "zoneId": null,
+        "spaceId": null,
+        "autoCreateOnContestantCreate": false
+      }
+    },
+    "revisionChecks": 7,
+    "invalidCases": 29,
+    "denials": 27,
+    "snapshots": [
+      {
+        "planId": 27003,
+        "snapshot": {
+          "id": "109074",
+          "plan_id": 27003,
+          "source_template_id": 20043,
+          "contract_version": 2,
+          "source": "inherited",
+          "template_name": "U02 snapshot probe",
+          "default_duration": 10,
+          "default_cameras": 0,
+          "default_zone_id": null,
+          "default_space_id": null,
+          "auto_create_on_contestant_create": false,
+          "requires_auxiliar": false,
+          "requires_coach": false,
+          "requires_presenter": false,
+          "exclusive_auxiliar": false,
+          "has_dependency": false,
+          "dependency_template_ids": [],
+          "resource_requirements": null,
+          "itinerant_team_requirement": "none",
+          "itinerant_team_id": null,
+          "allowed_itinerant_team_ids": [],
+          "setup_id": null,
+          "created_at": "2026-10-22T07:07:10.014Z",
+          "updated_at": "2026-10-22T07:07:10.014Z",
+          "participant_margin_before_minutes": 0,
+          "participant_margin_after_minutes": 15,
+          "continuity_group": null
+        },
+        "projected": {
+          "before": 0,
+          "after": 15
+        }
+      },
+      {
+        "planId": 27004,
+        "snapshot": {
+          "id": "109117",
+          "plan_id": 27004,
+          "source_template_id": 20043,
+          "contract_version": 2,
+          "source": "inherited",
+          "template_name": "U02 snapshot probe",
+          "default_duration": 10,
+          "default_cameras": 0,
+          "default_zone_id": null,
+          "default_space_id": null,
+          "auto_create_on_contestant_create": false,
+          "requires_auxiliar": false,
+          "requires_coach": false,
+          "requires_presenter": false,
+          "exclusive_auxiliar": false,
+          "has_dependency": false,
+          "dependency_template_ids": [],
+          "resource_requirements": null,
+          "itinerant_team_requirement": "none",
+          "itinerant_team_id": null,
+          "allowed_itinerant_team_ids": [],
+          "setup_id": null,
+          "created_at": "2026-10-22T07:07:10.520Z",
+          "updated_at": "2026-10-22T07:07:10.520Z",
+          "participant_margin_before_minutes": 20,
+          "participant_margin_after_minutes": 0,
+          "continuity_group": null
+        },
+        "projected": {
+          "before": 20,
+          "after": 0
+        }
+      },
+      {
+        "planId": 27005,
+        "snapshot": {
+          "id": "109160",
+          "plan_id": 27005,
+          "source_template_id": 20043,
+          "contract_version": 2,
+          "source": "inherited",
+          "template_name": "U02 snapshot probe",
+          "default_duration": 10,
+          "default_cameras": 0,
+          "default_zone_id": null,
+          "default_space_id": null,
+          "auto_create_on_contestant_create": false,
+          "requires_auxiliar": false,
+          "requires_coach": false,
+          "requires_presenter": false,
+          "exclusive_auxiliar": false,
+          "has_dependency": false,
+          "dependency_template_ids": [],
+          "resource_requirements": null,
+          "itinerant_team_requirement": "none",
+          "itinerant_team_id": null,
+          "allowed_itinerant_team_ids": [],
+          "setup_id": null,
+          "created_at": "2026-10-22T07:07:10.787Z",
+          "updated_at": "2026-10-22T07:07:10.787Z",
+          "participant_margin_before_minutes": null,
+          "participant_margin_after_minutes": null,
+          "continuity_group": null
+        },
+        "projected": {
+          "before": null,
+          "after": null
+        }
+      }
+    ]
+  },
+  "reproductionHead": "5b62b5c",
+  "candidateRuntimeHead": "ba37e7f",
+  "runtime": {
+    "node": "v20.20.2",
+    "lockfileSha256": "cbe75a531336356a5d3baa75202818f1a7060b72f10d205449b8036295ffeaaa",
+    "chromium": "156.0.8078.4"
+  },
+  "before": {
+    "result": "FAIL",
+    "cause": "unchanged legacy any/null requirement with no explicit alternative is rejected by an unconditional UI guard before HTTP",
+    "editFailure": {
+      "requests": [],
+      "responses": [],
+      "alerts": []
+    },
+    "httpFullPatchSucceeded": true,
+    "uiAfterClick": [
+      "Selecciona al menos un equipo itinerante"
+    ]
+  },
+  "candidate": {
+    "result": "PASS",
+    "marginEdit": {
+      "operation": "real UI legacy itinerary margin PATCH",
+      "requests": [
+        {
+          "method": "PATCH",
+          "path": "/api/ta/20032"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/ta/20032"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/ta/20032"
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/ta/20032"
+        }
+      ],
+      "responses": [
+        {
+          "status": 200,
+          "path": "/api/ta/20032"
+        },
+        {
+          "status": 200,
+          "path": "/api/ta/20032"
+        },
+        {
+          "status": 200,
+          "path": "/api/ta/20032"
+        },
+        {
+          "status": 200,
+          "path": "/api/ta/20032"
+        }
+      ],
+      "payload": {
+        "name": "U02 edit probe",
+        "defaultDuration": 10,
+        "defaultCameras": 0,
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 20,
+        "requiresAuxiliar": false,
+        "exclusiveAuxiliar": true,
+        "zoneId": null,
+        "spaceId": null,
+        "autoCreateOnContestantCreate": false
+      }
+    },
+    "preservedHistoricalTables": {
+      "task_templates": {
+        "count": 31,
+        "hash": "36e05a0bfc40c9171aeec5c5017d0776"
+      },
+      "plan_task_template_snapshots": {
+        "count": 62,
+        "hash": "7bf4ee34b88ac25e6d0589fe6c860895"
+      },
+      "plans": {
+        "count": 3,
+        "hash": "76c6fc1677d295510423998f9ce61aa8"
+      },
+      "daily_tasks": {
+        "count": 865,
+        "hash": "3063858873869423e19073249ab42def"
+      },
+      "locks": {
+        "count": 1,
+        "hash": "21b917e5947e3906056553569ab44b0c"
+      },
+      "assisted_planning_stages": {
+        "count": 11,
+        "hash": "deef43a718a480661d565be3cc50c6e2"
+      },
+      "plan_config_revisions": {
+        "count": 1,
+        "hash": "daf4f1bc78ae1e49af8880ffd2ea246c"
+      }
+    },
+    "invalidCases": 29,
+    "denials": 27,
+    "revisionChecks": 7,
+    "snapshots": [
+      {
+        "planId": 27003,
+        "snapshot": {
+          "id": "109074",
+          "plan_id": 27003,
+          "source_template_id": 20043,
+          "contract_version": 2,
+          "source": "inherited",
+          "template_name": "U02 snapshot probe",
+          "default_duration": 10,
+          "default_cameras": 0,
+          "default_zone_id": null,
+          "default_space_id": null,
+          "auto_create_on_contestant_create": false,
+          "requires_auxiliar": false,
+          "requires_coach": false,
+          "requires_presenter": false,
+          "exclusive_auxiliar": false,
+          "has_dependency": false,
+          "dependency_template_ids": [],
+          "resource_requirements": null,
+          "itinerant_team_requirement": "none",
+          "itinerant_team_id": null,
+          "allowed_itinerant_team_ids": [],
+          "setup_id": null,
+          "created_at": "2026-10-22T06:48:01.144Z",
+          "updated_at": "2026-10-22T06:48:01.144Z",
+          "participant_margin_before_minutes": 0,
+          "participant_margin_after_minutes": 15,
+          "continuity_group": null
+        },
+        "projected": {
+          "before": 0,
+          "after": 15
+        }
+      },
+      {
+        "planId": 27004,
+        "snapshot": {
+          "id": "109117",
+          "plan_id": 27004,
+          "source_template_id": 20043,
+          "contract_version": 2,
+          "source": "inherited",
+          "template_name": "U02 snapshot probe",
+          "default_duration": 10,
+          "default_cameras": 0,
+          "default_zone_id": null,
+          "default_space_id": null,
+          "auto_create_on_contestant_create": false,
+          "requires_auxiliar": false,
+          "requires_coach": false,
+          "requires_presenter": false,
+          "exclusive_auxiliar": false,
+          "has_dependency": false,
+          "dependency_template_ids": [],
+          "resource_requirements": null,
+          "itinerant_team_requirement": "none",
+          "itinerant_team_id": null,
+          "allowed_itinerant_team_ids": [],
+          "setup_id": null,
+          "created_at": "2026-10-22T06:48:02.489Z",
+          "updated_at": "2026-10-22T06:48:02.489Z",
+          "participant_margin_before_minutes": 20,
+          "participant_margin_after_minutes": 0,
+          "continuity_group": null
+        },
+        "projected": {
+          "before": 20,
+          "after": 0
+        }
+      },
+      {
+        "planId": 27005,
+        "snapshot": {
+          "id": "109160",
+          "plan_id": 27005,
+          "source_template_id": 20043,
+          "contract_version": 2,
+          "source": "inherited",
+          "template_name": "U02 snapshot probe",
+          "default_duration": 10,
+          "default_cameras": 0,
+          "default_zone_id": null,
+          "default_space_id": null,
+          "auto_create_on_contestant_create": false,
+          "requires_auxiliar": false,
+          "requires_coach": false,
+          "requires_presenter": false,
+          "exclusive_auxiliar": false,
+          "has_dependency": false,
+          "dependency_template_ids": [],
+          "resource_requirements": null,
+          "itinerant_team_requirement": "none",
+          "itinerant_team_id": null,
+          "allowed_itinerant_team_ids": [],
+          "setup_id": null,
+          "created_at": "2026-10-22T06:48:03.219Z",
+          "updated_at": "2026-10-22T06:48:03.219Z",
+          "participant_margin_before_minutes": null,
+          "participant_margin_after_minutes": null,
+          "continuity_group": null
+        },
+        "projected": {
+          "before": null,
+          "after": null
+        }
+      }
+    ]
+  },
+  "timeoutsChanged": false,
+  "persistenceContractsRelaxed": false,
+  "remoteWrites": 0,
+  "excludedBrowserFailures": "An earlier concurrent main harness passed the investigated PATCH and later failed during reload while Docker networks changed; the final full main repetition passed without concurrent network creation."
+}

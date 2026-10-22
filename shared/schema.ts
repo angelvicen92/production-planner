@@ -59,6 +59,7 @@ export const plans = pgTable("plans", {
   planningStats: jsonb("planning_stats").$type<Record<string, any>>().notNull().default({}),
   optimizerEngine: text("optimizer_engine").notNull().default("v3"),
   plannerNextConfiguration: jsonb("planner_next_configuration"),
+  itinerantCompositionVersion: integer("itinerant_composition_version"),
   plannerNextProfile: jsonb("planner_next_profile").$type<import("./newDayPlannerConfiguration").NewDayPlannerSnapshot>(),
 });
 // 1.0.1 planning_runs (execution state + compact Engine V3 diagnostics)

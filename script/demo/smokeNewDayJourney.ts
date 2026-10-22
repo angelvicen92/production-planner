@@ -76,7 +76,14 @@ export async function runNewDayJourney({appUrl,url,anon,service,users,db,directo
   };
   const planToStage=async(planId:number,label:string)=>{
     const {input,adapter}=await captureInput(planId,label);assert.equal(adapter.status,"SUPPORTED",JSON.stringify(adapter.issues));
+    const authority=(await db.query("SELECT planner_next_profile,itinerant_composition_version FROM plans WHERE id=$1",[planId])).rows[0];
+    assert.equal(authority.itinerant_composition_version,1);
+    assert.ok(authority.planner_next_profile.configuration,"the same created day freezes the Next profile");
+    assert.deepEqual(input.itinerantCompositionSnapshot,{contractVersion:1,units:[]},"an empty physical catalog is a valid daily snapshot");
+    assert.ok(input.tasks.every(task=>task.plannerNextKind),"physical mapping preserves every explicit Next role");
     const ready=await api(`/api/plans/${planId}/effective-configuration`);assert.equal(ready.readiness.status,"READY",JSON.stringify(ready.readiness));
+    assert.equal(ready.plannerProfile.sourceRevision,authority.planner_next_profile.sourceRevision);
+    assert.deepEqual(ready.itinerantComposition.units,[]);
     await page.goto(`${appUrl}/plans/${planId}?tab=configuration`);await page.getByText("Planner Next: READY",{exact:true}).waitFor();
     await page.screenshot({path:`${directory}/${label}-ready.png`,fullPage:true});
     const bootstrap=page.waitForResponse(response=>new URL(response.url()).pathname===`/api/plans/${planId}/assisted/session`&&response.request().method()==="POST");
@@ -108,8 +115,13 @@ export async function runNewDayJourney({appUrl,url,anon,service,users,db,directo
     assert.ok(accepted.activeStage.snapshotJson.tasks.every((task:any)=>task.startPlanned&&task.endPlanned));
     assert.deepEqual(accepted.activeStage.snapshotJson,draft.draft);
     const final=await storage.getTasksForPlan(planId);assert.ok(final.every(task=>task.startPlanned&&task.endPlanned));
+    const revisions=(await db.query("SELECT id,fingerprint,replay_snapshot_json FROM plan_config_revisions WHERE plan_id=$1 ORDER BY id",[planId])).rows;
+    const acceptedRevision=revisions.find(revision=>Number(revision.id)===Number(accepted.currentConfigRevisionId));
+    assert.deepEqual(acceptedRevision.replay_snapshot_json.authorities.plan_workday[0].itinerantComposition,{contractVersion:1,units:[]},"the accepted revision freezes the empty physical authority alongside Next");
+    writeFileSync(`${directory}/${label}-config-revisions.json`,JSON.stringify(revisions,null,2));
     writeFileSync(`${directory}/${label}-stage.json`,JSON.stringify(accepted,null,2));await page.screenshot({path:`${directory}/${label}-accepted.png`,fullPage:true});
     return {planId,obligations:input.tasks.length,completed:final.length,stages:1,durationMs:Math.round(performance.now()-started),problemFingerprint:adapter.problemFingerprint,
+      combinedAuthorities:{plannerProfileRevision:authority.planner_next_profile.sourceRevision,itinerantCompositionVersion:1,itinerantUnitCount:0},
       branches:result.evidence?.branchesExplored??result.evidence?.work,hardCount:0,requiredCount:0};
   };
   try {

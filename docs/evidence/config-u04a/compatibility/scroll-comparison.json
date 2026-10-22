@@ -1,0 +1,111 @@
+{
+  "original": {
+    "head": "8e08d9e18c263c286b163b4e025e41f89aab3a20",
+    "runId": 39680908288,
+    "jobId": 119502824517,
+    "artifactId": 12383403879,
+    "artifactZipSha256": "3d8e2783aed8be2685060138df9467d5152738b1edd54c3cee740c97820e2aa9",
+    "observed": {
+      "viewport": 69,
+      "workspace": 264
+    },
+    "failurePngSha256": "bf85fdf05b4892c3da9218d3006827a4b174dcbfd6d5a8af5397fd977ea00a95"
+  },
+  "candidateCI": {
+    "head": "dab401c0ae6fc72ae7375569f2d1b081ff0f1260",
+    "runId": 39736357583,
+    "jobId": 119682855821,
+    "artifactId": 12407138485,
+    "result": "PASS",
+    "observed": {
+      "node": "v20.20.2",
+      "viewport": {
+        "width": 820,
+        "height": 1180
+      },
+      "reset": {
+        "viewport": 0,
+        "workspace": 0,
+        "refresh": {
+          "x": 633,
+          "y": 336.72265625,
+          "width": 130,
+          "height": 44,
+          "top": 336.72265625,
+          "right": 763,
+          "bottom": 380.72265625,
+          "left": 633
+        },
+        "active": "BODY"
+      },
+      "afterRefresh": {
+        "viewport": 0,
+        "workspace": 0,
+        "active": "BUTTON"
+      }
+    }
+  },
+  "mainLocal": {
+    "head": "b9802860d8e48b26938e38f82648c328122efd26",
+    "result": "PASS",
+    "observed": {
+      "node": "v20.20.2",
+      "viewport": {
+        "width": 820,
+        "height": 1180
+      },
+      "reset": {
+        "viewport": 0,
+        "workspace": 0,
+        "refresh": {
+          "x": 633,
+          "y": 333,
+          "width": 130,
+          "height": 44,
+          "top": 333,
+          "right": 763,
+          "bottom": 377,
+          "left": 633
+        },
+        "active": "BODY"
+      },
+      "afterRefresh": {
+        "viewport": 0,
+        "workspace": 0,
+        "active": "BODY"
+      }
+    }
+  },
+  "candidateLocal": {
+    "runtimeHead": "ba37e7f",
+    "result": "PASS",
+    "checks": [
+      "Three simultaneous next/late cards, two running and independent future slot coexist; 266 agenda identities; mobile/tablet no overflow",
+      "All four true state filters, stable pre-state counters, combined search and explicit empty/reset state",
+      "Global production location selector uses day tasks/snapshot; day switch resets filters and prevents wrong-date delay",
+      "Distinct nominal aux scopes stay narrow; consultation toggle does not grant writes; viewer/unassigned read-only; admin global focus",
+      "Start/Finish from matrix and agenda use observed version/status, prevent double send and reconcile; correction remains accessible",
+      "400/403/409/503 preserve observed status with explicit errors; offline/read error block actions and reliable late labels",
+      "Explicit task fragment navigates once; refresh/polling does not repeat automatic scrolling",
+      "Dozens of delayed tasks expand with exact remaining counts; manual clock remains authoritative; no JS errors"
+    ]
+  },
+  "productSourcesIdenticalInOriginalMainAndCandidate": [
+    "client/src/pages/my-day.tsx",
+    "client/src/components/layout.tsx",
+    "client/src/components/my-day/activity-information.tsx",
+    "client/src/hooks/usePlanOpsData.ts"
+  ],
+  "assertionStillExactly": {
+    "viewport": 0,
+    "workspace": 0
+  },
+  "timeoutsChanged": false,
+  "additionalDiagnostics": {
+    "sameDocumentFragmentThenTrialClickIterations": 30,
+    "allExactAssertionsPassed": true,
+    "fontDelay2000ms": "PASS, fonts still loading at reset",
+    "fontDeliveryHeldThenReleasedAfterReset": "PASS; no original 69/264 reproduced"
+  },
+  "conclusion": "Original intermittent 69/264 not reproduced. Exact mechanical cause remains undemonstrated; unchanged consumer sources and matching controlled runs do not establish a product regression. No visual assertion or product behavior changed."
+}

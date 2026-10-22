@@ -1,3 +1,4 @@
+import { applyDailyItinerantComposition, ItinerantCompositionError } from '../server/itinerantComposition';
 import { applyNewDayPlannerConfiguration } from "../server/newDayPlannerConfiguration";
 import { applyEffectiveOperationContinuity } from "../server/operationContinuity";
 import { applyEffectiveMainFlowPreference } from "../server/mainFlowPreference";
@@ -998,5 +999,12 @@ export async function buildEngineInput(
       lockedResourceId: l.locked_resource_id ?? l.lockedResourceId ?? null,
     })),
   };
-  return applyEffectiveOperationContinuity(applyEffectiveRoundPreparations(applyEffectiveMainFlowPreference(applyPlanPlannerNextConfiguration(applyNewDayPlannerConfiguration(input,p.planner_next_profile,taskTemplateSnapshots),p.planner_next_configuration??p.plannerNextConfiguration),p),p),p,taskTemplateSnapshots);
+  // Materialize roles/dependencies before mapping physical catalog identities.
+  // Historical 088 authority stays exclusive; daily continuity is applied last.
+  let effectiveInput = applyPlanPlannerNextConfiguration(applyNewDayPlannerConfiguration(input,p.planner_next_profile,taskTemplateSnapshots),p.planner_next_configuration??p.plannerNextConfiguration);
+  if ((p.itinerant_composition_version ?? p.itinerantCompositionVersion) === 1) {
+    if ((p.planner_next_configuration ?? p.plannerNextConfiguration) != null) throw new ItinerantCompositionError('autoridades históricas y heredadas incompatibles');
+    effectiveInput = applyDailyItinerantComposition(effectiveInput, await storage.getPlanItinerantUnitSnapshots(planId), planId);
+  }
+  return applyEffectiveOperationContinuity(applyEffectiveRoundPreparations(applyEffectiveMainFlowPreference(effectiveInput,p),p),p,taskTemplateSnapshots);
 }

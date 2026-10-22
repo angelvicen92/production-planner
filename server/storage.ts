@@ -1,3 +1,4 @@
+import { ItinerantCompositionError } from './itinerantComposition';
 import { catalogContinuityGroup } from "./operationContinuity";
 import { newDayPlannerSnapshotSchema } from "../shared/newDayPlannerConfiguration";
 import { mapTaskTemplatePatch, mapTaskTemplateRow } from "./taskTemplateMapping";
@@ -88,7 +89,7 @@ async function throwAfterPlanCreationFailure(planId: number, cause: unknown, fal
   if (cleanupError) {
     throw new Error(`${fallbackMessage}: ${originalMessage}; COMPENSATION_FAILED: ${cleanupError.message}; potentially orphaned plan ${planId}`);
   }
-  if (cause instanceof SpatialAvailabilityValidationError) throw cause;
+  if (cause instanceof SpatialAvailabilityValidationError || cause instanceof ItinerantCompositionError) throw cause;
   throw new Error(originalMessage || fallbackMessage);
 }
 
@@ -240,6 +241,7 @@ export interface IStorage {
   createLock(lock: InsertLock): Promise<Lock>;
 
   // Engine Data
+  getPlanItinerantUnitSnapshots(planId: number): Promise<unknown[]>;
   getPlanFullDetails(planId: number): Promise<PlanFullDetails | undefined>;
   getPlanEngineInputDetails(planId: number): Promise<PlanFullDetails | undefined>;
   getPlanOptimizerSnapshot(planId: number): Promise<PlanOptimizerSnapshotV1>;
@@ -508,7 +510,7 @@ export class SupabaseStorage implements IStorage {
   async syncPlanMealBreaks(planId: number): Promise<void> {
     const { data: plan, error: planErr } = await supabaseAdmin
       .from("plans")
-      .select("id, meal_start, meal_end, meal_mode, space_meal_break_minutes, planner_next_configuration, planner_next_profile")
+      .select("id, meal_start, meal_end, meal_mode, space_meal_break_minutes, planner_next_configuration, planner_next_profile, itinerant_composition_version")
       .eq("id", planId)
       .single();
     if (planErr) throw planErr;
@@ -560,9 +562,9 @@ export class SupabaseStorage implements IStorage {
       if (Number.isFinite(zid)) zoneMealBreakById.set(zid, raw == null ? null : resolveMealBreakDuration(raw));
     }
 
-    const { data: teams } = await supabaseAdmin
-      .from("itinerant_teams")
-      .select("id, is_active");
+    const teams = plan.itinerant_composition_version === 1
+      ? (await this.getPlanItinerantUnitSnapshots(planId) as import("../shared/itinerantComposition").DailyItinerantUnit[]).map(unit=>({id:unit.source_team_id,is_active:true}))
+      : await (async()=>{const {data,error}=await supabaseAdmin.from("itinerant_teams").select("id, is_active");if(error)throw error;return data;})();
 
     const { data: existing } = await supabaseAdmin
       .from("plan_breaks")
@@ -1405,6 +1407,7 @@ export class SupabaseStorage implements IStorage {
       .insert({
         planner_next_profile: plannerNextProfile,
         date: plan.date,
+        itinerant_composition_version: 1,
         work_start: validatedSnapshots.workStart,
         work_end: validatedSnapshots.workEnd,
         meal_start: mealEffective.start,
@@ -1702,6 +1705,15 @@ export class SupabaseStorage implements IStorage {
       }
     } catch (e: any) {
       return throwAfterPlanCreationFailure(Number(data.id), e, "Failed to snapshot resources for plan");
+    }
+
+    try {
+      const {error: compositionError} = await supabaseAdmin.rpc("snapshot_plan_itinerant_units", {
+        p_plan_id: Number(data.id), p_actor: plan.configurationActorId,
+      });
+      if (compositionError) throw new ItinerantCompositionError("no se pudieron materializar las correspondencias del catálogo");
+    } catch (compositionError) {
+      return throwAfterPlanCreationFailure(Number(data.id), compositionError, "Configuración itinerante sin correspondencias diarias válidas");
     }
 
     try {
@@ -3411,6 +3423,12 @@ export class SupabaseStorage implements IStorage {
       availability: availabilityResult.data ?? [],
       breaks: breaksResult.data ?? [],
     };
+  }
+
+  async getPlanItinerantUnitSnapshots(planId: number): Promise<unknown[]> {
+    const {data,error} = await supabaseAdmin.from("plan_itinerant_unit_snapshots").select("*").eq("plan_id",planId).order("id");
+    if (error) throw error;
+    return data ?? [];
   }
 
   async getPlanFullDetails(planId: number) {

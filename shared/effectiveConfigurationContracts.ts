@@ -27,5 +27,6 @@ export interface EffectiveConfigurationView {
     available:boolean;mealApplicable:boolean;zeroBeforeRepresentable:boolean;counts:number[]};
   operationContinuity?: { revisionId:number|null; groups: ReturnType<typeof import("../server/operationContinuity").operationContinuityValues> };
   roundPreparations?: { revisionId: number | null; timeGridMinutes: number; lanes: RoundPreparationValue[] };
+  itinerantComposition?: {units: NonNullable<import('../engine/types').EngineInput['itinerantTeamAvailability']>; resources:{id:number;name:string}[]; labels?:{id:number;name:string}[]; presencePolicies?:Record<number,'OFF'|'PREFERRED'|'REQUIRED'>};
   productCoverage:Record<CapabilityStatus,number>;
 }

@@ -1,0 +1,4173 @@
+{
+  "tables": [
+    {
+      "name": "assisted_planning_sessions",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "assisted_planning_sessions",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "assisted_planning_sessions",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "assisted_planning_stages",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "assisted_planning_stages",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "assisted_planning_stages",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT"
+      ],
+      "columns": {
+        "archived_at": [
+          "UPDATE"
+        ]
+      }
+    },
+    {
+      "name": "contestants",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "contestants",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "contestants",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "control_room_settings",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "control_room_settings",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "control_room_settings",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "UPDATE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "daily_tasks",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "daily_tasks",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "daily_tasks",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "engine_plan_results",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "engine_plan_results",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "engine_plan_results",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "itinerant_team_members",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "itinerant_team_members",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "itinerant_team_members",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "itinerant_teams",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "itinerant_teams",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "itinerant_teams",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "locks",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "locks",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "locks",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "new_day_planner_configuration",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "new_day_planner_configuration",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "new_day_planner_configuration",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "UPDATE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "operation_continuity_groups",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "operation_continuity_groups",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "operation_continuity_groups",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "operational_incident_events",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "operational_incident_events",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "operational_incident_events",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "operational_incidents",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "operational_incidents",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "operational_incidents",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT"
+      ],
+      "columns": {
+        "type": [
+          "UPDATE"
+        ],
+        "cause": [
+          "UPDATE"
+        ],
+        "status": [
+          "UPDATE"
+        ],
+        "context": [
+          "UPDATE"
+        ],
+        "task_id": [
+          "UPDATE"
+        ],
+        "version": [
+          "UPDATE"
+        ],
+        "zone_id": [
+          "UPDATE"
+        ],
+        "severity": [
+          "UPDATE"
+        ],
+        "space_id": [
+          "UPDATE"
+        ],
+        "updated_at": [
+          "UPDATE"
+        ],
+        "description": [
+          "UPDATE"
+        ],
+        "resolved_at": [
+          "UPDATE"
+        ],
+        "resource_id": [
+          "UPDATE"
+        ],
+        "contestant_id": [
+          "UPDATE"
+        ],
+        "responsible_id": [
+          "UPDATE"
+        ],
+        "resolution_note": [
+          "UPDATE"
+        ]
+      }
+    },
+    {
+      "name": "optimizer_settings",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "optimizer_settings",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "optimizer_settings",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "UPDATE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_breaks",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_breaks",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_breaks",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_config_revisions",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_config_revisions",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_config_revisions",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_header_notes",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_header_notes",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_header_notes",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT"
+      ],
+      "columns": {
+        "lines": [
+          "UPDATE"
+        ],
+        "version": [
+          "UPDATE"
+        ],
+        "updated_at": [
+          "UPDATE"
+        ],
+        "updated_by": [
+          "UPDATE"
+        ]
+      }
+    },
+    {
+      "name": "plan_itinerant_unit_snapshots",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_itinerant_unit_snapshots",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_itinerant_unit_snapshots",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_optimizer_snapshot_grouping_zones",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_optimizer_snapshot_grouping_zones",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_optimizer_snapshot_grouping_zones",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "TRUNCATE",
+        "REFERENCES",
+        "TRIGGER"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_optimizer_snapshot_heuristics",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_optimizer_snapshot_heuristics",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_optimizer_snapshot_heuristics",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "TRUNCATE",
+        "REFERENCES",
+        "TRIGGER"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_optimizer_snapshots",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_optimizer_snapshots",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_optimizer_snapshots",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "TRUNCATE",
+        "REFERENCES",
+        "TRIGGER"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_resource_bundle_snapshots",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_resource_bundle_snapshots",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_resource_bundle_snapshots",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "TRUNCATE",
+        "REFERENCES",
+        "TRIGGER"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_resource_items",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_resource_items",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_resource_items",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_resource_pools",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_resource_pools",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_resource_pools",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_space_resource_assignments",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_space_resource_assignments",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_space_resource_assignments",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_space_resource_type_requirements",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_space_resource_type_requirements",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_space_resource_type_requirements",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_space_settings",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_space_settings",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_space_settings",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "TRUNCATE",
+        "REFERENCES",
+        "TRIGGER"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_staff_assignments",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_staff_assignments",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_staff_assignments",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_summaries",
+      "role": "anon",
+      "kind": "v",
+      "rls": false,
+      "options": [
+        "security_invoker=true"
+      ],
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_summaries",
+      "role": "authenticated",
+      "kind": "v",
+      "rls": false,
+      "options": [
+        "security_invoker=true"
+      ],
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_summaries",
+      "role": "service_role",
+      "kind": "v",
+      "rls": false,
+      "options": [
+        "security_invoker=true"
+      ],
+      "privileges": [
+        "SELECT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_task_template_snapshots",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_task_template_snapshots",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_task_template_snapshots",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "TRUNCATE",
+        "REFERENCES",
+        "TRIGGER"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_vocal_coach_rules",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_vocal_coach_rules",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_vocal_coach_rules",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_zone_resource_assignments",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_zone_resource_assignments",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_zone_resource_assignments",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_zone_resource_type_requirements",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_zone_resource_type_requirements",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_zone_resource_type_requirements",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_zone_settings",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_zone_settings",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_zone_settings",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "TRUNCATE",
+        "REFERENCES",
+        "TRIGGER"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plan_zone_staff_mode",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_zone_staff_mode",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plan_zone_staff_mode",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "planning_accepted_exceptions",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "planning_accepted_exceptions",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "planning_accepted_exceptions",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT"
+      ],
+      "columns": {
+        "status": [
+          "UPDATE"
+        ],
+        "resolved_at": [
+          "UPDATE"
+        ]
+      }
+    },
+    {
+      "name": "planning_runs",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "planning_runs",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "planning_runs",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "planning_stage_validations",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "planning_stage_validations",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "planning_stage_validations",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plans",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "plans",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "plans",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "program_settings",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "program_settings",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "program_settings",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "UPDATE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "resource_availability",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "resource_availability",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "resource_availability",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "resource_bundle_components",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "resource_bundle_components",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "resource_bundle_components",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "resource_bundle_space_affinities",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "resource_bundle_space_affinities",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "resource_bundle_space_affinities",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "resource_bundles",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "resource_bundles",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "resource_bundles",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "resource_item_components",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "resource_item_components",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "resource_item_components",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "resource_items",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "resource_items",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "resource_items",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "resource_pools",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "resource_pools",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "resource_pools",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "resource_types",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "resource_types",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "resource_types",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "resources",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "resources",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "resources",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "roles",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "roles",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "roles",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "space_resource_defaults",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "space_resource_defaults",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "space_resource_defaults",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "space_resource_type_defaults",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "space_resource_type_defaults",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "space_resource_type_defaults",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "spaces",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "spaces",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "spaces",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "staff_assignment_defaults",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "staff_assignment_defaults",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "staff_assignment_defaults",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "staff_people",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "staff_people",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "staff_people",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "staff_zone_mode_defaults",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "staff_zone_mode_defaults",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "staff_zone_mode_defaults",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "task_status_events",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "task_status_events",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "task_status_events",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "task_templates",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "task_templates",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "task_templates",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "user_entity_links",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "user_entity_links",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "user_entity_links",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "user_preferences",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "user_preferences",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "user_preferences",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "user_roles",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "user_roles",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "user_roles",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "vocal_coach_rules",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "vocal_coach_rules",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "vocal_coach_rules",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "zone_resource_defaults",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "zone_resource_defaults",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "zone_resource_defaults",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "zone_resource_type_defaults",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "zone_resource_type_defaults",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "zone_resource_type_defaults",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "DELETE"
+      ],
+      "columns": {}
+    },
+    {
+      "name": "zones",
+      "role": "anon",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "zones",
+      "role": "authenticated",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [],
+      "columns": {}
+    },
+    {
+      "name": "zones",
+      "role": "service_role",
+      "kind": "r",
+      "rls": true,
+      "options": null,
+      "privileges": [
+        "SELECT",
+        "INSERT",
+        "UPDATE",
+        "DELETE"
+      ],
+      "columns": {}
+    }
+  ],
+  "sequences": [
+    {
+      "name": "assisted_planning_sessions_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "assisted_planning_sessions"
+    },
+    {
+      "name": "assisted_planning_sessions_id_seq",
+      "role": "authenticated",
+      "privileges": [
+        "USAGE",
+        "SELECT"
+      ],
+      "owned_by": "assisted_planning_sessions"
+    },
+    {
+      "name": "assisted_planning_sessions_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE",
+        "SELECT"
+      ],
+      "owned_by": "assisted_planning_sessions"
+    },
+    {
+      "name": "assisted_planning_stages_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "assisted_planning_stages"
+    },
+    {
+      "name": "assisted_planning_stages_id_seq",
+      "role": "authenticated",
+      "privileges": [
+        "USAGE",
+        "SELECT"
+      ],
+      "owned_by": "assisted_planning_stages"
+    },
+    {
+      "name": "assisted_planning_stages_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE",
+        "SELECT"
+      ],
+      "owned_by": "assisted_planning_stages"
+    },
+    {
+      "name": "contestants_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "contestants"
+    },
+    {
+      "name": "contestants_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "contestants"
+    },
+    {
+      "name": "contestants_id_seq",
+      "role": "service_role",
+      "privileges": [],
+      "owned_by": "contestants"
+    },
+    {
+      "name": "daily_tasks_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "daily_tasks"
+    },
+    {
+      "name": "daily_tasks_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "daily_tasks"
+    },
+    {
+      "name": "daily_tasks_id_seq",
+      "role": "service_role",
+      "privileges": [],
+      "owned_by": "daily_tasks"
+    },
+    {
+      "name": "engine_plan_results_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "engine_plan_results"
+    },
+    {
+      "name": "engine_plan_results_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "engine_plan_results"
+    },
+    {
+      "name": "engine_plan_results_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE"
+      ],
+      "owned_by": "engine_plan_results"
+    },
+    {
+      "name": "itinerant_teams_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "itinerant_teams"
+    },
+    {
+      "name": "itinerant_teams_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "itinerant_teams"
+    },
+    {
+      "name": "itinerant_teams_id_seq",
+      "role": "service_role",
+      "privileges": [],
+      "owned_by": "itinerant_teams"
+    },
+    {
+      "name": "locks_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "locks"
+    },
+    {
+      "name": "locks_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "locks"
+    },
+    {
+      "name": "locks_id_seq",
+      "role": "service_role",
+      "privileges": [],
+      "owned_by": "locks"
+    },
+    {
+      "name": "operational_incident_events_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "operational_incident_events"
+    },
+    {
+      "name": "operational_incident_events_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "operational_incident_events"
+    },
+    {
+      "name": "operational_incident_events_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE"
+      ],
+      "owned_by": "operational_incident_events"
+    },
+    {
+      "name": "plan_breaks_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "plan_breaks"
+    },
+    {
+      "name": "plan_breaks_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "plan_breaks"
+    },
+    {
+      "name": "plan_breaks_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE"
+      ],
+      "owned_by": "plan_breaks"
+    },
+    {
+      "name": "plan_config_revisions_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "plan_config_revisions"
+    },
+    {
+      "name": "plan_config_revisions_id_seq",
+      "role": "authenticated",
+      "privileges": [
+        "USAGE",
+        "SELECT"
+      ],
+      "owned_by": "plan_config_revisions"
+    },
+    {
+      "name": "plan_config_revisions_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE",
+        "SELECT"
+      ],
+      "owned_by": "plan_config_revisions"
+    },
+    {
+      "name": "plan_itinerant_unit_snapshots_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "plan_itinerant_unit_snapshots"
+    },
+    {
+      "name": "plan_itinerant_unit_snapshots_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "plan_itinerant_unit_snapshots"
+    },
+    {
+      "name": "plan_itinerant_unit_snapshots_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE",
+        "SELECT"
+      ],
+      "owned_by": "plan_itinerant_unit_snapshots"
+    },
+    {
+      "name": "plan_optimizer_snapshot_grouping_zones_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "plan_optimizer_snapshot_grouping_zones"
+    },
+    {
+      "name": "plan_optimizer_snapshot_grouping_zones_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "plan_optimizer_snapshot_grouping_zones"
+    },
+    {
+      "name": "plan_optimizer_snapshot_grouping_zones_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE",
+        "SELECT",
+        "UPDATE"
+      ],
+      "owned_by": "plan_optimizer_snapshot_grouping_zones"
+    },
+    {
+      "name": "plan_optimizer_snapshot_heuristics_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "plan_optimizer_snapshot_heuristics"
+    },
+    {
+      "name": "plan_optimizer_snapshot_heuristics_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "plan_optimizer_snapshot_heuristics"
+    },
+    {
+      "name": "plan_optimizer_snapshot_heuristics_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE",
+        "SELECT",
+        "UPDATE"
+      ],
+      "owned_by": "plan_optimizer_snapshot_heuristics"
+    },
+    {
+      "name": "plan_optimizer_snapshots_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "plan_optimizer_snapshots"
+    },
+    {
+      "name": "plan_optimizer_snapshots_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "plan_optimizer_snapshots"
+    },
+    {
+      "name": "plan_optimizer_snapshots_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE",
+        "SELECT",
+        "UPDATE"
+      ],
+      "owned_by": "plan_optimizer_snapshots"
+    },
+    {
+      "name": "plan_resource_bundle_snapshots_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "plan_resource_bundle_snapshots"
+    },
+    {
+      "name": "plan_resource_bundle_snapshots_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "plan_resource_bundle_snapshots"
+    },
+    {
+      "name": "plan_resource_bundle_snapshots_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE",
+        "SELECT",
+        "UPDATE"
+      ],
+      "owned_by": "plan_resource_bundle_snapshots"
+    },
+    {
+      "name": "plan_resource_items_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "plan_resource_items"
+    },
+    {
+      "name": "plan_resource_items_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "plan_resource_items"
+    },
+    {
+      "name": "plan_resource_items_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE"
+      ],
+      "owned_by": "plan_resource_items"
+    },
+    {
+      "name": "plan_resource_pools_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "plan_resource_pools"
+    },
+    {
+      "name": "plan_resource_pools_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "plan_resource_pools"
+    },
+    {
+      "name": "plan_resource_pools_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE"
+      ],
+      "owned_by": "plan_resource_pools"
+    },
+    {
+      "name": "plan_space_resource_assignments_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "plan_space_resource_assignments"
+    },
+    {
+      "name": "plan_space_resource_assignments_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "plan_space_resource_assignments"
+    },
+    {
+      "name": "plan_space_resource_assignments_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE"
+      ],
+      "owned_by": "plan_space_resource_assignments"
+    },
+    {
+      "name": "plan_space_resource_type_requirements_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "plan_space_resource_type_requirements"
+    },
+    {
+      "name": "plan_space_resource_type_requirements_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "plan_space_resource_type_requirements"
+    },
+    {
+      "name": "plan_space_resource_type_requirements_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE"
+      ],
+      "owned_by": "plan_space_resource_type_requirements"
+    },
+    {
+      "name": "plan_space_settings_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "plan_space_settings"
+    },
+    {
+      "name": "plan_space_settings_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "plan_space_settings"
+    },
+    {
+      "name": "plan_space_settings_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE",
+        "SELECT",
+        "UPDATE"
+      ],
+      "owned_by": "plan_space_settings"
+    },
+    {
+      "name": "plan_staff_assignments_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "plan_staff_assignments"
+    },
+    {
+      "name": "plan_staff_assignments_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "plan_staff_assignments"
+    },
+    {
+      "name": "plan_staff_assignments_id_seq",
+      "role": "service_role",
+      "privileges": [],
+      "owned_by": "plan_staff_assignments"
+    },
+    {
+      "name": "plan_task_template_snapshots_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "plan_task_template_snapshots"
+    },
+    {
+      "name": "plan_task_template_snapshots_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "plan_task_template_snapshots"
+    },
+    {
+      "name": "plan_task_template_snapshots_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE",
+        "SELECT",
+        "UPDATE"
+      ],
+      "owned_by": "plan_task_template_snapshots"
+    },
+    {
+      "name": "plan_vocal_coach_rules_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "plan_vocal_coach_rules"
+    },
+    {
+      "name": "plan_vocal_coach_rules_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "plan_vocal_coach_rules"
+    },
+    {
+      "name": "plan_vocal_coach_rules_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE"
+      ],
+      "owned_by": "plan_vocal_coach_rules"
+    },
+    {
+      "name": "plan_zone_resource_assignments_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "plan_zone_resource_assignments"
+    },
+    {
+      "name": "plan_zone_resource_assignments_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "plan_zone_resource_assignments"
+    },
+    {
+      "name": "plan_zone_resource_assignments_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE"
+      ],
+      "owned_by": "plan_zone_resource_assignments"
+    },
+    {
+      "name": "plan_zone_resource_type_requirements_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "plan_zone_resource_type_requirements"
+    },
+    {
+      "name": "plan_zone_resource_type_requirements_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "plan_zone_resource_type_requirements"
+    },
+    {
+      "name": "plan_zone_resource_type_requirements_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE"
+      ],
+      "owned_by": "plan_zone_resource_type_requirements"
+    },
+    {
+      "name": "plan_zone_settings_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "plan_zone_settings"
+    },
+    {
+      "name": "plan_zone_settings_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "plan_zone_settings"
+    },
+    {
+      "name": "plan_zone_settings_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE",
+        "SELECT",
+        "UPDATE"
+      ],
+      "owned_by": "plan_zone_settings"
+    },
+    {
+      "name": "planning_accepted_exceptions_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "planning_accepted_exceptions"
+    },
+    {
+      "name": "planning_accepted_exceptions_id_seq",
+      "role": "authenticated",
+      "privileges": [
+        "USAGE",
+        "SELECT"
+      ],
+      "owned_by": "planning_accepted_exceptions"
+    },
+    {
+      "name": "planning_accepted_exceptions_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE",
+        "SELECT"
+      ],
+      "owned_by": "planning_accepted_exceptions"
+    },
+    {
+      "name": "planning_runs_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "planning_runs"
+    },
+    {
+      "name": "planning_runs_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "planning_runs"
+    },
+    {
+      "name": "planning_runs_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE"
+      ],
+      "owned_by": "planning_runs"
+    },
+    {
+      "name": "planning_stage_validations_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "planning_stage_validations"
+    },
+    {
+      "name": "planning_stage_validations_id_seq",
+      "role": "authenticated",
+      "privileges": [
+        "USAGE",
+        "SELECT"
+      ],
+      "owned_by": "planning_stage_validations"
+    },
+    {
+      "name": "planning_stage_validations_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE",
+        "SELECT"
+      ],
+      "owned_by": "planning_stage_validations"
+    },
+    {
+      "name": "plans_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "plans"
+    },
+    {
+      "name": "plans_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "plans"
+    },
+    {
+      "name": "plans_id_seq",
+      "role": "service_role",
+      "privileges": [],
+      "owned_by": "plans"
+    },
+    {
+      "name": "resource_availability_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "resource_availability"
+    },
+    {
+      "name": "resource_availability_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "resource_availability"
+    },
+    {
+      "name": "resource_availability_id_seq",
+      "role": "service_role",
+      "privileges": [],
+      "owned_by": "resource_availability"
+    },
+    {
+      "name": "resource_item_components_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "resource_item_components"
+    },
+    {
+      "name": "resource_item_components_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "resource_item_components"
+    },
+    {
+      "name": "resource_item_components_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE"
+      ],
+      "owned_by": "resource_item_components"
+    },
+    {
+      "name": "resource_items_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "resource_items"
+    },
+    {
+      "name": "resource_items_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "resource_items"
+    },
+    {
+      "name": "resource_items_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE"
+      ],
+      "owned_by": "resource_items"
+    },
+    {
+      "name": "resource_pools_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "resource_pools"
+    },
+    {
+      "name": "resource_pools_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "resource_pools"
+    },
+    {
+      "name": "resource_pools_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE"
+      ],
+      "owned_by": "resource_pools"
+    },
+    {
+      "name": "resource_types_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "resource_types"
+    },
+    {
+      "name": "resource_types_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "resource_types"
+    },
+    {
+      "name": "resource_types_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE"
+      ],
+      "owned_by": "resource_types"
+    },
+    {
+      "name": "resources_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "resources"
+    },
+    {
+      "name": "resources_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "resources"
+    },
+    {
+      "name": "resources_id_seq",
+      "role": "service_role",
+      "privileges": [],
+      "owned_by": "resources"
+    },
+    {
+      "name": "space_resource_defaults_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "space_resource_defaults"
+    },
+    {
+      "name": "space_resource_defaults_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "space_resource_defaults"
+    },
+    {
+      "name": "space_resource_defaults_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE"
+      ],
+      "owned_by": "space_resource_defaults"
+    },
+    {
+      "name": "space_resource_type_defaults_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "space_resource_type_defaults"
+    },
+    {
+      "name": "space_resource_type_defaults_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "space_resource_type_defaults"
+    },
+    {
+      "name": "space_resource_type_defaults_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE"
+      ],
+      "owned_by": "space_resource_type_defaults"
+    },
+    {
+      "name": "spaces_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "spaces"
+    },
+    {
+      "name": "spaces_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "spaces"
+    },
+    {
+      "name": "spaces_id_seq",
+      "role": "service_role",
+      "privileges": [],
+      "owned_by": "spaces"
+    },
+    {
+      "name": "staff_assignment_defaults_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "staff_assignment_defaults"
+    },
+    {
+      "name": "staff_assignment_defaults_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "staff_assignment_defaults"
+    },
+    {
+      "name": "staff_assignment_defaults_id_seq",
+      "role": "service_role",
+      "privileges": [],
+      "owned_by": "staff_assignment_defaults"
+    },
+    {
+      "name": "staff_people_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "staff_people"
+    },
+    {
+      "name": "staff_people_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "staff_people"
+    },
+    {
+      "name": "staff_people_id_seq",
+      "role": "service_role",
+      "privileges": [],
+      "owned_by": "staff_people"
+    },
+    {
+      "name": "task_status_events_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "task_status_events"
+    },
+    {
+      "name": "task_status_events_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "task_status_events"
+    },
+    {
+      "name": "task_status_events_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE"
+      ],
+      "owned_by": "task_status_events"
+    },
+    {
+      "name": "task_templates_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "task_templates"
+    },
+    {
+      "name": "task_templates_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "task_templates"
+    },
+    {
+      "name": "task_templates_id_seq",
+      "role": "service_role",
+      "privileges": [],
+      "owned_by": "task_templates"
+    },
+    {
+      "name": "user_entity_links_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "user_entity_links"
+    },
+    {
+      "name": "user_entity_links_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "user_entity_links"
+    },
+    {
+      "name": "user_entity_links_id_seq",
+      "role": "service_role",
+      "privileges": [],
+      "owned_by": "user_entity_links"
+    },
+    {
+      "name": "vocal_coach_rules_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "vocal_coach_rules"
+    },
+    {
+      "name": "vocal_coach_rules_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "vocal_coach_rules"
+    },
+    {
+      "name": "vocal_coach_rules_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE"
+      ],
+      "owned_by": "vocal_coach_rules"
+    },
+    {
+      "name": "zone_resource_defaults_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "zone_resource_defaults"
+    },
+    {
+      "name": "zone_resource_defaults_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "zone_resource_defaults"
+    },
+    {
+      "name": "zone_resource_defaults_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE"
+      ],
+      "owned_by": "zone_resource_defaults"
+    },
+    {
+      "name": "zone_resource_type_defaults_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "zone_resource_type_defaults"
+    },
+    {
+      "name": "zone_resource_type_defaults_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "zone_resource_type_defaults"
+    },
+    {
+      "name": "zone_resource_type_defaults_id_seq",
+      "role": "service_role",
+      "privileges": [
+        "USAGE"
+      ],
+      "owned_by": "zone_resource_type_defaults"
+    },
+    {
+      "name": "zones_id_seq",
+      "role": "anon",
+      "privileges": [],
+      "owned_by": "zones"
+    },
+    {
+      "name": "zones_id_seq",
+      "role": "authenticated",
+      "privileges": [],
+      "owned_by": "zones"
+    },
+    {
+      "name": "zones_id_seq",
+      "role": "service_role",
+      "privileges": [],
+      "owned_by": "zones"
+    }
+  ],
+  "functions": [
+    {
+      "signature": "apply_day_config_operation(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "apply_day_config_operation(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "apply_day_config_operation(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "apply_day_config_operation_v2(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "apply_day_config_operation_v2(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "apply_day_config_operation_v2(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "apply_day_config_operation_v3(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "apply_day_config_operation_v3(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "apply_day_config_operation_v3(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "apply_day_config_operation_v4(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "apply_day_config_operation_v4(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "apply_day_config_operation_v4(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "apply_day_config_operation_v5(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "apply_day_config_operation_v5(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "apply_day_config_operation_v5(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "assisted_accept_stage(integer,uuid,text,bigint,text)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "assisted_accept_stage(integer,uuid,text,bigint,text)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "assisted_accept_stage(integer,uuid,text,bigint,text)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "assisted_apply_config_refresh(integer,uuid,bigint,jsonb,jsonb,jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "assisted_apply_config_refresh(integer,uuid,bigint,jsonb,jsonb,jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "assisted_apply_config_refresh(integer,uuid,bigint,jsonb,jsonb,jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "assisted_apply_config_refresh_v1(integer,uuid,bigint,jsonb,jsonb,jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "assisted_apply_config_refresh_v1(integer,uuid,bigint,jsonb,jsonb,jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "assisted_apply_config_refresh_v1(integer,uuid,bigint,jsonb,jsonb,jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "assisted_apply_config_refresh_v2(integer,uuid,bigint,jsonb,jsonb,jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "assisted_apply_config_refresh_v2(integer,uuid,bigint,jsonb,jsonb,jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "assisted_apply_config_refresh_v2(integer,uuid,bigint,jsonb,jsonb,jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "assisted_apply_proposal(integer,bigint,text,bigint)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "assisted_apply_proposal(integer,bigint,text,bigint)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "assisted_apply_proposal(integer,bigint,text,bigint)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "assisted_apply_snapshot(integer,jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "assisted_apply_snapshot(integer,jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "assisted_apply_snapshot(integer,jsonb)",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "assisted_bootstrap_session(integer,uuid,jsonb,jsonb,jsonb,text)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "assisted_bootstrap_session(integer,uuid,jsonb,jsonb,jsonb,text)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "assisted_bootstrap_session(integer,uuid,jsonb,jsonb,jsonb,text)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "assisted_finish_proposal(integer,bigint,jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "assisted_finish_proposal(integer,bigint,jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "assisted_finish_proposal(integer,bigint,jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "assisted_move_draft_edit(integer,text,bigint,boolean)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "assisted_move_draft_edit(integer,text,bigint,boolean)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "assisted_move_draft_edit(integer,text,bigint,boolean)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "assisted_move_stage(integer,bigint,boolean)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "assisted_move_stage(integer,bigint,boolean)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "assisted_move_stage(integer,bigint,boolean)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "assisted_patch_draft(integer,text,bigint,jsonb,text)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "assisted_patch_draft(integer,text,bigint,jsonb,text)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "assisted_patch_draft(integer,text,bigint,jsonb,text)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "assisted_record_manual_clean_validation(integer,text,bigint,bigint,jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "assisted_record_manual_clean_validation(integer,text,bigint,bigint,jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "assisted_record_manual_clean_validation(integer,text,bigint,bigint,jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "assisted_record_proposal_clean_validation(integer,text,bigint,bigint)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "assisted_record_proposal_clean_validation(integer,text,bigint,bigint)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "assisted_record_proposal_clean_validation(integer,text,bigint,bigint)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "assisted_record_stage_validation(integer,text,bigint,bigint,jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "assisted_record_stage_validation(integer,text,bigint,bigint,jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "assisted_record_stage_validation(integer,text,bigint,bigint,jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "assisted_restart_bootstrap(integer,text,bigint)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "assisted_restart_bootstrap(integer,text,bigint)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "assisted_restart_bootstrap(integer,text,bigint)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "bump_task_template_revision()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "bump_task_template_revision()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "bump_task_template_revision()",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "correct_task_execution_time(bigint,uuid,text,text,text,integer)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "correct_task_execution_time(bigint,uuid,text,text,text,integer)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "correct_task_execution_time(bigint,uuid,text,text,text,integer)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "effective_operation_continuity(integer,jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "effective_operation_continuity(integer,jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "effective_operation_continuity(integer,jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "effective_round_preparations(jsonb,jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "effective_round_preparations(jsonb,jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "effective_round_preparations(jsonb,jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "execute_task_transition(bigint,uuid,text,text,integer)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "execute_task_transition(bigint,uuid,text,text,integer)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "execute_task_transition(bigint,uuid,text,text,integer)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "execution_clock(bigint)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "execution_clock(bigint)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "execution_clock(bigint)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "execution_context(bigint,uuid)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "execution_context(bigint,uuid)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "execution_context(bigint,uuid)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "execution_history_immutable()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "execution_history_immutable()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "execution_history_immutable()",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "execution_plan_ready(bigint)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "execution_plan_ready(bigint)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "execution_plan_ready(bigint)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "execution_task_authorized(bigint,uuid)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "execution_task_authorized(bigint,uuid)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "execution_task_authorized(bigint,uuid)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "execution_task_resources(bigint)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "execution_task_resources(bigint)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "execution_task_resources(bigint)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "execution_task_scope(bigint,uuid)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "execution_task_scope(bigint,uuid)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "execution_task_scope(bigint,uuid)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "guard_assisted_planning_stage_update()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "guard_assisted_planning_stage_update()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "guard_assisted_planning_stage_update()",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "guard_assisted_stage_proposal_plan()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "guard_assisted_stage_proposal_plan()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "guard_assisted_stage_proposal_plan()",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "guard_itinerant_team_delete()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "guard_itinerant_team_delete()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "guard_itinerant_team_delete()",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "guard_main_flow_preference()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "guard_main_flow_preference()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "guard_main_flow_preference()",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "guard_operation_continuity_overrides()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "guard_operation_continuity_overrides()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "guard_operation_continuity_overrides()",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "guard_round_preparation_overrides()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "guard_round_preparation_overrides()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "guard_round_preparation_overrides()",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "guard_transport_policy_revision()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "guard_transport_policy_revision()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "guard_transport_policy_revision()",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "has_role(text)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "has_role(text)",
+      "role": "authenticated",
+      "execute": true
+    },
+    {
+      "signature": "has_role(text)",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "hhmm_to_minutes(text)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "hhmm_to_minutes(text)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "hhmm_to_minutes(text)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "incident_actor_name(uuid,text)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "incident_actor_name(uuid,text)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "incident_actor_name(uuid,text)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "incident_command(bigint,uuid,text,jsonb,uuid,integer,text)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "incident_command(bigint,uuid,text,jsonb,uuid,integer,text)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "incident_command(bigint,uuid,text,jsonb,uuid,integer,text)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "incident_document(operational_incidents,uuid)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "incident_document(operational_incidents,uuid)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "incident_document(operational_incidents,uuid)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "incident_manageable(bigint,bigint,uuid)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "incident_manageable(bigint,bigint,uuid)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "incident_manageable(bigint,bigint,uuid)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "incident_query(bigint,uuid,uuid,boolean)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "incident_query(bigint,uuid,uuid,boolean)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "incident_query(bigint,uuid,uuid,boolean)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "incident_role(uuid)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "incident_role(uuid)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "incident_role(uuid)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "incident_validate_links()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "incident_validate_links()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "incident_validate_links()",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "incident_visible(bigint,bigint,uuid)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "incident_visible(bigint,bigint,uuid)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "incident_visible(bigint,bigint,uuid)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "initialize_day_config_revision(integer,uuid,jsonb,jsonb,jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "initialize_day_config_revision(integer,uuid,jsonb,jsonb,jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "initialize_day_config_revision(integer,uuid,jsonb,jsonb,jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "is_positive_integer_jsonb_array(jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "is_positive_integer_jsonb_array(jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "is_positive_integer_jsonb_array(jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "optimizer_baseline_from_assisted_refresh()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "optimizer_baseline_from_assisted_refresh()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "optimizer_baseline_from_assisted_refresh()",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "optimizer_snapshot_provenance_metadata()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "optimizer_snapshot_provenance_metadata()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "optimizer_snapshot_provenance_metadata()",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "planning_header_scope_valid()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "planning_header_scope_valid()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "planning_header_scope_valid()",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "positive_integer_jsonb_array(jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "positive_integer_jsonb_array(jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "positive_integer_jsonb_array(jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "preserve_itinerant_snapshot()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "preserve_itinerant_snapshot()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "preserve_itinerant_snapshot()",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "preserve_new_day_planner_profile()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "preserve_new_day_planner_profile()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "preserve_new_day_planner_profile()",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "preserve_plan_planner_next_configuration()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "preserve_plan_planner_next_configuration()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "preserve_plan_planner_next_configuration()",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "reset_plan_execution(bigint,uuid,jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "reset_plan_execution(bigint,uuid,jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "reset_plan_execution(bigint,uuid,jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "reset_task_execution(bigint,uuid)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "reset_task_execution(bigint,uuid)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "reset_task_execution(bigint,uuid)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "save_itinerant_composition(bigint,uuid,integer,jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "save_itinerant_composition(bigint,uuid,integer,jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "save_itinerant_composition(bigint,uuid,integer,jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "save_operation_continuity_group(uuid,uuid,jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "save_operation_continuity_group(uuid,uuid,jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "save_operation_continuity_group(uuid,uuid,jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "save_planning_header_notes(bigint,uuid,text,bigint,integer,jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "save_planning_header_notes(bigint,uuid,text,bigint,integer,jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "save_planning_header_notes(bigint,uuid,text,bigint,integer,jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "save_task_template_with_inverse(bigint,uuid,jsonb,jsonb,bigint[],bigint[])",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "save_task_template_with_inverse(bigint,uuid,jsonb,jsonb,bigint[],bigint[])",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "save_task_template_with_inverse(bigint,uuid,jsonb,jsonb,bigint[],bigint[])",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "set_resource_bundle_updated_at()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "set_resource_bundle_updated_at()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "set_resource_bundle_updated_at()",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "snapshot_plan_itinerant_units(integer,uuid)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "snapshot_plan_itinerant_units(integer,uuid)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "snapshot_plan_itinerant_units(integer,uuid)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "spec11_validate_plan_optimizer_grouping_zone_scope()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "spec11_validate_plan_optimizer_grouping_zone_scope()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "spec11_validate_plan_optimizer_grouping_zone_scope()",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "spec11_validate_plan_optimizer_snapshot_scope()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "spec11_validate_plan_optimizer_snapshot_scope()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "spec11_validate_plan_optimizer_snapshot_scope()",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "task_execution_history(bigint,uuid)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "task_execution_history(bigint,uuid)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "task_execution_history(bigint,uuid)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "valid_planning_header_lines(jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "valid_planning_header_lines(jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "valid_planning_header_lines(jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "validate_itinerant_windows(jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "validate_itinerant_windows(jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "validate_itinerant_windows(jsonb)",
+      "role": "service_role",
+      "execute": true
+    }
+  ]
+}

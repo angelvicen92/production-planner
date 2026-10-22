@@ -1,0 +1,65 @@
+{
+  "base": "49d826c9a5ecdd3e0488a64d2b6a05dd3aad98b5",
+  "targetBranch": "codex/itinerant-composition-u04a",
+  "focalTests": {
+    "passed": 168,
+    "failed": 0
+  },
+  "typescript": "PASS",
+  "integrationHarnessTypes": "PASS",
+  "migrationSequence": "PASS",
+  "build": "PASS (native production runtime built from final sources)",
+  "nativeJourney": "PASS",
+  "A2FinalEngineBenchmark": {
+    "completed": 266,
+    "total": 266,
+    "stages": 11,
+    "hardViolations": 0,
+    "requiredViolations": 0
+  },
+  "uiFullRehearsal": {
+    "baseline": "FAIL after 266/266, 11 Stages",
+    "intermediateCandidate": "FAIL at the same history sorting control after 266/266, 11 Stages",
+    "control": "Orden por tarea",
+    "newFullUiRegressionObserved": false
+  },
+  "productionMigrations": false,
+  "replitPublished": false,
+  "merged": false,
+  "completeU04aProductAcceptance": false,
+  "pending": [
+    "General new-day Planner Next authorities and a productive full new-day solver/Draft/Stage path",
+    "Versioned composition editing of existing days",
+    "Complete historical-view UI rehearsal"
+  ],
+  "sourceSha256": {
+    ".github/workflows/itinerant-composition-ci.yml": "a5a423685e2eab52e662fb46c0d479d59f7dd42bc89988745ad28c21e676d7d6",
+    "client/src/components/daily-itinerant-compositions.tsx": "e90575473401d55c9777ab45362b14994e6cb9a615aa56404a8cbb78979a677b",
+    "client/src/components/effective-configuration.tsx": "58ee41de17013be1157362ffaf04f9e08a1aeaaad4023340b096a0788f57116a",
+    "client/src/components/itinerant-composition-settings.tsx": "4046e224b6590c1360854a967d52189d3ec0829d2baf8fc37af6ca62a75faaba",
+    "client/src/pages/settings.tsx": "dff77df5b9db303dad036ea53e2cc54454bd8b2355745349e8116c6091ccc29d",
+    "engine/buildInput.ts": "abbc9302bdd0da565c25e11ca4c12e592e39faae83fae97ce3126e79bba15804",
+    "engine/planner-next/integration/engineInputAdapter.ts": "4be739d1fd27c731b1b92820f608d635e3deb7ea843045dca63d53af016ac8da",
+    "engine/planner-next/integration/engineInputPreflight.ts": "b0a1b162b772514af14e1c377861f353f7f2059f10c7d7a1cc9dbd09adda4c4e",
+    "engine/types.ts": "37a1819077d51c8a1b6a51a2dc9d54f717c0fb20e26fb2ec8f6e43fb896f49c4",
+    "script/demo/fixtures/data-api-privileges.json": "7079fd019e948397e06198791dc72f482a3d835d4458ad20a080c128e90a1f9d",
+    "script/demo/smokeA2Integration.ts": "8340f296c11337e7925f831e62fb6b0ea31b8584ce4afb8db9dbd468b48dc3d7",
+    "script/demo/smokeItinerantCompositionJourney.ts": "8d75a3a7d31c268408050ea40d898a3c990b241d582f8dc74624825ff52fb492",
+    "script/demo/smokeRemainingDaySections.ts": "d3cdf496b38fcbedeb1b2cc6242eb84179d67007dd5834bc592696d7edef9764",
+    "script/demo/smokeSettingsOperations.ts": "ab3410db1fded57b33d87ffc0ea6e42584e64f616f29872d761457eec925ec37",
+    "server/apiAuthorization.spec.ts": "9e9be6ee934458afbde27b8a05a1978f62e6a7f5c48783e80578fdb9b2372bac",
+    "server/apiAuthorization.ts": "f588855d44e0292c4320fb7c4ca726427451234a76062809932d18041d6a333d",
+    "server/effectiveConfigurationView.ts": "c74fd129a8c1fed835da68e27f30478d264da0796e2dfd720338306de7d10ba5",
+    "server/effectivePlanConfigRevision.ts": "8b1d630609ea456c96dc5c89b162f859bcff35982e1a92711dc7e5750a721f3e",
+    "server/itinerantComposition.spec.ts": "f45730fa1874981d0eae35857d7add3a84a0eff8ef8752af640d03f9139c74e6",
+    "server/itinerantComposition.ts": "68326831a1c1a7afd35a14965512b10d6795e25e21b0192ee02017047fad7d3c",
+    "server/planPlannerNextConfiguration.ts": "febb29f99ba09ece8deb86f3d17d5731c288d56769cb8e42d5efdefb750c01aa",
+    "server/routes.ts": "2fa55db110a625285c768127ebb8abb2de959fb4d073d2addb2d8362c5d12e64",
+    "server/storage.ts": "5623df8ad9b7739e5a1c5f39f35d9324c89e290d3518129a69e0b2234efa1b56",
+    "shared/effectiveConfigurationContracts.ts": "7ea20cc5cdcdc34d6a32b0c02bb239945bab08c1e1607cb845a029bc16c63ae9",
+    "shared/itinerantComposition.ts": "66e8284f1015cfb65b7623fd60c243f1f3708baad197f71803ef7576719ea7b5",
+    "shared/routes.ts": "77c5a0f7897a253fd1d21494b9fe31f6e522b97195ccabc8cd42387cf5ab04d3",
+    "shared/schema.ts": "beeee0a46ca8170cb1059cb351913093fd2872076be38de49b74b526637fdce0",
+    "supabase/migrations/104_itinerant_physical_composition.sql": "e2b793b11e1e88a144ce0d23dd02d24ccc915e932bb61d9d74349c41bb7422ac"
+  }
+}

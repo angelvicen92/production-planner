@@ -44,6 +44,7 @@ if(process.argv.includes('--app')){
  const templateCreation=process.argv.includes('--template-creation');
  const operationContinuity=process.argv.includes("--operation-continuity");
  const atomicTemplate=process.argv.includes('--atomic-template');
+ const itinerantComposition=process.argv.includes('--itinerant-composition');
  const historicalTopology=process.argv.includes('--historical-topology');
  assert.ok(!atomicTemplate||historicalTopology,'atomic template rehearsal requires protected historical rows');
  assert.ok(!templateCreation||historicalTopology,'template creation requires the protected historical catalog');
@@ -100,6 +101,7 @@ if(process.argv.includes('--app')){
  if(executionDateIntegrity)runtimeFiles.push('script/demo/smokeExecutionDateIntegrity.ts','server/liveExecution.ts','supabase/migrations/098_execution_start_workday.sql');
  if(bulkExecutionReset)runtimeFiles.push('script/demo/smokeBulkExecutionReset.ts','server/bulkExecutionReset.ts','server/apiAuthorization.ts','shared/routes.ts','supabase/migrations/101_admin_bulk_execution_reset.sql');
  if(restrictedDataApi)runtimeFiles.push('script/demo/dataApiCatalog.ts','script/demo/dataApiGrantsGate.ts','script/demo/dataApiCallSheet.ts','script/demo/fixtures/data-api-privileges.json','supabase/migrations/100_data_api_explicit_grants.sql');
+ if(itinerantComposition)runtimeFiles.push('script/demo/smokeItinerantCompositionJourney.ts','shared/itinerantComposition.ts','server/itinerantComposition.ts','server/apiAuthorization.ts','server/effectiveConfigurationView.ts','server/effectivePlanConfigRevision.ts','server/planPlannerNextConfiguration.ts','engine/buildInput.ts','engine/types.ts','shared/routes.ts','shared/schema.ts','shared/effectiveConfigurationContracts.ts','client/src/pages/settings.tsx','client/src/components/itinerant-composition-settings.tsx','client/src/components/daily-itinerant-compositions.tsx','client/src/components/effective-configuration.tsx','supabase/migrations/106_itinerant_physical_composition.sql');
  if(atomicTemplate)runtimeFiles.push('script/demo/smokeAtomicTaskTemplate.ts','server/atomicTaskTemplate.ts','server/taskTemplateMapping.ts','shared/routes.ts','shared/schema.ts','client/src/hooks/use-tasks.ts','client/src/pages/settings.tsx','supabase/migrations/103_atomic_task_template_inverse.sql');
  if(operationContinuity)runtimeFiles.push('engine/planner-next/transportGrouping.ts','engine/planner-next/operationContinuity.ts','engine/planner-next/assistedPlanning.ts','engine/planner-next/contracts.ts','engine/planner-next/placeAuxiliaryTasks.ts','engine/planner-next/earlyEntryMaterialization.ts','engine/planner-next/earlyClosureMaterialization.ts','engine/buildInput.ts','engine/types.ts','shared/dayConfig.ts','shared/effectiveConfigurationContracts.ts','shared/schema.ts','script/demo/smokeOperationContinuityJourney.ts','shared/operationContinuity.ts','server/operationContinuity.ts','server/operationContinuityCatalog.ts','server/dayConfigurationService.ts','server/taskTemplateSnapshot.ts','server/assistedConfigRefresh.ts','client/src/components/operation-continuity-editor.tsx','supabase/migrations/104_operation_continuity.sql');
  const hashes=()=>Object.fromEntries(runtimeFiles.map(file=>[file,createHash('sha256').update(readFileSync(file)).digest('hex')]));
@@ -258,8 +260,16 @@ if(process.argv.includes('--app')){
   await db.query("NOTIFY pgrst,'reload schema'");
   const localEnv={...process.env,SUPABASE_URL:url,VITE_SUPABASE_URL:url,SUPABASE_ANON_KEY:anon,VITE_SUPABASE_ANON_KEY:anon,SUPABASE_SERVICE_ROLE_KEY:service,DATABASE_URL:`postgres://postgres:${password}@127.0.0.1:${dbPort}/postgres`,PORT:String(appPort),NODE_ENV:'development',ADMIN_EMAIL:users.admin.email};
   delete (localEnv as Record<string,unknown>).REPL_ID;
+  if(process.argv.includes('--production-runtime')) {
+   // Compile against the disposable gateway's credentials, never inherited
+   // VITE_* values. Static assets isolate browser rehearsals from Vite HMR/cache.
+   localEnv.NODE_ENV='production';
+   writeFileSync(`${directory}/build-private.log`,execFileSync(process.execPath,['--import','tsx',resolve('script/build.ts')],{env:localEnv,encoding:'utf8',stdio:['ignore','pipe','pipe']}),{mode:0o600});
+   report.clientRuntime='production build against disposable localhost Auth';
+  }
+
   const appLog=createWriteStream(`${directory}/app-private.log`,{mode:0o600});
-  app=spawn(process.execPath,['--import','tsx',resolve('script/demo/smokeA2Integration.ts'),'--app'],{env:localEnv,stdio:['ignore','pipe','pipe']});app.stdout!.pipe(appLog);app.stderr!.pipe(appLog);
+  app=spawn(process.execPath,process.argv.includes('--production-runtime')?[resolve('dist/index.cjs')]:['--import','tsx',resolve('script/demo/smokeA2Integration.ts'),'--app'],{env:localEnv,stdio:['ignore','pipe','pipe']});app.stdout!.pipe(appLog);app.stderr!.pipe(appLog);
   await eventually(async()=>{assert.equal(app!.exitCode,null,'product server exited');const r=await fetch(`${appUrl}/api/plans/${dataset.input.planId}`,{headers:{Authorization:`Bearer ${users.production.token}`}});assert.equal(r.status,200);});
   const requestedBaseline=catalogAuthorization?process.env.CATALOG_AUTHORIZATION_BASELINE_ROOT:assistedStageCycle?process.env.P8_BASELINE_ROOT:realityScope?process.env.REALITY_BASELINE_ROOT:headerNotes?process.env.UI06_BASELINE_ROOT:operationalMeals?process.env.UI05_BASELINE_ROOT:settingsSections?process.env.SETTINGS_SECTIONS_BASELINE_ROOT:collapsibleSections?process.env.SECTIONS_BASELINE_ROOT:templateCreation?process.env.TEMPLATE_CREATION_BASELINE_ROOT:templateAuthorization?process.env.TEMPLATE_AUTHORIZATION_BASELINE_ROOT:configurationReadRecovery?process.env.CONFIG_READ_BASELINE_ROOT:controlRoom?process.env.CONTROL_ROOM_BASELINE_ROOT:undefined;
   if(requestedBaseline){
@@ -274,7 +284,11 @@ if(process.argv.includes('--app')){
    pass('native complete object/role matrix, invalid Auth, same-JWT role change/revocation and admin user cleanup');
   }
   const {storage}=await import('../../server/storage');const {buildEngineInput}=await import('../../engine/buildInput');const {adaptEngineInputToPlannerNextProblem}=await import('../../engine/planner-next/integration/engineInputAdapter');
-  if(operationContinuity){
+  if(itinerantComposition){
+   const {runItinerantCompositionJourney}=await import('./smokeItinerantCompositionJourney');
+   report.requestedStages=0;
+   report.itinerantComposition=await runItinerantCompositionJourney({appUrl,url,anon,service,db,users,directory,pass,transport});
+  }else if(operationContinuity){
    const {runOperationContinuityJourney}=await import('./smokeOperationContinuityJourney');
    report.requestedStages=0;
    report.operationContinuity=await runOperationContinuityJourney({appUrl,db,users,directory,planId:dataset.input.planId,storage,pass});

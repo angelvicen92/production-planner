@@ -159,7 +159,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     sourceRoundSynchronizations.flatMap((policy) => policy.lanes.map((lane) => lane.spaceId)),
     operationalMealPolicies.flatMap((policy) => [...policy.spaceIds]),
   ));
-  const requiredResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => [...projection.genericResourceIds]).concat([...mealResourceIds].filter(id=>!coachResourceIds.has(id))));
+  const requiredResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => [...projection.genericResourceIds]).concat([...mealResourceIds].filter(id=>!coachResourceIds.has(id)), (input.itinerantTeamAvailability ?? []).flatMap(unit=>unit.planResourceItemIds ?? [])));
 
   const tasks: Task[] = activeTasks.map((source) => {
     const projection = projectionsByTaskId.get(source.id)!;
@@ -178,6 +178,9 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
       dependencies: [...new Set(source.dependsOnTaskIds ?? (source.dependsOnTaskId != null ? [source.dependsOnTaskId] : []))].sort((a, b) => a - b).map((id) => canonical("task", id)),
       ...(resources.length ? { requiredResourceIds: resources.map((id) => canonical("plan-resource", id)) } : {}),
       ...(source.resourceInheritance === "OPERATION_ONLY" ? { nonSubstitutableResourceIds: [...new Set([...(source.declaredResourceIds ?? source.assignedResourceIds ?? []), ...projection.lockedResourceIds])].sort((a,b)=>a-b).map(id=>canonical("plan-resource",id)) } : {}),
+      // LOCATION resources remain independent of an itinerant alternative choice.
+      ...(input.itinerantCompositionSnapshot && (source.itinerantTeamId != null || source.allowedItinerantTeamIds?.length) && source.resourceInheritance !== "OPERATION_ONLY"
+        ? {nonSubstitutableResourceIds: resources.map(id=>canonical("plan-resource",id))} : {}),
       ...(fixed ? { availability: [window(fixed)] } : {}),
       ...(source.itinerantTeamId != null ? { itinerantUnitId: canonical("itinerant-team",source.itinerantTeamId) } : {}),
       ...(source.allowedItinerantTeamIds?.length ? { allowedItinerantUnitIds: [...new Set(source.allowedItinerantTeamIds)]

@@ -1,0 +1,76 @@
+{
+  "mode": "INTERCEPTED_HTTP_UI",
+  "checks": [
+    "Three simultaneous next/late cards, two running and independent future slot coexist; 266 agenda identities; mobile/tablet no overflow",
+    "All four true state filters, stable pre-state counters, combined search and explicit empty/reset state",
+    "Global production location selector uses day tasks/snapshot; day switch resets filters and prevents wrong-date delay",
+    "Distinct nominal aux scopes stay narrow; consultation toggle does not grant writes; viewer/unassigned read-only; admin global focus",
+    "Start/Finish from matrix and agenda use observed version/status, prevent double send and reconcile; correction remains accessible",
+    "400/403/409/503 preserve observed status with explicit errors; offline/read error block actions and reliable late labels",
+    "Explicit task fragment navigates once; refresh/polling does not repeat automatic scrolling",
+    "Dozens of delayed tasks expand with exact remaining counts; manual clock remains authoritative; no JS errors"
+  ],
+  "writes": [
+    {
+      "taskId": 10001,
+      "status": "in_progress",
+      "expectedStatus": "pending",
+      "expectedVersion": 0
+    },
+    {
+      "taskId": 10001,
+      "status": "done",
+      "expectedStatus": "in_progress",
+      "expectedVersion": 1
+    },
+    {
+      "taskId": 10002,
+      "status": "in_progress",
+      "expectedStatus": "pending",
+      "expectedVersion": 0
+    },
+    {
+      "taskId": 10002,
+      "status": "done",
+      "expectedStatus": "in_progress",
+      "expectedVersion": 1
+    },
+    {
+      "taskId": 10003,
+      "status": "in_progress",
+      "expectedStatus": "pending",
+      "expectedVersion": 0
+    },
+    {
+      "taskId": 10003,
+      "status": "in_progress",
+      "expectedStatus": "pending",
+      "expectedVersion": 0
+    },
+    {
+      "taskId": 10003,
+      "status": "in_progress",
+      "expectedStatus": "pending",
+      "expectedVersion": 0
+    },
+    {
+      "taskId": 10003,
+      "status": "in_progress",
+      "expectedStatus": "pending",
+      "expectedVersion": 0
+    }
+  ],
+  "screenshots": [
+    "upcoming-mobile.png",
+    "late-mobile.png",
+    "late-mobile-matrix.png",
+    "matrix-tablet.png",
+    "late-tablet.png",
+    "offline-tablet.png",
+    "expanded-tablet.png"
+  ],
+  "errors": [],
+  "acceptedTaskCount": 266,
+  "remoteWrites": 0,
+  "nativeAuthRls": false
+}
