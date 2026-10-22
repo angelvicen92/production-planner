@@ -717,22 +717,28 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
   // PREFERRED first tries the compact geometry, then the same legal intervals.
   // This changes the existing geometric representation, without another solver.
   const geometries=entryContinuityRequired?["COMPACT" as const]:entryContinuityPreferred?["COMPACT" as const,"RELEASED" as const]:["RELEASED" as const,"COMPACT" as const];
+  const releaseDomains=()=>pressure.map(layer=>{
+    const feeder=feederSpots.find(spot=>spot.tokenId===layer.tokenId)!,main=mainSpots[layer.position]!;
+    const operation=anchoredOperations.get(layer.tokenId);
+    const placed=[{...layer.feeder,start:feeder.start,end:feeder.end},...(operation?.tasks??[{...layer.main,start:main.start,end:main.end}])];
+    const domain=exactTaskStartDomain(problem,layer.styling,placed);
+    const arrivalDomain=arrivalDomains[layers.findIndex(item=>item.tokenId===layer.tokenId)]!;
+    const release=(arrivalDomain.intervals[0]?.start??Infinity)+layer.arrival.duration+participantGapMinutes(problem,layer.arrival,layer.styling);
+    return {layer,domain,release};
+  });
+  let releasedDomains:ReturnType<typeof releaseDomains>|undefined;
+  const seenStylingGeometries=new Set<string>();
   entryGeometry: for(const geometry of geometries) for(const start of styleStarts){
     if(excludedStylingStarts.has(start))continue;
     entryCandidateStartsConsidered.push(start);
     if(geometry==="COMPACT") stylingSpots=layers.map((_,i)=>({id:`styling:${i}`,start:start+i*duration,end:start+(i+1)*duration}));
     else {
       stylingSpots=[];
+      const domains=releasedDomains??=releaseDomains();
       const remaining=new Set(pressure.map(layer=>layer.tokenId));
       let cursor=start;
       while(remaining.size){
-        const candidates=pressure.filter(layer=>remaining.has(layer.tokenId)).flatMap(layer=>{
-          const feeder=feederSpots.find(spot=>spot.tokenId===layer.tokenId)!,main=mainSpots[layer.position]!;
-          const operation=anchoredOperations.get(layer.tokenId);
-          const placed=[{...layer.feeder,start:feeder.start,end:feeder.end},...(operation?.tasks??[{...layer.main,start:main.start,end:main.end}])];
-          const domain=exactTaskStartDomain(problem,layer.styling,placed);
-          const arrivalDomain=arrivalDomains[layers.findIndex(item=>item.tokenId===layer.tokenId)]!;
-          const release=(arrivalDomain.intervals[0]?.start??Infinity)+layer.arrival.duration+participantGapMinutes(problem,layer.arrival,layer.styling);
+        const candidates=domains.filter(({layer})=>remaining.has(layer.tokenId)).flatMap(({layer,domain,release})=>{
           const at=domain.intervals.map(interval=>Math.max(interval.start,cursor,release)).find(at=>domain.intervals.some(interval=>interval.start<=at&&at<=interval.end));
           return at===undefined?[]:[{layer,at}];
         }).sort((a,b)=>a.at-b.at||pressure.indexOf(a.layer)-pressure.indexOf(b.layer));
@@ -742,6 +748,12 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
       }
       if(stylingSpots.length!==layers.length)continue;
     }
+    // Several boundaries can release the identical geometry. Its matching and
+    // arrival proof depend on these intervals and the fixed architecture only.
+    // Reuse that result, including across COMPACT and RELEASED representations.
+    const geometryKey=stylingSpots.map(spot=>`${spot.start}:${spot.end}`).join("|");
+    if(seenStylingGeometries.has(geometryKey))continue;
+    seenStylingGeometries.add(geometryKey);
     styleOwner=new Map();
     const augment=(x:Layer&{position:number},seen:Set<number>):boolean=>{
       const vocal=feederSpots.find(s=>s.tokenId===x.tokenId)!,main=mainSpots[x.position]!;

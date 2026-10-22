@@ -42,7 +42,7 @@
     "script/demo/a2ImportRows.ts": "b9c7cadd5218fdd3abe2c18796a62713a0f637f173f61d9b610fd323a57016b0",
     "script/demo/prepareA2Import.ts": "8c18275b2786bfccb4a023e07e5270310353e36765418ee7e443b10385247244",
     "script/demo/prepareA2Schema.ts": "a1903ae921f5d5c28e5c1c5377a7254b8c78a4392217abd8263e9226ed4f0fda",
-    "script/demo/smokeA2Integration.ts": "d29ab120f5b90a7df614c3abb50e6d98c0862080972aa3662177966f4e3d48a4",
+    "script/demo/smokeA2Integration.ts": "85493fc2630037233013e62baa70bae891810ef37249896dbc740f6fae856a72",
     "script/demo/smokeA2Journey.ts": "d6628a1233118a448c3758054e9f0e0cdbb0a93eec7f9fba1dcee1c3150bc1e6",
     "client/src/lib/assisted-planning-view.ts": "c54e2274d214f8992572e214ffb6787cd6ac9173d76c4c71e70e985d25fd2597",
     "client/src/lib/assisted-draft-warnings.ts": "b59f3949e177402f8a020e04fa9c082070cd3333820f161f995865c523da4b81",
@@ -70,7 +70,7 @@
     "client/src/components/main-flow-preference-editor.tsx": "6401fe7514ffb0ba32b71caa628a04d6a9105fbf068ad09297334b8c88ba65b0",
     "client/src/lib/main-flow-preference-result.ts": "9f27151434586783f8c0cc8f5b1c7cf48eb3523a0c835818bbada9f337b975da",
     "engine/planner-next/mainFlowMeal.ts": "cacb654432e5db02ce8ad844332c4e4a5678deedfdb7d971dbd5d795b5f6835d",
-    "engine/planner-next/anonymousPipelineWitness.ts": "8457de7910e022e28c1cd3f71c3094df29e9ac22276b9bb059a88608566934cc",
+    "engine/planner-next/anonymousPipelineWitness.ts": "ef1a76f28459aa6365adb81388b0f1cff4a2d5c8822a2458a134682a45dcaca5",
     "engine/planner-next/exactMainAndFeederCore.ts": "c85bc260661939a19848fc4a3deebf4f7a4e9c700e3c4852fc0c52d8f32a2eec",
     "client/index.html": "78d320cec1e1d400e55ce1cf2282139ffefd94a5080b8063f22255f8b9f5aac4",
     "client/src/index.css": "2cb497b6e1adbaf2bfa735544271ba461ded72e27d65d8d7b8194ee5a698fe60",
@@ -97,6 +97,18 @@
     "script/demo/dataApiCallSheet.ts": "017c0208669c22cfef919b563c5dd545e541db66b7f7c20e9cbc5d335fb7e440",
     "script/demo/fixtures/data-api-privileges.json": "3cdd06946b6c8939318c043219b89c86ce6770a3287e736a9659bac26d9abb16",
     "supabase/migrations/100_data_api_explicit_grants.sql": "daa4764c56c2d878df0f39f3fd2d4ae5a119196506a55718b9a395483c589273",
+    "engine/planner-next/transportGrouping.ts": "da337f4a0cc34d144b7cd1447118675f6783ae67c446032579c74f723a9b5b2d",
+    "engine/planner-next/operationContinuity.ts": "cf0ad4496c3b151e63fecee43a881ddc660238aa247b22f9ae2c28dba008e476",
+    "engine/planner-next/assistedPlanning.ts": "c5ea8e4ff0a74dd1ba7357a9d88daf7266835fca2b120bdd46a3ccaf8d261789",
+    "engine/planner-next/contracts.ts": "e05e66e150416977b5ef92eb4129c1e17f07daf67c5d81b168a634709d3e71fd",
+    "engine/planner-next/placeAuxiliaryTasks.ts": "298cdaa13eb5ca0d179fb6ea9bf332f5480035d980a4a7d8022113e241455d13",
+    "engine/planner-next/earlyEntryMaterialization.ts": "cb356a00e6739b34519d6aaf0cae0fd52100d7a38f86dad29b27c471d625be52",
+    "engine/planner-next/earlyClosureMaterialization.ts": "6b30df8c9a7eff09a2967d4aa2257f8f93e562b73827cedf956e00394d9fdf9a",
+    "engine/buildInput.ts": "1e012a733107816e8d2baba57c7cd998002932506cb5a5a777d0326c3b4e96f7",
+    "engine/types.ts": "30aa4c14af7d2b9f45ee922b320bbe53a7727be0131a8cfaa1bb549f48ce2ef6",
+    "shared/dayConfig.ts": "af5da500446e72192215391e1a57473ec3066473db9969400e977ccff21c071e",
+    "shared/effectiveConfigurationContracts.ts": "c9c22d81f7408061d9a31b5f994f98349e8ea6e1e7771f3cf5d6dd7644fdf53e",
+    "shared/schema.ts": "c87fc3ecf904d9d26830a330d896428caf6aab0f0739dfa816ddff8ef9d96fb9",
     "script/demo/smokeOperationContinuityJourney.ts": "975196de0878c23d45be1d367a9d2df474dd06437d105a1276691e432fdaa90a",
     "shared/operationContinuity.ts": "d2d8dee90f8c70661a38280c9ce1c16875ec4d1ea5b9a27bfe4be2b5178720e1",
     "server/operationContinuity.ts": "fd2fa9371a11df3b54f31ebb4a770cb9d1b7b31cc62dad230e8243e1810e9075",
@@ -131,8 +143,8 @@
         20033
       ],
       "snapshotGroupIds": [
-        "576990cf-0e6f-418e-ba17-ae91f27922db",
-        "576990cf-0e6f-418e-ba17-ae91f27922db"
+        "cbdd3ed6-5942-41a2-93fc-4ddbaf46144d",
+        "cbdd3ed6-5942-41a2-93fc-4ddbaf46144d"
       ],
       "nextConfigurationPresent": false
     },

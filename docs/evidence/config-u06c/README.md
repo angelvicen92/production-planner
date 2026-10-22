@@ -12,6 +12,12 @@ La construcción ahora obtiene posiciones tempranas de los dominios existentes y
 
 La prueba positiva REQUIRED también cubre la proyección intermedia: un core todavía incompleto aplaza el grupo igual que aplaza una cadena técnica incompleta; el candidato completo debe validar todos sus miembros. La protección final nunca se aplaza.
 
+## Corrección del coste del replay
+
+La CI del primer head completa 266/266 y las dos parejas de órdenes, pero el replay desde S0 supera los 180 s del GET existente. La CI verde de la base tardó 177,152 s en ese mismo paso. No se eleva ningún timeout. El perfil del candidato localiza 16,469 s de CPU propia en clasificación de transporte; la primera arquitectura ejecuta 28 pruebas de llegada para 22 entradas distintas.
+
+La corrección reutiliza geometrías exactamente iguales y dominios invariantes de una arquitectura, y clasifica las ocupaciones externas una sola vez al enumerar un dominio de llegadas. Cada tick conserva todos los checks de colocación. La misma arquitectura pasa de 14,678 a 8,037 s, con las mismas huellas de arquitectura, certificado y colocaciones; no es una nueva estrategia de búsqueda. [geometry-reuse.json](geometry-reuse.json) conserva las muestras y hashes de ambos consumidores. El resultado de la CI final se registra en el PR.
+
 ## Autoridad y precedencia
 
 `operation_continuity_groups` identifica el grupo por UUID y guarda política, peso y revisión. Las plantillas guardan una FK; la relación de PostgREST se resuelve explícitamente y falla si la referencia no puede leerse. El snapshot diario guarda la política y la identidad completas, sin depender de un catálogo mutable. El consumidor obtiene los task IDs efectivos de las instancias de sus plantillas.
@@ -30,7 +36,7 @@ El editor de plantillas ofrece «Agrupación y continuidad»: crear/reutilizar g
 
 ## Resultado comprobado
 
-El A2 reproducido y los dos candidatos conservan 266/266, 11 Stages, 27049 ramas y 8465 minutos agregados, con todos los snapshots idénticos. El candidato tarda 77,707/79,987 s frente a 69,204 s de la muestra base. El detalle de gates, límites, métricas individuales y coste está en [validation.md](validation.md) y [a2-report.json](a2-report.json).
+El A2 reproducido y los dos candidatos conservan 266/266, 11 Stages, 27049 ramas y 8465 minutos agregados, con todos los snapshots idénticos. El candidato final tarda 51,831/51,872 s frente a 69,204 s de la muestra base. El detalle de gates, límites, métricas individuales y coste está en [validation.md](validation.md) y [a2-report.json](a2-report.json).
 
 ## Dependencia material reservada a P0
 
@@ -46,5 +52,7 @@ PLAYWRIGHT_BROWSERS_PATH=/tmp/u06c-browsers node --import tsx script/demo/smokeA
 ```
 
 El primer comando ejecuta la base exacta y dos candidatos offline y revalida certificados/protección. Los dominios de primera entrada factible del informe mantienen todas las demás tareas finales fijas; no son una prueba de optimalidad global. Los tiempos observados no se presentan como igualdad de CPU. La auditoría offline tiene ledger separado del motor.
+
+La auditoría focal se reproduce con `node --import tsx docs/evidence/config-u06c/auditGeometryReuse.ts /tmp/geometry.json` en cada checkout, copiando sólo ese observador al head previo.
 
 El segundo usa PostgreSQL/Auth/PostgREST/HTTP/Chromium descartables y el ledger nativo, con `remoteWrites=0`. El contrato de permisos incorpora sólo los nuevos objetos de 104. El preparador histórico conserva su alcance hasta 099; las migraciones posteriores siguen una operación separada del ledger. Así no instala wrappers que exigen 104 en un schema antiguo. No se toca Supabase productivo, Replit ni se hace merge.

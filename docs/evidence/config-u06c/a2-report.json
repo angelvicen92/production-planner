@@ -530,7 +530,7 @@
     "stylingGapMinutes": 300,
     "stylingWorkMinutes": 285,
     "branches": 27049,
-    "durationMs": 77707,
+    "durationMs": 51831,
     "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d"
   },
   "stagesBefore": [
@@ -671,7 +671,7 @@
     {
       "ordinal": 1,
       "branches": 22053,
-      "durationMs": 73711,
+      "durationMs": 49874,
       "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
       "replay": "PASS",
       "completeForScope": true,
@@ -683,7 +683,7 @@
     {
       "ordinal": 2,
       "branches": 293,
-      "durationMs": 162,
+      "durationMs": 154,
       "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
       "replay": "PASS",
       "completeForScope": true,
@@ -695,7 +695,7 @@
     {
       "ordinal": 3,
       "branches": 293,
-      "durationMs": 121,
+      "durationMs": 117,
       "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
       "replay": "PASS",
       "completeForScope": true,
@@ -707,7 +707,7 @@
     {
       "ordinal": 4,
       "branches": 293,
-      "durationMs": 135,
+      "durationMs": 127,
       "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
       "replay": "PASS",
       "completeForScope": true,
@@ -719,7 +719,7 @@
     {
       "ordinal": 5,
       "branches": 293,
-      "durationMs": 169,
+      "durationMs": 151,
       "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
       "replay": "PASS",
       "completeForScope": true,
@@ -731,7 +731,7 @@
     {
       "ordinal": 6,
       "branches": 293,
-      "durationMs": 124,
+      "durationMs": 162,
       "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
       "replay": "PASS",
       "completeForScope": true,
@@ -743,7 +743,7 @@
     {
       "ordinal": 7,
       "branches": 293,
-      "durationMs": 125,
+      "durationMs": 127,
       "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
       "replay": "PASS",
       "completeForScope": true,
@@ -755,7 +755,7 @@
     {
       "ordinal": 8,
       "branches": 1507,
-      "durationMs": 311,
+      "durationMs": 272,
       "certificate": "bfdbe415effe6d9d827c5ae6dd9d95ed1e5953f43252df64def69234b4a50343",
       "replay": "PASS",
       "completeForScope": true,
@@ -767,7 +767,7 @@
     {
       "ordinal": 9,
       "branches": 293,
-      "durationMs": 162,
+      "durationMs": 134,
       "certificate": "bfdbe415effe6d9d827c5ae6dd9d95ed1e5953f43252df64def69234b4a50343",
       "replay": "PASS",
       "completeForScope": true,
@@ -779,7 +779,7 @@
     {
       "ordinal": 10,
       "branches": 293,
-      "durationMs": 139,
+      "durationMs": 124,
       "certificate": "bfdbe415effe6d9d827c5ae6dd9d95ed1e5953f43252df64def69234b4a50343",
       "replay": "PASS",
       "completeForScope": true,
@@ -791,7 +791,7 @@
     {
       "ordinal": 11,
       "branches": 1145,
-      "durationMs": 2548,
+      "durationMs": 589,
       "certificate": "9a918ed64990241b3d5b4e914ef38df059dc18f7e6802c45d022efbfd48f3e2a",
       "replay": "PASS",
       "completeForScope": true,
@@ -801,7 +801,7 @@
       "offlineAuditBranches": 293
     }
   ],
-  "repeatDurationMs": 79987,
+  "repeatDurationMs": 51872,
   "localFeasibilityDefinition": "Exact task domain with all other final tasks, IN and meals fixed; not a global earliest-start proof.",
   "offlineAuditAccounting": "Separate from product branch counts."
 }
