@@ -18,7 +18,7 @@
     "incompatible preferred end is diagnosed; complete native table/function privilege matrix agrees with the reviewed contract",
     "snapshot isolation, immutable day profile, catalog permissions, stale writes and direct REST denial"
   ],
-  "startedAt": "2026-10-22T07:19:28.443Z",
+  "startedAt": "2026-10-22T07:32:09.097Z",
   "sourceCommit": "b9802860d8e48b26938e38f82648c328122efd26",
   "postgresVersion": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
   "migrations": [
@@ -787,16 +787,6 @@
       "error": null
     },
     {
-      "path": "/rest/v1/rpc/execution_context",
-      "method": "POST",
-      "contentLength": "64",
-      "receivedBytes": 64,
-      "requestEnded": true,
-      "upstreamFinished": true,
-      "responseStatus": 200,
-      "error": null
-    },
-    {
       "path": "/rest/v1/rpc/initialize_day_config_revision",
       "method": "POST",
       "contentLength": "8159",
@@ -935,7 +925,7 @@
         "obligations": 4,
         "completed": 4,
         "stages": 1,
-        "durationMs": 3222,
+        "durationMs": 2364,
         "problemFingerprint": "3cf2f87808ba1fea4ed36fca31fe7e889e9f1eec9df55f841114830b5d0d0ae6",
         "branches": {
           "coreBranches": 20,
@@ -1004,7 +994,7 @@
         "obligations": 9,
         "completed": 9,
         "stages": 1,
-        "durationMs": 3143,
+        "durationMs": 2445,
         "problemFingerprint": "90c10079a8e6a5458a67271321c48a7b975b846182e07e605a0ae140bd0af096",
         "branches": {
           "coreBranches": 29,
@@ -1079,7 +1069,7 @@
       "incompatible preferred end is diagnosed; complete native table/function privilege matrix agrees with the reviewed contract",
       "snapshot isolation, immutable day profile, catalog permissions, stale writes and direct REST denial"
     ],
-    "startedAt": "2026-10-22T07:19:49.102Z",
+    "startedAt": "2026-10-22T07:32:19.044Z",
     "templates": [
       {
         "id": 1,
@@ -1202,7 +1192,7 @@
             "category": "Reglas de planificación",
             "status": "INCOMPATIBLE",
             "message": "ADAPTED_PROBLEM_NOT_REPRESENTABLE · plannerNextProblem: El fin preferido debe estar dentro de la jornada y no superar el inicio de la pausa global de comida. Revisa el perfil de origen.",
-            "navigationTarget": "Reglas de planificación"
+            "navigationTarget": "#config-MAIN_FLOW"
           }
         ]
       }
@@ -1211,5 +1201,5 @@
     "status": "PASS"
   },
   "status": "PASS",
-  "finishedAt": "2026-10-22T07:21:50.225Z"
+  "finishedAt": "2026-10-22T07:33:46.051Z"
 }

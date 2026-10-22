@@ -6,7 +6,7 @@
       "obligations": 4,
       "completed": 4,
       "stages": 1,
-      "durationMs": 3222,
+      "durationMs": 2364,
       "problemFingerprint": "3cf2f87808ba1fea4ed36fca31fe7e889e9f1eec9df55f841114830b5d0d0ae6",
       "branches": {
         "coreBranches": 20,
@@ -75,7 +75,7 @@
       "obligations": 9,
       "completed": 9,
       "stages": 1,
-      "durationMs": 3143,
+      "durationMs": 2445,
       "problemFingerprint": "90c10079a8e6a5458a67271321c48a7b975b846182e07e605a0ae140bd0af096",
       "branches": {
         "coreBranches": 29,
@@ -150,7 +150,7 @@
     "incompatible preferred end is diagnosed; complete native table/function privilege matrix agrees with the reviewed contract",
     "snapshot isolation, immutable day profile, catalog permissions, stale writes and direct REST denial"
   ],
-  "startedAt": "2026-10-22T07:19:49.102Z",
+  "startedAt": "2026-10-22T07:32:19.044Z",
   "templates": [
     {
       "id": 1,
@@ -273,7 +273,7 @@
           "category": "Reglas de planificación",
           "status": "INCOMPATIBLE",
           "message": "ADAPTED_PROBLEM_NOT_REPRESENTABLE · plannerNextProblem: El fin preferido debe estar dentro de la jornada y no superar el inicio de la pausa global de comida. Revisa el perfil de origen.",
-          "navigationTarget": "Reglas de planificación"
+          "navigationTarget": "#config-MAIN_FLOW"
         }
       ]
     }

@@ -10,6 +10,8 @@
   "engine/planner-next/integration/engineInputPreflight.ts": "3d03305f90c323fc6d2eeffaa9be4261e8eb7374c12879c3ea05e584a8ad5b36",
   "engine/planner-next/planMainFlowAndFeeders.spec.ts": "23492de5fcfe4674fc2d753e7cfb8b7128cb83d51cbb0bb0a9cdcd43697065e1",
   "engine/types.ts": "22de7aa9fc30f54a8d762a7308d93fe4983b0e4e7cfcdc32b9c96098be071bce",
+  "script/demo/a2ExistingDatabase.spec.ts": "bd5e90ac38641fc7ad6a1fe2662b94f606320a55541d8a709aa255645818e903",
+  "script/demo/assistedSQLContracts.ts": "23fbb3ff73edd13b4ba50b37f77d61a881d12bb9fd713c69e3a9a9a66dc9b79e",
   "script/demo/fixtures/data-api-privileges.json": "ffa019fabd9751cf7291daee51c9cbaf09c5797f708595d691d9556de69bb36e",
   "script/demo/smokeNewDayIntegration.ts": "d7fb510d15ea80b2b9cacd7ea6b5b34952545542b5f2071a0841cd212cd54201",
   "script/demo/smokeNewDayJourney.ts": "f4ef59b8ac82cce9ab79df5d6b86e36999572ce0006548112ecd02c761b49f82",
