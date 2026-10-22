@@ -1,0 +1,32 @@
+{
+  "sourceHashes": {
+    "supabase/migrations/104_operation_continuity.sql": "acab8671be1d15e97180d9d6b41680ae61f60eb9dbe1e57924d0d841404f4a0e",
+    "supabase/migrations/105_itinerant_physical_composition.sql": "e2b793b11e1e88a144ce0d23dd02d24ccc915e932bb61d9d74349c41bb7422ac",
+    "engine/buildInput.ts": "ee717f6158dee82c1e6e8db15a9fb57044de5b7259286ec0548c4d89b94ce1e3",
+    "engine/planner-next/integration/engineInputAdapter.ts": "9954159915435f6f61d3b4819555837954d613a9f3d77ddc99fc5a1940c02440",
+    "engine/planner-next/integration/engineInputPreflight.ts": "cf78bce6de6a8ba9445f3ad3b697fcea1653e89ae580b9bc51f8af8954003e0b",
+    "engine/planner-next/integration/itinerantComposition.spec.ts": "11a44a344ee855a808e75f92f3a1f2915e009b74c48bd7aeb4a601d260ece9a4",
+    "server/itinerantComposition.ts": "68326831a1c1a7afd35a14965512b10d6795e25e21b0192ee02017047fad7d3c",
+    "server/operationContinuity.ts": "fd2fa9371a11df3b54f31ebb4a770cb9d1b7b31cc62dad230e8243e1810e9075",
+    "engine/planner-next/operationContinuity.ts": "cf0ad4496c3b151e63fecee43a881ddc660238aa247b22f9ae2c28dba008e476",
+    "server/operationContinuity.spec.ts": "47ab537e78847c386613407991f18a4beedb8679594f771c6f42d2a1cc1005cd",
+    "server/operationContinuitySql.spec.ts": "b34ae1f9d93b87ff2bff6060090c46746fe78aebfbff5fa8381f8a70666e9d50",
+    "engine/planner-next/operationContinuity.spec.ts": "638ad40c5ff31082adf34605035154919b36d6546ffe139cd53acfd4eb3e1710",
+    "client/src/pages/settings.tsx": "9632ab935e91eef176aeaf1cc86eca01e16b820daf7cde89896d5b2b262b0e35",
+    "client/src/pages/my-day.tsx": "85665c806299f9b9f1bba75463357dca37a3566f0fccaf651c7dfa2fd1afcba9",
+    "client/src/components/layout.tsx": "3be0f0b4501eecb52fe54547d3455d67867be651ead74df852a3562561669697",
+    "client/src/components/my-day/p4.browser.mjs": "5785821efe236d57aaacbfb7655fae825411e154f733bbf484057adc672aa166",
+    "script/demo/smokeA2Integration.ts": "8bec5615485da46771605f1f808c02d8bcf52cc282b78fd66fb3e8d6834cc1bc",
+    "script/demo/smokeTemplateCreation.ts": "6aa7574148deea632249cf08a224c5647ee50d5734326d293d68fbb6d59d023e",
+    "script/demo/fixtures/data-api-privileges.json": "f9d2991ed758dbc6d116894d02ac4101c71d8be3aa0c16bb6017bf5c1ad6abf3"
+  },
+  "compositionMigrationBytesUnchanged": true,
+  "sequentialMigrations": [
+    104,
+    105
+  ],
+  "serverTestMovedWithoutDroppingCases": 8,
+  "plannerSearchChangedComparedWithMain": false,
+  "timeoutsOrVisualAssertionsRelaxed": false,
+  "historicalEvidence": "Original native.json, validation.json and a2-final* are retained as evidence of 8e08d9e; compatibility artifacts supersede their runtime paths/hashes."
+}

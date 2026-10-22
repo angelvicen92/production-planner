@@ -36,15 +36,19 @@ npm run check:migrations
 npm run check
 npm run build
 npx --no-install tsc -p script/demo/tsconfig.integration.json
-node --import tsx --test server/itinerantComposition.spec.ts server/atomicTaskTemplate.spec.ts server/apiAuthorization.spec.ts engine/planner-next/integration/engineInputAdapter.spec.ts engine/planner-next/itinerantUnitMeals.spec.ts engine/planner-next/exactItinerantPlan.spec.ts server/taskTemplateSnapshot.spec.ts engine/buildInput.taskTemplateSnapshot.spec.ts server/effectivePlanConfigRevision.spec.ts
+node --import tsx --test engine/planner-next/integration/itinerantComposition.spec.ts server/atomicTaskTemplate.spec.ts server/apiAuthorization.spec.ts engine/planner-next/integration/engineInputAdapter.spec.ts engine/planner-next/itinerantUnitMeals.spec.ts engine/planner-next/exactItinerantPlan.spec.ts server/taskTemplateSnapshot.spec.ts engine/buildInput.taskTemplateSnapshot.spec.ts server/effectivePlanConfigRevision.spec.ts
 npm run demo:a2:smoke -- work/u04a/native --restricted-data-api --historical-topology --itinerant-composition --production-runtime
 ```
 
 El modo `--production-runtime` compila y arranca el bundle real contra el gateway/Auth de localhost creado por el propio ensayo; no utiliza las credenciales `VITE_*` heredadas. Evita compartir HMR entre ensayos. El workflow dedicado conserva los artefactos sanitizados; los logs privados y los bundles con credenciales descartables no se versionan.
 
-La migración 104 sólo se aplica a PostgreSQL descartable en estos ensayos. No se aplican migraciones productivas, no se publica Replit y no se hace merge.
+La migración 105 sólo se aplica a PostgreSQL descartable en estos ensayos. No se aplican migraciones productivas, no se publica Replit y no se hace merge.
 
-## Resultados y Evidence del candidato
+## Integración con U06c sobre main b980286
+
+La continuación del mismo PR incorpora main, conserva la migración 104 de continuidad y renumera la composición a 105 sin cambiar sus bytes SQL. La única corrección funcional adicional permite editar campos ajenos al requisito itinerante en plantillas heredadas sin exigir nuevas alternativas. [Informe de compatibilidad y comparación](compatibility/README.md). Los resultados siguientes y sus hashes son la fotografía del head auditado original; los artefactos de `compatibility/` certifican la integración actual.
+
+## Resultados y Evidence del candidato original
 
 - **168 tests focales: PASS**, incluyendo determinismo por orden de filas, ventanas de miembros/unidad, comidas, transición, recursos independientes, IDs inexistentes y autorización con casing de Express. TypeScript, tipado del harness, build y secuencia de migraciones pasan.
 - **Ensayo nativo: PASS**, con PostgreSQL, Auth, PostgREST, Data API restrictiva y Chromium. La UI crea CAM_A/CAM_B/SON_1, A/B/C y las plantillas; edita transición 0, guarda/recarga y crea jornadas. Las unidades globales 1/2/3 se resuelven explícitamente a unidades diarias 4/5/6; CAM_A conserva el mismo recurso diario en A y C. Dos guardados concurrentes producen 200/409; un fallo tardío revierte revisión y miembros. No hay escritura remota. [native.json](native.json), [itinerant-composition.json](itinerant-composition.json), [catálogo](u04a-catalog.png), [plantillas](u04a-templates.png), [día](u04a-day.png).

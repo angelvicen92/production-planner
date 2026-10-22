@@ -1,0 +1,253 @@
+{
+  "runtime": "Node v20.20.2, same npm ci lockfile on main and candidate",
+  "main": "b9802860d8e48b26938e38f82648c328122efd26",
+  "candidateRuntimeHead": "ba37e7f",
+  "entireReportEqualExcludingDurations": true,
+  "stageFingerprintsIdentical": true,
+  "historicalU04aFinalFingerprintAlsoIdentical": true,
+  "reports": {
+    "main": {
+      "status": "PASS",
+      "completedObligationCount": 266,
+      "stageCount": 11,
+      "finalHardViolationCount": 0,
+      "finalRequiredViolationCount": 0,
+      "deterministicFingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+      "sha256": "caf051729795f89e146d7aa8e01a5d4300557faaca885771ffbd80dac1f67c42",
+      "stages": [
+        {
+          "ordinal": 1,
+          "completedObligationCount": 19,
+          "acceptedStageFingerprint": "bb27f392bc55684dc45cc5d8813bc21686cb15ad0f65897374cc4aacc7d5f1d6",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 22053,
+          "durationMs": 191878
+        },
+        {
+          "ordinal": 2,
+          "completedObligationCount": 38,
+          "acceptedStageFingerprint": "5f1d26b364e355db92a33dc4de49cf1fe98042896aa3bb52cf0f4d673b3de87b",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 293,
+          "durationMs": 620
+        },
+        {
+          "ordinal": 3,
+          "completedObligationCount": 46,
+          "acceptedStageFingerprint": "062ddead65f7b52a11031cae5de57c61e953befa409e4c3fc158be6dc2f00a72",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 293,
+          "durationMs": 566
+        },
+        {
+          "ordinal": 4,
+          "completedObligationCount": 65,
+          "acceptedStageFingerprint": "23b11c8538ae51fae35e1b65ce2494ddf540bf61ad9a8d893db6231dc5538a27",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 293,
+          "durationMs": 606
+        },
+        {
+          "ordinal": 5,
+          "completedObligationCount": 73,
+          "acceptedStageFingerprint": "9c78408d2a96af35fb4f4becfede96d6a0514509636c5eda27fafbb7de9b893b",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 293,
+          "durationMs": 429
+        },
+        {
+          "ordinal": 6,
+          "completedObligationCount": 109,
+          "acceptedStageFingerprint": "c5db2cd98e27dc3e3c46abd935760f338d525100eebaf60d80d3ace5c82a646c",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 293,
+          "durationMs": 371
+        },
+        {
+          "ordinal": 7,
+          "completedObligationCount": 151,
+          "acceptedStageFingerprint": "2985c793d6ac28d8e7be1904a6da4b082fbf44d09285bd73ca018fa18cf0197e",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 293,
+          "durationMs": 393
+        },
+        {
+          "ordinal": 8,
+          "completedObligationCount": 189,
+          "acceptedStageFingerprint": "6b60592a3835c84c938567ec6d60917388124cb17de4161d9cfe3c9ab94d2909",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 1507,
+          "durationMs": 1108
+        },
+        {
+          "ordinal": 9,
+          "completedObligationCount": 191,
+          "acceptedStageFingerprint": "b7d5ae0cf88759fd401d005ff1de7d27e5cca1c7ad7c72f236906603a3b1b80d",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 293,
+          "durationMs": 411
+        },
+        {
+          "ordinal": 10,
+          "completedObligationCount": 209,
+          "acceptedStageFingerprint": "89bc6bcde9d7df768233bcd30a016d0f3e12a7cb85c3044fddf720a05bd8c49e",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 293,
+          "durationMs": 364
+        },
+        {
+          "ordinal": 11,
+          "completedObligationCount": 266,
+          "acceptedStageFingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 1145,
+          "durationMs": 1998
+        }
+      ]
+    },
+    "candidate": {
+      "status": "PASS",
+      "completedObligationCount": 266,
+      "stageCount": 11,
+      "finalHardViolationCount": 0,
+      "finalRequiredViolationCount": 0,
+      "deterministicFingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+      "sha256": "c8f32d85af6e7772f3d8ffafd6851426fc29b7dc57e9c523e9602eb4688d5934",
+      "stages": [
+        {
+          "ordinal": 1,
+          "completedObligationCount": 19,
+          "acceptedStageFingerprint": "bb27f392bc55684dc45cc5d8813bc21686cb15ad0f65897374cc4aacc7d5f1d6",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 22053,
+          "durationMs": 170194
+        },
+        {
+          "ordinal": 2,
+          "completedObligationCount": 38,
+          "acceptedStageFingerprint": "5f1d26b364e355db92a33dc4de49cf1fe98042896aa3bb52cf0f4d673b3de87b",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 293,
+          "durationMs": 1186
+        },
+        {
+          "ordinal": 3,
+          "completedObligationCount": 46,
+          "acceptedStageFingerprint": "062ddead65f7b52a11031cae5de57c61e953befa409e4c3fc158be6dc2f00a72",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 293,
+          "durationMs": 1016
+        },
+        {
+          "ordinal": 4,
+          "completedObligationCount": 65,
+          "acceptedStageFingerprint": "23b11c8538ae51fae35e1b65ce2494ddf540bf61ad9a8d893db6231dc5538a27",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 293,
+          "durationMs": 697
+        },
+        {
+          "ordinal": 5,
+          "completedObligationCount": 73,
+          "acceptedStageFingerprint": "9c78408d2a96af35fb4f4becfede96d6a0514509636c5eda27fafbb7de9b893b",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 293,
+          "durationMs": 653
+        },
+        {
+          "ordinal": 6,
+          "completedObligationCount": 109,
+          "acceptedStageFingerprint": "c5db2cd98e27dc3e3c46abd935760f338d525100eebaf60d80d3ace5c82a646c",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 293,
+          "durationMs": 626
+        },
+        {
+          "ordinal": 7,
+          "completedObligationCount": 151,
+          "acceptedStageFingerprint": "2985c793d6ac28d8e7be1904a6da4b082fbf44d09285bd73ca018fa18cf0197e",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 293,
+          "durationMs": 803
+        },
+        {
+          "ordinal": 8,
+          "completedObligationCount": 189,
+          "acceptedStageFingerprint": "6b60592a3835c84c938567ec6d60917388124cb17de4161d9cfe3c9ab94d2909",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 1507,
+          "durationMs": 2086
+        },
+        {
+          "ordinal": 9,
+          "completedObligationCount": 191,
+          "acceptedStageFingerprint": "b7d5ae0cf88759fd401d005ff1de7d27e5cca1c7ad7c72f236906603a3b1b80d",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 293,
+          "durationMs": 731
+        },
+        {
+          "ordinal": 10,
+          "completedObligationCount": 209,
+          "acceptedStageFingerprint": "89bc6bcde9d7df768233bcd30a016d0f3e12a7cb85c3044fddf720a05bd8c49e",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 293,
+          "durationMs": 788
+        },
+        {
+          "ordinal": 11,
+          "completedObligationCount": 266,
+          "acceptedStageFingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+          "protectedPlacementsPreserved": true,
+          "newHardViolationCount": 0,
+          "newRequiredViolationCount": 0,
+          "branchesExplored": 1145,
+          "durationMs": 1770
+        }
+      ]
+    }
+  },
+  "excludedAttempts": "Two initial executions were paused during browser diagnosis and hit the unchanged 300s product safety limit; they are BLOCKED, not PASS. The final fresh executions above ran without pauses or budget changes."
+}
