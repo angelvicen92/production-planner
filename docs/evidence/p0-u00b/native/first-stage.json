@@ -80,8 +80,8 @@
     },
     "draftFingerprint": "dc29ef5c25e7235843104d65744db65112ca1a363e8b38a76a1bd483e68f5544",
     "draftValidationId": null,
-    "createdAt": "2026-10-22T12:53:43.931515+00:00",
-    "updatedAt": "2026-10-22T12:53:49.227831+00:00"
+    "createdAt": "2026-10-22T13:24:52.744466+00:00",
+    "updatedAt": "2026-10-22T13:24:55.718856+00:00"
   },
   "activeStage": {
     "id": 2,
@@ -220,10 +220,10 @@
       "requiredCount": 0,
       "preferredCount": 0
     },
-    "acceptedBy": "3603f9dd-a5b6-43e3-b38d-9000c7129702",
-    "acceptedAt": "2026-10-22T12:53:49.227831+00:00",
+    "acceptedBy": "84d22090-392b-4b80-8c71-36b526e86c58",
+    "acceptedAt": "2026-10-22T13:24:55.718856+00:00",
     "archivedAt": null,
-    "createdAt": "2026-10-22T12:53:49.227831+00:00"
+    "createdAt": "2026-10-22T13:24:55.718856+00:00"
   },
   "draft": {
     "tasks": [
@@ -391,10 +391,10 @@
         "requiredCount": 0,
         "preferredCount": 0
       },
-      "acceptedBy": "3603f9dd-a5b6-43e3-b38d-9000c7129702",
-      "acceptedAt": "2026-10-22T12:53:43.931515+00:00",
+      "acceptedBy": "84d22090-392b-4b80-8c71-36b526e86c58",
+      "acceptedAt": "2026-10-22T13:24:52.744466+00:00",
       "archivedAt": null,
-      "createdAt": "2026-10-22T12:53:43.931515+00:00"
+      "createdAt": "2026-10-22T13:24:52.744466+00:00"
     },
     {
       "id": 2,
@@ -533,10 +533,10 @@
         "requiredCount": 0,
         "preferredCount": 0
       },
-      "acceptedBy": "3603f9dd-a5b6-43e3-b38d-9000c7129702",
-      "acceptedAt": "2026-10-22T12:53:49.227831+00:00",
+      "acceptedBy": "84d22090-392b-4b80-8c71-36b526e86c58",
+      "acceptedAt": "2026-10-22T13:24:55.718856+00:00",
       "archivedAt": null,
-      "createdAt": "2026-10-22T12:53:49.227831+00:00"
+      "createdAt": "2026-10-22T13:24:55.718856+00:00"
     }
   ]
 }

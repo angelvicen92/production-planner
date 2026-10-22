@@ -191,7 +191,7 @@ export async function runStandaloneDayJourney({appUrl,url,anon,service,users,db,
     const incompatible=await createDay("2026-11-27");await addParticipant(incompatible,"Persona incompatible","09:00","17:00");
     const mismatch=await captureInput(incompatible,"incompatible-role");assert.equal(mismatch.adapter.status,"UNSUPPORTED");
     assert.ok(mismatch.adapter.reasonCodes.includes("UNSUPPORTED_TASK_ROLE"));
-    assert.notEqual((await api(`/api/plans/${incompatible}/effective-configuration`)).readiness.status,"READY");
+    assert.equal((await api(`/api/plans/${incompatible}/effective-configuration`)).readiness.status,"UNSUPPORTED");
     for(const t of [install,calibrate,verify])await addTechnicalTask(mixed,t.name);
     const negativeResources=await api(`/api/plans/${mixed}/resource-items`);const narrow=negativeResources.find((r:any)=>r.name==="Kit físico compartido");
     await api(`/api/plans/${mixed}/resource-items/${narrow.id}`,"PATCH",{availabilityStart:"09:00",availabilityEnd:"09:05"});

@@ -65,8 +65,8 @@
     },
     "draftFingerprint": "664c4e16a5812e3a2f30f35da1f471d6541fea58ba11755fb10580757907198b",
     "draftValidationId": null,
-    "createdAt": "2026-10-22T12:54:28.756864+00:00",
-    "updatedAt": "2026-10-22T12:54:32.17087+00:00"
+    "createdAt": "2026-10-22T13:25:15.777079+00:00",
+    "updatedAt": "2026-10-22T13:25:17.716935+00:00"
   },
   "activeStage": {
     "id": 3,
@@ -124,10 +124,10 @@
       "requiredCount": 0,
       "preferredCount": 0
     },
-    "acceptedBy": "3603f9dd-a5b6-43e3-b38d-9000c7129702",
-    "acceptedAt": "2026-10-22T12:54:28.756864+00:00",
+    "acceptedBy": "84d22090-392b-4b80-8c71-36b526e86c58",
+    "acceptedAt": "2026-10-22T13:25:15.777079+00:00",
     "archivedAt": null,
-    "createdAt": "2026-10-22T12:54:28.756864+00:00"
+    "createdAt": "2026-10-22T13:25:15.777079+00:00"
   },
   "draft": {
     "tasks": [
@@ -229,10 +229,10 @@
         "requiredCount": 0,
         "preferredCount": 0
       },
-      "acceptedBy": "3603f9dd-a5b6-43e3-b38d-9000c7129702",
-      "acceptedAt": "2026-10-22T12:54:28.756864+00:00",
+      "acceptedBy": "84d22090-392b-4b80-8c71-36b526e86c58",
+      "acceptedAt": "2026-10-22T13:25:15.777079+00:00",
       "archivedAt": null,
-      "createdAt": "2026-10-22T12:54:28.756864+00:00"
+      "createdAt": "2026-10-22T13:25:15.777079+00:00"
     }
   ]
 }

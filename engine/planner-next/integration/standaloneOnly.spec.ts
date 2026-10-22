@@ -37,5 +37,7 @@ test("references, dependency cycles, incompatible role and missing resources blo
   ] as const);
   for(const [code,mutate] of cases){const source=fixture();mutate(source);const result=adaptEngineInputToPlannerNextProblem(source);
     assert.equal(result.status,"UNSUPPORTED");assert.ok(result.reasonCodes.includes(code),JSON.stringify(result.issues));
-    assert.notEqual(plannerReadiness(source,{status:"READY",issues:[]}).status,"READY");}
+    const readiness=plannerReadiness(source,{status:"READY",issues:[]});
+    assert.notEqual(readiness.status,"READY");
+    if(code==="UNSUPPORTED_TASK_ROLE")assert.equal(readiness.status,"UNSUPPORTED","missing coach must not mask a forbidden profile role");}
 });

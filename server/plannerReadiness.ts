@@ -27,5 +27,10 @@ export function plannerReadiness(input:EngineInput,current:EffectiveConfiguratio
       message:`${issue.code} · ${issue.path}: ${invalidPreferredEnd?"El fin preferido debe estar dentro de la jornada y no superar el inicio de la pausa global de comida. Revisa el perfil de origen.":issue.path.endsWith(".templateSnapshot")?issue.message:actions[issue.code]??issue.message}`,
       navigationTarget:issue.code.startsWith("MISSING_SEARCH_")?"/settings":issue.entityKind==="task"||issue.entityKind==="participant"||issue.entityKind==="contestant"?`/plans/${input.planId}?tab=tasks`:"#config-MAIN_FLOW"});
   }
-  return {status:issues.some(issue=>issue.status==="INCOMPATIBLE")?"INCOMPATIBLE":issues.some(issue=>issue.status==="INCOMPLETE")?"INCOMPLETE":issues.length?"UNSUPPORTED":"READY",issues};
+  // A forbidden structural profile cannot be repaired by adding a coach.
+  // Missing secondary references must not hide the actionable incompatibility.
+  const incompatibleStandalone=input.plannerNext?.profile==="STANDALONE_ONLY" &&
+    (input.plannerNext.mainFlow!==undefined || input.tasks.some(task=>task.status!=="cancelled" &&
+      (task.plannerNextKind==="main"||task.plannerNextKind==="vocal")));
+  return {status:incompatibleStandalone?"UNSUPPORTED":issues.some(issue=>issue.status==="INCOMPATIBLE")?"INCOMPATIBLE":issues.some(issue=>issue.status==="INCOMPLETE")?"INCOMPLETE":issues.length?"UNSUPPORTED":"READY",issues};
 }

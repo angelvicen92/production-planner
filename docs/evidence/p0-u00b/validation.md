@@ -9,6 +9,7 @@
 - Auth/PostgREST/PostgreSQL/Chromium descartables: U00b **6/6 y 3/3** hasta Stage, cero nuevas HARD/REQUIRED. Negativos con `NO_PROPOSAL`, permisos, CAS e inmutabilidad: PASS. `native/integration.json` registra `remoteWrites=0`.
 - U00a instrumentado nuevamente: **4/4 y 9/9** hasta Stage. Comparación exacta de problemas, fingerprints, identity maps y snapshots/placements contra Evidence de la base integrada: PASS. Matriz nativa completa de privilegios y denegación REST: PASS.
 - A2 desde S0, base exacta/candidato/repetición bajo el mismo runtime: **266/266, 11 Stages, 27.049 ramas, 8.465 min**, snapshots/horarios/huella idénticos, 22 certificados y Future Feasibility revalidados: PASS. No se modifican datos de fixtures ni assertions canónicas.
+- Precisión final de readiness: un rol MAIN/VOCAL prohibido conserva `UNSUPPORTED` aunque falte coach. Se refuerza la aserción focal y se repite el recorrido nativo completo, además de TypeScript/build, sobre ese ajuste.
 - CI remota: se comprueba en el PR y sobre su head exacto. Sus resultados finales se registran en la conversación y descripción del PR; este archivo describe las ejecuciones locales instrumentadas.
 
 Los primeros intentos de preparar el entorno no forman parte de los PASS anteriores: se restauró el lockfile completo antes de la instrumentación válida con Node 20 y se corrigió un selector del harness técnico. El comparador A2 exige runtimes iguales; la base se volvió a ejecutar con Node 20 en checkout descartable. No se cambió ninguna assertion para aceptar esos intentos.
