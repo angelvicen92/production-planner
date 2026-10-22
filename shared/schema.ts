@@ -60,6 +60,7 @@ export const plans = pgTable("plans", {
   optimizerEngine: text("optimizer_engine").notNull().default("v3"),
   plannerNextConfiguration: jsonb("planner_next_configuration"),
   itinerantCompositionVersion: integer("itinerant_composition_version"),
+  plannerNextProfile: jsonb("planner_next_profile").$type<import("./newDayPlannerConfiguration").NewDayPlannerSnapshot>(),
 });
 // 1.0.1 planning_runs (execution state + compact Engine V3 diagnostics)
 export const planningRuns = pgTable("planning_runs", {
@@ -435,6 +436,12 @@ export const operationContinuityGroups = pgTable("operation_continuity_groups", 
   gapWeight:integer("gap_weight").notNull(), revision:integer("revision").notNull().default(0),
 });
 
+export const newDayPlannerConfiguration = pgTable("new_day_planner_configuration", {
+  id: integer("id").primaryKey(),
+  revision: integer("revision").notNull().default(0),
+  configuration: jsonb("configuration").$type<import("./newDayPlannerConfiguration").NewDayPlannerConfiguration>(),
+});
+
 // 6. task_templates
 export const taskTemplates = pgTable("task_templates", {
   continuityGroupId: uuid("continuity_group_id").references(()=>operationContinuityGroups.id),
@@ -481,6 +488,7 @@ export const taskTemplates = pgTable("task_templates", {
 
 // 6.1 plan_task_template_snapshots (per-plan operational snapshot)
 export const planTaskTemplateSnapshots = pgTable("plan_task_template_snapshots", {
+  plannerNextOperation: jsonb("planner_next_operation").$type<import("./newDayPlannerConfiguration").TemplatePlannerOperation>(),
   id: bigint("id", { mode: "number" }).primaryKey(),
   planId: integer("plan_id").notNull().references(() => plans.id, { onDelete: "cascade" }),
   sourceTemplateId: integer("source_template_id").notNull(),
@@ -838,6 +846,7 @@ export const insertPlanSchema = createInsertSchema(plans).omit({
   mealBaselineStart: true, mealBaselineEnd: true, mealBaselineMode: true,
   mealConfigSource: true, mealOverrideBy: true, mealOverrideAt: true,
   currentConfigRevisionId: true,
+  plannerNextProfile: true,
 });
 export const insertZoneSchema = createInsertSchema(zones).omit({ id: true });
 export const insertSpaceSchema = createInsertSchema(spaces).omit({ id: true });

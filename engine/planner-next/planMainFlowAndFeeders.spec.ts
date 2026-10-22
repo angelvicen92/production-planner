@@ -159,6 +159,8 @@ test("planner-next remains isolated from legacy and production", () => {
     // projection. These boundaries never dispatch search from configuration.
     "server/dayConfigurationService.ts",
     "server/effectiveConfigurationView.ts",
+    // P0-U00a readiness reuses the productive adapter/preflight read-only.
+    "server/plannerReadiness.ts",
     "server/roundPreparation.spec.ts",
     "server/operationContinuity.spec.ts",
   ]);

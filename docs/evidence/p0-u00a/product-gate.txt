@@ -1,0 +1,12 @@
+Gate vigente de .github/workflows/planner-engine-ci.yml, Node 20.20.2.
+Sin cambios de exclusiones respecto a la base autorizada.
+  ...
+1..2991
+# tests 3056
+# suites 9
+# pass 3056
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 544570.151818

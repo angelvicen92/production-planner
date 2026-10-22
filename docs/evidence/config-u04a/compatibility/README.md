@@ -1,5 +1,7 @@
 # U04a — compatibilidad con U06c, mismo PR #1175
 
+> Informe histórico sobre `b980286`. La integración final con main `7872b581`, 105 P0 y 106 composición se acredita en [P0-U00a + U04a](../p0-integration/README.md). Los ordinales inferiores conservan su provenance histórica.
+
 Base comparada: `b9802860d8e48b26938e38f82648c328122efd26`. Head auditado inicial: `8e08d9e18c263c286b163b4e025e41f89aab3a20`. El merge local `5b62b5c` tiene ambos como padres; la corrección funcional está en `ba37e7f`. Los cambios posteriores instrumentan pruebas y documentan resultados. No se modifica búsqueda, geometría, políticas, presupuestos ni timeouts del planificador respecto de main.
 
 ## Fallos auditados

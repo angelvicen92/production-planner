@@ -1,4 +1,5 @@
 import { ItinerantCompositionError, mapItinerantTeam, registerItinerantCompositionRoutes } from './itinerantComposition';
+import { registerNewDayPlannerConfiguration } from "./newDayPlannerConfigurationRoutes";
 import { registerOperationContinuityCatalog } from "./operationContinuityCatalog";
 import { registerAtomicTaskTemplateRoutes } from "./atomicTaskTemplate";
 import { registerAdminInviteRoutes } from "./adminInvites";
@@ -3505,6 +3506,7 @@ function mapDeleteError(err: any, fallback: string) {
   });
 
   registerOperationContinuityCatalog(app, supabaseAdmin);
+  registerNewDayPlannerConfiguration(app, supabaseAdmin);
   registerAtomicTaskTemplateRoutes(app, (name, args) => supabaseAdmin.rpc(name, args));
 
   // Task Templates

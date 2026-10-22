@@ -1,0 +1,62 @@
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { newDayPlannerConfigurationSchema, type NewDayPlannerConfiguration } from "@shared/newDayPlannerConfiguration";
+import { apiRequest } from "@/lib/api";
+import { useSpaces } from "@/hooks/use-spaces";
+import { useUserRole } from "@/hooks/use-user-role";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+
+const path="/api/new-day-planner-configuration";
+const initial:NewDayPlannerConfiguration={contractVersion:1,scenario:"MAIN_WITH_VOCAL_FEEDER",transport:"NONE",setup:"NONE",meals:"DAY_CONFIGURATION",
+  searchPolicy:"EXACT_CONSTRUCTIVE",searchBudget:{bestK:3,maxBacktracks:50,maxPatterns:20,maxBranchExpansions:10_000},
+  timeGridMinutes:5,resourceTransitionMinutes:0,mainFlow:{spaceId:0,preferredEnd:"",continuity:"REQUIRED",maxBlocksByKey:1,minTasksPerBlock:1}};
+
+export function TemplatePlannerRole({rules,onChange,disabled=false}:{rules:any;onChange:(rules:any)=>void;disabled?:boolean}) {
+  return <label className="block space-y-1">Rol operativo Planner Next
+    <select aria-label="Rol operativo Planner Next" className="block w-full rounded border bg-background p-2" disabled={disabled}
+      value={rules?.plannerNextOperation?.kind??""} onChange={event=>{
+        const next={...(rules??{})};
+        if(event.target.value)next.plannerNextOperation={contractVersion:1,kind:event.target.value};else delete next.plannerNextOperation;
+        onChange(next);
+      }}>
+      <option value="">Sin configurar</option><option value="main">Actividad del flujo principal</option>
+      <option value="vocal">Preparación vocal previa</option><option value="auxiliary">Actividad auxiliar del participante</option>
+      <option value="technical">Operación técnica sin participante</option>
+    </select>
+  </label>;
+}
+
+export function NewDayPlannerEditor() {
+  const query=useQuery<{revision:number;configuration:NewDayPlannerConfiguration|null}>({queryKey:[path]});
+  const {data:spaceRows=[]}=useSpaces();const spaces=spaceRows as Array<{id:number;name:string}>;const {role}=useUserRole();const qc=useQueryClient();
+  const [value,setValue]=useState(initial),[revision,setRevision]=useState(0),[saved,setSaved]=useState(false);
+  useEffect(()=>{if(query.data){setValue(query.data.configuration??initial);setRevision(query.data.revision);}},[query.data]);
+  const save=useMutation({mutationFn:()=>apiRequest("PUT",path,{expectedRevision:revision,configuration:newDayPlannerConfigurationSchema.parse(value)}),
+    onSuccess:async()=>{setSaved(true);await qc.invalidateQueries({queryKey:[path]});}});
+  const main=(key:string,field:unknown)=>{setSaved(false);setValue(previous=>({...previous,mainFlow:{...previous.mainFlow,[key]:field}}));};
+  return <Card><CardHeader><CardTitle>Planner Next para nuevas jornadas</CardTitle></CardHeader><CardContent className="space-y-4">
+    <p className="text-sm">Cada día conserva su configuración original. Este primer perfil admite un flujo principal real, una preparación vocal previa y un coach asignado por participante, más actividades auxiliares y técnicas. Declara los roles, espacios y dependencias en las plantillas.</p>
+    <p className="text-sm text-muted-foreground">Las jornadas sin flujo principal o sin coach, el transporte y los montajes todavía no están disponibles en este perfil. La comida utiliza la configuración del día; no se crean tareas de comida ni salas adicionales.</p>
+    <p className="text-sm text-muted-foreground">Si hay una pausa global de comida, el fin preferido del flujo principal debe ser anterior o igual a su inicio.</p>
+    {query.isError?<p role="alert">No se pudo cargar la configuración. <Button variant="outline" onClick={()=>void query.refetch()}>Reintentar</Button></p>:null}
+    <fieldset disabled={role!=="admin"||query.isLoading||query.isError||save.isPending} className="grid gap-3 sm:grid-cols-2">
+      <label>Espacio del flujo principal<select aria-label="Espacio del flujo principal" className="block w-full rounded border bg-background p-2" value={value.mainFlow.spaceId||""} onChange={event=>main("spaceId",Number(event.target.value))}>
+        <option value="">Seleccionar espacio real</option>{spaces.map(space=><option key={space.id} value={space.id}>{space.name}</option>)}
+      </select></label>
+      <label>Fin preferido del flujo principal<Input aria-label="Fin preferido del flujo principal" type="time" step={300} value={value.mainFlow.preferredEnd} onChange={event=>main("preferredEnd",event.target.value)}/></label>
+      <label>Máximo de bloques por coach<Input aria-label="Máximo de bloques por coach" type="number" min={1} value={value.mainFlow.maxBlocksByKey} onChange={event=>main("maxBlocksByKey",Number(event.target.value))}/></label>
+      <label>Mínimo de tareas por bloque<Input aria-label="Mínimo de tareas por bloque" type="number" min={1} value={value.mainFlow.minTasksPerBlock} onChange={event=>main("minTasksPerBlock",Number(event.target.value))}/></label>
+      <details className="sm:col-span-2"><summary>Parámetros técnicos de Planner Next</summary><div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <label>Política de búsqueda<select aria-label="Política de búsqueda" value={value.searchPolicy} onChange={event=>setValue({...value,searchPolicy:event.target.value as NewDayPlannerConfiguration["searchPolicy"]})}><option value="EXACT_CONSTRUCTIVE">Construcción exacta</option><option value="COMPATIBILITY_PRESERVING">Compatibilidad</option></select></label>
+        <label>Transición entre recursos (min)<Input aria-label="Transición entre recursos" type="number" min={0} step={5} value={value.resourceTransitionMinutes} onChange={event=>setValue({...value,resourceTransitionMinutes:Number(event.target.value)})}/></label>
+        {([ ["bestK","Mejores candidatos"],["maxBacktracks","Retrocesos máximos"],["maxPatterns","Patrones máximos"],["maxBranchExpansions","Ramas máximas"] ] as const).map(([key,label])=><label key={key}>{label}<Input aria-label={label} type="number" min={1} max={key==="maxBranchExpansions"?100000:undefined} value={value.searchBudget[key]} onChange={event=>setValue({...value,searchBudget:{...value.searchBudget,[key]:Number(event.target.value)}})}/></label>)}
+      </div></details>
+      <Button disabled={!newDayPlannerConfigurationSchema.safeParse(value).success} onClick={()=>save.mutate()}>Guardar Planner para futuras jornadas</Button>
+    </fieldset>
+    {saved?<p role="status">Configuración guardada. Las jornadas existentes conservan su snapshot.</p>:null}
+    {save.error?<p role="alert">{save.error.message}</p>:null}
+    <p className="text-xs text-muted-foreground">Revisión general: {query.data?.revision??"sin verificar"} · Comprueba el readiness del día después de añadir sus tareas.</p>
+  </CardContent></Card>;
+}

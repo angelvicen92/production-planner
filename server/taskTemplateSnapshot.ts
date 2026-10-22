@@ -1,4 +1,5 @@
 import { continuityGroupSchema, type ContinuityGroup } from "../shared/operationContinuity";
+import { templatePlannerOperationSchema, type TemplatePlannerOperation } from "../shared/newDayPlannerConfiguration";
 import { createHash } from "node:crypto";
 import type { ResourceRequirementsInput } from "../engine/types";
 import { immutableMapView } from "../shared/immutableMapView";
@@ -33,6 +34,7 @@ export interface TaskTemplateOperationalSnapshotV1 {
   readonly allowedItinerantTeamIds: readonly number[];
   readonly setupId: number | null;
   readonly continuityGroup?: ContinuityGroup;
+  readonly plannerNextOperation?: TemplatePlannerOperation;
   readonly participantMarginBeforeMinutes: number | null;
   readonly participantMarginAfterMinutes: number | null;
 }
@@ -65,6 +67,7 @@ export interface TaskTemplateSnapshotPersistenceRow {
   readonly allowed_itinerant_team_ids: readonly number[];
   readonly setup_id: number | null;
   readonly continuity_group?: ContinuityGroup;
+  readonly planner_next_operation?: TemplatePlannerOperation;
   readonly participant_margin_before_minutes: number | null;
   readonly participant_margin_after_minutes: number | null;
 }
@@ -169,8 +172,12 @@ function normalizePositiveIntegerArray(value: unknown): readonly number[] {
 }
 
 function normalizeDependencies(record: UnknownRecord): readonly number[] {
+  // Existing persisted V2 snapshots were hashed using the legacy spellings.
+  // The opt-in operational declaration owns the corrected persistence mapping;
+  // never reinterpret a historical snapshot and invalidate its accepted replay.
+  const operational = readPresent(record,"plannerNextOperation","planner_next_operation") != null;
   const current = normalizePositiveIntegerArray(
-    readPresent(record, "dependencyTemplateIds", "dependsOnTemplateIds", "depends_on_template_ids"),
+    readPresent(record, "dependencyTemplateIds", ...(operational?["dependency_template_ids"]:[]), "dependsOnTemplateIds", "depends_on_template_ids"),
   );
   const legacy = optionalPositiveInteger(
     readPresent(record, "dependsOnTemplateId", "depends_on_template_id"),
@@ -412,6 +419,8 @@ function normalizeSnapshot(
     ])).sort((left, right) => left - right),
   );
   const dependencyTemplateIds = normalizeDependencies(record);
+  const plannerOperation = readPresent(record,"plannerNextOperation","planner_next_operation")
+    ?? asRecord(readPresent(record,"rulesJson","rules_json"))?.plannerNextOperation;
 
   const normalizedWithoutFingerprint = deepFreeze({
     contractVersion: TASK_TEMPLATE_SNAPSHOT_CONTRACT_VERSION,
@@ -435,6 +444,7 @@ function normalizeSnapshot(
     itinerantTeamRequirement: requirement,
     itinerantTeamId: normalizedSpecificId,
     allowedItinerantTeamIds,
+    ...(plannerOperation == null ? {} : {plannerNextOperation:templatePlannerOperationSchema.parse(plannerOperation)}),
     ...(readPresent(record, "continuityGroup", "continuity_group") == null ? {} : {continuityGroup:continuityGroupSchema.parse(readPresent(record, "continuityGroup", "continuity_group"))}),
     setupId: optionalPositiveInteger(readPresent(record, "setupId", "setup_id")),
     participantMarginBeforeMinutes: optionalNonNegativeInteger(readPresent(record, "participantMarginBeforeMinutes", "participant_margin_before_minutes"), "participantMarginBeforeMinutes"),
@@ -497,6 +507,7 @@ export function taskTemplateSnapshotToPersistenceRow(
     itinerant_team_id: snapshot.itinerantTeamId,
     allowed_itinerant_team_ids: snapshot.allowedItinerantTeamIds,
     setup_id: snapshot.setupId,
+    ...(snapshot.plannerNextOperation ? {planner_next_operation:snapshot.plannerNextOperation} : {}),
     ...(snapshot.continuityGroup ? {continuity_group:snapshot.continuityGroup} : {}),
     participant_margin_before_minutes: snapshot.participantMarginBeforeMinutes,
     participant_margin_after_minutes: snapshot.participantMarginAfterMinutes,

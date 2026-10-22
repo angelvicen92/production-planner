@@ -1,5 +1,7 @@
 # U04a — composición física y mappings diarios
 
+> La [integración final con U06c y P0-U00a](p0-integration/README.md) compara con main `7872b581`, conserva 105 P0 y acredita composición en 106. Los resultados y límites de este informe inicial conservan su provenance histórica.
+
 El catálogo permite crear y editar composiciones con recursos físicos existentes, disponibilidad explícita opcional, transición (incluido 0) y estado activo. Muestra los miembros compartidos y sus posibles conflictos. Código e ID permanecen estables. Guardado y reemplazo de miembros son una única transacción con revisión esperada; un conflicto no conserva cambios parciales.
 
 ## Contrato y autoridades

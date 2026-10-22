@@ -1,4 +1,5 @@
 import { applyDailyItinerantComposition, ItinerantCompositionError } from '../server/itinerantComposition';
+import { applyNewDayPlannerConfiguration } from "../server/newDayPlannerConfiguration";
 import { applyEffectiveOperationContinuity } from "../server/operationContinuity";
 import { applyEffectiveMainFlowPreference } from "../server/mainFlowPreference";
 import { applyEffectiveRoundPreparations } from "../server/roundPreparation";
@@ -568,8 +569,8 @@ export async function buildEngineInput(
   const transportVanCapacity = optimizerProjection.transport.vanCapacity;
   const arrivalTransportTemplateName = optimizerProjection.transport.arrivalTemplateName;
   const departureTransportTemplateName = optimizerProjection.transport.departureTemplateName;
-  const arrivalTransportTemplateId = optimizerProjection.transport.arrivalSourceTemplateId;
-  const departureTransportTemplateId = optimizerProjection.transport.departureSourceTemplateId;
+  const arrivalTransportTemplateId = p.planner_next_profile?.configuration ? null : optimizerProjection.transport.arrivalSourceTemplateId;
+  const departureTransportTemplateId = p.planner_next_profile?.configuration ? null : optimizerProjection.transport.departureSourceTemplateId;
 
   const taskTemplateNameById: Record<number, string> = Object.fromEntries(
     templates.map((snapshot) => [snapshot.sourceTemplateId, snapshot.templateName]),
@@ -998,7 +999,9 @@ export async function buildEngineInput(
       lockedResourceId: l.locked_resource_id ?? l.lockedResourceId ?? null,
     })),
   };
-  let effectiveInput = applyPlanPlannerNextConfiguration(input,p.planner_next_configuration??p.plannerNextConfiguration);
+  // Materialize roles/dependencies before mapping physical catalog identities.
+  // Historical 088 authority stays exclusive; daily continuity is applied last.
+  let effectiveInput = applyPlanPlannerNextConfiguration(applyNewDayPlannerConfiguration(input,p.planner_next_profile,taskTemplateSnapshots),p.planner_next_configuration??p.plannerNextConfiguration);
   if ((p.itinerant_composition_version ?? p.itinerantCompositionVersion) === 1) {
     if ((p.planner_next_configuration ?? p.plannerNextConfiguration) != null) throw new ItinerantCompositionError('autoridades históricas y heredadas incompatibles');
     effectiveInput = applyDailyItinerantComposition(effectiveInput, await storage.getPlanItinerantUnitSnapshots(planId), planId);

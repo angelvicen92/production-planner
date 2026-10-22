@@ -342,6 +342,7 @@ function sourceProjection(input: EngineInput): unknown {
     contestantMealDurationMinutes: input.contestantMealDurationMinutes,
     contestantMealMaxSimultaneous: input.contestantMealMaxSimultaneous,
     mealTaskTemplateId: input.mealTaskTemplateId,
+    ...(input.plannerNextMaterializationIssues?.length?{plannerNextMaterializationIssues:input.plannerNextMaterializationIssues}:{}),
     tasks,
     locks: input.locks,
     planResourceItems,
@@ -486,6 +487,9 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       ...(details ? { details: stableValue(details) as Record<string, unknown> } : {}),
     });
   };
+  for (const issue of input.plannerNextMaterializationIssues ?? []) {
+    addIssue(issue.code,"task",issue.taskId,`tasks.${issue.taskId}.templateSnapshot`,issue.message);
+  }
   if (input.operationContinuityGroups !== undefined) {
     const groups = input.operationContinuityGroups;
     const seen = new Set<string>(), members = new Set<number>();

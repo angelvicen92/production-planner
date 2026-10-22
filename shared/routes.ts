@@ -5,6 +5,7 @@ import { z } from "zod";
 import { transportBoundsFields } from "./transportPolicy";
 import { createDayConfigurationIntentSchema, dayConfigEditSchema, dayConfigRefreshSchema, dayConfigRestoreSchema } from "./dayConfig";
 import { optimizerHeuristicKeys } from "./optimizer";
+import { templateRulesWithPlannerOperationSchema } from "./newDayPlannerConfiguration";
 import {
   insertPlanSchema,
   plans,
@@ -37,7 +38,7 @@ export const updateTaskTemplateSchema = z
           exclusiveAuxiliar: z.boolean().optional(),
           continuityGroupId: z.string().uuid().nullable().optional(),
           setupId: z.number().int().positive().nullable().optional(),
-          rulesJson: z.any().optional(),
+          rulesJson: templateRulesWithPlannerOperationSchema.optional(),
           resourceRequirements: z.any().nullable().optional(),
           // ✅ NUEVO: color hex (o null)
           uiColor: z
@@ -1573,7 +1574,7 @@ export const api = {
           exclusiveAuxiliar: z.boolean().optional(),
           continuityGroupId: z.string().uuid().nullable().optional(),
           setupId: z.number().int().positive().nullable().optional(),
-          rulesJson: z.any().optional(),
+          rulesJson: templateRulesWithPlannerOperationSchema.optional(),
           resourceRequirements: z.any().nullable().optional(),
 
           uiColor: z

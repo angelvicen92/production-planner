@@ -123,10 +123,15 @@ export async function runItinerantCompositionJourney({appUrl,url,anon,db,users,d
      const card=page.locator('.bg-card').filter({has:page.getByText(name,{exact:true})}).last();
      await card.getByRole('button',{name:'Editar',exact:true}).click();
      const editing=page.locator('.bg-card').filter({has:page.getByRole('button',{name:'Cancelar',exact:true})}).last();
+     await editing.getByLabel('Rol operativo Planner Next',{exact:true}).selectOption('technical');
      await editing.getByRole('checkbox',{name:'Requiere equipo itinerante',exact:true}).check();
      for(const team of teams.filter(team=>allowed.includes(team.id)))await editing.getByRole('checkbox',{name:team.name,exact:true}).check();
      const saved=page.waitForResponse(r=>new URL(r.url()).pathname===api.taskTemplates.update.path.replace(':id',String(template.id))&&r.request().method()==='PATCH');
-     await editing.getByRole('button',{name:'Guardar',exact:true}).click();const update=await saved;assert.equal(update.status(),200);templates.push(await update.json());
+     await editing.getByRole('button',{name:'Guardar',exact:true}).click();const update=await saved;assert.equal(update.status(),200);const updated=await update.json();
+     report.combinedTemplateEdit={role:updated.rulesJson?.plannerNextOperation,allowed:updated.rulesJson?.itinerantTeamAllowedIds};
+     assert.equal(updated.rulesJson?.plannerNextOperation?.kind,'technical','the same UI save preserves the edited Next role and itinerant alternatives');
+     assert.deepEqual(updated.rulesJson.itinerantTeamAllowedIds,allowed);
+     templates.push(updated);
    }
    await page.screenshot({path:`${directory}/u04a-templates.png`,fullPage:true});
    assert.equal(templates[0].itinerantTeamRequirement,'any');assert.equal(templates[1].itinerantTeamRequirement,'specific');report.templates=templates;

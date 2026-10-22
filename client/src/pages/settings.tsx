@@ -1,4 +1,5 @@
 import { ItinerantCompositionSettings } from '@/components/itinerant-composition-settings';
+import { NewDayPlannerEditor, TemplatePlannerRole } from "@/components/new-day-planner-editor";
 import { ContinuityGroupPicker } from "@/components/operation-continuity-editor";
 import { useSettingsSection } from "@/hooks/use-settings-section";
 import { SettingsSection } from "@/components/settings/settings-section";
@@ -147,6 +148,7 @@ export default function SettingsPage() {
           </div>
           <TabsContent value="general" className="space-y-4">
             <GeneralProgramSettings />
+            <NewDayPlannerEditor />
             <GeneralOptimizerSettings />
             <ControlRoomSettingsCard />
           </TabsContent>
@@ -2505,6 +2507,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
       expectedTemplates: (catalog ?? []).map((row: any) => ({ id: row.id, revision: row.revision })),
       id: Number(tpl.id),
       continuityGroupId:tpl.continuityGroupId??null,
+      rulesJson:tpl.rulesJson??null,
       name: String(tpl.name ?? ""),
       abbrev: String(tpl.abbrev ?? ""),
       defaultDuration: Number(
@@ -2687,8 +2690,8 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
       normalizedAllowedTeamIds.length === 1 ? normalizedAllowedTeamIds[0] : null;
 
     const previousRules =
-      editData.rulesJsonData && typeof editData.rulesJsonData === "object"
-        ? editData.rulesJsonData
+      editData.rulesJson && typeof editData.rulesJson === "object"
+        ? editData.rulesJson
         : {};
 
     const normalizedDirectDependencies = Array.from(
@@ -2810,6 +2813,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
           ...(editData.abbrev !== editData.initial.abbrev ? { abbrev: String(editData.abbrev ?? "").trim() || null } : {}),
           defaultDuration: Number(editData.defaultDuration ?? 30),
           defaultCameras: Number(editData.defaultCameras ?? 0),
+          ...(changed("rulesJson")?{rulesJson:editData.rulesJson}:{}),
           ...(changed("continuityGroupId")?{continuityGroupId:editData.continuityGroupId}:{}),
           participantMarginBeforeMinutes: editData.participantMarginBeforeMinutes,
           participantMarginAfterMinutes: editData.participantMarginAfterMinutes,
@@ -2918,11 +2922,15 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                 Create
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create Template</DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
+                <TemplatePlannerRole rules={formData.rulesJson} onChange={rulesJson=>setFormData({...formData,rulesJson})} disabled={!canEditDependencies}/>
+                <label className="flex items-center gap-2"><Checkbox checked={!!formData.requiresCoach} onCheckedChange={checked=>setFormData({...formData,requiresCoach:checked===true})}/>Requiere el coach asignado al participante</label>
+                <label>Espacio de la plantilla<select aria-label="Espacio de la plantilla" className="block w-full rounded border bg-background p-2" value={formData.spaceId??""} onChange={event=>{const space=(spaces as any[]).find(space=>space.id===Number(event.target.value));setFormData({...formData,spaceId:space?.id??null,zoneId:space?.zoneId??null});}}><option value="">Sin asignar</option>{(spaces as any[]).map(space=><option key={space.id} value={space.id}>{space.name}</option>)}</select></label>
+                <label>Plantillas previas<select aria-label="Plantillas previas" multiple className="block w-full rounded border bg-background p-2" value={(formData.dependsOnTemplateIds??[]).map(String)} onChange={event=>setFormData({...formData,dependsOnTemplateIds:Array.from(event.target.selectedOptions,option=>Number(option.value))})}>{templates?.map(template=><option key={template.id} value={template.id}>{template.name}</option>)}</select></label>
                 <ContinuityGroupPicker value={formData.continuityGroupId??null} onChange={continuityGroupId=>setFormData({...formData,continuityGroupId})} disabled={!canEditDependencies}/>
                 <Input
                   placeholder="Name"
@@ -3026,6 +3034,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
           const dependents = dependentsByTemplateId.get(Number(tpl?.id)) ?? [];
           return (
             <Card key={tpl.id}>
+              {isEditing ? <TemplatePlannerRole rules={editData.rulesJson} onChange={rulesJson=>setEditData({...editData,rulesJson})} disabled={!canEditDependencies||isSavingEdit}/> : null}
               {isEditing ? <ContinuityGroupPicker value={editData.continuityGroupId??null} onChange={continuityGroupId=>setEditData({...editData,continuityGroupId})} disabled={!canEditDependencies||isSavingEdit}/> : null}
               <CardHeader className="py-2 px-3 sm:px-4">
                 <div className="flex items-start justify-between gap-2">

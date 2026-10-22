@@ -1,5 +1,6 @@
 import { ItinerantCompositionError } from './itinerantComposition';
 import { catalogContinuityGroup } from "./operationContinuity";
+import { newDayPlannerSnapshotSchema } from "../shared/newDayPlannerConfiguration";
 import { mapTaskTemplatePatch, mapTaskTemplateRow } from "./taskTemplateMapping";
 import type { CreateTaskTemplateInput, UpdateTaskTemplateInput } from "@shared/routes";
 import { supabaseAdmin } from "./supabase";
@@ -509,7 +510,7 @@ export class SupabaseStorage implements IStorage {
   async syncPlanMealBreaks(planId: number): Promise<void> {
     const { data: plan, error: planErr } = await supabaseAdmin
       .from("plans")
-      .select("id, meal_start, meal_end, meal_mode, space_meal_break_minutes, planner_next_configuration, itinerant_composition_version")
+      .select("id, meal_start, meal_end, meal_mode, space_meal_break_minutes, planner_next_configuration, planner_next_profile, itinerant_composition_version")
       .eq("id", planId)
       .single();
     if (planErr) throw planErr;
@@ -520,6 +521,8 @@ export class SupabaseStorage implements IStorage {
       planPlannerNextConfigurationSchema.parse(plan.planner_next_configuration);
       return;
     }
+
+    if (plan.planner_next_profile != null && newDayPlannerSnapshotSchema.parse(plan.planner_next_profile).configuration != null) return;
 
     const { data: settings, error: settingsErr } = await supabaseAdmin
       .from("program_settings")
@@ -1339,6 +1342,7 @@ export class SupabaseStorage implements IStorage {
       { data: bundleComponentCatalog, error: bundleComponentsError },
       { data: bundleAffinityCatalog, error: bundleAffinitiesError },
       taskTemplateCatalog,
+      { data: plannerProfile, error: plannerProfileError },
       { data: optimizerSettings, error: optimizerSettingsError },
     ] = await Promise.all([
       supabaseAdmin.from("program_settings").select("default_work_start, default_work_end, meal_start, meal_end, meal_mode, default_participant_transition_minutes").eq("id", 1).single(),
@@ -1348,8 +1352,11 @@ export class SupabaseStorage implements IStorage {
       supabaseAdmin.from("resource_bundle_components").select("id, bundle_id, resource_id, resource_item_id, component_role, quantity, is_required, metadata").order("id"),
       supabaseAdmin.from("resource_bundle_space_affinities").select("id, bundle_id, space_id, affinity_score, metadata").order("bundle_id").order("space_id"),
       this.getTaskTemplates(),
+      supabaseAdmin.from("new_day_planner_configuration").select("revision, configuration").eq("id",1).single(),
       supabaseAdmin.from("optimizer_settings").select("*").eq("id", 1).single(),
     ]);
+    if (plannerProfileError) throw plannerProfileError;
+    const plannerNextProfile = newDayPlannerSnapshotSchema.parse({contractVersion:1,sourceRevision:plannerProfile.revision,configuration:plannerProfile.configuration});
     if (settingsError) throw settingsError;
     if (zonesError) throw zonesError;
     if (spacesError) throw spacesError;
@@ -1398,6 +1405,7 @@ export class SupabaseStorage implements IStorage {
     const { data, error } = await supabaseAdmin
       .from("plans")
       .insert({
+        planner_next_profile: plannerNextProfile,
         date: plan.date,
         itinerant_composition_version: 1,
         work_start: validatedSnapshots.workStart,
