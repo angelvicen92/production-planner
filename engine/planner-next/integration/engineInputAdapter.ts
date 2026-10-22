@@ -290,6 +290,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     coaches,
     ...(itinerantUnits.length ? { itinerantUnits } : {}),
     tasks,
+    ...(input.operationContinuityGroups?.length ? {operationContinuityGroups: input.operationContinuityGroups.map(group => ({...group, id: group.id, taskIds: group.taskIds.filter(id=>activeTasks.some(task=>task.id===id)).map(id => canonical("task", id)).sort(compare)})).filter(group=>group.taskIds.length).sort((a,b)=>compare(a.id,b.id))} : {}),
     mainFlow: {
       spaceId: canonical("space", config.mainFlow.spaceId),
       preferredEnd: engineTimeToMinute(config.mainFlow.preferredEnd),

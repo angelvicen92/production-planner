@@ -1,3 +1,4 @@
+import { applyEffectiveOperationContinuity } from "../server/operationContinuity";
 import { applyEffectiveMainFlowPreference } from "../server/mainFlowPreference";
 import { applyEffectiveRoundPreparations } from "../server/roundPreparation";
 import type { IStorage } from "../server/storage";
@@ -996,5 +997,5 @@ export async function buildEngineInput(
       lockedResourceId: l.locked_resource_id ?? l.lockedResourceId ?? null,
     })),
   };
-  return applyEffectiveRoundPreparations(applyEffectiveMainFlowPreference(applyPlanPlannerNextConfiguration(input,p.planner_next_configuration??p.plannerNextConfiguration),p),p);
+  return applyEffectiveOperationContinuity(applyEffectiveRoundPreparations(applyEffectiveMainFlowPreference(applyPlanPlannerNextConfiguration(input,p.planner_next_configuration??p.plannerNextConfiguration),p),p),p,taskTemplateSnapshots);
 }

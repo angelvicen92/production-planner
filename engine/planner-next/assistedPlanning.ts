@@ -52,6 +52,7 @@ export interface AssistedProblem {
 }
 
 export interface AssistedPlanningEvidence {
+  readonly operationContinuity?: ReturnType<typeof import("./operationContinuity").assessOperationContinuity>;
   readonly scopeTaskCount: number;
   readonly scopeTaskIds: readonly string[];
   readonly supportingTaskIds: readonly string[];
@@ -408,6 +409,11 @@ export function buildAssistedProblem(
           includeSupporting(member.id, `JOINT_GROUP:${jointGroupId}`); changed = true;
         }
       }
+      for (const group of problem.operationContinuityGroups ?? []) if (group.policy === "REQUIRED" && group.taskIds.includes(id)) {
+        for (const memberId of group.taskIds) if (!included.has(memberId)) {
+          includeSupporting(memberId, `OPERATION_CONTINUITY:${group.id}`); changed = true;
+        }
+      }
       for (const chain of problem.technicalChains ?? []) if (chain.orderedTaskIds.includes(id)) {
         for (const memberId of chain.orderedTaskIds) if (!included.has(memberId)) {
           includeSupporting(memberId, `TECHNICAL_CHAIN:${chain.id}`); changed = true;
@@ -515,6 +521,11 @@ export function buildAssistedProblem(
       prerequisiteTasks:[...prerequisiteIds].sort().map(id=>structuredClone(tasksById.get(id)!))};
   });
   problem.tasks = problem.tasks.filter(({ id }) => included.has(id));
+  if (problem.operationContinuityGroups) problem.operationContinuityGroups = problem.operationContinuityGroups.map(group => {
+    const taskIds = group.taskIds.filter(id => included.has(id));
+    return { ...group, taskIds, ...(taskIds.length !== group.taskIds.length
+      ? { declaredTaskCount: group.declaredTaskCount ?? group.taskIds.length } : {}) };
+  }).filter(group => group.taskIds.length);
   problem.anchoredAccompaniments = problem.anchoredAccompaniments?.filter((anchor) =>
     [anchor.anchorTaskId, ...anchor.beforeTaskIds, ...anchor.afterTaskIds].every((id) => included.has(id)));
   problem.roundSynchronizations = problem.roundSynchronizations?.map((policy) => ({
@@ -766,6 +777,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     "firstFixedMainBundleHardGateDiagnostic"] as const;
   const fixedMainBundle=Object.fromEntries(fixedMainBundleKeys.map(key=>[key,evidenceRecord[key]])) as AssistedPlanningEvidence["fixedMainBundle"];
   return { proposal, evidence: {
+    ...(validation?.operationContinuity ? {operationContinuity:validation.operationContinuity} : {}),
     scopeTaskCount: input.scope.resolvedTaskIds.length,
     scopeTaskIds: input.scope.resolvedTaskIds,
     supportingTaskIds: input.supportingTaskIds,

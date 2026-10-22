@@ -1,3 +1,4 @@
+import { applyEffectiveOperationContinuity, candidateOperationContinuity } from "./operationContinuity";
 import { transportBoundsSchema } from "../shared/transportPolicy";
 import { mainFlowPreferenceFromRow } from "../shared/mainFlowPreference";
 import { withMainFlowPreference, validateMainFlowPreference } from "./mainFlowPreference";
@@ -131,8 +132,10 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
   const roundEdit = operation === "EDIT" ? (payload as DayConfigEdit).roundPreparation : undefined;
   const roundRestore = operation === "RESTORE" && (payload as DayConfigRestore).capability === "SYNCHRONIZED_ROUNDS"
     ? payload as Extract<DayConfigRestore, { capability: "SYNCHRONIZED_ROUNDS" }> : undefined;
+  const continuityEdit = operation === "EDIT" ? (payload as DayConfigEdit).operationContinuity : undefined;
+  const continuityRestore = operation === "RESTORE" && (payload as DayConfigRestore).capability === "OPERATION_CONTINUITY" ? payload as Extract<DayConfigRestore,{capability:"OPERATION_CONTINUITY"}> : undefined;
   const expectedRevision = plan.current_config_revision_id == null ? null : Number(plan.current_config_revision_id);
-  if ((roundEdit || roundRestore) && (payload as DayConfigEdit).expectedRevisionId !== expectedRevision)
+  if ((roundEdit || roundRestore || continuityEdit || continuityRestore) && (payload as DayConfigEdit).expectedRevisionId !== expectedRevision)
     throw Object.assign(new Error("STALE_CONFIG_REVISION"), { status: 409 });
   const mainPreferenceBaseline=operation==="REFRESH"&&(payload as DayConfigRefresh).capabilities.includes("BLOCK_COUNT_POLICY")
     ?mainFlowPreferenceFromRow(general):undefined;
@@ -172,15 +175,22 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
     const readiness = preflightEngineInputForPlannerNext(nextInput);
     if (readiness.status !== "SUPPORTED") throw Object.assign(new Error(`La preparación no es representable con la configuración efectiva (rejilla de ${nextInput.plannerNext?.timeGridMinutes} minutos). ${readiness.reasonCodes.join(", ")}`), { status: 422 });
   }
+  if (continuityEdit || continuityRestore) {
+    const snapshots=await repository.getPlanTaskTemplateSnapshots(planId);
+    const baseline=applyEffectiveOperationContinuity({...nextInput,operationContinuityGroups:undefined},{...plan,operation_continuity_overrides:[]},snapshots);
+    nextInput=candidateOperationContinuity(nextInput,continuityEdit??continuityRestore!.operationContinuity,!!continuityRestore,baseline);
+    const readiness=preflightEngineInputForPlannerNext(nextInput);
+    if(readiness.status!=="SUPPORTED") throw Object.assign(new Error("La continuidad no es representable con la configuración efectiva."),{status:422});
+  }
   const candidate = await buildCanonicalPlanConfig(planId, repository, nextInput, effectiveOptimizer);
-  const { data, error } = await supabaseAdmin.rpc("apply_day_config_operation_v4", {
+  const { data, error } = await supabaseAdmin.rpc("apply_day_config_operation_v5", {
     p_plan_id: planId, p_actor: actorId, p_operation: operation, p_payload: {...payload,...(optimizerBaseline?{optimizerBaseline}: {}),...(mainPreferenceBaseline?{mainPreferenceBaseline}: {})},
     p_expected_revision: plan.current_config_revision_id == null ? null : Number(plan.current_config_revision_id),
     p_expected_identity: current.identity, p_expected_replay: current.replay,
     p_candidate_identity: candidate.identity, p_candidate_replay: candidate.replay,
     p_diff: { operation, payload,...(mainPreferenceBaseline?{mainPreferenceBaseline}: {}) },
   });
-  if (error) throw Object.assign(error, { status: error.message.includes("PERMISSION_DENIED") ? 403 : /STALE_|ROUND_PREPARATION/.test(error.message) ? 409 : 500 });
+  if (error) throw Object.assign(error, { status: error.message.includes("PERMISSION_DENIED") ? 403 : /STALE_|ROUND_PREPARATION|OPERATION_CONTINUITY/.test(error.message) ? 409 : 500 });
   const { data: updated, error: updatedError } = await supabaseAdmin.from("plans").select("*").eq("id", planId).single();
   if (updatedError || !updated) throw updatedError;
   return { ...mapPlan(updated), revisionId: Number(data) };

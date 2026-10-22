@@ -132,6 +132,14 @@ test('actual 086 bootstrap rejects resource staleness, materializes S0 and persi
   assert.deepEqual((await db.query<any>('SELECT assigned_resource_ids FROM daily_tasks WHERE id=$1',[altered.tasks[0].taskId])).rows[0].assigned_resource_ids,altered.tasks[0].assignedResourceIds);
   assert.equal((await db.query<any>("SELECT has_function_privilege('service_role','public.assisted_apply_snapshot(integer,jsonb)','EXECUTE') AS allowed")).rows[0].allowed,false,'internal snapshot writer is not callable via REST');
   for(const role of ['anon','authenticated'])assert.equal((await db.query<any>(`SELECT has_function_privilege('${role}','public.assisted_bootstrap_session(integer,uuid,jsonb,jsonb,jsonb,text)','EXECUTE') AS allowed`)).rows[0].allowed,false);
+  // Historical repair is bounded through 099. Current application contracts
+  // require their subsequent ledger migrations, applied separately here too.
+  await db.exec('CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT NULL::uuid $$;');
+  const rbac=readFileSync('supabase/migrations/037_rbac_auth_magic_link.sql','utf8');
+  const roleStart=rbac.indexOf('CREATE OR REPLACE FUNCTION public.has_role');
+  await db.exec(rbac.slice(roleStart,rbac.indexOf('GRANT EXECUTE ON FUNCTION public.has_role',roleStart)));
+  for(const migration of ['102_round_preparation_day_override.sql','103_atomic_task_template_inverse.sql','104_operation_continuity.sql'])
+    await db.exec(readFileSync(`supabase/migrations/${migration}`,'utf8'));
   const auditSQL=readFileSync('script/demo/sql/catalog-audit.sql','utf8');
   const select=auditSQL.slice(auditSQL.indexOf('SELECT jsonb_build_object('),auditSQL.lastIndexOf('COMMIT;'));
   const catalog=(await db.query<any>(select)).rows[0].audit;

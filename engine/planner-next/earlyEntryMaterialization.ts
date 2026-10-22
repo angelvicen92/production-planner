@@ -1,3 +1,4 @@
+import { continuityPenalty } from "./operationContinuity";
 import type { FutureJointCompletionWitnessV1 } from "./anonymousPipelineWitness";
 import type { PlannerNextProblem, ScheduledTask } from "./contracts";
 import { ExactSearchTimeLimitReached, type ExactSearchLedger } from "./exactMainAndFeederCore";
@@ -71,7 +72,7 @@ export function materializeEarlyEntries(source: PlannerNextProblem, original: Fu
         if (replay !== "PASS") continue;
         const nextClosure = authority.evaluate(candidate.tasks, candidate.participantMeals, consume, "CERTIFY", candidate.spaceMeals);
         attempt.outcome = nextClosure.certified ? "PROJECTION_REJECTED" : `CLOSURE_${nextClosure.reason ?? nextClosure.status}`;
-        if (!nextClosure.certified || !acceptsProjection(candidate)) continue;
+        if (!nextClosure.certified || continuityPenalty(source,candidate.tasks)>continuityPenalty(source,witness.tasks) || !acceptsProjection(candidate)) continue;
         witness = candidate; closure = nextClosure;
         attempt.outcome = "CERTIFIED";
         evidence.moves.push({ taskId: task.id, from: task.start, to: start });

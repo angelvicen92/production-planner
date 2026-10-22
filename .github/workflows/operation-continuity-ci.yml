@@ -1,0 +1,49 @@
+name: Operation continuity
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'engine/planner-next/**'
+      - 'engine/buildInput.ts'
+      - 'engine/types.ts'
+      - 'server/operationContinuity*'
+      - 'server/taskTemplate*'
+      - 'server/assistedConfigRefresh.ts'
+      - 'server/dayConfigurationService.ts'
+      - 'server/storage.ts'
+      - 'shared/operationContinuity.ts'
+      - 'shared/dayConfig.ts'
+      - 'client/src/components/operation-continuity-editor.tsx'
+      - 'client/src/pages/settings.tsx'
+      - 'supabase/migrations/**'
+      - 'script/demo/smokeOperationContinuityJourney.ts'
+      - 'script/demo/smokeA2Integration.ts'
+      - '.github/workflows/operation-continuity-ci.yml'
+permissions:
+  contents: read
+concurrency:
+  group: operation-continuity-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  continuity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run check && npm run check:migrations && npm run build
+      - run: node --import tsx --test --test-concurrency=1 engine/planner-next/operationContinuity.spec.ts engine/planner-next/anonymousPipelineWitness.spec.ts server/operationContinuity.spec.ts server/operationContinuitySql.spec.ts server/assistedConfigRefresh.spec.ts server/apiAuthorization.spec.ts script/demo/a2Preflight.spec.ts
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: node --import tsx script/demo/smokeA2Integration.ts work/operation-continuity --operation-continuity
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: operation-continuity
+          path: |
+            work/operation-continuity/integration.json
+            work/operation-continuity/operation-continuity.json
+            work/operation-continuity/continuity-template.png

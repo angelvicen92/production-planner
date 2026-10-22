@@ -7,6 +7,7 @@ export function mapTaskTemplatePatch(patch: UpdateTaskTemplateInput): Record<str
       safe.participant_margin_before_minutes = patch.participantMarginBeforeMinutes;
     if (patch.participantMarginAfterMinutes === null || typeof patch.participantMarginAfterMinutes === "number")
       safe.participant_margin_after_minutes = patch.participantMarginAfterMinutes;
+    if (Object.prototype.hasOwnProperty.call(patch, "continuityGroupId")) safe.continuity_group_id = patch.continuityGroupId;
     if (typeof patch.name === "string") safe.name = patch.name;
 
     if (typeof patch.requiresAuxiliar === "boolean")
@@ -143,6 +144,7 @@ export function mapTaskTemplateRow(data: any): TaskTemplate {
     return {
       id: data.id,
       revision: data.revision,
+      continuityGroupId: data.continuity_group_id ?? null,
       name: data.name,
       defaultDuration: data.default_duration ?? null,
       defaultCameras: data.default_cameras ?? 0,

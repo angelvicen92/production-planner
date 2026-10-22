@@ -185,7 +185,7 @@ describe("anonymous structural pipeline witness",()=>{
     assert.deepEqual(diagnostic.anchoredOperationIntervals.map(x=>[x.start,x.end]),[[185,230]]);
   });
 
-  it("adds the exact ARRIVAL release frontier when reduced boundaries skip the first joint opening",()=>{
+  it("uses the exact ARRIVAL release in the first entry geometry",()=>{
     const p=problem();
     p.tasks.find(task=>task.id==="style0")!.availability=[{start:0,end:30}];
     p.tasks.find(task=>task.id==="in0")!.availability=[{start:0,end:20}];
@@ -193,8 +193,8 @@ describe("anonymous structural pipeline witness",()=>{
     let diagnostic:Parameters<NonNullable<Parameters<typeof buildAnonymousPipelineWitness>[2]>>[0]|undefined;
     const witness=buildAnonymousPipelineWitness(p,{pattern:["A"],slots:[120]},value=>{diagnostic=value;});
     assert.equal(witness.status,"FEASIBLE",witness.reason);
-    assert.deepEqual(diagnostic?.entryCandidateStartsConsidered.slice(0,2),[0,15]);
-    assert.deepEqual(diagnostic?.entryCandidatesRejectedByArrival,[0]);
+    assert.deepEqual(diagnostic?.entryCandidateStartsConsidered,[0]);
+    assert.deepEqual(diagnostic?.entryCandidatesRejectedByArrival,[]);
     assert.equal(diagnostic?.selectedEntryBlockStart,15);
     assert.ok(witness.inGroups.every(group=>group.end+5<=witness.stylingSpots.find(spot=>
       witness.assignments.some(item=>item.inGroupId===group.id&&item.stylingSpotId===spot.id))!.start));

@@ -1,3 +1,4 @@
+import { participantGapMinutes } from "./participantTransition";
 import { createHash } from "node:crypto";
 import type { ParticipantMealObligation, ParticipantTask, PlannerNextProblem, ScheduledTask, Task, Window } from "./contracts";
 import { generateMainFlowPatterns, proveMainFeederArchitectureImpossible, createMainFutureDependencyEvidence, recordMainFutureDependencyCertificate, type MainFutureDependencyEvidence, type MainFeederArchitecture } from "./mainFlowPatterns";
@@ -647,6 +648,10 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
   if(layers.some(x=>x.styling.spaceId!==styleSpace||x.styling.duration!==layers[0]!.styling.duration))
     return rejected("INCONCLUSIVE","HETEROGENEOUS_STYLING_GEOMETRY");
   const duration=layers[0]!.styling.duration;
+  const entryGroups=(problem.operationContinuityGroups??[]).filter(group=>group.taskIds.some(id=>layers.some(layer=>layer.styling.id===id)));
+  const entryContinuityRequired=problem.spaces.find(space=>space.id===styleSpace)?.secondaryContinuity==="REQUIRED"
+    ||entryGroups.some(group=>group.policy==="REQUIRED");
+  const entryContinuityPreferred=entryGroups.some(group=>group.policy==="PREFERRED");
   const styleWindows=orderedWindows(problem.spaces.find(s=>s.id===styleSpace)?.availability,problem.day);
   const stylingDomains=layers.map(layer=>exactTaskStartDomain(problem,layer.styling,[]));
   const arrivalDomains=layers.map(layer=>exactTaskStartDomain(problem,layer.arrival,[]));
@@ -671,7 +676,7 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
         interval.end+layers[layerIndex]!.arrival.duration+problem.participantTransitionMinutes-ordinal*duration]))),
     ...feederSpots.flatMap(spot=>[spot.start-duration,spot.end]),
     ...anchoredOperationSpots.flatMap(spot=>[spot.start-duration,spot.end])])
-    .filter(start=>styleWindows.some(window=>window.start<=start&&start+layers.length*duration<=window.end)))]
+    .filter(start=>styleWindows.some(window=>window.start<=start&&start+(entryContinuityRequired?layers.length:1)*duration<=window.end)))]
     .sort((a,b)=>a-b);
   stylingCandidateStartBoundaryCount=styleStarts.length;
   onStylingStarts?.(styleStarts);
@@ -708,10 +713,35 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
   let styleOwner=new Map<number,Layer & {position:number}>();
   let arrival:ReturnType<typeof assessCoreArrivalTransportFeasibility>|null=null;
   let matchingFound=false;
-  for(const start of styleStarts){
+  // REQUIRED retains its serial block. OFF constructs release-aware intervals;
+  // PREFERRED first tries the compact geometry, then the same legal intervals.
+  // This changes the existing geometric representation, without another solver.
+  const geometries=entryContinuityRequired?["COMPACT" as const]:entryContinuityPreferred?["COMPACT" as const,"RELEASED" as const]:["RELEASED" as const,"COMPACT" as const];
+  entryGeometry: for(const geometry of geometries) for(const start of styleStarts){
     if(excludedStylingStarts.has(start))continue;
     entryCandidateStartsConsidered.push(start);
-    stylingSpots=layers.map((_,i)=>({id:`styling:${i}`,start:start+i*duration,end:start+(i+1)*duration}));
+    if(geometry==="COMPACT") stylingSpots=layers.map((_,i)=>({id:`styling:${i}`,start:start+i*duration,end:start+(i+1)*duration}));
+    else {
+      stylingSpots=[];
+      const remaining=new Set(pressure.map(layer=>layer.tokenId));
+      let cursor=start;
+      while(remaining.size){
+        const candidates=pressure.filter(layer=>remaining.has(layer.tokenId)).flatMap(layer=>{
+          const feeder=feederSpots.find(spot=>spot.tokenId===layer.tokenId)!,main=mainSpots[layer.position]!;
+          const operation=anchoredOperations.get(layer.tokenId);
+          const placed=[{...layer.feeder,start:feeder.start,end:feeder.end},...(operation?.tasks??[{...layer.main,start:main.start,end:main.end}])];
+          const domain=exactTaskStartDomain(problem,layer.styling,placed);
+          const arrivalDomain=arrivalDomains[layers.findIndex(item=>item.tokenId===layer.tokenId)]!;
+          const release=(arrivalDomain.intervals[0]?.start??Infinity)+layer.arrival.duration+participantGapMinutes(problem,layer.arrival,layer.styling);
+          const at=domain.intervals.map(interval=>Math.max(interval.start,cursor,release)).find(at=>domain.intervals.some(interval=>interval.start<=at&&at<=interval.end));
+          return at===undefined?[]:[{layer,at}];
+        }).sort((a,b)=>a.at-b.at||pressure.indexOf(a.layer)-pressure.indexOf(b.layer));
+        const chosen=candidates[0];if(!chosen)break;
+        stylingSpots.push({id:`styling:${stylingSpots.length}`,start:chosen.at,end:chosen.at+duration});
+        cursor=chosen.at+duration;remaining.delete(chosen.layer.tokenId);
+      }
+      if(stylingSpots.length!==layers.length)continue;
+    }
     styleOwner=new Map();
     const augment=(x:Layer&{position:number},seen:Set<number>):boolean=>{
       const vocal=feederSpots.find(s=>s.tokenId===x.tokenId)!,main=mainSpots[x.position]!;
@@ -740,7 +770,7 @@ function buildPipelineWitness(problem: Readonly<PlannerNextProblem>, architectur
     arrivalClassification=candidate.evidence.classification;arrivalContiguousStatesExplored+=candidate.evidence.contiguousStatesExplored;
     arrivalMembershipFallbackEntered||=candidate.evidence.membershipFallbackEntered;
     if(candidate.status!=="FEASIBLE"||!candidate.scheduled){entryCandidatesRejectedByArrival.push(start);continue;}
-    arrival=candidate;selectedEntryBlockStart=start;selectedEntryBlockEnd=start+layers.length*duration;break;
+    arrival=candidate;selectedEntryBlockStart=stylingSpots[0]!.start;selectedEntryBlockEnd=stylingSpots.at(-1)!.end;break entryGeometry;
   }
   if(!arrival)return rejected("INCONCLUSIVE",
     matchingFound?"JOINT_ARRIVAL_GEOMETRY":"JOINT_STYLING_FEEDER_MATCHING");
@@ -826,7 +856,7 @@ export function* fixedSupportingPipelineGeometryFrontier(problem:Readonly<Planne
   const selected=Math.min(...witness.stylingSpots.map(spot=>spot.start));
   yield {witness,scheduledTasks,diagnostic:diagnostic!};
   const duration=witness.stylingSpots[0]!.end-witness.stylingSpots[0]!.start;
-  for(const start of starts){if(start===selected)continue;
+  for(const start of starts){if(start===selected&&witness.stylingSpots.every((spot,index)=>spot.start===selected+index*duration))continue;
     const stylingSpots=witness.stylingSpots.map((spot,index)=>({...spot,start:start+index*duration,end:start+(index+1)*duration}));
     const payload={...witness,stylingSpots,fingerprint:undefined};
     yield {witness:{...witness,stylingSpots,fingerprint:stable(payload)},scheduledTasks,diagnostic:diagnostic!};

@@ -160,6 +160,7 @@ test("planner-next remains isolated from legacy and production", () => {
     "server/dayConfigurationService.ts",
     "server/effectiveConfigurationView.ts",
     "server/roundPreparation.spec.ts",
+    "server/operationContinuity.spec.ts",
   ]);
   // Historical server-side evidence runners are diagnostics, not production
   // entry points. Keep their existing boundary explicit; new Planner Next probes

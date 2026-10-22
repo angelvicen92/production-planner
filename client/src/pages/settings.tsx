@@ -1,3 +1,4 @@
+import { ContinuityGroupPicker } from "@/components/operation-continuity-editor";
 import { useSettingsSection } from "@/hooks/use-settings-section";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { Layout } from "@/components/layout";
@@ -2625,6 +2626,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
       // Capture versions at editor opening, never from a later cache refresh.
       expectedTemplates: (catalog ?? []).map((row: any) => ({ id: row.id, revision: row.revision })),
       id: Number(tpl.id),
+      continuityGroupId:tpl.continuityGroupId??null,
       name: String(tpl.name ?? ""),
       abbrev: String(tpl.abbrev ?? ""),
       defaultDuration: Number(
@@ -2933,6 +2935,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
           ...(editData.abbrev !== editData.initial.abbrev ? { abbrev: String(editData.abbrev ?? "").trim() || null } : {}),
           defaultDuration: Number(editData.defaultDuration ?? 30),
           defaultCameras: Number(editData.defaultCameras ?? 0),
+          ...(changed("continuityGroupId")?{continuityGroupId:editData.continuityGroupId}:{}),
           participantMarginBeforeMinutes: editData.participantMarginBeforeMinutes,
           participantMarginAfterMinutes: editData.participantMarginAfterMinutes,
           autoCreateOnContestantCreate: Boolean(
@@ -3045,6 +3048,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                 <DialogTitle>Create Template</DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
+                <ContinuityGroupPicker value={formData.continuityGroupId??null} onChange={continuityGroupId=>setFormData({...formData,continuityGroupId})} disabled={!canEditDependencies}/>
                 <Input
                   placeholder="Name"
                   value={formData.name}
@@ -3147,6 +3151,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
           const dependents = dependentsByTemplateId.get(Number(tpl?.id)) ?? [];
           return (
             <Card key={tpl.id}>
+              {isEditing ? <ContinuityGroupPicker value={editData.continuityGroupId??null} onChange={continuityGroupId=>setEditData({...editData,continuityGroupId})} disabled={!canEditDependencies||isSavingEdit}/> : null}
               <CardHeader className="py-2 px-3 sm:px-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1 flex items-stretch gap-2">

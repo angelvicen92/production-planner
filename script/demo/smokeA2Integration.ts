@@ -42,6 +42,7 @@ if(process.argv.includes('--app')){
  const templateAuthorization=process.argv.includes('--template-authorization');
  const settingsSections=process.argv.includes('--settings-sections');
  const templateCreation=process.argv.includes('--template-creation');
+ const operationContinuity=process.argv.includes("--operation-continuity");
  const atomicTemplate=process.argv.includes('--atomic-template');
  const historicalTopology=process.argv.includes('--historical-topology');
  assert.ok(!atomicTemplate||historicalTopology,'atomic template rehearsal requires protected historical rows');
@@ -100,6 +101,7 @@ if(process.argv.includes('--app')){
  if(bulkExecutionReset)runtimeFiles.push('script/demo/smokeBulkExecutionReset.ts','server/bulkExecutionReset.ts','server/apiAuthorization.ts','shared/routes.ts','supabase/migrations/101_admin_bulk_execution_reset.sql');
  if(restrictedDataApi)runtimeFiles.push('script/demo/dataApiCatalog.ts','script/demo/dataApiGrantsGate.ts','script/demo/dataApiCallSheet.ts','script/demo/fixtures/data-api-privileges.json','supabase/migrations/100_data_api_explicit_grants.sql');
  if(atomicTemplate)runtimeFiles.push('script/demo/smokeAtomicTaskTemplate.ts','server/atomicTaskTemplate.ts','server/taskTemplateMapping.ts','shared/routes.ts','shared/schema.ts','client/src/hooks/use-tasks.ts','client/src/pages/settings.tsx','supabase/migrations/103_atomic_task_template_inverse.sql');
+ if(operationContinuity)runtimeFiles.push('script/demo/smokeOperationContinuityJourney.ts','shared/operationContinuity.ts','server/operationContinuity.ts','server/operationContinuityCatalog.ts','server/dayConfigurationService.ts','server/taskTemplateSnapshot.ts','server/assistedConfigRefresh.ts','client/src/components/operation-continuity-editor.tsx','supabase/migrations/104_operation_continuity.sql');
  const hashes=()=>Object.fromEntries(runtimeFiles.map(file=>[file,createHash('sha256').update(readFileSync(file)).digest('hex')]));
  if(warRoom)runtimeFiles.push('script/demo/smokeWarRoomJourney.ts','server/incidents.ts','server/incidentErrors.ts','shared/incidents.ts','client/src/pages/my-day.tsx','client/src/pages/war-room.tsx','client/src/hooks/use-war-room.ts','client/src/hooks/use-plan-realtime.ts','client/src/lib/war-room-store.ts','client/src/pages/dashboard.tsx','client/src/pages/call-sheet.tsx','server/apiAuthorization.ts','shared/routes.ts','shared/schema.ts','supabase/migrations/094_operational_incidents.sql');
  runtimeFiles.push('client/src/hooks/use-execution-context.ts','client/src/hooks/use-tasks.ts','client/src/hooks/use-production-clock.ts','shared/execution.ts','script/demo/smokeLiveExecutionJourney.ts');
@@ -272,7 +274,11 @@ if(process.argv.includes('--app')){
    pass('native complete object/role matrix, invalid Auth, same-JWT role change/revocation and admin user cleanup');
   }
   const {storage}=await import('../../server/storage');const {buildEngineInput}=await import('../../engine/buildInput');const {adaptEngineInputToPlannerNextProblem}=await import('../../engine/planner-next/integration/engineInputAdapter');
-  if(atomicTemplate){
+  if(operationContinuity){
+   const {runOperationContinuityJourney}=await import('./smokeOperationContinuityJourney');
+   report.requestedStages=0;
+   report.operationContinuity=await runOperationContinuityJourney({appUrl,db,users,directory,planId:dataset.input.planId,storage,pass});
+  }else if(atomicTemplate){
    const {runAtomicTaskTemplate}=await import('./smokeAtomicTaskTemplate');
    report.requestedStages=0;
    report.atomicTemplate=await runAtomicTaskTemplate({appUrl,url,anon,service,db,users,directory,pass,transport});

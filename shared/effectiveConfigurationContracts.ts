@@ -24,6 +24,7 @@ export interface EffectiveConfigurationView {
   readiness:{status:ReadinessStatus;issues:readonly ReadinessIssue[]};
   mainFlowPreference?:{value:MainFlowPreference;baseline:MainFlowPreference;defaultGeneral:MainFlowPreference;
     available:boolean;mealApplicable:boolean;zeroBeforeRepresentable:boolean;counts:number[]};
+  operationContinuity?: { revisionId:number|null; groups: ReturnType<typeof import("../server/operationContinuity").operationContinuityValues> };
   roundPreparations?: { revisionId: number | null; timeGridMinutes: number; lanes: RoundPreparationValue[] };
   productCoverage:Record<CapabilityStatus,number>;
 }
