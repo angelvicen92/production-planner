@@ -142,7 +142,9 @@
   "ci": {
     "authority": "Live rollup for the current head of PR #1183; readiness requires green checks. CI URLs and final readiness are recorded in the PR description.",
     "url": "https://github.com/angelvicen92/production-planner/pull/1183/checks",
-    "initialAttempt": "v2/ci-initial.json"
+    "initialAttempt": "v2/ci-initial.json",
+    "hostedNativeProof": "v2/ci-verifier-bootstrap.json",
+    "offlineVerifierWithoutEnvironment": "PASS; loopback-only bootstrap and fetch prohibited"
   },
   "limitations": [
     "Physical auxiliary operations with participants, exclusive capacity-one rooms and EXACT_CONSTRUCTIVE.",

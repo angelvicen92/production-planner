@@ -9,7 +9,7 @@
     "client/src/components/effective-configuration.tsx": "f715b3c42081884e2a6878dcbb04593840237f46da99b06f8b62f1d9d6824eec",
     "client/src/components/new-day-planner-editor.tsx": "5faebbad751a42e3a471c07225562b24ab3fdcbfb09574a24148b3c1fe6ea2e3",
     "client/src/components/setup-families-editor.tsx": "55fe3977a763b1428715be620f14f799a1e1d769d808d64e07873b14aac42622",
-    "docs/evidence/p0-u00e/v2/verify-native.ts": "1557789cbf033df8bb5375f1b0a59915ea4a92c2af6a322217f79686ec5278a2",
+    "docs/evidence/p0-u00e/v2/verify-native.ts": "fbd82b7e6460b74df1488b6851c62bc3bce957e786ecf2c1b574fb942736598f",
     "engine/planner-next/assistedPlanning.ts": "c7df3b45d037f814d3e83c3498106db03d1c472348455efb13f0aa67509511f0",
     "engine/planner-next/contracts.ts": "dff2eb2df38c5636307ae076559914011a8040c10e11e05778d702a7b2d89853",
     "engine/planner-next/exactItinerantPlan.ts": "59ecf4ab8991ebc8c808bda7a461f4f33c5629bc85d3bd1df3c820753cded111",
@@ -28,5 +28,11 @@
     "script/demo/tsconfig.new-day.json": "5f3c4cf180fed15269c0b4f601ea3100bff641ce2818e0fcf57072ef0429820b",
     "server/newDayPlannerConfiguration.ts": "d9761f7a6c93cd31c75a4e3a25fa61bc3eeaf157e09ab36a0df3a77300b06e3e",
     "shared/newDayPlannerConfiguration.ts": "b44c9f3c3677b94071ea3875233e792bf731e5e50df0f8ec7e65f05cab40f2f7"
+  },
+  "verifierOnlyFollowup": {
+    "parentCommit": "ab6047406169ccacb57a10e08a1a2b97c3198ab2",
+    "file": "docs/evidence/p0-u00e/v2/verify-native.ts",
+    "reason": "Bootstrap pure snapshot materialization without credentials, force loopback and prohibit fetch. The other 23 source hashes are unchanged.",
+    "validation": "PASS with three Supabase variables unset, on local and genuine hosted native artifacts."
   }
 }

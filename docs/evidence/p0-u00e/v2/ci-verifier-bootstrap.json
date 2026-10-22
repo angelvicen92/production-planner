@@ -1,0 +1,16 @@
+{
+  "producerHead": "ab6047406169ccacb57a10e08a1a2b97c3198ab2",
+  "job": "https://github.com/angelvicen92/production-planner/actions/runs/39869092923/job/120138681565",
+  "artifact": "https://github.com/angelvicen92/production-planner/actions/runs/39869092923/artifacts/12464994637",
+  "zipSha256": "0954eb1f2d7601053fbdd565cd9adc235cd21e095c87aaf0b43c96aeab466f87",
+  "allFourNativeJourneys": "PASS",
+  "failure": "Only the following offline verifier import failed because server/supabase.ts requires variables at module bootstrap.",
+  "correction": "Dynamic import after loopback-only placeholders with fetch prohibited; no credentials or live database needed.",
+  "verificationWithSupabaseVariablesUnset": "PASS",
+  "comparisons": [
+    "ci-hosted-comparison.json",
+    "ci-hosted-u00a-b-comparison.json",
+    "ci-hosted-policy-comparison.json"
+  ],
+  "productOrHarnessChanges": false
+}

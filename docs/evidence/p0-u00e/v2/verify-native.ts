@@ -5,8 +5,14 @@ import {validatePlan} from '../../../../engine/planner-next/validate';
 import {assessSpacePolicies} from '../../../../engine/planner-next/operationContinuity';
 import {createPlanningScope,buildAssistedProblem,executeAssistedPlanning} from '../../../../engine/planner-next/assistedPlanning';
 import {createSetupPreparation} from '../../../../engine/planner-next/setupPreparation';
-import {materializeAssistedSnapshotOccupations} from '../../../../server/assistedProposalService';
 import type {ScheduledTask,ScheduledSetupPreparation} from '../../../../engine/planner-next/contracts';
+// Snapshot materialization is pure, but its service imports the server clients.
+// Keep this artifact verifier independent of credentials and prohibit network IO.
+process.env.SUPABASE_URL='http://127.0.0.1:1';
+process.env.SUPABASE_SERVICE_ROLE_KEY='offline-evidence-only';
+process.env.SUPABASE_ANON_KEY='offline-evidence-only';
+globalThis.fetch=async()=>{throw new Error('Network IO is forbidden in the offline U00e verifier');};
+const {materializeAssistedSnapshotOccupations}=await import('../../../../server/assistedProposalService');
 const [directory,destination]=process.argv.slice(2);
 const read=(name:string)=>JSON.parse(readFileSync(resolve(directory,name),'utf8'));
 const a=read('setup-preflight.json'),b=read('explicit-preflight.json');assert.equal(a.status,'SUPPORTED');assert.equal(b.status,'SUPPORTED');
