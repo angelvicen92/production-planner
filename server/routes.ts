@@ -3256,6 +3256,12 @@ function mapDeleteError(err: any, fallback: string) {
     });
   });
   app.post("/api/plans/:id/assisted/session", async (req, res) => assistedAction(res, () => assistedPlanning.start(assistedPlanId(req.params.id), (req as any).user.id)));
+  app.get("/api/plans/:id/assisted/bootstrap-additions", async(req,res)=>assistedAction(res,()=>assistedPlanning.previewAdditions(assistedPlanId(req.params.id))));
+  app.post("/api/plans/:id/assisted/bootstrap-additions", async(req,res)=>assistedAction(res,()=>{
+    const body=assistedExpected.extend({expectedSessionId:z.number().int().positive(),expectedConfigRevisionId:z.number().int().positive(),
+      sourceToken:z.string().regex(/^[0-9a-f]{64}$/),confirmation:z.literal("INCORPORATE_NEW_TASKS")}).parse(req.body);
+    return assistedPlanning.incorporateAdditions(assistedPlanId(req.params.id),(req as any).user.id,{...body,allowed:true,reason:null,addedTaskIds:[]});
+  }));
   app.patch("/api/plans/:id/assisted/draft", async (req, res) => assistedAction(res, () => { const body = assistedExpected.extend({ changes: z.array(assistedChanges).min(1) }).parse(req.body); return assistedPlanning.patchDraft(assistedPlanId(req.params.id), body.expectedDraftFingerprint, body.expectedBaseStageId, body.changes); }));
   app.post("/api/plans/:id/assisted/draft/reset", async (req, res) => assistedAction(res, () => { const body = assistedExpected.parse(req.body); return assistedPlanning.resetDraft(assistedPlanId(req.params.id), body.expectedDraftFingerprint, body.expectedBaseStageId); }));
   const planningBlockOperation = z.discriminatedUnion("kind", [
@@ -3291,6 +3297,7 @@ function mapDeleteError(err: any, fallback: string) {
     catch(error){ if(error instanceof AssistedProposalError)return res.status(error.status).json({code:error.code,message:error.code}); throw error; }
   });
   app.get("/api/plans/:id/assisted/proposals/:runId", async(req,res)=>assistedAction(res,()=>assistedProposals.get(assistedPlanId(req.params.id),assistedPlanId(req.params.runId))));
+  app.post("/api/plans/:id/assisted/proposals/:runId/discard", async(req,res)=>assistedAction(res,()=>{const body=assistedExpected.parse(req.body);return assistedProposals.discard(assistedPlanId(req.params.id),assistedPlanId(req.params.runId),body.expectedDraftFingerprint,body.expectedBaseStageId);}));
   app.post("/api/plans/:id/assisted/proposals/:runId/apply", async(req,res)=>assistedAction(res,()=>{const body=assistedProposalApplySchema.parse(req.body);return assistedProposals.apply(assistedPlanId(req.params.id),assistedPlanId(req.params.runId),body.expectedDraftFingerprint,body.expectedBaseStageId);}));
   app.get("/api/plans/:id/assisted/config-refresh",async(req,res)=>assistedAction(res,()=>assistedConfigRefresh.preview(assistedPlanId(req.params.id))));
   app.post("/api/plans/:id/assisted/config-refresh",async(req,res)=>assistedAction(res,()=>{const body=assistedConfigRefreshApplySchema.parse(req.body);return assistedConfigRefresh.apply(assistedPlanId(req.params.id),(req as any).user.id,body.expectedConfigRevisionId,body.selectedChangeKeys);}));

@@ -1,3 +1,4 @@
+import {incorporateBootstrapAdditions} from "./smokeBootstrapAdditions";
 import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import type pg from "pg";
@@ -86,11 +87,13 @@ export async function runNewDayJourney({appUrl,url,anon,service,users,db,directo
     assert.deepEqual(ready.itinerantComposition.units,[]);
     await page.goto(`${appUrl}/plans/${planId}?tab=configuration`);await page.getByText("Planner Next: READY",{exact:true}).waitFor();
     await page.screenshot({path:`${directory}/${label}-ready.png`,fullPage:true});
-    const bootstrap=page.waitForResponse(response=>new URL(response.url()).pathname===`/api/plans/${planId}/assisted/session`&&response.request().method()==="POST");
-    await page.goto(`${appUrl}/plans/${planId}?tab=planning`);assert.equal((await bootstrap).status(),200);
+    const existingSession=await request(`/api/plans/${planId}/assisted`);
+    const bootstrap=existingSession.status===404?page.waitForResponse(response=>new URL(response.url()).pathname===`/api/plans/${planId}/assisted/session`&&response.request().method()==="POST"):null;
+    await page.goto(`${appUrl}/plans/${planId}?tab=planning`);if(bootstrap)assert.equal((await bootstrap).status(),200);
     const path=`/api/plans/${planId}/assisted`;
     const initial=await api(path);assert.equal(initial.activeStage.ordinal,0);assert.equal(initial.draft.tasks.length,input.tasks.length);
     const scope=page.getByTestId("section-assisted-scope");
+    await scope.getByRole("checkbox").first().waitFor();
     for(const checkbox of await scope.getByRole("checkbox").all())await checkbox.check();
     const pending=page.waitForResponse(response=>new URL(response.url()).pathname===path+"/proposals"&&response.request().method()==="POST");
     const started=performance.now();await page.getByRole("button",{name:"Generar propuesta",exact:true}).click();const generated=await pending;
@@ -168,19 +171,28 @@ export async function runNewDayJourney({appUrl,url,anon,service,users,db,directo
     const prior=await api(`/api/plans/${changed}/assisted/session`,"POST",{});
     await addParticipant(changed,"Alta posterior","09:30","17:00","Coach segunda producción");
     const changedInput=await captureInput(changed,"added-after-s0");assert.equal(changedInput.adapter.status,"SUPPORTED");
-    const submitted=await api(`/api/plans/${changed}/assisted/proposals`,"POST",{selector:{kind:"TASK_IDS",taskIds:changedInput.input.tasks.map(task=>task.id)},includePrerequisites:true,
+    const submitted=await request(`/api/plans/${changed}/assisted/proposals`,"POST",{selector:{kind:"TASK_IDS",taskIds:changedInput.input.tasks.map(task=>task.id)},includePrerequisites:true,
       expectedDraftFingerprint:prior.draftFingerprint,expectedBaseStageId:prior.draftBaseStageId});
-    let staleRun:any;
-    for(let attempt=0;attempt<40;attempt++){
-      staleRun=await api(`/api/plans/${changed}/assisted/proposals/${submitted.runId}`);
-      if(staleRun.status!=="running")break;await new Promise(resolve=>setTimeout(resolve,100));
-    }
-    assert.equal(staleRun.status,"error");assert.match(staleRun.message,/STALE_CONFIG_REVISION/);
+    assert.equal(submitted.status,409);assert.equal(submitted.body.code,"STALE_CONFIG_REVISION");
+    const staleRun={status:"rejected_before_run",message:submitted.body.code};
     const afterAddition=await api(`/api/plans/${changed}/assisted`);
     assert.deepEqual(afterAddition.activeStage,prior.activeStage);assert.deepEqual(afterAddition.draft,prior.draft);
     report.addition={planId:changed,effectiveTasks:changedInput.input.tasks.length,stageTasks:prior.draft.tasks.length,
       reasonCode:staleRun.message,protectedStageUnchanged:true};
     writeFileSync(`${directory}/added-after-s0-state.json`,JSON.stringify({prior,afterAddition,run:staleRun},null,2));
+    if(process.argv.includes("--post-bootstrap-additions")){
+      const noChanges=await api(`/api/plans/${first}/assisted/bootstrap-additions`);assert.equal(noChanges.reason,"REBOOTSTRAP_ACCEPTED_STAGE");
+      await incorporateBootstrapAdditions({page,appUrl,planId:changed,db,api,request,directory,label:"main-additions",pass:check,negatives:true});
+      report.additions=await planToStage(changed,"main-additions");
+      assert.equal(report.additions.completed,6);
+      const concurrentDay=await createDay("2026-11-28");
+      await addParticipant(concurrentDay,"Concurrencia inicial","09:00","17:00","Coach de esta producción");
+      const noAdditions=await api(`/api/plans/${concurrentDay}/assisted/session`,"POST",{});
+      assert.equal((await api(`/api/plans/${concurrentDay}/assisted/bootstrap-additions`)).reason,"REBOOTSTRAP_NO_ADDITIONS");
+      await addParticipant(concurrentDay,"Concurrencia posterior","09:30","17:00","Coach segunda producción");
+      await incorporateBootstrapAdditions({page,appUrl,planId:concurrentDay,db,api,request,directory,label:"concurrent",pass:check,concurrent:true});
+
+    }
     for(const task of changedInput.input.tasks.filter(task=>task.plannerNextKind==="main"))await api(`/api/daily-tasks/${task.id}`,"DELETE");
     const withoutMain=await captureInput(changed,"without-main");assert.equal(withoutMain.adapter.status,"UNSUPPORTED");
     assert.equal((await api(`/api/plans/${changed}/effective-configuration`)).readiness.status,"UNSUPPORTED");

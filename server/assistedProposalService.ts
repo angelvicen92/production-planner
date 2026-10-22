@@ -232,7 +232,7 @@ export class AssistedProposalService {
     try { resolution=resolveAssistedScope(input,adapter,request.selector); if(request.includePrerequisites) resolution=expandVisiblePrerequisites(input,resolution,adapter); }
     catch(error) { if(error instanceof ScopeResolutionError) throw new AssistedProposalError(error.code,422); throw error; }
     const {data,error}=await this.runs.create({plan_id:planId,status:"running",engine:"planner-next",execution_kind:"ASSISTED_SCOPE",assisted_session_id:session.id,base_stage_id:base.id,config_revision_id:session.currentConfigRevisionId,scope_json:{selector:request.selector,metadata:resolution.scope.metadata},scope_task_ids_json:resolution.productTaskIds,include_prerequisites:request.includePrerequisites,source_draft_fingerprint:session.draftFingerprint});
-    if(error) throw error; const runId=Number(data!.id);
+    if(error) mapDbError(error); const runId=Number(data!.id);
     this.defer(()=>void this.run(planId,runId).catch(async failure=>{await this.runs.fail(planId,runId,assistedProposalFailureMessage(failure));}));
     return {runId};
   }
@@ -373,5 +373,10 @@ export class AssistedProposalService {
     const {error}=await this.runs.finish(planId,Number(run.id),result);if(error)throw error;return result;
   }
   async get(planId:number,runId:number){const {data,error}=await this.runs.find(planId,runId);if(error)throw error;if(!data)throw new AssistedProposalError("RUN_NOT_FOUND",404);return data;}
+  async discard(planId:number,runId:number,expectedDraftFingerprint:string,expectedBaseStageId:number) {
+    const {error}=await supabaseAdmin.rpc("assisted_discard_pending_proposal",{p_plan_id:planId,p_run_id:runId,p_expected_base:expectedBaseStageId,p_expected_fingerprint:expectedDraftFingerprint});
+    if(error)mapDbError(error);
+    return {discarded:true};
+  }
   async apply(planId:number,runId:number,expectedDraftFingerprint:string,expectedBaseStageId:number){const {error}=await this.runs.apply({p_plan_id:planId,p_run_id:runId,p_expected_fingerprint:expectedDraftFingerprint,p_expected_base:expectedBaseStageId});if(error)mapDbError(error);return this.get(planId,runId);}
 }
