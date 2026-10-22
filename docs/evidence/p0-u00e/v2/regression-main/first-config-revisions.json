@@ -1,0 +1,582 @@
+[
+  {
+    "id": "2",
+    "fingerprint": "8be33918960c49c65a5bca88e194d69f491c0ff4533a7a4b8b1367ca075eb703",
+    "replay_snapshot_json": {
+      "authorities": {
+        "plan_workday": [
+          {
+            "meal": {
+              "end": "14:00",
+              "start": "13:00"
+            },
+            "workDay": {
+              "end": "18:00",
+              "start": "09:00"
+            },
+            "mealMode": "global_hard_break",
+            "itinerantComposition": {
+              "units": [],
+              "contractVersion": 1
+            },
+            "plannerNextAuthorities": {
+              "plannerNext": {
+                "mainFlow": {
+                  "spaceId": 1,
+                  "continuity": "REQUIRED",
+                  "preferredEnd": "12:00",
+                  "maxBlocksByKey": 1,
+                  "minTasksPerBlock": 1
+                },
+                "searchBudget": {
+                  "bestK": 3,
+                  "maxPatterns": 20,
+                  "maxBacktracks": 50,
+                  "maxBranchExpansions": 10000
+                },
+                "searchPolicy": "EXACT_CONSTRUCTIVE",
+                "timeGridMinutes": 5,
+                "resourceTransitionMinutes": 0,
+                "participantTransitionMinutes": 5
+              },
+              "taskOperations": [],
+              "mealTaskTemplateId": null,
+              "itinerantTeamAvailability": []
+            },
+            "itinerantTeamAvailability": [],
+            "defaultParticipantTransitionMinutes": 5
+          }
+        ],
+        "resource_bundles": [],
+        "spatial_configuration": [
+          {
+            "kind": "space",
+            "name": "Escenario de entrevistas",
+            "zoneId": 1,
+            "spaceId": 1,
+            "groupingLevel": 0,
+            "parentSpaceId": null,
+            "priorityLevel": 1,
+            "availabilityEnd": null,
+            "groupingMinChain": 4,
+            "availabilityStart": null,
+            "groupingApplyToDescendants": false
+          },
+          {
+            "kind": "space",
+            "name": "Preparación de voz",
+            "zoneId": 1,
+            "spaceId": 2,
+            "groupingLevel": 0,
+            "parentSpaceId": null,
+            "priorityLevel": 1,
+            "availabilityEnd": null,
+            "groupingMinChain": 4,
+            "availabilityStart": null,
+            "groupingApplyToDescendants": false
+          },
+          {
+            "kind": "zone",
+            "name": "Nuevo estudio de producción",
+            "zoneId": 1,
+            "groupingLevel": 0,
+            "availabilityEnd": null,
+            "groupingMinChain": 4,
+            "mealEndPreferred": null,
+            "availabilityStart": null,
+            "maxTemplateChanges": 4,
+            "mealStartPreferred": null,
+            "spaceMealBreakMinutes": null
+          }
+        ],
+        "resource_configuration": [
+          {
+            "id": 2,
+            "name": "Coach de esta producción",
+            "typeId": 1,
+            "typeCode": "vocal_coach",
+            "typeName": "Vocal Coach",
+            "isAvailable": true,
+            "resourceItemId": 1,
+            "availabilityEnd": "18:00",
+            "availabilityStart": "09:00"
+          }
+        ],
+        "contestant_availability": [],
+        "resource_assignments_and_requirements": [
+          {
+            "kind": "components",
+            "value": {}
+          },
+          {
+            "kind": "spaceAssignments",
+            "value": {}
+          },
+          {
+            "kind": "spaceRequirements",
+            "value": {}
+          },
+          {
+            "kind": "zoneAssignments",
+            "value": {}
+          },
+          {
+            "kind": "zoneRequirements",
+            "value": {}
+          }
+        ]
+      },
+      "contractVersion": 1,
+      "optimizerSnapshot": {
+        "source": "INHERITED",
+        "transport": {
+          "vanCapacity": 0,
+          "groupingWeight": 0,
+          "arrivalMinGapMinutes": 0,
+          "arrivalGroupingTarget": 0,
+          "departureMinGapMinutes": 0,
+          "departureGroupingTarget": 0,
+          "arrivalPlanTemplateSnapshotId": null,
+          "departurePlanTemplateSnapshotId": null
+        },
+        "heuristics": {
+          "CONTESTANT_COMPACT": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "MAIN_ZONE_PRIORITY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "MAIN_ZONE_KEEP_BUSY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "CONTESTANT_TOTAL_SPAN": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "GROUP_BY_SPACE_ACTIVE": {
+            "basicLevel": 2,
+            "advancedValue": 0,
+            "effectiveWeight": 6
+          },
+          "MAIN_ZONE_FINISH_EARLY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "CONTESTANT_STAY_IN_ZONE": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "ARRIVAL_DEPARTURE_GROUPING": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "GROUP_BY_SPACE_TEMPLATE_MATCH": {
+            "basicLevel": 2,
+            "advancedValue": 0,
+            "effectiveWeight": 6
+          }
+        },
+        "mainZoneId": null,
+        "editingMode": "BASIC",
+        "contractVersion": 1,
+        "groupingZoneIds": [],
+        "nearHardBreaksMax": 0,
+        "configurationFingerprint": "4b770099c9e87063d68e2fbef0ad2fcce91e364d9e03b2fc8967ee74ca4a422f"
+      },
+      "taskTemplateSnapshots": [
+        {
+          "source": "inherited",
+          "setupId": null,
+          "templateName": "Preparación de voz para entrevista",
+          "defaultZoneId": 1,
+          "hasDependency": false,
+          "requiresCoach": true,
+          "defaultCameras": 0,
+          "defaultSpaceId": 2,
+          "contractVersion": 2,
+          "defaultDuration": 10,
+          "itinerantTeamId": null,
+          "requiresAuxiliar": false,
+          "sourceTemplateId": 1,
+          "exclusiveAuxiliar": false,
+          "requiresPresenter": false,
+          "sourceFingerprint": "1d7c37f1f7efcff3f26fbe8e3167b92a0192bc8468c592e5f71ddb52a1a4711b",
+          "plannerNextOperation": {
+            "kind": "vocal",
+            "contractVersion": 1
+          },
+          "resourceRequirements": null,
+          "dependencyTemplateIds": [],
+          "allowedItinerantTeamIds": [],
+          "itinerantTeamRequirement": "none",
+          "autoCreateOnContestantCreate": true,
+          "participantMarginAfterMinutes": 0,
+          "participantMarginBeforeMinutes": 0
+        },
+        {
+          "source": "inherited",
+          "setupId": null,
+          "templateName": "Entrevista individual",
+          "defaultZoneId": 1,
+          "hasDependency": true,
+          "requiresCoach": true,
+          "defaultCameras": 0,
+          "defaultSpaceId": 1,
+          "contractVersion": 2,
+          "defaultDuration": 10,
+          "itinerantTeamId": null,
+          "requiresAuxiliar": false,
+          "sourceTemplateId": 2,
+          "exclusiveAuxiliar": false,
+          "requiresPresenter": false,
+          "sourceFingerprint": "2732155db1b2cc41e8bdba8dd20c1eadb9f7db8b06ce9775a8972f5596ff046f",
+          "plannerNextOperation": {
+            "kind": "main",
+            "contractVersion": 1
+          },
+          "resourceRequirements": null,
+          "dependencyTemplateIds": [
+            1
+          ],
+          "allowedItinerantTeamIds": [],
+          "itinerantTeamRequirement": "none",
+          "autoCreateOnContestantCreate": true,
+          "participantMarginAfterMinutes": 0,
+          "participantMarginBeforeMinutes": 0
+        }
+      ]
+    }
+  },
+  {
+    "id": "3",
+    "fingerprint": "2d3b2f6ba1cbc746887a654697a310f085f0523b1759280d062a34c51d016a38",
+    "replay_snapshot_json": {
+      "authorities": {
+        "plan_workday": [
+          {
+            "meal": {
+              "end": "14:00",
+              "start": "13:00"
+            },
+            "workDay": {
+              "end": "18:00",
+              "start": "09:00"
+            },
+            "mealMode": "global_hard_break",
+            "itinerantComposition": {
+              "units": [],
+              "contractVersion": 1
+            },
+            "plannerNextAuthorities": {
+              "plannerNext": {
+                "mainFlow": {
+                  "spaceId": 1,
+                  "continuity": "REQUIRED",
+                  "preferredEnd": "12:00",
+                  "maxBlocksByKey": 1,
+                  "minTasksPerBlock": 1
+                },
+                "searchBudget": {
+                  "bestK": 3,
+                  "maxPatterns": 20,
+                  "maxBacktracks": 50,
+                  "maxBranchExpansions": 10000
+                },
+                "searchPolicy": "EXACT_CONSTRUCTIVE",
+                "timeGridMinutes": 5,
+                "resourceTransitionMinutes": 0,
+                "participantTransitionMinutes": 5
+              },
+              "taskOperations": [
+                {
+                  "taskId": 3,
+                  "itinerantTeamId": null,
+                  "operationalRole": "productive_task",
+                  "plannerNextKind": "vocal",
+                  "dependsOnTaskIds": [],
+                  "declaredResourceIds": [
+                    2
+                  ],
+                  "allowedItinerantTeamIds": [],
+                  "itinerantTeamRequirement": "none"
+                },
+                {
+                  "taskId": 4,
+                  "itinerantTeamId": null,
+                  "operationalRole": "productive_task",
+                  "plannerNextKind": "main",
+                  "dependsOnTaskIds": [
+                    3
+                  ],
+                  "declaredResourceIds": [
+                    2
+                  ],
+                  "allowedItinerantTeamIds": [],
+                  "itinerantTeamRequirement": "none"
+                },
+                {
+                  "taskId": 5,
+                  "itinerantTeamId": null,
+                  "operationalRole": "productive_task",
+                  "plannerNextKind": "vocal",
+                  "dependsOnTaskIds": [],
+                  "declaredResourceIds": [
+                    2
+                  ],
+                  "allowedItinerantTeamIds": [],
+                  "itinerantTeamRequirement": "none"
+                },
+                {
+                  "taskId": 6,
+                  "itinerantTeamId": null,
+                  "operationalRole": "productive_task",
+                  "plannerNextKind": "main",
+                  "dependsOnTaskIds": [
+                    5
+                  ],
+                  "declaredResourceIds": [
+                    2
+                  ],
+                  "allowedItinerantTeamIds": [],
+                  "itinerantTeamRequirement": "none"
+                }
+              ],
+              "mealTaskTemplateId": null,
+              "itinerantTeamAvailability": []
+            },
+            "itinerantTeamAvailability": [],
+            "defaultParticipantTransitionMinutes": 5
+          }
+        ],
+        "resource_bundles": [],
+        "spatial_configuration": [
+          {
+            "kind": "space",
+            "name": "Escenario de entrevistas",
+            "zoneId": 1,
+            "spaceId": 1,
+            "groupingLevel": 0,
+            "parentSpaceId": null,
+            "priorityLevel": 1,
+            "availabilityEnd": null,
+            "groupingMinChain": 4,
+            "availabilityStart": null,
+            "groupingApplyToDescendants": false
+          },
+          {
+            "kind": "space",
+            "name": "Preparación de voz",
+            "zoneId": 1,
+            "spaceId": 2,
+            "groupingLevel": 0,
+            "parentSpaceId": null,
+            "priorityLevel": 1,
+            "availabilityEnd": null,
+            "groupingMinChain": 4,
+            "availabilityStart": null,
+            "groupingApplyToDescendants": false
+          },
+          {
+            "kind": "zone",
+            "name": "Nuevo estudio de producción",
+            "zoneId": 1,
+            "groupingLevel": 0,
+            "availabilityEnd": null,
+            "groupingMinChain": 4,
+            "mealEndPreferred": null,
+            "availabilityStart": null,
+            "maxTemplateChanges": 4,
+            "mealStartPreferred": null,
+            "spaceMealBreakMinutes": null
+          }
+        ],
+        "resource_configuration": [
+          {
+            "id": 2,
+            "name": "Coach de esta producción",
+            "typeId": 1,
+            "typeCode": "vocal_coach",
+            "typeName": "Vocal Coach",
+            "isAvailable": true,
+            "resourceItemId": 1,
+            "availabilityEnd": "18:00",
+            "availabilityStart": "09:00"
+          }
+        ],
+        "contestant_availability": [
+          {
+            "end": "17:00",
+            "start": "09:00",
+            "contestantId": 2
+          },
+          {
+            "end": "16:30",
+            "start": "09:30",
+            "contestantId": 3
+          }
+        ],
+        "resource_assignments_and_requirements": [
+          {
+            "kind": "components",
+            "value": {}
+          },
+          {
+            "kind": "spaceAssignments",
+            "value": {}
+          },
+          {
+            "kind": "spaceRequirements",
+            "value": {}
+          },
+          {
+            "kind": "zoneAssignments",
+            "value": {}
+          },
+          {
+            "kind": "zoneRequirements",
+            "value": {}
+          }
+        ]
+      },
+      "contractVersion": 1,
+      "optimizerSnapshot": {
+        "source": "INHERITED",
+        "transport": {
+          "vanCapacity": 0,
+          "groupingWeight": 0,
+          "arrivalMinGapMinutes": 0,
+          "arrivalGroupingTarget": 0,
+          "departureMinGapMinutes": 0,
+          "departureGroupingTarget": 0,
+          "arrivalPlanTemplateSnapshotId": null,
+          "departurePlanTemplateSnapshotId": null
+        },
+        "heuristics": {
+          "CONTESTANT_COMPACT": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "MAIN_ZONE_PRIORITY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "MAIN_ZONE_KEEP_BUSY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "CONTESTANT_TOTAL_SPAN": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "GROUP_BY_SPACE_ACTIVE": {
+            "basicLevel": 2,
+            "advancedValue": 0,
+            "effectiveWeight": 6
+          },
+          "MAIN_ZONE_FINISH_EARLY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "CONTESTANT_STAY_IN_ZONE": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "ARRIVAL_DEPARTURE_GROUPING": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "GROUP_BY_SPACE_TEMPLATE_MATCH": {
+            "basicLevel": 2,
+            "advancedValue": 0,
+            "effectiveWeight": 6
+          }
+        },
+        "mainZoneId": null,
+        "editingMode": "BASIC",
+        "contractVersion": 1,
+        "groupingZoneIds": [],
+        "nearHardBreaksMax": 0,
+        "configurationFingerprint": "4b770099c9e87063d68e2fbef0ad2fcce91e364d9e03b2fc8967ee74ca4a422f"
+      },
+      "taskTemplateSnapshots": [
+        {
+          "source": "inherited",
+          "setupId": null,
+          "templateName": "Preparación de voz para entrevista",
+          "defaultZoneId": 1,
+          "hasDependency": false,
+          "requiresCoach": true,
+          "defaultCameras": 0,
+          "defaultSpaceId": 2,
+          "contractVersion": 2,
+          "defaultDuration": 10,
+          "itinerantTeamId": null,
+          "requiresAuxiliar": false,
+          "sourceTemplateId": 1,
+          "exclusiveAuxiliar": false,
+          "requiresPresenter": false,
+          "sourceFingerprint": "1d7c37f1f7efcff3f26fbe8e3167b92a0192bc8468c592e5f71ddb52a1a4711b",
+          "plannerNextOperation": {
+            "kind": "vocal",
+            "contractVersion": 1
+          },
+          "resourceRequirements": null,
+          "dependencyTemplateIds": [],
+          "allowedItinerantTeamIds": [],
+          "itinerantTeamRequirement": "none",
+          "autoCreateOnContestantCreate": true,
+          "participantMarginAfterMinutes": 0,
+          "participantMarginBeforeMinutes": 0
+        },
+        {
+          "source": "inherited",
+          "setupId": null,
+          "templateName": "Entrevista individual",
+          "defaultZoneId": 1,
+          "hasDependency": true,
+          "requiresCoach": true,
+          "defaultCameras": 0,
+          "defaultSpaceId": 1,
+          "contractVersion": 2,
+          "defaultDuration": 10,
+          "itinerantTeamId": null,
+          "requiresAuxiliar": false,
+          "sourceTemplateId": 2,
+          "exclusiveAuxiliar": false,
+          "requiresPresenter": false,
+          "sourceFingerprint": "2732155db1b2cc41e8bdba8dd20c1eadb9f7db8b06ce9775a8972f5596ff046f",
+          "plannerNextOperation": {
+            "kind": "main",
+            "contractVersion": 1
+          },
+          "resourceRequirements": null,
+          "dependencyTemplateIds": [
+            1
+          ],
+          "allowedItinerantTeamIds": [],
+          "itinerantTeamRequirement": "none",
+          "autoCreateOnContestantCreate": true,
+          "participantMarginAfterMinutes": 0,
+          "participantMarginBeforeMinutes": 0
+        }
+      ]
+    }
+  }
+]

@@ -63,7 +63,7 @@ export function NewDayPlannerEditor() {
       </>:null}
       <label className="sm:col-span-2">Montajes<select aria-label="Montajes" className="block w-full rounded border bg-background p-2" value={value.setup} onChange={event=>{
         setSaved(false);const {setupFamilies:_,...rest}=value;
-        setValue(event.target.value==="FAMILIES"?{...rest,setup:"FAMILIES",searchPolicy:"EXACT_CONSTRUCTIVE",setupFamilies:{families:[],policies:[]}}:{...rest,setup:"NONE"});
+        setValue(event.target.value==="FAMILIES"?{...rest,setup:"FAMILIES",searchPolicy:"EXACT_CONSTRUCTIVE",setupFamilies:{contractVersion:2,families:[],policies:[]}}:{...rest,setup:"NONE"});
       }}><option value="NONE">Sin montajes</option><option value="FAMILIES">Familias y políticas por espacio</option></select></label>
       {value.setup==="FAMILIES"?<div className="sm:col-span-2"><SetupFamiliesEditor value={value.setupFamilies!} spaces={spaces} onChange={setupFamilies=>{setSaved(false);setValue({...value,setupFamilies});}}/></div>:null}
       <details className="sm:col-span-2"><summary>Parámetros técnicos de Planner Next</summary><div className="mt-3 grid gap-3 sm:grid-cols-2">

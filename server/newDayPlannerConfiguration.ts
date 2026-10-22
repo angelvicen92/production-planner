@@ -32,7 +32,8 @@ export function applyNewDayPlannerConfiguration(input:EngineInput,raw:unknown,
   const setupPolicies=setup?.policies.flatMap(({familyIds,familyOrder,...policy})=>{
     const present=new Set(tasks.filter(task=>task.status!=="cancelled"&&task.spaceId===policy.spaceId).map(task=>task.setupFamilyId));
     const families=familyIds.map(String).filter(id=>present.has(id));
-    return families.length?[{...policy,families,...(familyOrder?{familyOrder:familyOrder.map(String).filter(id=>present.has(id))}:{})}]:[];
+    const active=tasks.some(task=>task.status!=="cancelled"&&task.spaceId===policy.spaceId);
+    return families.length||setup.contractVersion===2&&active?[{...policy,...(setup.contractVersion===2?{contractVersion:2 as const}:{}),families,...(familyOrder?{familyOrder:familyOrder.map(String).filter(id=>present.has(id))}:{})}]:[];
   });
   const {arrivalDepartureGrouping:_,...weights}=input.optimizerWeights??{};
   return {...input,tasks,
@@ -77,7 +78,7 @@ export function newDayConfigurationDefects(input:EngineInput,snapshots:readonly 
       candidate.templateId===id && candidate.contestantId===task.contestantId && candidate.status!=="cancelled"));
     return [
       ...(missing.length?[{code:"MISSING_DEPENDENCY_REFERENCE" as const,taskId:task.id,message:`La tarea ${task.id} necesita las instancias de sus plantillas previas (${missing.join(", ")}). Añádelas al mismo participante.`}]:[]),
-      ...((template?.setupId!=null&&!validSetupMapping(input,task,template,setup))||(setup?.policies.some(p=>p.spaceId===task.spaceId)&&template?.setupId==null)
+      ...((template?.setupId!=null&&!validSetupMapping(input,task,template,setup))||(setup?.policies.some(p=>p.spaceId===task.spaceId&&(setup.contractVersion!==2||p.groupingPolicy!=="OFF"))&&template?.setupId==null)
         ?[{code:"UNSUPPORTED_SETUP_MAPPING" as const,taskId:task.id,message:`La tarea ${task.id} necesita una familia de montaje conocida y permitida por la política de su espacio. Sólo se admiten auxiliares físicas con participante, sin grupo conjunto.`}]:[]),
       // Auxiliary/technical units are resolved by the daily composition authority
       // after this profile. Preflight still validates its effective identities,

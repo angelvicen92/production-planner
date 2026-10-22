@@ -26,11 +26,15 @@ export interface Space {
 }
 export interface SpaceMealPolicy { window: Window; duration: Minute }
 export interface SetupPolicy {
+  /** Opt-in semantics; absent preserves the historical compact block contract. */
+  contractVersion?: 2;
+  groupingPolicy?: SecondaryContinuity;
+  initialPreparationMinutes?: number;
   /** Canonical allowed families. For explicit policies this is also the required order. */
   familyOrder: string[];
   /** When true, familyOrder is an allowed-family set and search chooses the block order. */
   flexibleFamilyOrder?: boolean;
-  reentry: "FORBIDDEN";
+  reentry: "FORBIDDEN" | "ALLOWED";
   /** Historical/explicit preparation contract keyed by the family that starts. */
   preparationMinutesByFamily?: Record<string, number>;
   /** Flexible-order preparation inserted before every family after the first selected family. */
@@ -67,7 +71,7 @@ export interface CoachRouteTransition {
   minutes: Minute;
 }
 
-export type SecondaryContinuity = "OFF" | "REQUIRED";
+export type SecondaryContinuity = "OFF" | "PREFERRED" | "REQUIRED";
 
 export type PreferenceLevel = "OFF" | "LOW" | "MEDIUM" | "HIGH" | "MAXIMUM";
 export type PresenceConcentrationPolicy = "OFF" | "PREFERRED" | "REQUIRED";

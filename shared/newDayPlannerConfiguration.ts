@@ -9,17 +9,27 @@ export type TemplatePlannerOperation = z.infer<typeof templatePlannerOperationSc
 
 /** IDs are stable catalogue references, independent of editable display names. */
 export const setupFamiliesConfigurationSchema = z.object({
-  families:z.array(z.object({id:positive.max(2147483647),name:z.string().trim().min(1).max(120)}).strict()).min(1),
-  policies:z.array(z.object({spaceId:positive,familyIds:z.array(positive).min(1),
+  contractVersion:z.literal(2).optional(),
+  families:z.array(z.object({id:positive.max(2147483647),name:z.string().trim().min(1).max(120)}).strict()),
+  policies:z.array(z.object({spaceId:positive,familyIds:z.array(positive),
     orderConstraint:z.enum(["EXPLICIT","UNSPECIFIED"]),familyOrder:z.array(positive).optional(),
-    oneBlockPerFamily:z.literal(true),reentry:z.literal("FORBIDDEN"),
-    preparationMinutesBetweenFamilies:positive.multipleOf(5),
+    continuityPolicy:z.enum(["OFF","PREFERRED","REQUIRED"]).optional(),
+    groupingPolicy:z.enum(["OFF","PREFERRED","REQUIRED"]).optional(),
+    initialPreparationMinutes:positive.multipleOf(5).optional(),
+    oneBlockPerFamily:z.boolean(),reentry:z.enum(["FORBIDDEN","ALLOWED"]),
+    preparationMinutesBetweenFamilies:z.number().int().nonnegative().multipleOf(5),
   }).strict()).min(1),
 }).strict().superRefine((value,ctx)=>{
   const fail=(message:string)=>ctx.addIssue({code:z.ZodIssueCode.custom,message});
   const ids=new Set(value.families.map(f=>f.id)),spaces=new Set(value.policies.map(p=>p.spaceId));
   if(ids.size!==value.families.length||spaces.size!==value.policies.length)fail("Familias o espacios duplicados.");
   for(const policy of value.policies){
+    if(value.contractVersion===2){
+      if(!policy.continuityPolicy||!policy.groupingPolicy)fail("Declara continuidad temporal y agrupación de familias independientemente.");
+      if(policy.oneBlockPerFamily!==(policy.groupingPolicy==="REQUIRED")||policy.reentry!==(policy.groupingPolicy==="REQUIRED"?"FORBIDDEN":"ALLOWED"))fail("Severidad de agrupación y reentrada incoherentes.");
+      if(policy.groupingPolicy!=="OFF"&&!policy.familyIds.length)fail("La agrupación activa necesita familias.");
+      if(policy.groupingPolicy==="OFF"&&(policy.preparationMinutesBetweenFamilies!==0||policy.initialPreparationMinutes!==undefined||policy.orderConstraint!=="UNSPECIFIED"))fail("OFF no declara preparaciones ni orden implícito.");
+    }else if(policy.continuityPolicy!==undefined||policy.groupingPolicy!==undefined||policy.initialPreparationMinutes!==undefined||!policy.oneBlockPerFamily||policy.reentry!=="FORBIDDEN"||!policy.familyIds.length||!value.families.length||policy.preparationMinutesBetweenFamilies<=0)fail("Contrato histórico de setup inválido; adopta explícitamente la versión 2 para cambiar su semántica.");
     const families=new Set(policy.familyIds);
     if(families.size!==policy.familyIds.length||policy.familyIds.some(id=>!ids.has(id)))fail("Familia desconocida o duplicada en el espacio.");
     if(policy.orderConstraint==="UNSPECIFIED"&&policy.familyOrder!==undefined)fail("El orden flexible no declara una secuencia.");

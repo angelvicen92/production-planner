@@ -16,8 +16,22 @@ export function assessOperationContinuity(problem: Pick<PlannerNextProblem, "ope
   });
 }
 
-export function continuityPenalty(problem: Pick<PlannerNextProblem, "operationContinuityGroups">, tasks: readonly ScheduledTask[]) {
-  return assessOperationContinuity(problem, tasks).reduce((sum, group) => sum + group.penalty, 0);
+export function assessSpacePolicies(problem: Partial<Pick<PlannerNextProblem,"spaces"|"operationalMealPolicies">>,tasks:readonly ScheduledTask[]){
+  return (problem.spaces??[]).filter(space=>space.setupPolicy?.contractVersion===2).map(space=>{
+    const own=tasks.filter(task=>task.spaceId===space.id).sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+    const sequence=own.flatMap((task,index)=>task.setupFamilyId&&task.setupFamilyId!==own[index-1]?.setupFamilyId?[task.setupFamilyId]:[]);
+    const changes=Math.max(0,sequence.length-1),reentries=sequence.length-new Set(sequence).size;
+    const prep=space.setupPolicy!.groupingPolicy==="OFF"?0:changes*(space.setupPolicy!.preparationMinutesBetweenFamilies??0);
+    const pauses=(problem.operationalMealPolicies??[]).filter(p=>p.spaceIds.includes(space.id)&&p.duration===p.window.end-p.window.start&&own.length&&p.window.start>=own[0].start&&p.window.end<=own.at(-1)!.end).reduce((sum,p)=>sum+p.duration,0);
+    const gapMinutes=Math.max(0,secondaryGapMinutes(own)-prep-pauses);
+    const continuityPenalty=space.secondaryContinuity==="PREFERRED"?gapMinutes:0;
+    const setupPenalty=space.setupPolicy!.groupingPolicy==="PREFERRED"?changes+reentries:0;
+    return {spaceId:space.id,continuityPolicy:space.secondaryContinuity,groupingPolicy:space.setupPolicy!.groupingPolicy,gapMinutes,changes,reentries,continuityPenalty,setupPenalty,penalty:continuityPenalty+setupPenalty};
+  });
+}
+
+export function continuityPenalty(problem: Pick<PlannerNextProblem, "operationContinuityGroups"> & Partial<Pick<PlannerNextProblem,"spaces"|"operationalMealPolicies">>, tasks: readonly ScheduledTask[]) {
+  return assessOperationContinuity(problem, tasks).reduce((sum, group) => sum + group.penalty, 0)+assessSpacePolicies(problem,tasks).reduce((sum,space)=>sum+space.penalty,0);
 }
 
 export function operationContinuityPreflight(problem: Pick<PlannerNextProblem, "operationContinuityGroups" | "tasks" | "mainFlow" | "transportPolicy">): string[] {

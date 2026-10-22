@@ -1,0 +1,30 @@
+{
+  "baseCommit": "3a05cb099a74d7263c0d630d7055746fcd722114",
+  "scope": "Final candidate product, harness, focal tests and CI delta; native runs identify a working tree above this base. Documentation artifacts are not product inputs.",
+  "hashAlgorithm": "sha256",
+  "files": {
+    ".github/workflows/new-day-planner-ci.yml": "9be3879f526653ed5ea24fd0deb5fbc626d3df90a6fcd121b3d80c85af8e44fd",
+    "client/src/components/effective-configuration.tsx": "f715b3c42081884e2a6878dcbb04593840237f46da99b06f8b62f1d9d6824eec",
+    "client/src/components/new-day-planner-editor.tsx": "5faebbad751a42e3a471c07225562b24ab3fdcbfb09574a24148b3c1fe6ea2e3",
+    "client/src/components/setup-families-editor.tsx": "55fe3977a763b1428715be620f14f799a1e1d769d808d64e07873b14aac42622",
+    "docs/evidence/p0-u00e/v2/verify-native.ts": "cdfcb43a2cd3ceff70d7a23e3e44794f5fa2fc2a61f7536cd681a2f7a529eac3",
+    "engine/planner-next/assistedPlanning.ts": "c7df3b45d037f814d3e83c3498106db03d1c472348455efb13f0aa67509511f0",
+    "engine/planner-next/contracts.ts": "dff2eb2df38c5636307ae076559914011a8040c10e11e05778d702a7b2d89853",
+    "engine/planner-next/exactItinerantPlan.ts": "59ecf4ab8991ebc8c808bda7a461f4f33c5629bc85d3bd1df3c820753cded111",
+    "engine/planner-next/exactSetupBlocks.ts": "d02b5135c4a41aedb074fd4d89148685beb0bac1c1cea88621b1f22931fb8fd9",
+    "engine/planner-next/integration/engineInputAdapter.ts": "4c38d86c7aaadee9d9e6bd5239fc5f8fa940fff4a7e617870adac83c4d5d8733",
+    "engine/planner-next/integration/engineInputPreflight.ts": "49830947ebb16733c53bc042e4d61f565ca671713ba3d93558902897b51d64dd",
+    "engine/planner-next/integration/newDaySetupFamilies.spec.ts": "e3b2a2f374006156aea6822fda3388ceaf0a2a2953a4ed9a2f3d39bc5e316310",
+    "engine/planner-next/integration/spacePoliciesV2.spec.ts": "46f6e84f1bab828260cbba3b1b0c42911bd29e44cc349c617870ff0c1cb49354",
+    "engine/planner-next/operationContinuity.ts": "d010b5ddbd0b049fb2e918f150f038acc89b08e0106f53f3cd8e4e7e589910d4",
+    "engine/planner-next/placeAuxiliaryTasks.ts": "090f314277218d94b048746f72b3dc7684024f26979400defaabead62c7e321c",
+    "engine/planner-next/setupGrouping.ts": "e0af70f1631c30dbe95228c896cb1e853785aa6fe34011d87ddfd6179d7218a2",
+    "engine/planner-next/setupPreparation.ts": "17cbdeb7923cd8e3ba02854d2b45e860bbbe3ce53a0f0cae6dc3910fda364504",
+    "engine/planner-next/validate.ts": "46f2abd3d2d93a69856d189f64ad3ecc8792c4946ce19ddcb197cb66c48cb7ed",
+    "engine/types.ts": "0262f399677baa5216aa479530d861d298637d4f50c20671564c012b10b994dc",
+    "script/demo/smokeNewDaySetupJourney.ts": "a7d69cf6abf7c3458f21eaabe4d7d009be2c6d29d69bc99c0d62861931e3059c",
+    "script/demo/tsconfig.new-day.json": "5f3c4cf180fed15269c0b4f601ea3100bff641ce2818e0fcf57072ef0429820b",
+    "server/newDayPlannerConfiguration.ts": "d9761f7a6c93cd31c75a4e3a25fa61bc3eeaf157e09ab36a0df3a77300b06e3e",
+    "shared/newDayPlannerConfiguration.ts": "b44c9f3c3677b94071ea3875233e792bf731e5e50df0f8ec7e65f05cab40f2f7"
+  }
+}

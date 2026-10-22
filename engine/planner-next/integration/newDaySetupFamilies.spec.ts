@@ -99,7 +99,8 @@ test('permitted inactive families do not create fictitious entries or initial pr
 });
 
 test('a wait inside one setup family is not reentry or a temporal continuity requirement',()=>{
-  const f=fixture();const input=applyNewDayPlannerConfiguration(f.input,f.profile,f.templates);
+  const f=fixture();const profile={...f.profile,configuration:{...f.profile.configuration,setupFamilies:{...f.profile.configuration.setupFamilies,contractVersion:2,policies:f.profile.configuration.setupFamilies.policies.map(policy=>({...policy,continuityPolicy:'OFF',groupingPolicy:'REQUIRED'}))}}};
+  const input=applyNewDayPlannerConfiguration(f.input,profile,f.templates);
   const adapter=adaptEngineInputToPlannerNextProblem(input);assert.equal(adapter.status,'SUPPORTED');if(adapter.status!=='SUPPORTED')return;
   const ordered=[...adapter.problem.tasks].sort((a,b)=>a.id.localeCompare(b.id));
   const scheduled=ordered.map((task,index)=>({...task,start:[600,620,640,650][index],end:[610,630,650,660][index]}));

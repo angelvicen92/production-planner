@@ -1,3 +1,4 @@
+import {assessSpacePolicies} from "./operationContinuity";
 import type {
   ParticipantMealObligation,
   PlannerNextProblem,
@@ -118,6 +119,7 @@ export interface AssistedPlanningEvidence {
     readonly itinerantUnit: readonly import("./contracts").ScheduledItinerantUnitMeal[];
   } | null;
   /** Read-only structural artifacts selected with the proposal; snapshots currently persist tasks and meals only. */
+  readonly spacePolicyCosts?: ReturnType<typeof assessSpacePolicies>;
   readonly selectedSetupPreparations?: readonly import("./contracts").ScheduledSetupPreparation[];
   readonly selectedRoundPreparations?: readonly import("./contracts").ScheduledRoundPreparation[];
   readonly selectedRoundPreparationIds?: readonly string[];
@@ -301,13 +303,15 @@ export function buildAssistedProblem(
   const preparationIds=new Set<string>();
   for(const preparation of protectedSetupPreparations){
     const space=problem.spaces.find(item=>item.id===preparation.spaceId);
-    const expected=space?.setupPolicy?.preparationMinutesByFamily?.[preparation.setupFamilyId]
+    const firstProtected=[...protectedPlacements].filter(task=>task.spaceId===preparation.spaceId).sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id))[0];
+    const initial=space?.setupPolicy?.contractVersion===2&&firstProtected?.setupFamilyId===preparation.setupFamilyId&&preparation.end<=firstProtected.start;
+    const expected=initial?space!.setupPolicy!.initialPreparationMinutes:space?.setupPolicy?.preparationMinutesByFamily?.[preparation.setupFamilyId]
       ??space?.setupPolicy?.preparationMinutesBetweenFamilies;
     if(preparationIds.has(preparation.id)||!space?.setupPolicy
       ||!space.setupPolicy.familyOrder.includes(preparation.setupFamilyId)
       ||preparation.id!==setupPreparationId(preparation.spaceId,preparation.setupFamilyId,preparation.entryIndex)
       ||expected!==preparation.duration
-      ||preparation.entryIndex!==1||preparation.start>=preparation.end
+      ||(space.setupPolicy.contractVersion!==2?preparation.entryIndex!==1:!Number.isInteger(preparation.entryIndex)||preparation.entryIndex<1)||preparation.start>=preparation.end
       ||preparation.end-preparation.start!==preparation.duration
       ||!space.availability.some(window=>window.start<=preparation.start&&preparation.end<=window.end))
       throw new Error(`UNREPRESENTABLE_PROTECTED_SETUP_PREPARATION:${preparation.id}`);
@@ -854,6 +858,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     selectedPipelineWitnessAuthority:structuredClone((evidenceRecord.selectedPipelineWitnessAuthority as ExactItinerantPlanEvidence["selectedPipelineWitnessAuthority"]|undefined)??null),
     selectedMealWitnesses,
     fixedMainBundle,
+    ...(input.problem.spaces.some(space=>space.setupPolicy?.contractVersion===2)?{spacePolicyCosts:assessSpacePolicies(input.originalValidationProblem,scheduled)}:{}),
     selectedSetupPreparations:structuredClone(result?.scheduledSetupPreparations??[]),
     selectedRoundPreparations:structuredClone(result?.scheduledRoundPreparations??[]),
     selectedRoundPreparationIds:(result?.scheduledRoundPreparations??[]).map(({id})=>id).sort(),

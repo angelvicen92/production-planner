@@ -1,0 +1,11 @@
+{
+  "baselineCommit": "3a05cb099a74d7263c0d630d7055746fcd722114",
+  "baselineMethod": "git archive of the synchronized PR head; locked node_modules symlink only",
+  "candidateSources": "source-hashes.json",
+  "runtime": "Node 20.20.2",
+  "execution": "Serial baseline, candidate and repeat from S0. No build, UI or suite runs concurrently.",
+  "capture": "docs/evidence/STYLING-IN-OUT-CAUSAL-DIAGNOSTIC/capture.ts",
+  "audit": "docs/evidence/config-u06c/verify.ts plus ../compare.mjs",
+  "searchBudgetAndTimeoutChanges": 0,
+  "remoteWrites": 0
+}

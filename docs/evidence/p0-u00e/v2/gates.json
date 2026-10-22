@@ -1,0 +1,29 @@
+{
+  "runtime": "Node 20.20.2",
+  "productTypeScript": "PASS",
+  "harnessTypeScript": "PASS",
+  "productionBuild": "PASS",
+  "migrations": {
+    "status": "PASS",
+    "last": 107,
+    "newMigrations": 0
+  },
+  "productSuite": {
+    "passed": 3113,
+    "failed": 0,
+    "durationMs": 840151.808422,
+    "concurrency": 2,
+    "excludedExactlyAsExistingCI": [
+      "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts",
+      "server/benchmarks/runA2Assist7Evidence.spec.ts"
+    ]
+  },
+  "postSuiteDelta": {
+    "scope": "Evidence marks the v2 analytic macro domain as inexact, without claiming structural/matching counts; legacy defaults and search behavior remain unchanged. Final targeted tests, both TypeScript checks and build repeated after this delta.",
+    "tests": 92,
+    "passed": 92,
+    "failed": 0,
+    "command": "node node_modules/tsx/dist/cli.mjs --test --test-concurrency=1 engine/planner-next/integration/spacePoliciesV2.spec.ts engine/planner-next/integration/newDaySetupFamilies.spec.ts engine/planner-next/exactItinerantPlan.spec.ts"
+  },
+  "noBudgetOrTimeoutIncrease": true
+}

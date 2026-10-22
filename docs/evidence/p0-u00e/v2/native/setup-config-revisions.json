@@ -1,0 +1,521 @@
+[
+  {
+    "id": "1",
+    "fingerprint": "7cd2f0afe7348b7700b20f1fea8b466a89da07e1e68a9f7b66c27412f112a525",
+    "replay_snapshot_json": {
+      "authorities": {
+        "plan_workday": [
+          {
+            "meal": {
+              "end": "14:00",
+              "start": "13:00"
+            },
+            "workDay": {
+              "end": "18:00",
+              "start": "09:00"
+            },
+            "mealMode": "global_hard_break",
+            "itinerantComposition": {
+              "units": [],
+              "contractVersion": 1
+            },
+            "plannerNextAuthorities": {
+              "plannerNext": {
+                "profile": "STANDALONE_ONLY",
+                "searchBudget": {
+                  "bestK": 3,
+                  "maxPatterns": 20,
+                  "maxBacktracks": 50,
+                  "maxBranchExpansions": 10000
+                },
+                "searchPolicy": "EXACT_CONSTRUCTIVE",
+                "timeGridMinutes": 5,
+                "resourceTransitionMinutes": 5,
+                "participantTransitionMinutes": 5
+              },
+              "setupPolicies": [],
+              "taskOperations": [],
+              "mealTaskTemplateId": null,
+              "itinerantTeamAvailability": []
+            },
+            "itinerantTeamAvailability": [],
+            "defaultParticipantTransitionMinutes": 5
+          }
+        ],
+        "resource_bundles": [],
+        "spatial_configuration": [
+          {
+            "kind": "space",
+            "name": "Espacio compartido",
+            "zoneId": 1,
+            "spaceId": 1,
+            "groupingLevel": 0,
+            "parentSpaceId": null,
+            "priorityLevel": 1,
+            "availabilityEnd": null,
+            "groupingMinChain": 4,
+            "availabilityStart": null,
+            "groupingApplyToDescendants": false
+          },
+          {
+            "kind": "zone",
+            "name": "Montajes nuevos",
+            "zoneId": 1,
+            "groupingLevel": 0,
+            "availabilityEnd": null,
+            "groupingMinChain": 4,
+            "mealEndPreferred": null,
+            "availabilityStart": null,
+            "maxTemplateChanges": 4,
+            "mealStartPreferred": null,
+            "spaceMealBreakMinutes": null
+          }
+        ],
+        "resource_configuration": [],
+        "contestant_availability": [],
+        "resource_assignments_and_requirements": [
+          {
+            "kind": "components",
+            "value": {}
+          },
+          {
+            "kind": "spaceAssignments",
+            "value": {}
+          },
+          {
+            "kind": "spaceRequirements",
+            "value": {}
+          },
+          {
+            "kind": "zoneAssignments",
+            "value": {}
+          },
+          {
+            "kind": "zoneRequirements",
+            "value": {}
+          }
+        ]
+      },
+      "contractVersion": 1,
+      "optimizerSnapshot": {
+        "source": "INHERITED",
+        "transport": {
+          "vanCapacity": 0,
+          "groupingWeight": 0,
+          "arrivalMinGapMinutes": 0,
+          "arrivalGroupingTarget": 0,
+          "departureMinGapMinutes": 0,
+          "departureGroupingTarget": 0,
+          "arrivalPlanTemplateSnapshotId": null,
+          "departurePlanTemplateSnapshotId": null
+        },
+        "heuristics": {
+          "CONTESTANT_COMPACT": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "MAIN_ZONE_PRIORITY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "MAIN_ZONE_KEEP_BUSY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "CONTESTANT_TOTAL_SPAN": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "GROUP_BY_SPACE_ACTIVE": {
+            "basicLevel": 2,
+            "advancedValue": 0,
+            "effectiveWeight": 6
+          },
+          "MAIN_ZONE_FINISH_EARLY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "CONTESTANT_STAY_IN_ZONE": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "ARRIVAL_DEPARTURE_GROUPING": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "GROUP_BY_SPACE_TEMPLATE_MATCH": {
+            "basicLevel": 2,
+            "advancedValue": 0,
+            "effectiveWeight": 6
+          }
+        },
+        "mainZoneId": null,
+        "editingMode": "BASIC",
+        "contractVersion": 1,
+        "groupingZoneIds": [],
+        "nearHardBreaksMax": 0,
+        "configurationFingerprint": "4b770099c9e87063d68e2fbef0ad2fcce91e364d9e03b2fc8967ee74ca4a422f"
+      },
+      "taskTemplateSnapshots": [
+        {
+          "source": "inherited",
+          "setupId": 1056989402,
+          "templateName": "Montaje A",
+          "defaultZoneId": 1,
+          "hasDependency": false,
+          "requiresCoach": false,
+          "defaultCameras": 0,
+          "defaultSpaceId": 1,
+          "contractVersion": 2,
+          "defaultDuration": 10,
+          "itinerantTeamId": null,
+          "requiresAuxiliar": false,
+          "sourceTemplateId": 1,
+          "exclusiveAuxiliar": false,
+          "requiresPresenter": false,
+          "sourceFingerprint": "7feaea58e938b72f0795c78f2d019c8ddb2baa7cc77473ff3259d97c9059c64c",
+          "plannerNextOperation": {
+            "kind": "auxiliary",
+            "contractVersion": 1
+          },
+          "resourceRequirements": null,
+          "dependencyTemplateIds": [],
+          "allowedItinerantTeamIds": [],
+          "itinerantTeamRequirement": "none",
+          "autoCreateOnContestantCreate": true,
+          "participantMarginAfterMinutes": 0,
+          "participantMarginBeforeMinutes": 0
+        },
+        {
+          "source": "inherited",
+          "setupId": 2000570871,
+          "templateName": "Montaje B",
+          "defaultZoneId": 1,
+          "hasDependency": false,
+          "requiresCoach": false,
+          "defaultCameras": 0,
+          "defaultSpaceId": 1,
+          "contractVersion": 2,
+          "defaultDuration": 10,
+          "itinerantTeamId": null,
+          "requiresAuxiliar": false,
+          "sourceTemplateId": 2,
+          "exclusiveAuxiliar": false,
+          "requiresPresenter": false,
+          "sourceFingerprint": "049d81e0b6a941cef45a785f4f8f7bab1edc432e9a2514b4e7ea49f1eb8030ff",
+          "plannerNextOperation": {
+            "kind": "auxiliary",
+            "contractVersion": 1
+          },
+          "resourceRequirements": null,
+          "dependencyTemplateIds": [],
+          "allowedItinerantTeamIds": [],
+          "itinerantTeamRequirement": "none",
+          "autoCreateOnContestantCreate": true,
+          "participantMarginAfterMinutes": 0,
+          "participantMarginBeforeMinutes": 0
+        }
+      ]
+    }
+  },
+  {
+    "id": "2",
+    "fingerprint": "b843ab1e48817e3cb528b08cb371cd1394ea13ab80be520d693c052f5fb47227",
+    "replay_snapshot_json": {
+      "authorities": {
+        "plan_workday": [
+          {
+            "meal": {
+              "end": "14:00",
+              "start": "13:00"
+            },
+            "workDay": {
+              "end": "18:00",
+              "start": "09:00"
+            },
+            "mealMode": "global_hard_break",
+            "itinerantComposition": {
+              "units": [],
+              "contractVersion": 1
+            },
+            "plannerNextAuthorities": {
+              "plannerNext": {
+                "profile": "STANDALONE_ONLY",
+                "searchBudget": {
+                  "bestK": 3,
+                  "maxPatterns": 20,
+                  "maxBacktracks": 50,
+                  "maxBranchExpansions": 10000
+                },
+                "searchPolicy": "EXACT_CONSTRUCTIVE",
+                "timeGridMinutes": 5,
+                "resourceTransitionMinutes": 5,
+                "participantTransitionMinutes": 5
+              },
+              "setupPolicies": [
+                {
+                  "reentry": "FORBIDDEN",
+                  "spaceId": 1,
+                  "families": [
+                    "1056989402",
+                    "2000570871"
+                  ],
+                  "groupingPolicy": "REQUIRED",
+                  "contractVersion": 2,
+                  "orderConstraint": "UNSPECIFIED",
+                  "continuityPolicy": "PREFERRED",
+                  "oneBlockPerFamily": true,
+                  "preparationMinutesBetweenFamilies": 10
+                }
+              ],
+              "taskOperations": [
+                {
+                  "taskId": 1,
+                  "setupFamilyId": "1056989402",
+                  "itinerantTeamId": null,
+                  "operationalRole": "productive_task",
+                  "plannerNextKind": "auxiliary",
+                  "dependsOnTaskIds": [],
+                  "allowedItinerantTeamIds": [],
+                  "itinerantTeamRequirement": "none"
+                },
+                {
+                  "taskId": 2,
+                  "setupFamilyId": "2000570871",
+                  "itinerantTeamId": null,
+                  "operationalRole": "productive_task",
+                  "plannerNextKind": "auxiliary",
+                  "dependsOnTaskIds": [],
+                  "allowedItinerantTeamIds": [],
+                  "itinerantTeamRequirement": "none"
+                },
+                {
+                  "taskId": 3,
+                  "setupFamilyId": "1056989402",
+                  "itinerantTeamId": null,
+                  "operationalRole": "productive_task",
+                  "plannerNextKind": "auxiliary",
+                  "dependsOnTaskIds": [],
+                  "allowedItinerantTeamIds": [],
+                  "itinerantTeamRequirement": "none"
+                },
+                {
+                  "taskId": 4,
+                  "setupFamilyId": "2000570871",
+                  "itinerantTeamId": null,
+                  "operationalRole": "productive_task",
+                  "plannerNextKind": "auxiliary",
+                  "dependsOnTaskIds": [],
+                  "allowedItinerantTeamIds": [],
+                  "itinerantTeamRequirement": "none"
+                }
+              ],
+              "mealTaskTemplateId": null,
+              "itinerantTeamAvailability": []
+            },
+            "itinerantTeamAvailability": [],
+            "defaultParticipantTransitionMinutes": 5
+          }
+        ],
+        "resource_bundles": [],
+        "spatial_configuration": [
+          {
+            "kind": "space",
+            "name": "Espacio compartido",
+            "zoneId": 1,
+            "spaceId": 1,
+            "groupingLevel": 0,
+            "parentSpaceId": null,
+            "priorityLevel": 1,
+            "availabilityEnd": null,
+            "groupingMinChain": 4,
+            "availabilityStart": null,
+            "groupingApplyToDescendants": false
+          },
+          {
+            "kind": "zone",
+            "name": "Montajes nuevos",
+            "zoneId": 1,
+            "groupingLevel": 0,
+            "availabilityEnd": null,
+            "groupingMinChain": 4,
+            "mealEndPreferred": null,
+            "availabilityStart": null,
+            "maxTemplateChanges": 4,
+            "mealStartPreferred": null,
+            "spaceMealBreakMinutes": null
+          }
+        ],
+        "resource_configuration": [],
+        "contestant_availability": [
+          {
+            "end": "12:00",
+            "start": "09:00",
+            "contestantId": 1
+          },
+          {
+            "end": "12:00",
+            "start": "09:00",
+            "contestantId": 2
+          }
+        ],
+        "resource_assignments_and_requirements": [
+          {
+            "kind": "components",
+            "value": {}
+          },
+          {
+            "kind": "spaceAssignments",
+            "value": {}
+          },
+          {
+            "kind": "spaceRequirements",
+            "value": {}
+          },
+          {
+            "kind": "zoneAssignments",
+            "value": {}
+          },
+          {
+            "kind": "zoneRequirements",
+            "value": {}
+          }
+        ]
+      },
+      "contractVersion": 1,
+      "optimizerSnapshot": {
+        "source": "INHERITED",
+        "transport": {
+          "vanCapacity": 0,
+          "groupingWeight": 0,
+          "arrivalMinGapMinutes": 0,
+          "arrivalGroupingTarget": 0,
+          "departureMinGapMinutes": 0,
+          "departureGroupingTarget": 0,
+          "arrivalPlanTemplateSnapshotId": null,
+          "departurePlanTemplateSnapshotId": null
+        },
+        "heuristics": {
+          "CONTESTANT_COMPACT": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "MAIN_ZONE_PRIORITY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "MAIN_ZONE_KEEP_BUSY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "CONTESTANT_TOTAL_SPAN": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "GROUP_BY_SPACE_ACTIVE": {
+            "basicLevel": 2,
+            "advancedValue": 0,
+            "effectiveWeight": 6
+          },
+          "MAIN_ZONE_FINISH_EARLY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "CONTESTANT_STAY_IN_ZONE": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "ARRIVAL_DEPARTURE_GROUPING": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "GROUP_BY_SPACE_TEMPLATE_MATCH": {
+            "basicLevel": 2,
+            "advancedValue": 0,
+            "effectiveWeight": 6
+          }
+        },
+        "mainZoneId": null,
+        "editingMode": "BASIC",
+        "contractVersion": 1,
+        "groupingZoneIds": [],
+        "nearHardBreaksMax": 0,
+        "configurationFingerprint": "4b770099c9e87063d68e2fbef0ad2fcce91e364d9e03b2fc8967ee74ca4a422f"
+      },
+      "taskTemplateSnapshots": [
+        {
+          "source": "inherited",
+          "setupId": 1056989402,
+          "templateName": "Montaje A",
+          "defaultZoneId": 1,
+          "hasDependency": false,
+          "requiresCoach": false,
+          "defaultCameras": 0,
+          "defaultSpaceId": 1,
+          "contractVersion": 2,
+          "defaultDuration": 10,
+          "itinerantTeamId": null,
+          "requiresAuxiliar": false,
+          "sourceTemplateId": 1,
+          "exclusiveAuxiliar": false,
+          "requiresPresenter": false,
+          "sourceFingerprint": "7feaea58e938b72f0795c78f2d019c8ddb2baa7cc77473ff3259d97c9059c64c",
+          "plannerNextOperation": {
+            "kind": "auxiliary",
+            "contractVersion": 1
+          },
+          "resourceRequirements": null,
+          "dependencyTemplateIds": [],
+          "allowedItinerantTeamIds": [],
+          "itinerantTeamRequirement": "none",
+          "autoCreateOnContestantCreate": true,
+          "participantMarginAfterMinutes": 0,
+          "participantMarginBeforeMinutes": 0
+        },
+        {
+          "source": "inherited",
+          "setupId": 2000570871,
+          "templateName": "Montaje B",
+          "defaultZoneId": 1,
+          "hasDependency": false,
+          "requiresCoach": false,
+          "defaultCameras": 0,
+          "defaultSpaceId": 1,
+          "contractVersion": 2,
+          "defaultDuration": 10,
+          "itinerantTeamId": null,
+          "requiresAuxiliar": false,
+          "sourceTemplateId": 2,
+          "exclusiveAuxiliar": false,
+          "requiresPresenter": false,
+          "sourceFingerprint": "049d81e0b6a941cef45a785f4f8f7bab1edc432e9a2514b4e7ea49f1eb8030ff",
+          "plannerNextOperation": {
+            "kind": "auxiliary",
+            "contractVersion": 1
+          },
+          "resourceRequirements": null,
+          "dependencyTemplateIds": [],
+          "allowedItinerantTeamIds": [],
+          "itinerantTeamRequirement": "none",
+          "autoCreateOnContestantCreate": true,
+          "participantMarginAfterMinutes": 0,
+          "participantMarginBeforeMinutes": 0
+        }
+      ]
+    }
+  }
+]

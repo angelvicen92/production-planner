@@ -1,0 +1,26 @@
+{
+  "id": 1,
+  "planId": 1,
+  "sessionId": 1,
+  "baseStageId": 1,
+  "draftFingerprint": "046870c240f3fd4346e8da688c1448cc94693305b6e4927f55a1ac0eadef3739",
+  "configRevisionId": 2,
+  "hardCount": 0,
+  "requiredCount": 0,
+  "preferredCount": 0,
+  "reportJson": {
+    "mode": "PROPOSAL_CERTIFIED_CLEAN_V1",
+    "scopeTaskIds": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "proposalRunId": 1,
+    "hardAssessment": "CLEAN",
+    "requiredAssessment": "CLEAN",
+    "preferredAssessment": "NOT_CLASSIFIED",
+    "includePrerequisites": true
+  },
+  "createdAt": "2026-10-22T19:57:32.975436+00:00"
+}

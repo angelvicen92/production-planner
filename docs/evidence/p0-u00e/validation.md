@@ -1,15 +1,48 @@
-# Validación U00e — BORRADOR BLOQUEADO
+# Validación U00e v2
 
-U00e no está completada ni lista para merge. La prueba de aceptación del hueco interno queda fallida: el motor confunde continuidad de estado de setup con contigüidad temporal. El bloqueo se reproduce en ambos generadores, sin agotamiento; no se modifica el solver ni se suaviza una regla para pasar el gate.
+**Gates locales: PASS.** La habilitación READY del PR exige además CI verde en su head remoto; el resultado vivo y sus enlaces se registran en [PR #1183](https://github.com/angelvicen92/production-planner/pull/1183/checks). No implica merge ni despliegue.
 
-- Base remota U00e y main verificadas en `037500b139d43bf5f82c1087db4fe6ed90fc8074`. Checkout avanzado fast-forward desde U00c antes de editar. Sin cambios locales ajenos.
-- TypeScript de producto y `tsconfig.new-day.json`: PASS con Node 20.20.2. Build: PASS (avisos habituales de bundle/Browserslist). Secuencia de migraciones hasta 107: PASS; ninguna migración nueva.
-- Focal de configuración, consumos U00d, propuestas/persistencia, permisos, refresh y vista efectiva: 68/68 PASS antes de incorporar la prueba del hueco. El focal posterior conserva 8/9 PASS y **1 fallo de aceptación** (`secondaryContinuityViolationCount=1`, setup y preparación = 0).
-- Receta nativa exploratoria: PostgreSQL 17/Auth/PostgREST, ledger íntegro, cinco identidades Auth y Chromium reales. Las familias y políticas, plantilla/edición del selector, participantes, jornadas, scope, Draft, validación y aceptación usan UI; el recurso espacial diario usa API productiva. Dos días compactos alcanzan Stage 1, 4/4 y 6/6, 283/150 ramas, cero nuevas HARD/REQUIRED, una preparación de diez minutos y dos de cinco. Orden flexible / explícito C→A→B; duraciones y disponibilidades distintas, dependencias y recurso diario físico. Replay repetido determinista y Stage/input del primer día intactos tras cambios generales.
-- Negativos nativos: familia desconocida, política incompleta, preparación ausente, orden incorrecto, reentrada, capacidad, CAS stale, permisos de escritura y perfil histórico inmutable: PASS. Las ocupaciones de recursos heredados se reconstruyen desde configuración; no se duplican como recursos directos en cada fila del Stage.
-- Una repetición bajo build/suite/A2 simultáneos agotó los 30 segundos del navegador cargando login. No se incrementa ningún timeout. Los stacks de producto se repiten serialmente con sus límites originales.
+La continuación parte de `3a05cb099a74d7263c0d630d7055746fcd722114` y conserva los dos commits documentales humanos. [Causalidad](v2/causal.md), [resultados estructurados](validation-results.json), [contenido exacto validado](v2/source-hashes.json). Las ejecuciones nativas identifican el head base y los hashes del working tree que contiene el cambio; el commit final incorpora ese contenido. La validación inicial bloqueada se conserva en [initial-validation.md](initial-validation.md), sin sustituirla por un PASS retrospectivo.
 
-- A2 desde S0 sobre la base exacta, Node 20.20.2: **266/266, 11 Stages, 27.049 ramas, 8.465 min**, fingerprint `2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d`. Los runs/snapshots/runtime quedan comprimidos. El candidato bajo carga concurrente llegó al límite existente de 300.000 ms en S0 (20.827 ramas, `SEARCH_TIME_LIMIT_REACHED`); no certifica regresión ni inviabilidad. Se conserva el run y no se aumenta el límite. La repetición concurrente se detuvo; comparación aislada y repetición quedan pendientes.
-- Gate global: detenido incompleto tras confirmar el bloqueo de aceptación. `validation-results.json` registra el último test terminado y los fallos observados; no se presenta el fragmento como PASS global. Las comparaciones UI completas y fingerprints nuevos U00a–U00d están pendientes. La Evidence integrada previa no se modifica.
+## Tipos, construcción y pruebas
 
-`source-hashes.json` identifica el contenido final. `compact-native/integration.json` identifica el contenido exacto de la ejecución exploratoria anterior: es una prueba de wiring compacto y no se presenta como ejecución del head final ni como certificación de U00e. Las adiciones posteriores proyectan sólo familias activas y conservan el contraejemplo de aceptación. Los logs privados y trazas del navegador no se versionan.
+Node 20.20.2 y dependencias del lockfile. TypeScript de producto y del harness, build y secuencia de migraciones: PASS. Sin migraciones nuevas. Suite de producto: **3.113/3.113**, cero fallos, 840.152 s, concurrencia 2 y las dos exclusiones históricas exactas de CI. Después de identificar explícitamente como estimación el probe analítico v2, se repitieron ambos TypeScript, build y **92/92 pruebas** del explorador exacto, contrato legacy y políticas v2. Recibos y TAP comprimidos en `v2/gates.json`, `v2/product-suite.tap.gz` y `v2/final-delta-tests.tap.gz`.
+
+Se conservó la prueba roja original de espera interna y se adoptó v2 explícitamente. Los focales cruzan las nueve combinaciones, pausa fija autorizada, hueco rechazado bajo REQUIRED, ABA permitido bajo PREFERRED con dos preparaciones físicas y coste, rechazo de reentrada REQUIRED, OFF sin coste/montaje implícito, preparación inicial explícita, duración heterogénea, matching de identidades distintas, dependencias, ventanas, recurso compartido, dos espacios, identidad falsificada, montaje omitido/incorrecto/solapado, configuración sin familias y espacio configurado sin tareas. No se borró ningún test rojo ni se relajó la severidad física.
+
+## Dos jornadas nuevas por UI y stack real descartable
+
+PostgreSQL 17/Auth/PostgREST/Chromium reales, ledger completo, cinco identidades Auth, cero escrituras remotas. Configuración → participantes/espacios/plantillas/tareas → readiness → Assisted → Draft → validación → Stage aceptado → replay. [Recibo nativo](v2/native/integration.json).
+
+| Día | Agrupación | Continuidad | Obligaciones | Ramas | Preparaciones | Nuevas HARD/REQUIRED |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | REQUIRED | PREFERRED | 4/4 | 11 | 1 × 10 min | 0/0 |
+| 2 | PREFERRED | REQUIRED | 6/6 | 16 | 2 × 5 min | 0/0 |
+
+El segundo día usa orden explícito C→A→B, duraciones 5/15/10, dependencias y recursos diarios físicos. Revisiones, permisos, CAS stale, referencias desconocidas y perfil histórico inmutable: PASS. El primer input y Stage permanecen iguales tras editar la configuración general; replay repetido determinista. Las autoridades del montaje se reconstruyen desde la revisión aceptada, sin duplicar recursos heredados.
+
+[Comparación de preferencias](v2/policy-comparison.json) sobre las autoridades reales de esos días: espera válida, coste **0→5**; reentradas válidas, coste de setup **2→6**, cuatro preparaciones físicas. Las mismas alternativas fallan al cambiar el eje correspondiente a REQUIRED. El focal adicional demuestra decisión distinta: OFF selecciona ABA, PREFERRED agrupa AAB. El coste se incorpora al scoring existente; no se presenta como una prueba de óptimo global.
+
+## Regresión U00a–U00d
+
+Los stacks se ejecutaron serialmente con los límites existentes. U00a/U00b conservan problemas completos, fingerprints, mapas de identidad y snapshots de Stage: **4/4, 9/9, 6/6, 3/3**. U00c conserva snapshots anteriores, rebootstrap, problema/fingerprints y Stage final, además de permisos, Draft sucio, ejecución protegida, propuesta en curso, rollback y CAS. U00d completa dos días de **4/4** con equipos físicos, alternativa B junto a C y negativos de capacidad, ventanas, transición y recurso independiente. Problemas, fingerprints y snapshots completos idénticos a la Evidence integrada. [Comparación U00a/b](v2/u00a-b-comparison.json), [comparación U00c/d y A2](v2/comparison.json).
+
+## A2 aislado desde S0
+
+Base archivada exacta `3a05cb0`, candidato y repetición seriales, sin UI/build/suite concurrentes y sin aumentar límites. Los tres terminan **266/266, 11 Stages, cero nuevas HARD/REQUIRED**, regeneración automática, conjunto exacto de obligaciones y conservación de cada Stage aceptado.
+
+| Ejecución | Tiempo de iteraciones (s) | Obligaciones | Stages | Ramas |
+| --- | --- | --- | --- | --- |
+| base | 135.038 | 266/266 | 11 | 27.049 |
+| candidate | 152.626 | 266/266 | 11 | 27.049 |
+| repeat | 94.230 | 266/266 | 11 | 27.049 |
+
+Ratio candidato/base: **1.130**; repetición/base: **0.698**. La diferencia de +13,0% se concentra en S0 (+18,664 s); la mayoría de los Stages posteriores es más rápida. El mismo candidato repetido tarda un 30,2% menos que la base, con idénticos contadores y certificados. No hay un incremento estructural de búsqueda; la variación de tiempo no permite atribuir una regresión sostenida al código. No se instrumentó la causa de host/CPU y no se promete throughput. Los informes completos son idénticos excluyendo sólo `iterations[].durationMs`; los once snapshots de cada ejecución son idénticos, al igual que runtime/lockfile. Presencia total: **8.465 min**. Fingerprint: `2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d`. La auditoría reutilizada revalida **22 certificados**, cierre participante/comida y conservación de ocupaciones; sus aserciones no cambian. Se corrige sólo su etiqueta descriptiva de base, conservando `verifierOriginalBaseMetadata`.
+
+[Informe A2](v2/a2-report.json), [comparación integral](v2/comparison.json), [condiciones de ejecución](v2/a2-execution.json). Runs/snapshots/runtime están comprimidos en `v2/a2-base`, `v2/a2-candidate` y `v2/a2-repeat`. La diferencia temporal es medida, no una garantía de rendimiento. El timeout concurrente del primer borrador permanece histórico y no se usa como baseline ni como prueba de inviabilidad.
+
+## Frontera y reproducción
+
+Se habilitan auxiliares físicas con participante en espacios exclusivos de capacidad 1 y EXACT_CONSTRUCTIVE. Grupos conjuntos y elecciones itinerantes dentro del espacio v2 dan diagnóstico explícito; U00d sin estas políticas conserva su soporte. REQUIRED con pausa operativa flexible devuelve `SPACE_POLICY_FLEXIBLE_PAUSE_UNSUPPORTED`; las pausas fijas autorizadas se admiten. No hay adopción automática de jornadas anteriores. Los probes analíticos se identifican como límites superiores, sin afirmar matching ni completitud.
+
+Reproducción serial: [reproduce.sh](reproduce.sh), sobre Node 20 con Docker/Chromium y dependencias locked. Las recetas y datos del primer borrador se conservan aparte. No se versionan credenciales, logs privados ni trazas de navegador. Sin nuevo solver, aumento de budgets/timeouts, cambios en Supabase productivo, Replit, migraciones, publicación ni merge.

@@ -1,0 +1,939 @@
+{
+  "remoteWrites": 0,
+  "days": [
+    {
+      "planId": 2,
+      "obligations": 4,
+      "completed": 4,
+      "stages": 1,
+      "durationMs": 2725,
+      "problemFingerprint": "ae17ff334069e181a1c0e5f1f579bfa8d4cb7b57a460e7f6daa345bbe3a600d6",
+      "combinedAuthorities": {
+        "plannerProfileRevision": 1,
+        "itinerantCompositionVersion": 1,
+        "itinerantUnitCount": 3
+      },
+      "branches": {
+        "coreBranches": 0,
+        "branchesExplored": 5,
+        "coreMaximumDepth": 0,
+        "branchBudgetLimit": 10000,
+        "conflictBackjumps": 0,
+        "standaloneBranches": 5,
+        "feederOrderBranches": 0,
+        "suffixDepthsSkipped": 0,
+        "architecturesChecked": 0,
+        "bundleNogoodBranches": 0,
+        "bundleNogoodsCreated": 0,
+        "bundleMatchingRepairs": 0,
+        "mainRunWitnessRepairs": 0,
+        "bundleCertifiedRepairs": 0,
+        "bundleMatchingAttempts": 0,
+        "mainRunWitnessAttempts": 0,
+        "coreLeafTransportPrunes": 0,
+        "deepestCoreDepthReached": 0,
+        "mainCandidatesEvaluated": 0,
+        "standaloneForwardChecks": 0,
+        "feederSlotMatchingChecks": 0,
+        "feederCandidatesEvaluated": 0,
+        "membershipFallbackEntered": 0,
+        "patternCandidatesExplored": 0,
+        "transportContiguousStates": 0,
+        "bundleNogoodDeduplications": 0,
+        "residualMatchingFullBuilds": 0,
+        "timelineCandidatesExplored": 0,
+        "bundleHardValidationRejects": 0,
+        "residualMatchingInvocations": 0,
+        "bundleNogoodRepairsSucceeded": 0,
+        "feederSlotMatchingEdgeChecks": 0,
+        "standaloneForwardStartChecks": 0,
+        "residualMatchingEdgeCacheHits": 0,
+        "bundleMatchingMaterializations": 0,
+        "residualMatchingPositionChecks": 0,
+        "participantMealZeroDomainPrunes": 0,
+        "residualMatchingEdgeCacheMisses": 0,
+        "mainRunEquivalentOrdersCollapsed": 0,
+        "residualMatchingBranchesExplored": 0,
+        "residualMatchingAugmentTraversals": 0,
+        "standaloneForwardWitnessCacheHits": 0,
+        "feederSlotMatchingBranchesExplored": 0,
+        "futureRoundWitnessBranchesConsumed": 0,
+        "residualMatchingIncrementalUpdates": 0,
+        "feederSlotMatchingAugmentTraversals": 0,
+        "futureRoundWitnessCompleteMatchings": 0,
+        "futureRoundWitnessSearchInvocations": 0,
+        "standaloneForwardWitnessCacheMisses": 0,
+        "futureRoundWitnessPrerequisiteChecks": 0,
+        "participantMealExactMaterializations": 1,
+        "futureRoundWitnessStructuralCandidates": 0,
+        "participantMealFutureFeasibilityChecks": 1,
+        "participantMealAnalyticCollectivePrunes": 0,
+        "participantMealFutureInfeasibleBranches": 0,
+        "futureRoundWitnessParticipantFutureChecks": 0,
+        "participantMealAffectedObligationsChecked": 0
+      },
+      "hardCount": 0,
+      "requiredCount": 0
+    },
+    {
+      "planId": 3,
+      "obligations": 4,
+      "completed": 4,
+      "stages": 1,
+      "durationMs": 2777,
+      "problemFingerprint": "29334aaa162ba1bde342132c77a09bd2d8fd3b3f507f55a19b8275eb42c98d57",
+      "combinedAuthorities": {
+        "plannerProfileRevision": 1,
+        "itinerantCompositionVersion": 1,
+        "itinerantUnitCount": 3
+      },
+      "branches": {
+        "coreBranches": 0,
+        "branchesExplored": 5,
+        "coreMaximumDepth": 0,
+        "branchBudgetLimit": 10000,
+        "conflictBackjumps": 0,
+        "standaloneBranches": 5,
+        "feederOrderBranches": 0,
+        "suffixDepthsSkipped": 0,
+        "architecturesChecked": 0,
+        "bundleNogoodBranches": 0,
+        "bundleNogoodsCreated": 0,
+        "bundleMatchingRepairs": 0,
+        "mainRunWitnessRepairs": 0,
+        "bundleCertifiedRepairs": 0,
+        "bundleMatchingAttempts": 0,
+        "mainRunWitnessAttempts": 0,
+        "coreLeafTransportPrunes": 0,
+        "deepestCoreDepthReached": 0,
+        "mainCandidatesEvaluated": 0,
+        "standaloneForwardChecks": 0,
+        "feederSlotMatchingChecks": 0,
+        "feederCandidatesEvaluated": 0,
+        "membershipFallbackEntered": 0,
+        "patternCandidatesExplored": 0,
+        "transportContiguousStates": 0,
+        "bundleNogoodDeduplications": 0,
+        "residualMatchingFullBuilds": 0,
+        "timelineCandidatesExplored": 0,
+        "bundleHardValidationRejects": 0,
+        "residualMatchingInvocations": 0,
+        "bundleNogoodRepairsSucceeded": 0,
+        "feederSlotMatchingEdgeChecks": 0,
+        "standaloneForwardStartChecks": 0,
+        "residualMatchingEdgeCacheHits": 0,
+        "bundleMatchingMaterializations": 0,
+        "residualMatchingPositionChecks": 0,
+        "participantMealZeroDomainPrunes": 0,
+        "residualMatchingEdgeCacheMisses": 0,
+        "mainRunEquivalentOrdersCollapsed": 0,
+        "residualMatchingBranchesExplored": 0,
+        "residualMatchingAugmentTraversals": 0,
+        "standaloneForwardWitnessCacheHits": 0,
+        "feederSlotMatchingBranchesExplored": 0,
+        "futureRoundWitnessBranchesConsumed": 0,
+        "residualMatchingIncrementalUpdates": 0,
+        "feederSlotMatchingAugmentTraversals": 0,
+        "futureRoundWitnessCompleteMatchings": 0,
+        "futureRoundWitnessSearchInvocations": 0,
+        "standaloneForwardWitnessCacheMisses": 0,
+        "futureRoundWitnessPrerequisiteChecks": 0,
+        "participantMealExactMaterializations": 1,
+        "futureRoundWitnessStructuralCandidates": 0,
+        "participantMealFutureFeasibilityChecks": 1,
+        "participantMealAnalyticCollectivePrunes": 0,
+        "participantMealFutureInfeasibleBranches": 0,
+        "futureRoundWitnessParticipantFutureChecks": 0,
+        "participantMealAffectedObligationsChecked": 0
+      },
+      "hardCount": 0,
+      "requiredCount": 0
+    }
+  ],
+  "checks": [
+    "physical resources and A=CAM_A, B=CAM_B, C=CAM_A+SON_1 created in the normal catalog UI",
+    "real proposal selects B alongside C, A+B run simultaneously and Stage reserves exactly the selected members plus the independent kit",
+    "existing placement/preflight authorities reject shared CAM_A, forbidden alternatives, missing/ambiguous mappings, out-of-window operations and insufficient physical transitions",
+    "four auxiliary tasks with two participants, template dependencies and daily team mappings complete a second UI-created day without changing the first",
+    "an independent resource with insufficient availability prevents a proposal and preserves S0/Draft"
+  ],
+  "startedAt": "2026-10-22T20:04:16.273Z",
+  "teams": [
+    {
+      "id": 1,
+      "code": "U00D_0",
+      "name": "Equipo A",
+      "isActive": true,
+      "orderIndex": 0,
+      "revision": 0,
+      "availabilityWindows": [
+        {
+          "end": "12:00",
+          "start": "09:00"
+        }
+      ],
+      "transitionMinutes": 3,
+      "resourceItemIds": [
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "code": "U00D_1",
+      "name": "Equipo B",
+      "isActive": true,
+      "orderIndex": 0,
+      "revision": 0,
+      "availabilityWindows": [
+        {
+          "end": "12:00",
+          "start": "09:00"
+        }
+      ],
+      "transitionMinutes": 3,
+      "resourceItemIds": [
+        2
+      ]
+    },
+    {
+      "id": 3,
+      "code": "U00D_2",
+      "name": "Equipo C",
+      "isActive": true,
+      "orderIndex": 0,
+      "revision": 0,
+      "availabilityWindows": [
+        {
+          "end": "12:00",
+          "start": "10:00"
+        }
+      ],
+      "transitionMinutes": 3,
+      "resourceItemIds": [
+        1,
+        3
+      ]
+    }
+  ],
+  "members": [
+    {
+      "id": 1,
+      "type_id": 1,
+      "name": "CAM_A",
+      "is_active": true,
+      "default_availability_start": null,
+      "default_availability_end": null
+    },
+    {
+      "id": 2,
+      "type_id": 1,
+      "name": "CAM_B",
+      "is_active": true,
+      "default_availability_start": null,
+      "default_availability_end": null
+    },
+    {
+      "id": 3,
+      "type_id": 1,
+      "name": "SON_1",
+      "is_active": true,
+      "default_availability_start": null,
+      "default_availability_end": null
+    },
+    {
+      "id": 4,
+      "type_id": 1,
+      "name": "KIT_INDEPENDIENTE",
+      "is_active": true,
+      "default_availability_start": null,
+      "default_availability_end": null
+    }
+  ],
+  "firstIdentity": {
+    "snapshot": {
+      "contractVersion": 1,
+      "units": [
+        {
+          "id": 4,
+          "plan_id": 2,
+          "source_team_id": 1,
+          "source_revision": 0,
+          "code": "U00D_0",
+          "name": "Equipo A",
+          "availability_windows": [
+            {
+              "start": "09:00",
+              "end": "12:00"
+            }
+          ],
+          "transition_minutes": 3,
+          "members": [
+            {
+              "resourceItemId": 1,
+              "planResourceItemId": 5
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "plan_id": 2,
+          "source_team_id": 2,
+          "source_revision": 0,
+          "code": "U00D_1",
+          "name": "Equipo B",
+          "availability_windows": [
+            {
+              "start": "09:00",
+              "end": "12:00"
+            }
+          ],
+          "transition_minutes": 3,
+          "members": [
+            {
+              "resourceItemId": 2,
+              "planResourceItemId": 6
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "plan_id": 2,
+          "source_team_id": 3,
+          "source_revision": 0,
+          "code": "U00D_2",
+          "name": "Equipo C",
+          "availability_windows": [
+            {
+              "start": "10:00",
+              "end": "12:00"
+            }
+          ],
+          "transition_minutes": 3,
+          "members": [
+            {
+              "resourceItemId": 1,
+              "planResourceItemId": 5
+            },
+            {
+              "resourceItemId": 3,
+              "planResourceItemId": 7
+            }
+          ]
+        }
+      ]
+    },
+    "tasks": [
+      {
+        "id": 1,
+        "planId": 2,
+        "templateId": 1,
+        "templateName": "Operar cámara A",
+        "resourceRequirements": null,
+        "zoneId": 1,
+        "spaceId": 1,
+        "_invalidSpaceId": null,
+        "_unplannedHint": null,
+        "contestantId": null,
+        "contestantName": null,
+        "status": "pending",
+        "itinerantTeamId": 4,
+        "allowedItinerantTeamIds": [
+          4
+        ],
+        "itinerantTeamRequirement": "specific",
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "hasDependency": false,
+        "dependsOnTemplateIds": [],
+        "dependsOnTaskIds": [],
+        "dependsOnTemplateId": null,
+        "dependsOnTaskId": null,
+        "durationOverrideMin": 10,
+        "camerasOverride": 0,
+        "startPlanned": null,
+        "endPlanned": null,
+        "lockedStart": null,
+        "lockedEnd": null,
+        "lockType": null,
+        "startReal": null,
+        "endReal": null,
+        "assignedResourceIds": null,
+        "plannerNextKind": "technical",
+        "operationalRole": "productive_task"
+      },
+      {
+        "id": 2,
+        "planId": 2,
+        "templateId": 2,
+        "templateName": "Operar cámara B",
+        "resourceRequirements": null,
+        "zoneId": 1,
+        "spaceId": 2,
+        "_invalidSpaceId": null,
+        "_unplannedHint": null,
+        "contestantId": null,
+        "contestantName": null,
+        "status": "pending",
+        "itinerantTeamId": 5,
+        "allowedItinerantTeamIds": [
+          5
+        ],
+        "itinerantTeamRequirement": "specific",
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "hasDependency": false,
+        "dependsOnTemplateIds": [],
+        "dependsOnTaskIds": [],
+        "dependsOnTemplateId": null,
+        "dependsOnTaskId": null,
+        "durationOverrideMin": 10,
+        "camerasOverride": 0,
+        "startPlanned": null,
+        "endPlanned": null,
+        "lockedStart": null,
+        "lockedEnd": null,
+        "lockType": null,
+        "startReal": null,
+        "endReal": null,
+        "assignedResourceIds": null,
+        "plannerNextKind": "technical",
+        "operationalRole": "productive_task"
+      },
+      {
+        "id": 3,
+        "planId": 2,
+        "templateId": 3,
+        "templateName": "Operar composición C",
+        "resourceRequirements": null,
+        "zoneId": 1,
+        "spaceId": 3,
+        "_invalidSpaceId": null,
+        "_unplannedHint": null,
+        "contestantId": null,
+        "contestantName": null,
+        "status": "pending",
+        "itinerantTeamId": 6,
+        "allowedItinerantTeamIds": [
+          6
+        ],
+        "itinerantTeamRequirement": "specific",
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "hasDependency": true,
+        "dependsOnTemplateIds": [
+          1
+        ],
+        "dependsOnTaskIds": [
+          1
+        ],
+        "dependsOnTemplateId": 1,
+        "dependsOnTaskId": 1,
+        "durationOverrideMin": 10,
+        "camerasOverride": 0,
+        "startPlanned": null,
+        "endPlanned": null,
+        "lockedStart": null,
+        "lockedEnd": null,
+        "lockType": null,
+        "startReal": null,
+        "endReal": null,
+        "assignedResourceIds": null,
+        "plannerNextKind": "technical",
+        "operationalRole": "productive_task"
+      },
+      {
+        "id": 4,
+        "planId": 2,
+        "templateId": 4,
+        "templateName": "Elegir cámara alternativa",
+        "resourceRequirements": {
+          "byItem": {
+            "4": 1
+          }
+        },
+        "zoneId": 1,
+        "spaceId": 4,
+        "_invalidSpaceId": null,
+        "_unplannedHint": null,
+        "contestantId": null,
+        "contestantName": null,
+        "status": "pending",
+        "itinerantTeamId": null,
+        "allowedItinerantTeamIds": [
+          4,
+          5
+        ],
+        "itinerantTeamRequirement": "any",
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "hasDependency": true,
+        "dependsOnTemplateIds": [
+          2
+        ],
+        "dependsOnTaskIds": [
+          2
+        ],
+        "dependsOnTemplateId": 2,
+        "dependsOnTaskId": 2,
+        "durationOverrideMin": 10,
+        "camerasOverride": 0,
+        "startPlanned": null,
+        "endPlanned": null,
+        "lockedStart": null,
+        "lockedEnd": null,
+        "lockType": null,
+        "startReal": null,
+        "endReal": null,
+        "assignedResourceIds": null,
+        "plannerNextKind": "technical",
+        "operationalRole": "productive_task",
+        "declaredResourceIds": [
+          8
+        ]
+      }
+    ],
+    "adapter": {
+      "identityMap": [
+        {
+          "namespace": "itinerant-team",
+          "sourceId": "4",
+          "canonicalId": "itinerant-team:4"
+        },
+        {
+          "namespace": "itinerant-team",
+          "sourceId": "5",
+          "canonicalId": "itinerant-team:5"
+        },
+        {
+          "namespace": "itinerant-team",
+          "sourceId": "6",
+          "canonicalId": "itinerant-team:6"
+        },
+        {
+          "namespace": "plan-resource",
+          "sourceId": "5",
+          "canonicalId": "plan-resource:5"
+        },
+        {
+          "namespace": "plan-resource",
+          "sourceId": "6",
+          "canonicalId": "plan-resource:6"
+        },
+        {
+          "namespace": "plan-resource",
+          "sourceId": "7",
+          "canonicalId": "plan-resource:7"
+        },
+        {
+          "namespace": "plan-resource",
+          "sourceId": "8",
+          "canonicalId": "plan-resource:8"
+        },
+        {
+          "namespace": "plan",
+          "sourceId": "2",
+          "canonicalId": "plan:2"
+        },
+        {
+          "namespace": "resource-item",
+          "sourceId": "1",
+          "canonicalId": "resource-item:1"
+        },
+        {
+          "namespace": "resource-item",
+          "sourceId": "2",
+          "canonicalId": "resource-item:2"
+        },
+        {
+          "namespace": "resource-item",
+          "sourceId": "3",
+          "canonicalId": "resource-item:3"
+        },
+        {
+          "namespace": "resource-item",
+          "sourceId": "4",
+          "canonicalId": "resource-item:4"
+        },
+        {
+          "namespace": "resource-type",
+          "sourceId": "1",
+          "canonicalId": "resource-type:1"
+        },
+        {
+          "namespace": "space",
+          "sourceId": "1",
+          "canonicalId": "space:1"
+        },
+        {
+          "namespace": "space",
+          "sourceId": "2",
+          "canonicalId": "space:2"
+        },
+        {
+          "namespace": "space",
+          "sourceId": "3",
+          "canonicalId": "space:3"
+        },
+        {
+          "namespace": "space",
+          "sourceId": "4",
+          "canonicalId": "space:4"
+        },
+        {
+          "namespace": "space",
+          "sourceId": "5",
+          "canonicalId": "space:5"
+        },
+        {
+          "namespace": "space",
+          "sourceId": "6",
+          "canonicalId": "space:6"
+        },
+        {
+          "namespace": "task",
+          "sourceId": "1",
+          "canonicalId": "task:1"
+        },
+        {
+          "namespace": "task",
+          "sourceId": "2",
+          "canonicalId": "task:2"
+        },
+        {
+          "namespace": "task",
+          "sourceId": "3",
+          "canonicalId": "task:3"
+        },
+        {
+          "namespace": "task",
+          "sourceId": "4",
+          "canonicalId": "task:4"
+        },
+        {
+          "namespace": "template",
+          "sourceId": "1",
+          "canonicalId": "template:1"
+        },
+        {
+          "namespace": "template",
+          "sourceId": "2",
+          "canonicalId": "template:2"
+        },
+        {
+          "namespace": "template",
+          "sourceId": "3",
+          "canonicalId": "template:3"
+        },
+        {
+          "namespace": "template",
+          "sourceId": "4",
+          "canonicalId": "template:4"
+        },
+        {
+          "namespace": "zone",
+          "sourceId": "1",
+          "canonicalId": "zone:1"
+        }
+      ],
+      "diagnostics": {
+        "taskCount": 4,
+        "planifiableTaskCount": 4,
+        "protectedTaskCount": 0,
+        "cancelledTaskCount": 0,
+        "pendingPlanningDiscardCount": 0,
+        "lockCount": 0,
+        "participantCount": 0,
+        "coachReferenceCount": 0,
+        "missingCoachReferenceCount": 0,
+        "spaceCount": 6,
+        "referencedSpaceCount": 4,
+        "describedSpaceCount": 6,
+        "zoneCount": 1,
+        "planResourceCount": 4,
+        "requiredPlanResourceCount": 4,
+        "usableRequiredPlanResourceCount": 4,
+        "unusableRequiredPlanResourceCount": 0,
+        "protectedTaskResourceAvailabilityConflictCount": 0,
+        "requiredSpaceCount": 4,
+        "usableRequiredSpaceCount": 4,
+        "unusableRequiredSpaceCount": 0,
+        "requiredZoneCount": 1,
+        "protectedTaskSpatialAvailabilityConflictCount": 0,
+        "resourceItemCount": 4,
+        "resourceAssignmentReferenceCount": 1,
+        "resourceComponentReferenceCount": 0,
+        "missingResourceReferenceCount": 0,
+        "dependencyCount": 2,
+        "breakCount": 1,
+        "participantScopedMealCount": 0,
+        "supportedParticipantScopedMealCount": 0,
+        "unsupportedParticipantScopedMealCount": 0,
+        "transportConfigured": false,
+        "setupConfigurationDetected": false,
+        "integrationConfigurationPresent": true,
+        "mainFlowConfigurationComplete": false,
+        "searchPolicyConfigurationPresent": true,
+        "searchBudgetConfigurationComplete": true,
+        "timeGridVerifiable": true,
+        "transitionConfigurationComplete": true,
+        "anchoredOperationContractPresent": false,
+        "unresolvedTaskRoleCount": 0,
+        "missingDurationTaskCount": 0,
+        "missingAvailabilityCounts": {
+          "participants": 0,
+          "spaces": 0,
+          "resources": 0
+        },
+        "unsupportedCapabilityCodes": [],
+        "readOnly": true
+      },
+      "issues": [],
+      "sourceFingerprint": "d0e3f6c0ca0eeadf94aa4d473c3bc076cbc15f502477e3d2f0f701da04b980aa",
+      "identityMapFingerprint": "059039e655d0c0231ab65152d9411506391e84f3811cb0747a1de9624715ae21",
+      "readOnly": true,
+      "status": "SUPPORTED",
+      "problem": {
+        "day": {
+          "start": 540,
+          "end": 1080
+        },
+        "protectedMeal": {
+          "start": 780,
+          "end": 840
+        },
+        "spaces": [
+          {
+            "id": "space:1",
+            "availability": [
+              {
+                "start": 570,
+                "end": 580
+              }
+            ]
+          },
+          {
+            "id": "space:2",
+            "availability": [
+              {
+                "start": 570,
+                "end": 580
+              }
+            ]
+          },
+          {
+            "id": "space:3",
+            "availability": [
+              {
+                "start": 600,
+                "end": 610
+              }
+            ]
+          },
+          {
+            "id": "space:4",
+            "availability": [
+              {
+                "start": 600,
+                "end": 610
+              }
+            ]
+          }
+        ],
+        "resources": [
+          {
+            "id": "plan-resource:5",
+            "availability": [
+              {
+                "start": 570,
+                "end": 720
+              }
+            ],
+            "presencePreference": "OFF",
+            "presenceConcentrationPolicy": "OFF",
+            "transitionMinutes": 5
+          },
+          {
+            "id": "plan-resource:6",
+            "availability": [
+              {
+                "start": 570,
+                "end": 720
+              }
+            ],
+            "presencePreference": "OFF",
+            "presenceConcentrationPolicy": "OFF",
+            "transitionMinutes": 5
+          },
+          {
+            "id": "plan-resource:7",
+            "availability": [
+              {
+                "start": 600,
+                "end": 720
+              }
+            ],
+            "presencePreference": "OFF",
+            "presenceConcentrationPolicy": "OFF",
+            "transitionMinutes": 5
+          },
+          {
+            "id": "plan-resource:8",
+            "availability": [
+              {
+                "start": 570,
+                "end": 720
+              }
+            ],
+            "presencePreference": "OFF",
+            "presenceConcentrationPolicy": "OFF",
+            "transitionMinutes": 5
+          }
+        ],
+        "participants": [],
+        "coaches": [],
+        "itinerantUnits": [
+          {
+            "id": "itinerant-team:4",
+            "availability": [
+              {
+                "start": 540,
+                "end": 720
+              }
+            ],
+            "resourceIds": [
+              "plan-resource:5"
+            ],
+            "transitionMinutes": 3
+          },
+          {
+            "id": "itinerant-team:5",
+            "availability": [
+              {
+                "start": 540,
+                "end": 720
+              }
+            ],
+            "resourceIds": [
+              "plan-resource:6"
+            ],
+            "transitionMinutes": 3
+          },
+          {
+            "id": "itinerant-team:6",
+            "availability": [
+              {
+                "start": 600,
+                "end": 720
+              }
+            ],
+            "resourceIds": [
+              "plan-resource:5",
+              "plan-resource:7"
+            ],
+            "transitionMinutes": 3
+          }
+        ],
+        "tasks": [
+          {
+            "id": "task:1",
+            "duration": 10,
+            "spaceId": "space:1",
+            "dependencies": [],
+            "nonSubstitutableResourceIds": [],
+            "itinerantUnitId": "itinerant-team:4",
+            "allowedItinerantUnitIds": [
+              "itinerant-team:4"
+            ],
+            "participantMarginBeforeMinutes": 0,
+            "participantMarginAfterMinutes": 0,
+            "kind": "technical",
+            "requiredResourceIds": [
+              "plan-resource:5"
+            ]
+          },
+          {
+            "id": "task:2",
+            "duration": 10,
+            "spaceId": "space:2",
+            "dependencies": [],
+            "nonSubstitutableResourceIds": [],
+            "itinerantUnitId": "itinerant-team:5",
+            "allowedItinerantUnitIds": [
+              "itinerant-team:5"
+            ],
+            "participantMarginBeforeMinutes": 0,
+            "participantMarginAfterMinutes": 0,
+            "kind": "technical",
+            "requiredResourceIds": [
+              "plan-resource:6"
+            ]
+          },
+          {
+            "id": "task:3",
+            "duration": 10,
+            "spaceId": "space:3",
+            "dependencies": [
+              "task:1"
+            ],
+            "nonSubstitutableResourceIds": [],
+            "itinerantUnitId": "itinerant-team:6",
+            "allowedItinerantUnitIds": [
+              "itinerant-team:6"
+            ],
+            "participantMarginBeforeMinutes": 0,
+            "participantMarginAfterMinutes": 0,
+            "kind": "technical",
+            "requiredResourceIds": [
+              "plan-resource:5",
+              "plan-resource:7"
+            ]
+          },
+          {
+            "id": "task:4",
+            "duration": 10,
+            "spaceId": "space:4",
+            "dependencies": [
+              "task:2"
+            ],
+            "requiredResourceIds": [
+              "plan-resource:8"
+            ],
+            "nonSubstitutableResourceIds": [
+              "plan-resource:8"
+            ],
+            "allowedItinerantUnitIds": [
+              "itinerant-team:4",
+              "itinerant-team:5"
+            ],
+            "participantMarginBeforeMinutes": 0,
+            "participantMarginAfterMinutes": 0,
+            "kind": "technical"
+          }
+        ],
+        "profile": "STANDALONE_ONLY",
+        "participantTransitionMinutes": 5,
+        "resourceTransitionMinutes": 5,
+        "budget": {
+          "bestK": 3,
+          "maxBacktracks": 50,
+          "maxPatterns": 20,
+          "maxBranchExpansions": 10000
+        },
+        "searchPolicy": "EXACT_CONSTRUCTIVE"
+      },
+      "reasonCodes": [],
+      "problemFingerprint": "ae17ff334069e181a1c0e5f1f579bfa8d4cb7b57a460e7f6daa345bbe3a600d6"
+    }
+  },
+  "physicalProbes": {
+    "AplusB": true,
+    "AplusC": false,
+    "forbiddenChoiceRejected": true,
+    "missingUnitRejected": true,
+    "ambiguousMappingRejected": true,
+    "unitWindowRespected": true,
+    "memberWindowRespected": true,
+    "physicalTransitionMinutes": 5
+  },
+  "finishedAt": "2026-10-22T20:06:26.100Z"
+}

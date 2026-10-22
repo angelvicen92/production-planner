@@ -1,3 +1,4 @@
+import type {SetupPolicy} from "./contracts";
 import { assessOperationContinuity, operationContinuityPreflight } from "./operationContinuity";
 import type {
   Person,
@@ -249,16 +250,24 @@ export function preflight(problem: PlannerNextProblem): string[] {
   for (const space of spaces) {
     if(Object.prototype.hasOwnProperty.call(space,"mealPolicy")){const p=(space as {mealPolicy?:unknown}).mealPolicy;const validObject=p!==null&&typeof p==="object"&&!Array.isArray(p);const policy=validObject?p as {window?:unknown;duration?:unknown}:undefined;const w=policy?.window as {start?:unknown;end?:unknown}|undefined;const duration=policy?.duration;const validWindow=w!==null&&typeof w==="object"&&Number.isFinite(w.start)&&Number.isInteger(w.start)&&Number.isFinite(w.end)&&Number.isInteger(w.end)&&(w.start as number)<(w.end as number)&&(w.start as number)>=day.start&&(w.end as number)<=day.end;const validDuration=typeof duration==="number"&&Number.isFinite(duration)&&Number.isInteger(duration)&&duration>0&&validWindow&&duration<=(w!.end as number)-(w!.start as number);const fits=validDuration&&Math.ceil((w!.start as number)/5)*5+duration<=(w!.end as number);const available=validWindow&&space.availability.some(a=>a.start<=(w!.start as number)&&(w!.end as number)<=a.end);if(!validObject||!validWindow||!validDuration||!fits||!available)reasons.add("INVALID_SPACE_MEAL_POLICY");if(space.id===mainSpaceId){if(!incompatibleMainMeals&&!mainFlowMealAligned(problem))reasons.add("MAIN_FLOW_MEAL_ALIGNMENT_INVALID");if(space.setupPolicy!==undefined||space.secondaryContinuity!==undefined&&space.secondaryContinuity!=="OFF")reasons.add("SPACE_MEAL_IN_STRUCTURED_SPACE_UNSUPPORTED");const own=tasks.filter(t=>t?.spaceId===space.id);if(own.some(t=>t.kind!=="main"||!t.participantId||!t.coachId||!t.blockKey))reasons.add("SPACE_MEAL_TASK_KIND_UNSUPPORTED");}else{if(space.setupPolicy!==undefined)reasons.add("SPACE_MEAL_IN_STRUCTURED_SPACE_UNSUPPORTED");const own=tasks.filter(t=>t?.spaceId===space.id),fixed=validDuration&&duration===(w!.end as number)-(w!.start as number);if(own.some(t=>{const auxiliary=t.kind==="auxiliary"&&t.jointGroupId===undefined&&t.setupFamilyId===undefined&&Array.isArray(t.dependencies)&&t.dependencies.length===0&&t.coachId===undefined;const exactFeeder=fixed&&t.kind==="vocal"&&t.participantId!==undefined&&t.coachId!==undefined&&Array.isArray(t.dependencies)&&t.dependencies.length===0;return !auxiliary&&!exactFeeder;})||(space.secondaryContinuity==="REQUIRED"&&own.length<2))reasons.add("SPACE_MEAL_TASK_KIND_UNSUPPORTED");}}
     if (space.setupPolicy !== undefined) {
-      const policy = space.setupPolicy as { familyOrder?: unknown; flexibleFamilyOrder?: unknown; reentry?: unknown; preparationMinutesByFamily?: unknown; preparationMinutesBetweenFamilies?: unknown };
-      if (!policy || typeof policy !== "object" || !Array.isArray(policy.familyOrder) || policy.familyOrder.length === 0 || policy.familyOrder.some((x) => typeof x !== "string" || x.length === 0)) reasons.add("INVALID_SETUP_POLICY");
+      const policy = space.setupPolicy as SetupPolicy & { familyOrder?: unknown; flexibleFamilyOrder?: unknown; reentry?: unknown; preparationMinutesByFamily?: unknown; preparationMinutesBetweenFamilies?: unknown };
+      if (!policy || typeof policy !== "object" || !Array.isArray(policy.familyOrder) || (policy.familyOrder.length === 0&&!(policy.contractVersion===2&&policy.groupingPolicy==="OFF")) || policy.familyOrder.some((x) => typeof x !== "string" || x.length === 0)) reasons.add("INVALID_SETUP_POLICY");
+      if(policy.contractVersion!==undefined&&policy.contractVersion!==2)reasons.add("INVALID_SETUP_POLICY");
+      if(policy.contractVersion!==2&&(policy.groupingPolicy!==undefined||policy.initialPreparationMinutes!==undefined))reasons.add("INVALID_SETUP_POLICY");
+      if(policy.contractVersion===2&&space.secondaryContinuity==="REQUIRED"&&(problem.operationalMealPolicies??[]).some(p=>p.spaceIds.includes(space.id)&&p.duration!==p.window.end-p.window.start))reasons.add("SPACE_POLICY_FLEXIBLE_PAUSE_UNSUPPORTED");
+      if(policy.contractVersion===2&&!["OFF","PREFERRED","REQUIRED"].includes(String(space.secondaryContinuity)))reasons.add("INVALID_SECONDARY_CONTINUITY");
       const order = Array.isArray(policy?.familyOrder) ? policy.familyOrder.filter((x): x is string => typeof x === "string") : [];
       if (new Set(order).size !== order.length) reasons.add("DUPLICATE_SETUP_FAMILY");
       if (policy?.flexibleFamilyOrder !== undefined && typeof policy.flexibleFamilyOrder !== "boolean") reasons.add("INVALID_SETUP_POLICY");
-      if (policy?.reentry !== "FORBIDDEN") reasons.add("UNSUPPORTED_SETUP_REENTRY");
-      if (policy.flexibleFamilyOrder === true) {
+      if (policy?.reentry !== (policy.contractVersion===2&&policy.groupingPolicy!=="REQUIRED"?"ALLOWED":"FORBIDDEN")) reasons.add("UNSUPPORTED_SETUP_REENTRY");
+      if(policy.contractVersion===2){
+        if(policy.preparationMinutesByFamily!==undefined)reasons.add("INVALID_SETUP_PREPARATION_POLICY");
+        const minutes=policy.preparationMinutesBetweenFamilies;
+        if(policy.groupingPolicy!=="OFF"&&(typeof minutes!=="number"||!Number.isInteger(minutes)||minutes<0||minutes%5!==0))reasons.add("INVALID_SETUP_PREPARATION_POLICY");
+      }else if (policy.flexibleFamilyOrder === true) {
         if (Object.prototype.hasOwnProperty.call(policy, "preparationMinutesByFamily")) reasons.add("INVALID_SETUP_PREPARATION_POLICY");
         const minutes = policy.preparationMinutesBetweenFamilies;
-        if (typeof minutes !== "number" || !Number.isFinite(minutes) || !Number.isInteger(minutes) || minutes <= 0 || minutes % PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES !== 0) reasons.add("INVALID_SETUP_PREPARATION_POLICY");
+        if (typeof minutes !== "number" || !Number.isFinite(minutes) || !Number.isInteger(minutes) || (policy.contractVersion===2?minutes<0:minutes<=0) || minutes % PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES !== 0) reasons.add("INVALID_SETUP_PREPARATION_POLICY");
       } else {
         if (Object.prototype.hasOwnProperty.call(policy, "preparationMinutesBetweenFamilies")) reasons.add("INVALID_SETUP_PREPARATION_POLICY");
         if (Object.prototype.hasOwnProperty.call(policy, "preparationMinutesByFamily")) {
@@ -275,21 +284,26 @@ export function preflight(problem: PlannerNextProblem): string[] {
         }
       }
       if (space.id === mainSpaceId) reasons.add("SETUP_ON_MAIN_FLOW_UNSUPPORTED");
-      if (space.secondaryContinuity !== "REQUIRED") reasons.add("SETUP_REQUIRES_REQUIRED_CONTINUITY");
+      if(policy.contractVersion===2){
+        if(!["OFF","PREFERRED","REQUIRED"].includes(String(policy.groupingPolicy)))reasons.add("INVALID_SETUP_POLICY");
+        if(policy.groupingPolicy==="OFF"&&(policy.preparationMinutesBetweenFamilies!==undefined||policy.initialPreparationMinutes!==undefined))reasons.add("INVALID_SETUP_PREPARATION_POLICY");
+        if(policy.initialPreparationMinutes!==undefined&&(!Number.isInteger(policy.initialPreparationMinutes)||policy.initialPreparationMinutes<=0||policy.initialPreparationMinutes%5!==0))reasons.add("INVALID_SETUP_PREPARATION_POLICY");
+      }else if (space.secondaryContinuity !== "REQUIRED") reasons.add("SETUP_REQUIRES_REQUIRED_CONTINUITY");
       const own = tasks.filter((task) => task?.spaceId === space.id);
       if (own.some((task) => task.kind !== "auxiliary")) reasons.add("SETUP_WITH_NON_AUXILIARY_TASK");
-      if (own.some((task) => typeof task.setupFamilyId !== "string" || task.setupFamilyId.length === 0)) reasons.add("MISSING_SETUP_FAMILY");
+      if (policy.groupingPolicy!=="OFF"&&own.some((task) => typeof task.setupFamilyId !== "string" || task.setupFamilyId.length === 0)) reasons.add("MISSING_SETUP_FAMILY");
       if (own.some((task) => typeof task.setupFamilyId === "string" && !order.includes(task.setupFamilyId))) reasons.add("UNKNOWN_SETUP_FAMILY");
       if (order.some((family) => !own.some((task) => task.setupFamilyId === family))) reasons.add("EMPTY_SETUP_FAMILY");
     }
-    if (space.secondaryContinuity !== undefined && space.secondaryContinuity !== "OFF" && space.secondaryContinuity !== "REQUIRED") reasons.add("INVALID_SECONDARY_CONTINUITY");
+    if (space.secondaryContinuity !== undefined && space.secondaryContinuity !== "OFF" && space.secondaryContinuity !== "PREFERRED" && space.secondaryContinuity !== "REQUIRED") reasons.add("INVALID_SECONDARY_CONTINUITY");
+    if(space.secondaryContinuity==="PREFERRED"&&space.setupPolicy?.contractVersion!==2)reasons.add("INVALID_SECONDARY_CONTINUITY");
     if (space.secondaryContinuity !== "REQUIRED") continue;
     const own = tasks.filter((task) => task?.spaceId === space.id);
     const auxiliaryCount = own.filter((task) => task?.kind === "auxiliary").length;
     if (space.id === mainSpaceId) reasons.add("REQUIRED_SECONDARY_ON_MAIN_FLOW_UNSUPPORTED");
     if (own.some((task) => task?.kind !== "auxiliary")) reasons.add("REQUIRED_SECONDARY_WITH_NON_AUXILIARY_TASK");
     if (auxiliaryCount === 0) reasons.add("REQUIRED_SECONDARY_SPACE_EMPTY");
-    else if (auxiliaryCount === 1) reasons.add("REQUIRED_SECONDARY_SPACE_TOO_SMALL");
+    else if (auxiliaryCount === 1&&space.setupPolicy?.contractVersion!==2) reasons.add("REQUIRED_SECONDARY_SPACE_TOO_SMALL");
   }
 
   for (const task of tasks) {
@@ -588,9 +602,14 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     const expected = setupTasks(problem.tasks, space.id), actual = setupTasks(scheduled, space.id);
     const policy = space.setupPolicy!;
     const invalid = actual.length !== expected.length || actual.some((task) => !expected.some(({ id }) => id === task.id))
-      || actual.some((task) => !task.setupFamilyId || task.spaceId !== space.id)
-      || !followsSetupPolicy(actual, policy) || hasSetupReentry(actual)
-      || policy.familyOrder.some((family) => setupBlockCounts(actual)[family] !== 1);
+      || actual.some((task) => policy.groupingPolicy!=="OFF"&&!task.setupFamilyId || task.spaceId !== space.id)
+      || !followsSetupPolicy(actual, policy) || (policy.contractVersion!==2||policy.groupingPolicy==="REQUIRED")&&(hasSetupReentry(actual)||policy.familyOrder.some((family) => setupBlockCounts(actual)[family] !== 1))
+      || policy.contractVersion===2&&actual.some(task=>{
+        const source=expected.find(item=>item.id===task.id);
+        const equalIds=(a:readonly string[]|undefined,b:readonly string[]|undefined)=>JSON.stringify([...(a??[])].sort())===JSON.stringify([...(b??[])].sort());
+        return !source||actual.filter(item=>item.id===task.id).length!==1||task.setupFamilyId!==source.setupFamilyId||task.kind!==source.kind||task.duration!==source.duration||task.participantId!==source.participantId
+          ||!equalIds(task.dependencies,source.dependencies)||!equalIds(task.requiredResourceIds,source.requiredResourceIds);
+      });
     if (invalid) setup += 1;
   }
   for (const space of setupSpaces(problem).filter((candidate) => candidate.setupPolicy?.preparationMinutesByFamily !== undefined || candidate.setupPolicy?.preparationMinutesBetweenFamilies !== undefined)) {
@@ -599,6 +618,23 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     const ownPreparations = preparations.filter((item) => item.spaceId === space.id);
     const occupied = spaceOccupations(scheduled, preparations, space.id);
     const sequence = setupFamilySequence(ownTasks);
+    if(policy.contractVersion===2){
+      const ordered=[...ownTasks].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
+      const entries=ordered.filter((task,index)=>index===0||task.setupFamilyId!==ordered[index-1].setupFamilyId);
+      const expectedIds=new Set<string>();const counts=new Map<string,number>();
+      for(const [index,task] of entries.entries()){
+        const family=task.setupFamilyId;const count=(counts.get(family??"")??0)+1;counts.set(family??"",count);
+        const duration=policy.groupingPolicy==="OFF"?undefined:index===0?policy.initialPreparationMinutes:policy.preparationMinutesBetweenFamilies||undefined;
+        if(duration===undefined)continue;
+        const id=setupPreparationId(space.id,family!,count);expectedIds.add(id);
+        const matches=ownPreparations.filter(item=>item.id===id),p=matches[0];
+        const previous=ordered.filter(item=>item.end<=task.start&&item.id!==task.id).at(-1);
+        if(matches.length!==1||!p||p.spaceId!==space.id||p.setupFamilyId!==family||p.entryIndex!==count||p.kind!=="setup-preparation"||p.duration!==duration||p.end-p.start!==duration
+          ||p.end>task.start||(previous&&p.start<previous.end)||!preparationWithinDay(problem,p)||!preparationWithinAvailability(space.availability,p)||!occupationAvoidsProtectedMeal(problem,p.spaceId,p.start,p.end)||!preparationAvoidsOccupations(p,occupied))setupPreparation+=1;
+      }
+      setupPreparation+=ownPreparations.filter(p=>!expectedIds.has(p.id)).length;
+      continue;
+    }
     const durationByFamily: Record<string, number> = policy.flexibleFamilyOrder === true
       ? Object.fromEntries(sequence.slice(1).map((family) => [family, policy.preparationMinutesBetweenFamilies!]))
       : { ...(policy.preparationMinutesByFamily ?? {}) };

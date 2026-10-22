@@ -849,7 +849,7 @@ function unsupportedShapeReasons(problem: PlannerNextProblem, pending: Task[], c
   const technicalChainIds = new Set(getTechnicalChains(pending,problem.technicalChains).flat().map(({ id }) => id));
   for (const task of [...pending].sort(byId)) {
     const space = problem.spaces.find(({ id }) => id === task.spaceId);
-    const isSetupTask = task.setupFamilyId !== undefined;
+    const isSetupTask = task.setupFamilyId !== undefined||space?.setupPolicy?.contractVersion===2;
     const unitIds=task.itinerantUnitId?[task.itinerantUnitId]:task.allowedItinerantUnitIds??[];
     const physicalTechnical=task.kind==="technical" && unitIds.length>0 && unitIds.every(id=>
       problem.itinerantUnits?.some(unit=>unit.id===id && (unit.resourceIds?.length??0)>0));
@@ -966,7 +966,7 @@ function searchStandaloneForCoreCandidate(sourceProblem: PlannerNextProblem, cor
     ordinaryStaticDomainCache.set(key, domain);
     return domain;
   };
-  const macroDomainCache = new Map<string, { domainSize:number; structuralCandidateCount?:number; matchingFeasibleCandidateCount?:number }>();
+  const macroDomainCache = new Map<string, { domainSize:number; domainExact?:boolean; domainMeasure?:string; structuralCandidateCount?:number; matchingFeasibleCandidateCount?:number }>();
   const macroPendingPrerequisiteCache:MacroPendingPrerequisiteForwardCache=new Map();
   const staticMacroDomains = new Map<string, StandaloneForwardStaticDomain>();
   let activeMacroCandidateTrace:MacroCandidateCausalTrace|null=null;
@@ -1604,10 +1604,10 @@ function searchStandaloneForCoreCandidate(sourceProblem: PlannerNextProblem, cor
     }
     return "DEAD_END";
   };
-const setupSpaceIds = [...new Set(pending.filter((task) => task.setupFamilyId !== undefined).map(({ spaceId }) => spaceId))].sort();
+const setupSpaceIds = [...new Set(pending.filter((task) => task.setupFamilyId !== undefined||problem.spaces.find(space=>space.id===task.spaceId)?.setupPolicy?.contractVersion===2).map(({ spaceId }) => spaceId))].sort();
 const setupGroups = setupSpaceIds.map((spaceId) => ({
   spaceId,
-  tasks: pending.filter((task) => task.spaceId === spaceId && task.setupFamilyId !== undefined).sort(byId),
+  tasks: pending.filter((task) => task.spaceId === spaceId && (task.setupFamilyId !== undefined||problem.spaces.find(space=>space.id===spaceId)?.setupPolicy?.contractVersion===2)).sort(byId),
 }));
 const mergeSetupOrderCounts = (spaceId: string, counts: Record<string, number>): void => {
   const merged = { ...(evidence.setupFamilyOrderCandidateCountsBySpaceId[spaceId] ?? {}) };
@@ -1679,7 +1679,7 @@ const agendaItems=[...agendaGroups].map(([domain,tasks])=>({id:`itinerant-agenda
   unitIds:domain.split("+"),tasks:tasks.sort(byId)}));
 const agendaTaskIds=new Set(agendaItems.flatMap(item=>item.tasks.map(task=>task.id)));
 const rawResourceTasks = pending.filter((task) => (task.requiredResourceIds?.length ?? 0) > 0
-  && !coupledTaskIds.has(task.id) && !agendaTaskIds.has(task.id) && !roundTaskIds.has(task.id) && task.setupFamilyId === undefined
+  && !coupledTaskIds.has(task.id) && !agendaTaskIds.has(task.id) && !roundTaskIds.has(task.id) && task.setupFamilyId === undefined && !setupSpaceIds.includes(task.spaceId)
   && !dynamicTransportIds.has(task.id));
 const preferredGroups=new Map<string,Task[]>();
 const individualResourceTasks:Task[]=[];
@@ -1791,7 +1791,7 @@ const macroConstrainedness = (unit: MacroUnit, placed: ScheduledTask[], preparat
   const synchronizedSlotCount = unit.kind === "ROUND_SYNCHRONIZATION"
     ? Math.min(...unit.policy.lanes.map((lane) => lane.taskIds.length))
     : unit.kind === "JOINT" ? unit.tasks.length : 0;
-  return { unit, id: unit.id, domainSize:measure.domainSize, domainMeasure:"hard-valid-top-level-macro-placements", domainExact:true,
+  return { unit, id: unit.id, domainSize:measure.domainSize, domainMeasure:measure.domainMeasure??"hard-valid-top-level-macro-placements", domainExact:measure.domainExact??true,
     structuralCandidateCount:measure.structuralCandidateCount,matchingFeasibleCandidateCount:measure.matchingFeasibleCandidateCount,
     hardResourceAvailabilityMinutes: resourceAvailabilityMinutes(unit.tasks),
     exclusiveResourceCount: resourceIds.length, synchronizedSlotCount,
@@ -2056,7 +2056,12 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     }
   } else if (unit.kind === "SETUP_GROUP") {
     evidence.setupBlockSearchInvocations += 1;
-    const generated = generateExactSetupBlockCandidates(problem, unit.tasks, [...coreTasks, ...placed], preparations, coreMeals, ledger);
+    let acceptedChild:ReturnType<typeof recurse>|undefined;
+    const versioned=problem.spaces.find(space=>space.id===unit.spaceId)?.setupPolicy?.contractVersion===2;
+    const generated = generateExactSetupBlockCandidates(problem, unit.tasks, [...coreTasks, ...placed], preparations, coreMeals, ledger,false,versioned?candidate=>{
+      candidatesEvaluated+=1;const child=recurse(candidate.tasks,[...preparations,...candidate.preparations]);
+      if(child!=="DEAD_END"){acceptedChild=child;return true;}evidence.standaloneBacktracks+=1;return false;
+    }:undefined);
     evidence.setupBlockBranchesExplored += generated.evidence.branchesExplored;
     evidence.setupBlockStartsExplored += generated.evidence.startsExplored;
     evidence.setupBlockCompleteCandidateCount += generated.evidence.completeCandidateCount;
@@ -2064,8 +2069,9 @@ const searchMacroUnits = (remainingUnits: MacroUnit[], placed: ScheduledTask[], 
     evidence.setupBlockMatchingSuccesses += generated.evidence.matchingSuccesses;
     evidence.setupBlockPermutationBranchesAvoided += generated.evidence.permutationBranchesAvoided;
     mergeSetupOrderCounts(unit.spaceId, generated.evidence.familyOrderCandidateCounts);
+    if(acceptedChild!==undefined)return acceptedChild;
     if (generated.outcome === "BUDGET_EXHAUSTED") { evidence.setupBlockBudgetExhaustions += 1; return "BUDGET_EXHAUSTED"; }
-    for (const candidate of generated.candidates) {
+    for (const candidate of versioned?[]:generated.candidates) {
       candidatesEvaluated += 1;
       const child = recurse(candidate.tasks, [...preparations, ...candidate.preparations]);
       if (child !== "DEAD_END") return child; evidence.standaloneBacktracks += 1;

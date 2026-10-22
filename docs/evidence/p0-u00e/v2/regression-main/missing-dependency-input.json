@@ -1,0 +1,353 @@
+{
+  "planId": 6,
+  "taskTemplateSnapshotContractVersion": 2,
+  "taskTemplateSnapshotCount": 4,
+  "taskTemplateSnapshotSources": {
+    "inherited": 4,
+    "legacy_backfill": 0,
+    "ad_hoc_from_default": 0
+  },
+  "taskTemplateSnapshotFingerprint": "d3e70729de57862104349e5e6e81260a6c58225a4a98893471c4374500f41db9",
+  "planZoneSettings": [
+    {
+      "id": 6,
+      "zoneId": 1,
+      "availabilityStart": null,
+      "availabilityEnd": null,
+      "source": "default",
+      "name": "Nuevo estudio de producción",
+      "mealStartPreferred": null,
+      "mealEndPreferred": null,
+      "groupingLevel": 0,
+      "groupingMinChain": 4,
+      "maxTemplateChanges": 4,
+      "spaceMealBreakMinutes": null
+    }
+  ],
+  "planSpaceSettings": [
+    {
+      "id": 14,
+      "spaceId": 1,
+      "zoneId": 1,
+      "availabilityStart": null,
+      "availabilityEnd": null,
+      "source": "default",
+      "name": "Escenario de entrevistas",
+      "parentSpaceId": null,
+      "priorityLevel": 1,
+      "groupingLevel": 0,
+      "groupingMinChain": 4,
+      "groupingApplyToDescendants": false
+    },
+    {
+      "id": 15,
+      "spaceId": 2,
+      "zoneId": 1,
+      "availabilityStart": null,
+      "availabilityEnd": null,
+      "source": "default",
+      "name": "Preparación de voz",
+      "parentSpaceId": null,
+      "priorityLevel": 1,
+      "groupingLevel": 0,
+      "groupingMinChain": 4,
+      "groupingApplyToDescendants": false
+    },
+    {
+      "id": 16,
+      "spaceId": 3,
+      "zoneId": 1,
+      "availabilityStart": null,
+      "availabilityEnd": null,
+      "source": "default",
+      "name": "Escenario de segunda producción",
+      "parentSpaceId": null,
+      "priorityLevel": 1,
+      "groupingLevel": 0,
+      "groupingMinChain": 4,
+      "groupingApplyToDescendants": false
+    }
+  ],
+  "workDay": {
+    "start": "09:00",
+    "end": "18:00"
+  },
+  "defaultParticipantTransitionMinutes": 5,
+  "mealMode": "global_hard_break",
+  "meal": {
+    "start": "13:00",
+    "end": "14:00"
+  },
+  "globalHardBreaks": [],
+  "protectedBreaks": [],
+  "mealTaskTemplateId": null,
+  "camerasAvailable": 0,
+  "taskTemplateNameById": {
+    "1": "Preparación de voz para entrevista",
+    "2": "Entrevista individual",
+    "3": "Fotografía individual",
+    "4": "Actividad pendiente de clasificación"
+  },
+  "zoneResourceAssignments": {},
+  "spaceResourceAssignments": {},
+  "spaceParentById": {
+    "1": null,
+    "2": null,
+    "3": null
+  },
+  "spaceNameById": {
+    "1": "Escenario de entrevistas",
+    "2": "Preparación de voz",
+    "3": "Escenario de segunda producción"
+  },
+  "spaceCapacityById": {},
+  "spaceIsExclusiveById": {
+    "1": true,
+    "2": true,
+    "3": true
+  },
+  "spacePriorityById": {
+    "1": 1,
+    "2": 1,
+    "3": 1
+  },
+  "zoneIdBySpaceId": {
+    "1": 1,
+    "2": 1,
+    "3": 1
+  },
+  "spaceIdsByZoneId": {
+    "1": [
+      1,
+      2,
+      3
+    ]
+  },
+  "groupingBySpaceId": {},
+  "minimizeChangesBySpace": {},
+  "zoneResourceTypeRequirements": {},
+  "spaceResourceTypeRequirements": {},
+  "planResourceItems": [
+    {
+      "id": 9,
+      "resourceItemId": 1,
+      "typeId": 1,
+      "typeCode": "vocal_coach",
+      "typeName": "Vocal Coach",
+      "name": "Coach de esta producción",
+      "isAvailable": true,
+      "availabilityStart": "09:00",
+      "availabilityEnd": "18:00"
+    },
+    {
+      "id": 10,
+      "resourceItemId": 2,
+      "typeId": 1,
+      "typeCode": "vocal_coach",
+      "typeName": "Vocal Coach",
+      "name": "Coach segunda producción",
+      "isAvailable": true,
+      "availabilityStart": "09:00",
+      "availabilityEnd": "18:00"
+    }
+  ],
+  "coachResourceIds": [
+    9
+  ],
+  "vocalCoachPlanResourceItemIdByContestantId": {
+    "11": 9
+  },
+  "resourceItemComponents": {},
+  "resourceBundles": [],
+  "resourceBundleComponents": [],
+  "resourceBundleSpaceAffinities": [],
+  "resourceBundleLoadWarnings": [],
+  "contestantAvailabilityById": {
+    "11": {
+      "start": "09:00",
+      "end": "17:00"
+    }
+  },
+  "optimizerSnapshotContractVersion": 1,
+  "optimizerSnapshotSource": "INHERITED",
+  "optimizerSnapshotEditingMode": "BASIC",
+  "optimizerSnapshotFingerprint": "4b770099c9e87063d68e2fbef0ad2fcce91e364d9e03b2fc8967ee74ca4a422f",
+  "optimizerLegacyAdapterVersion": 1,
+  "optimizerCompatibilityWarnings": [],
+  "optimizerIgnoredActiveHeuristics": [],
+  "optimizerMainZoneId": null,
+  "optimizerPrioritizeMainZone": false,
+  "optimizerGroupBySpaceAndTemplate": false,
+  "groupingZoneIds": [],
+  "maxTemplateChangesByZoneId": {},
+  "spaceMealBreakMinutesByZoneId": {},
+  "optimizerMainZonePriorityLevel": 0,
+  "optimizerGroupingLevel": 0,
+  "optimizerMainZoneOptFinishEarly": false,
+  "optimizerMainZoneOptKeepBusy": false,
+  "optimizerContestantCompactLevel": 0,
+  "optimizerContestantStayInZoneLevel": 0,
+  "optimizerNearHardBreaksMax": 0,
+  "optimizerWeights": {
+    "mainZoneFinishEarly": 0,
+    "mainZoneKeepBusy": 0,
+    "contestantCompact": 0,
+    "groupBySpaceTemplateMatch": 0,
+    "groupBySpaceActive": 0,
+    "contestantStayInZone": 0,
+    "contestantTotalSpan": 0
+  },
+  "tasks": [
+    {
+      "id": 29,
+      "planId": 6,
+      "templateId": 2,
+      "templateName": "Entrevista individual",
+      "resourceRequirements": null,
+      "zoneId": 1,
+      "spaceId": 3,
+      "_invalidSpaceId": null,
+      "_unplannedHint": null,
+      "contestantId": 11,
+      "contestantName": "Persona de revisión",
+      "status": "pending",
+      "itinerantTeamId": null,
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "participantMarginBeforeMinutes": 0,
+      "participantMarginAfterMinutes": 0,
+      "hasDependency": true,
+      "dependsOnTemplateIds": [
+        1
+      ],
+      "dependsOnTaskIds": [],
+      "dependsOnTemplateId": 1,
+      "dependsOnTaskId": null,
+      "durationOverrideMin": 10,
+      "camerasOverride": 0,
+      "startPlanned": null,
+      "endPlanned": null,
+      "lockedStart": null,
+      "lockedEnd": null,
+      "lockType": null,
+      "startReal": null,
+      "endReal": null,
+      "assignedResourceIds": null,
+      "plannerNextKind": "main",
+      "operationalRole": "productive_task",
+      "declaredResourceIds": [
+        9
+      ]
+    },
+    {
+      "id": 30,
+      "planId": 6,
+      "templateId": 3,
+      "templateName": "Fotografía individual",
+      "resourceRequirements": null,
+      "zoneId": 1,
+      "spaceId": 2,
+      "_invalidSpaceId": null,
+      "_unplannedHint": null,
+      "contestantId": 11,
+      "contestantName": "Persona de revisión",
+      "status": "pending",
+      "itinerantTeamId": null,
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "participantMarginBeforeMinutes": 0,
+      "participantMarginAfterMinutes": 0,
+      "hasDependency": true,
+      "dependsOnTemplateIds": [
+        1
+      ],
+      "dependsOnTaskIds": [],
+      "dependsOnTemplateId": 1,
+      "dependsOnTaskId": null,
+      "durationOverrideMin": 10,
+      "camerasOverride": 0,
+      "startPlanned": null,
+      "endPlanned": null,
+      "lockedStart": null,
+      "lockedEnd": null,
+      "lockType": null,
+      "startReal": null,
+      "endReal": null,
+      "assignedResourceIds": null,
+      "plannerNextKind": "auxiliary",
+      "operationalRole": "productive_task"
+    },
+    {
+      "id": 31,
+      "planId": 6,
+      "templateId": 4,
+      "templateName": "Actividad pendiente de clasificación",
+      "resourceRequirements": null,
+      "zoneId": 1,
+      "spaceId": 2,
+      "_invalidSpaceId": null,
+      "_unplannedHint": null,
+      "contestantId": 11,
+      "contestantName": "Persona de revisión",
+      "status": "pending",
+      "itinerantTeamId": null,
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "participantMarginBeforeMinutes": 0,
+      "participantMarginAfterMinutes": 0,
+      "hasDependency": false,
+      "dependsOnTemplateIds": [],
+      "dependsOnTaskIds": [],
+      "dependsOnTemplateId": null,
+      "dependsOnTaskId": null,
+      "durationOverrideMin": 10,
+      "camerasOverride": 0,
+      "startPlanned": null,
+      "endPlanned": null,
+      "lockedStart": null,
+      "lockedEnd": null,
+      "lockType": null,
+      "startReal": null,
+      "endReal": null,
+      "assignedResourceIds": null,
+      "operationalRole": "productive_task"
+    }
+  ],
+  "locks": [],
+  "plannerNextMaterializationIssues": [
+    {
+      "code": "MISSING_DEPENDENCY_REFERENCE",
+      "taskId": 29,
+      "message": "La tarea 29 necesita las instancias de sus plantillas previas (1). Añádelas al mismo participante."
+    },
+    {
+      "code": "MISSING_DEPENDENCY_REFERENCE",
+      "taskId": 30,
+      "message": "La tarea 30 necesita las instancias de sus plantillas previas (1). Añádelas al mismo participante."
+    }
+  ],
+  "plannerNext": {
+    "searchPolicy": "EXACT_CONSTRUCTIVE",
+    "searchBudget": {
+      "bestK": 3,
+      "maxBacktracks": 50,
+      "maxPatterns": 20,
+      "maxBranchExpansions": 10000
+    },
+    "timeGridMinutes": 5,
+    "participantTransitionMinutes": 5,
+    "resourceTransitionMinutes": 0,
+    "mainFlow": {
+      "spaceId": 3,
+      "preferredEnd": "11:30",
+      "continuity": "REQUIRED",
+      "maxBlocksByKey": 1,
+      "minTasksPerBlock": 1
+    }
+  },
+  "itinerantCompositionSnapshot": {
+    "contractVersion": 1,
+    "units": []
+  },
+  "itinerantTeamAvailability": []
+}

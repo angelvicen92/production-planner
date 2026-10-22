@@ -28,6 +28,19 @@ export function eligibleSetupTasksForPolicy<T extends Task>(
   scheduled: ScheduledTask[],
   policy: SetupPolicy,
 ): T[] {
+  if(policy.contractVersion===2){
+    const allowed=pending.filter(task=>policy.groupingPolicy==="OFF"||task.setupFamilyId!==undefined&&policy.familyOrder.includes(task.setupFamilyId));
+    if(policy.groupingPolicy==="OFF")return [...allowed].sort((a,b)=>a.id.localeCompare(b.id));
+    const sequence=setupFamilySequence(scheduled),last=sequence.at(-1);
+    const eligible=allowed.filter(task=>{
+      const family=task.setupFamilyId!;
+      if(policy.groupingPolicy==="REQUIRED"&&sequence.includes(family)&&family!==last)return false;
+      if(policy.groupingPolicy==="REQUIRED"&&last&&pending.some(t=>t.setupFamilyId===last)&&family!==last)return false;
+      if(policy.flexibleFamilyOrder!==true&&!sequence.includes(family))return family===policy.familyOrder.find(id=>!sequence.includes(id));
+      return true;
+    });
+    return eligible.sort((a,b)=>Number(b.setupFamilyId===last)-Number(a.setupFamilyId===last)||a.id.localeCompare(b.id));
+  }
   if (policy.flexibleFamilyOrder !== true) return eligibleSetupTasks(pending, policy.familyOrder);
 
   const lastFamily = scheduled.at(-1)?.setupFamilyId;
@@ -63,6 +76,12 @@ export function followsSetupOrder(tasks: ScheduledTask[], familyOrder: string[])
 }
 
 export function followsSetupPolicy(tasks: ScheduledTask[], policy: SetupPolicy): boolean {
+  if(policy.contractVersion===2){
+    if(policy.groupingPolicy==="OFF")return true;
+    const sequence=setupFamilySequence(tasks),firstEntries=[...new Set(sequence)];
+    return sequence.every(f=>policy.familyOrder.includes(f))&&(policy.groupingPolicy!=="REQUIRED"||!hasSetupReentry(tasks))
+      &&(policy.flexibleFamilyOrder===true||firstEntries.every((family,index)=>family===policy.familyOrder[index]));
+  }
   if (policy.flexibleFamilyOrder !== true) return followsSetupOrder(tasks, policy.familyOrder);
   const sequence = setupFamilySequence(tasks);
   const allowed = new Set(policy.familyOrder);

@@ -89,6 +89,8 @@ export async function runNewDaySetupJourney({appUrl,url,anon,service,users,db,di
         await page.getByRole('button',{name:'Subir familia 3 en espacio 1',exact:true}).click();
         await page.getByRole('button',{name:'Subir familia 2 en espacio 1',exact:true}).click();
       }
+      await page.getByLabel('Continuidad temporal 1',{exact:true}).selectOption(explicit?'REQUIRED':'PREFERRED');
+      await page.getByLabel('Agrupación por familia 1',{exact:true}).selectOption(explicit?'PREFERRED':'REQUIRED');
       await page.getByLabel('Preparación entre familias 1',{exact:true}).fill(explicit?'5':'10');
     }
     const pending=page.waitForResponse(response=>new URL(response.url()).pathname==="/api/new-day-planner-configuration"&&response.request().method()==="PUT");

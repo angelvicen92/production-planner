@@ -1,48 +1,132 @@
 {
-  "status": "NOT_CERTIFIED",
-  "authorizedBase": "037500b139d43bf5f82c1087db4fe6ed90fc8074",
-  "productTypeScript": "PASS",
-  "harnessTypeScript": "PASS",
-  "build": "PASS",
-  "migrations": "PASS",
-  "focal": {
-    "passed": 68,
-    "failed": 0
+  "status": "LOCAL_GATES_PASS",
+  "authorizedBase": "3a05cb099a74d7263c0d630d7055746fcd722114",
+  "preservedHumanCommits": [
+    "4cc64b36962a4ce97198d17d34e5a48be298f314",
+    "3a05cb099a74d7263c0d630d7055746fcd722114"
+  ],
+  "sources": "v2/source-hashes.json",
+  "gateResults": {
+    "runtime": "Node 20.20.2",
+    "productTypeScript": "PASS",
+    "harnessTypeScript": "PASS",
+    "productionBuild": "PASS",
+    "migrations": {
+      "status": "PASS",
+      "last": 107,
+      "newMigrations": 0
+    },
+    "productSuite": {
+      "passed": 3113,
+      "failed": 0,
+      "durationMs": 840151.808422,
+      "concurrency": 2,
+      "excludedExactlyAsExistingCI": [
+        "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts",
+        "server/benchmarks/runA2Assist7Evidence.spec.ts"
+      ]
+    },
+    "postSuiteDelta": {
+      "scope": "Evidence marks the v2 analytic macro domain as inexact, without claiming structural/matching counts; legacy defaults and search behavior remain unchanged. Final targeted tests, both TypeScript checks and build repeated after this delta.",
+      "tests": 92,
+      "passed": 92,
+      "failed": 0,
+      "command": "node node_modules/tsx/dist/cli.mjs --test --test-concurrency=1 engine/planner-next/integration/spacePoliciesV2.spec.ts engine/planner-next/integration/newDaySetupFamilies.spec.ts engine/planner-next/exactItinerantPlan.spec.ts"
+    },
+    "noBudgetOrTimeoutIncrease": true
   },
-  "setupAcceptance": {
-    "passed": 8,
-    "failed": 1,
-    "reason": "SECONDARY_CONTINUITY_VIOLATION on internal wait without setup reentry"
-  },
-  "compactNative": "PASS (exploratory source-hashed run, 4/4 and 6/6)",
-  "nativeRepetition": {
-    "status": "TIMEOUT",
-    "phase": "initial login page load under concurrent build/suite/A2",
-    "timeoutUnchangedMs": 30000
-  },
-  "a2Base": {
+  "native": {
     "status": "PASS",
-    "completed": 266,
-    "stages": 11,
-    "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d"
-  },
-  "a2CandidateConcurrent": {
-    "status": "NOT_CERTIFIED",
-    "reason": "SEARCH_TIME_LIMIT_REACHED at the existing 300000ms while global tests/build also ran; 20827 branches, S0. Not an infeasibility proof or a certified regression comparison."
-  },
-  "a2Repeat": "Stopped after the timed-out concurrent candidate; isolated repeat pending",
-  "mergeGate": {
-    "status": "STOPPED_INCOMPLETE",
-    "lastFinishedTest": [
-      "1321",
-      "A2-ASSIST-6 executes validation, atomic acceptance and inherited proposal"
+    "obligations": [
+      4,
+      6
     ],
-    "observedFailures": [],
-    "reason": "The known acceptance blocker prevents certification; do not continue a premature merge gate or interpret partial results as PASS."
+    "completed": [
+      4,
+      6
+    ],
+    "stages": [
+      1,
+      1
+    ],
+    "branches": [
+      11,
+      16
+    ],
+    "newHard": 0,
+    "newRequired": 0,
+    "replayDeterministic": true,
+    "historicalSnapshotImmutable": true,
+    "axes": [
+      {
+        "grouping": "REQUIRED",
+        "continuity": "PREFERRED"
+      },
+      {
+        "grouping": "PREFERRED",
+        "continuity": "REQUIRED"
+      }
+    ],
+    "preferenceComparison": {
+      "continuityCost": [
+        0,
+        5
+      ],
+      "setupCost": [
+        2,
+        6
+      ],
+      "reentryPhysicalPreparations": 4,
+      "requiredCounterfactualsRejected": true
+    }
   },
-  "u00aThroughU00d": "Full new UI regression runs/fingerprint comparisons pending; original checked-in Evidence unchanged",
-  "noSolverOrValidatorChanges": true,
+  "regressions": {
+    "u00aThroughU00d": "PASS",
+    "fullProblemsFingerprintsStageSnapshotsIdentical": true,
+    "comparison": "v2/comparison.json",
+    "u00aAndU00b": "v2/u00a-b-comparison.json"
+  },
+  "a2": {
+    "status": "PASS",
+    "obligations": 266,
+    "stages": 11,
+    "newHard": 0,
+    "newRequired": 0,
+    "branches": 27049,
+    "presenceMinutes": 8465,
+    "fullReportsIdenticalExceptDurations": true,
+    "allStageSnapshotsIdentical": true,
+    "runtimeIdentical": true,
+    "automaticRegenerationPreserved": true,
+    "deterministicFingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+    "durationMs": {
+      "base": 135038,
+      "candidate": 152626,
+      "repeat": 94230
+    },
+    "certificatesAudited": 22,
+    "timeAssessment": {
+      "baselineMs": 135038,
+      "candidateMs": 152626,
+      "repeatMs": 94230,
+      "candidateDeltaPercent": 13.0244819976599,
+      "repeatDeltaPercent": -30.2196507554896,
+      "analysis": "All non-duration report fields, work counters, certificates and Stage snapshots match exactly. Candidate +13.0% is not repeated: identical candidate sources complete -30.2% versus baseline on the next isolated run. This establishes variable wall time without a structural search change; host/CPU causes were not instrumented, so no throughput guarantee is claimed. No budget or timeout changes."
+    }
+  },
+  "ci": {
+    "authority": "Live rollup for the current head of PR #1183; readiness requires green checks. CI URLs and final readiness are recorded in the PR description.",
+    "url": "https://github.com/angelvicen92/production-planner/pull/1183/checks"
+  },
+  "limitations": [
+    "Physical auxiliary operations with participants, exclusive capacity-one rooms and EXACT_CONSTRUCTIVE.",
+    "Joint operations and itinerant unit choices within a v2 space are explicitly unsupported; U00d without v2 remains supported.",
+    "REQUIRED continuity with flexible operational pauses is explicitly unsupported; fixed authorized pauses are supported.",
+    "Soft costs guide ordering/scoring without proving global optimality; analytic macro domains are marked as upper bounds."
+  ],
   "noBudgetOrTimeoutIncrease": true,
+  "newMigrations": 0,
   "productionWrites": 0,
+  "deployed": false,
   "merged": false
 }
