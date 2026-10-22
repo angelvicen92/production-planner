@@ -1,7 +1,7 @@
 # Validación del candidato P0-U00b
 
 - Node 20.20.2, dependencias exactas del lockfile sin cambios: PASS.
-- TypeScript de producto y harness ampliado (incluye los dos specs standalone): PASS.
+- TypeScript de producto, harness ampliado (incluye los dos specs standalone) y harness compartido `tsconfig.integration.json`: PASS. La primera CI detectó tres accesos a MAIN en observadores A2; reciben sólo assertions de tipo, sin alterar datos, assertions de benchmark ni comportamiento runtime.
 - Build de producción: PASS. Avisos habituales de tamaño del bundle/Browserslist; no fallos.
 - Secuencia de migraciones y ledger completo en PostgreSQL nativo descartable: PASS. Sin migraciones nuevas.
 - Gate completo de producto vigente: **3.076/3.076 PASS**, cero fallos, omitidos o cancelados. Se mantienen únicamente las dos exclusiones históricas preexistentes del workflow; no se añaden exclusiones ni se alteran presupuestos/timeouts. Resumen original en `product-gate.txt`.

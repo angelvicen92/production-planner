@@ -136,7 +136,7 @@ export function summarizeSearch(result:AssistedPlanningResult){
 export function replayChargedPrefix(input:EngineInput){
   const built=projectS0(input),assisted=built.assisted;
   assert.equal(assisted.collectiveCoreProjection,undefined);
-  assert.equal(assisted.problem.mainFlow.preferredBlockCount,undefined);
+  assert.equal(assisted.problem.mainFlow!.preferredBlockCount,undefined);
   assert.ok(assisted.problem.analyticalFutureCollectiveContinuation);
   const problem={...assisted.problem,budget:{...assisted.problem.budget,
     maxBranchExpansions:Math.min(100000,assisted.problem.budget.maxBranchExpansions)},
