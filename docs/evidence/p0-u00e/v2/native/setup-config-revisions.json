@@ -1,7 +1,7 @@
 [
   {
     "id": "1",
-    "fingerprint": "7cd2f0afe7348b7700b20f1fea8b466a89da07e1e68a9f7b66c27412f112a525",
+    "fingerprint": "99b335d392b4ea95564b4d546bde5eeb5e110317c506b66c117de7125ee3a911",
     "replay_snapshot_json": {
       "authorities": {
         "plan_workday": [
@@ -166,7 +166,7 @@
       "taskTemplateSnapshots": [
         {
           "source": "inherited",
-          "setupId": 1056989402,
+          "setupId": 1846769187,
           "templateName": "Montaje A",
           "defaultZoneId": 1,
           "hasDependency": false,
@@ -180,7 +180,7 @@
           "sourceTemplateId": 1,
           "exclusiveAuxiliar": false,
           "requiresPresenter": false,
-          "sourceFingerprint": "7feaea58e938b72f0795c78f2d019c8ddb2baa7cc77473ff3259d97c9059c64c",
+          "sourceFingerprint": "4d7c07a2d0733397814d30f24223d800bbd71e0169f765ff4fad6e03d21e7301",
           "plannerNextOperation": {
             "kind": "auxiliary",
             "contractVersion": 1
@@ -195,7 +195,7 @@
         },
         {
           "source": "inherited",
-          "setupId": 2000570871,
+          "setupId": 359692235,
           "templateName": "Montaje B",
           "defaultZoneId": 1,
           "hasDependency": false,
@@ -209,7 +209,7 @@
           "sourceTemplateId": 2,
           "exclusiveAuxiliar": false,
           "requiresPresenter": false,
-          "sourceFingerprint": "049d81e0b6a941cef45a785f4f8f7bab1edc432e9a2514b4e7ea49f1eb8030ff",
+          "sourceFingerprint": "cde607c4ace7d82d09062dcde5b6245b22d42d825cca14da4150a44282f7c70d",
           "plannerNextOperation": {
             "kind": "auxiliary",
             "contractVersion": 1
@@ -227,7 +227,7 @@
   },
   {
     "id": "2",
-    "fingerprint": "b843ab1e48817e3cb528b08cb371cd1394ea13ab80be520d693c052f5fb47227",
+    "fingerprint": "8ce6eaf6361fb4e9bbf700b552fbb656bbdec36ea37ac3efe49c456763208b37",
     "replay_snapshot_json": {
       "authorities": {
         "plan_workday": [
@@ -264,8 +264,8 @@
                   "reentry": "FORBIDDEN",
                   "spaceId": 1,
                   "families": [
-                    "1056989402",
-                    "2000570871"
+                    "1846769187",
+                    "359692235"
                   ],
                   "groupingPolicy": "REQUIRED",
                   "contractVersion": 2,
@@ -278,7 +278,7 @@
               "taskOperations": [
                 {
                   "taskId": 1,
-                  "setupFamilyId": "1056989402",
+                  "setupFamilyId": "1846769187",
                   "itinerantTeamId": null,
                   "operationalRole": "productive_task",
                   "plannerNextKind": "auxiliary",
@@ -288,7 +288,7 @@
                 },
                 {
                   "taskId": 2,
-                  "setupFamilyId": "2000570871",
+                  "setupFamilyId": "359692235",
                   "itinerantTeamId": null,
                   "operationalRole": "productive_task",
                   "plannerNextKind": "auxiliary",
@@ -298,7 +298,7 @@
                 },
                 {
                   "taskId": 3,
-                  "setupFamilyId": "1056989402",
+                  "setupFamilyId": "1846769187",
                   "itinerantTeamId": null,
                   "operationalRole": "productive_task",
                   "plannerNextKind": "auxiliary",
@@ -308,7 +308,7 @@
                 },
                 {
                   "taskId": 4,
-                  "setupFamilyId": "2000570871",
+                  "setupFamilyId": "359692235",
                   "itinerantTeamId": null,
                   "operationalRole": "productive_task",
                   "plannerNextKind": "auxiliary",
@@ -459,7 +459,7 @@
       "taskTemplateSnapshots": [
         {
           "source": "inherited",
-          "setupId": 1056989402,
+          "setupId": 1846769187,
           "templateName": "Montaje A",
           "defaultZoneId": 1,
           "hasDependency": false,
@@ -473,7 +473,7 @@
           "sourceTemplateId": 1,
           "exclusiveAuxiliar": false,
           "requiresPresenter": false,
-          "sourceFingerprint": "7feaea58e938b72f0795c78f2d019c8ddb2baa7cc77473ff3259d97c9059c64c",
+          "sourceFingerprint": "4d7c07a2d0733397814d30f24223d800bbd71e0169f765ff4fad6e03d21e7301",
           "plannerNextOperation": {
             "kind": "auxiliary",
             "contractVersion": 1
@@ -488,7 +488,7 @@
         },
         {
           "source": "inherited",
-          "setupId": 2000570871,
+          "setupId": 359692235,
           "templateName": "Montaje B",
           "defaultZoneId": 1,
           "hasDependency": false,
@@ -502,7 +502,7 @@
           "sourceTemplateId": 2,
           "exclusiveAuxiliar": false,
           "requiresPresenter": false,
-          "sourceFingerprint": "049d81e0b6a941cef45a785f4f8f7bab1edc432e9a2514b4e7ea49f1eb8030ff",
+          "sourceFingerprint": "cde607c4ace7d82d09062dcde5b6245b22d42d825cca14da4150a44282f7c70d",
           "plannerNextOperation": {
             "kind": "auxiliary",
             "contractVersion": 1

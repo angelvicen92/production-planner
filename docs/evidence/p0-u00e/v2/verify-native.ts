@@ -3,6 +3,7 @@ import {readFileSync,writeFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {validatePlan} from '../../../../engine/planner-next/validate';
 import {assessSpacePolicies} from '../../../../engine/planner-next/operationContinuity';
+import {createPlanningScope,buildAssistedProblem,executeAssistedPlanning} from '../../../../engine/planner-next/assistedPlanning';
 import {createSetupPreparation} from '../../../../engine/planner-next/setupPreparation';
 import {materializeAssistedSnapshotOccupations} from '../../../../server/assistedProposalService';
 import type {ScheduledTask,ScheduledSetupPreparation} from '../../../../engine/planner-next/contracts';
@@ -20,6 +21,18 @@ const profiles=['setup','explicit'].map(label=>{
 });
 assert.equal(profiles[0].policy.groupingPolicy,'REQUIRED');assert.equal(profiles[0].policy.continuityPolicy,'PREFERRED');
 assert.equal(profiles[1].policy.groupingPolicy,'PREFERRED');assert.equal(profiles[1].policy.continuityPolicy,'REQUIRED');
+const continuations=['setup','explicit'].map(label=>{
+ const adapter=read(`${label}-preflight.json`),full=read(`${label}-replay.json`).a;
+ const firstFamily=adapter.problem.spaces.find((space:any)=>space.setupPolicy).setupPolicy.familyOrder[0];
+ const accepted=full.proposal.filter((task:any)=>task.setupFamilyId===firstFamily),frozen=structuredClone(accepted);
+ const pending=adapter.problem.tasks.filter((task:any)=>task.setupFamilyId!==firstFamily).map((task:any)=>task.id);
+ const result=executeAssistedPlanning(buildAssistedProblem(adapter.problem,createPlanningScope({kind:'DAY',value:`continue-${label}`},{},pending),accepted));
+ assert.equal(result.evidence.completeForScope,true,result.evidence.reasonCodes.join(','));
+ assert.equal(result.evidence.protectedPlacementsPreserved,true);assert.deepEqual(accepted,frozen);
+ assert.equal(validatePlan(adapter.problem,[...accepted,...result.proposal!],[...result.evidence.selectedSetupPreparations!]).hardValid,true);
+ assert.equal(result.evidence.selectedSetupPreparations!.length,label==='setup'?1:2);
+ return {label,complete:true,accepted,proposal:result.proposal,preparations:result.evidence.selectedSetupPreparations,protectedPreserved:true};
+});
 const first=read('setup-replay.json').a,ordered=[...first.proposal].sort((x,y)=>x.start-y.start);
 const gap=ordered.map((task,index)=>index?{...task,start:task.start+5,end:task.end+5}:task);
 const gapPreparations=first.evidence.selectedSetupPreparations.map((p:any)=>({...p,start:p.start+5,end:p.end+5}));
@@ -46,5 +59,5 @@ assert.equal(reentryCost[0].setupPenalty,6);assert.equal(reentryCost[0].continui
 const grouped=read('explicit-replay.json').a.proposal,groupedCost=assessSpacePolicies(b.problem,grouped);assert.equal(groupedCost[0].setupPenalty,2);
 const forbidden=structuredClone(b.problem);const policy=forbidden.spaces.find((s:any)=>s.setupPolicy).setupPolicy;policy.groupingPolicy='REQUIRED';policy.reentry='FORBIDDEN';
 assert.equal(validatePlan(forbidden,reentry,preparations).setupViolationCount,1);
-writeFileSync(destination,JSON.stringify({status:'PASS',profiles,preferredGap:{before:gapBefore,after:gapAfter,alternative:gap,preparations:gapPreparations},preferredReentry:{before:groupedCost,after:reentryCost,alternative:reentry,preparations},hardChecks:{sameGapRequiredRejected:true,sameReentryRequiredRejected:true},note:'Comparative probes retain the genuine UI-created authorities; only placement alternatives and the stated policy counterfactual change.'},null,2));
+writeFileSync(destination,JSON.stringify({status:'PASS',profiles,continuations,preferredGap:{before:gapBefore,after:gapAfter,alternative:gap,preparations:gapPreparations},preferredReentry:{before:groupedCost,after:reentryCost,alternative:reentry,preparations},hardChecks:{sameGapRequiredRejected:true,sameReentryRequiredRejected:true},note:'Comparative probes retain the genuine UI-created authorities; only placement alternatives, accepted-prefix projections and the stated policy counterfactual change.'},null,2));
 console.log(JSON.stringify({status:'PASS',obligations:profiles.map(p=>p.obligations),preferredGapCost:[0,5],preferredSetupCost:[2,6],reentryPreparations:4}));

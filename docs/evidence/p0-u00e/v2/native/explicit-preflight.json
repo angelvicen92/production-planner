@@ -32,18 +32,18 @@
     },
     {
       "namespace": "setup-family",
-      "sourceId": "1:1056989402",
-      "canonicalId": "setup-family:1:1056989402"
+      "sourceId": "1:1846769187",
+      "canonicalId": "setup-family:1:1846769187"
     },
     {
       "namespace": "setup-family",
-      "sourceId": "1:185506854",
-      "canonicalId": "setup-family:1:185506854"
+      "sourceId": "1:1970921417",
+      "canonicalId": "setup-family:1:1970921417"
     },
     {
       "namespace": "setup-family",
-      "sourceId": "1:2000570871",
-      "canonicalId": "setup-family:1:2000570871"
+      "sourceId": "1:359692235",
+      "canonicalId": "setup-family:1:359692235"
     },
     {
       "namespace": "space",
@@ -154,8 +154,8 @@
     "readOnly": true
   },
   "issues": [],
-  "sourceFingerprint": "9184ea36489063da7cd3df7f50ef849c3e185aa8cbaf85c7c1800654d6b806de",
-  "identityMapFingerprint": "721b2add4dbee0ff7fc1471b650998e4053b8c56318f136b6414cbd60c6dda36",
+  "sourceFingerprint": "bc2a444d633676f58d447959d5ca40ee04df53ba86848f5ff8b52dcbc45ffce8",
+  "identityMapFingerprint": "97f5dea5f2df9011d571a2adae990c5982d856ecfd9c7c43dda3bb39f945654c",
   "readOnly": true,
   "status": "SUPPORTED",
   "problem": {
@@ -181,9 +181,9 @@
           "contractVersion": 2,
           "groupingPolicy": "PREFERRED",
           "familyOrder": [
-            "setup-family:1:185506854",
-            "setup-family:1:1056989402",
-            "setup-family:1:2000570871"
+            "setup-family:1:1970921417",
+            "setup-family:1:1846769187",
+            "setup-family:1:359692235"
           ],
           "flexibleFamilyOrder": false,
           "reentry": "ALLOWED",
@@ -239,7 +239,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:3",
-        "setupFamilyId": "setup-family:1:185506854"
+        "setupFamilyId": "setup-family:1:1970921417"
       },
       {
         "id": "task:6",
@@ -255,7 +255,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:3",
-        "setupFamilyId": "setup-family:1:1056989402"
+        "setupFamilyId": "setup-family:1:1846769187"
       },
       {
         "id": "task:7",
@@ -271,7 +271,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:3",
-        "setupFamilyId": "setup-family:1:2000570871"
+        "setupFamilyId": "setup-family:1:359692235"
       },
       {
         "id": "task:8",
@@ -285,7 +285,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:4",
-        "setupFamilyId": "setup-family:1:185506854"
+        "setupFamilyId": "setup-family:1:1970921417"
       },
       {
         "id": "task:9",
@@ -301,7 +301,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:4",
-        "setupFamilyId": "setup-family:1:1056989402"
+        "setupFamilyId": "setup-family:1:1846769187"
       },
       {
         "id": "task:10",
@@ -317,7 +317,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:4",
-        "setupFamilyId": "setup-family:1:2000570871"
+        "setupFamilyId": "setup-family:1:359692235"
       }
     ],
     "profile": "STANDALONE_ONLY",
@@ -335,5 +335,5 @@
     }
   },
   "reasonCodes": [],
-  "problemFingerprint": "1066831230bcb9062a1b8da7d5d3779e1803dea63b0f6b71b10622cab8991e0d"
+  "problemFingerprint": "f93fd3da6d084a12e52edfa3ff6da1de8085c19eb6393c6983d3a3d898edecf6"
 }

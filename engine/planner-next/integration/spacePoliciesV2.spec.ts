@@ -175,3 +175,41 @@ test('an unused configured room does not impose its policies on the active room'
  assert.equal(mapped.setupPolicies!.length,1);assert.equal(mapped.setupPolicies![0].spaceId,303);
  const adapter=adaptEngineInputToPlannerNextProblem(mapped);assert.equal(adapter.status,'SUPPORTED',JSON.stringify(adapter.issues));
 });
+
+test('continuing after an accepted family derives the transition without moving protected tasks',()=>{
+ const {problem}=fixture('REQUIRED','PREFERRED',[1,1,2,2],[10,10,10,10]);
+ problem.spaces.find(space=>space.setupPolicy)!.setupPolicy!.flexibleFamilyOrder=false;
+ const full=execute(problem);assert.equal(full.evidence.completeForScope,true);
+ const fixedTasks=full.proposal!.filter(task=>task.setupFamilyId==='setup-family:303:1');
+ const pending=problem.tasks.filter(task=>task.setupFamilyId==='setup-family:303:2').map(task=>task.id);
+ const frozen=structuredClone(fixedTasks);
+ const continued=executeAssistedPlanning(buildAssistedProblem(problem,createPlanningScope({kind:'DAY',value:'next-family'},{},pending),[...fixedTasks]));
+ assert.equal(continued.evidence.completeForScope,true,continued.evidence.reasonCodes.join(','));
+ assert.equal(continued.evidence.protectedPlacementsPreserved,true);assert.deepEqual(fixedTasks,frozen);
+ assert.equal(continued.evidence.selectedSetupPreparations!.length,1);
+ assert.equal(validatePlan(problem,[...fixedTasks,...continued.proposal!],[...continued.evidence.selectedSetupPreparations!]).hardValid,true);
+});
+
+test('continuation retains an accepted preparation and adds the physical return preparation',()=>{
+ const {problem}=fixture('PREFERRED','OFF',[1,2,1]);fixed(problem,[540,560,580]);
+ const full=execute(problem);assert.equal(full.evidence.completeForScope,true);
+ const fixedTasks=full.proposal!.filter(task=>task.start<580),acceptedPreparations=full.evidence.selectedSetupPreparations!.filter(preparation=>preparation.end<=560);
+ const frozen=structuredClone({fixedTasks,acceptedPreparations});
+ const continued=executeAssistedPlanning(buildAssistedProblem(problem,createPlanningScope({kind:'DAY',value:'return-family'},{},[problem.tasks[2].id]),[...fixedTasks],new Set(),[],[...acceptedPreparations]));
+ assert.equal(continued.evidence.completeForScope,true,continued.evidence.reasonCodes.join(','));
+ assert.deepEqual({fixedTasks,acceptedPreparations},frozen);
+ const preparations=[...continued.evidence.selectedSetupPreparations!];assert.equal(preparations.length,2);
+ assert.deepEqual(preparations.find(preparation=>preparation.id===acceptedPreparations[0].id),acceptedPreparations[0]);
+ assert.equal(preparations.find(preparation=>preparation.setupFamilyId==='setup-family:303:1')!.entryIndex,2);
+ assert.equal(validatePlan(problem,[...fixedTasks,...continued.proposal!],preparations).hardValid,true);
+});
+
+test('a new family can be placed before protected future work without moving its accepted interval',()=>{
+ const {problem}=fixture('REQUIRED','OFF',[1,2]);fixed(problem,[540,560]);
+ const future={...problem.tasks[1],start:560,end:570};
+ const result=executeAssistedPlanning(buildAssistedProblem(problem,createPlanningScope({kind:'DAY',value:'before-fixed'},{},[problem.tasks[0].id]),[future]));
+ assert.equal(result.evidence.completeForScope,true,result.evidence.reasonCodes.join(','));
+ assert.equal(result.evidence.protectedPlacementsPreserved,true);
+ assert.equal(result.evidence.selectedSetupPreparations!.length,1);
+ assert.equal(validatePlan(problem,[future,...result.proposal!],[...result.evidence.selectedSetupPreparations!]).hardValid,true);
+});

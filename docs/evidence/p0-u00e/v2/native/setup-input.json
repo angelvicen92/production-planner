@@ -7,7 +7,7 @@
     "legacy_backfill": 0,
     "ad_hoc_from_default": 0
   },
-  "taskTemplateSnapshotFingerprint": "e3da490ad14624b6630556ede4353bcda66a769b3cab329f229a04dc9194360f",
+  "taskTemplateSnapshotFingerprint": "1d084f641505fb0986aefac7e8dfc163ba69bbb5b1893853454fffb8fa7d11d0",
   "planZoneSettings": [
     {
       "id": 1,
@@ -168,7 +168,7 @@
       "assignedResourceIds": null,
       "plannerNextKind": "auxiliary",
       "operationalRole": "productive_task",
-      "setupFamilyId": "1056989402"
+      "setupFamilyId": "1846769187"
     },
     {
       "id": 2,
@@ -205,7 +205,7 @@
       "assignedResourceIds": null,
       "plannerNextKind": "auxiliary",
       "operationalRole": "productive_task",
-      "setupFamilyId": "2000570871"
+      "setupFamilyId": "359692235"
     },
     {
       "id": 3,
@@ -242,7 +242,7 @@
       "assignedResourceIds": null,
       "plannerNextKind": "auxiliary",
       "operationalRole": "productive_task",
-      "setupFamilyId": "1056989402"
+      "setupFamilyId": "1846769187"
     },
     {
       "id": 4,
@@ -279,7 +279,7 @@
       "assignedResourceIds": null,
       "plannerNextKind": "auxiliary",
       "operationalRole": "productive_task",
-      "setupFamilyId": "2000570871"
+      "setupFamilyId": "359692235"
     }
   ],
   "locks": [],
@@ -294,8 +294,8 @@
       "preparationMinutesBetweenFamilies": 10,
       "contractVersion": 2,
       "families": [
-        "1056989402",
-        "2000570871"
+        "1846769187",
+        "359692235"
       ]
     }
   ],

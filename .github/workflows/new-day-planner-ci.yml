@@ -38,7 +38,16 @@ jobs:
       - run: npm run check && npm run check:migrations && npm run build
       - run: npx --no-install tsc -p script/demo/tsconfig.new-day.json
       - run: node --import tsx --test --test-concurrency=1 engine/planner-next/standaloneOnly.spec.ts engine/planner-next/integration/standaloneOnly.spec.ts server/assistedBootstrapAdditions.spec.ts server/newDayPlannerConfiguration.spec.ts engine/planner-next/integration/newDayItinerantConsumption.spec.ts engine/planner-next/integration/newDaySetupFamilies.spec.ts engine/planner-next/integration/spacePoliciesV2.spec.ts server/taskTemplateSnapshot.spec.ts server/effectiveConfigurationView.spec.ts server/assistedConfigRefresh.spec.ts server/apiAuthorization.spec.ts
-      - run: npx --no-install playwright install --with-deps chromium
+      - name: Select installed Chromium or provision Playwright
+        shell: bash
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [[ -n "$task_browser_path" ]]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+            "$task_browser_path" --version
+          else
+            npx --no-install playwright install --with-deps chromium
+          fi
       - run: node --import tsx script/demo/smokeNewDayIntegration.ts work/new-day-planner --post-bootstrap-additions
       - run: node --import tsx script/demo/smokeNewDayIntegration.ts work/standalone-day-planner --standalone-only --post-bootstrap-additions
       - run: node --import tsx script/demo/smokeNewDayIntegration.ts work/itinerant-new-day-planner --itinerant-consumption

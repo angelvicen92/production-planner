@@ -131,6 +131,14 @@ export function generateExactSetupBlockCandidates(
   // below remains exact for historical policies. No identity is collapsed here.
   if(policy.contractVersion===2){
     let stopped=false,preferGrouped=false;
+    // Reconstruct the whole owned timeline, including immutable accepted tasks.
+    // Their fixed windows preserve identity/time while exposing transitions at
+    // either side of new work. Only new occupations leave this generator.
+    const requestedIds=new Set(ordered.map(task=>task.id));
+    const fixedOwn=placed.filter(task=>task.spaceId===spaceId&&!requestedIds.has(task.id)&&problem.tasks.some(source=>source.id===task.id));
+    const fixedIds=new Set(fixedOwn.map(task=>task.id)),protectedPreparationIds=new Set(preparations.map(preparation=>preparation.id));
+    const contextPlaced=placed.filter(task=>!fixedIds.has(task.id));
+    const owned=[...ordered,...fixedOwn.map(task=>({...task,availability:[{start:task.start,end:task.end}]}))].sort(byId);
     const emitted=new Set<string>();
     const fixedPauses=(problem.operationalMealPolicies??[]).filter(p=>p.spaceIds.includes(spaceId)&&p.duration===p.window.end-p.window.start)
       .map(p=>({id:p.id,...p.window}));
@@ -142,7 +150,7 @@ export function generateExactSetupBlockCandidates(
     const emit=(scheduled:ScheduledTask[],derived:ScheduledSetupPreparation[],cost:number)=>{
       const occupations=spaceOccupations(scheduled,derived,spaceId,meals);
       if(space.secondaryContinuity==="REQUIRED"&&!hasRequiredSecondaryContinuity([...occupations,...continuityBridgesWithinSpan(occupations,fixedPauses)]))return;
-      const candidate={tasks:scheduled,preparations:derived,cost};
+      const candidate={tasks:scheduled.filter(task=>!fixedIds.has(task.id)),preparations:derived.filter(preparation=>!protectedPreparationIds.has(preparation.id)),cost};
       const signature=candidateSignature(candidate);if(emitted.has(signature))return;emitted.add(signature);
       if(!countOnly)complete.push(candidate);
       const key=setupFamilySequence(scheduled).join(">");familyOrderCandidateCounts[key]=(familyOrderCandidateCounts[key]??0)+1;
@@ -161,7 +169,7 @@ export function generateExactSetupBlockCandidates(
           const prior=scheduled.at(-1),prep=!prior?policy.initialPreparationMinutes:prior.setupFamilyId!==family?policy.preparationMinutesBetweenFamilies:0;
           const start=cursor+(prep??0),slots=members.map((_,index)=>String(index));
           if(!ledger.consume("STANDALONE")){exhausted=true;return;}branchesExplored+=1;matchingAttempts+=1;
-          const matching=findCanonicalPerfectMatching(slots,members.map(task=>task.id),(id,slot)=>canPlaceTask(problem,members.find(task=>task.id===id)!,start+Number(slot)*members[0].duration,[...placed,...scheduled],meals));
+          const matching=findCanonicalPerfectMatching(slots,members.map(task=>task.id),(id,slot)=>canPlaceTask(problem,members.find(task=>task.id===id)!,start+Number(slot)*members[0].duration,[...contextPlaced,...scheduled],meals));
           if(!matching)eligible=eligible.filter(task=>task.setupFamilyId!==family);else matchingSuccesses+=1;
           // A perfect matching only proves a necessary condition. Enumerate all
           // identity assignments below; future/resource distinctions remain.
@@ -172,11 +180,11 @@ export function generateExactSetupBlockCandidates(
         const prepDuration=policy.groupingPolicy==="OFF"?undefined:!previous?policy.initialPreparationMinutes:changed?policy.preparationMinutesBetweenFamilies||undefined:undefined;
         const earliest=cursor+(prepDuration??0);
         const compactPreparationStart=bridged(cursor);
-        const starts=compact?[bridged(compactPreparationStart+(prepDuration??0))]:exactTaskStartDomain(problem,task,[...placed,...scheduled],meals).starts();
+        const starts=compact?[bridged(compactPreparationStart+(prepDuration??0))]:exactTaskStartDomain(problem,task,[...contextPlaced,...scheduled],meals).starts();
         for(const start of starts){
           if(start<earliest||task.duration+start>problem.day.end)continue;
           if(!ledger.consume("STANDALONE")){exhausted=true;return;}branchesExplored+=1;
-          if(!canPlaceTask(problem,task,start,[...placed,...scheduled],meals))continue;
+          if(!canPlaceTask(problem,task,start,[...contextPlaced,...scheduled],meals))continue;
           const entryIndex=1+scheduled.filter((item,index)=>item.setupFamilyId===task.setupFamilyId&&(index===0||scheduled[index-1].setupFamilyId!==item.setupFamilyId)).length;
           // A wait within a family does not create an entry/preparation.
           const actualEntry=previous?.setupFamilyId===task.setupFamilyId?entryIndex-1:entryIndex;
@@ -186,11 +194,13 @@ export function generateExactSetupBlockCandidates(
             const preparation=prepStart===undefined?undefined:createSetupPreparation(spaceId,task.setupFamilyId!,actualEntry,prepDuration!,prepStart);
             if(preparation){
               if(!ledger.consume("STANDALONE")){exhausted=true;return;}branchesExplored+=1;
+              const protectedPreparation=preparations.find(existing=>existing.id===preparation.id);
+              if(protectedPreparation&&(protectedPreparation.start!==preparation.start||protectedPreparation.end!==preparation.end||protectedPreparation.duration!==preparation.duration))continue;
               if(!preparationWithinDay(problem,preparation)||!preparationWithinAvailability(space.availability,preparation)||!occupationAvoidsProtectedMeal(problem,spaceId,preparation.start,preparation.end)
-                ||!preparationAvoidsOccupations(preparation,spaceOccupations([...placed,...scheduled],[...preparations,...derived],spaceId,meals))
+                ||!preparationAvoidsOccupations(preparation,spaceOccupations([...contextPlaced,...scheduled],[...preparations.filter(existing=>existing.id!==preparation.id),...derived],spaceId,meals))
                 ||fixedPauses.some(p=>p.start<preparation.end&&preparation.start<p.end))continue;
             }
-            const scored=scoreAuxiliaryTask(problem,task,start,[...placed,...scheduled]);
+            const scored=scoreAuxiliaryTask(problem,task,start,[...contextPlaced,...scheduled]);
             walk(remaining.filter(item=>item.id!==task.id),[...scheduled,scored.scheduled],preparation?[...derived,preparation]:derived,scored.scheduled.end,compact,cost+scored.cost);
           }
           if(stopped||exhausted)return;
@@ -206,7 +216,7 @@ export function generateExactSetupBlockCandidates(
       for(const grouped of policy.groupingPolicy==="PREFERRED"?[true,false]:[false]){
         preferGrouped=grouped;
         for(let start=problem.day.start;start<(compact?problem.day.end:problem.day.start+1);start+=5){
-          startsExplored+=1;walk(ordered,[],[],start,compact,0);
+          startsExplored+=1;walk(owned,[],[],start,compact,0);
           if(stopped||exhausted)return finish(exhausted?"BUDGET_EXHAUSTED":"COMPLETE");
         }
       }

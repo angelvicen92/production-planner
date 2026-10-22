@@ -13,7 +13,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:3",
-        "setupFamilyId": "setup-family:1:185506854",
+        "setupFamilyId": "setup-family:1:1970921417",
         "start": 545,
         "end": 550
       },
@@ -29,7 +29,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:4",
-        "setupFamilyId": "setup-family:1:185506854",
+        "setupFamilyId": "setup-family:1:1970921417",
         "start": 550,
         "end": 555
       },
@@ -47,7 +47,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:3",
-        "setupFamilyId": "setup-family:1:1056989402",
+        "setupFamilyId": "setup-family:1:1846769187",
         "start": 560,
         "end": 575
       },
@@ -65,7 +65,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:4",
-        "setupFamilyId": "setup-family:1:1056989402",
+        "setupFamilyId": "setup-family:1:1846769187",
         "start": 575,
         "end": 590
       },
@@ -83,7 +83,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:4",
-        "setupFamilyId": "setup-family:1:2000570871",
+        "setupFamilyId": "setup-family:1:359692235",
         "start": 595,
         "end": 605
       },
@@ -101,7 +101,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:3",
-        "setupFamilyId": "setup-family:1:2000570871",
+        "setupFamilyId": "setup-family:1:359692235",
         "start": 605,
         "end": 615
       }
@@ -168,7 +168,7 @@
       },
       "futureWitnessSetCandidateTraces": [
         {
-          "geometryFingerprint": "1eb1548a0dad8531a0074df6529970daf9d8fb91f77d192ee89750b59e3916e1",
+          "geometryFingerprint": "15c7f21edf13ac571ac8c03b30db435c2e38e83c76484afea0cfdbe7d5c7fce7",
           "frontiers": {},
           "outcome": "FOUND",
           "attempts": 1,
@@ -289,20 +289,20 @@
       ],
       "selectedSetupPreparations": [
         {
-          "id": "setup-preparation:space:1:setup-family:1:1056989402:1",
+          "id": "setup-preparation:space:1:setup-family:1:1846769187:1",
           "kind": "setup-preparation",
           "spaceId": "space:1",
-          "setupFamilyId": "setup-family:1:1056989402",
+          "setupFamilyId": "setup-family:1:1846769187",
           "entryIndex": 1,
           "duration": 5,
           "start": 555,
           "end": 560
         },
         {
-          "id": "setup-preparation:space:1:setup-family:1:2000570871:1",
+          "id": "setup-preparation:space:1:setup-family:1:359692235:1",
           "kind": "setup-preparation",
           "spaceId": "space:1",
-          "setupFamilyId": "setup-family:1:2000570871",
+          "setupFamilyId": "setup-family:1:359692235",
           "entryIndex": 1,
           "duration": 5,
           "start": 590,
@@ -809,11 +809,11 @@
         "futureCollectiveClosureMatchingTraversals": 0,
         "futureCollectiveClosureHall": null,
         "futureCollectiveClosureFirstPrune": null,
-        "futureCollectiveClosureWitnessFingerprint": "34b302e15fc9987931931e6e9a082ce854ca433c38a85184f5e654c07422ca8b",
+        "futureCollectiveClosureWitnessFingerprint": "e074090850df534d9b91335003415192bea23e7014879cba52ef4b10be31bcc7",
         "futureCollectiveClosureAbstentions": {},
         "futureCollectiveClosureInconclusiveLeaves": 0,
         "futureCollectiveClosureLastCertificate": {
-          "fingerprint": "34b302e15fc9987931931e6e9a082ce854ca433c38a85184f5e654c07422ca8b",
+          "fingerprint": "e074090850df534d9b91335003415192bea23e7014879cba52ef4b10be31bcc7",
           "contextTaskIds": [
             "task:10",
             "task:5",
@@ -850,7 +850,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:3",
-        "setupFamilyId": "setup-family:1:185506854",
+        "setupFamilyId": "setup-family:1:1970921417",
         "start": 545,
         "end": 550
       },
@@ -866,7 +866,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:4",
-        "setupFamilyId": "setup-family:1:185506854",
+        "setupFamilyId": "setup-family:1:1970921417",
         "start": 550,
         "end": 555
       },
@@ -884,7 +884,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:3",
-        "setupFamilyId": "setup-family:1:1056989402",
+        "setupFamilyId": "setup-family:1:1846769187",
         "start": 560,
         "end": 575
       },
@@ -902,7 +902,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:4",
-        "setupFamilyId": "setup-family:1:1056989402",
+        "setupFamilyId": "setup-family:1:1846769187",
         "start": 575,
         "end": 590
       },
@@ -920,7 +920,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:4",
-        "setupFamilyId": "setup-family:1:2000570871",
+        "setupFamilyId": "setup-family:1:359692235",
         "start": 595,
         "end": 605
       },
@@ -938,7 +938,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:3",
-        "setupFamilyId": "setup-family:1:2000570871",
+        "setupFamilyId": "setup-family:1:359692235",
         "start": 605,
         "end": 615
       }
@@ -1005,7 +1005,7 @@
       },
       "futureWitnessSetCandidateTraces": [
         {
-          "geometryFingerprint": "1eb1548a0dad8531a0074df6529970daf9d8fb91f77d192ee89750b59e3916e1",
+          "geometryFingerprint": "15c7f21edf13ac571ac8c03b30db435c2e38e83c76484afea0cfdbe7d5c7fce7",
           "frontiers": {},
           "outcome": "FOUND",
           "attempts": 1,
@@ -1126,20 +1126,20 @@
       ],
       "selectedSetupPreparations": [
         {
-          "id": "setup-preparation:space:1:setup-family:1:1056989402:1",
+          "id": "setup-preparation:space:1:setup-family:1:1846769187:1",
           "kind": "setup-preparation",
           "spaceId": "space:1",
-          "setupFamilyId": "setup-family:1:1056989402",
+          "setupFamilyId": "setup-family:1:1846769187",
           "entryIndex": 1,
           "duration": 5,
           "start": 555,
           "end": 560
         },
         {
-          "id": "setup-preparation:space:1:setup-family:1:2000570871:1",
+          "id": "setup-preparation:space:1:setup-family:1:359692235:1",
           "kind": "setup-preparation",
           "spaceId": "space:1",
-          "setupFamilyId": "setup-family:1:2000570871",
+          "setupFamilyId": "setup-family:1:359692235",
           "entryIndex": 1,
           "duration": 5,
           "start": 590,
@@ -1646,11 +1646,11 @@
         "futureCollectiveClosureMatchingTraversals": 0,
         "futureCollectiveClosureHall": null,
         "futureCollectiveClosureFirstPrune": null,
-        "futureCollectiveClosureWitnessFingerprint": "34b302e15fc9987931931e6e9a082ce854ca433c38a85184f5e654c07422ca8b",
+        "futureCollectiveClosureWitnessFingerprint": "e074090850df534d9b91335003415192bea23e7014879cba52ef4b10be31bcc7",
         "futureCollectiveClosureAbstentions": {},
         "futureCollectiveClosureInconclusiveLeaves": 0,
         "futureCollectiveClosureLastCertificate": {
-          "fingerprint": "34b302e15fc9987931931e6e9a082ce854ca433c38a85184f5e654c07422ca8b",
+          "fingerprint": "e074090850df534d9b91335003415192bea23e7014879cba52ef4b10be31bcc7",
           "contextTaskIds": [
             "task:10",
             "task:5",

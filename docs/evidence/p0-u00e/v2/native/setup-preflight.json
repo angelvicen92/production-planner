@@ -17,13 +17,13 @@
     },
     {
       "namespace": "setup-family",
-      "sourceId": "1:1056989402",
-      "canonicalId": "setup-family:1:1056989402"
+      "sourceId": "1:1846769187",
+      "canonicalId": "setup-family:1:1846769187"
     },
     {
       "namespace": "setup-family",
-      "sourceId": "1:2000570871",
-      "canonicalId": "setup-family:1:2000570871"
+      "sourceId": "1:359692235",
+      "canonicalId": "setup-family:1:359692235"
     },
     {
       "namespace": "space",
@@ -119,8 +119,8 @@
     "readOnly": true
   },
   "issues": [],
-  "sourceFingerprint": "5441fd1675aeb86a33cdb1e9920abade8cec9b21d299d86c7a9af3b022124bd6",
-  "identityMapFingerprint": "89db0284188e617c007229fa4b4d71ef688778fe9b76d8cecbdbd1b39fcc245e",
+  "sourceFingerprint": "01c412f81b2be66a2b25f7b7a3345dcd0da09784458c43867c6892a871a1da9f",
+  "identityMapFingerprint": "93b269ef291d4dafacaadf6f3775541a27afcc37dca0579c9b1d5e7d7a1f545d",
   "readOnly": true,
   "status": "SUPPORTED",
   "problem": {
@@ -146,8 +146,8 @@
           "contractVersion": 2,
           "groupingPolicy": "REQUIRED",
           "familyOrder": [
-            "setup-family:1:1056989402",
-            "setup-family:1:2000570871"
+            "setup-family:1:1846769187",
+            "setup-family:1:359692235"
           ],
           "flexibleFamilyOrder": true,
           "reentry": "FORBIDDEN",
@@ -187,7 +187,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:1",
-        "setupFamilyId": "setup-family:1:1056989402"
+        "setupFamilyId": "setup-family:1:1846769187"
       },
       {
         "id": "task:2",
@@ -198,7 +198,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:1",
-        "setupFamilyId": "setup-family:1:2000570871"
+        "setupFamilyId": "setup-family:1:359692235"
       },
       {
         "id": "task:3",
@@ -209,7 +209,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:2",
-        "setupFamilyId": "setup-family:1:1056989402"
+        "setupFamilyId": "setup-family:1:1846769187"
       },
       {
         "id": "task:4",
@@ -220,7 +220,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:2",
-        "setupFamilyId": "setup-family:1:2000570871"
+        "setupFamilyId": "setup-family:1:359692235"
       }
     ],
     "profile": "STANDALONE_ONLY",
@@ -238,5 +238,5 @@
     }
   },
   "reasonCodes": [],
-  "problemFingerprint": "55a60c1a9c8ed83387c5bb365eea57cf5c2365444d696d345f6e5f95aa7d736d"
+  "problemFingerprint": "802cbaf84fd241e73c5304bdcc3eba283aa6140fb165825cc1b79ac39525fe5a"
 }

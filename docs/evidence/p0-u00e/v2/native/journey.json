@@ -6,8 +6,8 @@
       "obligations": 4,
       "completed": 4,
       "stages": 1,
-      "durationMs": 2766,
-      "problemFingerprint": "55a60c1a9c8ed83387c5bb365eea57cf5c2365444d696d345f6e5f95aa7d736d",
+      "durationMs": 2722,
+      "problemFingerprint": "802cbaf84fd241e73c5304bdcc3eba283aa6140fb165825cc1b79ac39525fe5a",
       "branches": {
         "coreBranches": 0,
         "branchesExplored": 11,
@@ -75,8 +75,8 @@
       "obligations": 6,
       "completed": 6,
       "stages": 1,
-      "durationMs": 2691,
-      "problemFingerprint": "1066831230bcb9062a1b8da7d5d3779e1803dea63b0f6b71b10622cab8991e0d",
+      "durationMs": 2550,
+      "problemFingerprint": "f93fd3da6d084a12e52edfa3ff6da1de8085c19eb6393c6983d3a3d898edecf6",
       "branches": {
         "coreBranches": 0,
         "branchesExplored": 16,
@@ -145,7 +145,7 @@
     "unknown references, stale configuration, unauthorized edits and attempts to rewrite historical day profiles are rejected",
     "existing preflight and validators reject missing preparation, shared capacity violation, reentry, unknown family, incomplete policy and wrong explicit order"
   ],
-  "startedAt": "2026-10-22T19:56:41.157Z",
+  "startedAt": "2026-10-22T22:44:35.310Z",
   "negatives": {
     "insufficientPreparation": true,
     "capacity": true,
@@ -157,5 +157,5 @@
     "permissions": true,
     "protectedStage": true
   },
-  "finishedAt": "2026-10-22T19:58:12.211Z"
+  "finishedAt": "2026-10-22T22:46:03.141Z"
 }

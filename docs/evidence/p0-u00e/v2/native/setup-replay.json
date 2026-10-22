@@ -10,7 +10,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:1",
-        "setupFamilyId": "setup-family:1:1056989402",
+        "setupFamilyId": "setup-family:1:1846769187",
         "start": 540,
         "end": 550
       },
@@ -23,7 +23,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:2",
-        "setupFamilyId": "setup-family:1:1056989402",
+        "setupFamilyId": "setup-family:1:1846769187",
         "start": 550,
         "end": 560
       },
@@ -36,7 +36,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:1",
-        "setupFamilyId": "setup-family:1:2000570871",
+        "setupFamilyId": "setup-family:1:359692235",
         "start": 570,
         "end": 580
       },
@@ -49,7 +49,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:2",
-        "setupFamilyId": "setup-family:1:2000570871",
+        "setupFamilyId": "setup-family:1:359692235",
         "start": 580,
         "end": 590
       }
@@ -114,7 +114,7 @@
       },
       "futureWitnessSetCandidateTraces": [
         {
-          "geometryFingerprint": "2a24e0af6114929755774c9192df5020bef81cda952c723e4e6fe1ac133509fb",
+          "geometryFingerprint": "9737ea85ee473aef9fdb2a598b73b72d419b96e32dc645bfd87f0682b0651426",
           "frontiers": {},
           "outcome": "FOUND",
           "attempts": 1,
@@ -235,10 +235,10 @@
       ],
       "selectedSetupPreparations": [
         {
-          "id": "setup-preparation:space:1:setup-family:1:2000570871:1",
+          "id": "setup-preparation:space:1:setup-family:1:359692235:1",
           "kind": "setup-preparation",
           "spaceId": "space:1",
-          "setupFamilyId": "setup-family:1:2000570871",
+          "setupFamilyId": "setup-family:1:359692235",
           "entryIndex": 1,
           "duration": 10,
           "start": 560,
@@ -735,11 +735,11 @@
         "futureCollectiveClosureMatchingTraversals": 0,
         "futureCollectiveClosureHall": null,
         "futureCollectiveClosureFirstPrune": null,
-        "futureCollectiveClosureWitnessFingerprint": "ba42e444bf332c23099777d286e481c02a342871e80cbb5e334dba1384d9416d",
+        "futureCollectiveClosureWitnessFingerprint": "b3a67590bcbad10d778e239f14a506e94b0710136f99e1cbbd8c97184b17b4ca",
         "futureCollectiveClosureAbstentions": {},
         "futureCollectiveClosureInconclusiveLeaves": 0,
         "futureCollectiveClosureLastCertificate": {
-          "fingerprint": "ba42e444bf332c23099777d286e481c02a342871e80cbb5e334dba1384d9416d",
+          "fingerprint": "b3a67590bcbad10d778e239f14a506e94b0710136f99e1cbbd8c97184b17b4ca",
           "contextTaskIds": [
             "task:1",
             "task:2",
@@ -771,7 +771,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:1",
-        "setupFamilyId": "setup-family:1:1056989402",
+        "setupFamilyId": "setup-family:1:1846769187",
         "start": 540,
         "end": 550
       },
@@ -784,7 +784,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:2",
-        "setupFamilyId": "setup-family:1:1056989402",
+        "setupFamilyId": "setup-family:1:1846769187",
         "start": 550,
         "end": 560
       },
@@ -797,7 +797,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:1",
-        "setupFamilyId": "setup-family:1:2000570871",
+        "setupFamilyId": "setup-family:1:359692235",
         "start": 570,
         "end": 580
       },
@@ -810,7 +810,7 @@
         "participantMarginAfterMinutes": 0,
         "kind": "auxiliary",
         "participantId": "participant:2",
-        "setupFamilyId": "setup-family:1:2000570871",
+        "setupFamilyId": "setup-family:1:359692235",
         "start": 580,
         "end": 590
       }
@@ -875,7 +875,7 @@
       },
       "futureWitnessSetCandidateTraces": [
         {
-          "geometryFingerprint": "2a24e0af6114929755774c9192df5020bef81cda952c723e4e6fe1ac133509fb",
+          "geometryFingerprint": "9737ea85ee473aef9fdb2a598b73b72d419b96e32dc645bfd87f0682b0651426",
           "frontiers": {},
           "outcome": "FOUND",
           "attempts": 1,
@@ -996,10 +996,10 @@
       ],
       "selectedSetupPreparations": [
         {
-          "id": "setup-preparation:space:1:setup-family:1:2000570871:1",
+          "id": "setup-preparation:space:1:setup-family:1:359692235:1",
           "kind": "setup-preparation",
           "spaceId": "space:1",
-          "setupFamilyId": "setup-family:1:2000570871",
+          "setupFamilyId": "setup-family:1:359692235",
           "entryIndex": 1,
           "duration": 10,
           "start": 560,
@@ -1496,11 +1496,11 @@
         "futureCollectiveClosureMatchingTraversals": 0,
         "futureCollectiveClosureHall": null,
         "futureCollectiveClosureFirstPrune": null,
-        "futureCollectiveClosureWitnessFingerprint": "ba42e444bf332c23099777d286e481c02a342871e80cbb5e334dba1384d9416d",
+        "futureCollectiveClosureWitnessFingerprint": "b3a67590bcbad10d778e239f14a506e94b0710136f99e1cbbd8c97184b17b4ca",
         "futureCollectiveClosureAbstentions": {},
         "futureCollectiveClosureInconclusiveLeaves": 0,
         "futureCollectiveClosureLastCertificate": {
-          "fingerprint": "ba42e444bf332c23099777d286e481c02a342871e80cbb5e334dba1384d9416d",
+          "fingerprint": "b3a67590bcbad10d778e239f14a506e94b0710136f99e1cbbd8c97184b17b4ca",
           "contextTaskIds": [
             "task:1",
             "task:2",

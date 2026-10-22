@@ -79,29 +79,29 @@
       "contractVersion": 1,
       "setupPreparations": [
         {
-          "id": "setup-preparation:space:1:setup-family:1:1056989402:1",
+          "id": "setup-preparation:space:1:setup-family:1:1846769187:1",
           "end": 560,
           "start": 555,
           "spaceId": 1,
           "duration": 5,
           "entryIndex": 1,
-          "setupFamilyId": "1:1056989402"
+          "setupFamilyId": "1:1846769187"
         },
         {
-          "id": "setup-preparation:space:1:setup-family:1:2000570871:1",
+          "id": "setup-preparation:space:1:setup-family:1:359692235:1",
           "end": 595,
           "start": 590,
           "spaceId": 1,
           "duration": 5,
           "entryIndex": 1,
-          "setupFamilyId": "1:2000570871"
+          "setupFamilyId": "1:359692235"
         }
       ]
     },
-    "draftFingerprint": "d57974c44075b8f26a0c2847ba44aa2ef30bf84b67dce87d0e4022164ba275cf",
+    "draftFingerprint": "baa90d22fceb2f51e8c347ec0ae4b2e338b6e115edb9b693de5e1d74465a494a",
     "draftValidationId": null,
-    "createdAt": "2026-10-22T19:58:08.170811+00:00",
-    "updatedAt": "2026-10-22T19:58:11.530004+00:00"
+    "createdAt": "2026-10-22T22:45:59.654214+00:00",
+    "updatedAt": "2026-10-22T22:46:02.552837+00:00"
   },
   "activeStage": {
     "id": 4,
@@ -217,26 +217,26 @@
       "contractVersion": 1,
       "setupPreparations": [
         {
-          "id": "setup-preparation:space:1:setup-family:1:1056989402:1",
+          "id": "setup-preparation:space:1:setup-family:1:1846769187:1",
           "end": 560,
           "start": 555,
           "spaceId": 1,
           "duration": 5,
           "entryIndex": 1,
-          "setupFamilyId": "1:1056989402"
+          "setupFamilyId": "1:1846769187"
         },
         {
-          "id": "setup-preparation:space:1:setup-family:1:2000570871:1",
+          "id": "setup-preparation:space:1:setup-family:1:359692235:1",
           "end": 595,
           "start": 590,
           "spaceId": 1,
           "duration": 5,
           "entryIndex": 1,
-          "setupFamilyId": "1:2000570871"
+          "setupFamilyId": "1:359692235"
         }
       ]
     },
-    "snapshotFingerprint": "d57974c44075b8f26a0c2847ba44aa2ef30bf84b67dce87d0e4022164ba275cf",
+    "snapshotFingerprint": "baa90d22fceb2f51e8c347ec0ae4b2e338b6e115edb9b693de5e1d74465a494a",
     "validationSummaryJson": {
       "report": {
         "mode": "PROPOSAL_CERTIFIED_CLEAN_V1",
@@ -260,10 +260,10 @@
       "requiredCount": 0,
       "preferredCount": 0
     },
-    "acceptedBy": "ec358b1a-a8ef-425b-9083-c6323d2b35f8",
-    "acceptedAt": "2026-10-22T19:58:11.530004+00:00",
+    "acceptedBy": "33f511d5-47b5-4570-b00d-2db1bf644550",
+    "acceptedAt": "2026-10-22T22:46:02.552837+00:00",
     "archivedAt": null,
-    "createdAt": "2026-10-22T19:58:11.530004+00:00"
+    "createdAt": "2026-10-22T22:46:02.552837+00:00"
   },
   "draft": {
     "tasks": [
@@ -337,27 +337,27 @@
     "contractVersion": 1,
     "setupPreparations": [
       {
-        "id": "setup-preparation:space:1:setup-family:1:1056989402:1",
+        "id": "setup-preparation:space:1:setup-family:1:1846769187:1",
         "end": 560,
         "start": 555,
         "spaceId": 1,
         "duration": 5,
         "entryIndex": 1,
-        "setupFamilyId": "1:1056989402"
+        "setupFamilyId": "1:1846769187"
       },
       {
-        "id": "setup-preparation:space:1:setup-family:1:2000570871:1",
+        "id": "setup-preparation:space:1:setup-family:1:359692235:1",
         "end": 595,
         "start": 590,
         "spaceId": 1,
         "duration": 5,
         "entryIndex": 1,
-        "setupFamilyId": "1:2000570871"
+        "setupFamilyId": "1:359692235"
       }
     ]
   },
   "draftBaseStageId": 4,
-  "draftFingerprint": "d57974c44075b8f26a0c2847ba44aa2ef30bf84b67dce87d0e4022164ba275cf",
+  "draftFingerprint": "baa90d22fceb2f51e8c347ec0ae4b2e338b6e115edb9b693de5e1d74465a494a",
   "currentConfigRevisionId": 4,
   "validation": null,
   "acceptedExceptions": [],
@@ -451,10 +451,10 @@
         "requiredCount": 0,
         "preferredCount": 0
       },
-      "acceptedBy": "ec358b1a-a8ef-425b-9083-c6323d2b35f8",
-      "acceptedAt": "2026-10-22T19:58:08.170811+00:00",
+      "acceptedBy": "33f511d5-47b5-4570-b00d-2db1bf644550",
+      "acceptedAt": "2026-10-22T22:45:59.654214+00:00",
       "archivedAt": null,
-      "createdAt": "2026-10-22T19:58:08.170811+00:00"
+      "createdAt": "2026-10-22T22:45:59.654214+00:00"
     },
     {
       "id": 4,
@@ -570,26 +570,26 @@
         "contractVersion": 1,
         "setupPreparations": [
           {
-            "id": "setup-preparation:space:1:setup-family:1:1056989402:1",
+            "id": "setup-preparation:space:1:setup-family:1:1846769187:1",
             "end": 560,
             "start": 555,
             "spaceId": 1,
             "duration": 5,
             "entryIndex": 1,
-            "setupFamilyId": "1:1056989402"
+            "setupFamilyId": "1:1846769187"
           },
           {
-            "id": "setup-preparation:space:1:setup-family:1:2000570871:1",
+            "id": "setup-preparation:space:1:setup-family:1:359692235:1",
             "end": 595,
             "start": 590,
             "spaceId": 1,
             "duration": 5,
             "entryIndex": 1,
-            "setupFamilyId": "1:2000570871"
+            "setupFamilyId": "1:359692235"
           }
         ]
       },
-      "snapshotFingerprint": "d57974c44075b8f26a0c2847ba44aa2ef30bf84b67dce87d0e4022164ba275cf",
+      "snapshotFingerprint": "baa90d22fceb2f51e8c347ec0ae4b2e338b6e115edb9b693de5e1d74465a494a",
       "validationSummaryJson": {
         "report": {
           "mode": "PROPOSAL_CERTIFIED_CLEAN_V1",
@@ -613,10 +613,10 @@
         "requiredCount": 0,
         "preferredCount": 0
       },
-      "acceptedBy": "ec358b1a-a8ef-425b-9083-c6323d2b35f8",
-      "acceptedAt": "2026-10-22T19:58:11.530004+00:00",
+      "acceptedBy": "33f511d5-47b5-4570-b00d-2db1bf644550",
+      "acceptedAt": "2026-10-22T22:46:02.552837+00:00",
       "archivedAt": null,
-      "createdAt": "2026-10-22T19:58:11.530004+00:00"
+      "createdAt": "2026-10-22T22:46:02.552837+00:00"
     }
   ]
 }

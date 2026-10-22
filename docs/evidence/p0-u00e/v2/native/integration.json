@@ -13,7 +13,7 @@
     "unknown references, stale configuration, unauthorized edits and attempts to rewrite historical day profiles are rejected",
     "existing preflight and validators reject missing preparation, shared capacity violation, reentry, unknown family, incomplete policy and wrong explicit order"
   ],
-  "startedAt": "2026-10-22T19:56:28.537Z",
+  "startedAt": "2026-10-22T22:44:22.496Z",
   "sourceHashes": {
     "server/newDayPlannerConfiguration.ts": "d9761f7a6c93cd31c75a4e3a25fa61bc3eeaf157e09ab36a0df3a77300b06e3e",
     "server/assistedProposalService.ts": "59c59f0ec735ba4e6e645238c7ffe49c64d1a04eed5e3702eaf055c75a536989",
@@ -30,7 +30,7 @@
     "client/src/components/new-day-planner-editor.tsx": "5faebbad751a42e3a471c07225562b24ab3fdcbfb09574a24148b3c1fe6ea2e3",
     "client/src/pages/settings.tsx": "d9b35ec50cfcc5542c7ac7ead815949d10084f318c40075dade24e167efc0c8c"
   },
-  "sourceCommit": "3a05cb099a74d7263c0d630d7055746fcd722114",
+  "sourceCommit": "152fc31ca732ff00b7cba573706b83e3d45527e3",
   "postgresVersion": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
   "migrations": [
     {
@@ -488,8 +488,8 @@
     {
       "path": "/rest/v1/rpc/initialize_day_config_revision",
       "method": "POST",
-      "contentLength": "6598",
-      "receivedBytes": 6598,
+      "contentLength": "6597",
+      "receivedBytes": 6597,
       "requestEnded": true,
       "upstreamFinished": true,
       "responseStatus": 200,
@@ -588,8 +588,8 @@
     {
       "path": "/rest/v1/rpc/assisted_guarded_bootstrap_session",
       "method": "POST",
-      "contentLength": "8619",
-      "receivedBytes": 8619,
+      "contentLength": "8615",
+      "receivedBytes": 8615,
       "requestEnded": true,
       "upstreamFinished": true,
       "responseStatus": 200,
@@ -598,8 +598,8 @@
     {
       "path": "/rest/v1/rpc/assisted_finish_proposal",
       "method": "POST",
-      "contentLength": "21866",
-      "receivedBytes": 21866,
+      "contentLength": "21862",
+      "receivedBytes": 21862,
       "requestEnded": true,
       "upstreamFinished": true,
       "responseStatus": 204,
@@ -648,8 +648,8 @@
     {
       "path": "/rest/v1/rpc/initialize_day_config_revision",
       "method": "POST",
-      "contentLength": "8966",
-      "receivedBytes": 8966,
+      "contentLength": "8965",
+      "receivedBytes": 8965,
       "requestEnded": true,
       "upstreamFinished": true,
       "responseStatus": 200,
@@ -748,8 +748,8 @@
     {
       "path": "/rest/v1/rpc/assisted_guarded_bootstrap_session",
       "method": "POST",
-      "contentLength": "11825",
-      "receivedBytes": 11825,
+      "contentLength": "11824",
+      "receivedBytes": 11824,
       "requestEnded": true,
       "upstreamFinished": true,
       "responseStatus": 200,
@@ -758,8 +758,8 @@
     {
       "path": "/rest/v1/rpc/assisted_finish_proposal",
       "method": "POST",
-      "contentLength": "22871",
-      "receivedBytes": 22871,
+      "contentLength": "22867",
+      "receivedBytes": 22867,
       "requestEnded": true,
       "upstreamFinished": true,
       "responseStatus": 204,
@@ -814,8 +814,8 @@
         "obligations": 4,
         "completed": 4,
         "stages": 1,
-        "durationMs": 2766,
-        "problemFingerprint": "55a60c1a9c8ed83387c5bb365eea57cf5c2365444d696d345f6e5f95aa7d736d",
+        "durationMs": 2722,
+        "problemFingerprint": "802cbaf84fd241e73c5304bdcc3eba283aa6140fb165825cc1b79ac39525fe5a",
         "branches": {
           "coreBranches": 0,
           "branchesExplored": 11,
@@ -883,8 +883,8 @@
         "obligations": 6,
         "completed": 6,
         "stages": 1,
-        "durationMs": 2691,
-        "problemFingerprint": "1066831230bcb9062a1b8da7d5d3779e1803dea63b0f6b71b10622cab8991e0d",
+        "durationMs": 2550,
+        "problemFingerprint": "f93fd3da6d084a12e52edfa3ff6da1de8085c19eb6393c6983d3a3d898edecf6",
         "branches": {
           "coreBranches": 0,
           "branchesExplored": 16,
@@ -953,7 +953,7 @@
       "unknown references, stale configuration, unauthorized edits and attempts to rewrite historical day profiles are rejected",
       "existing preflight and validators reject missing preparation, shared capacity violation, reentry, unknown family, incomplete policy and wrong explicit order"
     ],
-    "startedAt": "2026-10-22T19:56:41.157Z",
+    "startedAt": "2026-10-22T22:44:35.310Z",
     "negatives": {
       "insufficientPreparation": true,
       "capacity": true,
@@ -965,8 +965,8 @@
       "permissions": true,
       "protectedStage": true
     },
-    "finishedAt": "2026-10-22T19:58:12.211Z"
+    "finishedAt": "2026-10-22T22:46:03.141Z"
   },
   "status": "PASS",
-  "finishedAt": "2026-10-22T19:58:14.950Z"
+  "finishedAt": "2026-10-22T22:46:05.622Z"
 }

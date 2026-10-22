@@ -419,7 +419,7 @@
       "roundSynchronizationNoBreakHolePrunes": 0,
       "terminalDeparturePrerequisiteBranches": 0,
       "futureCollectiveClosureLastCertificate": {
-        "fingerprint": "34b302e15fc9987931931e6e9a082ce854ca433c38a85184f5e654c07422ca8b",
+        "fingerprint": "e074090850df534d9b91335003415192bea23e7014879cba52ef4b10be31bcc7",
         "mealTaskIds": [],
         "closureTaskIds": [],
         "contextTaskIds": [
@@ -446,7 +446,7 @@
       "terminalTransportMaterializationFailures": 0,
       "futureCollectiveClosureInconclusiveLeaves": 0,
       "futureCollectiveClosureMatchingTraversals": 0,
-      "futureCollectiveClosureWitnessFingerprint": "34b302e15fc9987931931e6e9a082ce854ca433c38a85184f5e654c07422ca8b",
+      "futureCollectiveClosureWitnessFingerprint": "e074090850df534d9b91335003415192bea23e7014879cba52ef4b10be31bcc7",
       "futureRoundWitnessParticipantFutureChecks": 0,
       "terminalDeparturePrerequisitePhaseEntered": false,
       "roundSynchronizationSelectedBreakIntervals": [],
@@ -493,24 +493,24 @@
     "selectedRoundPreparations": [],
     "selectedSetupPreparations": [
       {
-        "id": "setup-preparation:space:1:setup-family:1:1056989402:1",
+        "id": "setup-preparation:space:1:setup-family:1:1846769187:1",
         "end": 560,
         "kind": "setup-preparation",
         "start": 555,
         "spaceId": "space:1",
         "duration": 5,
         "entryIndex": 1,
-        "setupFamilyId": "setup-family:1:1056989402"
+        "setupFamilyId": "setup-family:1:1846769187"
       },
       {
-        "id": "setup-preparation:space:1:setup-family:1:2000570871:1",
+        "id": "setup-preparation:space:1:setup-family:1:359692235:1",
         "end": 595,
         "kind": "setup-preparation",
         "start": 590,
         "spaceId": "space:1",
         "duration": 5,
         "entryIndex": 1,
-        "setupFamilyId": "setup-family:1:2000570871"
+        "setupFamilyId": "setup-family:1:359692235"
       }
     ],
     "sharedCapacityFingerprint": null,
@@ -568,7 +568,7 @@
         "mealPrunes": 0,
         "setFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
         "roundAlternatives": 0,
-        "geometryFingerprint": "1eb1548a0dad8531a0074df6529970daf9d8fb91f77d192ee89750b59e3916e1",
+        "geometryFingerprint": "15c7f21edf13ac571ac8c03b30db435c2e38e83c76484afea0cfdbe7d5c7fce7",
         "itineraryAlternatives": 0
       }
     ],
@@ -883,24 +883,24 @@
     "contractVersion": 1,
     "setupPreparations": [
       {
-        "id": "setup-preparation:space:1:setup-family:1:1056989402:1",
+        "id": "setup-preparation:space:1:setup-family:1:1846769187:1",
         "end": 560,
         "start": 555,
         "spaceId": 1,
         "duration": 5,
         "entryIndex": 1,
-        "setupFamilyId": "1:1056989402"
+        "setupFamilyId": "1:1846769187"
       },
       {
-        "id": "setup-preparation:space:1:setup-family:1:2000570871:1",
+        "id": "setup-preparation:space:1:setup-family:1:359692235:1",
         "end": 595,
         "start": 590,
         "spaceId": 1,
         "duration": 5,
         "entryIndex": 1,
-        "setupFamilyId": "1:2000570871"
+        "setupFamilyId": "1:359692235"
       }
     ]
   },
-  "proposedDraftFingerprint": "d57974c44075b8f26a0c2847ba44aa2ef30bf84b67dce87d0e4022164ba275cf"
+  "proposedDraftFingerprint": "baa90d22fceb2f51e8c347ec0ae4b2e338b6e115edb9b693de5e1d74465a494a"
 }

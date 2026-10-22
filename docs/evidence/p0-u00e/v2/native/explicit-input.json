@@ -7,7 +7,7 @@
     "legacy_backfill": 0,
     "ad_hoc_from_default": 0
   },
-  "taskTemplateSnapshotFingerprint": "2031bd3f96cb0e72affe19505f75a5b41dfcb663fcf387e6c1e39dc2a018aac8",
+  "taskTemplateSnapshotFingerprint": "43a3128d7bc406b64245cf8159c6a66b0992312fc92926da8d1c5147b31acb6f",
   "planZoneSettings": [
     {
       "id": 2,
@@ -187,7 +187,7 @@
       "assignedResourceIds": null,
       "plannerNextKind": "auxiliary",
       "operationalRole": "productive_task",
-      "setupFamilyId": "185506854"
+      "setupFamilyId": "1970921417"
     },
     {
       "id": 6,
@@ -228,7 +228,7 @@
       "assignedResourceIds": null,
       "plannerNextKind": "auxiliary",
       "operationalRole": "productive_task",
-      "setupFamilyId": "1056989402"
+      "setupFamilyId": "1846769187"
     },
     {
       "id": 7,
@@ -269,7 +269,7 @@
       "assignedResourceIds": null,
       "plannerNextKind": "auxiliary",
       "operationalRole": "productive_task",
-      "setupFamilyId": "2000570871"
+      "setupFamilyId": "359692235"
     },
     {
       "id": 8,
@@ -306,7 +306,7 @@
       "assignedResourceIds": null,
       "plannerNextKind": "auxiliary",
       "operationalRole": "productive_task",
-      "setupFamilyId": "185506854"
+      "setupFamilyId": "1970921417"
     },
     {
       "id": 9,
@@ -347,7 +347,7 @@
       "assignedResourceIds": null,
       "plannerNextKind": "auxiliary",
       "operationalRole": "productive_task",
-      "setupFamilyId": "1056989402"
+      "setupFamilyId": "1846769187"
     },
     {
       "id": 10,
@@ -388,7 +388,7 @@
       "assignedResourceIds": null,
       "plannerNextKind": "auxiliary",
       "operationalRole": "productive_task",
-      "setupFamilyId": "2000570871"
+      "setupFamilyId": "359692235"
     }
   ],
   "locks": [],
@@ -403,14 +403,14 @@
       "preparationMinutesBetweenFamilies": 5,
       "contractVersion": 2,
       "families": [
-        "1056989402",
-        "2000570871",
-        "185506854"
+        "1846769187",
+        "359692235",
+        "1970921417"
       ],
       "familyOrder": [
-        "185506854",
-        "1056989402",
-        "2000570871"
+        "1970921417",
+        "1846769187",
+        "359692235"
       ]
     }
   ],

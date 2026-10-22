@@ -17,21 +17,32 @@
       "newMigrations": 0
     },
     "productSuite": {
-      "passed": 3113,
+      "passed": 3117,
       "failed": 0,
-      "durationMs": 840151.808422,
+      "skipped": 0,
+      "durationMs": 725154.310157,
       "concurrency": 2,
       "excludedExactlyAsExistingCI": [
         "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts",
         "server/benchmarks/runA2Assist7Evidence.spec.ts"
       ]
     },
-    "postSuiteDelta": {
-      "scope": "Evidence marks the v2 analytic macro domain as inexact, without claiming structural/matching counts; legacy defaults and search behavior remain unchanged. Final targeted tests, both TypeScript checks and build repeated after this delta.",
-      "tests": 92,
-      "passed": 92,
+    "finalFocal": {
+      "scope": "Final protected-context continuation, canonical exact explorer, all v2 combinations and legacy contract. Passed before the final full suite.",
+      "passed": 95,
       "failed": 0,
+      "durationMs": 6477.549787,
       "command": "node node_modules/tsx/dist/cli.mjs --test --test-concurrency=1 engine/planner-next/integration/spacePoliciesV2.spec.ts engine/planner-next/integration/newDaySetupFamilies.spec.ts engine/planner-next/exactItinerantPlan.spec.ts"
+    },
+    "ciPreparation": {
+      "yamlAndShellSyntax": "PASS",
+      "existingChromiumSelected": "/usr/bin/chromium",
+      "version": "154.0.8037.57",
+      "originalTimeoutsMinutes": [
+        15,
+        20
+      ],
+      "allNativeStepsRetained": true
     },
     "noBudgetOrTimeoutIncrease": true
   },
@@ -55,6 +66,11 @@
     ],
     "newHard": 0,
     "newRequired": 0,
+    "acceptedFamilyContinuations": {
+      "profiles": 2,
+      "hardValid": true,
+      "protectedPreserved": true
+    },
     "replayDeterministic": true,
     "historicalSnapshotImmutable": true,
     "axes": [
@@ -100,23 +116,33 @@
     "automaticRegenerationPreserved": true,
     "deterministicFingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
     "durationMs": {
-      "base": 135038,
-      "candidate": 152626,
-      "repeat": 94230
+      "base": 93479,
+      "candidate": 113805,
+      "repeat": 101733
     },
     "certificatesAudited": 22,
     "timeAssessment": {
-      "baselineMs": 135038,
-      "candidateMs": 152626,
-      "repeatMs": 94230,
-      "candidateDeltaPercent": 13.0244819976599,
-      "repeatDeltaPercent": -30.2196507554896,
-      "analysis": "All non-duration report fields, work counters, certificates and Stage snapshots match exactly. Candidate +13.0% is not repeated: identical candidate sources complete -30.2% versus baseline on the next isolated run. This establishes variable wall time without a structural search change; host/CPU causes were not instrumented, so no throughput guarantee is claimed. No budget or timeout changes."
+      "candidateDeltaPercent": 21.7439210945774,
+      "repeatDeltaPercent": 8.82979076476113,
+      "firstStageDeltasMs": {
+        "candidate": 20069,
+        "repeat": 8165
+      },
+      "profile": "v2/s0-time-profile.json",
+      "profileFirstStageMs": {
+        "base": 102043,
+        "candidate": 91020
+      },
+      "profileSameReportExceptDuration": true,
+      "newSpaceScorerSampledPercent": 6e-05,
+      "analysis": "Sampled profiles show no dominant time in continuityPenalty or the new assessSpacePolicies scorer. The setup explorer and GC shares are reported, not inferred from wall time. All non-duration Stage fields and work counters match. Profiling and normal runs vary in wall time; this does not certify equal throughput or attribute the variation to a particular host/CPU mechanism. No search optimization, budget or timeout change is made.",
+      "equalThroughputCertified": false
     }
   },
   "ci": {
     "authority": "Live rollup for the current head of PR #1183; readiness requires green checks. CI URLs and final readiness are recorded in the PR description.",
-    "url": "https://github.com/angelvicen92/production-planner/pull/1183/checks"
+    "url": "https://github.com/angelvicen92/production-planner/pull/1183/checks",
+    "initialAttempt": "v2/ci-initial.json"
   },
   "limitations": [
     "Physical auxiliary operations with participants, exclusive capacity-one rooms and EXACT_CONSTRUCTIVE.",

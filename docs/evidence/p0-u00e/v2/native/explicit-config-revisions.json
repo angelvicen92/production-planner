@@ -1,7 +1,7 @@
 [
   {
     "id": "3",
-    "fingerprint": "5b981c5477945f7a57a6fdc2afe669b46ab783c28a4ab0dab5262486206dbac1",
+    "fingerprint": "8a00c41738fea3ae7f233f76d6e2bbdb02cb916f01a47bde5c29a3f591071bc1",
     "replay_snapshot_json": {
       "authorities": {
         "plan_workday": [
@@ -178,7 +178,7 @@
       "taskTemplateSnapshots": [
         {
           "source": "inherited",
-          "setupId": 1056989402,
+          "setupId": 1846769187,
           "templateName": "Montaje A",
           "defaultZoneId": 1,
           "hasDependency": false,
@@ -192,7 +192,7 @@
           "sourceTemplateId": 1,
           "exclusiveAuxiliar": false,
           "requiresPresenter": false,
-          "sourceFingerprint": "286b34a3311421bd7a43d640bca8e695ab06af5c669c70c2fa095906dad9c7ff",
+          "sourceFingerprint": "292580fcc6bb7d9eb5aac4589928d0c1ec873fef06e8037272a8f7b5421bcf90",
           "plannerNextOperation": {
             "kind": "auxiliary",
             "contractVersion": 1
@@ -207,7 +207,7 @@
         },
         {
           "source": "inherited",
-          "setupId": 2000570871,
+          "setupId": 359692235,
           "templateName": "Montaje B",
           "defaultZoneId": 1,
           "hasDependency": false,
@@ -221,7 +221,7 @@
           "sourceTemplateId": 2,
           "exclusiveAuxiliar": false,
           "requiresPresenter": false,
-          "sourceFingerprint": "a84a4bceaad888ce016cc8bc95ec9bdb540709332168775501321d172e9c5083",
+          "sourceFingerprint": "f38c6e5a7af2fc8651936e839f29cf85fd972bcee070c96d6a1141ca84c7c660",
           "plannerNextOperation": {
             "kind": "auxiliary",
             "contractVersion": 1
@@ -236,7 +236,7 @@
         },
         {
           "source": "inherited",
-          "setupId": 185506854,
+          "setupId": 1970921417,
           "templateName": "Segunda jornada Montaje C",
           "defaultZoneId": 1,
           "hasDependency": false,
@@ -250,7 +250,7 @@
           "sourceTemplateId": 3,
           "exclusiveAuxiliar": false,
           "requiresPresenter": false,
-          "sourceFingerprint": "63dccdd75782d24265491fdc27d50458526a2ecce59b56399f3a276c1c5df557",
+          "sourceFingerprint": "29a314dbb14cb419251becf3704df95b5e3fd671307e076a63ec13177076270f",
           "plannerNextOperation": {
             "kind": "auxiliary",
             "contractVersion": 1
@@ -265,7 +265,7 @@
         },
         {
           "source": "inherited",
-          "setupId": 1056989402,
+          "setupId": 1846769187,
           "templateName": "Segunda jornada Montaje A",
           "defaultZoneId": 1,
           "hasDependency": true,
@@ -279,7 +279,7 @@
           "sourceTemplateId": 4,
           "exclusiveAuxiliar": false,
           "requiresPresenter": false,
-          "sourceFingerprint": "355fb8568a64f5d1533ddf00e5aa9e22894cf2950e157e4726f5d77afdd9ddc4",
+          "sourceFingerprint": "fd270c59a54fa7ea73cb3a87c285c82983044fe7c2d9bdd360ada0a2e2561ca1",
           "plannerNextOperation": {
             "kind": "auxiliary",
             "contractVersion": 1
@@ -296,7 +296,7 @@
         },
         {
           "source": "inherited",
-          "setupId": 2000570871,
+          "setupId": 359692235,
           "templateName": "Segunda jornada Montaje B",
           "defaultZoneId": 1,
           "hasDependency": true,
@@ -310,7 +310,7 @@
           "sourceTemplateId": 5,
           "exclusiveAuxiliar": false,
           "requiresPresenter": false,
-          "sourceFingerprint": "23cd6cf362886890d15274aaf677f5313c56ea1f3957c8d29b531b7cf12b4594",
+          "sourceFingerprint": "80a86417c1f76410716d34ee036dd24d526f41974b093337e1f6933de49a1321",
           "plannerNextOperation": {
             "kind": "auxiliary",
             "contractVersion": 1
@@ -330,7 +330,7 @@
   },
   {
     "id": "4",
-    "fingerprint": "d8474d80c437f838e71a9fe9cf3ef1041ad68a13739e4dc6a8d995b432f0f210",
+    "fingerprint": "61ca62346e9b3fd1695ee065b9ea53c2379c5905b89dc4de91eb715013e94085",
     "replay_snapshot_json": {
       "authorities": {
         "plan_workday": [
@@ -367,14 +367,14 @@
                   "reentry": "ALLOWED",
                   "spaceId": 1,
                   "families": [
-                    "1056989402",
-                    "2000570871",
-                    "185506854"
+                    "1846769187",
+                    "359692235",
+                    "1970921417"
                   ],
                   "familyOrder": [
-                    "185506854",
-                    "1056989402",
-                    "2000570871"
+                    "1970921417",
+                    "1846769187",
+                    "359692235"
                   ],
                   "groupingPolicy": "PREFERRED",
                   "contractVersion": 2,
@@ -387,7 +387,7 @@
               "taskOperations": [
                 {
                   "taskId": 5,
-                  "setupFamilyId": "185506854",
+                  "setupFamilyId": "1970921417",
                   "itinerantTeamId": null,
                   "operationalRole": "productive_task",
                   "plannerNextKind": "auxiliary",
@@ -397,7 +397,7 @@
                 },
                 {
                   "taskId": 6,
-                  "setupFamilyId": "1056989402",
+                  "setupFamilyId": "1846769187",
                   "itinerantTeamId": null,
                   "operationalRole": "productive_task",
                   "plannerNextKind": "auxiliary",
@@ -409,7 +409,7 @@
                 },
                 {
                   "taskId": 7,
-                  "setupFamilyId": "2000570871",
+                  "setupFamilyId": "359692235",
                   "itinerantTeamId": null,
                   "operationalRole": "productive_task",
                   "plannerNextKind": "auxiliary",
@@ -421,7 +421,7 @@
                 },
                 {
                   "taskId": 8,
-                  "setupFamilyId": "185506854",
+                  "setupFamilyId": "1970921417",
                   "itinerantTeamId": null,
                   "operationalRole": "productive_task",
                   "plannerNextKind": "auxiliary",
@@ -431,7 +431,7 @@
                 },
                 {
                   "taskId": 9,
-                  "setupFamilyId": "1056989402",
+                  "setupFamilyId": "1846769187",
                   "itinerantTeamId": null,
                   "operationalRole": "productive_task",
                   "plannerNextKind": "auxiliary",
@@ -443,7 +443,7 @@
                 },
                 {
                   "taskId": 10,
-                  "setupFamilyId": "2000570871",
+                  "setupFamilyId": "359692235",
                   "itinerantTeamId": null,
                   "operationalRole": "productive_task",
                   "plannerNextKind": "auxiliary",
@@ -612,7 +612,7 @@
       "taskTemplateSnapshots": [
         {
           "source": "inherited",
-          "setupId": 1056989402,
+          "setupId": 1846769187,
           "templateName": "Montaje A",
           "defaultZoneId": 1,
           "hasDependency": false,
@@ -626,7 +626,7 @@
           "sourceTemplateId": 1,
           "exclusiveAuxiliar": false,
           "requiresPresenter": false,
-          "sourceFingerprint": "286b34a3311421bd7a43d640bca8e695ab06af5c669c70c2fa095906dad9c7ff",
+          "sourceFingerprint": "292580fcc6bb7d9eb5aac4589928d0c1ec873fef06e8037272a8f7b5421bcf90",
           "plannerNextOperation": {
             "kind": "auxiliary",
             "contractVersion": 1
@@ -641,7 +641,7 @@
         },
         {
           "source": "inherited",
-          "setupId": 2000570871,
+          "setupId": 359692235,
           "templateName": "Montaje B",
           "defaultZoneId": 1,
           "hasDependency": false,
@@ -655,7 +655,7 @@
           "sourceTemplateId": 2,
           "exclusiveAuxiliar": false,
           "requiresPresenter": false,
-          "sourceFingerprint": "a84a4bceaad888ce016cc8bc95ec9bdb540709332168775501321d172e9c5083",
+          "sourceFingerprint": "f38c6e5a7af2fc8651936e839f29cf85fd972bcee070c96d6a1141ca84c7c660",
           "plannerNextOperation": {
             "kind": "auxiliary",
             "contractVersion": 1
@@ -670,7 +670,7 @@
         },
         {
           "source": "inherited",
-          "setupId": 185506854,
+          "setupId": 1970921417,
           "templateName": "Segunda jornada Montaje C",
           "defaultZoneId": 1,
           "hasDependency": false,
@@ -684,7 +684,7 @@
           "sourceTemplateId": 3,
           "exclusiveAuxiliar": false,
           "requiresPresenter": false,
-          "sourceFingerprint": "63dccdd75782d24265491fdc27d50458526a2ecce59b56399f3a276c1c5df557",
+          "sourceFingerprint": "29a314dbb14cb419251becf3704df95b5e3fd671307e076a63ec13177076270f",
           "plannerNextOperation": {
             "kind": "auxiliary",
             "contractVersion": 1
@@ -699,7 +699,7 @@
         },
         {
           "source": "inherited",
-          "setupId": 1056989402,
+          "setupId": 1846769187,
           "templateName": "Segunda jornada Montaje A",
           "defaultZoneId": 1,
           "hasDependency": true,
@@ -713,7 +713,7 @@
           "sourceTemplateId": 4,
           "exclusiveAuxiliar": false,
           "requiresPresenter": false,
-          "sourceFingerprint": "355fb8568a64f5d1533ddf00e5aa9e22894cf2950e157e4726f5d77afdd9ddc4",
+          "sourceFingerprint": "fd270c59a54fa7ea73cb3a87c285c82983044fe7c2d9bdd360ada0a2e2561ca1",
           "plannerNextOperation": {
             "kind": "auxiliary",
             "contractVersion": 1
@@ -730,7 +730,7 @@
         },
         {
           "source": "inherited",
-          "setupId": 2000570871,
+          "setupId": 359692235,
           "templateName": "Segunda jornada Montaje B",
           "defaultZoneId": 1,
           "hasDependency": true,
@@ -744,7 +744,7 @@
           "sourceTemplateId": 5,
           "exclusiveAuxiliar": false,
           "requiresPresenter": false,
-          "sourceFingerprint": "23cd6cf362886890d15274aaf677f5313c56ea1f3957c8d29b531b7cf12b4594",
+          "sourceFingerprint": "80a86417c1f76410716d34ee036dd24d526f41974b093337e1f6933de49a1321",
           "plannerNextOperation": {
             "kind": "auxiliary",
             "contractVersion": 1

@@ -270,7 +270,7 @@
     "stylingGapMinutes": 300,
     "stylingWorkMinutes": 285,
     "branches": 27049,
-    "durationMs": 135038,
+    "durationMs": 93479,
     "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d"
   },
   "after": {
@@ -530,14 +530,14 @@
     "stylingGapMinutes": 300,
     "stylingWorkMinutes": 285,
     "branches": 27049,
-    "durationMs": 152626,
+    "durationMs": 113805,
     "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d"
   },
   "stagesBefore": [
     {
       "ordinal": 1,
       "branches": 22053,
-      "durationMs": 128817,
+      "durationMs": 87566,
       "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
       "replay": "PASS",
       "completeForScope": true,
@@ -549,7 +549,7 @@
     {
       "ordinal": 2,
       "branches": 293,
-      "durationMs": 506,
+      "durationMs": 509,
       "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
       "replay": "PASS",
       "completeForScope": true,
@@ -561,7 +561,7 @@
     {
       "ordinal": 3,
       "branches": 293,
-      "durationMs": 474,
+      "durationMs": 389,
       "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
       "replay": "PASS",
       "completeForScope": true,
@@ -573,7 +573,7 @@
     {
       "ordinal": 4,
       "branches": 293,
-      "durationMs": 413,
+      "durationMs": 402,
       "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
       "replay": "PASS",
       "completeForScope": true,
@@ -585,7 +585,7 @@
     {
       "ordinal": 5,
       "branches": 293,
-      "durationMs": 374,
+      "durationMs": 399,
       "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
       "replay": "PASS",
       "completeForScope": true,
@@ -597,7 +597,7 @@
     {
       "ordinal": 6,
       "branches": 293,
-      "durationMs": 380,
+      "durationMs": 299,
       "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
       "replay": "PASS",
       "completeForScope": true,
@@ -609,7 +609,7 @@
     {
       "ordinal": 7,
       "branches": 293,
-      "durationMs": 396,
+      "durationMs": 377,
       "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
       "replay": "PASS",
       "completeForScope": true,
@@ -621,7 +621,7 @@
     {
       "ordinal": 8,
       "branches": 1507,
-      "durationMs": 1025,
+      "durationMs": 1059,
       "certificate": "bfdbe415effe6d9d827c5ae6dd9d95ed1e5953f43252df64def69234b4a50343",
       "replay": "PASS",
       "completeForScope": true,
@@ -633,7 +633,7 @@
     {
       "ordinal": 9,
       "branches": 293,
-      "durationMs": 414,
+      "durationMs": 382,
       "certificate": "bfdbe415effe6d9d827c5ae6dd9d95ed1e5953f43252df64def69234b4a50343",
       "replay": "PASS",
       "completeForScope": true,
@@ -645,7 +645,7 @@
     {
       "ordinal": 10,
       "branches": 293,
-      "durationMs": 431,
+      "durationMs": 520,
       "certificate": "bfdbe415effe6d9d827c5ae6dd9d95ed1e5953f43252df64def69234b4a50343",
       "replay": "PASS",
       "completeForScope": true,
@@ -657,7 +657,7 @@
     {
       "ordinal": 11,
       "branches": 1145,
-      "durationMs": 1808,
+      "durationMs": 1577,
       "certificate": "9a918ed64990241b3d5b4e914ef38df059dc18f7e6802c45d022efbfd48f3e2a",
       "replay": "PASS",
       "completeForScope": true,
@@ -671,7 +671,7 @@
     {
       "ordinal": 1,
       "branches": 22053,
-      "durationMs": 147481,
+      "durationMs": 107635,
       "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
       "replay": "PASS",
       "completeForScope": true,
@@ -683,7 +683,7 @@
     {
       "ordinal": 2,
       "branches": 293,
-      "durationMs": 320,
+      "durationMs": 426,
       "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
       "replay": "PASS",
       "completeForScope": true,
@@ -695,7 +695,7 @@
     {
       "ordinal": 3,
       "branches": 293,
-      "durationMs": 366,
+      "durationMs": 426,
       "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
       "replay": "PASS",
       "completeForScope": true,
@@ -707,7 +707,7 @@
     {
       "ordinal": 4,
       "branches": 293,
-      "durationMs": 355,
+      "durationMs": 386,
       "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
       "replay": "PASS",
       "completeForScope": true,
@@ -719,7 +719,7 @@
     {
       "ordinal": 5,
       "branches": 293,
-      "durationMs": 272,
+      "durationMs": 426,
       "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
       "replay": "PASS",
       "completeForScope": true,
@@ -731,7 +731,7 @@
     {
       "ordinal": 6,
       "branches": 293,
-      "durationMs": 287,
+      "durationMs": 702,
       "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
       "replay": "PASS",
       "completeForScope": true,
@@ -743,7 +743,7 @@
     {
       "ordinal": 7,
       "branches": 293,
-      "durationMs": 297,
+      "durationMs": 553,
       "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
       "replay": "PASS",
       "completeForScope": true,
@@ -755,7 +755,7 @@
     {
       "ordinal": 8,
       "branches": 1507,
-      "durationMs": 840,
+      "durationMs": 703,
       "certificate": "bfdbe415effe6d9d827c5ae6dd9d95ed1e5953f43252df64def69234b4a50343",
       "replay": "PASS",
       "completeForScope": true,
@@ -767,7 +767,7 @@
     {
       "ordinal": 9,
       "branches": 293,
-      "durationMs": 442,
+      "durationMs": 304,
       "certificate": "bfdbe415effe6d9d827c5ae6dd9d95ed1e5953f43252df64def69234b4a50343",
       "replay": "PASS",
       "completeForScope": true,
@@ -779,7 +779,7 @@
     {
       "ordinal": 10,
       "branches": 293,
-      "durationMs": 420,
+      "durationMs": 383,
       "certificate": "bfdbe415effe6d9d827c5ae6dd9d95ed1e5953f43252df64def69234b4a50343",
       "replay": "PASS",
       "completeForScope": true,
@@ -791,7 +791,7 @@
     {
       "ordinal": 11,
       "branches": 1145,
-      "durationMs": 1546,
+      "durationMs": 1861,
       "certificate": "9a918ed64990241b3d5b4e914ef38df059dc18f7e6802c45d022efbfd48f3e2a",
       "replay": "PASS",
       "completeForScope": true,
@@ -801,7 +801,7 @@
       "offlineAuditBranches": 293
     }
   ],
-  "repeatDurationMs": 94230,
+  "repeatDurationMs": 101733,
   "localFeasibilityDefinition": "Exact task domain with all other final tasks, IN and meals fixed; not a global earliest-start proof.",
   "offlineAuditAccounting": "Separate from product branch counts.",
   "verifierOriginalBaseMetadata": "49d826c9a5ecdd3e0488a64d2b6a05dd3aad98b5"

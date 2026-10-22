@@ -57,20 +57,20 @@
       "contractVersion": 1,
       "setupPreparations": [
         {
-          "id": "setup-preparation:space:1:setup-family:1:2000570871:1",
+          "id": "setup-preparation:space:1:setup-family:1:359692235:1",
           "end": 570,
           "start": 560,
           "spaceId": 1,
           "duration": 10,
           "entryIndex": 1,
-          "setupFamilyId": "1:2000570871"
+          "setupFamilyId": "1:359692235"
         }
       ]
     },
-    "draftFingerprint": "046870c240f3fd4346e8da688c1448cc94693305b6e4927f55a1ac0eadef3739",
+    "draftFingerprint": "4f8f6b421c2821afca933c70148a0fbf660d6209cd00697ffad2c273bcf94f16",
     "draftValidationId": null,
-    "createdAt": "2026-10-22T19:57:30.148715+00:00",
-    "updatedAt": "2026-10-22T19:57:33.243471+00:00"
+    "createdAt": "2026-10-22T22:45:31.497939+00:00",
+    "updatedAt": "2026-10-22T22:45:34.525516+00:00"
   },
   "activeStage": {
     "id": 2,
@@ -158,17 +158,17 @@
       "contractVersion": 1,
       "setupPreparations": [
         {
-          "id": "setup-preparation:space:1:setup-family:1:2000570871:1",
+          "id": "setup-preparation:space:1:setup-family:1:359692235:1",
           "end": 570,
           "start": 560,
           "spaceId": 1,
           "duration": 10,
           "entryIndex": 1,
-          "setupFamilyId": "1:2000570871"
+          "setupFamilyId": "1:359692235"
         }
       ]
     },
-    "snapshotFingerprint": "046870c240f3fd4346e8da688c1448cc94693305b6e4927f55a1ac0eadef3739",
+    "snapshotFingerprint": "4f8f6b421c2821afca933c70148a0fbf660d6209cd00697ffad2c273bcf94f16",
     "validationSummaryJson": {
       "report": {
         "mode": "PROPOSAL_CERTIFIED_CLEAN_V1",
@@ -190,10 +190,10 @@
       "requiredCount": 0,
       "preferredCount": 0
     },
-    "acceptedBy": "ec358b1a-a8ef-425b-9083-c6323d2b35f8",
-    "acceptedAt": "2026-10-22T19:57:33.243471+00:00",
+    "acceptedBy": "33f511d5-47b5-4570-b00d-2db1bf644550",
+    "acceptedAt": "2026-10-22T22:45:34.525516+00:00",
     "archivedAt": null,
-    "createdAt": "2026-10-22T19:57:33.243471+00:00"
+    "createdAt": "2026-10-22T22:45:34.525516+00:00"
   },
   "draft": {
     "tasks": [
@@ -245,18 +245,18 @@
     "contractVersion": 1,
     "setupPreparations": [
       {
-        "id": "setup-preparation:space:1:setup-family:1:2000570871:1",
+        "id": "setup-preparation:space:1:setup-family:1:359692235:1",
         "end": 570,
         "start": 560,
         "spaceId": 1,
         "duration": 10,
         "entryIndex": 1,
-        "setupFamilyId": "1:2000570871"
+        "setupFamilyId": "1:359692235"
       }
     ]
   },
   "draftBaseStageId": 2,
-  "draftFingerprint": "046870c240f3fd4346e8da688c1448cc94693305b6e4927f55a1ac0eadef3739",
+  "draftFingerprint": "4f8f6b421c2821afca933c70148a0fbf660d6209cd00697ffad2c273bcf94f16",
   "currentConfigRevisionId": 2,
   "validation": null,
   "acceptedExceptions": [],
@@ -328,10 +328,10 @@
         "requiredCount": 0,
         "preferredCount": 0
       },
-      "acceptedBy": "ec358b1a-a8ef-425b-9083-c6323d2b35f8",
-      "acceptedAt": "2026-10-22T19:57:30.148715+00:00",
+      "acceptedBy": "33f511d5-47b5-4570-b00d-2db1bf644550",
+      "acceptedAt": "2026-10-22T22:45:31.497939+00:00",
       "archivedAt": null,
-      "createdAt": "2026-10-22T19:57:30.148715+00:00"
+      "createdAt": "2026-10-22T22:45:31.497939+00:00"
     },
     {
       "id": 2,
@@ -419,17 +419,17 @@
         "contractVersion": 1,
         "setupPreparations": [
           {
-            "id": "setup-preparation:space:1:setup-family:1:2000570871:1",
+            "id": "setup-preparation:space:1:setup-family:1:359692235:1",
             "end": 570,
             "start": 560,
             "spaceId": 1,
             "duration": 10,
             "entryIndex": 1,
-            "setupFamilyId": "1:2000570871"
+            "setupFamilyId": "1:359692235"
           }
         ]
       },
-      "snapshotFingerprint": "046870c240f3fd4346e8da688c1448cc94693305b6e4927f55a1ac0eadef3739",
+      "snapshotFingerprint": "4f8f6b421c2821afca933c70148a0fbf660d6209cd00697ffad2c273bcf94f16",
       "validationSummaryJson": {
         "report": {
           "mode": "PROPOSAL_CERTIFIED_CLEAN_V1",
@@ -451,10 +451,10 @@
         "requiredCount": 0,
         "preferredCount": 0
       },
-      "acceptedBy": "ec358b1a-a8ef-425b-9083-c6323d2b35f8",
-      "acceptedAt": "2026-10-22T19:57:33.243471+00:00",
+      "acceptedBy": "33f511d5-47b5-4570-b00d-2db1bf644550",
+      "acceptedAt": "2026-10-22T22:45:34.525516+00:00",
       "archivedAt": null,
-      "createdAt": "2026-10-22T19:57:33.243471+00:00"
+      "createdAt": "2026-10-22T22:45:34.525516+00:00"
     }
   ]
 }

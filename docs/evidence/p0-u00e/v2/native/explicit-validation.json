@@ -3,7 +3,7 @@
   "planId": 2,
   "sessionId": 2,
   "baseStageId": 3,
-  "draftFingerprint": "d57974c44075b8f26a0c2847ba44aa2ef30bf84b67dce87d0e4022164ba275cf",
+  "draftFingerprint": "baa90d22fceb2f51e8c347ec0ae4b2e338b6e115edb9b693de5e1d74465a494a",
   "configRevisionId": 4,
   "hardCount": 0,
   "requiredCount": 0,
@@ -24,5 +24,5 @@
     "preferredAssessment": "NOT_CLASSIFIED",
     "includePrerequisites": true
   },
-  "createdAt": "2026-10-22T19:58:11.287508+00:00"
+  "createdAt": "2026-10-22T22:46:02.342952+00:00"
 }
