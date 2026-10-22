@@ -1,0 +1,45 @@
+name: New day Planner Next
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'engine/**'
+      - 'server/**'
+      - 'shared/**'
+      - 'client/src/components/new-day-planner-editor.tsx'
+      - 'client/src/components/effective-configuration.tsx'
+      - 'client/src/pages/settings.tsx'
+      - 'client/src/pages/plan-details.tsx'
+      - 'supabase/migrations/**'
+      - 'script/demo/smokeNewDay*'
+      - 'script/demo/tsconfig.new-day.json'
+      - 'script/demo/fixtures/data-api-privileges.json'
+      - '.github/workflows/new-day-planner-ci.yml'
+permissions:
+  contents: read
+concurrency:
+  group: new-day-planner-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  new-days:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run check && npm run check:migrations && npm run build
+      - run: npx --no-install tsc -p script/demo/tsconfig.new-day.json
+      - run: node --import tsx --test --test-concurrency=1 server/newDayPlannerConfiguration.spec.ts server/taskTemplateSnapshot.spec.ts server/effectiveConfigurationView.spec.ts server/assistedConfigRefresh.spec.ts server/apiAuthorization.spec.ts
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: node --import tsx script/demo/smokeNewDayIntegration.ts work/new-day-planner
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: new-day-planner
+          path: |
+            work/new-day-planner/*.json
+            work/new-day-planner/*.png

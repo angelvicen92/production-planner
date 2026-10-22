@@ -22,6 +22,7 @@ export interface EffectiveConfigurationView {
   contractVersion:2; planId:number; generatedFrom:"PRODUCTIVE_AUTHORITIES";
   values:readonly EffectiveConfigurationValue[];
   readiness:{status:ReadinessStatus;issues:readonly ReadinessIssue[]};
+  plannerProfile?:{sourceRevision:number;configured:boolean};
   mainFlowPreference?:{value:MainFlowPreference;baseline:MainFlowPreference;defaultGeneral:MainFlowPreference;
     available:boolean;mealApplicable:boolean;zeroBeforeRepresentable:boolean;counts:number[]};
   operationContinuity?: { revisionId:number|null; groups: ReturnType<typeof import("../server/operationContinuity").operationContinuityValues> };

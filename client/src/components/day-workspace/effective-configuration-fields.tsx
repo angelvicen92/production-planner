@@ -261,19 +261,19 @@ export function ReadinessSummary({
         <div>
           <strong>
             {ready
-              ? "Configuración disponible para revisión"
-              : "La configuración necesita atención"}
+              ? "Planner Next: READY"
+              : `Planner Next: ${readiness.status}`}
           </strong>
           <p className="text-sm text-muted-foreground">
             {ready
-              ? "Las comprobaciones causales actuales no detectan datos incompletos ni incompatibles. Revisa sólo las excepciones del día."
+              ? "El preflight productivo admite esta jornada. La propuesta comprobará su factibilidad antes de aplicarla."
               : `${readiness.issues.length} categoría(s) requieren revisión.`}
           </p>
-          {readiness.issues.map((i) => (
+          {readiness.issues.map((i,index) => (
             <a
-              key={i.capabilityId}
+              key={`${i.capabilityId}:${index}`}
               className="block text-sm underline"
-              href={`#config-${i.capabilityId}`}
+              href={i.navigationTarget.startsWith("/")||i.navigationTarget.startsWith("#")?i.navigationTarget:`#config-${i.capabilityId}`}
             >
               {i.category}: {i.message}
             </a>

@@ -251,7 +251,7 @@ export function projectEffectiveAuthoritiesFromEngineInputV1(
   const provenance = (authority: string): EffectivePlanConfigProvenanceV1 => ({ authority, authorityContractVersion: 1 });
   const bundleUnavailable = (input.resourceBundleLoadWarnings?.length ?? 0) > 0;
   return {
-    plan_workday: { semanticValue: [{ workDay: input.workDay, meal: input.meal, mealWindow: input.mealWindow, mealMode: input.mealMode,
+    plan_workday: { semanticValue: [{ workDay: input.workDay, meal: input.meal, ...(input.mealWindow===undefined?{}:{mealWindow:input.mealWindow}), mealMode: input.mealMode,
       defaultParticipantTransitionMinutes:input.defaultParticipantTransitionMinutes,
       ...(input.plannerNext?{plannerNextAuthorities:JSON.parse(JSON.stringify({plannerNext:input.plannerNext,mealTaskTemplateId:input.mealTaskTemplateId,
         taskOperations:input.tasks.map(({id,plannerNextKind,operationalRole,breakKind,mealOccupiesSpace,blocksSpace,agendaScope,resourceInheritance,declaredResourceIds,dependsOnTaskIds,jointGroupId,setupFamilyId,itinerantTeamId,itinerantTeamRequirement,allowedItinerantTeamIds})=>({taskId:id,plannerNextKind,operationalRole,breakKind,mealOccupiesSpace,blocksSpace,agendaScope,resourceInheritance,declaredResourceIds,dependsOnTaskIds,jointGroupId,setupFamilyId,itinerantTeamId,itinerantTeamRequirement,allowedItinerantTeamIds})),

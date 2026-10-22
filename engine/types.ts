@@ -312,6 +312,8 @@ export interface EngineInput {
   taskTemplateSnapshotFingerprint?: string;
   /** Explicit Planner Next integration contract, recovered for days with a persisted configuration. */
   plannerNext?: PlannerNextIntegrationConfigurationInput;
+  /** Defects found while resolving an explicit daily profile against its tasks. */
+  plannerNextMaterializationIssues?: Array<{code:"MISSING_DEPENDENCY_REFERENCE"|"MISSING_COACH_REFERENCE"|"UNSUPPORTED_RESOURCE_REQUIREMENT"|"UNSUPPORTED_SETUP_MAPPING"|"UNSUPPORTED_TASK_ROLE";taskId:number;message:string}>;
   /** Effective participant transition authority snapshotted on the plan/day. */
   defaultParticipantTransitionMinutes?: number;
   /** Explicit ordered Planner Next anchored-operation contract. */
