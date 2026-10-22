@@ -1,0 +1,19 @@
+✔ manual validation messages distinguish stale, uncertifiable, failure and a concrete transport conflict (1.058613ms)
+✔ scope requests use the pending selection and delegate prerequisite closure (4.340423ms)
+✔ preview is consent based and apply sends only guards (0.165249ms)
+✔ assisted timeline edits only the draft while accept and rollback alone refresh product state (0.319681ms)
+✔ bootstrap uses structured API authority and remains explicitly retryable (0.162704ms)
+✔ meal authority uses the accepted Stage or stored draft, independently from proposal preview (0.174984ms)
+✔ every authoritative 409 clears stale preview and run before refresh (1.080175ms)
+✔ manual and location scopes share live eligibility and the accepted base (0.274994ms)
+✔ the complete Assisted operator surface renders human context rather than internal identifiers or codes (0.432601ms)
+✔ Assisted receives product plan while V4 remains outside its authority (56.526779ms)
+✔ restart requires operator consent and delegates a guarded bootstrap move before clearing local state (0.382265ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 798.445182

@@ -1,0 +1,238 @@
+{
+  "session": {
+    "id": 3,
+    "planId": 2,
+    "status": "ACTIVE",
+    "activeStageId": 4,
+    "draftBaseStageId": 4,
+    "currentConfigRevisionId": 5,
+    "draftScopeJson": {
+      "metadata": {},
+      "selector": {
+        "kind": "TASK_IDS",
+        "taskIds": [
+          7,
+          8,
+          9
+        ]
+      },
+      "proposalRunId": 2,
+      "contractVersion": 1,
+      "resolvedTaskIds": [
+        7,
+        8,
+        9
+      ],
+      "includePrerequisites": true
+    },
+    "draftSnapshotJson": {
+      "tasks": [
+        {
+          "taskId": 7,
+          "zoneId": 1,
+          "spaceId": 1,
+          "endPlanned": "09:40",
+          "startPlanned": "09:30",
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        },
+        {
+          "taskId": 8,
+          "zoneId": 1,
+          "spaceId": 2,
+          "endPlanned": "10:10",
+          "startPlanned": "10:00",
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        },
+        {
+          "taskId": 9,
+          "zoneId": 1,
+          "spaceId": 1,
+          "endPlanned": "10:25",
+          "startPlanned": "10:15",
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        }
+      ],
+      "contractVersion": 1
+    },
+    "draftFingerprint": "664c4e16a5812e3a2f30f35da1f471d6541fea58ba11755fb10580757907198b",
+    "draftValidationId": null,
+    "createdAt": "2026-10-22T15:32:34.608704+00:00",
+    "updatedAt": "2026-10-22T15:32:41.852879+00:00"
+  },
+  "activeStage": {
+    "id": 4,
+    "sessionId": 3,
+    "planId": 2,
+    "ordinal": 0,
+    "parentStageId": null,
+    "scopeJson": {},
+    "scopeTaskIdsJson": [],
+    "includePrerequisites": false,
+    "configRevisionId": 5,
+    "proposalRunId": null,
+    "snapshotJson": {
+      "tasks": [
+        {
+          "taskId": 7,
+          "zoneId": 1,
+          "spaceId": 1,
+          "endPlanned": null,
+          "startPlanned": null,
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        },
+        {
+          "taskId": 8,
+          "zoneId": 1,
+          "spaceId": 2,
+          "endPlanned": null,
+          "startPlanned": null,
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        },
+        {
+          "taskId": 9,
+          "zoneId": 1,
+          "spaceId": 1,
+          "endPlanned": null,
+          "startPlanned": null,
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        }
+      ],
+      "contractVersion": 1
+    },
+    "snapshotFingerprint": "b065a86c91035529bee11dc7d58c023f8195102c6b33d11109cd3212b8ce7079",
+    "validationSummaryJson": {
+      "bootstrap": true,
+      "hardCount": 0,
+      "requiredCount": 0,
+      "preferredCount": 0
+    },
+    "acceptedBy": "586d30da-c1d5-4695-b302-d35435c8e1af",
+    "acceptedAt": "2026-10-22T15:32:34.608704+00:00",
+    "archivedAt": null,
+    "createdAt": "2026-10-22T15:32:34.608704+00:00"
+  },
+  "draft": {
+    "tasks": [
+      {
+        "taskId": 7,
+        "zoneId": 1,
+        "spaceId": 1,
+        "endPlanned": "09:40",
+        "startPlanned": "09:30",
+        "locationLabel": null,
+        "camerasOverride": null,
+        "durationOverride": null,
+        "assignedResourceIds": []
+      },
+      {
+        "taskId": 8,
+        "zoneId": 1,
+        "spaceId": 2,
+        "endPlanned": "10:10",
+        "startPlanned": "10:00",
+        "locationLabel": null,
+        "camerasOverride": null,
+        "durationOverride": null,
+        "assignedResourceIds": []
+      },
+      {
+        "taskId": 9,
+        "zoneId": 1,
+        "spaceId": 1,
+        "endPlanned": "10:25",
+        "startPlanned": "10:15",
+        "locationLabel": null,
+        "camerasOverride": null,
+        "durationOverride": null,
+        "assignedResourceIds": []
+      }
+    ],
+    "contractVersion": 1
+  },
+  "draftBaseStageId": 4,
+  "draftFingerprint": "664c4e16a5812e3a2f30f35da1f471d6541fea58ba11755fb10580757907198b",
+  "currentConfigRevisionId": 5,
+  "validation": null,
+  "acceptedExceptions": [],
+  "history": [
+    {
+      "id": 4,
+      "sessionId": 3,
+      "planId": 2,
+      "ordinal": 0,
+      "parentStageId": null,
+      "scopeJson": {},
+      "scopeTaskIdsJson": [],
+      "includePrerequisites": false,
+      "configRevisionId": 5,
+      "proposalRunId": null,
+      "snapshotJson": {
+        "tasks": [
+          {
+            "taskId": 7,
+            "zoneId": 1,
+            "spaceId": 1,
+            "endPlanned": null,
+            "startPlanned": null,
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 8,
+            "zoneId": 1,
+            "spaceId": 2,
+            "endPlanned": null,
+            "startPlanned": null,
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 9,
+            "zoneId": 1,
+            "spaceId": 1,
+            "endPlanned": null,
+            "startPlanned": null,
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          }
+        ],
+        "contractVersion": 1
+      },
+      "snapshotFingerprint": "b065a86c91035529bee11dc7d58c023f8195102c6b33d11109cd3212b8ce7079",
+      "validationSummaryJson": {
+        "bootstrap": true,
+        "hardCount": 0,
+        "requiredCount": 0,
+        "preferredCount": 0
+      },
+      "acceptedBy": "586d30da-c1d5-4695-b302-d35435c8e1af",
+      "acceptedAt": "2026-10-22T15:32:34.608704+00:00",
+      "archivedAt": null,
+      "createdAt": "2026-10-22T15:32:34.608704+00:00"
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import {incorporateBootstrapAdditions} from "./smokeBootstrapAdditions";
 import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import type pg from "pg";
@@ -104,11 +105,13 @@ export async function runStandaloneDayJourney({appUrl,url,anon,service,users,db,
     assert.deepEqual(ready.itinerantComposition.units,[]);
     await page.goto(`${appUrl}/plans/${planId}?tab=configuration`);await page.getByText("Planner Next: READY",{exact:true}).waitFor();
     await page.screenshot({path:`${directory}/${label}-ready.png`,fullPage:true});
-    const bootstrap=page.waitForResponse(response=>new URL(response.url()).pathname===`/api/plans/${planId}/assisted/session`&&response.request().method()==="POST");
-    await page.goto(`${appUrl}/plans/${planId}?tab=planning`);assert.equal((await bootstrap).status(),200);
+    const existingSession=await request(`/api/plans/${planId}/assisted`);
+    const bootstrap=existingSession.status===404?page.waitForResponse(response=>new URL(response.url()).pathname===`/api/plans/${planId}/assisted/session`&&response.request().method()==="POST"):null;
+    await page.goto(`${appUrl}/plans/${planId}?tab=planning`);if(bootstrap)assert.equal((await bootstrap).status(),200);
     const path=`/api/plans/${planId}/assisted`;
     const initial=await api(path);assert.equal(initial.activeStage.ordinal,0);assert.equal(initial.draft.tasks.length,input.tasks.length);
     const scope=page.getByTestId("section-assisted-scope");
+    await scope.getByRole("checkbox").first().waitFor();
     for(const checkbox of await scope.getByRole("checkbox").all())await checkbox.check();
     const pending=page.waitForResponse(response=>new URL(response.url()).pathname===path+"/proposals"&&response.request().method()==="POST");
     const started=performance.now();await page.getByRole("button",{name:"Generar propuesta",exact:true}).click();const generated=await pending;
@@ -175,11 +178,16 @@ export async function runStandaloneDayJourney({appUrl,url,anon,service,users,db,
     const calibrate=await createTemplate("Calibrar sistema técnico","technical",roomB.id,[install.id]);
     const verify=await createTemplate("Verificar sistema técnico","technical",roomA.id,[calibrate.id]);
     const second=await createDay("2026-11-25");
-    for(const t of [install,calibrate,verify])await addTechnicalTask(second,t.name);
+    if(!process.argv.includes("--post-bootstrap-additions"))for(const t of [install,calibrate,verify])await addTechnicalTask(second,t.name);
     const resources=await api(`/api/plans/${second}/resource-items`);const kit=resources.find((r:any)=>r.name==="Kit físico compartido");assert.ok(kit);
     for(const room of [roomA,roomB])await api(`/api/plans/${second}/spaces/${room.id}/space-resource-assignments`,"PATCH",{planResourceItemIds:[kit.id]});
     await api(`/api/plans/${second}/spaces/${roomA.id}/availability`,"PATCH",{availabilityStart:"09:00",availabilityEnd:"12:00"});
     await api(`/api/plans/${second}/spaces/${roomB.id}/availability`,"PATCH",{availabilityStart:"10:00",availabilityEnd:"16:00"});
+    if(process.argv.includes("--post-bootstrap-additions")){
+      await addTechnicalTask(second,install.name);await api(`/api/plans/${second}/assisted/session`,"POST",{});
+      await addTechnicalTask(second,calibrate.name);await addTechnicalTask(second,verify.name);
+      await incorporateBootstrapAdditions({page,appUrl,planId:second,db,api,request,directory,label:"technical-additions",pass:check});
+    }
     report.days.push(await planToStage(second,"second"));assert.equal(report.days[1].completed,3);
     const technical=await captureInput(second,"second-accepted-input");
     assert.equal(technical.input.tasks.filter(t=>t.contestantId!=null).length,0);

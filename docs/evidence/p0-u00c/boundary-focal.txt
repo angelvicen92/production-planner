@@ -1,0 +1,110 @@
+TAP version 13
+# Subtest: NEXT-001 retains its frozen complete, hard-valid result
+ok 1 - NEXT-001 retains its frozen complete, hard-valid result
+  ---
+  duration_ms: 61.686155
+  ...
+# Subtest: the adversarial scenario proves genuine bounded backtracking
+ok 2 - the adversarial scenario proves genuine bounded backtracking
+  ---
+  duration_ms: 84.15865
+  ...
+# Subtest: partial branch rejection is not counted as backtracking
+ok 3 - partial branch rejection is not counted as backtracking
+  ---
+  duration_ms: 34.876018
+  ...
+# Subtest: logical search budgets stop atomically with specific reasons
+ok 4 - logical search budgets stop atomically with specific reasons
+  ---
+  duration_ms: 5.566311
+  ...
+# Subtest: missing relationships and invalid availability never crash
+ok 5 - missing relationships and invalid availability never crash
+  ---
+  duration_ms: 2.118058
+  ...
+# Subtest: unsupported focal structures are rejected explicitly
+ok 6 - unsupported focal structures are rejected explicitly
+  ---
+  duration_ms: 36.796915
+  ...
+# Subtest: results and logical metrics are deterministic and array-order independent
+ok 7 - results and logical metrics are deterministic and array-order independent
+  ---
+  duration_ms: 151.18417
+  ...
+# Subtest: planner-next remains isolated from legacy and production
+ok 8 - planner-next remains isolated from legacy and production
+  ---
+  duration_ms: 20.10278
+  ...
+# Subtest: unsafe preview never builds an EngineInput or writes a replacement
+ok 9 - unsafe preview never builds an EngineInput or writes a replacement
+  ---
+  duration_ms: 1.743376
+  ...
+# Subtest: server authorization is re-read before any privileged replacement work
+ok 10 - server authorization is re-read before any privileged replacement work
+  ---
+  duration_ms: 0.587973
+  ...
+# Subtest: operator token cannot adopt changes that appeared after review
+ok 11 - operator token cannot adopt changes that appeared after review
+  ---
+  duration_ms: 0.252129
+  ...
+# Subtest: historical input and fingerprints retain their exact shape without opt-in
+ok 12 - historical input and fingerprints retain their exact shape without opt-in
+  ---
+  duration_ms: 8.417248
+  ...
+# Subtest: roles and prerequisites come from the frozen templates, never names or current catalog
+ok 13 - roles and prerequisites come from the frozen templates, never names or current catalog
+  ---
+  duration_ms: 2.295754
+  ...
+# Subtest: task additions rematerialize dependencies and change effective configuration identity
+ok 14 - task additions rematerialize dependencies and change effective configuration identity
+  ---
+  duration_ms: 1.813951
+  ...
+# Subtest: a missing prerequisite is blocking instead of silently erased
+ok 15 - a missing prerequisite is blocking instead of silently erased
+  ---
+  duration_ms: 10.393964
+  ...
+# Subtest: invalid operational role declarations fail the product write contract
+ok 16 - invalid operational role declarations fail the product write contract
+  ---
+  duration_ms: 0.673791
+  ...
+# Subtest: a persisted template round trip preserves prerequisites and role identity
+ok 17 - a persisted template round trip preserves prerequisites and role identity
+  ---
+  duration_ms: 0.714111
+  ...
+# Subtest: standalone snapshots omit mainFlow and never manufacture participants, tasks or coaches
+ok 18 - standalone snapshots omit mainFlow and never manufacture participants, tasks or coaches
+  ---
+  duration_ms: 0.523836
+  ...
+# Subtest: standalone rejects contradictory roles and preserves declared dependency/resource requirements
+ok 19 - standalone rejects contradictory roles and preserves declared dependency/resource requirements
+  ---
+  duration_ms: 0.498147
+  ...
+# Subtest: structural profiles are strict and retain the main profile contract
+ok 20 - structural profiles are strict and retain the main profile contract
+  ---
+  duration_ms: 0.330966
+  ...
+1..20
+# tests 20
+# suites 0
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1353.502795

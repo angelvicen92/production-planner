@@ -32,6 +32,8 @@
 
 ---
 
+**P0-U00c — candidato en revisión (base U00b #1180 ya integrado, `3bec719`):** incorpora altas posteriores al bootstrap mediante previsualización y confirmación explícita, exclusivamente antes del primer Stage aceptado, con Draft idéntico a S0 y sin propuesta/ejecución/locks protegidos. Una RPC cierra la sesión anterior y reutiliza el bootstrap existente en la misma transacción, manteniendo S0, revisión y replay históricos. La migración 107 captura fuentes completas para demostrar que las tareas existentes siguen intactas: las sesiones históricas sin esa referencia se rechazan explícitamente, sin backfill inferido. [Diseño y Evidence U00c](../evidence/p0-u00c/README.md). P0 general y reconciliación posterior a S1 siguen abiertos. La demo permanece congelada.
+
 ## 1. La aplicación que queremos tener
 
 OptiPlan debe convertirse en el **sistema operativo de una jornada de producción audiovisual**, no simplemente en un generador de horarios. Según la Fuente 01, abarca el ciclo completo:

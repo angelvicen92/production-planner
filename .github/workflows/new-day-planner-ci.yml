@@ -13,6 +13,8 @@ on:
       - 'supabase/migrations/**'
       - 'script/demo/smokeNewDay*'
       - 'script/demo/smokeStandaloneDayJourney.ts'
+      - 'script/demo/smokeBootstrapAdditions.ts'
+      - 'client/src/components/planning/assisted-planning-workspace.tsx'
       - 'script/demo/tsconfig.new-day.json'
       - 'script/demo/fixtures/data-api-privileges.json'
       - '.github/workflows/new-day-planner-ci.yml'
@@ -34,10 +36,10 @@ jobs:
       - run: npm ci
       - run: npm run check && npm run check:migrations && npm run build
       - run: npx --no-install tsc -p script/demo/tsconfig.new-day.json
-      - run: node --import tsx --test --test-concurrency=1 engine/planner-next/standaloneOnly.spec.ts engine/planner-next/integration/standaloneOnly.spec.ts server/newDayPlannerConfiguration.spec.ts server/taskTemplateSnapshot.spec.ts server/effectiveConfigurationView.spec.ts server/assistedConfigRefresh.spec.ts server/apiAuthorization.spec.ts
+      - run: node --import tsx --test --test-concurrency=1 engine/planner-next/standaloneOnly.spec.ts engine/planner-next/integration/standaloneOnly.spec.ts server/assistedBootstrapAdditions.spec.ts server/newDayPlannerConfiguration.spec.ts server/taskTemplateSnapshot.spec.ts server/effectiveConfigurationView.spec.ts server/assistedConfigRefresh.spec.ts server/apiAuthorization.spec.ts
       - run: npx --no-install playwright install --with-deps chromium
-      - run: node --import tsx script/demo/smokeNewDayIntegration.ts work/new-day-planner
-      - run: node --import tsx script/demo/smokeNewDayIntegration.ts work/standalone-day-planner --standalone-only
+      - run: node --import tsx script/demo/smokeNewDayIntegration.ts work/new-day-planner --post-bootstrap-additions
+      - run: node --import tsx script/demo/smokeNewDayIntegration.ts work/standalone-day-planner --standalone-only --post-bootstrap-additions
       - uses: actions/upload-artifact@v4
         if: always()
         with:

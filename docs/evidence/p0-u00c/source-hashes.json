@@ -1,0 +1,35 @@
+{
+  "base": "3bec719512ed4c30543460cb590c074c093bef91",
+  "instrumentedDirtyCandidate": true,
+  "a2Runtime": {
+    "node": "v24.19.0",
+    "v8": "13.6.233.17-node.51",
+    "packages": {
+      "tsx": "4.20.5",
+      "typescript": "5.6.3",
+      "esbuild": "0.25.12"
+    },
+    "lockfileSha256": "cbe75a531336356a5d3baa75202818f1a7060b72f10d205449b8036295ffeaaa"
+  },
+  "files": {
+    "server/assistedPlanningService.ts": "f34ceb9d3d5e40d4e9bd08d0bb9f4e6606abef594117cdf09df86b366e086468",
+    "server/assistedProposalService.ts": "251c5a9b2191e02ae5aae7dd9ae57d5a3bb2621e6ebb5a36144385a4e9838001",
+    "server/routes.ts": "632296b40be19b251360cf1f97b82ef8a840f5ded4fd9ec8440db000b1821605",
+    "shared/assistedBootstrapAdditions.ts": "7eea19b5db3c57e7f160713a483d1c53680ae24fa9617e934e0ec6ef31f94395",
+    "supabase/migrations/107_assisted_post_bootstrap_additions.sql": "bd299c97f55a87935e936f9f07f943ebc89d4558fafb3f229621305ac2d707ec",
+    "client/src/components/planning/assisted-planning-workspace.tsx": "d9a531d94161c3ce5e2ff56e166382ccc6acb2ac3ec5c8aa7311bdc13da51bb3",
+    "script/demo/smokeNewDayIntegration.ts": "2a13e37ab33c0b54ad2f9c1c04ba11fdd4c53936e2826fb298687140c9768415",
+    "script/demo/smokeNewDayJourney.ts": "277a4fd6ad079bf47401c9a5514db1170333b4a91252c3b495f8ff3980982708",
+    "script/demo/smokeStandaloneDayJourney.ts": "80db2e119e5359e1df286ae87bb65acd535e7a41b14e8b19a5333a4790563c18",
+    "script/demo/smokeBootstrapAdditions.ts": "a91c7f6c7dda347522362d9a6b05e184a23d29b694684e4adbd9eeb1efc68843",
+    "engine/buildInput.ts": "933d499ac4a5fdc8d8dec8939c627b95e1d58cc6271cab7ce27a0fc8577afc70",
+    "server/effectivePlanConfigRevision.ts": "e5129905ed1194bb5a75f9d75248e2d7c6a950366c5cde1ff7d08b706132f953",
+    "server/assistedPlanningConfigRevision.ts": "9f4ec28cae3b4c239e0859bf3b950def893e01e4de7d87d14e492e1b53d0df92",
+    "server/assistedPlanningSnapshot.ts": "2184dc531787336e974359fe0e7b0772432dc0a78c9c139a0893f390d3ddab4b",
+    "engine/planner-next/assistedPlanning.ts": "c5ea8e4ff0a74dd1ba7357a9d88daf7266835fca2b120bdd46a3ccaf8d261789",
+    "engine/planner-next/exactMainAndFeederCore.ts": "1d71ebdd645682667568c3b8a8af0c26f3b02ec3ee29a614f9047b435f51174d",
+    "engine/planner-next/integration/engineInputAdapter.ts": "ba9099e2a92cd4c0799c637c2d2ef51c1a747cb5aed16166de8ff89ef5b1f5bb",
+    "engine/planner-next/integration/engineInputPreflight.ts": "3b10dafc6114a03f3d623e34ad70980b2bbc59645c37cf9553077484a962adcb",
+    "package-lock.json": "cbe75a531336356a5d3baa75202818f1a7060b72f10d205449b8036295ffeaaa"
+  }
+}

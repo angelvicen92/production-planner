@@ -1,3 +1,5 @@
+import { bootstrapAdditionReasons, type BootstrapAdditionsPreview } from "../shared/assistedBootstrapAdditions";
+import { plannerReadiness } from "./plannerReadiness";
 import type { IStorage } from "./storage";
 import { supabaseAdmin } from "./supabase";
 import { buildEngineInput } from "../engine/buildInput";
@@ -14,12 +16,13 @@ import {recommendNextAssistedScope} from './assistedScopeOrchestrator';
 import {getUserRole} from './authz';
 import {newStageDeviationCounts} from '../shared/assistedStageValidation';
 
-export type AssistedPlanningErrorCode = "ASSISTED_ACCEPT_FORBIDDEN" | "HARD_ADMIN_AUTHORIZATION_REQUIRED" | "SESSION_NOT_FOUND" | "STALE_DRAFT" | "STALE_BASE_STAGE" | "STALE_CONFIG_REVISION" | "STALE_VALIDATION" | "VALIDATION_REQUIRED" | "VALIDATION_NOT_ACCEPTABLE" | "HARD_CONFIRMATION_REQUIRED" | "REQUIRED_CONFIRMATION_REQUIRED" | "RUN_RESULT_INVALID" | "UNSUPPORTED_ENGINE_INPUT" | "TASK_SET_MISMATCH" | "IMMUTABLE_TASK" | "UNSUPPORTED_MANUAL_FIELD" | "INVALID_MANUAL_DURATION" | "INVALID_MANUAL_RESET" | "INVALID_BLOCK_OPERATION" | "PLANNING_BLOCK_ORDER_CONFLICT" | "CORRUPT_EDIT_LEDGER" | "ASSISTED_DELTA_VALIDATION_UNSUPPORTED" | "INVALID_STAGE_TARGET" | "NO_REDO_AVAILABLE" | "NO_UNDO_AVAILABLE" | "CONCURRENT_ACCEPT" | "RESTART_PROTECTED_DAY" | "RESTART_RUNNING_PROPOSAL";
+export type AssistedPlanningErrorCode = keyof typeof bootstrapAdditionReasons | "ASSISTED_ACCEPT_FORBIDDEN" | "HARD_ADMIN_AUTHORIZATION_REQUIRED" | "SESSION_NOT_FOUND" | "STALE_DRAFT" | "STALE_BASE_STAGE" | "STALE_CONFIG_REVISION" | "STALE_VALIDATION" | "VALIDATION_REQUIRED" | "VALIDATION_NOT_ACCEPTABLE" | "HARD_CONFIRMATION_REQUIRED" | "REQUIRED_CONFIRMATION_REQUIRED" | "RUN_RESULT_INVALID" | "UNSUPPORTED_ENGINE_INPUT" | "TASK_SET_MISMATCH" | "IMMUTABLE_TASK" | "UNSUPPORTED_MANUAL_FIELD" | "INVALID_MANUAL_DURATION" | "INVALID_MANUAL_RESET" | "INVALID_BLOCK_OPERATION" | "PLANNING_BLOCK_ORDER_CONFLICT" | "CORRUPT_EDIT_LEDGER" | "ASSISTED_DELTA_VALIDATION_UNSUPPORTED" | "INVALID_STAGE_TARGET" | "NO_REDO_AVAILABLE" | "NO_UNDO_AVAILABLE" | "CONCURRENT_ACCEPT" | "RESTART_PROTECTED_DAY" | "RESTART_RUNNING_PROPOSAL";
 export class AssistedPlanningError extends Error {
   constructor(readonly code: AssistedPlanningErrorCode, readonly status: 403 | 404 | 409 | 422,
     readonly validationDiagnostics?:{phase:string;reasonCodes:readonly string[]}) { super(code); this.name = "AssistedPlanningError"; }
 }
 const statuses: Record<AssistedPlanningErrorCode, 403 | 404 | 409 | 422> = {
+  ...Object.fromEntries(Object.keys(bootstrapAdditionReasons).map(code => [code, 409])) as Record<keyof typeof bootstrapAdditionReasons, 409>,
   ASSISTED_ACCEPT_FORBIDDEN: 403, HARD_ADMIN_AUTHORIZATION_REQUIRED: 403,
   SESSION_NOT_FOUND: 404, STALE_DRAFT: 409, STALE_BASE_STAGE: 409, STALE_VALIDATION: 409,
   STALE_CONFIG_REVISION: 409, VALIDATION_REQUIRED: 422, VALIDATION_NOT_ACCEPTABLE: 422, RUN_RESULT_INVALID: 422, UNSUPPORTED_ENGINE_INPUT: 422, TASK_SET_MISMATCH: 409,
@@ -32,6 +35,7 @@ const statuses: Record<AssistedPlanningErrorCode, 403 | 404 | 409 | 422> = {
   HARD_CONFIRMATION_REQUIRED: 422, REQUIRED_CONFIRMATION_REQUIRED: 422,
 };
 function dbError(error: any): never {
+  if(error?.code === "55P03" || error?.code === "40P01") throw new AssistedPlanningError("REBOOTSTRAP_STALE_SOURCES",409);
   const code = (Object.keys(statuses) as AssistedPlanningErrorCode[]).find((candidate) => String(error?.message ?? "").includes(candidate));
   if (code) throw new AssistedPlanningError(code, statuses[code]);
   throw error;
@@ -39,7 +43,7 @@ function dbError(error: any): never {
 function provenance(authority: string) { return { authority, authorityContractVersion: 1 }; }
 
 export type DraftChange = { taskId: number; startPlanned?: string | null; endPlanned?: string | null; zoneId?: number | null; spaceId?: number | null; locationLabel?: string | null; durationOverride?: number | null; camerasOverride?: number | null };
-type AssistedRpc = (name: string, parameters: Record<string, unknown>) => Promise<{ error: unknown }>;
+type AssistedRpc = (name: string, parameters: Record<string, unknown>) => Promise<{ error: unknown; data?: any }>;
 type AssistedPlanningServiceDependencies = {
   lookupRole?: typeof getUserRole;
   buildInput?: typeof buildEngineInput;
@@ -71,6 +75,8 @@ export class AssistedPlanningService {
   async start(planId: number, userId: string) {
     const existing = await this.storage.getActiveAssistedPlanningSession(planId);
     if (existing) return this.state(planId);
+    const {data: sourceToken, error: sourceError} = await this.rpc("assisted_bootstrap_source_token", {p_plan_id:planId});
+    if (sourceError) dbError(sourceError);
     const [engineInput, optimizerSnapshot, taskTemplateSnapshots, tasks] = await Promise.all([
       this.buildInput(planId), this.storage.getPlanOptimizerSnapshot(planId),
       this.storage.getPlanTaskTemplateSnapshots(planId), this.storage.getTasksForPlan(planId),
@@ -81,8 +87,55 @@ export class AssistedPlanningService {
     const identity = (this.dependencies.buildConfigRevision ?? buildEffectivePlanConfigRevisionV1)(revisionInput);
     const replay = buildEffectivePlanConfigReplaySnapshotV1(revisionInput);
     const snapshot = buildAssistedPlanningSnapshotV1(tasks);
-    const { error } = await this.rpc("assisted_bootstrap_session", { p_plan_id: planId, p_user_id: userId, p_identity: identity, p_replay: replay, p_snapshot: snapshot, p_fingerprint: fingerprintAssistedPlanningSnapshotV1(snapshot) });
+    const { error } = await this.rpc("assisted_guarded_bootstrap_session", { p_source_token:sourceToken, p_plan_id: planId, p_user_id: userId, p_identity: identity, p_replay: replay, p_snapshot: snapshot, p_fingerprint: fingerprintAssistedPlanningSnapshotV1(snapshot) });
     if (error) dbError(error);
+    return this.state(planId);
+  }
+
+  private async additionsCandidate(planId: number) {
+    const read = async () => {
+      const {data,error} = await this.rpc("assisted_preview_bootstrap_additions", {p_plan_id:planId});
+      if(error) dbError(error);
+      return data as BootstrapAdditionsPreview;
+    };
+    const preview = await read();
+    if (!preview.allowed) return {preview};
+    const [input, optimizerSnapshot, taskTemplateSnapshots, tasks] = await Promise.all([
+      this.buildInput(planId), this.storage.getPlanOptimizerSnapshot(planId),
+      this.storage.getPlanTaskTemplateSnapshots(planId), this.storage.getTasksForPlan(planId),
+    ]);
+    const revisionInput = {planId, optimizerSnapshot, taskTemplateSnapshots,
+      optimizerProvenance:provenance("plan_optimizer_snapshots"), taskTemplateProvenance:provenance("plan_task_template_snapshots"),
+      authorities:projectEffectiveAuthoritiesFromEngineInputV1(input)};
+    const identity = (this.dependencies.buildConfigRevision ?? buildEffectivePlanConfigRevisionV1)(revisionInput);
+    const replay = buildEffectivePlanConfigReplaySnapshotV1(revisionInput);
+    const snapshot = buildAssistedPlanningSnapshotV1(tasks);
+    const after = await read();
+    if (JSON.stringify(preview) !== JSON.stringify(after)) throw new AssistedPlanningError("REBOOTSTRAP_STALE_SOURCES",409);
+    if (plannerReadiness(input,{status:"READY",issues:[]}).status !== "READY")
+      return {preview:{...preview,allowed:false,reason:"UNSUPPORTED_ENGINE_INPUT" as const}};
+    return {preview,identity,replay,snapshot};
+  }
+
+  async previewAdditions(planId: number) { return (await this.additionsCandidate(planId)).preview; }
+
+  async incorporateAdditions(planId:number, userId:string, expected:BootstrapAdditionsPreview) {
+    const role = await (this.dependencies.lookupRole ?? getUserRole)(userId);
+    if(role!=="admin" && role!=="production") throw new AssistedPlanningError("ASSISTED_ACCEPT_FORBIDDEN",403);
+    const candidate = await this.additionsCandidate(planId);
+    const {preview,identity,replay,snapshot} = candidate;
+    if (preview.expectedSessionId!==expected.expectedSessionId || preview.expectedBaseStageId!==expected.expectedBaseStageId)
+      throw new AssistedPlanningError("STALE_BASE_STAGE",409);
+    if(preview.expectedDraftFingerprint!==expected.expectedDraftFingerprint) throw new AssistedPlanningError("STALE_DRAFT",409);
+    if(preview.expectedConfigRevisionId!==expected.expectedConfigRevisionId) throw new AssistedPlanningError("STALE_CONFIG_REVISION",409);
+    if(preview.sourceToken!==expected.sourceToken) throw new AssistedPlanningError("REBOOTSTRAP_STALE_SOURCES",409);
+    if(!preview.allowed || !snapshot) throw new AssistedPlanningError(preview.reason ?? "REBOOTSTRAP_STALE_SOURCES",409);
+    const {error} = await this.rpc("assisted_rebootstrap_additions", {p_plan_id:planId,p_user_id:userId,
+      p_expected_session:expected.expectedSessionId,p_expected_base:expected.expectedBaseStageId,
+      p_expected_fingerprint:expected.expectedDraftFingerprint,p_expected_config:expected.expectedConfigRevisionId,
+      p_source_token:expected.sourceToken,p_identity:identity,p_replay:replay,p_snapshot:snapshot,
+      p_fingerprint:fingerprintAssistedPlanningSnapshotV1(snapshot)});
+    if(error) dbError(error);
     return this.state(planId);
   }
 
