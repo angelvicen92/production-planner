@@ -1,0 +1,10 @@
+{
+  "specFiles": 408,
+  "exitCode": 0,
+  "seconds": 575.699,
+  "concurrency": 2,
+  "existingCiExclusions": [
+    "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts",
+    "server/benchmarks/runA2Assist7Evidence.spec.ts"
+  ]
+}

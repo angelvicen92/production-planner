@@ -42,7 +42,7 @@ Esto es una incompatibilidad representacional entre protección automática y es
 
 ## Alcance de aceptación y validación
 
-El gate causal inicial es positivo, pero el gate integral queda **BLOCKED** por otra incompatibilidad estructural. Se detuvo la integración y se retiró el prototipo. `engine/`, `server/`, `shared/`, `client/` y `supabase/` conservan sus bytes de base. El único cambio en el harness existente añade un dispatch diagnóstico explícito; sus modos U00a–U00f y la demo servida no cambian.
+El gate causal inicial es positivo, pero el gate integral queda **BLOCKED** por otra incompatibilidad estructural. Se detuvo la integración y se retiró el prototipo. `engine/`, `server/`, `shared/`, `client/` y `supabase/` conservan sus bytes de base. El harness existente también permanece intacto: la receta injerta el dispatch diagnóstico únicamente en el archivo descartable. Los modos U00a–U00f y la demo servida no cambian.
 
 No se declaran cumplidos los gates A–H de la capacidad productiva: no hay dos jornadas UI→Stage ni certificación funcional U00g. No se ejecutan nuevas mediciones A2 aisladas o regresiones UI U00a–U00f después de la orden de detener implementación; sus resultados históricos no se reutilizan como resultados del candidato. Los hashes de **todos** los archivos TypeScript de Planner Next se comparan antes/después y contra el checkout entregado. La suite de producto, TypeScript, build, migraciones, tests diagnósticos y CI de esta entrega se registran en [checks/](checks/) y [validation.json](validation.json). Verde técnico certifica el diagnóstico, no resuelve los bloqueos.
 
