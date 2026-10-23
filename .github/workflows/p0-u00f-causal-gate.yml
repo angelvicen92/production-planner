@@ -29,7 +29,15 @@ jobs:
       - run: npx --no-install tsc -p script/diagnostics/tsconfig.u00f.json
       - run: node node_modules/tsx/dist/cli.mjs --test script/diagnostics/u00fTransportGate.spec.ts
       - run: node --import tsx script/diagnostics/analyseU00fTransportGate.ts docs/evidence/p0-u00f/native work/u00f-causal-analysis.json
-      - run: node --import tsx script/diagnostics/verifyU00fTransportProduct.ts docs/evidence/p0-u00f/implementation/native work/u00f-product-verification.json
+      - name: Verify the historical source hashes in their exact baseline
+        run: |
+          git fetch --no-tags --depth=1 origin 4571cb993ae221832630f3ac1c60a72318f83f8c
+          mkdir -p work/u00f-historical-source
+          git archive 4571cb993ae221832630f3ac1c60a72318f83f8c | tar -x -C work/u00f-historical-source
+          ln -s "$GITHUB_WORKSPACE/node_modules" work/u00f-historical-source/node_modules
+          cd work/u00f-historical-source
+          node --import tsx script/diagnostics/verifyU00fTransportProduct.ts docs/evidence/p0-u00f/implementation/native ../u00f-historical-verification.json
+      - run: node --import tsx script/validation/replayU00fFrozen.ts work/u00f-current-replay.json
   native-transport:
     runs-on: ubuntu-latest
     timeout-minutes: 10

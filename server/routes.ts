@@ -42,7 +42,7 @@ import {
   buildAvailabilityWindowPatch,
   buildDefaultPlanResourceItemSnapshotRows,
 } from "./resourceAvailabilityWindow";
-import { executeSpatialAvailabilityAction, parsePositiveIntegerRouteId, parseSpatialRequestBody, SpatialEntityNotFoundError } from "./spatialAvailabilityHttp";
+import { executeSpatialAvailabilityAction, parsePositiveIntegerRouteId, parseSpatialRequestBody, SpatialEntityNotFoundError, SpatialRequestValidationError } from "./spatialAvailabilityHttp";
 import { SpatialAvailabilityValidationError } from "./spatialAvailabilityErrors";
 import { AssistedPlanningError, AssistedPlanningService } from "./assistedPlanningService";
 import { AssistedProposalError, AssistedProposalService } from "./assistedProposalService";
@@ -1733,7 +1733,7 @@ function mapDeleteError(err: any, fallback: string) {
       if(input.mealTaskTemplateId!=null){
         const {data,error}=await supabaseAdmin.from("task_templates").select("id").eq("id",input.mealTaskTemplateId).maybeSingle();
         if(error)throw error;
-        if(!data)throw new z.ZodError([{code:z.ZodIssueCode.custom,path:["mealTaskTemplateId"],message:"Selecciona una plantilla de comida existente."}]);
+        if(!data)throw new SpatialRequestValidationError("Selecciona una plantilla de comida existente.");
       }
       await storage.updateProgramSettingsAtomic(input);
       return { success: true };
