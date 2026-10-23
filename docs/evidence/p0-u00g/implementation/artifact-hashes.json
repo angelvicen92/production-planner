@@ -1,5 +1,5 @@
 {
-  "README.md": "f065ed3058d02d02456924287ab360427bd9634525cf3884a302055363a754cc",
+  "README.md": "1a66a0e4a4603f7ea334ebaf4e71f8d5aee863334f8205a5cb352dd81546cc0f",
   "a2-base/run.json.gz": "f746f8c6417acae6ee43cdd7cf8e36501401a85926f71f5858ea3322482523de",
   "a2-base/runtime.json": "45c5c01e6cb9d22d41afece17549ae3d4ff98072d5298ad03c31cc22246a4c7b",
   "a2-base/snapshots.json.gz": "aa9b3920f71ef5730c89e797b69543b389fcc864bfd640dd2fe85d3c66a5e64f",
@@ -10,6 +10,14 @@
   "a2-repeat/runtime.json": "45c5c01e6cb9d22d41afece17549ae3d4ff98072d5298ad03c31cc22246a4c7b",
   "a2-repeat/snapshots.json.gz": "aa9b3920f71ef5730c89e797b69543b389fcc864bfd640dd2fe85d3c66a5e64f",
   "a2-report.json": "a0d39c468d728331eae83dc08456fcda5ff4a155262b5f9efc6cc047ed98f87d",
+  "canonical-fingerprint-adversaries/A-S2-protection-negative.json": "8cb0c845c056cc8dfd923f8e9b2738bf5934cf4128f559d096f286031ee39159",
+  "canonical-fingerprint-adversaries/B-S2-protection-negative.json": "9dd11e451711f173a0b96458d15e055eea1b5781f10824f34aaed48ddc3d5914",
+  "canonical-fingerprint-adversaries/B-S3-protection-negative.json": "9dd11e451711f173a0b96458d15e055eea1b5781f10824f34aaed48ddc3d5914",
+  "canonical-fingerprint-adversaries/comparison.json": "89a0d4b479818a02a6edd4854f54e04871737dd3fdef46ce387a7084b847bd0e",
+  "canonical-fingerprint-adversaries/integration.json": "24b2f9b1d21d05acf322edea4fcf112effa543585323bb6cde47ac96b5f2a5dc",
+  "canonical-fingerprint-adversaries/source-manifest.json": "d49ac9bebb743c240f0094614e5ce46e1b4e4cde3edf60d5f2773529b62ba3b8",
+  "canonical-fingerprint-adversaries/sql-adversaries.json": "f1a09c48fcc1e64891fa55e60fa66a5c95afb4414e37c26bfedf350ecf83c29a",
+  "canonical-fingerprint-adversaries/summary.json": "a711b5d42252bb1780c4009315b018c06faab2d278ce249da135b4dcd5842d25",
   "causal-sql-boundary/continuation.json": "80766e3b1f8a9ab59a71c903818c607cb8fcee691c583f44461d9d595c70e465",
   "causal-sql-boundary/integration.json": "460eb77d7078965f8857a08b11ae47980548a38daa886451d6c0c9fbef64f182",
   "causal-sql-boundary/intervention.patch": "ab7fd932f2dd83a8e95e0825d7823e19b69a1cc087a64f4826dbc3adf324e93f",
@@ -25,6 +33,7 @@
   "checks/initial-suite-contract-failure.tap.gz": "21efcb6b1cd26653bd0f1cd51b3c6a25b6062f8cc220347e0dae187978202d39",
   "checks/migrations.log": "8b01b0934592ec9319a43434af29012f2c702d0721e7dd84be5892e0b23d99fa",
   "checks/typescript-application.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "checks/typescript-canonical-adversaries.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "checks/typescript-diagnostic.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "checks/typescript-regressions.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "checks/typescript-validation.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -103,5 +112,5 @@
   "u00e-candidate-replay.json": "37cc6e7dd416f7f0098bddb40783ba28aa9d2c79439247e49f9203a1fd7324b3",
   "u00f-frozen-current.json": "b914b39b10881da5a1ca11ec2b7cd4b4a2698b99a0a11d78f06913b41336cb43",
   "u00f-historical-verification.json": "0f77c9c16a3eb2b65406025a9acd851b5ab9befe3782048fe9ee5d4facccb357",
-  "validation.json": "7a8abc19bba131ebeacae7fff55823d4e09a55c314bb5757e81f3f40c912854d"
+  "validation.json": "947f8508f49bb815699e0ee5d831db176f0c8a8a922860c002b4cf28ed943f44"
 }

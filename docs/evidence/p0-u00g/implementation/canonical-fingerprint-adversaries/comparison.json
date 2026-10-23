@@ -1,0 +1,32 @@
+{
+  "status": "PASS",
+  "canonicalDraftContentFingerprintsRecomputed": true,
+  "sqlJsonbResultFingerprintsRecomputed": true,
+  "stages": [
+    {
+      "stage": "A-S1-stage.json",
+      "sameSnapshot": true,
+      "fingerprint": "26c3119d4d34a2113c46714114f9353fa7e612a51963d31898c6270f8a7f85d4"
+    },
+    {
+      "stage": "A-S2-stage.json",
+      "sameSnapshot": true,
+      "fingerprint": "acee08344f551163bcefcb080bfa4453ced456bddb4be015fb1c66ec2b9e88aa"
+    },
+    {
+      "stage": "B-S1-stage.json",
+      "sameSnapshot": true,
+      "fingerprint": "af26cd7f961bc51c197cb98932cd75c887550ae8c8a4ea31263d80b2b2880c77"
+    },
+    {
+      "stage": "B-S2-stage.json",
+      "sameSnapshot": true,
+      "fingerprint": "1dbdcc537b69b583326806822543ff45df682efe74725c8ab4dffb0fd232b904"
+    },
+    {
+      "stage": "B-S3-stage.json",
+      "sameSnapshot": true,
+      "fingerprint": "053a2b04d10ebe801aee706bdde354c2855108b7cc1baedaac22d56926f75529"
+    }
+  ]
+}
