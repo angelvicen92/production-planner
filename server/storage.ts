@@ -1357,6 +1357,8 @@ export class SupabaseStorage implements IStorage {
     ]);
     if (plannerProfileError) throw plannerProfileError;
     const plannerNextProfile = newDayPlannerSnapshotSchema.parse({contractVersion:1,sourceRevision:plannerProfile.revision,configuration:plannerProfile.configuration});
+    const transportTemplates=plannerNextProfile.configuration?.transport;
+    const explicitTransportTemplates=transportTemplates&&transportTemplates!=="NONE"?transportTemplates:undefined;
     if (settingsError) throw settingsError;
     if (zonesError) throw zonesError;
     if (spacesError) throw spacesError;
@@ -1376,6 +1378,7 @@ export class SupabaseStorage implements IStorage {
         templateName: snapshot.templateName,
         planTemplateSnapshotId: snapshot.sourceTemplateId,
       })),
+      explicitTransportTemplates,
     );
     const validatedOptimizerSnapshotPreview = normalizePlanOptimizerSnapshotV1(
       optimizerSettings,
@@ -1523,6 +1526,7 @@ export class SupabaseStorage implements IStorage {
           templateName: row.template_name,
           planTemplateSnapshotId: row.id,
         })),
+        explicitTransportTemplates,
       );
       const optimizerSnapshot = normalizePlanOptimizerSnapshotV1(
         optimizerSettings,

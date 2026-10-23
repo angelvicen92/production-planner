@@ -1,5 +1,5 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {"incremental": false},
-  "include": ["runU00fTransportGate.ts", "../demo/smokeNewDayTransportDiagnostic.ts", "analyseU00fTransportGate.ts", "u00fTransportGate.spec.ts"]
+  "include": ["runU00fTransportGate.ts", "../demo/smokeNewDayTransportDiagnostic.ts", "replayU00fSpaceRegression.ts", "verifyU00fTransportProduct.ts", "analyseU00fTransportGate.ts", "u00fTransportGate.spec.ts"]
 }

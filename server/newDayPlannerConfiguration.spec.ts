@@ -30,6 +30,24 @@ test("roles and prerequisites come from the frozen templates, never names or cur
   assert.equal(result.tasks.length,2);assert.equal(result.plannerNextMaterializationIssues?.length,0);
   assert.equal(applyNewDayPlannerConfiguration(original,profile,[template(7),template(8)]).tasks[0].plannerNextKind,undefined);
 });
+
+test("transport opt-in preserves the builder authority and classifies by frozen identity",()=>{
+  const source=input();
+  source.transportSettings={source:"engine-buildInput-optimizer-transport",arrivalTemplateId:7,departureTemplateId:8,
+    arrivalTargetGroupSize:2,departureTargetGroupSize:1,arrivalMinGapMinutes:20,departureMinGapMinutes:15,
+    arrivalMaximumGroupSize:3,departureMaximumGroupSize:2,vehicleCapacity:3,vanCapacity:3,groupingWeight:5,transportSpaceId:30};
+  const templates=[template(7),template(8)].map(row=>({...row,plannerNextOperation:{contractVersion:1 as const,kind:"auxiliary" as const}}));
+  const config={...profile,configuration:{...standaloneProfile().configuration,transport:{arrivalTemplateId:7,departureTemplateId:8}}};
+  const before=structuredClone(source),result=applyNewDayPlannerConfiguration(source,config,templates);
+  assert.equal(result.transportSettings,source.transportSettings);
+  assert.deepEqual(result.tasks.map(task=>task.operationalRole),["transport_arrival","transport_departure"]);
+  assert.equal(result.plannerNextMaterializationIssues?.length,0);assert.deepEqual(source,before);
+  const missing=applyNewDayPlannerConfiguration({...source,transportSettings:undefined},config,templates);
+  assert.equal(missing.plannerNextMaterializationIssues?.length,2);
+  assert.notEqual(plannerReadiness(missing,{status:"READY",issues:[]}).status,"READY");
+  assert.equal(newDayPlannerConfigurationSchema.safeParse({...config.configuration,transport:{arrivalTemplateId:7}}).success,false);
+  assert.equal(newDayPlannerConfigurationSchema.safeParse({...config.configuration,transport:{arrivalTemplateId:7,departureTemplateId:7}}).success,false);
+});
 test("task additions rematerialize dependencies and change effective configuration identity",()=>{
   const templates=[template(7,"vocal"),template(8,"main",[7])];
   const a=applyNewDayPlannerConfiguration(input(),profile,templates);

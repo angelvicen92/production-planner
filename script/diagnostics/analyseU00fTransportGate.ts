@@ -50,10 +50,17 @@ export function analyseU00fTransportGate(directory:string){
  const standalone=adaptEngineInputToPlannerNextProblem(standaloneInput);assert.equal(standalone.status,'SUPPORTED');
  if(standalone.status!=='SUPPORTED')throw Error('Standalone preflight changed');
  assert.equal(standalone.problem.profile,'STANDALONE_ONLY');assert.equal(standalone.problem.tasks.filter(task=>task.kind==='main').length,0);
- let standaloneFailure:{name:string;message:string;stack:string}|null=null;
- try{executeAssistedPlanning(buildAssistedProblem(standalone.problem,
-  createPlanningScope({kind:'DAY',value:'native standalone'},{},standalone.problem.tasks.map(task=>task.id)),[]));}
- catch(error){assert.ok(error instanceof Error);standaloneFailure={name:error.name,message:error.message,stack:error.stack??''};}
+ const standaloneScope=createPlanningScope({kind:'DAY',value:'native standalone'},{},standalone.problem.tasks.map(task=>task.id));
+ const standaloneBefore=structuredClone(standalone.problem);
+ const standaloneResult=executeAssistedPlanning(buildAssistedProblem(standalone.problem,standaloneScope,[]));
+ const standaloneRepeat=executeAssistedPlanning(buildAssistedProblem(standalone.problem,standaloneScope,[]));
+ assert.deepEqual(standalone.problem,standaloneBefore);
+ assert.equal(standaloneResult.evidence.completeForScope,true);
+ assert.equal(standaloneResult.proposal?.length,9);
+ assert.deepEqual(standaloneResult.proposal,standaloneRepeat.proposal);
+ assert.equal(standaloneResult.evidence.fingerprint,standaloneRepeat.evidence.fingerprint);
+ const standaloneValidation=validatePlan(standalone.problem,[...standaloneResult.proposal!]);
+ assert.equal(standaloneValidation.hardValid,true);
  // Hand-authored feasibility control for this 3-person/9-task fixture only.
  // It is never supplied to search, stored, accepted, or generalized into a scheduler.
  assert.equal(standalone.problem.participants.length,3);assert.equal(standalone.problem.tasks.length,9);
@@ -67,22 +74,26 @@ export function analyseU00fTransportGate(directory:string){
  const feasible=validatePlan(standalone.problem,witness);
  assert.equal(feasible.hardValid,true);assert.equal((feasible.violations??[]).filter(violation=>violation.severity==="REQUIRED").length,0);
  const nativeFailure=read('second-run.json');
- const report={status:'BLOCKED',featureImplemented:false,solverChanged:false,remoteWrites:0,
+ assert.equal(cold.evidence.completeForScope,true);
+ assert.equal(cold.evidence.protectedPlacementsPreserved,true);
+ assert.equal(validatePlan(problem,[...fixed,...cold.proposal!]).hardValid,true);
+ const report={status:'ENGINE_GATE_PASS',featureImplemented:false,solverChanged:true,remoteWrites:0,
   original:{preflight:'SUPPORTED',transportLost:true,readiness:read('journey.json').original.readiness},
   main:{obligations:problem.tasks.length,completeStageOrdinal:complete.activeStage.ordinal,
    protectedTaskCount:fixed.length,protectedPreserved:true,proposalWithPriorWitness:warm.evidence.completeForScope,
    replayFingerprint:warm.evidence.fingerprint,replayDeterministic:true,problemFingerprint:adapted.problemFingerprint,
    grouping:validateTransportGrouping(problem,[...fixed,...warm.proposal!])},
-  standalone:{diagnosis:'UNSUPPORTED',preflight:'SUPPORTED',obligations:standalone.problem.tasks.length,
-   observedNativeStatus:nativeFailure.status,observedNativeMessage:nativeFailure.message,offlineFailure:standaloneFailure,
+  standalone:{diagnosis:'SUPPORTED',preflight:'SUPPORTED',obligations:standalone.problem.tasks.length,
+   observedNativeStatus:nativeFailure.status,observedNativeMessage:nativeFailure.message,
+   solver:{result:standaloneResult,validation:standaloneValidation,deterministic:true},
    feasibleWitness:witness,witnessValidation:feasible,
-   cause:'onHardValidCoreLeaf compares 0 Main placements with 0 Main tasks; calls the Main pipeline because arrival policy exists; buildPipelineWitness dereferences empty layers[0].styling',
-   action:'Review the existing empty-core continuation and pipeline applicability; do not add fictitious Main/styling operations or another scheduler.'},
-  coldReplay:{diagnosis:'UNSUPPORTED',observedReasons:cold.evidence.reasonCodes,
+   historicalCause:'onHardValidCoreLeaf compared 0 Main placements with 0 Main tasks and called the Main pipeline; buildPipelineWitness dereferenced empty layers[0].styling',
+   correction:'Require nonempty Main geometry before pipeline matching; the same standalone search now produces and validates all nine obligations.'},
+  coldReplay:{diagnosis:cold.evidence.completeForScope?'SUPPORTED':'UNSUPPORTED',result:cold,observedReasons:cold.evidence.reasonCodes,
    architecture:deriveArchitectureFromProtectedMains(problem,fixed),withoutTransportPolicy:without,withTransportPolicy:withPolicy,
    productionContinuation:'SUPPORTED with the persisted JOINT_COMPLETION witness; the native Stage path succeeds.',
-   cause:'Without a witness, protected-Main architecture requires a styling layer; fallback drops transportPolicy and reclassifies valid synchronized IN as overlapping physical occupations.',
-   action:'Preserve the persisted witness for supported continuation; audit transport authority in cold fallback before promising witness-free replay.'}};
+   historicalCause:'Without a witness, protected-Main architecture requires a styling layer; fallback dropped transportPolicy and reclassified synchronized IN as overlapping physical occupations.',
+   correction:'Preserve literal direction parameters and project only task IDs in the protected-core fallback; cold continuation and persisted-certificate continuation both validate.'}};
  return report;
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){

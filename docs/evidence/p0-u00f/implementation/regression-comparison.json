@@ -1,0 +1,235 @@
+{
+  "status": "PASS",
+  "authorizedBase": "793d48733c4565cc49f434f86179b2016025fdf0",
+  "native": [
+    {
+      "scenario": "main",
+      "days": [
+        {
+          "label": "first",
+          "obligations": 4,
+          "problemFingerprint": "3cf2f87808ba1fea4ed36fca31fe7e889e9f1eec9df55f841114830b5d0d0ae6",
+          "stageFingerprint": "93468bcf6e3b8b614179d98b854f0e6a4ad94e583efe7d94dd24487475da42aa",
+          "identical": true
+        },
+        {
+          "label": "second",
+          "obligations": 9,
+          "problemFingerprint": "90c10079a8e6a5458a67271321c48a7b975b846182e07e605a0ae140bd0af096",
+          "stageFingerprint": "02a4784df12d039450cd97404f4480c0b27fbe016cccd747ce79d7de2ff094aa",
+          "identical": true
+        }
+      ]
+    },
+    {
+      "scenario": "standalone",
+      "days": [
+        {
+          "label": "first",
+          "obligations": 6,
+          "problemFingerprint": "c42e28e51b6d89678fe7aceb79968a860e7f2dc03856bf0df8dd519f2ff298c2",
+          "stageFingerprint": "dc29ef5c25e7235843104d65744db65112ca1a363e8b38a76a1bd483e68f5544",
+          "identical": true
+        },
+        {
+          "label": "second",
+          "obligations": 3,
+          "problemFingerprint": "7cee41be5d8d075d8917ca80abaa2c28e7e70f43211b52bbe2e7089da7b9e3fe",
+          "stageFingerprint": "664c4e16a5812e3a2f30f35da1f471d6541fea58ba11755fb10580757907198b",
+          "identical": true
+        }
+      ]
+    },
+    {
+      "scenario": "itinerant",
+      "days": [
+        {
+          "label": "technical",
+          "obligations": 4,
+          "problemFingerprint": "ae17ff334069e181a1c0e5f1f579bfa8d4cb7b57a460e7f6daa345bbe3a600d6",
+          "stageFingerprint": "3423759a90622eb1a3192fd59fea8e26a43b90febdbe1f4d0ca710e0c7a5d7e0",
+          "identical": true
+        },
+        {
+          "label": "auxiliary",
+          "obligations": 4,
+          "problemFingerprint": "29334aaa162ba1bde342132c77a09bd2d8fd3b3f507f55a19b8275eb42c98d57",
+          "stageFingerprint": "53a21bdfe1c4fff8a910f44a4ccae71bfc830bfdbcd0323ee4ca4b37005e6fbc",
+          "identical": true
+        }
+      ]
+    }
+  ],
+  "additions": [
+    {
+      "scenario": "main",
+      "historicalStagePreserved": true,
+      "rebootstrapIdentical": true
+    },
+    {
+      "scenario": "standalone",
+      "historicalStagePreserved": true,
+      "rebootstrapIdentical": true
+    }
+  ],
+  "u00e": {
+    "status": "PASS",
+    "method": "Exact same UI-created frozen EngineInput replayed in archived base and candidate; no identity normalization",
+    "historicalDifference": "Independent fresh UI runs use crypto-generated setup-family IDs; their historical fingerprints must not be declared identical.",
+    "days": [
+      {
+        "label": "setup",
+        "obligations": 4,
+        "problemFingerprint": "f263ed87e72785796e2df68b3e47bbf151f6acdcc2e18b77c3a8836db50317a6",
+        "stageFingerprint": "fbbad21532eccc137e13eab204cd42d3a32b43995de0c0491ca840158c0138eb",
+        "proposalFingerprint": "936ea907ae70b33d5e3a32b7e84667bcdce4b0a1e7084db21e9337954db5733b",
+        "work": {
+          "branchesExplored": 11,
+          "coreBranches": 0,
+          "standaloneBranches": 11,
+          "coreMaximumDepth": 0,
+          "patternCandidatesExplored": 0,
+          "timelineCandidatesExplored": 0,
+          "mainCandidatesEvaluated": 0,
+          "feederCandidatesEvaluated": 0,
+          "architecturesChecked": 0,
+          "feederOrderBranches": 0,
+          "feederSlotMatchingChecks": 0,
+          "feederSlotMatchingEdgeChecks": 0,
+          "feederSlotMatchingAugmentTraversals": 0,
+          "feederSlotMatchingBranchesExplored": 0,
+          "residualMatchingInvocations": 0,
+          "residualMatchingFullBuilds": 0,
+          "residualMatchingIncrementalUpdates": 0,
+          "residualMatchingEdgeCacheHits": 0,
+          "residualMatchingEdgeCacheMisses": 0,
+          "residualMatchingPositionChecks": 0,
+          "residualMatchingAugmentTraversals": 0,
+          "residualMatchingBranchesExplored": 0,
+          "mainRunWitnessAttempts": 0,
+          "mainRunWitnessRepairs": 0,
+          "mainRunEquivalentOrdersCollapsed": 0,
+          "bundleMatchingAttempts": 0,
+          "bundleMatchingRepairs": 0,
+          "bundleMatchingMaterializations": 0,
+          "bundleHardValidationRejects": 0,
+          "bundleCertifiedRepairs": 0,
+          "bundleNogoodsCreated": 0,
+          "bundleNogoodBranches": 0,
+          "bundleNogoodDeduplications": 0,
+          "bundleNogoodRepairsSucceeded": 0,
+          "conflictBackjumps": 0,
+          "suffixDepthsSkipped": 0,
+          "deepestCoreDepthReached": 0,
+          "standaloneForwardChecks": 0,
+          "standaloneForwardStartChecks": 0,
+          "standaloneForwardWitnessCacheHits": 0,
+          "standaloneForwardWitnessCacheMisses": 0,
+          "coreLeafTransportPrunes": 0,
+          "transportContiguousStates": 0,
+          "membershipFallbackEntered": 0,
+          "participantMealFutureFeasibilityChecks": 1,
+          "participantMealFutureInfeasibleBranches": 0,
+          "participantMealAffectedObligationsChecked": 0,
+          "participantMealZeroDomainPrunes": 0,
+          "participantMealAnalyticCollectivePrunes": 0,
+          "participantMealExactMaterializations": 1,
+          "futureRoundWitnessSearchInvocations": 0,
+          "futureRoundWitnessStructuralCandidates": 0,
+          "futureRoundWitnessCompleteMatchings": 0,
+          "futureRoundWitnessParticipantFutureChecks": 0,
+          "futureRoundWitnessPrerequisiteChecks": 0,
+          "futureRoundWitnessBranchesConsumed": 0,
+          "branchBudgetLimit": 10000
+        },
+        "identical": true
+      },
+      {
+        "label": "explicit",
+        "obligations": 6,
+        "problemFingerprint": "e0a4dcac3089b2de29b11d06e5fd652419ced0334d009e463601eea6d3843489",
+        "stageFingerprint": "edf0ea0f5eab392babc59235753aa510d18cb3f83d3c869ae9eba651c007da6b",
+        "proposalFingerprint": "94862806b5f2c74669ae7365a5090221b18ffacca8879a8e884516f5a32175e5",
+        "work": {
+          "branchesExplored": 16,
+          "coreBranches": 0,
+          "standaloneBranches": 16,
+          "coreMaximumDepth": 0,
+          "patternCandidatesExplored": 0,
+          "timelineCandidatesExplored": 0,
+          "mainCandidatesEvaluated": 0,
+          "feederCandidatesEvaluated": 0,
+          "architecturesChecked": 0,
+          "feederOrderBranches": 0,
+          "feederSlotMatchingChecks": 0,
+          "feederSlotMatchingEdgeChecks": 0,
+          "feederSlotMatchingAugmentTraversals": 0,
+          "feederSlotMatchingBranchesExplored": 0,
+          "residualMatchingInvocations": 0,
+          "residualMatchingFullBuilds": 0,
+          "residualMatchingIncrementalUpdates": 0,
+          "residualMatchingEdgeCacheHits": 0,
+          "residualMatchingEdgeCacheMisses": 0,
+          "residualMatchingPositionChecks": 0,
+          "residualMatchingAugmentTraversals": 0,
+          "residualMatchingBranchesExplored": 0,
+          "mainRunWitnessAttempts": 0,
+          "mainRunWitnessRepairs": 0,
+          "mainRunEquivalentOrdersCollapsed": 0,
+          "bundleMatchingAttempts": 0,
+          "bundleMatchingRepairs": 0,
+          "bundleMatchingMaterializations": 0,
+          "bundleHardValidationRejects": 0,
+          "bundleCertifiedRepairs": 0,
+          "bundleNogoodsCreated": 0,
+          "bundleNogoodBranches": 0,
+          "bundleNogoodDeduplications": 0,
+          "bundleNogoodRepairsSucceeded": 0,
+          "conflictBackjumps": 0,
+          "suffixDepthsSkipped": 0,
+          "deepestCoreDepthReached": 0,
+          "standaloneForwardChecks": 0,
+          "standaloneForwardStartChecks": 0,
+          "standaloneForwardWitnessCacheHits": 0,
+          "standaloneForwardWitnessCacheMisses": 0,
+          "coreLeafTransportPrunes": 0,
+          "transportContiguousStates": 0,
+          "membershipFallbackEntered": 0,
+          "participantMealFutureFeasibilityChecks": 1,
+          "participantMealFutureInfeasibleBranches": 0,
+          "participantMealAffectedObligationsChecked": 0,
+          "participantMealZeroDomainPrunes": 0,
+          "participantMealAnalyticCollectivePrunes": 0,
+          "participantMealExactMaterializations": 1,
+          "futureRoundWitnessSearchInvocations": 0,
+          "futureRoundWitnessStructuralCandidates": 0,
+          "futureRoundWitnessCompleteMatchings": 0,
+          "futureRoundWitnessParticipantFutureChecks": 0,
+          "futureRoundWitnessPrerequisiteChecks": 0,
+          "futureRoundWitnessBranchesConsumed": 0,
+          "branchBudgetLimit": 10000
+        },
+        "identical": true
+      }
+    ]
+  },
+  "a2": {
+    "obligations": 266,
+    "stages": 11,
+    "fullReportsIdenticalExceptDurations": true,
+    "allSnapshotsIdentical": true,
+    "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+    "branches": [
+      27049,
+      27049,
+      27049
+    ],
+    "durationMs": {
+      "a2-base": 71745,
+      "a2-candidate": 67851,
+      "a2-repeat": 66756
+    },
+    "candidateToBase": 0.9457244407275769,
+    "repeatToBase": 0.930462053104746
+  }
+}

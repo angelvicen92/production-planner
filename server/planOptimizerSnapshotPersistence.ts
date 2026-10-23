@@ -153,6 +153,7 @@ function resolveDirectionReference(
 export function resolvePlanOptimizerTransportReferencesV1(
   rawSettings: unknown,
   candidates: readonly PlanOptimizerTemplateSnapshotCandidateV1[],
+  explicitTemplates?: Readonly<{arrivalTemplateId:number;departureTemplateId:number}>,
 ): PlanOptimizerTransportSnapshotReferencesV1 {
   const settings = asRecord(rawSettings);
   if (!settings) {
@@ -160,6 +161,17 @@ export function resolvePlanOptimizerTransportReferencesV1(
       "INVALID_PLAN_OPTIMIZER_SNAPSHOT_PERSISTENCE",
       "Optimizer settings must be an object before transport references can be resolved.",
     );
+  }
+
+  if(explicitTemplates){
+    const resolve=(direction:"arrival"|"departure")=>{
+      const id=explicitTemplates[`${direction}TemplateId`];
+      const matches=candidates.filter(candidate=>candidate.sourceTemplateId===id);
+      if(matches.length!==1)throw new PlanOptimizerSnapshotPersistenceError("ACTIVE_TRANSPORT_TEMPLATE_UNRESOLVED",
+        `La plantilla ${direction} (${id}) necesita un snapshot diario único.`,{direction,sourceTemplateId:id});
+      return positiveInteger(matches[0].planTemplateSnapshotId,`${direction}PlanTemplateSnapshotId`);
+    };
+    return Object.freeze({arrivalPlanTemplateSnapshotId:resolve("arrival"),departurePlanTemplateSnapshotId:resolve("departure")});
   }
 
   const groupingWeight = clampedWeight(

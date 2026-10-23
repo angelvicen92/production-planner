@@ -569,8 +569,9 @@ export async function buildEngineInput(
   const transportVanCapacity = optimizerProjection.transport.vanCapacity;
   const arrivalTransportTemplateName = optimizerProjection.transport.arrivalTemplateName;
   const departureTransportTemplateName = optimizerProjection.transport.departureTemplateName;
-  const arrivalTransportTemplateId = p.planner_next_profile?.configuration ? null : optimizerProjection.transport.arrivalSourceTemplateId;
-  const departureTransportTemplateId = p.planner_next_profile?.configuration ? null : optimizerProjection.transport.departureSourceTemplateId;
+  const profileWithoutTransport=p.planner_next_profile?.configuration?.transport==="NONE";
+  const arrivalTransportTemplateId = profileWithoutTransport ? null : optimizerProjection.transport.arrivalSourceTemplateId;
+  const departureTransportTemplateId = profileWithoutTransport ? null : optimizerProjection.transport.departureSourceTemplateId;
 
   const taskTemplateNameById: Record<number, string> = Object.fromEntries(
     templates.map((snapshot) => [snapshot.sourceTemplateId, snapshot.templateName]),

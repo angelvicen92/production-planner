@@ -1,5 +1,5 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": { "incremental": false },
-  "include": ["smokeNewDayIntegration.ts", "smokeNewDayJourney.ts", "smokeStandaloneDayJourney.ts", "smokeNewDayItinerantJourney.ts", "smokeNewDaySetupJourney.ts", "../../engine/planner-next/integration/newDaySetupFamilies.spec.ts", "../../engine/planner-next/integration/spacePoliciesV2.spec.ts", "../../engine/planner-next/integration/newDayItinerantConsumption.spec.ts", "../../engine/planner-next/standaloneOnly.spec.ts", "../../engine/planner-next/integration/standaloneOnly.spec.ts"]
+  "include": ["smokeNewDayIntegration.ts", "smokeNewDayJourney.ts", "smokeStandaloneDayJourney.ts", "smokeNewDayItinerantJourney.ts", "smokeNewDaySetupJourney.ts", "smokeNewDayTransportJourney.ts", "../../engine/planner-next/integration/newDayTransport.spec.ts", "../../engine/planner-next/integration/newDaySetupFamilies.spec.ts", "../../engine/planner-next/integration/spacePoliciesV2.spec.ts", "../../engine/planner-next/integration/newDayItinerantConsumption.spec.ts", "../../engine/planner-next/standaloneOnly.spec.ts", "../../engine/planner-next/integration/standaloneOnly.spec.ts"]
 }

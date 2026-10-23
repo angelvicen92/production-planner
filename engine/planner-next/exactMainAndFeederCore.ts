@@ -1444,7 +1444,13 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           ?{...space,mealPolicy:{window:{...mainMealAuthority.window},duration:mainMealAuthority.duration}}:space;
       }),anchoredAccompaniments:[...fixedMainContracts,...applicableContracts],roundSynchronizations:undefined,
         participantMeals:undefined,participantMealCapacity:undefined,
-        operationalMealPolicies:operationalMainMealPolicies.length?operationalMainMealPolicies:undefined,transportPolicy:undefined};
+        operationalMealPolicies:operationalMainMealPolicies.length?operationalMainMealPolicies:undefined,
+        // Accepted synchronized transport remains transport in a reduced core.
+        // Residual task IDs are deferred; all direction parameters stay literal.
+        transportPolicy:problem.transportPolicy?{
+          arrival:{...problem.transportPolicy.arrival,taskIds:problem.transportPolicy.arrival.taskIds.filter(id=>coreIds.has(id))},
+          departure:{...problem.transportPolicy.departure,taskIds:problem.transportPolicy.departure.taskIds.filter(id=>coreIds.has(id))},
+        }:undefined};
       const fixedResourceMeals=(reduced.resourceMeals??[]).map(meal=>({id:meal.id,sourceTaskId:meal.sourceTaskId,
         resourceIds:[...meal.resourceIds],start:meal.interval.start,end:meal.interval.end,duration:meal.interval.end-meal.interval.start}));
       const fixedOperationalMeals=operationalMainMealPolicies.map(policy=>({id:policy.id,resourceIds:[...policy.resourceIds],
