@@ -1,0 +1,96 @@
+{
+  "status": "LOCAL_GATES_PASS",
+  "implementationCommit": "26c8459b082e76875b44d418f1aa8fe8863aecda",
+  "runtime": {
+    "node": "v20.20.2",
+    "v8": "11.3.244.8-node.38",
+    "packages": {
+      "tsx": "4.20.5",
+      "typescript": "5.6.3",
+      "esbuild": "0.25.12"
+    },
+    "lockfileSha256": "cbe75a531336356a5d3baa75202818f1a7060b72f10d205449b8036295ffeaaa"
+  },
+  "native": {
+    "days": [
+      {
+        "obligations": 6,
+        "stages": 2
+      },
+      {
+        "obligations": 12,
+        "stages": 3
+      }
+    ],
+    "sqlAdversaries": 19,
+    "protectedMutationAdversaries": 3,
+    "dailyRowsMatchEveryAcceptedStage": true,
+    "executionRemainsPending": true,
+    "deterministicApiReplay": true
+  },
+  "a2": {
+    "obligations": 266,
+    "stages": 11,
+    "fullReportsIdenticalExceptDurations": true,
+    "allSnapshotsIdentical": true,
+    "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+    "branches": [
+      27049,
+      27049,
+      27049
+    ],
+    "durationMs": {
+      "a2-base": 76134,
+      "a2-candidate": 74989,
+      "a2-repeat": 72959
+    },
+    "candidateToBase": 0.9849607271389917,
+    "repeatToBase": 0.9582972128089947
+  },
+  "fullSuite": {
+    "tests": 3126,
+    "pass": 3126,
+    "fail": 0,
+    "skipped": 0,
+    "durationMs": 567845.753064,
+    "concurrency": 2,
+    "exactHistoricalCiExclusions": [
+      "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts",
+      "server/benchmarks/runA2Assist7Evidence.spec.ts"
+    ]
+  },
+  "intermediateSuiteFailure": {
+    "pass": 3125,
+    "fail": 1,
+    "cause": "The existing service test asserted fixedInterval for accepted pending meals. It now asserts protectedInterval, no execution fixedInterval and status pending. Final full suite passes without exclusions beyond the two historical CI exclusions."
+  },
+  "focalBatches": [
+    {
+      "pass": 87
+    },
+    {
+      "pass": 34
+    },
+    {
+      "pass": 7
+    }
+  ],
+  "checks": {
+    "applicationTypeScript": "PASS",
+    "validationTypeScript": "PASS",
+    "diagnosticTypeScript": "PASS",
+    "regressionHarnessTypeScript": "PASS",
+    "migrationSequence": "PASS",
+    "allMigrationsAppliedOnNativePostgres17": "PASS",
+    "productionBuild": "PASS"
+  },
+  "ci": "https://github.com/angelvicen92/production-planner/pull/1185/checks",
+  "release": {
+    "merge": false,
+    "productionSupabaseWrites": 0,
+    "replitDeploy": false,
+    "servedDemoChanges": false,
+    "budgetsOrTimeoutsIncreased": false,
+    "hardOrRequiredRelaxed": false
+  }
+}

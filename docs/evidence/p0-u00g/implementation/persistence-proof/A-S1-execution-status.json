@@ -1,0 +1,50 @@
+[
+  {
+    "id": "1",
+    "status": "pending",
+    "start_planned": null,
+    "end_planned": null,
+    "space_id": "1",
+    "zone_id": "1"
+  },
+  {
+    "id": "2",
+    "status": "pending",
+    "start_planned": null,
+    "end_planned": null,
+    "space_id": "1",
+    "zone_id": "1"
+  },
+  {
+    "id": "3",
+    "status": "pending",
+    "start_planned": "12:00",
+    "end_planned": "12:20",
+    "space_id": null,
+    "zone_id": null
+  },
+  {
+    "id": "4",
+    "status": "pending",
+    "start_planned": null,
+    "end_planned": null,
+    "space_id": "1",
+    "zone_id": "1"
+  },
+  {
+    "id": "5",
+    "status": "pending",
+    "start_planned": null,
+    "end_planned": null,
+    "space_id": "1",
+    "zone_id": "1"
+  },
+  {
+    "id": "6",
+    "status": "pending",
+    "start_planned": "12:20",
+    "end_planned": "12:40",
+    "space_id": null,
+    "zone_id": null
+  }
+]

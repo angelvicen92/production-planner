@@ -1,0 +1,23 @@
+building client...
+vite v7.3.0 building client environment for production...
+transforming...
+Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+✓ 2371 modules transformed.
+rendering chunks...
+computing gzip size...
+../dist/public/index.html                     0.43 kB │ gzip:   0.28 kB
+../dist/public/assets/index-DAaxRX09.css     99.71 kB │ gzip:  17.19 kB
+../dist/public/assets/index-DNeG5UUL.js   1,713.17 kB │ gzip: 474.32 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 17.29s
+building server...
+
+  dist/index.cjs  3.6mb ⚠️
+
+⚡ Done in 1148ms
