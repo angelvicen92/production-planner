@@ -3048,7 +3048,7 @@ function mapDeleteError(err: any, fallback: string) {
           mealMode: p.meal_mode ?? p.mealMode ?? null,
 
           mealTaskTemplateName: String(p.mealTaskTemplateName ?? "Comer"),
-          mealTaskTemplateId: p.planner_next_profile?.mealTaskTemplateId ?? null,
+          ...(p.planner_next_profile?.configuration ? {mealTaskTemplateId:p.planner_next_profile.mealTaskTemplateId??null} : {}),
 
           contestantMealDurationMinutes:
             p.contestant_meal_duration_minutes ?? p.contestantMealDurationMinutes ?? 75,

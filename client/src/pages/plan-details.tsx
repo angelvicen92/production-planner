@@ -1205,7 +1205,7 @@ ${reasonMessage}` : message,
       .trim()
       .toLowerCase();
     const mealId=(plan as any)?.mealTaskTemplateId;
-    const isMealTask = mealId!=null ? Number(t?.templateId??t?.template_id)===Number(mealId)
+    const isMealTask = Object.prototype.hasOwnProperty.call(plan??{},"mealTaskTemplateId") ? mealId!=null&&Number(t?.templateId??t?.template_id)===Number(mealId)
       : mealName.length > 0 && taskName === mealName;
 
     if (isMealTask) return false;

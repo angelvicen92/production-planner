@@ -1640,7 +1640,7 @@ function TaskStatusMenuTrigger({
 
     const isMeal = (t: Task) => {
       const id=(plan as any)?.mealTaskTemplateId;
-      if(id!=null)return Number(t.templateId)===Number(id);
+      if(Object.prototype.hasOwnProperty.call(plan??{},"mealTaskTemplateId"))return id!=null&&Number(t.templateId)===Number(id);
       const n = String(t?.template?.name ?? "")
         .trim()
         .toLowerCase();
