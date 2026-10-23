@@ -1,7 +1,7 @@
 import { effectiveTransportDirection } from "../../../shared/transportPolicy";
 import { createHash } from "node:crypto";
 import type { EngineInput, ProtectedBreakInput, TimeWindow } from "../../types";
-import { resolveEffectiveTaskResourceAssignments } from "./effectiveTaskResourceAssignments";
+import { resolveConcreteTaskResourceRequirements, resolveEffectiveTaskResourceAssignments } from "./effectiveTaskResourceAssignments";
 import { resolveEffectivePlanResourceAvailability } from "./effectivePlanResourceAvailability";
 import { resolveEffectivePlanSpatialAvailability } from "./effectivePlanSpatialAvailability";
 import { resolveEffectiveTaskFixedInterval } from "./effectiveTaskFixedInterval";
@@ -1170,6 +1170,10 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       if (!planResourceIds.has(String(id))) missingResource("task", task.id, `${path}.declaredResourceIds`, id, "plan-resource");
     }
     const requirements = task.resourceRequirements;
+    for (const issue of resolveConcreteTaskResourceRequirements(input, task).issues) {
+      addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT", "task", task.id, `${path}.resourceRequirements.byItem.${issue.resourceItemId}`,
+        "Concrete resource requires quantity one, an unambiguous daily identity and representable capacity.", issue);
+    }
     for (const [id, quantity] of Object.entries(requirements?.byItem ?? {})) {
       if (!resourceItemIds.has(id)) missingResource("task", task.id, `${path}.resourceRequirements.byItem.${id}`, id, "resource-item");
       if (quantity !== 1) addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT", "task", task.id, `${path}.resourceRequirements.byItem.${id}`, "Resource quantity is not representable.", { quantity });

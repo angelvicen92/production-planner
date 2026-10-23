@@ -1,4 +1,4 @@
-import type { EngineInput, TaskStatus } from "../../types";
+import type { EngineInput, TaskInput, TaskStatus } from "../../types";
 import { resolveEffectivePlanSpatialAvailability } from "./effectivePlanSpatialAvailability";
 
 export type EffectiveTaskResourceZoneResolution = "NONE" | "TASK" | "DAILY_SPACE" | "MATCH" | "CONFLICT";
@@ -12,6 +12,8 @@ export interface EffectiveTaskResourceAssignment {
   effectiveZoneId: number | null;
   zoneResolution: EffectiveTaskResourceZoneResolution;
   directResourceIds: readonly number[];
+  /** Fixed catalogue requirements resolved by identity in this day's inventory. */
+  byItemResourceIds?: readonly number[];
   spaceResourceIds: readonly number[];
   zoneResourceIds: readonly number[];
   effectiveResourceIds: readonly number[];
@@ -29,6 +31,23 @@ export interface EffectiveTaskResourceAssignmentResolution {
   assignments: readonly EffectiveTaskResourceAssignment[];
   zoneConflicts: readonly EffectiveTaskResourceZoneConflict[];
   readOnly: true;
+}
+
+/** No selection: only a single daily identity can represent one concrete item. */
+export function resolveConcreteTaskResourceRequirements(input: EngineInput, task: TaskInput) {
+  const resourceIds: number[] = [];
+  const issues: {resourceItemId: string; quantity: number; dailyResourceIds: number[]; reason: string}[] = [];
+  for (const [resourceItemId, quantity] of Object.entries(task.resourceRequirements?.byItem ?? {}).sort(([a],[b])=>a.localeCompare(b))) {
+    const matches = input.planResourceItems.filter(item => String(item.resourceItemId) === resourceItemId);
+    // The input has no contract for an auxiliary's zone-sharing/attention capacity.
+    // A concrete identity must not silently turn that capacity into exclusivity.
+    const auxiliaryCapacityMissing = matches.length === 1 && (matches[0].typeCode === "auxiliar" || matches[0].category === "auxiliar");
+    if (quantity !== 1 || matches.length !== 1 || !isPositiveInteger(matches[0].id) || auxiliaryCapacityMissing) {
+      issues.push({resourceItemId, quantity, dailyResourceIds: matches.map(item=>item.id).sort((a,b)=>a-b),
+        reason: quantity !== 1 ? "UNREPRESENTABLE_QUANTITY" : matches.length > 1 ? "AMBIGUOUS_DAILY_RESOURCE" : auxiliaryCapacityMissing ? "UNREPRESENTABLE_AUXILIARY_CAPACITY" : "MISSING_DAILY_RESOURCE"});
+    } else resourceIds.push(matches[0].id);
+  }
+  return {resourceIds: normalizedIds(resourceIds), issues};
 }
 
 const isPositiveInteger = (value: unknown): value is number =>
@@ -79,14 +98,15 @@ export function resolveEffectiveTaskResourceAssignments(input: EngineInput): Eff
       zoneResolution = dailyHierarchyUsable ? "DAILY_SPACE" : "NONE";
     }
 
-    const directResourceIds = normalizedIds([...normalizedIds(task.assignedResourceIds), ...normalizedIds(task.declaredResourceIds)]);
+    const byItemResourceIds = resolveConcreteTaskResourceRequirements(input, task).resourceIds;
+    const directResourceIds = normalizedIds([...normalizedIds(task.assignedResourceIds), ...normalizedIds(task.declaredResourceIds), ...byItemResourceIds]);
     const ownResources = task.resourceInheritance === "OPERATION_ONLY";
     const spaceResourceIds = ownResources ? Object.freeze([] as number[]) : normalizedIds(mapValue(input.spaceResourceAssignments, spaceId));
     const zoneResourceIds = ownResources || zoneResolution === "CONFLICT" ? Object.freeze([] as number[]) : normalizedIds(mapValue(input.zoneResourceAssignments, effectiveZoneId));
     const teamResourceIds = ownResources && isPositiveInteger(task.itinerantTeamId)
       ? normalizedIds(input.itinerantTeamAvailability?.find(team => team.itinerantTeamId === task.itinerantTeamId)?.planResourceItemIds) : [];
     const effectiveResourceIds = normalizedIds([...directResourceIds, ...spaceResourceIds, ...zoneResourceIds, ...teamResourceIds]);
-    assignments.push(Object.freeze({ taskId: task.id, status: task.status, spaceId, explicitZoneId, mappedZoneId, effectiveZoneId, zoneResolution, directResourceIds, spaceResourceIds, zoneResourceIds, effectiveResourceIds }));
+    assignments.push(Object.freeze({ taskId: task.id, status: task.status, spaceId, explicitZoneId, mappedZoneId, effectiveZoneId, zoneResolution, directResourceIds, ...(byItemResourceIds.length ? {byItemResourceIds} : {}), spaceResourceIds, zoneResourceIds, effectiveResourceIds }));
   }
 
   assignments.sort((left, right) => left.taskId - right.taskId);

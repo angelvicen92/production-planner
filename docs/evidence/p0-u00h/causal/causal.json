@@ -1,0 +1,40 @@
+{
+  "status": "LOSS_REPRODUCED",
+  "planId": 2,
+  "resourceItemId": 2,
+  "planResourceItemId": 5,
+  "supported": true,
+  "missingRequiredResourceIds": true,
+  "overlappingTasks": true,
+  "proposal": [
+    {
+      "taskId": 1,
+      "zoneId": 1,
+      "spaceId": 1,
+      "endPlanned": "09:20",
+      "startPlanned": "09:00"
+    },
+    {
+      "taskId": 2,
+      "zoneId": 1,
+      "spaceId": 2,
+      "endPlanned": "09:20",
+      "startPlanned": "09:00"
+    },
+    {
+      "taskId": 3,
+      "zoneId": 1,
+      "spaceId": 3,
+      "endPlanned": "09:40",
+      "startPlanned": "09:20"
+    },
+    {
+      "taskId": 4,
+      "zoneId": 1,
+      "spaceId": 4,
+      "endPlanned": "09:40",
+      "startPlanned": "09:20"
+    }
+  ],
+  "remoteWrites": 0
+}

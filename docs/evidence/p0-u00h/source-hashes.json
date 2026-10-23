@@ -1,0 +1,7 @@
+{
+  "engine/planner-next/integration/effectiveTaskResourceAssignments.ts": "d0af3fdace36815cde5ba5113c39eadaf702843ec78375063b4e6b8439a028da",
+  "engine/planner-next/integration/engineInputPreflight.ts": "3920723c8acc2572a79537ca9a92284d9078de0ec6b21677c04360e3895ba705",
+  "engine/planner-next/integration/engineInputAdapter.ts": "318887917d294186123e01b258a3555815fad02f6db0f3806164aa544c12862f",
+  "server/itinerantComposition.ts": "8ccbf57712df44e1ae0a4953e5c5e71f5ac315692be708259a6ddadd2d16c640",
+  "server/assistedProposalService.ts": "5518a41cb1a3a3984c1064d875eb4a10d147b523a71ebfd38508e32ef7c9bed8"
+}

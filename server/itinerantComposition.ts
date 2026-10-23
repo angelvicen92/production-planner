@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { api } from '../shared/routes';
 import { dailyItinerantUnitSchema, type ItinerantTeam } from '../shared/itinerantComposition';
 import type { EngineInput } from '../engine/types';
+import {resolveConcreteTaskResourceRequirements} from '../engine/planner-next/integration/effectiveTaskResourceAssignments';
 
 export class ItinerantCompositionError extends Error {
   readonly code = 'ITINERANT_CONFIGURATION_ERROR';
@@ -84,11 +85,9 @@ export function applyDailyItinerantComposition(input: EngineInput, raw: unknown,
     if (task.itinerantTeamRequirement === 'specific' && task.itinerantTeamId == null) throw new ItinerantCompositionError('plantilla sin equipo obligatorio');
     if (task.itinerantTeamRequirement === 'specific' && allowed.some(id=>id!==task.itinerantTeamId))
       throw new ItinerantCompositionError('equipo obligatorio incompatible con sus alternativas');
-    const independentResources = Object.keys(task.resourceRequirements?.byItem ?? {}).map(Number).map(resourceItemId=>{
-      const matches = input.planResourceItems.filter(item=>item.resourceItemId === resourceItemId);
-      if (matches.length !== 1) throw new ItinerantCompositionError('requisito físico independiente sin correspondencia inequívoca');
-      return matches[0].id;
-    });
+    const concrete = resolveConcreteTaskResourceRequirements(input, task);
+    if (concrete.issues.length) throw new ItinerantCompositionError('requisito físico independiente sin correspondencia inequívoca o cantidad representable');
+    const independentResources = concrete.resourceIds;
     return {...task,itinerantTeamId:task.itinerantTeamId == null ? null : local(task.itinerantTeamId),allowedItinerantTeamIds:allowed.map(local),
       ...(independentResources.length ? {declaredResourceIds:[...new Set([...(task.declaredResourceIds??[]),...independentResources])].sort((a,b)=>a-b)} : {})};
   })};
