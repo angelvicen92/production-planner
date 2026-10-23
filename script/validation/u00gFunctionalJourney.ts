@@ -125,7 +125,7 @@ export async function runU00gFunctionalJourney({appUrl,users,db,directory,pass}:
         assert.ok(statuses.every(t=>t.status==='pending'));save(`${label}-S${index+1}-execution-status`,statuses);
         for(const task of statuses){
           const row=accepted.activeStage.snapshotJson.tasks.find((t:any)=>t.taskId===Number(task.id));
-          assert.deepEqual([task.start_planned,task.end_planned,task.space_id,task.zone_id],
+          assert.deepEqual([task.start_planned,task.end_planned,task.space_id==null?null:Number(task.space_id),task.zone_id==null?null:Number(task.zone_id)],
             [row.startPlanned,row.endPlanned,row.spaceId,row.zoneId],'accepted Stage must be materialized in daily_tasks');
         }
         await page.screenshot({path:`${directory}/${label}-S${index+1}-accepted.png`,fullPage:true});
