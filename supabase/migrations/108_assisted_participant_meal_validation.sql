@@ -1,17 +1,78 @@
 -- P0-U00g: certify materialized obligations, including participant meals.
 -- Historical 104 remains unchanged. No caller-supplied evidence or scope.
-CREATE FUNCTION public.assisted_assert_scope_materialization(p_run_id bigint)
-RETURNS void LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
+CREATE OR REPLACE FUNCTION public.assisted_record_proposal_clean_validation(
+  p_plan_id integer, p_expected_fingerprint text, p_expected_base bigint,
+  p_expected_config bigint
+) RETURNS bigint LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
 DECLARE
- r public.planning_runs%rowtype;
+  s public.assisted_planning_sessions%rowtype;
+  r public.planning_runs%rowtype;
+  result jsonb;
+  evidence jsonb;
+  proposal_run_id bigint;
+  validation_id bigint;
+  report jsonb;
+BEGIN
+  SELECT * INTO s FROM public.assisted_planning_sessions
+    WHERE plan_id=p_plan_id AND status='ACTIVE' FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'SESSION_NOT_FOUND'; END IF;
+  IF s.draft_fingerprint<>p_expected_fingerprint THEN RAISE EXCEPTION 'STALE_DRAFT'; END IF;
+  IF s.draft_base_stage_id IS DISTINCT FROM p_expected_base THEN RAISE EXCEPTION 'STALE_BASE_STAGE'; END IF;
+  IF s.current_config_revision_id<>p_expected_config THEN RAISE EXCEPTION 'STALE_CONFIG_REVISION'; END IF;
+
+  IF jsonb_typeof(s.draft_scope_json) IS DISTINCT FROM 'object'
+    OR coalesce(s.draft_scope_json->>'proposalRunId','') !~ '^[1-9][0-9]*$'
+    OR jsonb_typeof(s.draft_scope_json->'resolvedTaskIds') IS DISTINCT FROM 'array'
+    OR jsonb_typeof(s.draft_scope_json->'includePrerequisites') IS DISTINCT FROM 'boolean'
+  THEN RAISE EXCEPTION 'VALIDATION_REQUIRED'; END IF;
+  proposal_run_id := (s.draft_scope_json->>'proposalRunId')::bigint;
+
+  SELECT * INTO r FROM public.planning_runs WHERE id=proposal_run_id FOR SHARE;
+  IF NOT FOUND OR r.plan_id<>p_plan_id OR r.execution_kind<>'ASSISTED_SCOPE'
+    OR r.assisted_session_id<>s.id OR r.base_stage_id IS DISTINCT FROM s.draft_base_stage_id
+    OR r.config_revision_id<>s.current_config_revision_id OR r.status<>'success'
+    OR r.assisted_result_json IS NULL
+  THEN RAISE EXCEPTION 'VALIDATION_REQUIRED'; END IF;
+
+  result := r.assisted_result_json;
+  evidence := result->'evidence';
+  IF r.result_fingerprint IS NULL
+    OR r.result_fingerprint<>encode(extensions.digest(convert_to(result::text,'UTF8'),'sha256'),'hex')
+    OR result->>'contractVersion' IS DISTINCT FROM '1' OR result->>'outcome' IS DISTINCT FROM 'PROPOSAL'
+    OR jsonb_typeof(result->'proposal') IS DISTINCT FROM 'array'
+    OR jsonb_typeof(result->'proposedDraftSnapshot') IS DISTINCT FROM 'object'
+    OR result->'proposedDraftSnapshot' IS DISTINCT FROM s.draft_snapshot_json
+    OR result->>'proposedDraftFingerprint' IS DISTINCT FROM s.draft_fingerprint
+    OR result->'scopeTaskIds' IS DISTINCT FROM r.scope_task_ids_json
+    OR result->'scopeTaskIds' IS DISTINCT FROM s.draft_scope_json->'resolvedTaskIds'
+    OR result->'includePrerequisites' IS DISTINCT FROM to_jsonb(r.include_prerequisites)
+    OR result->'includePrerequisites' IS DISTINCT FROM s.draft_scope_json->'includePrerequisites'
+    OR EXISTS (SELECT 1 FROM jsonb_array_elements(result->'proposal') item
+      WHERE jsonb_typeof(item) IS DISTINCT FROM 'object' OR coalesce(item->>'taskId','') !~ '^[1-9][0-9]*$'
+      OR coalesce(item->>'startPlanned','')='' OR coalesce(item->>'endPlanned','')=''
+      OR NOT EXISTS (SELECT 1 FROM jsonb_array_elements(r.scope_task_ids_json) scope_id
+        WHERE scope_id #>> '{}' = item->>'taskId'))
+    OR (SELECT count(*) FROM jsonb_array_elements(result->'proposal'))
+      <> (SELECT count(DISTINCT item->>'taskId') FROM jsonb_array_elements(result->'proposal') item)
+  THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
+
+  IF jsonb_typeof(evidence) IS DISTINCT FROM 'object'
+    OR evidence->>'proposalCount' IS DISTINCT FROM '1'
+    OR evidence->>'completeForScope' IS DISTINCT FROM 'true'
+    OR evidence->>'protectedPlacementsPreserved' IS DISTINCT FROM 'true'
+  THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
+  IF evidence->>'hardValid' IS DISTINCT FROM 'true' OR evidence->>'requiredValid' IS DISTINCT FROM 'true'
+  THEN RAISE EXCEPTION 'VALIDATION_NOT_ACCEPTABLE'; END IF;
+
+  -- Reuse the existing server-only RPC: no additional exposed SQL endpoint.
+  DECLARE
  b public.assisted_planning_stages%rowtype;
  p public.plans%rowtype;
- result jsonb; candidate jsonb; previous jsonb; row jsonb; placement jsonb;
+ candidate jsonb; previous jsonb; row jsonb; placement jsonb;
  witnesses jsonb; meal jsonb; workday jsonb; meal_template bigint;
  task public.daily_tasks%rowtype; participant public.contestants%rowtype;
  start_min integer; end_min integer; duration_min integer; changed integer:=0;
 BEGIN
- SELECT * INTO r FROM public.planning_runs WHERE id=p_run_id FOR SHARE;
  SELECT * INTO b FROM public.assisted_planning_stages WHERE id=r.base_stage_id
    AND session_id=r.assisted_session_id AND plan_id=r.plan_id;
  IF NOT FOUND OR b.snapshot_fingerprint IS DISTINCT FROM r.source_draft_fingerprint
@@ -87,7 +148,10 @@ BEGIN
      THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
      start_min:=split_part(row->>'startPlanned',':',1)::integer*60+split_part(row->>'startPlanned',':',2)::integer;
      end_min:=split_part(row->>'endPlanned',':',1)::integer*60+split_part(row->>'endPlanned',':',2)::integer;
-     duration_min:=coalesce(nullif(task.duration_override,0),p.contestant_meal_duration_minutes);
+     SELECT coalesce(CASE WHEN task.duration_override>0 THEN task.duration_override END,default_duration)
+       INTO duration_min FROM public.plan_task_template_snapshots
+       WHERE plan_id=r.plan_id AND source_template_id=task.template_id;
+     IF duration_min IS NULL THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
      IF meal->>'start' IS DISTINCT FROM start_min::text OR meal->>'end' IS DISTINCT FROM end_min::text
        OR meal->>'duration' IS DISTINCT FROM duration_min::text OR end_min-start_min<>duration_min
        OR row->>'startPlanned'<greatest(p.work_start,p.meal_start,participant.availability_start)
@@ -105,75 +169,7 @@ BEGIN
      ON d.id=(t->>'taskId')::bigint AND d.plan_id=r.plan_id AND d.template_id=meal_template
      WHERE t->>'startPlanned'<=anchor->>'startPlanned' AND t->>'endPlanned'>anchor->>'startPlanned')>p.contestant_meal_max_simultaneous)
  THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
-END $$;
-REVOKE ALL ON FUNCTION public.assisted_assert_scope_materialization(bigint) FROM PUBLIC,anon,authenticated,service_role;
-GRANT EXECUTE ON FUNCTION public.assisted_assert_scope_materialization(bigint) TO service_role;
-
-CREATE OR REPLACE FUNCTION public.assisted_record_proposal_clean_validation(
-  p_plan_id integer, p_expected_fingerprint text, p_expected_base bigint,
-  p_expected_config bigint
-) RETURNS bigint LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
-DECLARE
-  s public.assisted_planning_sessions%rowtype;
-  r public.planning_runs%rowtype;
-  result jsonb;
-  evidence jsonb;
-  proposal_run_id bigint;
-  validation_id bigint;
-  report jsonb;
-BEGIN
-  SELECT * INTO s FROM public.assisted_planning_sessions
-    WHERE plan_id=p_plan_id AND status='ACTIVE' FOR UPDATE;
-  IF NOT FOUND THEN RAISE EXCEPTION 'SESSION_NOT_FOUND'; END IF;
-  IF s.draft_fingerprint<>p_expected_fingerprint THEN RAISE EXCEPTION 'STALE_DRAFT'; END IF;
-  IF s.draft_base_stage_id IS DISTINCT FROM p_expected_base THEN RAISE EXCEPTION 'STALE_BASE_STAGE'; END IF;
-  IF s.current_config_revision_id<>p_expected_config THEN RAISE EXCEPTION 'STALE_CONFIG_REVISION'; END IF;
-
-  IF jsonb_typeof(s.draft_scope_json) IS DISTINCT FROM 'object'
-    OR coalesce(s.draft_scope_json->>'proposalRunId','') !~ '^[1-9][0-9]*$'
-    OR jsonb_typeof(s.draft_scope_json->'resolvedTaskIds') IS DISTINCT FROM 'array'
-    OR jsonb_typeof(s.draft_scope_json->'includePrerequisites') IS DISTINCT FROM 'boolean'
-  THEN RAISE EXCEPTION 'VALIDATION_REQUIRED'; END IF;
-  proposal_run_id := (s.draft_scope_json->>'proposalRunId')::bigint;
-
-  SELECT * INTO r FROM public.planning_runs WHERE id=proposal_run_id FOR SHARE;
-  IF NOT FOUND OR r.plan_id<>p_plan_id OR r.execution_kind<>'ASSISTED_SCOPE'
-    OR r.assisted_session_id<>s.id OR r.base_stage_id IS DISTINCT FROM s.draft_base_stage_id
-    OR r.config_revision_id<>s.current_config_revision_id OR r.status<>'success'
-    OR r.assisted_result_json IS NULL
-  THEN RAISE EXCEPTION 'VALIDATION_REQUIRED'; END IF;
-
-  result := r.assisted_result_json;
-  evidence := result->'evidence';
-  IF r.result_fingerprint IS NULL
-    OR r.result_fingerprint<>encode(extensions.digest(convert_to(result::text,'UTF8'),'sha256'),'hex')
-    OR result->>'contractVersion' IS DISTINCT FROM '1' OR result->>'outcome' IS DISTINCT FROM 'PROPOSAL'
-    OR jsonb_typeof(result->'proposal') IS DISTINCT FROM 'array'
-    OR jsonb_typeof(result->'proposedDraftSnapshot') IS DISTINCT FROM 'object'
-    OR result->'proposedDraftSnapshot' IS DISTINCT FROM s.draft_snapshot_json
-    OR result->>'proposedDraftFingerprint' IS DISTINCT FROM s.draft_fingerprint
-    OR result->'scopeTaskIds' IS DISTINCT FROM r.scope_task_ids_json
-    OR result->'scopeTaskIds' IS DISTINCT FROM s.draft_scope_json->'resolvedTaskIds'
-    OR result->'includePrerequisites' IS DISTINCT FROM to_jsonb(r.include_prerequisites)
-    OR result->'includePrerequisites' IS DISTINCT FROM s.draft_scope_json->'includePrerequisites'
-    OR EXISTS (SELECT 1 FROM jsonb_array_elements(result->'proposal') item
-      WHERE jsonb_typeof(item) IS DISTINCT FROM 'object' OR coalesce(item->>'taskId','') !~ '^[1-9][0-9]*$'
-      OR coalesce(item->>'startPlanned','')='' OR coalesce(item->>'endPlanned','')=''
-      OR NOT EXISTS (SELECT 1 FROM jsonb_array_elements(r.scope_task_ids_json) scope_id
-        WHERE scope_id #>> '{}' = item->>'taskId'))
-    OR (SELECT count(*) FROM jsonb_array_elements(result->'proposal'))
-      <> (SELECT count(DISTINCT item->>'taskId') FROM jsonb_array_elements(result->'proposal') item)
-  THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
-
-  IF jsonb_typeof(evidence) IS DISTINCT FROM 'object'
-    OR evidence->>'proposalCount' IS DISTINCT FROM '1'
-    OR evidence->>'completeForScope' IS DISTINCT FROM 'true'
-    OR evidence->>'protectedPlacementsPreserved' IS DISTINCT FROM 'true'
-  THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
-  IF evidence->>'hardValid' IS DISTINCT FROM 'true' OR evidence->>'requiredValid' IS DISTINCT FROM 'true'
-  THEN RAISE EXCEPTION 'VALIDATION_NOT_ACCEPTABLE'; END IF;
-
-  PERFORM public.assisted_assert_scope_materialization(r.id);
+END;
 
   report := jsonb_build_object(
     'mode','PROPOSAL_CERTIFIED_CLEAN_V1', 'proposalRunId',proposal_run_id,
