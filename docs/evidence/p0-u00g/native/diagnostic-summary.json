@@ -1,0 +1,25 @@
+{
+  "status": "BLOCKED_VALIDATION_BEFORE_STAGE",
+  "planId": 1,
+  "identityIntervention": "builder ID only in isolated archive",
+  "applyStatus": 200,
+  "validation": {
+    "status": 422,
+    "body": {
+      "code": "RUN_RESULT_INVALID",
+      "message": "RUN_RESULT_INVALID"
+    }
+  },
+  "engineOutcome": "PROPOSAL",
+  "scopeTaskIds": [
+    3,
+    6
+  ],
+  "proposalArrayLength": 0,
+  "scheduledParticipantMeals": 2,
+  "previousAppliedDraftIntact": true,
+  "S0Intact": true,
+  "dailyTasksIntact": true,
+  "remoteWrites": 0,
+  "uiErrors": []
+}

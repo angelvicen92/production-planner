@@ -1,0 +1,40 @@
+TAP version 13
+# Subtest: native ID-only reproduction reaches Draft but SQL blocks meal-only validation without mutating the prior state
+ok 1 - native ID-only reproduction reaches Draft but SQL blocks meal-only validation without mutating the prior state
+  ---
+  duration_ms: 13.282398
+  ...
+# Subtest: original UI loss, identity-only restoration and protected projection blocker are reproducible
+ok 2 - original UI loss, identity-only restoration and protected projection blocker are reproducible
+  ---
+  duration_ms: 106.644302
+  ...
+# Subtest: the actual meal capacity conditions feasibility rather than only persisting a value
+ok 3 - the actual meal capacity conditions feasibility rather than only persisting a value
+  ---
+  duration_ms: 370.563718
+  ...
+# Subtest: narrow windows and dependencies require preserving future meal freedom
+ok 4 - narrow windows and dependencies require preserving future meal freedom
+  ---
+  duration_ms: 34.059754
+  ...
+# Subtest: invalid meal duration, capacity, physical channels and protected execution remain explicit
+ok 5 - invalid meal duration, capacity, physical channels and protected execution remain explicit
+  ---
+  duration_ms: 20.253344
+  ...
+# Subtest: the recognizer never invents meals for participants with no configured instance
+ok 6 - the recognizer never invents meals for participants with no configured instance
+  ---
+  duration_ms: 34.261121
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 604.828239

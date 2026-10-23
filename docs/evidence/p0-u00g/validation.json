@@ -1,0 +1,51 @@
+{
+  "status": "DIAGNOSTIC_BLOCKED_CI_PENDING",
+  "baseMain": "4571cb993ae221832630f3ac1c60a72318f83f8c",
+  "functionalImplementation": false,
+  "productionSourceChanged": false,
+  "nativeGate": "PASS_REPRODUCTION_OF_BLOCKED_VALIDATION",
+  "nativeNewDays": 1,
+  "nativeAcceptedStages": 0,
+  "diagnosticTests": {
+    "passed": 6,
+    "failed": 0
+  },
+  "localChecks": [
+    {
+      "check": "typescript",
+      "status": "PASS",
+      "exitCode": 0,
+      "seconds": 29.23
+    },
+    {
+      "check": "diagnostic-typescript",
+      "status": "PASS",
+      "exitCode": 0,
+      "seconds": 37.548
+    },
+    {
+      "check": "harness-typescript",
+      "status": "PASS",
+      "exitCode": 0,
+      "seconds": 40.499
+    },
+    {
+      "check": "migrations",
+      "status": "PASS",
+      "exitCode": 0,
+      "seconds": 0.122
+    },
+    {
+      "check": "build",
+      "status": "PASS",
+      "exitCode": 0,
+      "seconds": 23.131
+    }
+  ],
+  "productSuite": "RUNNING; initial sandbox IPC failure is not a test result",
+  "a2Isolated": "NOT_RUN_DIAGNOSTIC_STOP",
+  "uiRegressionsU00aU00f": "NOT_RUN_DIAGNOSTIC_STOP",
+  "acceptanceGatesAtoH": "NOT_CERTIFIED",
+  "merge": false,
+  "productionWrites": 0
+}

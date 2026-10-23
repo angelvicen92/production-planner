@@ -1,0 +1,49 @@
+name: P0 U00g participant meal diagnosis
+on:
+  pull_request:
+    paths:
+      - 'script/demo/smokeNewDayIntegration.ts'
+      - 'script/diagnostics/*U00g*'
+      - 'script/diagnostics/u00g*'
+      - 'script/diagnostics/tsconfig.u00g.json'
+      - 'docs/evidence/p0-u00g/**'
+      - '.github/workflows/p0-u00g-causal-gate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install tsc -p script/diagnostics/tsconfig.u00g.json
+      - run: node --import tsx --test script/diagnostics/u00gMealGate.spec.ts
+      - run: mkdir -p work && node --import tsx script/diagnostics/analyseU00gMealGate.ts docs/evidence/p0-u00g/causal work/u00g-analysis.json
+      - name: Select installed Chromium or provision Playwright
+        shell: bash
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [[ -n "$task_browser_path" ]]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+          fi
+      - run: git fetch --no-tags --depth=1 origin 4571cb993ae221832630f3ac1c60a72318f83f8c
+      - run: node --import tsx script/diagnostics/runU00gMealGate.ts work/u00g-native
+      - run: node --import tsx --input-type=module -e "import {verifyU00gNativeGate} from './script/diagnostics/analyseU00gMealGate.ts'; console.log(JSON.stringify(verifyU00gNativeGate('work/u00g-native')));"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: u00g-causal-diagnosis
+          path: |
+            work/u00g-analysis.json
+            work/u00g-native/intervention.json
+            work/u00g-native/identity-counterfactual.patch
+            work/u00g-native/native/*.json
+            work/u00g-native/native/*.png

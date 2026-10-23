@@ -1,0 +1,29 @@
+{
+  "obligations": [
+    {
+      "id": "participant-meal:3",
+      "sourceTaskId": "task:3",
+      "participantId": "participant:1",
+      "duration": 20,
+      "window": {
+        "start": 720,
+        "end": 780
+      },
+      "status": "pending",
+      "dependencies": []
+    },
+    {
+      "id": "participant-meal:6",
+      "sourceTaskId": "task:6",
+      "participantId": "participant:2",
+      "duration": 20,
+      "window": {
+        "start": 720,
+        "end": 780
+      },
+      "status": "pending",
+      "dependencies": []
+    }
+  ],
+  "defects": []
+}
