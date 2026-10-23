@@ -1,0 +1,38 @@
+{
+  "baseCommit": "152fc31ca732ff00b7cba573706b83e3d45527e3",
+  "authorizedHumanBase": "3a05cb099a74d7263c0d630d7055746fcd722114",
+  "scope": "Final product/harness/tests/CI sources including protected-context continuation. Native execution identifies this base plus the working-tree hashes.",
+  "hashAlgorithm": "sha256",
+  "files": {
+    ".github/workflows/new-day-planner-ci.yml": "5465b87acd9bd256b0b3582d5f4c0601e95c68cc96b12535701e476b5a3685fe",
+    ".github/workflows/planner-engine-ci.yml": "86cdad5ca97286ab267305377b957ab10d1f17486847469ca6ad494100d74f34",
+    "client/src/components/effective-configuration.tsx": "f715b3c42081884e2a6878dcbb04593840237f46da99b06f8b62f1d9d6824eec",
+    "client/src/components/new-day-planner-editor.tsx": "5faebbad751a42e3a471c07225562b24ab3fdcbfb09574a24148b3c1fe6ea2e3",
+    "client/src/components/setup-families-editor.tsx": "55fe3977a763b1428715be620f14f799a1e1d769d808d64e07873b14aac42622",
+    "docs/evidence/p0-u00e/v2/verify-native.ts": "fbd82b7e6460b74df1488b6851c62bc3bce957e786ecf2c1b574fb942736598f",
+    "engine/planner-next/assistedPlanning.ts": "c7df3b45d037f814d3e83c3498106db03d1c472348455efb13f0aa67509511f0",
+    "engine/planner-next/contracts.ts": "dff2eb2df38c5636307ae076559914011a8040c10e11e05778d702a7b2d89853",
+    "engine/planner-next/exactItinerantPlan.ts": "59ecf4ab8991ebc8c808bda7a461f4f33c5629bc85d3bd1df3c820753cded111",
+    "engine/planner-next/exactSetupBlocks.ts": "44cb76f5e12ff03b168014c1d8d1ddc3e34d59681b1f2a8f4085a793fd31433b",
+    "engine/planner-next/integration/engineInputAdapter.ts": "4c38d86c7aaadee9d9e6bd5239fc5f8fa940fff4a7e617870adac83c4d5d8733",
+    "engine/planner-next/integration/engineInputPreflight.ts": "49830947ebb16733c53bc042e4d61f565ca671713ba3d93558902897b51d64dd",
+    "engine/planner-next/integration/newDaySetupFamilies.spec.ts": "e3b2a2f374006156aea6822fda3388ceaf0a2a2953a4ed9a2f3d39bc5e316310",
+    "engine/planner-next/integration/spacePoliciesV2.spec.ts": "5589b46145e9b720ed5902094a6ad83b1caa1a51c337fa80b9937bd762375cdc",
+    "engine/planner-next/operationContinuity.ts": "d010b5ddbd0b049fb2e918f150f038acc89b08e0106f53f3cd8e4e7e589910d4",
+    "engine/planner-next/placeAuxiliaryTasks.ts": "090f314277218d94b048746f72b3dc7684024f26979400defaabead62c7e321c",
+    "engine/planner-next/setupGrouping.ts": "e0af70f1631c30dbe95228c896cb1e853785aa6fe34011d87ddfd6179d7218a2",
+    "engine/planner-next/setupPreparation.ts": "17cbdeb7923cd8e3ba02854d2b45e860bbbe3ce53a0f0cae6dc3910fda364504",
+    "engine/planner-next/validate.ts": "46f2abd3d2d93a69856d189f64ad3ecc8792c4946ce19ddcb197cb66c48cb7ed",
+    "engine/types.ts": "0262f399677baa5216aa479530d861d298637d4f50c20671564c012b10b994dc",
+    "script/demo/smokeNewDaySetupJourney.ts": "a7d69cf6abf7c3458f21eaabe4d7d009be2c6d29d69bc99c0d62861931e3059c",
+    "script/demo/tsconfig.new-day.json": "5f3c4cf180fed15269c0b4f601ea3100bff641ce2818e0fcf57072ef0429820b",
+    "server/newDayPlannerConfiguration.ts": "d9761f7a6c93cd31c75a4e3a25fa61bc3eeaf157e09ab36a0df3a77300b06e3e",
+    "shared/newDayPlannerConfiguration.ts": "b44c9f3c3677b94071ea3875233e792bf731e5e50df0f8ec7e65f05cab40f2f7"
+  },
+  "verifierOnlyFollowup": {
+    "parentCommit": "ab6047406169ccacb57a10e08a1a2b97c3198ab2",
+    "file": "docs/evidence/p0-u00e/v2/verify-native.ts",
+    "reason": "Bootstrap pure snapshot materialization without credentials, force loopback and prohibit fetch. The other 23 source hashes are unchanged.",
+    "validation": "PASS with three Supabase variables unset, on local and genuine hosted native artifacts."
+  }
+}

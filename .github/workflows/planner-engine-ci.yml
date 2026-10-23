@@ -227,7 +227,16 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npx --no-install playwright install --with-deps chromium
+      - name: Select installed Chromium or provision Playwright
+        shell: bash
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [[ -n "$task_browser_path" ]]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+            "$task_browser_path" --version
+          else
+            npx --no-install playwright install --with-deps chromium
+          fi
       - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
       - name: Real settings, day configuration, Evidence, Draft and Stages
         run: npm run demo:a2:smoke -- work/main-flow-preference-integration --historical-topology --full --day-workspace --main-flow-preference

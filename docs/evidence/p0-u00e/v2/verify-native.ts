@@ -1,0 +1,69 @@
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {resolve} from 'node:path';
+import {validatePlan} from '../../../../engine/planner-next/validate';
+import {assessSpacePolicies} from '../../../../engine/planner-next/operationContinuity';
+import {createPlanningScope,buildAssistedProblem,executeAssistedPlanning} from '../../../../engine/planner-next/assistedPlanning';
+import {createSetupPreparation} from '../../../../engine/planner-next/setupPreparation';
+import type {ScheduledTask,ScheduledSetupPreparation} from '../../../../engine/planner-next/contracts';
+// Snapshot materialization is pure, but its service imports the server clients.
+// Keep this artifact verifier independent of credentials and prohibit network IO.
+process.env.SUPABASE_URL='http://127.0.0.1:1';
+process.env.SUPABASE_SERVICE_ROLE_KEY='offline-evidence-only';
+process.env.SUPABASE_ANON_KEY='offline-evidence-only';
+globalThis.fetch=async()=>{throw new Error('Network IO is forbidden in the offline U00e verifier');};
+const {materializeAssistedSnapshotOccupations}=await import('../../../../server/assistedProposalService');
+const [directory,destination]=process.argv.slice(2);
+const read=(name:string)=>JSON.parse(readFileSync(resolve(directory,name),'utf8'));
+const a=read('setup-preflight.json'),b=read('explicit-preflight.json');assert.equal(a.status,'SUPPORTED');assert.equal(b.status,'SUPPORTED');
+const profiles=['setup','explicit'].map(label=>{
+ const input=read(`${label}-input.json`),stage=read(`${label}-stage.json`),revisions=read(`${label}-config-revisions.json`);
+ const revision=revisions.find((r:any)=>Number(r.id)===Number(stage.currentConfigRevisionId));assert.ok(revision);
+ assert.deepEqual(revision.replay_snapshot_json.authorities.plan_workday[0].plannerNextAuthorities.setupPolicies,input.setupPolicies);
+ const adapter=read(`${label}-preflight.json`),occupations=materializeAssistedSnapshotOccupations(adapter.problem,adapter.identityMap,stage.activeStage.snapshotJson);
+ const validation=validatePlan(adapter.problem,occupations.protectedPlacements,occupations.protectedSetupPreparations);
+ assert.equal(validation.hardValid,true,validation.reasonCodes.join(','));
+ return {label,policy:input.setupPolicies[0],obligations:input.tasks.length,preparations:occupations.protectedSetupPreparations,revisionFingerprint:revision.fingerprint,stageFingerprint:stage.activeStage.snapshotFingerprint,validation};
+});
+assert.equal(profiles[0].policy.groupingPolicy,'REQUIRED');assert.equal(profiles[0].policy.continuityPolicy,'PREFERRED');
+assert.equal(profiles[1].policy.groupingPolicy,'PREFERRED');assert.equal(profiles[1].policy.continuityPolicy,'REQUIRED');
+const continuations=['setup','explicit'].map(label=>{
+ const adapter=read(`${label}-preflight.json`),full=read(`${label}-replay.json`).a;
+ const firstFamily=adapter.problem.spaces.find((space:any)=>space.setupPolicy).setupPolicy.familyOrder[0];
+ const accepted=full.proposal.filter((task:any)=>task.setupFamilyId===firstFamily),frozen=structuredClone(accepted);
+ const pending=adapter.problem.tasks.filter((task:any)=>task.setupFamilyId!==firstFamily).map((task:any)=>task.id);
+ const result=executeAssistedPlanning(buildAssistedProblem(adapter.problem,createPlanningScope({kind:'DAY',value:`continue-${label}`},{},pending),accepted));
+ assert.equal(result.evidence.completeForScope,true,result.evidence.reasonCodes.join(','));
+ assert.equal(result.evidence.protectedPlacementsPreserved,true);assert.deepEqual(accepted,frozen);
+ assert.equal(validatePlan(adapter.problem,[...accepted,...result.proposal!],[...result.evidence.selectedSetupPreparations!]).hardValid,true);
+ assert.equal(result.evidence.selectedSetupPreparations!.length,label==='setup'?1:2);
+ return {label,complete:true,accepted,proposal:result.proposal,preparations:result.evidence.selectedSetupPreparations,protectedPreserved:true};
+});
+const first=read('setup-replay.json').a,ordered=[...first.proposal].sort((x,y)=>x.start-y.start);
+const gap=ordered.map((task,index)=>index?{...task,start:task.start+5,end:task.end+5}:task);
+const gapPreparations=first.evidence.selectedSetupPreparations.map((p:any)=>({...p,start:p.start+5,end:p.end+5}));
+assert.equal(validatePlan(a.problem,gap,gapPreparations).hardValid,true);
+const gapBefore=assessSpacePolicies(a.problem,ordered),gapAfter=assessSpacePolicies(a.problem,gap);
+assert.equal(gapBefore[0].continuityPenalty,0);assert.equal(gapAfter[0].continuityPenalty,5);
+const strict=structuredClone(a.problem);strict.spaces.find((s:any)=>s.setupPolicy).secondaryContinuity='REQUIRED';
+assert.equal(validatePlan(strict,gap,gapPreparations).secondaryContinuityViolationCount,1);
+const space=b.problem.spaces.find((s:any)=>s.setupPolicy),families=space.setupPolicy.familyOrder;
+const participants=[...new Set(b.problem.tasks.map((task:any)=>task.participantId))].sort();
+const task=(family:number,participant:number)=>b.problem.tasks.find((t:any)=>t.setupFamilyId===families[family]&&t.participantId===participants[participant]);
+const order=[task(0,0),task(1,0),task(0,1),task(1,1),task(2,0),task(2,1)];assert.ok(order.every(Boolean));
+const entries=new Map<string,number>(),reentry:ScheduledTask[]=[],preparations:ScheduledSetupPreparation[]=[];
+let cursor=Math.max(b.problem.day.start,...b.problem.participants.map((p:any)=>Math.min(...p.availability.map((w:any)=>w.start))));
+for(const source of order){
+ const changed=reentry.at(-1)?.setupFamilyId!==source.setupFamilyId;
+ if(changed){const entry=(entries.get(source.setupFamilyId)??0)+1;entries.set(source.setupFamilyId,entry);
+  if(reentry.length){const prep=createSetupPreparation(source.spaceId,source.setupFamilyId,entry,space.setupPolicy.preparationMinutesBetweenFamilies,cursor);preparations.push(prep);cursor=prep.end;}}
+ reentry.push({...source,start:cursor,end:cursor+source.duration});cursor+=source.duration;
+}
+assert.equal(validatePlan(b.problem,reentry,preparations).hardValid,true);
+assert.equal(preparations.length,4);const reentryCost=assessSpacePolicies(b.problem,reentry);
+assert.equal(reentryCost[0].setupPenalty,6);assert.equal(reentryCost[0].continuityPenalty,0);
+const grouped=read('explicit-replay.json').a.proposal,groupedCost=assessSpacePolicies(b.problem,grouped);assert.equal(groupedCost[0].setupPenalty,2);
+const forbidden=structuredClone(b.problem);const policy=forbidden.spaces.find((s:any)=>s.setupPolicy).setupPolicy;policy.groupingPolicy='REQUIRED';policy.reentry='FORBIDDEN';
+assert.equal(validatePlan(forbidden,reentry,preparations).setupViolationCount,1);
+writeFileSync(destination,JSON.stringify({status:'PASS',profiles,continuations,preferredGap:{before:gapBefore,after:gapAfter,alternative:gap,preparations:gapPreparations},preferredReentry:{before:groupedCost,after:reentryCost,alternative:reentry,preparations},hardChecks:{sameGapRequiredRejected:true,sameReentryRequiredRejected:true},note:'Comparative probes retain the genuine UI-created authorities; only placement alternatives, accepted-prefix projections and the stated policy counterfactual change.'},null,2));
+console.log(JSON.stringify({status:'PASS',obligations:profiles.map(p=>p.obligations),preferredGapCost:[0,5],preferredSetupCost:[2,6],reentryPreparations:4}));

@@ -1,0 +1,64 @@
+{
+  "base": {
+    "firstStageMs": 102043,
+    "branches": 22053,
+    "obligationsAccepted": 19,
+    "sampleCount": 84377,
+    "totalSampledMs": 108513.141,
+    "inclusiveSampling": {
+      "continuityPenalty": {
+        "sampledMilliseconds": 0.0,
+        "percent": 0.0
+      },
+      "assessSpacePolicies": {
+        "sampledMilliseconds": 0.0,
+        "percent": 0.0
+      },
+      "setupExplorer": {
+        "sampledMilliseconds": 1446.422,
+        "percent": 1.33295
+      },
+      "GC": {
+        "sampledMilliseconds": 5967.401,
+        "percent": 5.49924
+      }
+    }
+  },
+  "candidate": {
+    "firstStageMs": 91020,
+    "branches": 22053,
+    "obligationsAccepted": 19,
+    "sampleCount": 78426,
+    "totalSampledMs": 92682.794,
+    "inclusiveSampling": {
+      "continuityPenalty": {
+        "sampledMilliseconds": 2.631,
+        "percent": 0.00284
+      },
+      "assessSpacePolicies": {
+        "sampledMilliseconds": 0.055,
+        "percent": 6e-05
+      },
+      "setupExplorer": {
+        "sampledMilliseconds": 1478.37,
+        "percent": 1.59509
+      },
+      "GC": {
+        "sampledMilliseconds": 5145.123,
+        "percent": 5.55132
+      }
+    }
+  },
+  "status": "PASS",
+  "scope": "S0/first accepted Stage only, intentionally stopped after 19 obligations; these profiling runs are not full A2 certification. Full unprofiled 266/266 runs are separate.",
+  "sameFirstStageReportExceptDuration": true,
+  "sourceBase": "3a05cb099a74d7263c0d630d7055746fcd722114",
+  "candidateSources": "source-hashes.json",
+  "flags": [
+    "--cpu-prof",
+    "--cpu-prof-dir",
+    "--cpu-prof-name"
+  ],
+  "originalBudgetsAndTimeouts": true,
+  "analysis": "Sampled profiles show no dominant time in continuityPenalty or the new assessSpacePolicies scorer. The setup explorer and GC shares are reported, not inferred from wall time. All non-duration Stage fields and work counters match. Profiling and normal runs vary in wall time; this does not certify equal throughput or attribute the variation to a particular host/CPU mechanism. No search optimization, budget or timeout change is made."
+}

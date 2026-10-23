@@ -1,6 +1,6 @@
 import type { EngineInput } from "../engine/types";
 import type { TaskTemplateOperationalSnapshotV1 } from "./taskTemplateSnapshot";
-import { newDayPlannerSnapshotSchema } from "../shared/newDayPlannerConfiguration";
+import { newDayPlannerSnapshotSchema, type SetupFamiliesConfiguration } from "../shared/newDayPlannerConfiguration";
 import { PlanPlannerNextConfigurationError } from "./planPlannerNextConfiguration";
 
 /** Materialize against the effective task set on every build, never the catalog. */
@@ -12,6 +12,7 @@ export function applyNewDayPlannerConfiguration(input:EngineInput,raw:unknown,
   const config=parsed.data.configuration;
   if(!config)return input;
   const templates=new Map(snapshots.map(snapshot=>[snapshot.sourceTemplateId,snapshot]));
+  const setup=config.setup==="FAMILIES"?config.setupFamilies:undefined;
   const tasks=input.tasks.map(task=>{
     const template=templates.get(task.templateId);
     const kind=template?.plannerNextOperation?.kind;
@@ -22,11 +23,22 @@ export function applyNewDayPlannerConfiguration(input:EngineInput,raw:unknown,
         candidate.contestantId===task.contestantId && candidate.status!=="cancelled").map(candidate=>candidate.id));
     const coach=task.contestantId==null?undefined:input.vocalCoachPlanResourceItemIdByContestantId?.[task.contestantId];
     return {...task,...(kind?{plannerNextKind:kind}:{}),operationalRole:"productive_task" as const,
+      ...(template?.setupId!=null&&validSetupMapping(input,task,template,setup)?{setupFamilyId:String(template.setupId)}:{}),
       ...(template?.requiresCoach && coach!=null?{declaredResourceIds:[...new Set([...(task.declaredResourceIds??[]),coach])].sort((a,b)=>a-b)}:{}),
       dependsOnTaskIds:dependencies,dependsOnTaskId:dependencies[0]??null};
   });
+  // The catalogue is a permission set; the solver policy describes the families
+  // actually present in this day. Inactive families require no entry/preparation.
+  const setupPolicies=setup?.policies.flatMap(({familyIds,familyOrder,...policy})=>{
+    const present=new Set(tasks.filter(task=>task.status!=="cancelled"&&task.spaceId===policy.spaceId).map(task=>task.setupFamilyId));
+    const families=familyIds.map(String).filter(id=>present.has(id));
+    const active=tasks.some(task=>task.status!=="cancelled"&&task.spaceId===policy.spaceId);
+    return families.length||setup.contractVersion===2&&active?[{...policy,...(setup.contractVersion===2?{contractVersion:2 as const}:{}),families,...(familyOrder?{familyOrder:familyOrder.map(String).filter(id=>present.has(id))}:{})}]:[];
+  });
   const {arrivalDepartureGrouping:_,...weights}=input.optimizerWeights??{};
-  return {...input,tasks,plannerNextMaterializationIssues:newDayConfigurationDefects(input,snapshots,config.scenario),plannerNext:{searchPolicy:config.searchPolicy,searchBudget:{...config.searchBudget},
+  return {...input,tasks,
+    ...(setupPolicies?{setupPolicies}:{}),
+    plannerNextMaterializationIssues:newDayConfigurationDefects(input,snapshots,config.scenario,setup),plannerNext:{searchPolicy:config.searchPolicy,searchBudget:{...config.searchBudget},
       timeGridMinutes:config.timeGridMinutes,participantTransitionMinutes:input.defaultParticipantTransitionMinutes!,
       resourceTransitionMinutes:config.resourceTransitionMinutes,
       ...(config.scenario==="STANDALONE_ONLY"?{profile:"STANDALONE_ONLY" as const}:{mainFlow:{...config.mainFlow}})},
@@ -49,7 +61,15 @@ export function applyNewDayPlannerConfiguration(input:EngineInput,raw:unknown,
   };
 }
 
-export function newDayConfigurationDefects(input:EngineInput,snapshots:readonly TaskTemplateOperationalSnapshotV1[],scenario="MAIN_WITH_VOCAL_FEEDER"):NonNullable<EngineInput["plannerNextMaterializationIssues"]> {
+function validSetupMapping(input:EngineInput,task:EngineInput["tasks"][number],template:TaskTemplateOperationalSnapshotV1,setup?:SetupFamiliesConfiguration){
+  const policy=setup?.policies.find(p=>p.spaceId===task.spaceId);
+  return template.setupId!=null&&setup?.families.some(f=>f.id===template.setupId)&&policy?.familyIds.includes(template.setupId)
+    &&template.plannerNextOperation?.kind==="auxiliary"&&task.contestantId!=null&&task.jointGroupId==null
+    &&task.blocksSpace!==false&&task.agendaScope!=="ITINERANT_UNIT"&&task.allowsSpaceOverlap!==true
+    &&input.planSpaceSettings?.some(s=>s.spaceId===task.spaceId);
+}
+
+export function newDayConfigurationDefects(input:EngineInput,snapshots:readonly TaskTemplateOperationalSnapshotV1[],scenario="MAIN_WITH_VOCAL_FEEDER",setup?:SetupFamiliesConfiguration):NonNullable<EngineInput["plannerNextMaterializationIssues"]> {
   const templates=new Map(snapshots.map(snapshot=>[snapshot.sourceTemplateId,snapshot]));
   const active=input.tasks.filter(task=>task.status!=="cancelled");
   const issues=active.flatMap(task=>{
@@ -58,7 +78,8 @@ export function newDayConfigurationDefects(input:EngineInput,snapshots:readonly 
       candidate.templateId===id && candidate.contestantId===task.contestantId && candidate.status!=="cancelled"));
     return [
       ...(missing.length?[{code:"MISSING_DEPENDENCY_REFERENCE" as const,taskId:task.id,message:`La tarea ${task.id} necesita las instancias de sus plantillas previas (${missing.join(", ")}). Añádelas al mismo participante.`}]:[]),
-      ...(template?.setupId!=null?[{code:"UNSUPPORTED_SETUP_MAPPING" as const,taskId:task.id,message:`La tarea ${task.id} declara un montaje. Este perfil todavía no materializa familias de montaje.`}]:[]),
+      ...((template?.setupId!=null&&!validSetupMapping(input,task,template,setup))||(setup?.policies.some(p=>p.spaceId===task.spaceId&&(setup.contractVersion!==2||p.groupingPolicy!=="OFF"))&&template?.setupId==null)
+        ?[{code:"UNSUPPORTED_SETUP_MAPPING" as const,taskId:task.id,message:`La tarea ${task.id} necesita una familia de montaje conocida y permitida por la política de su espacio. Sólo se admiten auxiliares físicas con participante, sin grupo conjunto.`}]:[]),
       // Auxiliary/technical units are resolved by the daily composition authority
       // after this profile. Preflight still validates its effective identities,
       // members and domains; main/vocal unit consumption is not enabled here.

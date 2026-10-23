@@ -1,0 +1,21 @@
+{
+  "authorizedBase": "037500b139d43bf5f82c1087db4fe6ed90fc8074",
+  "finalSources": {
+    ".github/workflows/new-day-planner-ci.yml": "6d0fc21802f17323cde818f0753876ec4f20d0523fcb415c236c60d241ca1b11",
+    "client/src/components/effective-configuration.tsx": "487d15740bb50e46c8575d91e9d582dae41098ae310d99c7ab755e71ed29eaec",
+    "client/src/components/new-day-planner-editor.tsx": "692f790e3ad04f052c9776132d183d9ba62ae2b184dee1897b416bfd6b111d4c",
+    "client/src/components/setup-families-editor.tsx": "f9de4388894c7c7b4691a6f661f86717e77e5ff472bd366eff6f9962058bede6",
+    "client/src/pages/settings.tsx": "d9b35ec50cfcc5542c7ac7ead815949d10084f318c40075dade24e167efc0c8c",
+    "docs/evidence/p0-u00e/diagnose-logical-gap.ts": "50da57d616507c200554ef4f1091332e9d956669d643b97b01916656d588ec96",
+    "docs/evidence/p0-u00e/diagnose.ts": "6719cba350f4bb1bff9aaef156a0f70c217a30791aeaa41ed57b35f4d18c8a73",
+    "engine/planner-next/integration/newDaySetupFamilies.spec.ts": "c4b282f54c9b6e305d292c7996d00d9a6c544cc75ed8caa22d0adfb2788c29ed",
+    "script/demo/smokeNewDayIntegration.ts": "0ca7934e9e2edb383142dd39686e6d385d02e6755d3f18dd47ddeca7469f5445",
+    "script/demo/smokeNewDaySetupJourney.ts": "7c3b8cb647e636eeeb9df6f89b61da925e1e9259443a02d8a990cb331e633917",
+    "server/effectiveConfigurationView.ts": "5455120a89a816d92156e4ea233f1f0902253ccf740445e49946521b72742b0b",
+    "server/newDayPlannerConfiguration.ts": "4978923b5b49892b0d33fe3882a1481a6dae2a2ea31e74d18bf89533c1935c39",
+    "server/newDayPlannerConfigurationRoutes.ts": "eb11c25e216f8dced59f160fa23d9246c5152278821d5769f95595d26c58f629",
+    "shared/effectiveConfigurationContracts.ts": "8182606cc93009157d1d58422720964e6762b3b74756024e90b1ac0ab11e9fd6",
+    "shared/newDayPlannerConfiguration.ts": "41ece6ae2d41e1c625723a10767f6dec19666575b831643f1d612575c9eaaf56"
+  },
+  "note": "Final source content; native exploratory execution has its own earlier source hashes. Not a certified release."
+}

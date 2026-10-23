@@ -1,0 +1,40 @@
+{
+  "runtime": "Node 20.20.2",
+  "productTypeScript": "PASS",
+  "harnessTypeScript": "PASS",
+  "productionBuild": "PASS",
+  "migrations": {
+    "status": "PASS",
+    "last": 107,
+    "newMigrations": 0
+  },
+  "productSuite": {
+    "passed": 3117,
+    "failed": 0,
+    "skipped": 0,
+    "durationMs": 725154.310157,
+    "concurrency": 2,
+    "excludedExactlyAsExistingCI": [
+      "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts",
+      "server/benchmarks/runA2Assist7Evidence.spec.ts"
+    ]
+  },
+  "finalFocal": {
+    "scope": "Final protected-context continuation, canonical exact explorer, all v2 combinations and legacy contract. Passed before the final full suite.",
+    "passed": 95,
+    "failed": 0,
+    "durationMs": 6477.549787,
+    "command": "node node_modules/tsx/dist/cli.mjs --test --test-concurrency=1 engine/planner-next/integration/spacePoliciesV2.spec.ts engine/planner-next/integration/newDaySetupFamilies.spec.ts engine/planner-next/exactItinerantPlan.spec.ts"
+  },
+  "ciPreparation": {
+    "yamlAndShellSyntax": "PASS",
+    "existingChromiumSelected": "/usr/bin/chromium",
+    "version": "154.0.8037.57",
+    "originalTimeoutsMinutes": [
+      15,
+      20
+    ],
+    "allNativeStepsRetained": true
+  },
+  "noBudgetOrTimeoutIncrease": true
+}

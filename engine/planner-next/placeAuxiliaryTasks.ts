@@ -1,3 +1,5 @@
+import {generateExactSetupBlockCandidates} from "./exactSetupBlocks";
+import {createExactSearchLedger} from "./exactMainAndFeederCore";
 import { continuityPenalty } from "./operationContinuity";
 import type { PlannerNextProblem, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { canPlaceTask } from "./placement";
@@ -123,6 +125,14 @@ function probeBlock(problem: PlannerNextProblem, tasks: Task[], placed: Schedule
 
 export function generateBlockCandidates(problem: PlannerNextProblem, tasks: Task[], placed: ScheduledTask[], allowance: number, priorSecondary = 0, mode: "SEARCH" | "PROBE" = "SEARCH", probeLimit = 1, existingMeals:ScheduledSpaceMeal[]=[]): BlockConstructionResult {
   const spaceId=taskSpace(tasks);
+  if(problem.spaces.find(space=>space.id===spaceId)?.setupPolicy?.contractVersion===2){
+    const candidates:BlockCandidate[]=[],ledger=createExactSearchLedger(allowance);
+    const generated=generateExactSetupBlockCandidates(problem,tasks,placed,[],existingMeals,ledger,false,candidate=>{
+      candidates.push({...candidate,meals:[]});return candidates.length>=(mode==="PROBE"?probeLimit:problem.budget.bestK);
+    });
+    return {candidates,consumed:ledger.branchesExplored,secondaryBranches:priorSecondary+(mode==="SEARCH"?ledger.branchesExplored:0),exhausted:generated.outcome==="BUDGET_EXHAUSTED",
+      diagnostics:{startsExplored:generated.evidence.startsExplored,expansions:ledger.branchesExplored,completeCandidatesGenerated:candidates.length,maximumPartialStatesPerStart:generated.evidence.maximumDepth}};
+  }
   if(spaceId&&isRequiredBlockMealSpace(problem,spaceId))return generateRequiredMealBlockCandidates(problem,tasks,placed,allowance,priorSecondary,mode,probeLimit,existingMeals);
   type Partial = { tasks: ScheduledTask[]; preparations: ScheduledSetupPreparation[]; remaining: Task[]; cost: number; start: number };
   const complete: BlockCandidate[] = [];

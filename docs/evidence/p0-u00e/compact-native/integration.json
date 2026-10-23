@@ -1,0 +1,1005 @@
+{
+  "mode": "REAL_DISPOSABLE_NEW_DAY_UI",
+  "remoteWrites": 0,
+  "images": {
+    "db": "postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24",
+    "auth": "supabase/gotrue:v2.177.0@sha256:6a916b47af0386b7e0152ca84f3d45d050bf056e449a75a5460b48742fd67822",
+    "rest": "postgrest/postgrest:v12.2.12@sha256:5f4ce744539bbba786b4e24dbbd95bdb2a956dcf568c5374995a0ff4a68f5bd2"
+  },
+  "checks": [
+    "entire native application migration ledger",
+    "real password login for five Auth identities",
+    "two independent UI-created days reach complete Stages with flexible/explicit order, physical preparations, dependencies, availability and exact resources; first Stage and effective input stay frozen",
+    "unknown references, stale configuration, unauthorized edits and attempts to rewrite historical day profiles are rejected",
+    "existing preflight and validators reject missing preparation, shared capacity violation, reentry, unknown family, incomplete policy and wrong explicit order"
+  ],
+  "startedAt": "2026-10-22T17:50:27.401Z",
+  "sourceHashes": {
+    "server/newDayPlannerConfiguration.ts": "5da0261d3dfe122ed209691aa760602a0e0a0768c7718e554f8c976ee9199387",
+    "server/assistedProposalService.ts": "59c59f0ec735ba4e6e645238c7ffe49c64d1a04eed5e3702eaf055c75a536989",
+    "engine/planner-next/integration/engineInputAdapter.ts": "04429a164b52f3c67688b9ed831fe50fec4ac1574a6fd54a21c503f16fddaaeb",
+    "engine/planner-next/exactItinerantPlan.ts": "a4dcbbf0edcd3267b93851f0a3d3c375af1237d3fa2af82a6e8dbcf5b3ca87c8",
+    "engine/planner-next/validate.ts": "c08588895facfbe7fb53eca9bddaf8757a9ac8a7ea5b5c0bb0e578be5d8ab786",
+    "script/demo/smokeNewDayIntegration.ts": "feb5e13e4cff2a3fe331683c34fb9f175dbdcc8305cb54bada4b4d90450523fe",
+    "script/demo/smokeNewDayItinerantJourney.ts": "2cecc57bfe47005dd515cbc1855dc4b95bb91d5f7fda07e4c3dc2d1a2de336f8"
+  },
+  "sourceCommit": "037500b139d43bf5f82c1087db4fe6ed90fc8074",
+  "postgresVersion": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "migrations": [
+    {
+      "file": "001_init.sql",
+      "sha256": "ed0ad38bf9c0c31bf9e411eb0d2edd6bc724f25f1cbbf78d1020efc68090f1cf"
+    },
+    {
+      "file": "002_contestants.sql",
+      "sha256": "d0c7337081de996324e0d490897399a178023cc9bb18c65689859b23a216826c"
+    },
+    {
+      "file": "003_contestants_plan.sql",
+      "sha256": "a2c2906f35362b689aa85398a234f63a971089691222e7c28ab0013d952d208c"
+    },
+    {
+      "file": "004_task_locations.sql",
+      "sha256": "9c8a9952d3033d5381ad7c57bdf218a954b8ab46c1b3ce2f56fa46cbbafcb6e9"
+    },
+    {
+      "file": "005_resource_pools.sql",
+      "sha256": "f8b72cd2e5efa8f879a884e602480284885024d8bfb1cc75ef35db772b37f601"
+    },
+    {
+      "file": "006_resource_items.sql",
+      "sha256": "11704fa9dade1929beab474a613ec9b75c6d4d66497cf756776b0842f0968a82"
+    },
+    {
+      "file": "007_contestants_details.sql",
+      "sha256": "20ac4847148ee7e73337044ac92be0a833fe1e660cf1cdbc5468519329fca640"
+    },
+    {
+      "file": "008_task_templates_ui_color.sql",
+      "sha256": "220125c60e17a2eeff78fc27bba9d9f2bfc9523a64289c8ac2eaa0207623fade"
+    },
+    {
+      "file": "009_task_template_dependencies.sql",
+      "sha256": "fa42b4dfa4491bf03936aa535b2464011849de74d084ab9835de4d2336150ae9"
+    },
+    {
+      "file": "010_plan_contestant_meal_settings.sql",
+      "sha256": "f04f7d913e50a40b75086e008ca92db3189bbcdcf0d97132775fee63f953bc0a"
+    },
+    {
+      "file": "011_program_settings.sql",
+      "sha256": "374e818ff6abfaef4f983acea3dbf95ff364584580ce7125da4020ed5b64d116"
+    },
+    {
+      "file": "012_program_settings_meal_task_name.sql",
+      "sha256": "80c60ea5ef71380d6dc9fd524337cbe3f71bcd72e8fe9bb718213476fcc1a061"
+    },
+    {
+      "file": "013_space_resource_assignments.sql",
+      "sha256": "7d06a0e52020fc600ec711ffaa815ae7f9a7c6fcd7097c1b9176d878d868f452"
+    },
+    {
+      "file": "014_zone_resource_assignments.sql",
+      "sha256": "3af1a3718d4f1a8a22f71fd837bea0f7ec1d78479a2e5d81fc71c7dfe702425c"
+    },
+    {
+      "file": "015_add_task_secondary_color.sql",
+      "sha256": "725243fd536dbf5ab7e61e6b2fe187008c94063ccfce459a1fb6b97009a8463e"
+    },
+    {
+      "file": "016_add_zone_color.sql",
+      "sha256": "f0c9bc03853f8555f6160ab6a0fcf366effcd00d6546ebd757cd1fed18f641d3"
+    },
+    {
+      "file": "017_task_template_multi_dependencies.sql",
+      "sha256": "af50644d9da78f41f61dc8bc184f66ebf0931607976c5372c237c2316a52f461"
+    },
+    {
+      "file": "018_resource_item_components.sql",
+      "sha256": "5589e1ad6ac3e1f8c1bc618c7f4b76bb1f581f00c0910b6affc9c86bf104609d"
+    },
+    {
+      "file": "019_daily_tasks_required_plan_resources.sql",
+      "sha256": "dd05d90300ceb510764b6cf0e585fb8ba69a5329bcbe11703ad39b19363d8243"
+    },
+    {
+      "file": "020_zone_space_resource_type_requirements.sql",
+      "sha256": "cecad680843af5e0018e850c2a567a581286177804999f9a6e332b0d3e2c0a7c"
+    },
+    {
+      "file": "021_task_template_resource_requirements.sql",
+      "sha256": "bf19ee7ad73aca8ae65045a9326ecb7251b7d77611472599a1ce4557dacd0bf5"
+    },
+    {
+      "file": "022_daily_tasks_assigned_resources.sql",
+      "sha256": "61f8336e74ac820b4d05f7868e01d65b260e20a832e4f6ccb4fd3b400a6ce007"
+    },
+    {
+      "file": "023_plan_vocal_coach_rules.sql",
+      "sha256": "d0edc8be44e56daca806b7ad946c9a29b94fe73efae5db3cfbab17d01080c78a"
+    },
+    {
+      "file": "024_vocal_coach_rules.sql",
+      "sha256": "1b133945ce420b0edb49d963051be514cfac4b90789fe2190845f63b29e0f2f1"
+    },
+    {
+      "file": "025_contestants_availability_notes_instrument_name.sql",
+      "sha256": "63c1c51e6821414c0c967189cd849d8b3ff4c45afec9e0647e5d884da1515f89"
+    },
+    {
+      "file": "026_optimizer_settings.sql",
+      "sha256": "99adde203c4c4da4e3b6cd58c79e9309276c3d91d936803aeb27f4938b4463a0"
+    },
+    {
+      "file": "027_optimizer_settings_levels.sql",
+      "sha256": "b1e29d87e9bce68de32a15d4cde207dcfebd75c06ddba348e95e02cc26b515dd"
+    },
+    {
+      "file": "028_optimizer_settings_compact_and_main_zone_modes.sql",
+      "sha256": "08c1baa2abc88abfc4bde0f4dd9024b0142b6aa4e33f448825019f22eab86596"
+    },
+    {
+      "file": "029_staff_people_and_assignments.sql",
+      "sha256": "a02221fb3e0c149af6a6c11848558bad354944d45b623553e9fdd00dc588f243"
+    },
+    {
+      "file": "030_staff_defaults.sql",
+      "sha256": "062a79a9ef08b1fd69b4b6ec28a58e1a39baf96869f8d2314eff5601db6dbb55"
+    },
+    {
+      "file": "031_realtime_daily_tasks.sql",
+      "sha256": "66a214ae8570289e707070f61a02329a08fd630f465a54b811c93f336b9c5d5e"
+    },
+    {
+      "file": "032_itinerant_teams.sql",
+      "sha256": "0ac8d1b7df4b0580793ae312221d112a8cf45b82ed1ddaf9152c3ca56b08b7b1"
+    },
+    {
+      "file": "033_staff_assignments_itinerant_team.sql",
+      "sha256": "cdb0ade0db8e814137f468bb7d2100562f410a6cb1001c90f557c786266ac727"
+    },
+    {
+      "file": "034_2_task_templates_itinerant_team_requirement.sql",
+      "sha256": "3e8b48b13d29ff8e1b48e90fff01d7a0612ed11bc80cfda20a382057b207ccee"
+    },
+    {
+      "file": "034_staff_scope_check_itinerant_team.sql",
+      "sha256": "06def9cb6af3d80bf735073f6b947f6c6a4fb9c7687ea8e61aa9d62eab77e303"
+    },
+    {
+      "file": "035_plan_staff_assignments_scope_check_itinerant_team.sql",
+      "sha256": "5eead9f5e0328546a082c38497a7bbe13dbb2a80edd944ac6d568a3bb8aea3a5"
+    },
+    {
+      "file": "036_optimizer_settings_mode_and_advanced.sql",
+      "sha256": "51509cb83228990fe32170978b210a2897f05d63d8234f751b38dfcc370d4476"
+    },
+    {
+      "file": "037_rbac_auth_magic_link.sql",
+      "sha256": "b93e793b87da3e74e1d9bd801b80d892c9db485984d84a421678fea8f362d00c"
+    },
+    {
+      "file": "038_settings_delete_admin_policies.sql",
+      "sha256": "58d83f4e02bd54b6f0c5a9a763ac17cbe30cc6d2a92863121100657e53b3eb2d"
+    },
+    {
+      "file": "039_clock_and_task_events.sql",
+      "sha256": "5c066f2d1986c0efb69676c2d52df6003136583c2ae1d50f95c71415786d1ceb"
+    },
+    {
+      "file": "040_user_entity_links.sql",
+      "sha256": "86d181b5965da068a77853bf244be2323ee791beabb5bf5cd6cd60179458172a"
+    },
+    {
+      "file": "041_abbrev_and_task_comments.sql",
+      "sha256": "b1d6718bdc81ebdcb22a30102cb6480337529f587d72d84f09fc40eb126c9e33"
+    },
+    {
+      "file": "042_daily_tasks_manual_blocks.sql",
+      "sha256": "ec0437571ff1e032cd098271dc1762b4c3cc0878072b5464867b95a60a3b2cad"
+    },
+    {
+      "file": "043_space_itinerant_meal_breaks.sql",
+      "sha256": "aa4666cacfb4862147299793ab14cfb7bf8e63f9ba72ce42636966bc682aea56"
+    },
+    {
+      "file": "044_add_is_active_resource_types.sql",
+      "sha256": "68073b34170baa7792760e6607b7546579aa622302010f3451ce06f446167720"
+    },
+    {
+      "file": "044_grouping_scope_config.sql",
+      "sha256": "dfe9f5b20655e057647ff996d0412597dcc99ac8a1b583e5c97e8d648257b128"
+    },
+    {
+      "file": "045_user_preferences_favorite_plan.sql",
+      "sha256": "f4586d1697ee516b1047b1910be5165258c7ae0d7acb2639d94f04f7a815c0af"
+    },
+    {
+      "file": "046_daily_tasks_real_seconds.sql",
+      "sha256": "dddfc97c94d9fd5b0f81ddea703b5df7ab914e1ae01e818ad51f4cc300639e27"
+    },
+    {
+      "file": "047_control_room_settings_and_planning_runs.sql",
+      "sha256": "23369c94aec5dfc9b71d3d6ddf9d7c2320538ec95f21f6d2fd7165f0a59e9193"
+    },
+    {
+      "file": "048_plan_summaries_view.sql",
+      "sha256": "c0cc21fb6ce4dc6227ce0cffc0b81c13c5ce75330c79c6f571093135f6cf09d5"
+    },
+    {
+      "file": "049_optimizer_contestant_total_span_and_planning_progress.sql",
+      "sha256": "70bb9e34ee0f09bd609541ed3bcf6ad241deece5c2ea6aeeff168aa22b354b67"
+    },
+    {
+      "file": "050_simulated_set_at.sql",
+      "sha256": "ac6ab3d38deed030717614bf7f89a9fac6bab53e5e5217bd64aab1a896e39f51"
+    },
+    {
+      "file": "051_fix_staff_assignment_defaults_invalid.sql",
+      "sha256": "27dda71e0798be0bd41c719d65f403e652cb71597059ce71d0286009e51ea00e"
+    },
+    {
+      "file": "052_global_plan_favorite.sql",
+      "sha256": "7bced8853f4845eed3155f29687f30100effd941f152569cd05d080b40046bcb"
+    },
+    {
+      "file": "053_transport_breaks_settings.sql",
+      "sha256": "ce6d7e6d9ee1f4097b8369c398628704e5d0940065bb02e42c8fd3a617f5f1c3"
+    },
+    {
+      "file": "054_minimize_changes_by_zone_space.sql",
+      "sha256": "4a8876b9d00e9017c0c4848d9f5f20514a367528c19f6aae4523ab8a21f50db0"
+    },
+    {
+      "file": "055_pause_fields_daily_tasks.sql",
+      "sha256": "70fc3bcd0039387b59a785172c5a8b78d461ffdf2e5c48425cf15c6dcf2ec1c9"
+    },
+    {
+      "file": "056_task_templates_auto_create_on_contestant_create.sql",
+      "sha256": "a4a2e459c4229f14f891396fd53a8d18bc9e1ffffed1fca46b7f7ad56230e39f"
+    },
+    {
+      "file": "057_optimizer_grouping_zone_ids.sql",
+      "sha256": "b9355d112fc2f6d503b5184608723b7447b93da18dcc7f838f9edb5df65866ab"
+    },
+    {
+      "file": "058_optimizer_main_zone_split.sql",
+      "sha256": "dc68169fc477625cd488f4835a689b0c45a397c0dca072428b02320e319335aa"
+    },
+    {
+      "file": "059_plans_space_meal_break_minutes.sql",
+      "sha256": "86f0f214dc104140e70ec7a2b7b4604bf337975d5dee3791291da75dea101a33"
+    },
+    {
+      "file": "060_plans_planning_warnings_stats.sql",
+      "sha256": "30631ab6f4c6a6ead7e08c3ee3e989a17ca3c574a0af3c942606db459ce04928"
+    },
+    {
+      "file": "061_ui_order_indexes.sql",
+      "sha256": "2c08fae6db4696a1c29f45ad066cdcb9fa212cca690e91c9ba2252e46a0b3322"
+    },
+    {
+      "file": "062_zones_max_template_changes.sql",
+      "sha256": "ebc0f3fbd5ab04ebccadc9ac1c25403c5e505f89667e7189a4792adeb2f81ceb"
+    },
+    {
+      "file": "063_optimizer_transport_min_gaps.sql",
+      "sha256": "8205d7a6cb77caa9821836811a58b308a073e198d56d01de280757333a33ad32"
+    },
+    {
+      "file": "064_optimizer_near_hard_breaks_max.sql",
+      "sha256": "0d5bce8893174b211927162404190e3351c90ea7907a36585ff19b4360fbd372"
+    },
+    {
+      "file": "064_planning_runs_engine_v3.sql",
+      "sha256": "2945fc639bab4590c811391dcc64ac305d2901248e538572ad4cea36795de99c"
+    },
+    {
+      "file": "065_enable_rls_security_advisor.sql",
+      "sha256": "3a8c84051fbfeecd11a85b7dda29fbd70cccdabe74ef95dd6a9100b54378064d"
+    },
+    {
+      "file": "066_resource_bundles.sql",
+      "sha256": "e79f0ee50d65e1030b08a930ebc8d25cb7f9ce5cb9f2e6d14db5e58c48489aff"
+    },
+    {
+      "file": "067_planning_run_diagnostics.sql",
+      "sha256": "53efc56e4d75b5755d6373f74d0ab1ac1b354c845124b0878a83cd9a9fad78ce"
+    },
+    {
+      "file": "068_flexible_meal_mode_and_progress_history.sql",
+      "sha256": "6db6e92c78a93833b61a69cf8c9b4be9761b1b3ea521eb2b70a70b1f69e3be30"
+    },
+    {
+      "file": "069_planning_run_transactional_cancellation.sql",
+      "sha256": "68cbcde8878b9a0b297d57bbababb8f1264e05efa662a0be9669a0e04c667ae7"
+    },
+    {
+      "file": "070_engine_v4_parallel_results.sql",
+      "sha256": "19ca2db86b27228b3055fd9a5b54d9fdf3933cfeaffc270b6c7a9aa1ce359b20"
+    },
+    {
+      "file": "071_id258_zone_meal_break_minutes.sql",
+      "sha256": "159e9d53605f595fa8ec5e1b9dca1a745ccdea822c9965783d04df08a70c96eb"
+    },
+    {
+      "file": "072_resource_availability_snapshots.sql",
+      "sha256": "261613e4b1105c353077eeb59c1cf18e7a4aa530c60b089107013df996f63a7e"
+    },
+    {
+      "file": "073_workday_space_availability_snapshots.sql",
+      "sha256": "97f2d92821d01a09e96bf9d93fff3ebcee55bd9a90ef1547619b43351ddeb8a1"
+    },
+    {
+      "file": "074_plan_task_template_snapshots.sql",
+      "sha256": "f4f3d1bca7b2dbb31b64968f32dd3800a41460ef74411953cc02b9852a9d1a66"
+    },
+    {
+      "file": "075_plan_optimizer_snapshots.sql",
+      "sha256": "7819065271e7fdbf9cdaddb8fe08554f42d6896fd1f73af5f07013f9433d328f"
+    },
+    {
+      "file": "076_plan_operational_config_snapshots.sql",
+      "sha256": "049a9ec287659cae105543dc9fa79f1e539cca92754032f3a4bec8faeb447027"
+    },
+    {
+      "file": "077_assisted_planning_state.sql",
+      "sha256": "a0602631d7585b452597b4a5a037892ddd73d5eb660238ca02a45dac71bb7ded"
+    },
+    {
+      "file": "078_assisted_planning_workflow.sql",
+      "sha256": "696345975aff94824931ddd8a71448743fd8a20a86f990b23388970f693961eb"
+    },
+    {
+      "file": "079_assisted_proposal_runs.sql",
+      "sha256": "2fe10ec163e51ab70202fce6e282eae0873832b7cb39b979901ce318377a09e2"
+    },
+    {
+      "file": "080_assisted_clean_validation.sql",
+      "sha256": "02a9ffc6d84debc804adf5c9f72769345c0c8bb2f072e8b5e2107258baa65e3c"
+    },
+    {
+      "file": "081_assisted_draft_editing.sql",
+      "sha256": "b7dce87ff65e9a7518ce9526aa59fbb8fc8b470070cede4028a18a7d95d6aca9"
+    },
+    {
+      "file": "082_assisted_stage_validation_exceptions.sql",
+      "sha256": "77d9b7232231447f45dd7d66120f644303c010748daeaf920e149a8d8462ea39"
+    },
+    {
+      "file": "083_assisted_config_refresh.sql",
+      "sha256": "bcfcc064ca52f8e4d95f608584dcdd66a8e0fb0f4e2eccd983918d63809d0c76"
+    },
+    {
+      "file": "084_day_config_provenance.sql",
+      "sha256": "33b456db69df55ea52bcbae04be5e47abf90732b7ba5fbfd611fd04326b47862"
+    },
+    {
+      "file": "085_optimizer_day_config_restore.sql",
+      "sha256": "b57e2602325fbe66a45896c7671b8c86ca7a2fab81bd89f225f18220a2290aa1"
+    },
+    {
+      "file": "086_assisted_itinerant_resource_persistence.sql",
+      "sha256": "305b7334b970fe99411ece5048adfd964f694009603516ccc6474c2c5d82d698"
+    },
+    {
+      "file": "087_participant_transition_margins.sql",
+      "sha256": "fe67550f63987681d15cc2802d19f2ee2a39ec7b6c754c6b8df67d896935a61b"
+    },
+    {
+      "file": "088_plan_planner_next_configuration.sql",
+      "sha256": "7a346ad5be956a0798a79508bb32bb8dc02b0ec84853190d3ee4fd3275321f1b"
+    },
+    {
+      "file": "089_assisted_native_sql_integrity.sql",
+      "sha256": "a42dc7c86abcfe157d1244448ac8455c1740d01aad5a69f6eaf2b75c228bfd20"
+    },
+    {
+      "file": "090_assisted_manual_snapshot_fidelity.sql",
+      "sha256": "0015226018eef7e2beb079634acb4ee731fabf233306f444542c97cf9d785a6b"
+    },
+    {
+      "file": "091_assisted_restart_bootstrap.sql",
+      "sha256": "f484b6fb65de88a17d50012001853d227488034d475c315ee12f7df7e322a8b8"
+    },
+    {
+      "file": "092_main_flow_soft_preference.sql",
+      "sha256": "3d4f8193e0d7fccc0efc385e487edad5403d8c76d7d07ed1610385e93fc79f59"
+    },
+    {
+      "file": "093_live_task_execution.sql",
+      "sha256": "7a6fc40f1a353a3b8e6d4a7f7adaceeb0afcadd266ed82c4728b2fbc6c3fb341"
+    },
+    {
+      "file": "094_operational_incidents.sql",
+      "sha256": "1ac45fb1b56ce1ef552c4b19d0d3840c60d4b80b1ae187fc82124af8eb422918"
+    },
+    {
+      "file": "095_planning_header_notes.sql",
+      "sha256": "e0188833959b5bcd2d440635f5d8ecd14203a03cfde357c48c338b710ac6cb9f"
+    },
+    {
+      "file": "096_production_execution_scope.sql",
+      "sha256": "4c73025f63fd26c12752d7cc374062f373f67141ef6b5975c1a86c48e174de3a"
+    },
+    {
+      "file": "097_audited_execution_time_corrections.sql",
+      "sha256": "a2c679c1bb8170248f86737c97480551a05d8f3b297713ba0aa9d70d2759ee31"
+    },
+    {
+      "file": "098_execution_start_workday.sql",
+      "sha256": "56af8f2e4e58ff6451d2adf79035dbd9e5df539f94cc14e401fcc221615ddfbf"
+    },
+    {
+      "file": "099_transport_group_config_integrity.sql",
+      "sha256": "c9487b83a81da96a19d8d35a5fa4c4243ddeec5e97723d3166bb4f518fd2c8f3"
+    },
+    {
+      "file": "100_data_api_explicit_grants.sql",
+      "sha256": "daa4764c56c2d878df0f39f3fd2d4ae5a119196506a55718b9a395483c589273"
+    },
+    {
+      "file": "101_admin_bulk_execution_reset.sql",
+      "sha256": "b9b5e540da92990942c1a0106caaf5176252e1bd5d675b55189e78e693bc52c1"
+    },
+    {
+      "file": "102_round_preparation_day_override.sql",
+      "sha256": "6de1884e9c657ddef1dea2a99773484e7c29cec5a7a792a4e3db7c8ff44b6036"
+    },
+    {
+      "file": "103_atomic_task_template_inverse.sql",
+      "sha256": "5a198912564554f83ba649774fe679f63fd9c86d9944acbd288087f598caa34a"
+    },
+    {
+      "file": "104_operation_continuity.sql",
+      "sha256": "acab8671be1d15e97180d9d6b41680ae61f60eb9dbe1e57924d0d841404f4a0e"
+    },
+    {
+      "file": "105_new_day_planner_configuration.sql",
+      "sha256": "0418a3e0b227612df502a1a5c7e00d767d7b66c4b11848a9ceb659aabd81bb9f"
+    },
+    {
+      "file": "106_itinerant_physical_composition.sql",
+      "sha256": "e2b793b11e1e88a144ce0d23dd02d24ccc915e932bb61d9d74349c41bb7422ac"
+    },
+    {
+      "file": "107_assisted_post_bootstrap_additions.sql",
+      "sha256": "bd299c97f55a87935e936f9f07f943ebc89d4558fafb3f229621305ac2d707ec"
+    }
+  ],
+  "transport": [
+    {
+      "path": "/rest/v1/rpc/snapshot_plan_itinerant_units",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 204,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/initialize_day_config_revision",
+      "method": "POST",
+      "contentLength": "6766",
+      "receivedBytes": 6766,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/assisted_bootstrap_source_token",
+      "method": "POST",
+      "contentLength": "15",
+      "receivedBytes": 15,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/assisted_guarded_bootstrap_session",
+      "method": "POST",
+      "contentLength": "8536",
+      "receivedBytes": 8536,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/assisted_finish_proposal",
+      "method": "POST",
+      "contentLength": "21718",
+      "receivedBytes": 21718,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 204,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/assisted_apply_proposal",
+      "method": "POST",
+      "contentLength": "140",
+      "receivedBytes": 140,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/assisted_record_proposal_clean_validation",
+      "method": "POST",
+      "contentLength": "149",
+      "receivedBytes": 149,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/assisted_accept_stage",
+      "method": "POST",
+      "contentLength": "202",
+      "receivedBytes": 202,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/snapshot_plan_itinerant_units",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 204,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/initialize_day_config_revision",
+      "method": "POST",
+      "contentLength": "9194",
+      "receivedBytes": 9194,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/assisted_bootstrap_source_token",
+      "method": "POST",
+      "contentLength": "15",
+      "receivedBytes": 15,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/assisted_guarded_bootstrap_session",
+      "method": "POST",
+      "contentLength": "11741",
+      "receivedBytes": 11741,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/assisted_finish_proposal",
+      "method": "POST",
+      "contentLength": "22717",
+      "receivedBytes": 22717,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 204,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/assisted_apply_proposal",
+      "method": "POST",
+      "contentLength": "140",
+      "receivedBytes": 140,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/assisted_record_proposal_clean_validation",
+      "method": "POST",
+      "contentLength": "149",
+      "receivedBytes": 149,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/assisted_accept_stage",
+      "method": "POST",
+      "contentLength": "202",
+      "receivedBytes": 202,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    },
+    {
+      "path": "/rest/v1/rpc/execution_context",
+      "method": "POST",
+      "contentLength": "64",
+      "receivedBytes": 64,
+      "requestEnded": true,
+      "upstreamFinished": true,
+      "responseStatus": 200,
+      "error": null
+    }
+  ],
+  "journey": {
+    "remoteWrites": 0,
+    "days": [
+      {
+        "planId": 1,
+        "obligations": 4,
+        "completed": 4,
+        "stages": 1,
+        "durationMs": 5574,
+        "problemFingerprint": "fe36c4ca18370b52f21874d0ab3ed7829761a8e9cfce8979397044fbd82c87e6",
+        "branches": {
+          "coreBranches": 0,
+          "branchesExplored": 283,
+          "coreMaximumDepth": 0,
+          "branchBudgetLimit": 10000,
+          "conflictBackjumps": 0,
+          "standaloneBranches": 283,
+          "feederOrderBranches": 0,
+          "suffixDepthsSkipped": 0,
+          "architecturesChecked": 0,
+          "bundleNogoodBranches": 0,
+          "bundleNogoodsCreated": 0,
+          "bundleMatchingRepairs": 0,
+          "mainRunWitnessRepairs": 0,
+          "bundleCertifiedRepairs": 0,
+          "bundleMatchingAttempts": 0,
+          "mainRunWitnessAttempts": 0,
+          "coreLeafTransportPrunes": 0,
+          "deepestCoreDepthReached": 0,
+          "mainCandidatesEvaluated": 0,
+          "standaloneForwardChecks": 0,
+          "feederSlotMatchingChecks": 0,
+          "feederCandidatesEvaluated": 0,
+          "membershipFallbackEntered": 0,
+          "patternCandidatesExplored": 0,
+          "transportContiguousStates": 0,
+          "bundleNogoodDeduplications": 0,
+          "residualMatchingFullBuilds": 0,
+          "timelineCandidatesExplored": 0,
+          "bundleHardValidationRejects": 0,
+          "residualMatchingInvocations": 0,
+          "bundleNogoodRepairsSucceeded": 0,
+          "feederSlotMatchingEdgeChecks": 0,
+          "standaloneForwardStartChecks": 0,
+          "residualMatchingEdgeCacheHits": 0,
+          "bundleMatchingMaterializations": 0,
+          "residualMatchingPositionChecks": 0,
+          "participantMealZeroDomainPrunes": 0,
+          "residualMatchingEdgeCacheMisses": 0,
+          "mainRunEquivalentOrdersCollapsed": 0,
+          "residualMatchingBranchesExplored": 0,
+          "residualMatchingAugmentTraversals": 0,
+          "standaloneForwardWitnessCacheHits": 0,
+          "feederSlotMatchingBranchesExplored": 0,
+          "futureRoundWitnessBranchesConsumed": 0,
+          "residualMatchingIncrementalUpdates": 0,
+          "feederSlotMatchingAugmentTraversals": 0,
+          "futureRoundWitnessCompleteMatchings": 0,
+          "futureRoundWitnessSearchInvocations": 0,
+          "standaloneForwardWitnessCacheMisses": 0,
+          "futureRoundWitnessPrerequisiteChecks": 0,
+          "participantMealExactMaterializations": 1,
+          "futureRoundWitnessStructuralCandidates": 0,
+          "participantMealFutureFeasibilityChecks": 1,
+          "participantMealAnalyticCollectivePrunes": 0,
+          "participantMealFutureInfeasibleBranches": 0,
+          "futureRoundWitnessParticipantFutureChecks": 0,
+          "participantMealAffectedObligationsChecked": 0
+        },
+        "hardCount": 0,
+        "requiredCount": 0
+      },
+      {
+        "planId": 2,
+        "obligations": 6,
+        "completed": 6,
+        "stages": 1,
+        "durationMs": 9304,
+        "problemFingerprint": "0fb3766bad948f26d50054a4ac2d25fd85ee358917706041050e44aa1624676b",
+        "branches": {
+          "coreBranches": 0,
+          "branchesExplored": 150,
+          "coreMaximumDepth": 0,
+          "branchBudgetLimit": 10000,
+          "conflictBackjumps": 0,
+          "standaloneBranches": 150,
+          "feederOrderBranches": 0,
+          "suffixDepthsSkipped": 0,
+          "architecturesChecked": 0,
+          "bundleNogoodBranches": 0,
+          "bundleNogoodsCreated": 0,
+          "bundleMatchingRepairs": 0,
+          "mainRunWitnessRepairs": 0,
+          "bundleCertifiedRepairs": 0,
+          "bundleMatchingAttempts": 0,
+          "mainRunWitnessAttempts": 0,
+          "coreLeafTransportPrunes": 0,
+          "deepestCoreDepthReached": 0,
+          "mainCandidatesEvaluated": 0,
+          "standaloneForwardChecks": 0,
+          "feederSlotMatchingChecks": 0,
+          "feederCandidatesEvaluated": 0,
+          "membershipFallbackEntered": 0,
+          "patternCandidatesExplored": 0,
+          "transportContiguousStates": 0,
+          "bundleNogoodDeduplications": 0,
+          "residualMatchingFullBuilds": 0,
+          "timelineCandidatesExplored": 0,
+          "bundleHardValidationRejects": 0,
+          "residualMatchingInvocations": 0,
+          "bundleNogoodRepairsSucceeded": 0,
+          "feederSlotMatchingEdgeChecks": 0,
+          "standaloneForwardStartChecks": 0,
+          "residualMatchingEdgeCacheHits": 0,
+          "bundleMatchingMaterializations": 0,
+          "residualMatchingPositionChecks": 0,
+          "participantMealZeroDomainPrunes": 0,
+          "residualMatchingEdgeCacheMisses": 0,
+          "mainRunEquivalentOrdersCollapsed": 0,
+          "residualMatchingBranchesExplored": 0,
+          "residualMatchingAugmentTraversals": 0,
+          "standaloneForwardWitnessCacheHits": 0,
+          "feederSlotMatchingBranchesExplored": 0,
+          "futureRoundWitnessBranchesConsumed": 0,
+          "residualMatchingIncrementalUpdates": 0,
+          "feederSlotMatchingAugmentTraversals": 0,
+          "futureRoundWitnessCompleteMatchings": 0,
+          "futureRoundWitnessSearchInvocations": 0,
+          "standaloneForwardWitnessCacheMisses": 0,
+          "futureRoundWitnessPrerequisiteChecks": 0,
+          "participantMealExactMaterializations": 1,
+          "futureRoundWitnessStructuralCandidates": 0,
+          "participantMealFutureFeasibilityChecks": 1,
+          "participantMealAnalyticCollectivePrunes": 0,
+          "participantMealFutureInfeasibleBranches": 0,
+          "futureRoundWitnessParticipantFutureChecks": 0,
+          "participantMealAffectedObligationsChecked": 0
+        },
+        "hardCount": 0,
+        "requiredCount": 0
+      }
+    ],
+    "checks": [
+      "two independent UI-created days reach complete Stages with flexible/explicit order, physical preparations, dependencies, availability and exact resources; first Stage and effective input stay frozen",
+      "unknown references, stale configuration, unauthorized edits and attempts to rewrite historical day profiles are rejected",
+      "existing preflight and validators reject missing preparation, shared capacity violation, reentry, unknown family, incomplete policy and wrong explicit order"
+    ],
+    "startedAt": "2026-10-22T17:50:56.401Z",
+    "negatives": {
+      "insufficientPreparation": true,
+      "capacity": true,
+      "reentry": true,
+      "unknownFamily": true,
+      "incompletePolicy": true,
+      "wrongOrder": true,
+      "stale": true,
+      "permissions": true,
+      "protectedStage": true
+    },
+    "finishedAt": "2026-10-22T17:54:13.721Z"
+  },
+  "status": "PASS",
+  "finishedAt": "2026-10-22T17:54:22.501Z"
+}

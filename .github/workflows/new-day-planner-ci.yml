@@ -7,6 +7,7 @@ on:
       - 'server/**'
       - 'shared/**'
       - 'client/src/components/new-day-planner-editor.tsx'
+      - 'client/src/components/setup-families-editor.tsx'
       - 'client/src/components/effective-configuration.tsx'
       - 'client/src/pages/settings.tsx'
       - 'client/src/pages/plan-details.tsx'
@@ -36,11 +37,22 @@ jobs:
       - run: npm ci
       - run: npm run check && npm run check:migrations && npm run build
       - run: npx --no-install tsc -p script/demo/tsconfig.new-day.json
-      - run: node --import tsx --test --test-concurrency=1 engine/planner-next/standaloneOnly.spec.ts engine/planner-next/integration/standaloneOnly.spec.ts server/assistedBootstrapAdditions.spec.ts server/newDayPlannerConfiguration.spec.ts engine/planner-next/integration/newDayItinerantConsumption.spec.ts server/taskTemplateSnapshot.spec.ts server/effectiveConfigurationView.spec.ts server/assistedConfigRefresh.spec.ts server/apiAuthorization.spec.ts
-      - run: npx --no-install playwright install --with-deps chromium
+      - run: node --import tsx --test --test-concurrency=1 engine/planner-next/standaloneOnly.spec.ts engine/planner-next/integration/standaloneOnly.spec.ts server/assistedBootstrapAdditions.spec.ts server/newDayPlannerConfiguration.spec.ts engine/planner-next/integration/newDayItinerantConsumption.spec.ts engine/planner-next/integration/newDaySetupFamilies.spec.ts engine/planner-next/integration/spacePoliciesV2.spec.ts server/taskTemplateSnapshot.spec.ts server/effectiveConfigurationView.spec.ts server/assistedConfigRefresh.spec.ts server/apiAuthorization.spec.ts
+      - name: Select installed Chromium or provision Playwright
+        shell: bash
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [[ -n "$task_browser_path" ]]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+            "$task_browser_path" --version
+          else
+            npx --no-install playwright install --with-deps chromium
+          fi
       - run: node --import tsx script/demo/smokeNewDayIntegration.ts work/new-day-planner --post-bootstrap-additions
       - run: node --import tsx script/demo/smokeNewDayIntegration.ts work/standalone-day-planner --standalone-only --post-bootstrap-additions
       - run: node --import tsx script/demo/smokeNewDayIntegration.ts work/itinerant-new-day-planner --itinerant-consumption
+      - run: node --import tsx script/demo/smokeNewDayIntegration.ts work/setup-new-day-planner --setup-families
+      - run: node --import tsx docs/evidence/p0-u00e/v2/verify-native.ts work/setup-new-day-planner work/setup-new-day-planner/policy-comparison.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -52,3 +64,5 @@ jobs:
             work/standalone-day-planner/*.png
             work/itinerant-new-day-planner/*.json
             work/itinerant-new-day-planner/*.png
+            work/setup-new-day-planner/*.json
+            work/setup-new-day-planner/*.png

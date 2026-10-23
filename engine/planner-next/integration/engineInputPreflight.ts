@@ -969,14 +969,22 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       if (seenSetupPolicySpaces.has(spaceId)) addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.spaceId`, "Duplicate setup policy for space.", { spaceId });
       seenSetupPolicySpaces.add(spaceId);
     }
+    const v2=policy.contractVersion===2;
+    if(policy.contractVersion!==undefined&&!v2)addIssue("UNSUPPORTED_SETUP_MAPPING","setupPolicy",index,path,"Unsupported setup contract version.");
+    if(!v2&&(policy.continuityPolicy!==undefined||policy.groupingPolicy!==undefined||policy.initialPreparationMinutes!==undefined))addIssue("UNSUPPORTED_SETUP_MAPPING","setupPolicy",index,path,"Independent space policies require explicit version 2 adoption.");
+    if(v2&&(!["OFF","PREFERRED","REQUIRED"].includes(String(policy.continuityPolicy))||!["OFF","PREFERRED","REQUIRED"].includes(String(policy.groupingPolicy))))addIssue("UNSUPPORTED_SETUP_MAPPING","setupPolicy",index,path,"Declare independent continuity and setup grouping policies.");
     const families = Array.isArray(policy.families) ? policy.families : [];
     const invalidFamilies = families.filter((family) => typeof family !== "string" || family === "" || family.trim() !== family);
     const duplicateFamilies = families.filter((family, i) => typeof family === "string" && families.indexOf(family) !== i);
-    if (families.length === 0 || invalidFamilies.length || duplicateFamilies.length) addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.families`, "Setup policy families must be a non-empty set of trimmed strings.", { invalidFamilies, duplicateFamilies });
-    if (policy.oneBlockPerFamily !== true) addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.oneBlockPerFamily`, "oneBlockPerFamily must be exactly true.");
-    if (policy.reentry !== "FORBIDDEN") addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.reentry`, "reentry must be exactly FORBIDDEN.");
+    if ((!v2||policy.groupingPolicy!=="OFF")&&families.length === 0 || invalidFamilies.length || duplicateFamilies.length) addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.families`, "Setup policy families must be a non-empty set of trimmed strings.", { invalidFamilies, duplicateFamilies });
+    if (policy.oneBlockPerFamily !== (!v2||policy.groupingPolicy==="REQUIRED")) addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.oneBlockPerFamily`, "oneBlockPerFamily must be exactly true.");
+    if (policy.reentry !== (!v2||policy.groupingPolicy==="REQUIRED"?"FORBIDDEN":"ALLOWED")) addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.reentry`, "reentry must be exactly FORBIDDEN.");
     const prep = policy.preparationMinutesBetweenFamilies;
-    if (!isPositiveInteger(prep) || (isPositiveInteger(timeGrid) && isPositiveInteger(prep) && prep % timeGrid !== 0)) addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.preparationMinutesBetweenFamilies`, "Preparation minutes must be a positive integer compatible with timeGridMinutes.", { preparationMinutesBetweenFamilies: prep, timeGridMinutes: timeGrid });
+    if ((!v2?!isPositiveInteger(prep):!Number.isInteger(prep)||Number(prep)<0) || (isPositiveInteger(timeGrid) && isPositiveInteger(prep) && prep % timeGrid !== 0)) addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.preparationMinutesBetweenFamilies`, "Preparation minutes must be a positive integer compatible with timeGridMinutes.", { preparationMinutesBetweenFamilies: prep, timeGridMinutes: timeGrid });
+    if(v2&&integrationConfigurationRecord?.searchPolicy!=="EXACT_CONSTRUCTIVE")addIssue("INVALID_SEARCH_POLICY_CONFIGURATION","setupPolicy",index,path,"Version 2 space policies require EXACT_CONSTRUCTIVE; no compatibility substitution is supported.");
+    if(v2&&input.tasks.some(task=>task.status!=="cancelled"&&task.spaceId===spaceId&&task.itinerantTeamRequirement!=null&&task.itinerantTeamRequirement!=="none"))addIssue("UNSUPPORTED_SETUP_MAPPING","setupPolicy",index,path,"Version 2 space policies currently require auxiliary operations without itinerant unit choices.");
+    if(v2&&policy.groupingPolicy==="OFF"&&(prep!==0||policy.initialPreparationMinutes!==undefined||policy.orderConstraint!=="UNSPECIFIED"))addIssue("UNSUPPORTED_SETUP_MAPPING","setupPolicy",index,path,"OFF must not create setup operations or impose order.");
+    if(v2&&policy.initialPreparationMinutes!==undefined&&(!isPositiveInteger(policy.initialPreparationMinutes)||Number(policy.initialPreparationMinutes)%5!==0))addIssue("UNSUPPORTED_SETUP_MAPPING","setupPolicy",index,path,"Invalid explicit initial preparation.");
     if (policy.orderConstraint === "UNSPECIFIED") {
       if (Object.prototype.hasOwnProperty.call(policy, "familyOrder")) addIssue("UNSUPPORTED_SETUP_MAPPING", "setupPolicy", index, `${path}.familyOrder`, "UNSPECIFIED setup policy must omit familyOrder.");
     } else if (policy.orderConstraint === "EXPLICIT") {

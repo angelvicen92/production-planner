@@ -239,12 +239,16 @@ export interface EngineInputAnchoredAccompanimentInput {
 }
 
 export interface EngineInputSetupPolicyInput {
+  contractVersion?: 2;
+  continuityPolicy?: "OFF" | "PREFERRED" | "REQUIRED";
+  groupingPolicy?: "OFF" | "PREFERRED" | "REQUIRED";
+  initialPreparationMinutes?: number;
   spaceId: number;
   families: string[];
-  oneBlockPerFamily: true;
+  oneBlockPerFamily: boolean;
   orderConstraint: "EXPLICIT" | "UNSPECIFIED";
   familyOrder?: string[];
-  reentry: "FORBIDDEN";
+  reentry: "FORBIDDEN" | "ALLOWED";
   preparationMinutesBetweenFamilies: number;
 }
 

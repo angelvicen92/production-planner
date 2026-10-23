@@ -238,6 +238,13 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     const setupPolicy = setupPoliciesBySpaceId.get(id);
     const canonicalSpace = canonical("space", id);
     if (!setupPolicy) return { id: canonicalSpace, availability: [window(availability)] };
+    if(setupPolicy.contractVersion===2){
+      const familyOrder=(setupPolicy.familyOrder??[...setupPolicy.families].sort(compare)).map(family=>canonical("setup-family",`${id}:${family}`));
+      return {id:canonicalSpace,availability:[window(availability)],secondaryContinuity:setupPolicy.continuityPolicy!,setupPolicy:{contractVersion:2 as const,
+        groupingPolicy:setupPolicy.groupingPolicy!,familyOrder,flexibleFamilyOrder:setupPolicy.orderConstraint==="UNSPECIFIED",reentry:setupPolicy.reentry,
+        ...(setupPolicy.groupingPolicy!=="OFF"?{preparationMinutesBetweenFamilies:setupPolicy.preparationMinutesBetweenFamilies}:{}),
+        ...(setupPolicy.initialPreparationMinutes!==undefined?{initialPreparationMinutes:setupPolicy.initialPreparationMinutes}:{})}};
+    }
     const canonicalFamily = (family: string) => canonical("setup-family", `${id}:${family}`);
     if (setupPolicy.orderConstraint === "EXPLICIT") {
       const familyOrder = setupPolicy.familyOrder!.map(canonicalFamily);

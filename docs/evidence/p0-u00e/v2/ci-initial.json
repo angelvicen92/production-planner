@@ -1,0 +1,30 @@
+{
+  "head": "152fc31ca732ff00b7cba573706b83e3d45527e3",
+  "passedChecks": 19,
+  "cancelledChecks": [
+    "new-days",
+    "main-flow-preference-integration"
+  ],
+  "newDays": {
+    "url": "https://github.com/angelvicen92/production-planner/actions/runs/39847268571/job/120063720860",
+    "browserProvisioningStart": "2026-10-22T20:16:48Z",
+    "browserProvisioningEnd": "2026-10-22T20:27:40Z",
+    "nativeRegressionsBeforeCancellation": [
+      "U00a",
+      "U00b",
+      "U00c",
+      "U00d"
+    ],
+    "setupJourneyReached": false,
+    "existingTimeoutMinutes": 15
+  },
+  "mainPreference": {
+    "url": "https://github.com/angelvicen92/production-planner/actions/runs/39847268630/job/120063721145",
+    "nativeJourneyStart": "2026-10-22T20:30:26Z",
+    "all266AcceptedAt": "2026-10-22T20:35:50Z",
+    "cancelledAt": "2026-10-22T20:36:18Z",
+    "existingTimeoutMinutes": 20
+  },
+  "correction": "Prefer the runner Chromium binary using the already-supported executablePath; retain Playwright provisioning as fallback, all native assertions and original timeouts.",
+  "noTimeoutIncrease": true
+}

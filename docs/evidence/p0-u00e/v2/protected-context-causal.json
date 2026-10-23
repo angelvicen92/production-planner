@@ -1,0 +1,26 @@
+{
+  "beforeHead": "152fc31ca732ff00b7cba573706b83e3d45527e3",
+  "source": "native/setup-preflight.json and native/setup-replay.json",
+  "intervention": "Protect the first accepted family; request the remaining family. No authority or placement window is changed.",
+  "before": {
+    "complete": false,
+    "preparations": [],
+    "branches": 2084,
+    "reasonCodes": [
+      "ASSISTED_SCOPE_INCOMPLETE",
+      "NO_COMPLETE_HARD_VALID_ITINERANT_PLAN"
+    ]
+  },
+  "firstIncorrectDecision": "The v2 setup walk starts with an empty scheduled timeline although accepted tasks occupy the same space. It treats the next family as the first entry and cannot derive its physical transition.",
+  "correction": "Enumerate the same owned timeline with accepted tasks narrowed to their exact immutable windows; preserve accepted preparations by identity/time, derive transitions on either side, emit only new occupations. Existing explorer, ledger and hard validator remain authoritative.",
+  "focusedTests": {
+    "passed": 95,
+    "failed": 0,
+    "includes": [
+      "accepted first family and explicit order",
+      "protected preparation plus return entryIndex 2",
+      "new work before protected future task"
+    ]
+  },
+  "nativeAuthorityContinuationProof": "policy-comparison.json"
+}

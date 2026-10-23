@@ -1,3 +1,4 @@
+import {TemplateSetupFamily} from "@/components/setup-families-editor";
 import { ItinerantCompositionSettings } from '@/components/itinerant-composition-settings';
 import { NewDayPlannerEditor, TemplatePlannerRole } from "@/components/new-day-planner-editor";
 import { ContinuityGroupPicker } from "@/components/operation-continuity-editor";
@@ -2514,6 +2515,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
         tpl.defaultDuration ?? tpl.default_duration ?? 30,
       ),
       defaultCameras: Number(tpl.defaultCameras ?? tpl.default_cameras ?? 0),
+      setupId: tpl.setupId ?? tpl.setup_id ?? null,
       participantMarginBeforeMinutes: tpl.participantMarginBeforeMinutes ?? tpl.participant_margin_before_minutes ?? null,
       participantMarginAfterMinutes: tpl.participantMarginAfterMinutes ?? tpl.participant_margin_after_minutes ?? null,
       autoCreateOnContestantCreate: Boolean(
@@ -2813,6 +2815,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
           ...(editData.abbrev !== editData.initial.abbrev ? { abbrev: String(editData.abbrev ?? "").trim() || null } : {}),
           defaultDuration: Number(editData.defaultDuration ?? 30),
           defaultCameras: Number(editData.defaultCameras ?? 0),
+          ...(changed("setupId")?{setupId:editData.setupId}:{}),
           ...(changed("rulesJson")?{rulesJson:editData.rulesJson}:{}),
           ...(changed("continuityGroupId")?{continuityGroupId:editData.continuityGroupId}:{}),
           participantMarginBeforeMinutes: editData.participantMarginBeforeMinutes,
@@ -2927,6 +2930,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                 <DialogTitle>Create Template</DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
+                <TemplateSetupFamily value={formData.setupId??null} onChange={setupId=>setFormData({...formData,setupId})} disabled={!canEditDependencies}/>
                 <TemplatePlannerRole rules={formData.rulesJson} onChange={rulesJson=>setFormData({...formData,rulesJson})} disabled={!canEditDependencies}/>
                 <label className="flex items-center gap-2"><Checkbox checked={!!formData.requiresCoach} onCheckedChange={checked=>setFormData({...formData,requiresCoach:checked===true})}/>Requiere el coach asignado al participante</label>
                 <label>Espacio de la plantilla<select aria-label="Espacio de la plantilla" className="block w-full rounded border bg-background p-2" value={formData.spaceId??""} onChange={event=>{const space=(spaces as any[]).find(space=>space.id===Number(event.target.value));setFormData({...formData,spaceId:space?.id??null,zoneId:space?.zoneId??null});}}><option value="">Sin asignar</option>{(spaces as any[]).map(space=><option key={space.id} value={space.id}>{space.name}</option>)}</select></label>
@@ -3034,6 +3038,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
           const dependents = dependentsByTemplateId.get(Number(tpl?.id)) ?? [];
           return (
             <Card key={tpl.id}>
+              {isEditing ? <TemplateSetupFamily value={editData.setupId??null} onChange={setupId=>setEditData({...editData,setupId})} disabled={!canEditDependencies||isSavingEdit}/> : null}
               {isEditing ? <TemplatePlannerRole rules={editData.rulesJson} onChange={rulesJson=>setEditData({...editData,rulesJson})} disabled={!canEditDependencies||isSavingEdit}/> : null}
               {isEditing ? <ContinuityGroupPicker value={editData.continuityGroupId??null} onChange={continuityGroupId=>setEditData({...editData,continuityGroupId})} disabled={!canEditDependencies||isSavingEdit}/> : null}
               <CardHeader className="py-2 px-3 sm:px-4">

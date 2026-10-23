@@ -1,0 +1,5 @@
+{
+  "current": "v2/source-hashes.json",
+  "historicalInitialDraft": "initial-source-hashes.json",
+  "note": "The initial blocked and compact exploratory receipts remain historical. Final v2 runs use the source manifest under v2."
+}

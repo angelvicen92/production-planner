@@ -1,0 +1,151 @@
+{
+  "spaceAssignments": {
+    "1": [
+      1
+    ]
+  },
+  "physical": {
+    "id": 1,
+    "resourceItemId": 1,
+    "typeId": 1,
+    "typeCode": "setup_equipment",
+    "typeName": "Material de montaje",
+    "name": "Equipo de iluminación",
+    "isAvailable": true,
+    "availabilityStart": null,
+    "availabilityEnd": null
+  },
+  "occupations": {
+    "protectedPlacements": [
+      {
+        "id": "task:5",
+        "duration": 5,
+        "spaceId": "space:1",
+        "dependencies": [],
+        "requiredResourceIds": [
+          "plan-resource:1"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:3",
+        "setupFamilyId": "setup-family:1:1970921417",
+        "start": 545,
+        "end": 550
+      },
+      {
+        "id": "task:6",
+        "duration": 15,
+        "spaceId": "space:1",
+        "dependencies": [
+          "task:5"
+        ],
+        "requiredResourceIds": [
+          "plan-resource:1"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:3",
+        "setupFamilyId": "setup-family:1:1846769187",
+        "start": 560,
+        "end": 575
+      },
+      {
+        "id": "task:7",
+        "duration": 10,
+        "spaceId": "space:1",
+        "dependencies": [
+          "task:6"
+        ],
+        "requiredResourceIds": [
+          "plan-resource:1"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:3",
+        "setupFamilyId": "setup-family:1:359692235",
+        "start": 605,
+        "end": 615
+      },
+      {
+        "id": "task:8",
+        "duration": 5,
+        "spaceId": "space:1",
+        "dependencies": [],
+        "requiredResourceIds": [
+          "plan-resource:1"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:4",
+        "setupFamilyId": "setup-family:1:1970921417",
+        "start": 550,
+        "end": 555
+      },
+      {
+        "id": "task:9",
+        "duration": 15,
+        "spaceId": "space:1",
+        "dependencies": [
+          "task:8"
+        ],
+        "requiredResourceIds": [
+          "plan-resource:1"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:4",
+        "setupFamilyId": "setup-family:1:1846769187",
+        "start": 575,
+        "end": 590
+      },
+      {
+        "id": "task:10",
+        "duration": 10,
+        "spaceId": "space:1",
+        "dependencies": [
+          "task:9"
+        ],
+        "requiredResourceIds": [
+          "plan-resource:1"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:4",
+        "setupFamilyId": "setup-family:1:359692235",
+        "start": 595,
+        "end": 605
+      }
+    ],
+    "protectedOperationalMeals": [],
+    "protectedSetupPreparations": [
+      {
+        "id": "setup-preparation:space:1:setup-family:1:1846769187:1",
+        "end": 560,
+        "start": 555,
+        "spaceId": "space:1",
+        "duration": 5,
+        "entryIndex": 1,
+        "setupFamilyId": "setup-family:1:1846769187",
+        "kind": "setup-preparation"
+      },
+      {
+        "id": "setup-preparation:space:1:setup-family:1:359692235:1",
+        "end": 595,
+        "start": 590,
+        "spaceId": "space:1",
+        "duration": 5,
+        "entryIndex": 1,
+        "setupFamilyId": "setup-family:1:359692235",
+        "kind": "setup-preparation"
+      }
+    ],
+    "protectedRoundPreparations": [],
+    "protectedParticipantMeals": []
+  }
+}

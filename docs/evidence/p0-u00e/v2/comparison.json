@@ -1,0 +1,40 @@
+{
+  "status": "PASS",
+  "authorizedBase": "3a05cb099a74d7263c0d630d7055746fcd722114",
+  "a2": {
+    "fullReportsIdenticalExceptDurations": true,
+    "allStagesIdentical": true,
+    "obligations": 266,
+    "stages": 11,
+    "branches": 27049,
+    "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d"
+  },
+  "u00c": [
+    {
+      "profile": "main",
+      "rebootstrapSnapshotsIdentical": true,
+      "historicalStagePreserved": true
+    },
+    {
+      "profile": "standalone",
+      "rebootstrapSnapshotsIdentical": true,
+      "historicalStagePreserved": true
+    }
+  ],
+  "u00d": [
+    {
+      "label": "technical",
+      "obligations": 4,
+      "problemFingerprint": "ae17ff334069e181a1c0e5f1f579bfa8d4cb7b57a460e7f6daa345bbe3a600d6",
+      "identityMapFingerprint": "059039e655d0c0231ab65152d9411506391e84f3811cb0747a1de9624715ae21",
+      "stageIdentical": true
+    },
+    {
+      "label": "auxiliary",
+      "obligations": 4,
+      "problemFingerprint": "29334aaa162ba1bde342132c77a09bd2d8fd3b3f507f55a19b8275eb42c98d57",
+      "identityMapFingerprint": "dbdd947b7e7e15795ffc83c139d96ab347c358e944a984e57e86c9064da8deca",
+      "stageIdentical": true
+    }
+  ]
+}

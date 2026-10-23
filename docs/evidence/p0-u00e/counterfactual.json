@@ -1,0 +1,1353 @@
+{
+  "counterfactual": {
+    "planId": 1,
+    "taskTemplateSnapshotContractVersion": 2,
+    "taskTemplateSnapshotCount": 2,
+    "taskTemplateSnapshotSources": {
+      "inherited": 2,
+      "legacy_backfill": 0,
+      "ad_hoc_from_default": 0
+    },
+    "taskTemplateSnapshotFingerprint": "59b3a143ac4c0bc0934f35557b10205e12e53c93ca5be4e2ee1b091331ca4fa3",
+    "planZoneSettings": [
+      {
+        "id": 1,
+        "zoneId": 1,
+        "availabilityStart": null,
+        "availabilityEnd": null,
+        "source": "default",
+        "name": "Montajes nuevos",
+        "mealStartPreferred": null,
+        "mealEndPreferred": null,
+        "groupingLevel": 0,
+        "groupingMinChain": 4,
+        "maxTemplateChanges": 4,
+        "spaceMealBreakMinutes": null
+      }
+    ],
+    "planSpaceSettings": [
+      {
+        "id": 1,
+        "spaceId": 1,
+        "zoneId": 1,
+        "availabilityStart": null,
+        "availabilityEnd": null,
+        "source": "default",
+        "name": "Espacio compartido",
+        "parentSpaceId": null,
+        "priorityLevel": 1,
+        "groupingLevel": 0,
+        "groupingMinChain": 4,
+        "groupingApplyToDescendants": false
+      }
+    ],
+    "workDay": {
+      "start": "09:00",
+      "end": "18:00"
+    },
+    "defaultParticipantTransitionMinutes": 5,
+    "mealMode": "global_hard_break",
+    "meal": {
+      "start": "13:00",
+      "end": "14:00"
+    },
+    "globalHardBreaks": [],
+    "protectedBreaks": [],
+    "mealTaskTemplateId": null,
+    "camerasAvailable": 0,
+    "taskTemplateNameById": {
+      "1": "Montaje A",
+      "2": "Montaje B"
+    },
+    "zoneResourceAssignments": {},
+    "spaceResourceAssignments": {},
+    "spaceParentById": {
+      "1": null
+    },
+    "spaceNameById": {
+      "1": "Espacio compartido"
+    },
+    "spaceCapacityById": {},
+    "spaceIsExclusiveById": {
+      "1": true
+    },
+    "spacePriorityById": {
+      "1": 1
+    },
+    "zoneIdBySpaceId": {
+      "1": 1
+    },
+    "spaceIdsByZoneId": {
+      "1": [
+        1
+      ]
+    },
+    "groupingBySpaceId": {},
+    "minimizeChangesBySpace": {},
+    "zoneResourceTypeRequirements": {},
+    "spaceResourceTypeRequirements": {},
+    "planResourceItems": [],
+    "coachResourceIds": [],
+    "vocalCoachPlanResourceItemIdByContestantId": {},
+    "resourceItemComponents": {},
+    "resourceBundles": [],
+    "resourceBundleComponents": [],
+    "resourceBundleSpaceAffinities": [],
+    "resourceBundleLoadWarnings": [],
+    "contestantAvailabilityById": {
+      "1": {
+        "start": "09:00",
+        "end": "12:00"
+      },
+      "2": {
+        "start": "09:00",
+        "end": "12:00"
+      }
+    },
+    "optimizerSnapshotContractVersion": 1,
+    "optimizerSnapshotSource": "INHERITED",
+    "optimizerSnapshotEditingMode": "BASIC",
+    "optimizerSnapshotFingerprint": "4b770099c9e87063d68e2fbef0ad2fcce91e364d9e03b2fc8967ee74ca4a422f",
+    "optimizerLegacyAdapterVersion": 1,
+    "optimizerCompatibilityWarnings": [],
+    "optimizerIgnoredActiveHeuristics": [],
+    "optimizerMainZoneId": null,
+    "optimizerPrioritizeMainZone": false,
+    "optimizerGroupBySpaceAndTemplate": false,
+    "groupingZoneIds": [],
+    "maxTemplateChangesByZoneId": {},
+    "spaceMealBreakMinutesByZoneId": {},
+    "optimizerMainZonePriorityLevel": 0,
+    "optimizerGroupingLevel": 0,
+    "optimizerMainZoneOptFinishEarly": false,
+    "optimizerMainZoneOptKeepBusy": false,
+    "optimizerContestantCompactLevel": 0,
+    "optimizerContestantStayInZoneLevel": 0,
+    "optimizerNearHardBreaksMax": 0,
+    "optimizerWeights": {
+      "mainZoneFinishEarly": 0,
+      "mainZoneKeepBusy": 0,
+      "contestantCompact": 0,
+      "groupBySpaceTemplateMatch": 0,
+      "groupBySpaceActive": 0,
+      "contestantStayInZone": 0,
+      "contestantTotalSpan": 0
+    },
+    "tasks": [
+      {
+        "id": 1,
+        "planId": 1,
+        "templateId": 1,
+        "templateName": "Montaje A",
+        "resourceRequirements": null,
+        "zoneId": 1,
+        "spaceId": 1,
+        "_invalidSpaceId": null,
+        "_unplannedHint": null,
+        "contestantId": 1,
+        "contestantName": "Ada montaje",
+        "status": "pending",
+        "itinerantTeamId": null,
+        "allowedItinerantTeamIds": [],
+        "itinerantTeamRequirement": "none",
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "hasDependency": false,
+        "dependsOnTemplateIds": [],
+        "dependsOnTaskIds": [],
+        "dependsOnTemplateId": null,
+        "dependsOnTaskId": null,
+        "durationOverrideMin": 10,
+        "camerasOverride": 0,
+        "startPlanned": null,
+        "endPlanned": null,
+        "lockedStart": null,
+        "lockedEnd": null,
+        "lockType": null,
+        "startReal": null,
+        "endReal": null,
+        "assignedResourceIds": null,
+        "plannerNextKind": "auxiliary",
+        "operationalRole": "productive_task",
+        "setupFamilyId": "101"
+      },
+      {
+        "id": 2,
+        "planId": 1,
+        "templateId": 2,
+        "templateName": "Montaje B",
+        "resourceRequirements": null,
+        "zoneId": 1,
+        "spaceId": 1,
+        "_invalidSpaceId": null,
+        "_unplannedHint": null,
+        "contestantId": 1,
+        "contestantName": "Ada montaje",
+        "status": "pending",
+        "itinerantTeamId": null,
+        "allowedItinerantTeamIds": [],
+        "itinerantTeamRequirement": "none",
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "hasDependency": false,
+        "dependsOnTemplateIds": [],
+        "dependsOnTaskIds": [],
+        "dependsOnTemplateId": null,
+        "dependsOnTaskId": null,
+        "durationOverrideMin": 10,
+        "camerasOverride": 0,
+        "startPlanned": null,
+        "endPlanned": null,
+        "lockedStart": null,
+        "lockedEnd": null,
+        "lockType": null,
+        "startReal": null,
+        "endReal": null,
+        "assignedResourceIds": null,
+        "plannerNextKind": "auxiliary",
+        "operationalRole": "productive_task",
+        "setupFamilyId": "202"
+      },
+      {
+        "id": 3,
+        "planId": 1,
+        "templateId": 1,
+        "templateName": "Montaje A",
+        "resourceRequirements": null,
+        "zoneId": 1,
+        "spaceId": 1,
+        "_invalidSpaceId": null,
+        "_unplannedHint": null,
+        "contestantId": 2,
+        "contestantName": "Berta montaje",
+        "status": "pending",
+        "itinerantTeamId": null,
+        "allowedItinerantTeamIds": [],
+        "itinerantTeamRequirement": "none",
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "hasDependency": false,
+        "dependsOnTemplateIds": [],
+        "dependsOnTaskIds": [],
+        "dependsOnTemplateId": null,
+        "dependsOnTaskId": null,
+        "durationOverrideMin": 10,
+        "camerasOverride": 0,
+        "startPlanned": null,
+        "endPlanned": null,
+        "lockedStart": null,
+        "lockedEnd": null,
+        "lockType": null,
+        "startReal": null,
+        "endReal": null,
+        "assignedResourceIds": null,
+        "plannerNextKind": "auxiliary",
+        "operationalRole": "productive_task",
+        "setupFamilyId": "101"
+      },
+      {
+        "id": 4,
+        "planId": 1,
+        "templateId": 2,
+        "templateName": "Montaje B",
+        "resourceRequirements": null,
+        "zoneId": 1,
+        "spaceId": 1,
+        "_invalidSpaceId": null,
+        "_unplannedHint": null,
+        "contestantId": 2,
+        "contestantName": "Berta montaje",
+        "status": "pending",
+        "itinerantTeamId": null,
+        "allowedItinerantTeamIds": [],
+        "itinerantTeamRequirement": "none",
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "hasDependency": false,
+        "dependsOnTemplateIds": [],
+        "dependsOnTaskIds": [],
+        "dependsOnTemplateId": null,
+        "dependsOnTaskId": null,
+        "durationOverrideMin": 10,
+        "camerasOverride": 0,
+        "startPlanned": null,
+        "endPlanned": null,
+        "lockedStart": null,
+        "lockedEnd": null,
+        "lockType": null,
+        "startReal": null,
+        "endReal": null,
+        "assignedResourceIds": null,
+        "plannerNextKind": "auxiliary",
+        "operationalRole": "productive_task",
+        "setupFamilyId": "202"
+      }
+    ],
+    "locks": [],
+    "plannerNextMaterializationIssues": [],
+    "plannerNext": {
+      "searchPolicy": "EXACT_CONSTRUCTIVE",
+      "searchBudget": {
+        "bestK": 3,
+        "maxBacktracks": 50,
+        "maxPatterns": 20,
+        "maxBranchExpansions": 10000
+      },
+      "timeGridMinutes": 5,
+      "participantTransitionMinutes": 5,
+      "resourceTransitionMinutes": 5,
+      "profile": "STANDALONE_ONLY"
+    },
+    "itinerantCompositionSnapshot": {
+      "contractVersion": 1,
+      "units": []
+    },
+    "itinerantTeamAvailability": [],
+    "setupPolicies": [
+      {
+        "spaceId": 1,
+        "families": [
+          "101",
+          "202"
+        ],
+        "oneBlockPerFamily": true,
+        "orderConstraint": "UNSPECIFIED",
+        "reentry": "FORBIDDEN",
+        "preparationMinutesBetweenFamilies": 10
+      }
+    ]
+  },
+  "adapter": {
+    "identityMap": [
+      {
+        "namespace": "participant",
+        "sourceId": "1",
+        "canonicalId": "participant:1"
+      },
+      {
+        "namespace": "participant",
+        "sourceId": "2",
+        "canonicalId": "participant:2"
+      },
+      {
+        "namespace": "plan",
+        "sourceId": "1",
+        "canonicalId": "plan:1"
+      },
+      {
+        "namespace": "setup-family",
+        "sourceId": "1:101",
+        "canonicalId": "setup-family:1:101"
+      },
+      {
+        "namespace": "setup-family",
+        "sourceId": "1:202",
+        "canonicalId": "setup-family:1:202"
+      },
+      {
+        "namespace": "space",
+        "sourceId": "1",
+        "canonicalId": "space:1"
+      },
+      {
+        "namespace": "task",
+        "sourceId": "1",
+        "canonicalId": "task:1"
+      },
+      {
+        "namespace": "task",
+        "sourceId": "2",
+        "canonicalId": "task:2"
+      },
+      {
+        "namespace": "task",
+        "sourceId": "3",
+        "canonicalId": "task:3"
+      },
+      {
+        "namespace": "task",
+        "sourceId": "4",
+        "canonicalId": "task:4"
+      },
+      {
+        "namespace": "template",
+        "sourceId": "1",
+        "canonicalId": "template:1"
+      },
+      {
+        "namespace": "template",
+        "sourceId": "2",
+        "canonicalId": "template:2"
+      },
+      {
+        "namespace": "zone",
+        "sourceId": "1",
+        "canonicalId": "zone:1"
+      }
+    ],
+    "diagnostics": {
+      "taskCount": 4,
+      "planifiableTaskCount": 4,
+      "protectedTaskCount": 0,
+      "cancelledTaskCount": 0,
+      "pendingPlanningDiscardCount": 0,
+      "lockCount": 0,
+      "participantCount": 2,
+      "coachReferenceCount": 0,
+      "missingCoachReferenceCount": 0,
+      "spaceCount": 1,
+      "referencedSpaceCount": 1,
+      "describedSpaceCount": 1,
+      "zoneCount": 1,
+      "planResourceCount": 0,
+      "requiredPlanResourceCount": 0,
+      "usableRequiredPlanResourceCount": 0,
+      "unusableRequiredPlanResourceCount": 0,
+      "protectedTaskResourceAvailabilityConflictCount": 0,
+      "requiredSpaceCount": 1,
+      "usableRequiredSpaceCount": 1,
+      "unusableRequiredSpaceCount": 0,
+      "requiredZoneCount": 1,
+      "protectedTaskSpatialAvailabilityConflictCount": 0,
+      "resourceItemCount": 0,
+      "resourceAssignmentReferenceCount": 0,
+      "resourceComponentReferenceCount": 0,
+      "missingResourceReferenceCount": 0,
+      "dependencyCount": 0,
+      "breakCount": 1,
+      "participantScopedMealCount": 0,
+      "supportedParticipantScopedMealCount": 0,
+      "unsupportedParticipantScopedMealCount": 0,
+      "transportConfigured": false,
+      "setupConfigurationDetected": false,
+      "integrationConfigurationPresent": true,
+      "mainFlowConfigurationComplete": false,
+      "searchPolicyConfigurationPresent": true,
+      "searchBudgetConfigurationComplete": true,
+      "timeGridVerifiable": true,
+      "transitionConfigurationComplete": true,
+      "anchoredOperationContractPresent": false,
+      "unresolvedTaskRoleCount": 0,
+      "missingDurationTaskCount": 0,
+      "missingAvailabilityCounts": {
+        "participants": 0,
+        "spaces": 0,
+        "resources": 0
+      },
+      "unsupportedCapabilityCodes": [],
+      "readOnly": true
+    },
+    "issues": [],
+    "sourceFingerprint": "1d5965c64e8c8e064b1181479bd8edbe47c26ca7ba3d620461b1399c78beab29",
+    "identityMapFingerprint": "6bce5469a2ea73cac8c100ed2c6399cf1d6257180229714c79dec438b9dec0b8",
+    "readOnly": true,
+    "status": "SUPPORTED",
+    "problem": {
+      "day": {
+        "start": 540,
+        "end": 1080
+      },
+      "protectedMeal": {
+        "start": 780,
+        "end": 840
+      },
+      "spaces": [
+        {
+          "id": "space:1",
+          "availability": [
+            {
+              "start": 540,
+              "end": 1080
+            }
+          ],
+          "secondaryContinuity": "REQUIRED",
+          "setupPolicy": {
+            "familyOrder": [
+              "setup-family:1:101",
+              "setup-family:1:202"
+            ],
+            "flexibleFamilyOrder": true,
+            "reentry": "FORBIDDEN",
+            "preparationMinutesBetweenFamilies": 10
+          }
+        }
+      ],
+      "resources": [],
+      "participants": [
+        {
+          "id": "participant:1",
+          "availability": [
+            {
+              "start": 540,
+              "end": 720
+            }
+          ]
+        },
+        {
+          "id": "participant:2",
+          "availability": [
+            {
+              "start": 540,
+              "end": 720
+            }
+          ]
+        }
+      ],
+      "coaches": [],
+      "tasks": [
+        {
+          "id": "task:1",
+          "duration": 10,
+          "spaceId": "space:1",
+          "dependencies": [],
+          "participantMarginBeforeMinutes": 0,
+          "participantMarginAfterMinutes": 0,
+          "kind": "auxiliary",
+          "participantId": "participant:1",
+          "setupFamilyId": "setup-family:1:101"
+        },
+        {
+          "id": "task:2",
+          "duration": 10,
+          "spaceId": "space:1",
+          "dependencies": [],
+          "participantMarginBeforeMinutes": 0,
+          "participantMarginAfterMinutes": 0,
+          "kind": "auxiliary",
+          "participantId": "participant:1",
+          "setupFamilyId": "setup-family:1:202"
+        },
+        {
+          "id": "task:3",
+          "duration": 10,
+          "spaceId": "space:1",
+          "dependencies": [],
+          "participantMarginBeforeMinutes": 0,
+          "participantMarginAfterMinutes": 0,
+          "kind": "auxiliary",
+          "participantId": "participant:2",
+          "setupFamilyId": "setup-family:1:101"
+        },
+        {
+          "id": "task:4",
+          "duration": 10,
+          "spaceId": "space:1",
+          "dependencies": [],
+          "participantMarginBeforeMinutes": 0,
+          "participantMarginAfterMinutes": 0,
+          "kind": "auxiliary",
+          "participantId": "participant:2",
+          "setupFamilyId": "setup-family:1:202"
+        }
+      ],
+      "profile": "STANDALONE_ONLY",
+      "participantTransitionMinutes": 5,
+      "resourceTransitionMinutes": 5,
+      "budget": {
+        "bestK": 3,
+        "maxBacktracks": 50,
+        "maxPatterns": 20,
+        "maxBranchExpansions": 10000
+      },
+      "searchPolicy": "EXACT_CONSTRUCTIVE",
+      "auxiliaryPolicy": {
+        "participantPresencePreference": "OFF"
+      }
+    },
+    "reasonCodes": [],
+    "problemFingerprint": "0e751283549aa951136753093e218cabe1d02a105c13cb5d76cd90ec12749b8f"
+  },
+  "geometry": {
+    "outcome": "COMPLETE",
+    "evidence": {
+      "branchesExplored": 282,
+      "startsExplored": 108,
+      "maximumDepth": 4,
+      "completeCandidateCount": 54,
+      "familyOrderCandidateCounts": {
+        "setup-family:1:101>setup-family:1:202": 27,
+        "setup-family:1:202>setup-family:1:101": 27
+      },
+      "matchingAttempts": 282,
+      "matchingSuccesses": 120,
+      "permutationBranchesAvoided": 120
+    }
+  },
+  "validation": {
+    "hardValid": true,
+    "dependencyViolationCount": 0,
+    "overlapViolationCount": 0,
+    "transitionViolationCount": 0,
+    "availabilityViolationCount": 0,
+    "taskAvailabilityViolationCount": 0,
+    "blockViolationCount": 0,
+    "resourceAvailabilityViolationCount": 0,
+    "resourceOverlapViolationCount": 0,
+    "resourceTransitionViolationCount": 0,
+    "secondaryContinuityViolationCount": 0,
+    "setupViolationCount": 0,
+    "setupPreparationViolationCount": 0,
+    "jointGroupViolationCount": 0,
+    "technicalOperationViolationCount": 0,
+    "technicalChainViolationCount": 0,
+    "spaceMealViolationCount": 0,
+    "mainFlowMealViolationCount": 0,
+    "anchoredAccompanimentViolationCount": 0,
+    "participantMealViolationCount": 0,
+    "resourceMealViolationCount": 0,
+    "itinerantUnitMealViolationCount": 0,
+    "reasonCodes": [],
+    "unstructuredReasonCodes": [],
+    "violations": []
+  },
+  "result": {
+    "proposal": [
+      {
+        "id": "task:3",
+        "duration": 10,
+        "spaceId": "space:1",
+        "dependencies": [],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:2",
+        "setupFamilyId": "setup-family:1:101",
+        "start": 670,
+        "end": 680
+      },
+      {
+        "id": "task:1",
+        "duration": 10,
+        "spaceId": "space:1",
+        "dependencies": [],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:1",
+        "setupFamilyId": "setup-family:1:101",
+        "start": 680,
+        "end": 690
+      },
+      {
+        "id": "task:4",
+        "duration": 10,
+        "spaceId": "space:1",
+        "dependencies": [],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:2",
+        "setupFamilyId": "setup-family:1:202",
+        "start": 700,
+        "end": 710
+      },
+      {
+        "id": "task:2",
+        "duration": 10,
+        "spaceId": "space:1",
+        "dependencies": [],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:1",
+        "setupFamilyId": "setup-family:1:202",
+        "start": 710,
+        "end": 720
+      }
+    ],
+    "evidence": {
+      "scopeTaskCount": 4,
+      "scopeTaskIds": [
+        "task:1",
+        "task:2",
+        "task:3",
+        "task:4"
+      ],
+      "supportingTaskIds": [],
+      "supportingReasonByTaskId": {},
+      "protectedPlacementCount": 0,
+      "protectedOperationalMeals": [],
+      "protectedSetupPreparations": [],
+      "protectedRoundPreparations": [],
+      "protectedRoundPreparationIds": [],
+      "protectedRoundPreparationCount": 0,
+      "protectedParticipantMeals": [],
+      "retainedParticipantMealSourceIds": [],
+      "protectedPlacementsPreserved": true,
+      "proposalCount": 1,
+      "completeForScope": true,
+      "hardValid": true,
+      "prerequisiteSharedCapacityChecks": 0,
+      "prerequisiteSharedCapacityPrunes": 0,
+      "prerequisiteSharedCapacityAbstentions": 0,
+      "prerequisiteSharedCapacityChecksByAuthority": {},
+      "prerequisiteSharedCapacityAbstentionsByAuthority": {},
+      "firstSharedCapacityPrune": null,
+      "firstSharedCapacityPass": null,
+      "sharedCapacityFingerprint": null,
+      "requiredValid": true,
+      "fingerprint": "a5b66d1c6ca4db7bbb02f8bb8d864587e6448bec1fb4892239467a344986d4c0",
+      "priorFutureStructuralWitnessFound": false,
+      "priorFutureStructuralWitnessFingerprint": null,
+      "priorFutureStructuralWitnessRevalidation": null,
+      "priorFutureStructuralWitnessRejectCause": null,
+      "priorFutureStructuralWitnessRejectDetails": null,
+      "priorFutureStructuralWitnessReused": false,
+      "priorFutureStructuralWitnessFallbackEntered": false,
+      "futureItinerantWitnessSearchInvocations": 0,
+      "futureWitnessSet": {
+        "futureWitnessSetSearchInvocations": 1,
+        "futureWitnessSetUnits": 0,
+        "futureWitnessSetCombinationsAttempted": 1,
+        "futureWitnessSetBacktracks": 0,
+        "futureWitnessSetBranchesConsumed": 0,
+        "futureWitnessSetFound": 1,
+        "futureWitnessSetInconclusiveCombinations": 0,
+        "byIdentity": {},
+        "finalSet": {
+          "identities": [],
+          "witnessFingerprints": [],
+          "fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "ephemeralContextCount": 0,
+          "mealReservations": [],
+          "totalBranches": 0
+        }
+      },
+      "futureWitnessSetCandidateTraces": [
+        {
+          "geometryFingerprint": "b461f29809e6b1c3650ca48695e2e03bbb082055560c76a05b75168e6ce69e8d",
+          "frontiers": {},
+          "outcome": "FOUND",
+          "attempts": 1,
+          "roundAlternatives": 0,
+          "itineraryAlternatives": 0,
+          "mealPrunes": 0,
+          "branches": 0,
+          "setFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        }
+      ],
+      "futureItinerantWitnessCandidates": 0,
+      "futureItinerantWitnessBranchesConsumed": 0,
+      "futureItinerantWitnessesFound": 0,
+      "futureItinerantWitnessFingerprint": null,
+      "futureItinerantWitnessSupportingFingerprint": null,
+      "futureItinerantWitnessRejectsByAuthority": {},
+      "futureItinerantWitnessFirstReject": null,
+      "futureItinerantPriorRevalidation": null,
+      "futureItinerantPriorRejectCause": null,
+      "futureItinerantPriorPreviousFrontier": null,
+      "futureItinerantPriorCurrentFrontier": null,
+      "futureItinerantPriorRevalidationMs": 0,
+      "futureItinerantPrerequisiteSearchMs": 0,
+      "futureItinerantStructuralSearchMs": 0,
+      "futureItinerantParticipantFutureMs": 0,
+      "futureItinerantTechnicalFutureMs": 0,
+      "futureItinerantParticipantMealsMs": 0,
+      "futureItinerantOperationalMealsMs": 0,
+      "priorItinerantWitnessFound": false,
+      "priorItinerantWitnessRevalidation": null,
+      "priorItinerantWitnessRejectCause": null,
+      "priorItinerantWitnessReused": false,
+      "priorItinerantWitnessFallbackEntered": false,
+      "ephemeralSupportingPlacements": [],
+      "acceptedSupportingPlacements": [],
+      "futureStructuralWitnesses": [],
+      "branchesBeforeCurrentContinuation": null,
+      "selectedPipelineWitnessDiagnostic": null,
+      "selectedPipelineWitnessAuthority": null,
+      "selectedMealWitnesses": {
+        "participant": {
+          "scheduled": [],
+          "fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "finalSelectionOrder": []
+        },
+        "operational": {
+          "scheduled": [],
+          "fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "resource": [],
+        "itinerantUnit": []
+      },
+      "fixedMainBundle": {
+        "fixedMainBundlePathEntered": false,
+        "protectedMainCount": 0,
+        "protectedMainArchitectureFingerprint": null,
+        "protectedMainSlots": [],
+        "fixedMainBundleGraphPrepared": false,
+        "fixedMainBundlePreparedEdges": 0,
+        "fixedMainBundleCandidatePositions": {},
+        "fixedMainBundleZeroDomainTaskIds": [],
+        "fixedMainBundleParticipantEdgeChecks": 0,
+        "fixedMainBundleParticipantEdgePrunes": 0,
+        "fixedMainBundleFirstParticipantEdgePrune": null,
+        "fixedMainBundleMatchingAttempts": 0,
+        "fixedMainBundlePerfectMatchingFound": false,
+        "fixedMainBundleHardGatePasses": 0,
+        "fixedMainBundleHardGateRejects": 0,
+        "fixedMainBundleTaskCount": 0,
+        "fixedMainBundleTasksByKind": {},
+        "fixedSupportingGeometryFingerprint": null,
+        "fixedSupportingMatchingAttempts": 0,
+        "fixedSupportingEdges": 0,
+        "fixedSupportingZeroDomainTaskIds": [],
+        "fixedSupportingPerfectMatchingFound": false,
+        "fixedSupportingRematchedIdentityCount": 0,
+        "fixedSupportingArrivalResult": null,
+        "fixedSupportingArrivalPacketCount": 0,
+        "fixedSupportingSameGeometryRescued": false,
+        "fixedSupportingGeometriesAttempted": [],
+        "fixedSupportingGeometryFailure": null,
+        "fixedSupportingGlobalFailure": null,
+        "fixedSupportingWitnessDiagnostic": null,
+        "fixedSupportingWitnessAuthority": null,
+        "priorFutureStructuralWitnessFound": false,
+        "priorFutureStructuralWitnessFingerprint": null,
+        "priorFutureStructuralWitnessRevalidation": null,
+        "priorFutureStructuralWitnessRejectCause": null,
+        "priorFutureStructuralWitnessRejectDetails": null,
+        "priorFutureStructuralWitnessReused": false,
+        "priorFutureStructuralWitnessFallbackEntered": false,
+        "futureStructuralWitnesses": [],
+        "ephemeralSupportingPlacements": [],
+        "acceptedSupportingPlacements": [],
+        "branchesBeforeCurrentContinuation": null,
+        "protectedMainSlotChecks": 0,
+        "protectedMainSlotMismatches": 0,
+        "pipelineTasksRemovedFromStandalone": 0,
+        "pendingBeforeFixedMainBundle": 0,
+        "pendingAfterFixedMainBundle": 0,
+        "legacyFixedFeederFallbackEntered": false,
+        "legacyFixedFeederFallbackReason": null,
+        "firstFixedMainBundleRejection": null,
+        "firstFixedMainBundleHardGateDiagnostic": null
+      },
+      "selectedSetupPreparations": [
+        {
+          "id": "setup-preparation:space:1:setup-family:1:202:1",
+          "kind": "setup-preparation",
+          "spaceId": "space:1",
+          "setupFamilyId": "setup-family:1:202",
+          "entryIndex": 1,
+          "duration": 10,
+          "start": 690,
+          "end": 700
+        }
+      ],
+      "selectedRoundPreparations": [],
+      "selectedRoundPreparationIds": [],
+      "selectedRoundPreparationCount": 0,
+      "participantMealFutureFeasibility": {
+        "futureFeasibilityChecks": 1,
+        "futureInfeasibleBranches": 0,
+        "affectedObligationsChecked": 0,
+        "zeroDomainPrunes": 0,
+        "analyticCollectivePrunes": 0,
+        "blockingMealTaskIds": [],
+        "firstPrune": null
+      },
+      "operationalMealFutureReservation": {
+        "checks": 0,
+        "passes": 0,
+        "prunes": 0,
+        "abstentions": 0,
+        "irrelevantFastPasses": 0,
+        "affectedPoliciesChecked": 0,
+        "individualDomainChecks": 0,
+        "individualZeroDomainPrunes": 0,
+        "witnessValidationChecks": 0,
+        "witnessReuseHits": 0,
+        "witnessInvalidations": 0,
+        "witnessRepairs": 0,
+        "exactCollectiveChecks": 0,
+        "branchesConsumed": 0,
+        "terminalSearchesAvoided": 0,
+        "firstPrune": null,
+        "fixedContextInitializationChecks": 0,
+        "fixedContextWitnessFound": false,
+        "fixedContextWitnessFingerprint": null,
+        "preexistingZeroDomainPrunes": 0
+      },
+      "fixedMainFeederMealChecks": 0,
+      "fixedMainFeederMealPasses": 0,
+      "fixedMainFeederMealPrunes": 0,
+      "firstFixedMainFeederMealPrune": null,
+      "standaloneEntryMealWitness": null,
+      "participantFutureReservation": {
+        "checks": 0,
+        "passes": 0,
+        "prunes": 0,
+        "abstentions": 0,
+        "affectedParticipants": 0,
+        "affectedFutureTasksChecked": 0,
+        "affectedMealsChecked": 0,
+        "individualDomainChecks": 0,
+        "individualZeroDomainPrunes": 0,
+        "jointTaskMealChecks": 0,
+        "jointTaskMealPrunes": 0,
+        "collectiveChecks": 0,
+        "collectivePrunes": 0,
+        "compatiblePairChecks": 0,
+        "analyticChecks": 0,
+        "branchesConsumed": 0,
+        "macroAnalyticChecks": 0,
+        "macroAnalyticPrunes": 0,
+        "macroAnalyticAbstentions": 0,
+        "terminalExactChecks": 0,
+        "terminalExactPasses": 0,
+        "terminalExactPrunes": 0,
+        "terminalExactAbstentions": 0,
+        "terminalExactBranches": 0,
+        "firstPrune": null,
+        "firstTerminalExact": null
+      },
+      "technicalChainFutureReservation": {
+        "checks": 0,
+        "passes": 0,
+        "prunes": 0,
+        "abstentions": 0,
+        "branchesConsumed": 0,
+        "firstPrune": null,
+        "preparedAuthority": {
+          "preparedFutureStructures": [],
+          "witnessReuseChecks": 0,
+          "witnessReuseHits": 0,
+          "witnessInvalidations": 0,
+          "witnessRepairs": 0,
+          "exactRootOrderEvaluations": 0,
+          "ledgeredPermutationBranches": 0,
+          "assessCalls": 0,
+          "irrelevantFastPasses": 0,
+          "lastWitnessValidationChecks": 0,
+          "lastWitnessHits": 0,
+          "knownCandidateChecks": 0,
+          "fullCandidateScans": 0,
+          "explorerResumptions": 0,
+          "candidatePlacementChecks": 0,
+          "pressureCacheHits": 0,
+          "pressureCacheMisses": 0,
+          "rootStartsVisited": 0,
+          "rootOrdersEvaluated": 0,
+          "rootOrdersYielded": 0,
+          "domainComplete": false,
+          "exactCandidateCount": null
+        },
+        "firstMultiDecisionConflict": null,
+        "conflictBackjumps": 0,
+        "suffixDepthsSkipped": 0,
+        "constructive": {
+          "futureReservationStructures": 0,
+          "futureReservationWitnessesEvaluated": 0,
+          "futureReservationRootOrdersEvaluated": 0,
+          "futureReservationCandidatesRejectedByOtherReservations": 0,
+          "futureReservationCandidatesRejectedByNoBundleMatching": 0,
+          "futureReservationBundleMatchingAttempts": 0,
+          "futureReservationPerfectMatchings": 0,
+          "futureReservationSelectedFingerprint": null,
+          "architecturesTriedWithFutureReservation": 0,
+          "bundleEdgesBeforeReservation": 0,
+          "bundleEdgesRejectedByReservation": 0,
+          "bundleEdgesAfterReservation": 0,
+          "residualDfsEntered": true,
+          "residualDfsBranchesBeforeFirstSolution": 0,
+          "architecturesEnumerated": 0,
+          "architecturesPrepared": 0,
+          "participantBundleEdgesChecked": 0,
+          "participantBundleEdgesPruned": 0,
+          "participantBundleEdgesAbstained": 0,
+          "firstParticipantBundleEdgePrune": null,
+          "futureWitnessesTriedByArchitecture": {},
+          "preparedBundleEdges": 0,
+          "reservationFilteredEdges": 0,
+          "perfectMatchingsByArchitecture": {},
+          "hardGateRejectsByArchitecture": {},
+          "structuralSearchExhausted": true,
+          "structuralSearchBudgetExhausted": false,
+          "structuralArchitecturesFullyVisited": 0,
+          "structuralFutureDomainsFullyVisited": 0,
+          "structuralCandidatesProducedBeforeBudgetExhaustion": 0,
+          "conditionedLeafFutureRevalidations": 0,
+          "conditionedLeafFutureRevalidationPasses": 0,
+          "conditionedLeafFutureRevalidationRejects": 0,
+          "genericFutureAssessSkippedForConditionedLeaf": 0,
+          "structuralCandidateFingerprintAtHardGate": null,
+          "structuralCandidateFingerprintAtContinuation": null,
+          "structuralCandidateFingerprintBeforeStandalone": null,
+          "branchesBeforeResidualDfs": 0,
+          "selectedArchitectureFingerprint": null,
+          "selectedFutureReservationFingerprint": null,
+          "mainPatternCountGenerated": 0,
+          "mainPatternGenerationExhausted": false,
+          "mainPatternsVisited": 0,
+          "timelinesGenerated": 0,
+          "architectureStructuralProofChecks": 0,
+          "architectureStructuralProofRejects": 0,
+          "architectureStructuralRejectsByReason": {},
+          "futureDependencyStructural": {
+            "checks": 0,
+            "rejects": 0,
+            "passes": 0,
+            "abstentions": 0,
+            "firstRejection": null
+          },
+          "nominalPipelineWitnessChecks": 0,
+          "nominalPipelineWitnessFeasible": 0,
+          "nominalPipelineWitnessInfeasible": 0,
+          "nominalPipelineWitnessInconclusive": 0,
+          "nominalPipelineWitnessRejectsByReason": {},
+          "continuityRejects": 0,
+          "authorizedArchitecturesYielded": 0
+        }
+      },
+      "work": {
+        "branchesExplored": 283,
+        "coreBranches": 0,
+        "standaloneBranches": 283,
+        "coreMaximumDepth": 0,
+        "patternCandidatesExplored": 0,
+        "timelineCandidatesExplored": 0,
+        "mainCandidatesEvaluated": 0,
+        "feederCandidatesEvaluated": 0,
+        "architecturesChecked": 0,
+        "feederOrderBranches": 0,
+        "feederSlotMatchingChecks": 0,
+        "feederSlotMatchingEdgeChecks": 0,
+        "feederSlotMatchingAugmentTraversals": 0,
+        "feederSlotMatchingBranchesExplored": 0,
+        "residualMatchingInvocations": 0,
+        "residualMatchingFullBuilds": 0,
+        "residualMatchingIncrementalUpdates": 0,
+        "residualMatchingEdgeCacheHits": 0,
+        "residualMatchingEdgeCacheMisses": 0,
+        "residualMatchingPositionChecks": 0,
+        "residualMatchingAugmentTraversals": 0,
+        "residualMatchingBranchesExplored": 0,
+        "mainRunWitnessAttempts": 0,
+        "mainRunWitnessRepairs": 0,
+        "mainRunEquivalentOrdersCollapsed": 0,
+        "bundleMatchingAttempts": 0,
+        "bundleMatchingRepairs": 0,
+        "bundleMatchingMaterializations": 0,
+        "bundleHardValidationRejects": 0,
+        "bundleCertifiedRepairs": 0,
+        "bundleNogoodsCreated": 0,
+        "bundleNogoodBranches": 0,
+        "bundleNogoodDeduplications": 0,
+        "bundleNogoodRepairsSucceeded": 0,
+        "conflictBackjumps": 0,
+        "suffixDepthsSkipped": 0,
+        "deepestCoreDepthReached": 0,
+        "standaloneForwardChecks": 0,
+        "standaloneForwardStartChecks": 0,
+        "standaloneForwardWitnessCacheHits": 0,
+        "standaloneForwardWitnessCacheMisses": 0,
+        "coreLeafTransportPrunes": 0,
+        "transportContiguousStates": 0,
+        "membershipFallbackEntered": 0,
+        "participantMealFutureFeasibilityChecks": 1,
+        "participantMealFutureInfeasibleBranches": 0,
+        "participantMealAffectedObligationsChecked": 0,
+        "participantMealZeroDomainPrunes": 0,
+        "participantMealAnalyticCollectivePrunes": 0,
+        "participantMealExactMaterializations": 1,
+        "futureRoundWitnessSearchInvocations": 0,
+        "futureRoundWitnessStructuralCandidates": 0,
+        "futureRoundWitnessCompleteMatchings": 0,
+        "futureRoundWitnessParticipantFutureChecks": 0,
+        "futureRoundWitnessPrerequisiteChecks": 0,
+        "futureRoundWitnessBranchesConsumed": 0,
+        "branchBudgetLimit": 10000
+      },
+      "bundleMatching": {
+        "bundleForbiddenEdges": [],
+        "bundleRepairSequence": [],
+        "bundleTerminalCause": null,
+        "bundleNogoodsCreated": 0,
+        "bundleNogoodBranches": 0,
+        "bundleNogoodDeduplications": 0,
+        "bundleNogoodRepairsSucceeded": 0,
+        "conflictEdges": []
+      },
+      "causalDiagnostic": {
+        "waterfallByDepth": {
+          "0": {
+            "mainCandidate": 0,
+            "feederStart": 0,
+            "residualMatching": 0,
+            "continuation": 0,
+            "participantMeal": 0,
+            "standaloneForward": 0,
+            "other": 283,
+            "total": 283
+          }
+        },
+        "feederByDepth": {},
+        "feederRejections": [],
+        "feederCoachDomainEliminations": [],
+        "futureFeasibility": {
+          "totalEvaluations": 0,
+          "uniqueAuthorityStates": 0,
+          "repeatedEvaluations": 0,
+          "authorityResultCollisions": 0,
+          "negativeEvaluations": 0,
+          "repeatedNegativeEvaluations": 0,
+          "rejectsWithCertifiedBackjumpTarget": 0,
+          "evaluationsByDepth": {},
+          "repeatedByDepth": {},
+          "negativeByDepth": {},
+          "assessments": [],
+          "collisions": []
+        },
+        "bundleMaterializations": []
+      },
+      "standaloneDiagnostic": {
+        "bundleContinuationDeferrals": 0,
+        "bundleContinuationResumptions": 0,
+        "bundlePendingContinuations": 0,
+        "standaloneBranchesByDepth": {
+          "4": 1
+        },
+        "standaloneSelectionsByTaskId": {},
+        "standaloneCandidateStartsByTaskId": {},
+        "standaloneMaximumDepth": 4,
+        "standaloneCompleteLeafCount": 1,
+        "terminalTransportMaterializationAttempts": 0,
+        "macroCandidateCausalTraces": [
+          {
+            "fingerprint": "7eb33755491be9be0ec7b420da3c985509778fb95434a2a51ca56e73096a5535",
+            "macroUnitId": "setup:space:1",
+            "macroUnitKind": "SETUP_GROUP",
+            "depth": 0,
+            "candidate": {
+              "starts": [
+                {
+                  "taskId": "task:1",
+                  "start": 680,
+                  "end": 690
+                },
+                {
+                  "taskId": "task:2",
+                  "start": 710,
+                  "end": 720
+                },
+                {
+                  "taskId": "task:3",
+                  "start": 670,
+                  "end": 680
+                },
+                {
+                  "taskId": "task:4",
+                  "start": 700,
+                  "end": 710
+                }
+              ],
+              "domainSize": 54,
+              "structuralCandidateCount": 108,
+              "matchingFeasibleCandidateCount": 54,
+              "roundMatchingResult": "NOT_APPLICABLE"
+            },
+            "pendingPrerequisiteReservation": {
+              "status": "PASS",
+              "cause": null,
+              "blockingTaskId": null,
+              "authorityId": null
+            },
+            "participantFuture": {
+              "status": "NOT_CHECKED",
+              "cause": null
+            },
+            "participantMealFuture": {
+              "status": "PASS",
+              "cause": "NO_APPLICABLE_OBLIGATION"
+            },
+            "operationalMealFuture": {
+              "status": "PASS",
+              "cause": "NO_APPLICABLE_POLICY"
+            },
+            "enteredRecurseAfterMacro": true,
+            "selectedAnotherMacroUnit": false,
+            "enteredOrdinarySearch": true,
+            "firstDescendantDeadEnd": null,
+            "firstOrdinaryRejection": null,
+            "reachedCompleteLeaf": true,
+            "terminalParticipantFuture": {
+              "status": "NOT_CHECKED",
+              "cause": null
+            },
+            "outcome": "ENTERED_RESIDUAL_OR_TERMINAL"
+          }
+        ],
+        "macroCandidateCausalReconciliation": {
+          "total": 1,
+          "pruned": 0,
+          "deadEndedByAuthority": 0,
+          "enteredResidualOrTerminal": 1
+        },
+        "roundSynchronizationSharedOperationalMealPolicyIds": [],
+        "roundSynchronizationBreakVariantsConsidered": 0,
+        "roundSynchronizationSelectedBreakIntervals": [],
+        "roundSynchronizationMealAwareShapesFeasible": 0,
+        "roundSynchronizationNoBreakHolePrunes": 0,
+        "roundSynchronizationRawCompatibleEdges": 0,
+        "roundSynchronizationFutureEdgeChecks": 0,
+        "roundSynchronizationAnalyticPrunedEdges": 0,
+        "roundSynchronizationCausalForbiddenEdges": 0,
+        "roundSynchronizationIncrementalRepairs": 0,
+        "roundSynchronizationShapesRescuedByRematching": 0,
+        "roundSynchronizationMatchingTraversals": 0,
+        "roundSynchronizationTerminalFutureResult": "NOT_CHECKED",
+        "roundSynchronizationMatchingWitnesses": [],
+        "totalesMatchingAttempts": 0,
+        "terminalTransportMaterializationFailures": 0,
+        "terminalTransportWitness": null,
+        "terminalCompletionRejectionsByCause": {
+          "SUBSTANTIVE_IDENTITY_INCOMPLETE": 0,
+          "PARTICIPANT_MEAL_WITNESS_INCOMPLETE": 0,
+          "OPERATIONAL_MEAL_WITNESS_INCOMPLETE": 0,
+          "TRANSPORT_MATERIALIZATION_FAILED": 0,
+          "CANDIDATE_IDENTITY_MISMATCH": 0,
+          "VALIDATION_REJECTED": 0
+        },
+        "firstTerminalCompletionRejection": null,
+        "standaloneFirstSelectedTaskId": null,
+        "standaloneDominantPathFirst20": [],
+        "terminalDeparturePrerequisitePhaseEntered": false,
+        "terminalDeparturePrerequisiteTaskIds": [],
+        "terminalDeparturePrerequisiteBranches": 0,
+        "terminalDeparturePrerequisiteFirstCompleteCandidateAtBranch": null,
+        "terminalDeparturePrerequisiteTerminalRejectsByCause": {},
+        "standaloneFirstDominantBlocker": null,
+        "standaloneBranchesBeforeFirstOrdinaryCompleteLeaf": 282,
+        "standaloneBranchesAfterFirstOrdinaryCompleteLeaf": 1,
+        "firstHardValidCoreLeaf": {
+          "coreTaskCount": 0,
+          "pipelineMaterializedTaskCount": 0,
+          "immutableCoreTaskCount": 0,
+          "protectedTaskCount": 0,
+          "pipelineOnlySupportingExcludedCount": 0,
+          "coreTasksByKind": {},
+          "pendingSupportingTotal": 4,
+          "pendingOrdinaryNoTransport": 4,
+          "pendingDynamicTransport": 0,
+          "pendingTasksByKind": {
+            "auxiliary": 4
+          }
+        },
+        "firstHardValidCoreTasks": [],
+        "coreLeafTransportPrunes": 0,
+        "transportContiguousStates": 0,
+        "membershipFallbackEntered": 0,
+        "coreLeafArrivalEvidence": {
+          "direction": "arrival",
+          "orderedTaskIds": [],
+          "orderedParticipantIds": [],
+          "packetSizes": [],
+          "orderedDeadlines": [],
+          "packetMembers": [],
+          "starts": [],
+          "minGapMinutes": 0,
+          "construction": "contiguous",
+          "alternativesExplored": 0,
+          "classification": "CONTIGUOUS_EXACT",
+          "classificationBreakers": [],
+          "contiguousStatesExplored": 0,
+          "membershipFallbackEntered": false,
+          "taskCount": 0,
+          "candidateStartCount": 0,
+          "contextClasses": [],
+          "algorithm": "CONTIGUOUS_EXACT",
+          "statesExplored": 0,
+          "matchingChecks": 0,
+          "matchingTraversals": 0,
+          "membershipBranches": 0,
+          "budgetExhausted": false,
+          "failureCause": null,
+          "contiguousFirstDeadEnd": null
+        },
+        "corePrerequisiteReservationChecks": 0,
+        "corePrerequisiteReservationPrunes": 0,
+        "ordinaryPrerequisiteReservationChecks": 0,
+        "ordinaryPrerequisiteReservationPrunes": 0,
+        "firstPrerequisiteReservationPrune": null,
+        "firstStandaloneDeadEndCause": null,
+        "macroUnitsSelected": 1,
+        "macroSelectionOrder": [
+          "SETUP_GROUP:setup:space:1"
+        ],
+        "macroSelectionSteps": [
+          {
+            "selected": "setup:space:1",
+            "reason": "canonical-id-tiebreak",
+            "candidates": [
+              {
+                "id": "setup:space:1",
+                "kind": "SETUP_GROUP",
+                "domainSize": 54,
+                "domainMeasure": "hard-valid-top-level-macro-placements",
+                "domainExact": true,
+                "hardResourceAvailabilityMinutes": 540,
+                "totalDuration": 40,
+                "affectedTaskCount": 4,
+                "structuralCandidateCount": 108,
+                "matchingFeasibleCandidateCount": 54
+              }
+            ]
+          }
+        ],
+        "macroDomainSizes": {
+          "setup:space:1": 54
+        },
+        "ordinaryBranchesExplored": 0,
+        "itinerantAgendaPoolOperations": 0,
+        "itinerantAgendaUnitVariantsByTaskId": {},
+        "itinerantAgendaStaticStarts": 0,
+        "itinerantAgendaDynamicStarts": 0,
+        "itinerantAgendaBranchesBeforeSelection": null,
+        "itinerantAgendaBranches": 0,
+        "itinerantAgendaCandidates": 0,
+        "itinerantAgendaAssignmentsAndOrders": 0,
+        "itinerantAgendaEventBoundaryStarts": 0,
+        "itinerantAgendaFirstCompleteBranch": null,
+        "setupBlockSearchInvocations": 1,
+        "setupBlockStartsExplored": 108,
+        "setupBlockCompleteCandidateCount": 54,
+        "preferredResourceUnit": null,
+        "futureRoundWitnessSearchInvocations": 0,
+        "futureRoundWitnessStructuralCandidates": 0,
+        "futureRoundWitnessCompleteMatchings": 0,
+        "futureRoundWitnessParticipantFutureChecks": 0,
+        "futureRoundWitnessPrerequisiteChecks": 0,
+        "futureRoundWitnessBranchesConsumed": 0,
+        "futureCollectiveClosureChecks": 3,
+        "futureCollectiveClosureCacheHits": 1,
+        "futureCollectiveClosureRequiredCount": 0,
+        "futureCollectiveClosureMaximumMatching": 0,
+        "futureCollectiveClosureBranchesConsumed": 0,
+        "futureCollectiveClosureMatchingTraversals": 0,
+        "futureCollectiveClosureHall": null,
+        "futureCollectiveClosureFirstPrune": null,
+        "futureCollectiveClosureWitnessFingerprint": "33c1e3f9f0e3d5aab051668ddd4293202ef0c7ca37981be692cabc4bab30eff4",
+        "futureCollectiveClosureAbstentions": {},
+        "futureCollectiveClosureInconclusiveLeaves": 0,
+        "futureCollectiveClosureLastCertificate": {
+          "fingerprint": "33c1e3f9f0e3d5aab051668ddd4293202ef0c7ca37981be692cabc4bab30eff4",
+          "contextTaskIds": [
+            "task:1",
+            "task:2",
+            "task:3",
+            "task:4"
+          ],
+          "closureTaskIds": [],
+          "mealTaskIds": [],
+          "departureTaskIds": []
+        },
+        "futureCollectiveClosurePendingPredecessorTaskIds": [],
+        "futureCollectiveClosureFirstUncertifiedPlacement": null
+      },
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "violations": [],
+      "unstructuredReasonCodes": []
+    }
+  }
+}
