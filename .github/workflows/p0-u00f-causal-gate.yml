@@ -1,0 +1,62 @@
+name: P0 U00f transport gate
+on:
+  pull_request:
+    paths:
+      - 'engine/**'
+      - 'server/**'
+      - 'shared/newDayPlannerConfiguration.ts'
+      - 'client/src/components/new-day-planner-editor.tsx'
+      - 'script/demo/smokeNewDayIntegration.ts'
+      - 'script/demo/smokeNewDayTransportJourney.ts'
+      - 'script/diagnostics/*U00f*'
+      - 'script/diagnostics/u00f*'
+      - 'script/demo/smokeNewDayTransportDiagnostic.ts'
+      - 'script/diagnostics/tsconfig.u00f.json'
+      - 'docs/evidence/p0-u00f/**'
+      - '.github/workflows/p0-u00f-causal-gate.yml'
+  workflow_dispatch:
+jobs:
+  offline-causal-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install tsc -p script/diagnostics/tsconfig.u00f.json
+      - run: node node_modules/tsx/dist/cli.mjs --test script/diagnostics/u00fTransportGate.spec.ts
+      - run: node --import tsx script/diagnostics/analyseU00fTransportGate.ts docs/evidence/p0-u00f/native work/u00f-causal-analysis.json
+      - run: node --import tsx script/diagnostics/verifyU00fTransportProduct.ts docs/evidence/p0-u00f/implementation/native work/u00f-product-verification.json
+  native-transport:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install tsc -p script/demo/tsconfig.new-day.json
+      - run: node --import tsx --test --test-concurrency=1 engine/planner-next/integration/newDayTransport.spec.ts server/newDayPlannerConfiguration.spec.ts server/planOptimizerSnapshotPersistence.spec.ts
+      - name: Select installed Chromium or provision Playwright
+        shell: bash
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [[ -n "$task_browser_path" ]]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+          fi
+      - run: node --import tsx script/demo/smokeNewDayIntegration.ts work/u00f-native --transport
+      - run: node --import tsx script/diagnostics/verifyU00fTransportProduct.ts work/u00f-native work/u00f-native/verification.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: u00f-native-transport
+          path: |
+            work/u00f-native/*.json
+            work/u00f-native/*.png

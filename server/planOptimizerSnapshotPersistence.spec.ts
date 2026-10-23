@@ -46,6 +46,15 @@ const candidates = [
   { sourceTemplateId: 2, templateName: "OUT", planTemplateSnapshotId: 102 },
 ] as const;
 
+test("new-day transport identities survive renames and duplicate display names without name fallback",()=>{
+  const renamed=candidates.map(row=>({...row,templateName:"Mismo nombre"}));
+  const refs=resolvePlanOptimizerTransportReferencesV1(settings({arrivalTaskTemplateName:"obsoleto",departureTaskTemplateName:"obsoleto"}),renamed,
+    {arrivalTemplateId:2,departureTemplateId:1});
+  assert.deepEqual(refs,{arrivalPlanTemplateSnapshotId:102,departurePlanTemplateSnapshotId:101});
+  assert.throws(()=>resolvePlanOptimizerTransportReferencesV1(settings(),renamed,{arrivalTemplateId:999,departureTemplateId:1}),
+    (error:unknown)=>error instanceof PlanOptimizerSnapshotPersistenceError&&error.code==="ACTIVE_TRANSPORT_TEMPLATE_UNRESOLVED");
+});
+
 test("transport legacy names resolve only through unique daily template snapshot identities", () => {
   const refs = resolvePlanOptimizerTransportReferencesV1(settings(), candidates);
   assert.deepEqual(refs, {

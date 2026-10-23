@@ -31,6 +31,7 @@ export function TemplatePlannerRole({rules,onChange,disabled=false}:{rules:any;o
 
 export function NewDayPlannerEditor() {
   const query=useQuery<{revision:number;configuration:NewDayPlannerConfiguration|null}>({queryKey:[path]});
+  const templates=useQuery<Array<{id:number;name:string}>>({queryKey:["/api/task-templates"]});
   const {data:spaceRows=[]}=useSpaces();const spaces=spaceRows as Array<{id:number;name:string}>;const {role}=useUserRole();const qc=useQueryClient();
   const [value,setValue]=useState<NewDayPlannerConfiguration>(initial),[revision,setRevision]=useState(0),[saved,setSaved]=useState(false);
   useEffect(()=>{if(query.data){setValue(query.data.configuration??initial);setRevision(query.data.revision);}},[query.data]);
@@ -39,7 +40,7 @@ export function NewDayPlannerEditor() {
   const main=(key:string,field:unknown)=>{setSaved(false);setValue(previous=>previous.scenario==="MAIN_WITH_VOCAL_FEEDER"?({...previous,mainFlow:{...previous.mainFlow,[key]:field}}):previous);};
   return <Card><CardHeader><CardTitle>Planner Next para nuevas jornadas</CardTitle></CardHeader><CardContent className="space-y-4">
     <p className="text-sm">Cada día conserva su configuración original. El perfil con flujo principal admite un flujo principal real, una preparación vocal previa y un coach asignado por participante, más actividades auxiliares y técnicas. Declara los roles, espacios y dependencias en las plantillas.</p>
-    <p className="text-sm text-muted-foreground">STANDALONE_ONLY permite actividades auxiliares y técnicas sin flujo principal ni coach obligatorio. Las familias de montaje se admiten en auxiliares con participante y espacio físico exclusivo. Transporte requiere otras capacidades. La comida utiliza la configuración del día; no se crean tareas de comida ni salas adicionales.</p>
+    <p className="text-sm text-muted-foreground">STANDALONE_ONLY permite actividades auxiliares y técnicas sin flujo principal ni coach obligatorio. Las familias de montaje se admiten en auxiliares con participante y espacio físico exclusivo. Transporte utiliza las plantillas IN/OUT seleccionadas aquí y los parámetros de Transporte, congelados al crear cada jornada. La comida utiliza la configuración del día.</p>
     {value.scenario==="MAIN_WITH_VOCAL_FEEDER"?<p className="text-sm text-muted-foreground">Si hay una pausa global de comida, el fin preferido del flujo principal debe ser anterior o igual a su inicio.</p>:null}
     {query.isError?<p role="alert">No se pudo cargar la configuración. <Button variant="outline" onClick={()=>void query.refetch()}>Reintentar</Button></p>:null}
     <fieldset disabled={role!=="admin"||query.isLoading||query.isError||save.isPending} className="grid gap-3 sm:grid-cols-2">
@@ -61,6 +62,14 @@ export function NewDayPlannerEditor() {
       <label>Máximo de bloques por coach<Input aria-label="Máximo de bloques por coach" type="number" min={1} value={value.mainFlow.maxBlocksByKey} onChange={event=>main("maxBlocksByKey",Number(event.target.value))}/></label>
       <label>Mínimo de tareas por bloque<Input aria-label="Mínimo de tareas por bloque" type="number" min={1} value={value.mainFlow.minTasksPerBlock} onChange={event=>main("minTasksPerBlock",Number(event.target.value))}/></label>
       </>:null}
+      <label className="sm:col-span-2">Transporte de la jornada<select aria-label="Transporte de la jornada" className="block w-full rounded border bg-background p-2" value={value.transport==="NONE"?"NONE":"IN_OUT"} onChange={event=>{
+        setSaved(false);setValue({...value,transport:event.target.value==="NONE"?"NONE":{arrivalTemplateId:0,departureTemplateId:0}});
+      }}><option value="NONE">Sin transporte</option><option value="IN_OUT">Llegada IN y salida OUT</option></select></label>
+      {value.transport!=="NONE"?([['arrival','Llegada IN'],['departure','Salida OUT']] as const).map(([direction,label])=><label key={direction}>Plantilla de jornada {label}
+        <select aria-label={`Plantilla de jornada ${label}`} className="block w-full rounded border bg-background p-2" value={value.transport!=="NONE"?value.transport[`${direction}TemplateId`]||"":""} onChange={event=>{
+          if(value.transport!=="NONE"){setSaved(false);setValue({...value,transport:{...value.transport,[`${direction}TemplateId`]:Number(event.target.value)}});}
+        }}><option value="">Seleccionar plantilla auxiliar</option>{(templates.data??[]).map(template=><option key={template.id} value={template.id}>{template.name} · #{template.id}</option>)}</select>
+      </label>):null}
       <label className="sm:col-span-2">Montajes<select aria-label="Montajes" className="block w-full rounded border bg-background p-2" value={value.setup} onChange={event=>{
         setSaved(false);const {setupFamilies:_,...rest}=value;
         setValue(event.target.value==="FAMILIES"?{...rest,setup:"FAMILIES",searchPolicy:"EXACT_CONSTRUCTIVE",setupFamilies:{contractVersion:2,families:[],policies:[]}}:{...rest,setup:"NONE"});

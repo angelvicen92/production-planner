@@ -1,0 +1,956 @@
+{
+  "session": {
+    "id": 1,
+    "planId": 1,
+    "status": "ACTIVE",
+    "activeStageId": 4,
+    "draftBaseStageId": 4,
+    "currentConfigRevisionId": 2,
+    "draftScopeJson": {},
+    "draftSnapshotJson": {
+      "tasks": [
+        {
+          "taskId": 1,
+          "zoneId": 1,
+          "spaceId": 3,
+          "endPlanned": "09:10",
+          "startPlanned": "09:00",
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        },
+        {
+          "taskId": 2,
+          "zoneId": 1,
+          "spaceId": 2,
+          "endPlanned": "11:40",
+          "startPlanned": "11:30",
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        },
+        {
+          "taskId": 3,
+          "zoneId": 1,
+          "spaceId": 1,
+          "endPlanned": "12:00",
+          "startPlanned": "11:50",
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        },
+        {
+          "taskId": 4,
+          "zoneId": 1,
+          "spaceId": 3,
+          "endPlanned": "12:15",
+          "startPlanned": "12:05",
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        },
+        {
+          "taskId": 5,
+          "zoneId": 1,
+          "spaceId": 3,
+          "endPlanned": "09:10",
+          "startPlanned": "09:00",
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        },
+        {
+          "taskId": 6,
+          "zoneId": 1,
+          "spaceId": 2,
+          "endPlanned": "11:30",
+          "startPlanned": "11:20",
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        },
+        {
+          "taskId": 7,
+          "zoneId": 1,
+          "spaceId": 1,
+          "endPlanned": "11:50",
+          "startPlanned": "11:40",
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        },
+        {
+          "taskId": 8,
+          "zoneId": 1,
+          "spaceId": 3,
+          "endPlanned": "12:00",
+          "startPlanned": "11:50",
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        }
+      ],
+      "contractVersion": 1
+    },
+    "draftFingerprint": "00a595847aefc2dc9cbcaea0297377ce0c81fa81d1731b07ea798db258d6cfb5",
+    "draftValidationId": null,
+    "createdAt": "2026-10-23T13:24:44.626033+00:00",
+    "updatedAt": "2026-10-23T13:24:56.301575+00:00"
+  },
+  "activeStage": {
+    "id": 4,
+    "sessionId": 1,
+    "planId": 1,
+    "ordinal": 3,
+    "parentStageId": 3,
+    "scopeJson": {
+      "metadata": {},
+      "selector": {
+        "kind": "TASK_IDS",
+        "taskIds": [
+          4,
+          8
+        ]
+      },
+      "proposalRunId": 3,
+      "contractVersion": 1,
+      "resolvedTaskIds": [
+        4,
+        8
+      ],
+      "includePrerequisites": false
+    },
+    "scopeTaskIdsJson": [
+      4,
+      8
+    ],
+    "includePrerequisites": false,
+    "configRevisionId": 2,
+    "proposalRunId": 3,
+    "snapshotJson": {
+      "tasks": [
+        {
+          "taskId": 1,
+          "zoneId": 1,
+          "spaceId": 3,
+          "endPlanned": "09:10",
+          "startPlanned": "09:00",
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        },
+        {
+          "taskId": 2,
+          "zoneId": 1,
+          "spaceId": 2,
+          "endPlanned": "11:40",
+          "startPlanned": "11:30",
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        },
+        {
+          "taskId": 3,
+          "zoneId": 1,
+          "spaceId": 1,
+          "endPlanned": "12:00",
+          "startPlanned": "11:50",
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        },
+        {
+          "taskId": 4,
+          "zoneId": 1,
+          "spaceId": 3,
+          "endPlanned": "12:15",
+          "startPlanned": "12:05",
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        },
+        {
+          "taskId": 5,
+          "zoneId": 1,
+          "spaceId": 3,
+          "endPlanned": "09:10",
+          "startPlanned": "09:00",
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        },
+        {
+          "taskId": 6,
+          "zoneId": 1,
+          "spaceId": 2,
+          "endPlanned": "11:30",
+          "startPlanned": "11:20",
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        },
+        {
+          "taskId": 7,
+          "zoneId": 1,
+          "spaceId": 1,
+          "endPlanned": "11:50",
+          "startPlanned": "11:40",
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        },
+        {
+          "taskId": 8,
+          "zoneId": 1,
+          "spaceId": 3,
+          "endPlanned": "12:00",
+          "startPlanned": "11:50",
+          "locationLabel": null,
+          "camerasOverride": null,
+          "durationOverride": null,
+          "assignedResourceIds": []
+        }
+      ],
+      "contractVersion": 1
+    },
+    "snapshotFingerprint": "00a595847aefc2dc9cbcaea0297377ce0c81fa81d1731b07ea798db258d6cfb5",
+    "validationSummaryJson": {
+      "report": {
+        "mode": "PROPOSAL_CERTIFIED_CLEAN_V1",
+        "scopeTaskIds": [
+          4,
+          8
+        ],
+        "proposalRunId": 3,
+        "hardAssessment": "CLEAN",
+        "requiredAssessment": "CLEAN",
+        "preferredAssessment": "NOT_CLASSIFIED",
+        "includePrerequisites": false
+      },
+      "hardCount": 0,
+      "hardValid": true,
+      "validationId": 3,
+      "requiredCount": 0,
+      "preferredCount": 0
+    },
+    "acceptedBy": "1a731701-9505-4b1a-8690-b2728cbe7dd7",
+    "acceptedAt": "2026-10-23T13:24:56.301575+00:00",
+    "archivedAt": null,
+    "createdAt": "2026-10-23T13:24:56.301575+00:00"
+  },
+  "draft": {
+    "tasks": [
+      {
+        "taskId": 1,
+        "zoneId": 1,
+        "spaceId": 3,
+        "endPlanned": "09:10",
+        "startPlanned": "09:00",
+        "locationLabel": null,
+        "camerasOverride": null,
+        "durationOverride": null,
+        "assignedResourceIds": []
+      },
+      {
+        "taskId": 2,
+        "zoneId": 1,
+        "spaceId": 2,
+        "endPlanned": "11:40",
+        "startPlanned": "11:30",
+        "locationLabel": null,
+        "camerasOverride": null,
+        "durationOverride": null,
+        "assignedResourceIds": []
+      },
+      {
+        "taskId": 3,
+        "zoneId": 1,
+        "spaceId": 1,
+        "endPlanned": "12:00",
+        "startPlanned": "11:50",
+        "locationLabel": null,
+        "camerasOverride": null,
+        "durationOverride": null,
+        "assignedResourceIds": []
+      },
+      {
+        "taskId": 4,
+        "zoneId": 1,
+        "spaceId": 3,
+        "endPlanned": "12:15",
+        "startPlanned": "12:05",
+        "locationLabel": null,
+        "camerasOverride": null,
+        "durationOverride": null,
+        "assignedResourceIds": []
+      },
+      {
+        "taskId": 5,
+        "zoneId": 1,
+        "spaceId": 3,
+        "endPlanned": "09:10",
+        "startPlanned": "09:00",
+        "locationLabel": null,
+        "camerasOverride": null,
+        "durationOverride": null,
+        "assignedResourceIds": []
+      },
+      {
+        "taskId": 6,
+        "zoneId": 1,
+        "spaceId": 2,
+        "endPlanned": "11:30",
+        "startPlanned": "11:20",
+        "locationLabel": null,
+        "camerasOverride": null,
+        "durationOverride": null,
+        "assignedResourceIds": []
+      },
+      {
+        "taskId": 7,
+        "zoneId": 1,
+        "spaceId": 1,
+        "endPlanned": "11:50",
+        "startPlanned": "11:40",
+        "locationLabel": null,
+        "camerasOverride": null,
+        "durationOverride": null,
+        "assignedResourceIds": []
+      },
+      {
+        "taskId": 8,
+        "zoneId": 1,
+        "spaceId": 3,
+        "endPlanned": "12:00",
+        "startPlanned": "11:50",
+        "locationLabel": null,
+        "camerasOverride": null,
+        "durationOverride": null,
+        "assignedResourceIds": []
+      }
+    ],
+    "contractVersion": 1
+  },
+  "draftBaseStageId": 4,
+  "draftFingerprint": "00a595847aefc2dc9cbcaea0297377ce0c81fa81d1731b07ea798db258d6cfb5",
+  "currentConfigRevisionId": 2,
+  "validation": null,
+  "acceptedExceptions": [],
+  "history": [
+    {
+      "id": 1,
+      "sessionId": 1,
+      "planId": 1,
+      "ordinal": 0,
+      "parentStageId": null,
+      "scopeJson": {},
+      "scopeTaskIdsJson": [],
+      "includePrerequisites": false,
+      "configRevisionId": 2,
+      "proposalRunId": null,
+      "snapshotJson": {
+        "tasks": [
+          {
+            "taskId": 1,
+            "zoneId": 1,
+            "spaceId": 3,
+            "endPlanned": null,
+            "startPlanned": null,
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 2,
+            "zoneId": 1,
+            "spaceId": 2,
+            "endPlanned": null,
+            "startPlanned": null,
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 3,
+            "zoneId": 1,
+            "spaceId": 1,
+            "endPlanned": null,
+            "startPlanned": null,
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 4,
+            "zoneId": 1,
+            "spaceId": 3,
+            "endPlanned": null,
+            "startPlanned": null,
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 5,
+            "zoneId": 1,
+            "spaceId": 3,
+            "endPlanned": null,
+            "startPlanned": null,
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 6,
+            "zoneId": 1,
+            "spaceId": 2,
+            "endPlanned": null,
+            "startPlanned": null,
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 7,
+            "zoneId": 1,
+            "spaceId": 1,
+            "endPlanned": null,
+            "startPlanned": null,
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 8,
+            "zoneId": 1,
+            "spaceId": 3,
+            "endPlanned": null,
+            "startPlanned": null,
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          }
+        ],
+        "contractVersion": 1
+      },
+      "snapshotFingerprint": "36745da230fc00e31efcff3b8e2f5c05ad85ef45925743212e14ba2a4cff2a5e",
+      "validationSummaryJson": {
+        "bootstrap": true,
+        "hardCount": 0,
+        "requiredCount": 0,
+        "preferredCount": 0
+      },
+      "acceptedBy": "1a731701-9505-4b1a-8690-b2728cbe7dd7",
+      "acceptedAt": "2026-10-23T13:24:44.626033+00:00",
+      "archivedAt": null,
+      "createdAt": "2026-10-23T13:24:44.626033+00:00"
+    },
+    {
+      "id": 2,
+      "sessionId": 1,
+      "planId": 1,
+      "ordinal": 1,
+      "parentStageId": 1,
+      "scopeJson": {
+        "metadata": {},
+        "selector": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ]
+        },
+        "proposalRunId": 1,
+        "contractVersion": 1,
+        "resolvedTaskIds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "includePrerequisites": true
+      },
+      "scopeTaskIdsJson": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "includePrerequisites": true,
+      "configRevisionId": 2,
+      "proposalRunId": 1,
+      "snapshotJson": {
+        "tasks": [
+          {
+            "taskId": 1,
+            "zoneId": 1,
+            "spaceId": 3,
+            "endPlanned": "09:10",
+            "startPlanned": "09:00",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 2,
+            "zoneId": 1,
+            "spaceId": 2,
+            "endPlanned": "11:40",
+            "startPlanned": "11:30",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 3,
+            "zoneId": 1,
+            "spaceId": 1,
+            "endPlanned": "12:00",
+            "startPlanned": "11:50",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 4,
+            "zoneId": 1,
+            "spaceId": 3,
+            "endPlanned": "12:15",
+            "startPlanned": "12:05",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 5,
+            "zoneId": 1,
+            "spaceId": 3,
+            "endPlanned": "09:10",
+            "startPlanned": "09:00",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 6,
+            "zoneId": 1,
+            "spaceId": 2,
+            "endPlanned": "11:30",
+            "startPlanned": "11:20",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 7,
+            "zoneId": 1,
+            "spaceId": 1,
+            "endPlanned": "11:50",
+            "startPlanned": "11:40",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 8,
+            "zoneId": 1,
+            "spaceId": 3,
+            "endPlanned": "12:00",
+            "startPlanned": "11:50",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          }
+        ],
+        "contractVersion": 1
+      },
+      "snapshotFingerprint": "00a595847aefc2dc9cbcaea0297377ce0c81fa81d1731b07ea798db258d6cfb5",
+      "validationSummaryJson": {
+        "report": {
+          "mode": "PROPOSAL_CERTIFIED_CLEAN_V1",
+          "scopeTaskIds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "proposalRunId": 1,
+          "hardAssessment": "CLEAN",
+          "requiredAssessment": "CLEAN",
+          "preferredAssessment": "NOT_CLASSIFIED",
+          "includePrerequisites": true
+        },
+        "hardCount": 0,
+        "hardValid": true,
+        "validationId": 1,
+        "requiredCount": 0,
+        "preferredCount": 0
+      },
+      "acceptedBy": "1a731701-9505-4b1a-8690-b2728cbe7dd7",
+      "acceptedAt": "2026-10-23T13:24:47.415613+00:00",
+      "archivedAt": "2026-10-23T13:24:52.186183+00:00",
+      "createdAt": "2026-10-23T13:24:47.415613+00:00"
+    },
+    {
+      "id": 3,
+      "sessionId": 1,
+      "planId": 1,
+      "ordinal": 2,
+      "parentStageId": 1,
+      "scopeJson": {
+        "metadata": {},
+        "selector": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            1,
+            2,
+            3,
+            5,
+            6,
+            7
+          ]
+        },
+        "proposalRunId": 2,
+        "contractVersion": 1,
+        "resolvedTaskIds": [
+          1,
+          2,
+          3,
+          5,
+          6,
+          7
+        ],
+        "includePrerequisites": true
+      },
+      "scopeTaskIdsJson": [
+        1,
+        2,
+        3,
+        5,
+        6,
+        7
+      ],
+      "includePrerequisites": true,
+      "configRevisionId": 2,
+      "proposalRunId": 2,
+      "snapshotJson": {
+        "tasks": [
+          {
+            "taskId": 1,
+            "zoneId": 1,
+            "spaceId": 3,
+            "endPlanned": "09:10",
+            "startPlanned": "09:00",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 2,
+            "zoneId": 1,
+            "spaceId": 2,
+            "endPlanned": "11:40",
+            "startPlanned": "11:30",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 3,
+            "zoneId": 1,
+            "spaceId": 1,
+            "endPlanned": "12:00",
+            "startPlanned": "11:50",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 4,
+            "zoneId": 1,
+            "spaceId": 3,
+            "endPlanned": null,
+            "startPlanned": null,
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 5,
+            "zoneId": 1,
+            "spaceId": 3,
+            "endPlanned": "09:10",
+            "startPlanned": "09:00",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 6,
+            "zoneId": 1,
+            "spaceId": 2,
+            "endPlanned": "11:30",
+            "startPlanned": "11:20",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 7,
+            "zoneId": 1,
+            "spaceId": 1,
+            "endPlanned": "11:50",
+            "startPlanned": "11:40",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 8,
+            "zoneId": 1,
+            "spaceId": 3,
+            "endPlanned": null,
+            "startPlanned": null,
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          }
+        ],
+        "contractVersion": 1
+      },
+      "snapshotFingerprint": "879ff3d2406500c87046024da59f13a53a657b5864f8b153348b280854204d0f",
+      "validationSummaryJson": {
+        "report": {
+          "mode": "PROPOSAL_CERTIFIED_CLEAN_V1",
+          "scopeTaskIds": [
+            1,
+            2,
+            3,
+            5,
+            6,
+            7
+          ],
+          "proposalRunId": 2,
+          "hardAssessment": "CLEAN",
+          "requiredAssessment": "CLEAN",
+          "preferredAssessment": "NOT_CLASSIFIED",
+          "includePrerequisites": true
+        },
+        "hardCount": 0,
+        "hardValid": true,
+        "validationId": 2,
+        "requiredCount": 0,
+        "preferredCount": 0
+      },
+      "acceptedBy": "1a731701-9505-4b1a-8690-b2728cbe7dd7",
+      "acceptedAt": "2026-10-23T13:24:52.186183+00:00",
+      "archivedAt": null,
+      "createdAt": "2026-10-23T13:24:52.186183+00:00"
+    },
+    {
+      "id": 4,
+      "sessionId": 1,
+      "planId": 1,
+      "ordinal": 3,
+      "parentStageId": 3,
+      "scopeJson": {
+        "metadata": {},
+        "selector": {
+          "kind": "TASK_IDS",
+          "taskIds": [
+            4,
+            8
+          ]
+        },
+        "proposalRunId": 3,
+        "contractVersion": 1,
+        "resolvedTaskIds": [
+          4,
+          8
+        ],
+        "includePrerequisites": false
+      },
+      "scopeTaskIdsJson": [
+        4,
+        8
+      ],
+      "includePrerequisites": false,
+      "configRevisionId": 2,
+      "proposalRunId": 3,
+      "snapshotJson": {
+        "tasks": [
+          {
+            "taskId": 1,
+            "zoneId": 1,
+            "spaceId": 3,
+            "endPlanned": "09:10",
+            "startPlanned": "09:00",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 2,
+            "zoneId": 1,
+            "spaceId": 2,
+            "endPlanned": "11:40",
+            "startPlanned": "11:30",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 3,
+            "zoneId": 1,
+            "spaceId": 1,
+            "endPlanned": "12:00",
+            "startPlanned": "11:50",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 4,
+            "zoneId": 1,
+            "spaceId": 3,
+            "endPlanned": "12:15",
+            "startPlanned": "12:05",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 5,
+            "zoneId": 1,
+            "spaceId": 3,
+            "endPlanned": "09:10",
+            "startPlanned": "09:00",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 6,
+            "zoneId": 1,
+            "spaceId": 2,
+            "endPlanned": "11:30",
+            "startPlanned": "11:20",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 7,
+            "zoneId": 1,
+            "spaceId": 1,
+            "endPlanned": "11:50",
+            "startPlanned": "11:40",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          },
+          {
+            "taskId": 8,
+            "zoneId": 1,
+            "spaceId": 3,
+            "endPlanned": "12:00",
+            "startPlanned": "11:50",
+            "locationLabel": null,
+            "camerasOverride": null,
+            "durationOverride": null,
+            "assignedResourceIds": []
+          }
+        ],
+        "contractVersion": 1
+      },
+      "snapshotFingerprint": "00a595847aefc2dc9cbcaea0297377ce0c81fa81d1731b07ea798db258d6cfb5",
+      "validationSummaryJson": {
+        "report": {
+          "mode": "PROPOSAL_CERTIFIED_CLEAN_V1",
+          "scopeTaskIds": [
+            4,
+            8
+          ],
+          "proposalRunId": 3,
+          "hardAssessment": "CLEAN",
+          "requiredAssessment": "CLEAN",
+          "preferredAssessment": "NOT_CLASSIFIED",
+          "includePrerequisites": false
+        },
+        "hardCount": 0,
+        "hardValid": true,
+        "validationId": 3,
+        "requiredCount": 0,
+        "preferredCount": 0
+      },
+      "acceptedBy": "1a731701-9505-4b1a-8690-b2728cbe7dd7",
+      "acceptedAt": "2026-10-23T13:24:56.301575+00:00",
+      "archivedAt": null,
+      "createdAt": "2026-10-23T13:24:56.301575+00:00"
+    }
+  ]
+}

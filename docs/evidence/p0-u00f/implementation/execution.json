@@ -1,0 +1,13 @@
+{
+  "base": "793d48733c4565cc49f434f86179b2016025fdf0",
+  "baselineMethod": "git archive plus symlink to the same locked node_modules",
+  "nativeStacks": "PostgreSQL 17 / Auth / PostgREST / Chromium, complete unchanged migration ledger, loopback-only application services",
+  "a2Execution": "Serial baseline, candidate and repeat from S0; no UI/build/suites running concurrently",
+  "a2Capture": "docs/evidence/STYLING-IN-OUT-CAUSAL-DIAGNOSTIC/capture.ts",
+  "a2Audit": "docs/evidence/config-u06c/verify.ts",
+  "node": "20.20.2",
+  "lockfileSha256": "cbe75a531336356a5d3baa75202818f1a7060b72f10d205449b8036295ffeaaa",
+  "budgetChanges": 0,
+  "timeoutChanges": 0,
+  "productionWrites": 0
+}

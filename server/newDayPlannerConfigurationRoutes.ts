@@ -28,6 +28,14 @@ export function registerNewDayPlannerConfiguration(app:Express,database:any) {
         if(error)throw error;
         if(data?.length!==ids.length)return void res.status(400).json({message:"Selecciona espacios existentes para las políticas de montaje."});
       }
+      const transport=value.configuration?.transport;
+      if(transport&&transport!=="NONE"){
+        const ids=[transport.arrivalTemplateId,transport.departureTemplateId];
+        const {data,error}=await database.from("task_templates").select("id,rules_json,space_id").in("id",ids);
+        if(error)throw error;
+        if(data?.length!==2||data.some((row:any)=>row.rules_json?.plannerNextOperation?.kind!=="auxiliary"||!row.space_id))
+          return void res.status(400).json({message:"Selecciona dos plantillas auxiliares existentes, IN y OUT, con espacio real. Configura sus dependencias y los parámetros en Transporte."});
+      }
       const {data,error}=await database.from("new_day_planner_configuration")
         .update({configuration:value.configuration,revision:value.expectedRevision+1}).eq("id",1).eq("revision",value.expectedRevision)
         .select("revision,configuration").maybeSingle();

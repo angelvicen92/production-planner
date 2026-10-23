@@ -13,6 +13,7 @@ export function applyNewDayPlannerConfiguration(input:EngineInput,raw:unknown,
   if(!config)return input;
   const templates=new Map(snapshots.map(snapshot=>[snapshot.sourceTemplateId,snapshot]));
   const setup=config.setup==="FAMILIES"?config.setupFamilies:undefined;
+  const transport=config.transport!=="NONE"?config.transport:undefined;
   const tasks=input.tasks.map(task=>{
     const template=templates.get(task.templateId);
     const kind=template?.plannerNextOperation?.kind;
@@ -22,7 +23,9 @@ export function applyNewDayPlannerConfiguration(input:EngineInput,raw:unknown,
       input.tasks.filter(candidate=>candidate.templateId===templateId &&
         candidate.contestantId===task.contestantId && candidate.status!=="cancelled").map(candidate=>candidate.id));
     const coach=task.contestantId==null?undefined:input.vocalCoachPlanResourceItemIdByContestantId?.[task.contestantId];
-    return {...task,...(kind?{plannerNextKind:kind}:{}),operationalRole:"productive_task" as const,
+    const operationalRole=transport&&task.templateId===transport.arrivalTemplateId?"transport_arrival" as const
+      :transport&&task.templateId===transport.departureTemplateId?"transport_departure" as const:"productive_task" as const;
+    return {...task,...(kind?{plannerNextKind:kind}:{}),operationalRole,
       ...(template?.setupId!=null&&validSetupMapping(input,task,template,setup)?{setupFamilyId:String(template.setupId)}:{}),
       ...(template?.requiresCoach && coach!=null?{declaredResourceIds:[...new Set([...(task.declaredResourceIds??[]),coach])].sort((a,b)=>a-b)}:{}),
       dependsOnTaskIds:dependencies,dependsOnTaskId:dependencies[0]??null};
@@ -38,17 +41,19 @@ export function applyNewDayPlannerConfiguration(input:EngineInput,raw:unknown,
   const {arrivalDepartureGrouping:_,...weights}=input.optimizerWeights??{};
   return {...input,tasks,
     ...(setupPolicies?{setupPolicies}:{}),
-    plannerNextMaterializationIssues:newDayConfigurationDefects(input,snapshots,config.scenario,setup),plannerNext:{searchPolicy:config.searchPolicy,searchBudget:{...config.searchBudget},
+    plannerNextMaterializationIssues:[...newDayConfigurationDefects(input,snapshots,config.scenario,setup),
+      ...(transport?newDayTransportDefects(input,snapshots,transport):[])],plannerNext:{searchPolicy:config.searchPolicy,searchBudget:{...config.searchBudget},
       timeGridMinutes:config.timeGridMinutes,participantTransitionMinutes:input.defaultParticipantTransitionMinutes!,
       resourceTransitionMinutes:config.resourceTransitionMinutes,
       ...(config.scenario==="STANDALONE_ONLY"?{profile:"STANDALONE_ONLY" as const}:{mainFlow:{...config.mainFlow}})},
-    // These capabilities are explicitly inapplicable in this versioned profile.
-    transportSettings:undefined,transportSpaceId:undefined,transportVanCapacity:undefined,vanCapacity:undefined,
+    // NONE preserves the historical profile. Enabled transport retains the
+    // existing builder's daily identities, resources and direction parameters.
+    ...(!transport?{transportSettings:undefined,transportSpaceId:undefined,transportVanCapacity:undefined,vanCapacity:undefined,
     arrivalTaskTemplateName:undefined,departureTaskTemplateName:undefined,
     arrivalGroupingTarget:undefined,departureGroupingTarget:undefined,
     arrivalMinimumGroupSize:undefined,departureMinimumGroupSize:undefined,
     arrivalMaximumGroupSize:undefined,departureMaximumGroupSize:undefined,
-    arrivalMinGapMinutes:undefined,departureMinGapMinutes:undefined,
+    arrivalMinGapMinutes:undefined,departureMinGapMinutes:undefined}:{}),
     mealTaskTemplateId:null,mealTaskTemplateName:undefined,
     ...(input.mealMode==="global_hard_break"?{mealWindow:undefined,mealWindowStart:undefined,mealWindowEnd:undefined,
       contestantMealDurationMinutes:undefined,contestantMealMaxSimultaneous:undefined}:{}),
@@ -57,8 +62,19 @@ export function applyNewDayPlannerConfiguration(input:EngineInput,raw:unknown,
     // This marker describes only the unused legacy optimizer adapter. Preserve
     // every other compatibility warning; the explicit Next profile owns search.
     optimizerCompatibilityWarnings:input.optimizerCompatibilityWarnings?.filter(code=>code!=="OPTIMIZER_LEGACY_ENGINE_ADAPTER_V1"),
-    optimizerWeights:{...weights,groupBySpaceTemplateMatch:0,groupBySpaceActive:0},
+    optimizerWeights:{...weights,...(transport?{arrivalDepartureGrouping:input.optimizerWeights?.arrivalDepartureGrouping}:{}),groupBySpaceTemplateMatch:0,groupBySpaceActive:0},
   };
+}
+
+function newDayTransportDefects(input:EngineInput,snapshots:readonly TaskTemplateOperationalSnapshotV1[],
+  transport:{arrivalTemplateId:number;departureTemplateId:number}):NonNullable<EngineInput["plannerNextMaterializationIssues"]>{
+  const messages:string[]=[];
+  for(const direction of ["arrival","departure"] as const){
+    const id=transport[`${direction}TemplateId`],template=snapshots.find(row=>row.sourceTemplateId===id);
+    if(!template||template.plannerNextOperation?.kind!=="auxiliary")messages.push(`La plantilla ${direction} (${id}) debe existir en el snapshot y declarar actividad auxiliar con participante.`);
+    if(input.transportSettings?.[`${direction}TemplateId`]!==id)messages.push(`La referencia diaria ${direction} no coincide con la identidad de transporte del perfil. Revisa el snapshot de transporte.`);
+  }
+  return messages.map(message=>({code:"UNSUPPORTED_TASK_ROLE" as const,taskId:input.tasks[0]?.id??0,message}));
 }
 
 function validSetupMapping(input:EngineInput,task:EngineInput["tasks"][number],template:TaskTemplateOperationalSnapshotV1,setup?:SetupFamiliesConfiguration){

@@ -2730,7 +2730,8 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     // A revalidated structural witness already carries the exact fixed-supporting
     // materialization into this continuation. Rebuilding it here would repeat the
     // same bundle graph and arrival search before standalone can begin.
-    const pipeline=!conditioned&&!candidate.reusedFutureStructuralWitness
+    // An empty core has no Main pipeline geometry, even though 0 === 0.
+    const pipeline=orderedMains.length>0&&!conditioned&&!candidate.reusedFutureStructuralWitness
       &&orderedMains.length===problem.tasks.filter(task=>task.kind==="main").length
       ?materializePipelineBundleMatching(problem,{pattern:orderedMains.map(task=>task.blockKey??""),slots:orderedMains.map(task=>task.start)},options.fixedPlacements,
         new Set(),undefined,()=>ledger.consume("CORE"),operation=>futureTechnicalChains.intrusion(operation))

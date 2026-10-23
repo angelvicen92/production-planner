@@ -1,0 +1,39 @@
+{
+  "status": "BLOCKED",
+  "featureImplemented": false,
+  "nativeInfrastructure": "PASS",
+  "node": "20.20.2",
+  "focusedTests": {
+    "baseline": {
+      "passed": 56,
+      "failed": 0
+    },
+    "final": {
+      "passed": 61,
+      "failed": 0,
+      "observationalDiagnostics": 5
+    }
+  },
+  "typecheck": {
+    "product": "PASS",
+    "diagnosticHarness": "PASS"
+  },
+  "fullIntegrationGate": {
+    "status": "NOT_RUN",
+    "reason": "Causal gate found structural incompatibility before any integration candidate.",
+    "a2": "Historical U00e baseline only; not rerun",
+    "u00aThroughU00e": "Not rerun; no production code changed"
+  },
+  "solverChanged": false,
+  "runtimeDependenciesChanged": false,
+  "remoteWrites": 0,
+  "deployment": "NOT_PERFORMED",
+  "merge": "NOT_PERFORMED",
+  "environmentPreparation": {
+    "initialMissingLockedDependencies": [
+      "playwright@1.64.0",
+      "@electric-sql/pglite@0.5.8"
+    ],
+    "resolution": "Installed in work runtime and linked into node_modules; package.json and lockfile unchanged; checks repeated successfully."
+  }
+}

@@ -41,7 +41,10 @@ export type SetupFamiliesConfiguration = z.infer<typeof setupFamiliesConfigurati
 /** Explicit structural profiles. No task identities or scheduled times. */
 const common = z.object({
   contractVersion: z.literal(1),
-  transport: z.literal("NONE"),
+  // Parameters remain owned by the existing daily optimizer snapshot. These
+  // references select its templates by identity when a new day is created.
+  transport: z.union([z.literal("NONE"),z.object({arrivalTemplateId:positive,departureTemplateId:positive}).strict()
+    .refine(value=>value.arrivalTemplateId!==value.departureTemplateId,"IN y OUT necesitan plantillas distintas.")]),
   setup: z.enum(["NONE","FAMILIES"]),
   setupFamilies: setupFamiliesConfigurationSchema.optional(),
   meals: z.literal("DAY_CONFIGURATION"),

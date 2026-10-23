@@ -1,0 +1,34 @@
+diff --git a/workspace/production-planner/engine/buildInput.ts b/workspace/production-planner/work/u00f-final-native/source/engine/buildInput.ts
+index d38cbed..09912f8 100644
+--- a/workspace/production-planner/engine/buildInput.ts
++++ b/workspace/production-planner/work/u00f-final-native/source/engine/buildInput.ts
+@@ -1,3 +1,4 @@
++import {existsSync as u00fExists} from "node:fs";
+ import { applyDailyItinerantComposition, ItinerantCompositionError } from '../server/itinerantComposition';
+ import { applyNewDayPlannerConfiguration } from "../server/newDayPlannerConfiguration";
+ import { applyEffectiveOperationContinuity } from "../server/operationContinuity";
+@@ -569,8 +570,8 @@ export async function buildEngineInput(
+   const transportVanCapacity = optimizerProjection.transport.vanCapacity;
+   const arrivalTransportTemplateName = optimizerProjection.transport.arrivalTemplateName;
+   const departureTransportTemplateName = optimizerProjection.transport.departureTemplateName;
+-  const arrivalTransportTemplateId = p.planner_next_profile?.configuration ? null : optimizerProjection.transport.arrivalSourceTemplateId;
+-  const departureTransportTemplateId = p.planner_next_profile?.configuration ? null : optimizerProjection.transport.departureSourceTemplateId;
++  const arrivalTransportTemplateId = (p.planner_next_profile?.configuration && !u00fExists(process.env.OPTIPLAN_U00F_MARKER??"/no-u00f-marker")) ? null : optimizerProjection.transport.arrivalSourceTemplateId;
++  const departureTransportTemplateId = (p.planner_next_profile?.configuration && !u00fExists(process.env.OPTIPLAN_U00F_MARKER??"/no-u00f-marker")) ? null : optimizerProjection.transport.departureSourceTemplateId;
+
+   const taskTemplateNameById: Record<number, string> = Object.fromEntries(
+     templates.map((snapshot) => [snapshot.sourceTemplateId, snapshot.templateName]),
+@@ -1002,6 +1003,13 @@ export async function buildEngineInput(
+   // Materialize roles/dependencies before mapping physical catalog identities.
+   // Historical 088 authority stays exclusive; daily continuity is applied last.
+   let effectiveInput = applyPlanPlannerNextConfiguration(applyNewDayPlannerConfiguration(input,p.planner_next_profile,taskTemplateSnapshots),p.planner_next_configuration??p.plannerNextConfiguration);
++  // Controlled causal intervention in this disposable archive only.
++  if(u00fExists(process.env.OPTIPLAN_U00F_MARKER??"/no-u00f-marker")) {
++    const transportKeys=["transportSettings","transportSpaceId","transportVanCapacity","vanCapacity","arrivalTaskTemplateName","departureTaskTemplateName","arrivalGroupingTarget","departureGroupingTarget","arrivalMinimumGroupSize","departureMinimumGroupSize","arrivalMaximumGroupSize","departureMaximumGroupSize","arrivalMinGapMinutes","departureMinGapMinutes"] as const;
++    effectiveInput={...effectiveInput,...Object.fromEntries(transportKeys.map(key=>[key,input[key]])),optimizerWeights:{...effectiveInput.optimizerWeights,arrivalDepartureGrouping:input.optimizerWeights?.arrivalDepartureGrouping},
++      tasks:effectiveInput.tasks.map(task=>({...task,operationalRole:task.templateId===input.transportSettings?.arrivalTemplateId?"transport_arrival" as const:task.templateId===input.transportSettings?.departureTemplateId?"transport_departure" as const:task.operationalRole}))};
++  }
++
+   if ((p.itinerant_composition_version ?? p.itinerantCompositionVersion) === 1) {
+     if ((p.planner_next_configuration ?? p.plannerNextConfiguration) != null) throw new ItinerantCompositionError('autoridades históricas y heredadas incompatibles');
+     effectiveInput = applyDailyItinerantComposition(effectiveInput, await storage.getPlanItinerantUnitSnapshots(planId), planId);

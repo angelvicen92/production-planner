@@ -1,0 +1,363 @@
+{
+  "identityMap": [
+    {
+      "namespace": "participant",
+      "sourceId": "1",
+      "canonicalId": "participant:1"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "2",
+      "canonicalId": "participant:2"
+    },
+    {
+      "namespace": "plan-resource",
+      "sourceId": "1",
+      "canonicalId": "plan-resource:1"
+    },
+    {
+      "namespace": "plan",
+      "sourceId": "1",
+      "canonicalId": "plan:1"
+    },
+    {
+      "namespace": "resource-item",
+      "sourceId": "1",
+      "canonicalId": "resource-item:1"
+    },
+    {
+      "namespace": "resource-type",
+      "sourceId": "1",
+      "canonicalId": "resource-type:1"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "1",
+      "canonicalId": "space:1"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "2",
+      "canonicalId": "space:2"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "3",
+      "canonicalId": "space:3"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "1",
+      "canonicalId": "task:1"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "2",
+      "canonicalId": "task:2"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "3",
+      "canonicalId": "task:3"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "4",
+      "canonicalId": "task:4"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "5",
+      "canonicalId": "task:5"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "6",
+      "canonicalId": "task:6"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "7",
+      "canonicalId": "task:7"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "8",
+      "canonicalId": "task:8"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "1",
+      "canonicalId": "template:1"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "2",
+      "canonicalId": "template:2"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "3",
+      "canonicalId": "template:3"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "4",
+      "canonicalId": "template:4"
+    },
+    {
+      "namespace": "zone",
+      "sourceId": "1",
+      "canonicalId": "zone:1"
+    }
+  ],
+  "diagnostics": {
+    "taskCount": 8,
+    "planifiableTaskCount": 8,
+    "protectedTaskCount": 0,
+    "cancelledTaskCount": 0,
+    "pendingPlanningDiscardCount": 0,
+    "lockCount": 0,
+    "participantCount": 2,
+    "coachReferenceCount": 2,
+    "missingCoachReferenceCount": 0,
+    "spaceCount": 3,
+    "referencedSpaceCount": 3,
+    "describedSpaceCount": 3,
+    "zoneCount": 1,
+    "planResourceCount": 1,
+    "requiredPlanResourceCount": 1,
+    "usableRequiredPlanResourceCount": 1,
+    "unusableRequiredPlanResourceCount": 0,
+    "protectedTaskResourceAvailabilityConflictCount": 0,
+    "requiredSpaceCount": 3,
+    "usableRequiredSpaceCount": 3,
+    "unusableRequiredSpaceCount": 0,
+    "requiredZoneCount": 1,
+    "protectedTaskSpatialAvailabilityConflictCount": 0,
+    "resourceItemCount": 1,
+    "resourceAssignmentReferenceCount": 4,
+    "resourceComponentReferenceCount": 0,
+    "missingResourceReferenceCount": 0,
+    "dependencyCount": 6,
+    "breakCount": 1,
+    "participantScopedMealCount": 0,
+    "supportedParticipantScopedMealCount": 0,
+    "unsupportedParticipantScopedMealCount": 0,
+    "transportConfigured": false,
+    "setupConfigurationDetected": false,
+    "integrationConfigurationPresent": true,
+    "mainFlowConfigurationComplete": true,
+    "searchPolicyConfigurationPresent": true,
+    "searchBudgetConfigurationComplete": true,
+    "timeGridVerifiable": true,
+    "transitionConfigurationComplete": true,
+    "anchoredOperationContractPresent": false,
+    "unresolvedTaskRoleCount": 0,
+    "missingDurationTaskCount": 0,
+    "missingAvailabilityCounts": {
+      "participants": 0,
+      "spaces": 0,
+      "resources": 0
+    },
+    "unsupportedCapabilityCodes": [],
+    "readOnly": true
+  },
+  "issues": [],
+  "sourceFingerprint": "582518778ed60201fa07e9e5724d2d8391bad2e3712eb4848df15f2924566edb",
+  "identityMapFingerprint": "d03b3b3ed0b53de4fa4f5f284222d35b79eb79c751abb8a48b61de0f4431b1c7",
+  "readOnly": true,
+  "status": "SUPPORTED",
+  "problem": {
+    "day": {
+      "start": 540,
+      "end": 1080
+    },
+    "protectedMeal": {
+      "start": 780,
+      "end": 840
+    },
+    "spaces": [
+      {
+        "id": "space:1",
+        "availability": [
+          {
+            "start": 540,
+            "end": 1080
+          }
+        ]
+      },
+      {
+        "id": "space:2",
+        "availability": [
+          {
+            "start": 540,
+            "end": 1080
+          }
+        ]
+      },
+      {
+        "id": "space:3",
+        "availability": [
+          {
+            "start": 540,
+            "end": 1080
+          }
+        ]
+      }
+    ],
+    "resources": [],
+    "participants": [
+      {
+        "id": "participant:1",
+        "availability": [
+          {
+            "start": 540,
+            "end": 1020
+          }
+        ]
+      },
+      {
+        "id": "participant:2",
+        "availability": [
+          {
+            "start": 540,
+            "end": 1020
+          }
+        ]
+      }
+    ],
+    "coaches": [
+      {
+        "id": "plan-resource:1",
+        "availability": [
+          {
+            "start": 540,
+            "end": 1080
+          }
+        ]
+      }
+    ],
+    "tasks": [
+      {
+        "id": "task:1",
+        "duration": 10,
+        "spaceId": "space:3",
+        "dependencies": [],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:1"
+      },
+      {
+        "id": "task:2",
+        "duration": 10,
+        "spaceId": "space:2",
+        "dependencies": [
+          "task:1"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "vocal",
+        "participantId": "participant:1",
+        "coachId": "plan-resource:1"
+      },
+      {
+        "id": "task:3",
+        "duration": 10,
+        "spaceId": "space:1",
+        "dependencies": [
+          "task:2"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "main",
+        "participantId": "participant:1",
+        "coachId": "plan-resource:1",
+        "blockKey": "plan-resource:1"
+      },
+      {
+        "id": "task:4",
+        "duration": 10,
+        "spaceId": "space:3",
+        "dependencies": [
+          "task:3"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:1"
+      },
+      {
+        "id": "task:5",
+        "duration": 10,
+        "spaceId": "space:3",
+        "dependencies": [],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:2"
+      },
+      {
+        "id": "task:6",
+        "duration": 10,
+        "spaceId": "space:2",
+        "dependencies": [
+          "task:5"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "vocal",
+        "participantId": "participant:2",
+        "coachId": "plan-resource:1"
+      },
+      {
+        "id": "task:7",
+        "duration": 10,
+        "spaceId": "space:1",
+        "dependencies": [
+          "task:6"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "main",
+        "participantId": "participant:2",
+        "coachId": "plan-resource:1",
+        "blockKey": "plan-resource:1"
+      },
+      {
+        "id": "task:8",
+        "duration": 10,
+        "spaceId": "space:3",
+        "dependencies": [
+          "task:7"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:2"
+      }
+    ],
+    "mainFlow": {
+      "spaceId": "space:1",
+      "preferredEnd": 720,
+      "continuity": "REQUIRED",
+      "maxBlocksByKey": 1,
+      "minTasksPerBlock": 1
+    },
+    "participantTransitionMinutes": 5,
+    "resourceTransitionMinutes": 0,
+    "budget": {
+      "bestK": 3,
+      "maxBacktracks": 50,
+      "maxPatterns": 20,
+      "maxBranchExpansions": 10000
+    },
+    "searchPolicy": "EXACT_CONSTRUCTIVE",
+    "auxiliaryPolicy": {
+      "participantPresencePreference": "OFF"
+    }
+  },
+  "reasonCodes": [],
+  "problemFingerprint": "b4862e91760d4e8d8b270dcda3309c937bc06dabf25b199a1839b243452cfe33"
+}

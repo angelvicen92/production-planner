@@ -1,0 +1,788 @@
+[
+  {
+    "id": "1",
+    "fingerprint": "99ca636a4d2bf28eb72b6e7349c020ae061b1f49a216c329407c2d61c5187938",
+    "replay_snapshot_json": {
+      "authorities": {
+        "plan_workday": [
+          {
+            "meal": {
+              "end": "14:00",
+              "start": "13:00"
+            },
+            "workDay": {
+              "end": "18:00",
+              "start": "09:00"
+            },
+            "mealMode": "global_hard_break",
+            "itinerantComposition": {
+              "units": [],
+              "contractVersion": 1
+            },
+            "plannerNextAuthorities": {
+              "plannerNext": {
+                "mainFlow": {
+                  "spaceId": 1,
+                  "continuity": "REQUIRED",
+                  "preferredEnd": "12:00",
+                  "maxBlocksByKey": 1,
+                  "minTasksPerBlock": 1
+                },
+                "searchBudget": {
+                  "bestK": 3,
+                  "maxPatterns": 20,
+                  "maxBacktracks": 50,
+                  "maxBranchExpansions": 10000
+                },
+                "searchPolicy": "EXACT_CONSTRUCTIVE",
+                "timeGridMinutes": 5,
+                "resourceTransitionMinutes": 0,
+                "participantTransitionMinutes": 5
+              },
+              "taskOperations": [],
+              "mealTaskTemplateId": null,
+              "itinerantTeamAvailability": []
+            },
+            "itinerantTeamAvailability": [],
+            "defaultParticipantTransitionMinutes": 5
+          }
+        ],
+        "resource_bundles": [],
+        "spatial_configuration": [
+          {
+            "kind": "space",
+            "name": "Entrevistas nuevas",
+            "zoneId": 1,
+            "spaceId": 1,
+            "groupingLevel": 0,
+            "parentSpaceId": null,
+            "priorityLevel": 1,
+            "availabilityEnd": null,
+            "groupingMinChain": 4,
+            "availabilityStart": null,
+            "groupingApplyToDescendants": false
+          },
+          {
+            "kind": "space",
+            "name": "Preparación nueva",
+            "zoneId": 1,
+            "spaceId": 2,
+            "groupingLevel": 0,
+            "parentSpaceId": null,
+            "priorityLevel": 1,
+            "availabilityEnd": null,
+            "groupingMinChain": 4,
+            "availabilityStart": null,
+            "groupingApplyToDescendants": false
+          },
+          {
+            "kind": "space",
+            "name": "Punto de encuentro",
+            "zoneId": 1,
+            "spaceId": 3,
+            "groupingLevel": 0,
+            "parentSpaceId": null,
+            "priorityLevel": 1,
+            "availabilityEnd": null,
+            "groupingMinChain": 4,
+            "availabilityStart": null,
+            "groupingApplyToDescendants": false
+          },
+          {
+            "kind": "zone",
+            "name": "Producción transporte U00f",
+            "zoneId": 1,
+            "groupingLevel": 0,
+            "availabilityEnd": null,
+            "groupingMinChain": 4,
+            "mealEndPreferred": null,
+            "availabilityStart": null,
+            "maxTemplateChanges": 4,
+            "mealStartPreferred": null,
+            "spaceMealBreakMinutes": null
+          }
+        ],
+        "resource_configuration": [
+          {
+            "id": 1,
+            "name": "Coach transporte",
+            "typeId": 1,
+            "typeCode": "vocal_coach",
+            "typeName": "Vocal Coach",
+            "isAvailable": true,
+            "resourceItemId": 1,
+            "availabilityEnd": "18:00",
+            "availabilityStart": "09:00"
+          }
+        ],
+        "contestant_availability": [],
+        "resource_assignments_and_requirements": [
+          {
+            "kind": "components",
+            "value": {}
+          },
+          {
+            "kind": "spaceAssignments",
+            "value": {}
+          },
+          {
+            "kind": "spaceRequirements",
+            "value": {}
+          },
+          {
+            "kind": "zoneAssignments",
+            "value": {}
+          },
+          {
+            "kind": "zoneRequirements",
+            "value": {}
+          }
+        ]
+      },
+      "contractVersion": 1,
+      "optimizerSnapshot": {
+        "source": "INHERITED",
+        "transport": {
+          "vanCapacity": 2,
+          "groupingWeight": 5,
+          "arrivalMinGapMinutes": 20,
+          "arrivalGroupingTarget": 2,
+          "departureMinGapMinutes": 15,
+          "arrivalMaximumGroupSize": 2,
+          "arrivalMinimumGroupSize": 2,
+          "departureGroupingTarget": 1,
+          "departureMaximumGroupSize": 2,
+          "departureMinimumGroupSize": 1,
+          "arrivalPlanTemplateSnapshotId": 1,
+          "departurePlanTemplateSnapshotId": 4
+        },
+        "heuristics": {
+          "CONTESTANT_COMPACT": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "MAIN_ZONE_PRIORITY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "MAIN_ZONE_KEEP_BUSY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "CONTESTANT_TOTAL_SPAN": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "GROUP_BY_SPACE_ACTIVE": {
+            "basicLevel": 2,
+            "advancedValue": 0,
+            "effectiveWeight": 6
+          },
+          "MAIN_ZONE_FINISH_EARLY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "CONTESTANT_STAY_IN_ZONE": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "ARRIVAL_DEPARTURE_GROUPING": {
+            "basicLevel": 2,
+            "advancedValue": 5,
+            "effectiveWeight": 5
+          },
+          "GROUP_BY_SPACE_TEMPLATE_MATCH": {
+            "basicLevel": 2,
+            "advancedValue": 0,
+            "effectiveWeight": 6
+          }
+        },
+        "mainZoneId": null,
+        "editingMode": "BASIC",
+        "contractVersion": 1,
+        "groupingZoneIds": [],
+        "nearHardBreaksMax": 0,
+        "configurationFingerprint": "a9cc968c15eb3438e4322afb56110954b62b102d657b9c537f82d80be8d360d7"
+      },
+      "taskTemplateSnapshots": [
+        {
+          "source": "inherited",
+          "setupId": null,
+          "templateName": "Traslado azul",
+          "defaultZoneId": 1,
+          "hasDependency": false,
+          "requiresCoach": false,
+          "defaultCameras": 0,
+          "defaultSpaceId": 3,
+          "contractVersion": 2,
+          "defaultDuration": 10,
+          "itinerantTeamId": null,
+          "requiresAuxiliar": false,
+          "sourceTemplateId": 1,
+          "exclusiveAuxiliar": false,
+          "requiresPresenter": false,
+          "sourceFingerprint": "4f00a116ed61bc6e562d6316a8cf3d79e6f32610dec18f4c08f84e4cd1715842",
+          "plannerNextOperation": {
+            "kind": "auxiliary",
+            "contractVersion": 1
+          },
+          "resourceRequirements": null,
+          "dependencyTemplateIds": [],
+          "allowedItinerantTeamIds": [],
+          "itinerantTeamRequirement": "none",
+          "autoCreateOnContestantCreate": true,
+          "participantMarginAfterMinutes": 0,
+          "participantMarginBeforeMinutes": 0
+        },
+        {
+          "source": "inherited",
+          "setupId": null,
+          "templateName": "Preparación entrevista",
+          "defaultZoneId": 1,
+          "hasDependency": true,
+          "requiresCoach": true,
+          "defaultCameras": 0,
+          "defaultSpaceId": 2,
+          "contractVersion": 2,
+          "defaultDuration": 10,
+          "itinerantTeamId": null,
+          "requiresAuxiliar": false,
+          "sourceTemplateId": 2,
+          "exclusiveAuxiliar": false,
+          "requiresPresenter": false,
+          "sourceFingerprint": "eda045720b1cb0f1cd63dfe25714e4a343b73cb0cf4b191578fcc9ba8f673d98",
+          "plannerNextOperation": {
+            "kind": "vocal",
+            "contractVersion": 1
+          },
+          "resourceRequirements": null,
+          "dependencyTemplateIds": [
+            1
+          ],
+          "allowedItinerantTeamIds": [],
+          "itinerantTeamRequirement": "none",
+          "autoCreateOnContestantCreate": true,
+          "participantMarginAfterMinutes": 0,
+          "participantMarginBeforeMinutes": 0
+        },
+        {
+          "source": "inherited",
+          "setupId": null,
+          "templateName": "Entrevista nueva",
+          "defaultZoneId": 1,
+          "hasDependency": true,
+          "requiresCoach": true,
+          "defaultCameras": 0,
+          "defaultSpaceId": 1,
+          "contractVersion": 2,
+          "defaultDuration": 10,
+          "itinerantTeamId": null,
+          "requiresAuxiliar": false,
+          "sourceTemplateId": 3,
+          "exclusiveAuxiliar": false,
+          "requiresPresenter": false,
+          "sourceFingerprint": "bdece0071672f71c6280681c7ffe9216d32f9ec6a8d1929fad758d9c605a1d46",
+          "plannerNextOperation": {
+            "kind": "main",
+            "contractVersion": 1
+          },
+          "resourceRequirements": null,
+          "dependencyTemplateIds": [
+            2
+          ],
+          "allowedItinerantTeamIds": [],
+          "itinerantTeamRequirement": "none",
+          "autoCreateOnContestantCreate": true,
+          "participantMarginAfterMinutes": 0,
+          "participantMarginBeforeMinutes": 0
+        },
+        {
+          "source": "inherited",
+          "setupId": null,
+          "templateName": "Retorno verde",
+          "defaultZoneId": 1,
+          "hasDependency": true,
+          "requiresCoach": false,
+          "defaultCameras": 0,
+          "defaultSpaceId": 3,
+          "contractVersion": 2,
+          "defaultDuration": 10,
+          "itinerantTeamId": null,
+          "requiresAuxiliar": false,
+          "sourceTemplateId": 4,
+          "exclusiveAuxiliar": false,
+          "requiresPresenter": false,
+          "sourceFingerprint": "afb197f355f66d250f048e3be9e0ab496437675b67f4f779ff81fa77dffe70ec",
+          "plannerNextOperation": {
+            "kind": "auxiliary",
+            "contractVersion": 1
+          },
+          "resourceRequirements": null,
+          "dependencyTemplateIds": [
+            3
+          ],
+          "allowedItinerantTeamIds": [],
+          "itinerantTeamRequirement": "none",
+          "autoCreateOnContestantCreate": true,
+          "participantMarginAfterMinutes": 0,
+          "participantMarginBeforeMinutes": 0
+        }
+      ]
+    }
+  },
+  {
+    "id": "2",
+    "fingerprint": "67fca5cc121615c7f60467703d3983eef0ff6f12f1b50c6ce75ddaaf8ac9f1e4",
+    "replay_snapshot_json": {
+      "authorities": {
+        "plan_workday": [
+          {
+            "meal": {
+              "end": "14:00",
+              "start": "13:00"
+            },
+            "workDay": {
+              "end": "18:00",
+              "start": "09:00"
+            },
+            "mealMode": "global_hard_break",
+            "itinerantComposition": {
+              "units": [],
+              "contractVersion": 1
+            },
+            "plannerNextAuthorities": {
+              "plannerNext": {
+                "mainFlow": {
+                  "spaceId": 1,
+                  "continuity": "REQUIRED",
+                  "preferredEnd": "12:00",
+                  "maxBlocksByKey": 1,
+                  "minTasksPerBlock": 1
+                },
+                "searchBudget": {
+                  "bestK": 3,
+                  "maxPatterns": 20,
+                  "maxBacktracks": 50,
+                  "maxBranchExpansions": 10000
+                },
+                "searchPolicy": "EXACT_CONSTRUCTIVE",
+                "timeGridMinutes": 5,
+                "resourceTransitionMinutes": 0,
+                "participantTransitionMinutes": 5
+              },
+              "taskOperations": [
+                {
+                  "taskId": 1,
+                  "itinerantTeamId": null,
+                  "operationalRole": "transport_arrival",
+                  "plannerNextKind": "auxiliary",
+                  "dependsOnTaskIds": [],
+                  "allowedItinerantTeamIds": [],
+                  "itinerantTeamRequirement": "none"
+                },
+                {
+                  "taskId": 2,
+                  "itinerantTeamId": null,
+                  "operationalRole": "productive_task",
+                  "plannerNextKind": "vocal",
+                  "dependsOnTaskIds": [
+                    1
+                  ],
+                  "declaredResourceIds": [
+                    1
+                  ],
+                  "allowedItinerantTeamIds": [],
+                  "itinerantTeamRequirement": "none"
+                },
+                {
+                  "taskId": 3,
+                  "itinerantTeamId": null,
+                  "operationalRole": "productive_task",
+                  "plannerNextKind": "main",
+                  "dependsOnTaskIds": [
+                    2
+                  ],
+                  "declaredResourceIds": [
+                    1
+                  ],
+                  "allowedItinerantTeamIds": [],
+                  "itinerantTeamRequirement": "none"
+                },
+                {
+                  "taskId": 4,
+                  "itinerantTeamId": null,
+                  "operationalRole": "transport_departure",
+                  "plannerNextKind": "auxiliary",
+                  "dependsOnTaskIds": [
+                    3
+                  ],
+                  "allowedItinerantTeamIds": [],
+                  "itinerantTeamRequirement": "none"
+                },
+                {
+                  "taskId": 5,
+                  "itinerantTeamId": null,
+                  "operationalRole": "transport_arrival",
+                  "plannerNextKind": "auxiliary",
+                  "dependsOnTaskIds": [],
+                  "allowedItinerantTeamIds": [],
+                  "itinerantTeamRequirement": "none"
+                },
+                {
+                  "taskId": 6,
+                  "itinerantTeamId": null,
+                  "operationalRole": "productive_task",
+                  "plannerNextKind": "vocal",
+                  "dependsOnTaskIds": [
+                    5
+                  ],
+                  "declaredResourceIds": [
+                    1
+                  ],
+                  "allowedItinerantTeamIds": [],
+                  "itinerantTeamRequirement": "none"
+                },
+                {
+                  "taskId": 7,
+                  "itinerantTeamId": null,
+                  "operationalRole": "productive_task",
+                  "plannerNextKind": "main",
+                  "dependsOnTaskIds": [
+                    6
+                  ],
+                  "declaredResourceIds": [
+                    1
+                  ],
+                  "allowedItinerantTeamIds": [],
+                  "itinerantTeamRequirement": "none"
+                },
+                {
+                  "taskId": 8,
+                  "itinerantTeamId": null,
+                  "operationalRole": "transport_departure",
+                  "plannerNextKind": "auxiliary",
+                  "dependsOnTaskIds": [
+                    7
+                  ],
+                  "allowedItinerantTeamIds": [],
+                  "itinerantTeamRequirement": "none"
+                }
+              ],
+              "mealTaskTemplateId": null,
+              "arrivalMaximumGroupSize": 2,
+              "arrivalMinimumGroupSize": 2,
+              "departureMaximumGroupSize": 2,
+              "departureMinimumGroupSize": 1,
+              "itinerantTeamAvailability": []
+            },
+            "itinerantTeamAvailability": [],
+            "defaultParticipantTransitionMinutes": 5
+          }
+        ],
+        "resource_bundles": [],
+        "spatial_configuration": [
+          {
+            "kind": "space",
+            "name": "Entrevistas nuevas",
+            "zoneId": 1,
+            "spaceId": 1,
+            "groupingLevel": 0,
+            "parentSpaceId": null,
+            "priorityLevel": 1,
+            "availabilityEnd": null,
+            "groupingMinChain": 4,
+            "availabilityStart": null,
+            "groupingApplyToDescendants": false
+          },
+          {
+            "kind": "space",
+            "name": "Preparación nueva",
+            "zoneId": 1,
+            "spaceId": 2,
+            "groupingLevel": 0,
+            "parentSpaceId": null,
+            "priorityLevel": 1,
+            "availabilityEnd": null,
+            "groupingMinChain": 4,
+            "availabilityStart": null,
+            "groupingApplyToDescendants": false
+          },
+          {
+            "kind": "space",
+            "name": "Punto de encuentro",
+            "zoneId": 1,
+            "spaceId": 3,
+            "groupingLevel": 0,
+            "parentSpaceId": null,
+            "priorityLevel": 1,
+            "availabilityEnd": null,
+            "groupingMinChain": 4,
+            "availabilityStart": null,
+            "groupingApplyToDescendants": false
+          },
+          {
+            "kind": "zone",
+            "name": "Producción transporte U00f",
+            "zoneId": 1,
+            "groupingLevel": 0,
+            "availabilityEnd": null,
+            "groupingMinChain": 4,
+            "mealEndPreferred": null,
+            "availabilityStart": null,
+            "maxTemplateChanges": 4,
+            "mealStartPreferred": null,
+            "spaceMealBreakMinutes": null
+          }
+        ],
+        "resource_configuration": [
+          {
+            "id": 1,
+            "name": "Coach transporte",
+            "typeId": 1,
+            "typeCode": "vocal_coach",
+            "typeName": "Vocal Coach",
+            "isAvailable": true,
+            "resourceItemId": 1,
+            "availabilityEnd": "18:00",
+            "availabilityStart": "09:00"
+          }
+        ],
+        "contestant_availability": [
+          {
+            "end": "17:00",
+            "start": "09:00",
+            "contestantId": 1
+          },
+          {
+            "end": "17:00",
+            "start": "09:00",
+            "contestantId": 2
+          }
+        ],
+        "resource_assignments_and_requirements": [
+          {
+            "kind": "components",
+            "value": {}
+          },
+          {
+            "kind": "spaceAssignments",
+            "value": {}
+          },
+          {
+            "kind": "spaceRequirements",
+            "value": {}
+          },
+          {
+            "kind": "zoneAssignments",
+            "value": {}
+          },
+          {
+            "kind": "zoneRequirements",
+            "value": {}
+          }
+        ]
+      },
+      "contractVersion": 1,
+      "optimizerSnapshot": {
+        "source": "INHERITED",
+        "transport": {
+          "vanCapacity": 2,
+          "groupingWeight": 5,
+          "arrivalMinGapMinutes": 20,
+          "arrivalGroupingTarget": 2,
+          "departureMinGapMinutes": 15,
+          "arrivalMaximumGroupSize": 2,
+          "arrivalMinimumGroupSize": 2,
+          "departureGroupingTarget": 1,
+          "departureMaximumGroupSize": 2,
+          "departureMinimumGroupSize": 1,
+          "arrivalPlanTemplateSnapshotId": 1,
+          "departurePlanTemplateSnapshotId": 4
+        },
+        "heuristics": {
+          "CONTESTANT_COMPACT": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "MAIN_ZONE_PRIORITY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "MAIN_ZONE_KEEP_BUSY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "CONTESTANT_TOTAL_SPAN": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "GROUP_BY_SPACE_ACTIVE": {
+            "basicLevel": 2,
+            "advancedValue": 0,
+            "effectiveWeight": 6
+          },
+          "MAIN_ZONE_FINISH_EARLY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "CONTESTANT_STAY_IN_ZONE": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "ARRIVAL_DEPARTURE_GROUPING": {
+            "basicLevel": 2,
+            "advancedValue": 5,
+            "effectiveWeight": 5
+          },
+          "GROUP_BY_SPACE_TEMPLATE_MATCH": {
+            "basicLevel": 2,
+            "advancedValue": 0,
+            "effectiveWeight": 6
+          }
+        },
+        "mainZoneId": null,
+        "editingMode": "BASIC",
+        "contractVersion": 1,
+        "groupingZoneIds": [],
+        "nearHardBreaksMax": 0,
+        "configurationFingerprint": "a9cc968c15eb3438e4322afb56110954b62b102d657b9c537f82d80be8d360d7"
+      },
+      "taskTemplateSnapshots": [
+        {
+          "source": "inherited",
+          "setupId": null,
+          "templateName": "Traslado azul",
+          "defaultZoneId": 1,
+          "hasDependency": false,
+          "requiresCoach": false,
+          "defaultCameras": 0,
+          "defaultSpaceId": 3,
+          "contractVersion": 2,
+          "defaultDuration": 10,
+          "itinerantTeamId": null,
+          "requiresAuxiliar": false,
+          "sourceTemplateId": 1,
+          "exclusiveAuxiliar": false,
+          "requiresPresenter": false,
+          "sourceFingerprint": "4f00a116ed61bc6e562d6316a8cf3d79e6f32610dec18f4c08f84e4cd1715842",
+          "plannerNextOperation": {
+            "kind": "auxiliary",
+            "contractVersion": 1
+          },
+          "resourceRequirements": null,
+          "dependencyTemplateIds": [],
+          "allowedItinerantTeamIds": [],
+          "itinerantTeamRequirement": "none",
+          "autoCreateOnContestantCreate": true,
+          "participantMarginAfterMinutes": 0,
+          "participantMarginBeforeMinutes": 0
+        },
+        {
+          "source": "inherited",
+          "setupId": null,
+          "templateName": "Preparación entrevista",
+          "defaultZoneId": 1,
+          "hasDependency": true,
+          "requiresCoach": true,
+          "defaultCameras": 0,
+          "defaultSpaceId": 2,
+          "contractVersion": 2,
+          "defaultDuration": 10,
+          "itinerantTeamId": null,
+          "requiresAuxiliar": false,
+          "sourceTemplateId": 2,
+          "exclusiveAuxiliar": false,
+          "requiresPresenter": false,
+          "sourceFingerprint": "eda045720b1cb0f1cd63dfe25714e4a343b73cb0cf4b191578fcc9ba8f673d98",
+          "plannerNextOperation": {
+            "kind": "vocal",
+            "contractVersion": 1
+          },
+          "resourceRequirements": null,
+          "dependencyTemplateIds": [
+            1
+          ],
+          "allowedItinerantTeamIds": [],
+          "itinerantTeamRequirement": "none",
+          "autoCreateOnContestantCreate": true,
+          "participantMarginAfterMinutes": 0,
+          "participantMarginBeforeMinutes": 0
+        },
+        {
+          "source": "inherited",
+          "setupId": null,
+          "templateName": "Entrevista nueva",
+          "defaultZoneId": 1,
+          "hasDependency": true,
+          "requiresCoach": true,
+          "defaultCameras": 0,
+          "defaultSpaceId": 1,
+          "contractVersion": 2,
+          "defaultDuration": 10,
+          "itinerantTeamId": null,
+          "requiresAuxiliar": false,
+          "sourceTemplateId": 3,
+          "exclusiveAuxiliar": false,
+          "requiresPresenter": false,
+          "sourceFingerprint": "bdece0071672f71c6280681c7ffe9216d32f9ec6a8d1929fad758d9c605a1d46",
+          "plannerNextOperation": {
+            "kind": "main",
+            "contractVersion": 1
+          },
+          "resourceRequirements": null,
+          "dependencyTemplateIds": [
+            2
+          ],
+          "allowedItinerantTeamIds": [],
+          "itinerantTeamRequirement": "none",
+          "autoCreateOnContestantCreate": true,
+          "participantMarginAfterMinutes": 0,
+          "participantMarginBeforeMinutes": 0
+        },
+        {
+          "source": "inherited",
+          "setupId": null,
+          "templateName": "Retorno verde",
+          "defaultZoneId": 1,
+          "hasDependency": true,
+          "requiresCoach": false,
+          "defaultCameras": 0,
+          "defaultSpaceId": 3,
+          "contractVersion": 2,
+          "defaultDuration": 10,
+          "itinerantTeamId": null,
+          "requiresAuxiliar": false,
+          "sourceTemplateId": 4,
+          "exclusiveAuxiliar": false,
+          "requiresPresenter": false,
+          "sourceFingerprint": "afb197f355f66d250f048e3be9e0ab496437675b67f4f779ff81fa77dffe70ec",
+          "plannerNextOperation": {
+            "kind": "auxiliary",
+            "contractVersion": 1
+          },
+          "resourceRequirements": null,
+          "dependencyTemplateIds": [
+            3
+          ],
+          "allowedItinerantTeamIds": [],
+          "itinerantTeamRequirement": "none",
+          "autoCreateOnContestantCreate": true,
+          "participantMarginAfterMinutes": 0,
+          "participantMarginBeforeMinutes": 0
+        }
+      ]
+    }
+  }
+]

@@ -35,6 +35,8 @@ if(process.argv.includes("--app")) {
 
  const report:any={mode:"REAL_DISPOSABLE_NEW_DAY_UI",remoteWrites:0,images,checks:[],startedAt:new Date().toISOString(),
    sourceHashes:Object.fromEntries(['server/newDayPlannerConfiguration.ts','server/assistedProposalService.ts',
+     'engine/buildInput.ts','engine/planner-next/exactMainAndFeederCore.ts','server/storage.ts',
+     'server/planOptimizerSnapshotPersistence.ts','server/plannerReadiness.ts','script/demo/smokeNewDayTransportJourney.ts',
      'engine/planner-next/integration/engineInputAdapter.ts','engine/planner-next/exactItinerantPlan.ts','engine/planner-next/validate.ts',
      'script/demo/smokeNewDayIntegration.ts','script/demo/smokeNewDayItinerantJourney.ts','script/demo/smokeNewDaySetupJourney.ts',
      'shared/newDayPlannerConfiguration.ts','server/newDayPlannerConfigurationRoutes.ts','server/effectiveConfigurationView.ts',
@@ -107,7 +109,9 @@ if(process.argv.includes("--app")) {
   app.stdout!.pipe(log);app.stderr!.pipe(log);
   await eventually(async()=>{assert.equal(app!.exitCode,null);assert.equal((await fetch(`${appUrl}/api/health`)).status,200);});
   Object.assign(process.env,{SUPABASE_URL:url,SUPABASE_ANON_KEY:anon,SUPABASE_SERVICE_ROLE_KEY:service});
-  const {runNewDayJourney}=process.argv.includes("--setup-families")
+  const {runNewDayJourney}=process.argv.includes("--transport")
+    ?{runNewDayJourney:(await import("./smokeNewDayTransportJourney")).runNewDayTransportJourney}
+    :process.argv.includes("--setup-families")
     ?{runNewDayJourney:(await import("./smokeNewDaySetupJourney")).runNewDaySetupJourney}
     :process.argv.includes("--itinerant-consumption")
     ?{runNewDayJourney:(await import("./smokeNewDayItinerantJourney")).runNewDayItinerantJourney}
