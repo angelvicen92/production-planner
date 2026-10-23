@@ -1,0 +1,48 @@
+{
+  "status": "LOCAL_GATES_PASS",
+  "implementationHead": "0c6515ce1fa7714b5a1f7e64289ecbed45c6d2cd",
+  "base": "5256102bf5c7eb925fd24ab1d868c2d22bc91a6e",
+  "nativeDays": [
+    4,
+    4
+  ],
+  "nativeStages": [
+    1,
+    2
+  ],
+  "nativeSqlNegatives": 13,
+  "newTests": 15,
+  "focusedBoundaryTests": 57,
+  "fullSuite": {
+    "tests": 3141,
+    "pass": 3141,
+    "fail": 0,
+    "skipped": 0
+  },
+  "typescript": "PASS",
+  "harnessTypescript": "PASS",
+  "build": "PASS",
+  "migrationSequence": "PASS",
+  "nativeLedger": "PASS",
+  "regressions": "U00a\u2013U00g PASS",
+  "a2": {
+    "obligations": 266,
+    "stages": 11,
+    "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+    "branches": [
+      27049,
+      27049,
+      27049
+    ],
+    "durationMs": [
+      71989,
+      71042,
+      71036
+    ],
+    "allSnapshotsAndCertificatesIdentical": true
+  },
+  "ci": "Final head status in PR #1186; code head checks and exact source equivalence are recorded separately",
+  "remoteWrites": 0,
+  "merged": false,
+  "deployed": false
+}

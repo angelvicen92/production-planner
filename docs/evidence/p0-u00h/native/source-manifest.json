@@ -1,7 +1,18 @@
 {
   "ref": "HEAD",
-  "head": "ffdb2f075e3af1d402d80fe2741abb52b6fca673",
-  "patchSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "head": "0c6515ce1fa7714b5a1f7e64289ecbed45c6d2cd",
+  "node": "20.19.5",
+  "patchSha256": "940c7e17add88394648cae5a72d0ca90d0837988e526ec6e040ef30065779e9a",
   "originalHarnessSha256": "f797d62083a6988d795540b25a5a8435b169baf8e789c84caeb55d2be286430e",
+  "journeySha256": "0df78bb42f155fba7631c379b08c1dcea8c440341d65f24384e3d6db20883583",
+  "lockfileSha256": "cbe75a531336356a5d3baa75202818f1a7060b72f10d205449b8036295ffeaaa",
+  "sourceHashes": {
+    "engine/concreteTaskResourceRequirements.ts": "c1891f98766d65fe3fc56bde28669d7e34727de44deb00c92947a625f974a625",
+    "engine/planner-next/integration/effectiveTaskResourceAssignments.ts": "2b3afd102a8470887dce53c55d71ec01af155adcbbfdc755e2a03e0f58daf189",
+    "engine/planner-next/integration/engineInputPreflight.ts": "3920723c8acc2572a79537ca9a92284d9078de0ec6b21677c04360e3895ba705",
+    "engine/planner-next/integration/engineInputAdapter.ts": "318887917d294186123e01b258a3555815fad02f6db0f3806164aa544c12862f",
+    "server/itinerantComposition.ts": "3a64ebf87fa04ac760723abbd8c3830a1465d769efcce4440321236f7e32183b",
+    "server/assistedProposalService.ts": "5518a41cb1a3a3984c1064d875eb4a10d147b523a71ebfd38508e32ef7c9bed8"
+  },
   "remoteWrites": 0
 }

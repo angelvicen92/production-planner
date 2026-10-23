@@ -1,0 +1,10 @@
+{
+  "workflowRun": 40022944253,
+  "head": "0c6515ce1fa7714b5a1f7e64289ecbed45c6d2cd",
+  "checkoutMergeCommit": "fcb58bdae3bafe58708276b6383bf082982e7476",
+  "artifactId": 12530939946,
+  "zipSha256": "99a212b876497e7cc30be9d087ea6d0c3046f24724e6c87016e49745a9b450f8",
+  "remoteWrites": 0,
+  "headTree": "7589b91d72673e467f44b9f4d4896004d481e604",
+  "checkoutTree": "7589b91d72673e467f44b9f4d4896004d481e604"
+}

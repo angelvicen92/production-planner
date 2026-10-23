@@ -25,6 +25,7 @@ jobs:
       - run: node node_modules/tsx/dist/cli.mjs --test engine/planner-next/integration/concreteResourceRequirements.spec.ts
       - run: node --import tsx script/validation/runU00hResources.ts work/u00h-baseline --baseline
       - run: node --import tsx script/validation/runU00hResources.ts work/u00h-candidate
+      - run: python3 docs/evidence/p0-u00h/verify.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:

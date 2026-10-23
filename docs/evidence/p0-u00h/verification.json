@@ -1,0 +1,64 @@
+{
+  "status": "PASS",
+  "base": "5256102bf5c7eb925fd24ab1d868c2d22bc91a6e",
+  "nativeDays": [
+    4,
+    4
+  ],
+  "regressions": [
+    {
+      "scenario": "main",
+      "day": "first",
+      "stageFingerprint": "93468bcf6e3b8b614179d98b854f0e6a4ad94e583efe7d94dd24487475da42aa"
+    },
+    {
+      "scenario": "main",
+      "day": "second",
+      "stageFingerprint": "02a4784df12d039450cd97404f4480c0b27fbe016cccd747ce79d7de2ff094aa"
+    },
+    {
+      "scenario": "standalone",
+      "day": "first",
+      "stageFingerprint": "dc29ef5c25e7235843104d65744db65112ca1a363e8b38a76a1bd483e68f5544"
+    },
+    {
+      "scenario": "standalone",
+      "day": "second",
+      "stageFingerprint": "664c4e16a5812e3a2f30f35da1f471d6541fea58ba11755fb10580757907198b"
+    },
+    {
+      "scenario": "itinerant",
+      "day": "technical",
+      "stageFingerprint": "3423759a90622eb1a3192fd59fea8e26a43b90febdbe1f4d0ca710e0c7a5d7e0"
+    },
+    {
+      "scenario": "itinerant",
+      "day": "auxiliary",
+      "stageFingerprint": "53a21bdfe1c4fff8a910f44a4ccae71bfc830bfdbcd0323ee4ca4b37005e6fbc"
+    }
+  ],
+  "protectedHistoricalStagesIdentical": true,
+  "mealStagesIdentical": 5,
+  "a2": {
+    "obligations": 266,
+    "stages": 11,
+    "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+    "branches": [
+      27049,
+      27049,
+      27049
+    ],
+    "durationMs": [
+      71989,
+      71042,
+      71036
+    ],
+    "allSnapshotsAndCertificatesIdentical": true
+  },
+  "suite": {
+    "tests": 3141,
+    "pass": 3141,
+    "fail": 0,
+    "skipped": 0
+  }
+}
