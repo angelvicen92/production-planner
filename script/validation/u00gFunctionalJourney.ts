@@ -121,8 +121,13 @@ export async function runU00gFunctionalJourney({appUrl,users,db,directory,pass}:
         await action('Aceptar etapa','/accept-stage');const accepted=await state();save(`${label}-S${index+1}-stage`,accepted);
         assert.equal(accepted.activeStage.ordinal,index+1);assert.deepEqual(accepted.activeStage.snapshotJson,result.proposedDraftSnapshot);
         assert.equal(fingerprintAssistedPlanningSnapshotV1(accepted.activeStage.snapshotJson),result.proposedDraftFingerprint);
-        const statuses=(await db.query('SELECT id,status FROM public.daily_tasks WHERE plan_id=$1 ORDER BY id',[planId])).rows;
+        const statuses=(await db.query('SELECT id,status,start_planned,end_planned,space_id,zone_id FROM public.daily_tasks WHERE plan_id=$1 ORDER BY id',[planId])).rows;
         assert.ok(statuses.every(t=>t.status==='pending'));save(`${label}-S${index+1}-execution-status`,statuses);
+        for(const task of statuses){
+          const row=accepted.activeStage.snapshotJson.tasks.find((t:any)=>t.taskId===Number(task.id));
+          assert.deepEqual([task.start_planned,task.end_planned,task.space_id,task.zone_id],
+            [row.startPlanned,row.endPlanned,row.spaceId,row.zoneId],'accepted Stage must be materialized in daily_tasks');
+        }
         await page.screenshot({path:`${directory}/${label}-S${index+1}-accepted.png`,fullPage:true});
         stageReports.push({ordinal:index+1,runId,scope:result.scopeTaskIds,fingerprint:result.proposedDraftFingerprint,engineFingerprint:result.evidence.fingerprint,branches:result.evidence.work,elapsedMs:performance.now()-started,globalMealGate:result.evidence.globalMealGate,hardCount:0,requiredCount:0,deterministic:true});
       }
