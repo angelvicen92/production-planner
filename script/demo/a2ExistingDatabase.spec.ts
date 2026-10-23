@@ -138,7 +138,7 @@ test('actual 086 bootstrap rejects resource staleness, materializes S0 and persi
   const rbac=readFileSync('supabase/migrations/037_rbac_auth_magic_link.sql','utf8');
   const roleStart=rbac.indexOf('CREATE OR REPLACE FUNCTION public.has_role');
   await db.exec(rbac.slice(roleStart,rbac.indexOf('GRANT EXECUTE ON FUNCTION public.has_role',roleStart)));
-  for(const migration of ['102_round_preparation_day_override.sql','103_atomic_task_template_inverse.sql','104_operation_continuity.sql','105_new_day_planner_configuration.sql'])
+  for(const migration of ['102_round_preparation_day_override.sql','103_atomic_task_template_inverse.sql','104_operation_continuity.sql','105_new_day_planner_configuration.sql','108_assisted_participant_meal_validation.sql'])
     await db.exec(readFileSync(`supabase/migrations/${migration}`,'utf8'));
   const auditSQL=readFileSync('script/demo/sql/catalog-audit.sql','utf8');
   const select=auditSQL.slice(auditSQL.indexOf('SELECT jsonb_build_object('),auditSQL.lastIndexOf('COMMIT;'));

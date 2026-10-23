@@ -1,0 +1,188 @@
+{
+  "status": "DIAGNOSTIC_BLOCKED",
+  "firstCause": {
+    "component": "applyNewDayPlannerConfiguration",
+    "discardedMealTemplateId": 3,
+    "originalReasons": [
+      "MISSING_SPACE_REFERENCE",
+      "UNSUPPORTED_BREAK_SCOPE"
+    ],
+    "originalMealCount": 0,
+    "identityOnlyCounterfactual": true
+  },
+  "counterfactual": {
+    "taskCount": 4,
+    "mealCount": 2,
+    "completeForScope": true,
+    "hardValid": true,
+    "requiredValid": true,
+    "meals": [
+      {
+        "id": "participant-meal:3",
+        "sourceTaskId": "task:3",
+        "participantId": "participant:1",
+        "duration": 20,
+        "start": 720,
+        "end": 740
+      },
+      {
+        "id": "participant-meal:6",
+        "sourceTaskId": "task:6",
+        "participantId": "participant:2",
+        "duration": 20,
+        "start": 740,
+        "end": 760
+      }
+    ],
+    "fingerprint": "ca8d96d669710ba9ebe622ff2f6b255ce19b7c1a57af23b3c3b0d40da9cc50db",
+    "work": {
+      "branchesExplored": 11,
+      "coreBranches": 0,
+      "standaloneBranches": 11,
+      "coreMaximumDepth": 0,
+      "patternCandidatesExplored": 0,
+      "timelineCandidatesExplored": 0,
+      "mainCandidatesEvaluated": 0,
+      "feederCandidatesEvaluated": 0,
+      "architecturesChecked": 0,
+      "feederOrderBranches": 0,
+      "feederSlotMatchingChecks": 0,
+      "feederSlotMatchingEdgeChecks": 0,
+      "feederSlotMatchingAugmentTraversals": 0,
+      "feederSlotMatchingBranchesExplored": 0,
+      "residualMatchingInvocations": 0,
+      "residualMatchingFullBuilds": 0,
+      "residualMatchingIncrementalUpdates": 0,
+      "residualMatchingEdgeCacheHits": 0,
+      "residualMatchingEdgeCacheMisses": 0,
+      "residualMatchingPositionChecks": 0,
+      "residualMatchingAugmentTraversals": 0,
+      "residualMatchingBranchesExplored": 0,
+      "mainRunWitnessAttempts": 0,
+      "mainRunWitnessRepairs": 0,
+      "mainRunEquivalentOrdersCollapsed": 0,
+      "bundleMatchingAttempts": 0,
+      "bundleMatchingRepairs": 0,
+      "bundleMatchingMaterializations": 0,
+      "bundleHardValidationRejects": 0,
+      "bundleCertifiedRepairs": 0,
+      "bundleNogoodsCreated": 0,
+      "bundleNogoodBranches": 0,
+      "bundleNogoodDeduplications": 0,
+      "bundleNogoodRepairsSucceeded": 0,
+      "conflictBackjumps": 0,
+      "suffixDepthsSkipped": 0,
+      "deepestCoreDepthReached": 0,
+      "standaloneForwardChecks": 0,
+      "standaloneForwardStartChecks": 0,
+      "standaloneForwardWitnessCacheHits": 0,
+      "standaloneForwardWitnessCacheMisses": 0,
+      "coreLeafTransportPrunes": 0,
+      "transportContiguousStates": 0,
+      "membershipFallbackEntered": 0,
+      "participantMealFutureFeasibilityChecks": 5,
+      "participantMealFutureInfeasibleBranches": 0,
+      "participantMealAffectedObligationsChecked": 4,
+      "participantMealZeroDomainPrunes": 0,
+      "participantMealAnalyticCollectivePrunes": 0,
+      "participantMealExactMaterializations": 1,
+      "futureRoundWitnessSearchInvocations": 0,
+      "futureRoundWitnessStructuralCandidates": 0,
+      "futureRoundWitnessCompleteMatchings": 0,
+      "futureRoundWitnessParticipantFutureChecks": 0,
+      "futureRoundWitnessPrerequisiteChecks": 0,
+      "futureRoundWitnessBranchesConsumed": 0,
+      "branchBudgetLimit": 10000
+    },
+    "futureFeasibility": {
+      "futureFeasibilityChecks": 5,
+      "futureInfeasibleBranches": 0,
+      "affectedObligationsChecked": 4,
+      "zeroDomainPrunes": 0,
+      "analyticCollectivePrunes": 0,
+      "blockingMealTaskIds": [],
+      "firstPrune": null
+    },
+    "deterministic": true
+  },
+  "protectedContinuation": {
+    "evidenceLevel": "OFFLINE_PROJECTION_OF_VALID_FULL_WITNESS; NOT_AN_ACCEPTED_NATIVE_STAGE",
+    "component": "buildAssistedProblem → preflight",
+    "reasons": [
+      "FLEXIBLE_PARTICIPANT_MEAL_WITH_FIXED_INTERVAL"
+    ],
+    "mealAuthorities": [
+      {
+        "id": "participant-meal:3",
+        "sourceTaskId": "task:3",
+        "participantId": "participant:1",
+        "duration": 20,
+        "window": {
+          "start": 720,
+          "end": 780
+        },
+        "status": "pending",
+        "dependencies": [],
+        "fixedInterval": {
+          "start": 720,
+          "end": 740
+        }
+      },
+      {
+        "id": "participant-meal:6",
+        "sourceTaskId": "task:6",
+        "participantId": "participant:2",
+        "duration": 20,
+        "window": {
+          "start": 720,
+          "end": 780
+        },
+        "status": "pending",
+        "dependencies": [],
+        "fixedInterval": {
+          "start": 740,
+          "end": 760
+        }
+      }
+    ],
+    "branches": 0,
+    "proposal": null,
+    "existingFullWitnessHardValid": true,
+    "inputIntact": true
+  },
+  "remoteWrites": 0,
+  "native": {
+    "status": "DIAGNOSTIC_BLOCKED_BEFORE_STAGE",
+    "validationStatus": 422,
+    "reasonCode": "RUN_RESULT_INVALID",
+    "sqlPredicate": "jsonb_array_length(result->'proposal')=0",
+    "identityOnlyCounterfactual": true,
+    "solverUnchanged": true,
+    "scopeTaskIds": [
+      3,
+      6
+    ],
+    "scheduledParticipantMeals": [
+      {
+        "id": "participant-meal:3",
+        "end": 740,
+        "start": 720,
+        "duration": 20,
+        "sourceTaskId": "task:3",
+        "participantId": "participant:1"
+      },
+      {
+        "id": "participant-meal:6",
+        "end": 760,
+        "start": 740,
+        "duration": 20,
+        "sourceTaskId": "task:6",
+        "participantId": "participant:2"
+      }
+    ],
+    "previousAppliedDraftIntact": true,
+    "S0Intact": true,
+    "dailyTasksIntact": true,
+    "remoteWrites": 0
+  }
+}

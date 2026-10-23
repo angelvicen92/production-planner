@@ -7,6 +7,7 @@ export type ProgramSettingsUpdateInput = Readonly<{
   defaultWorkStart?: string; defaultWorkEnd?: string; mealStart?: string; mealEnd?: string;
   mealMode?: string; contestantMealDurationMinutes?: number; contestantMealMaxSimultaneous?: number;
   spaceMealBreakMinutes?: number; itinerantMealBreakMinutes?: number; mealTaskTemplateName?: string;
+  mealTaskTemplateId?: number | null;
   clockMode?: "auto" | "manual"; simulatedTime?: string | null;
   uiItinerantGroupOrderIndex?: number | null; uiUnlocatedGroupOrderIndex?: number | null;
 }>;
@@ -20,6 +21,7 @@ export function buildProgramSettingsAtomicPatch(input: ProgramSettingsUpdateInpu
   const mappings = [
     ["defaultWorkStart", "default_work_start"], ["defaultWorkEnd", "default_work_end"],
     ["mealStart", "meal_start"], ["mealEnd", "meal_end"], ["mealMode", "meal_mode"],
+    ["mealTaskTemplateId", "meal_task_template_id"],
     ["contestantMealDurationMinutes", "contestant_meal_duration_minutes"],
     ["contestantMealMaxSimultaneous", "contestant_meal_max_simultaneous"],
     ["spaceMealBreakMinutes", "space_meal_break_minutes"], ["itinerantMealBreakMinutes", "itinerant_meal_break_minutes"],

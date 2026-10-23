@@ -396,7 +396,10 @@ test("material participant meals update their source row and restore as fixed me
   await replay.run(planId,9);
   assert.deepEqual(restored?.protectedParticipantMeals.map(meal=>({sourceTaskId:meal.sourceTaskId,start:meal.start,end:meal.end})),
     [{sourceTaskId:"task:106",start:840,end:885}]);
-  assert.deepEqual(restored?.problem.participantMeals?.find(meal=>meal.sourceTaskId==="task:106")?.fixedInterval,{start:840,end:885});
+  const protectedMeal=restored?.problem.participantMeals?.find(meal=>meal.sourceTaskId==="task:106");
+  assert.deepEqual(protectedMeal?.protectedInterval,{start:840,end:885});
+  assert.equal(protectedMeal?.fixedInterval,undefined);
+  assert.equal(protectedMeal?.status,"pending");
 });
 
 test("operational meals consolidate only after all space/resource/coach consumers, preserving accepted intervals on replay",async()=>{

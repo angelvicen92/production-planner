@@ -267,6 +267,8 @@ export interface ParticipantMealObligation {
   /** Canonical predecessor identities; may reference tasks or other participant-meal sourceTaskIds. */
   dependencies?: string[];
   fixedInterval?: Window;
+  /** Validated accepted Stage placement; independent of real execution status. */
+  protectedInterval?: Window;
 }
 
 export interface ScheduledParticipantMeal {

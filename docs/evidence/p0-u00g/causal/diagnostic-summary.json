@@ -1,0 +1,12 @@
+{
+  "planId": 1,
+  "templateIds": {
+    "prepare": 1,
+    "record": 2,
+    "meal": 3
+  },
+  "original": "UNSUPPORTED",
+  "counterfactual": "SUPPORTED",
+  "remoteWrites": 0,
+  "uiErrors": []
+}

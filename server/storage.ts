@@ -1345,7 +1345,7 @@ export class SupabaseStorage implements IStorage {
       { data: plannerProfile, error: plannerProfileError },
       { data: optimizerSettings, error: optimizerSettingsError },
     ] = await Promise.all([
-      supabaseAdmin.from("program_settings").select("default_work_start, default_work_end, meal_start, meal_end, meal_mode, default_participant_transition_minutes").eq("id", 1).single(),
+      supabaseAdmin.from("program_settings").select("default_work_start, default_work_end, meal_start, meal_end, meal_mode, default_participant_transition_minutes, meal_task_template_id, contestant_meal_duration_minutes, contestant_meal_max_simultaneous").eq("id", 1).single(),
       supabaseAdmin.from("zones").select("id, name, meal_start_preferred, meal_end_preferred, grouping_level, grouping_min_chain, max_template_changes, space_meal_break_minutes, default_availability_start, default_availability_end").order("id"),
       supabaseAdmin.from("spaces").select("id, name, zone_id, parent_space_id, priority_level, grouping_level, grouping_min_chain, grouping_apply_to_descendants, default_availability_start, default_availability_end").order("id"),
       supabaseAdmin.from("resource_bundles").select("id, name, description, bundle_type, is_active, metadata").eq("is_active", true).order("id"),
@@ -1356,7 +1356,8 @@ export class SupabaseStorage implements IStorage {
       supabaseAdmin.from("optimizer_settings").select("*").eq("id", 1).single(),
     ]);
     if (plannerProfileError) throw plannerProfileError;
-    const plannerNextProfile = newDayPlannerSnapshotSchema.parse({contractVersion:1,sourceRevision:plannerProfile.revision,configuration:plannerProfile.configuration});
+    const plannerNextProfile = newDayPlannerSnapshotSchema.parse({contractVersion:1,sourceRevision:plannerProfile.revision,configuration:plannerProfile.configuration,
+      ...(plannerProfile.configuration?{mealTaskTemplateId:settings?.meal_task_template_id==null?null:Number(settings.meal_task_template_id)}:{})});
     const transportTemplates=plannerNextProfile.configuration?.transport;
     const explicitTransportTemplates=transportTemplates&&transportTemplates!=="NONE"?transportTemplates:undefined;
     if (settingsError) throw settingsError;
@@ -1369,6 +1370,8 @@ export class SupabaseStorage implements IStorage {
       .map((template: TaskTemplate) => normalizeTaskTemplateCatalogEntry(template, "inherited"))
       .sort((left: TaskTemplateOperationalSnapshotV1, right: TaskTemplateOperationalSnapshotV1) => left.sourceTemplateId - right.sourceTemplateId);
     indexTaskTemplateSnapshots(validatedTaskTemplateSnapshots);
+    if(plannerNextProfile.mealTaskTemplateId!=null&&!validatedTaskTemplateSnapshots.some(s=>s.sourceTemplateId===plannerNextProfile.mealTaskTemplateId))
+      throw new Error("MEAL_TEMPLATE_SNAPSHOT_NOT_FOUND");
 
     // SPEC11-010: validate the optimizer candidate before creating any persistent day.
     const optimizerPreviewReferences = resolvePlanOptimizerTransportReferencesV1(
@@ -1434,9 +1437,9 @@ export class SupabaseStorage implements IStorage {
         participant_transition_override_at:participantTransitionIntent.intent==="OVERRIDE"?new Date().toISOString():null,
 
         contestant_meal_duration_minutes:
-          plan.contestantMealDurationMinutes ?? 75,
+          plan.contestantMealDurationMinutes ?? settings.contestant_meal_duration_minutes ?? 75,
         contestant_meal_max_simultaneous:
-          plan.contestantMealMaxSimultaneous ?? 10,
+          plan.contestantMealMaxSimultaneous ?? settings.contestant_meal_max_simultaneous ?? 10,
 
         // Deprecated in UI (now derived from plan_resource_items), but still stored for legacy compatibility
         cameras_available: plan.camerasAvailable ?? 0,

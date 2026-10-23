@@ -123,6 +123,7 @@ export const planningRuns = pgTable("planning_runs", {
 // 1.1 program_settings (defaults globales)
 export const programSettings = pgTable("program_settings", {
   id: integer("id").primaryKey(),
+  mealTaskTemplateId: bigint("meal_task_template_id", {mode:"number"}),
   mainPreferredBlockCount: integer("main_preferred_block_count"),
   mainBeforeMealBlocks: integer("main_before_meal_blocks"),
   defaultWorkStart: text("default_work_start").notNull().default("09:00"),

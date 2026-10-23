@@ -1,0 +1,23 @@
+{
+  "baseline": "64baf361139a774cc8cd22bd9d463254839af182",
+  "purpose": "SQL-only repair with identity counterfactual, before productive identity/protection integration",
+  "files": {
+    "engine/buildInput.ts": {
+      "before": "e6bc8e8cf2adcd9752234edc09b65b671118b071785497b7146ef6e20ef26b09",
+      "after": "401688c0d4c544a08785125b37d0fa5583029c01cbcf067cd3f872213cd26859"
+    },
+    "script/demo/smokeNewDayIntegration.ts": {
+      "before": "f797d62083a6988d795540b25a5a8435b169baf8e789c84caeb55d2be286430e",
+      "after": "a8eb22932fb64c9accc88e82bafc99def56657fc6702741a8c0354643d67a90b"
+    },
+    "script/diagnostics/u00gMealJourney.ts": {
+      "before": "d06c635d8ffa7fa3bca8ff28caf2333818ba1a27e69a93d3a3921e6050e20a61",
+      "after": "8ea59c2ab14f5d0cffe34fbaa6b0e0921660d46dba7ceed079cbb155277b4eef"
+    },
+    "supabase/migrations/108_assisted_participant_meal_validation.sql": {
+      "before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after": "48e001d65d6088ac514e269fceee05f92c6b265d50dca8d327bfea04db43d5ee"
+    }
+  },
+  "remoteWrites": 0
+}

@@ -1,0 +1,98 @@
+[
+  {
+    "id": "7",
+    "status": "pending",
+    "start_planned": "11:20",
+    "end_planned": "11:30",
+    "space_id": "1",
+    "zone_id": "1"
+  },
+  {
+    "id": "8",
+    "status": "pending",
+    "start_planned": null,
+    "end_planned": null,
+    "space_id": "1",
+    "zone_id": "1"
+  },
+  {
+    "id": "9",
+    "status": "pending",
+    "start_planned": null,
+    "end_planned": null,
+    "space_id": "1",
+    "zone_id": "1"
+  },
+  {
+    "id": "10",
+    "status": "pending",
+    "start_planned": "12:00",
+    "end_planned": "12:15",
+    "space_id": null,
+    "zone_id": null
+  },
+  {
+    "id": "11",
+    "status": "pending",
+    "start_planned": "11:00",
+    "end_planned": "11:10",
+    "space_id": "1",
+    "zone_id": "1"
+  },
+  {
+    "id": "12",
+    "status": "pending",
+    "start_planned": null,
+    "end_planned": null,
+    "space_id": "1",
+    "zone_id": "1"
+  },
+  {
+    "id": "13",
+    "status": "pending",
+    "start_planned": null,
+    "end_planned": null,
+    "space_id": "1",
+    "zone_id": "1"
+  },
+  {
+    "id": "14",
+    "status": "pending",
+    "start_planned": "12:00",
+    "end_planned": "12:15",
+    "space_id": null,
+    "zone_id": null
+  },
+  {
+    "id": "15",
+    "status": "pending",
+    "start_planned": "11:10",
+    "end_planned": "11:20",
+    "space_id": "1",
+    "zone_id": "1"
+  },
+  {
+    "id": "16",
+    "status": "pending",
+    "start_planned": null,
+    "end_planned": null,
+    "space_id": "1",
+    "zone_id": "1"
+  },
+  {
+    "id": "17",
+    "status": "pending",
+    "start_planned": null,
+    "end_planned": null,
+    "space_id": "1",
+    "zone_id": "1"
+  },
+  {
+    "id": "18",
+    "status": "pending",
+    "start_planned": "12:15",
+    "end_planned": "12:30",
+    "space_id": null,
+    "zone_id": null
+  }
+]

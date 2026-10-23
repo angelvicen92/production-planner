@@ -1,0 +1,78 @@
+[
+  {
+    "name": "hash corruption",
+    "rejected": "RUN_RESULT_INVALID"
+  },
+  {
+    "name": "empty authorized scope",
+    "rejected": "RUN_RESULT_INVALID"
+  },
+  {
+    "name": "duplicate authorized scope",
+    "rejected": "RUN_RESULT_INVALID"
+  },
+  {
+    "name": "duplicate meal witness",
+    "rejected": "RUN_RESULT_INVALID"
+  },
+  {
+    "name": "invented meal identity",
+    "rejected": "RUN_RESULT_INVALID"
+  },
+  {
+    "name": "invented participant identity",
+    "rejected": "RUN_RESULT_INVALID"
+  },
+  {
+    "name": "invented meal source",
+    "rejected": "RUN_RESULT_INVALID"
+  },
+  {
+    "name": "duration forged consistently in witness and snapshot",
+    "rejected": "RUN_RESULT_INVALID"
+  },
+  {
+    "name": "window forged consistently in witness and snapshot",
+    "rejected": "RUN_RESULT_INVALID"
+  },
+  {
+    "name": "capacity forged with internally matching witnesses",
+    "rejected": "RUN_RESULT_INVALID"
+  },
+  {
+    "name": "mutation outside authorized scope",
+    "rejected": "RUN_RESULT_INVALID"
+  },
+  {
+    "name": "missing materialized obligation",
+    "rejected": "RUN_RESULT_INVALID"
+  },
+  {
+    "name": "no-op with matching draft, hash and snapshots",
+    "rejected": "RUN_RESULT_INVALID"
+  },
+  {
+    "name": "hard validity cannot be asserted by caller",
+    "rejected": "VALIDATION_NOT_ACCEPTABLE"
+  },
+  {
+    "name": "required validity cannot be asserted by caller",
+    "rejected": "VALIDATION_NOT_ACCEPTABLE"
+  },
+  {
+    "name": "stale Draft",
+    "rejected": "STALE_DRAFT"
+  },
+  {
+    "name": "stale base Stage",
+    "rejected": "STALE_BASE_STAGE"
+  },
+  {
+    "name": "stale configuration revision",
+    "rejected": "STALE_CONFIG_REVISION"
+  },
+  {
+    "name": "authenticated direct SQL access",
+    "rejected": "permission denied for function assisted_record_proposal_clean_validation"
+  }
+]

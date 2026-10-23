@@ -1,0 +1,79 @@
+{
+  "status": "DIAGNOSTIC_BLOCKED_CI_PENDING",
+  "baseMain": "4571cb993ae221832630f3ac1c60a72318f83f8c",
+  "functionalImplementation": false,
+  "productionSourceChanged": false,
+  "nativeGate": "PASS_REPRODUCTION_OF_BLOCKED_VALIDATION",
+  "nativeNewDays": 1,
+  "nativeAcceptedStages": 0,
+  "diagnosticTests": {
+    "passed": 6,
+    "failed": 0
+  },
+  "localChecks": [
+    {
+      "check": "typescript",
+      "status": "PASS",
+      "exitCode": 0,
+      "seconds": 29.23
+    },
+    {
+      "check": "diagnostic-typescript",
+      "status": "PASS",
+      "exitCode": 0,
+      "seconds": 37.548
+    },
+    {
+      "check": "harness-typescript",
+      "status": "PASS",
+      "exitCode": 0,
+      "seconds": 40.499
+    },
+    {
+      "check": "migrations",
+      "status": "PASS",
+      "exitCode": 0,
+      "seconds": 0.122
+    },
+    {
+      "check": "build",
+      "status": "PASS",
+      "exitCode": 0,
+      "seconds": 23.131
+    }
+  ],
+  "productSuite": {
+    "specFiles": 408,
+    "exitCode": 0,
+    "seconds": 575.699,
+    "concurrency": 2,
+    "existingCiExclusions": [
+      "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts",
+      "server/benchmarks/runA2Assist7Evidence.spec.ts"
+    ],
+    "tests": 3123,
+    "passed": 3123,
+    "failed": 0,
+    "status": "PASS",
+    "tap": "checks/product-suite.tap.gz"
+  },
+  "a2Isolated": "NOT_RUN_DIAGNOSTIC_STOP",
+  "uiRegressionsU00aU00f": "NOT_RUN_DIAGNOSTIC_STOP",
+  "acceptanceGatesAtoH": "NOT_CERTIFIED",
+  "merge": false,
+  "productionWrites": 0,
+  "pullRequest": "https://github.com/angelvicen92/production-planner/pull/1185",
+  "u00fOfflineReplay": "PASS; 8/8 and 9/9, protected cold/warm, original source hashes unchanged",
+  "ci": "PENDING_FINAL_HEAD",
+  "initialCiFailure": {
+    "check": "offline-causal-evidence",
+    "head": "3210b64aee34612066aed12589af361653356d38",
+    "cause": "The diagnostic dispatch modified the historical smokeNewDayIntegration.ts source hash.",
+    "resolution": "Restored the harness byte-for-byte to base; dispatch now exists only in the disposable archive. Original verifier passes unchanged.",
+    "assertionsRelaxed": false
+  },
+  "localInfrastructureAttempt": {
+    "productSuiteBeforeTests": "Sandbox EPERM on tsx Unix IPC socket; no tests started.",
+    "resolution": "Same suite and original limits with sandboxed network capability enabled."
+  }
+}

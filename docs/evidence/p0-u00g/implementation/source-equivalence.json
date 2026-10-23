@@ -1,0 +1,19 @@
+{
+  "verifiedNativeImplementationCommit": "26c8459b082e76875b44d418f1aa8fe8863aecda",
+  "persistenceProofCommit": "a5479dd90305395946404fc00d1cfa9e9eb427fe",
+  "a2Base": "4571cb993ae221832630f3ac1c60a72318f83f8c",
+  "a2Candidate": "26c8459b082e76875b44d418f1aa8fe8863aecda",
+  "productionRoots": [
+    "engine",
+    "server",
+    "client",
+    "shared",
+    "supabase",
+    "script/demo"
+  ],
+  "productionDelta": [],
+  "testOnlyDelta": [
+    "script/demo/a2ExistingDatabase.spec.ts"
+  ],
+  "exactProductionContentPreserved": true
+}

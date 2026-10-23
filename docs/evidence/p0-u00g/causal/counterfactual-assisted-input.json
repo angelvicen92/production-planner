@@ -1,0 +1,303 @@
+{
+  "problem": {
+    "day": {
+      "start": 660,
+      "end": 840
+    },
+    "spaces": [
+      {
+        "id": "space:1",
+        "availability": [
+          {
+            "start": 660,
+            "end": 840
+          }
+        ]
+      }
+    ],
+    "resources": [],
+    "participants": [
+      {
+        "id": "participant:1",
+        "availability": [
+          {
+            "start": 690,
+            "end": 780
+          }
+        ]
+      },
+      {
+        "id": "participant:2",
+        "availability": [
+          {
+            "start": 690,
+            "end": 780
+          }
+        ]
+      }
+    ],
+    "coaches": [],
+    "tasks": [
+      {
+        "id": "task:1",
+        "duration": 10,
+        "spaceId": "space:1",
+        "dependencies": [],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:1"
+      },
+      {
+        "id": "task:2",
+        "duration": 15,
+        "spaceId": "space:1",
+        "dependencies": [
+          "task:1"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:1"
+      },
+      {
+        "id": "task:4",
+        "duration": 10,
+        "spaceId": "space:1",
+        "dependencies": [],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:2"
+      },
+      {
+        "id": "task:5",
+        "duration": 15,
+        "spaceId": "space:1",
+        "dependencies": [
+          "task:4"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:2"
+      }
+    ],
+    "profile": "STANDALONE_ONLY",
+    "participantTransitionMinutes": 5,
+    "resourceTransitionMinutes": 0,
+    "budget": {
+      "bestK": 3,
+      "maxBacktracks": 50,
+      "maxPatterns": 20,
+      "maxBranchExpansions": 10000
+    },
+    "searchPolicy": "EXACT_CONSTRUCTIVE",
+    "participantMeals": [
+      {
+        "id": "participant-meal:3",
+        "sourceTaskId": "task:3",
+        "participantId": "participant:1",
+        "duration": 20,
+        "window": {
+          "start": 720,
+          "end": 780
+        },
+        "status": "pending",
+        "dependencies": []
+      },
+      {
+        "id": "participant-meal:6",
+        "sourceTaskId": "task:6",
+        "participantId": "participant:2",
+        "duration": 20,
+        "window": {
+          "start": 720,
+          "end": 780
+        },
+        "status": "pending",
+        "dependencies": []
+      }
+    ],
+    "participantMealCapacity": {
+      "maxSimultaneous": 1
+    },
+    "auxiliaryPolicy": {
+      "participantPresencePreference": "OFF"
+    },
+    "analyticalFutureParticipantTasks": [],
+    "analyticalRemainingParticipantTasks": [],
+    "analyticalFutureParticipantSupportingTaskIds": [],
+    "analyticalFutureTechnicalChains": [],
+    "analyticalFutureRoundSynchronizations": [],
+    "analyticalFutureItinerantAgendas": []
+  },
+  "originalValidationProblem": {
+    "day": {
+      "start": 660,
+      "end": 840
+    },
+    "spaces": [
+      {
+        "id": "space:1",
+        "availability": [
+          {
+            "start": 660,
+            "end": 840
+          }
+        ]
+      }
+    ],
+    "resources": [],
+    "participants": [
+      {
+        "id": "participant:1",
+        "availability": [
+          {
+            "start": 690,
+            "end": 780
+          }
+        ]
+      },
+      {
+        "id": "participant:2",
+        "availability": [
+          {
+            "start": 690,
+            "end": 780
+          }
+        ]
+      }
+    ],
+    "coaches": [],
+    "tasks": [
+      {
+        "id": "task:1",
+        "duration": 10,
+        "spaceId": "space:1",
+        "dependencies": [],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:1"
+      },
+      {
+        "id": "task:2",
+        "duration": 15,
+        "spaceId": "space:1",
+        "dependencies": [
+          "task:1"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:1"
+      },
+      {
+        "id": "task:4",
+        "duration": 10,
+        "spaceId": "space:1",
+        "dependencies": [],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:2"
+      },
+      {
+        "id": "task:5",
+        "duration": 15,
+        "spaceId": "space:1",
+        "dependencies": [
+          "task:4"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:2"
+      }
+    ],
+    "profile": "STANDALONE_ONLY",
+    "participantTransitionMinutes": 5,
+    "resourceTransitionMinutes": 0,
+    "budget": {
+      "bestK": 3,
+      "maxBacktracks": 50,
+      "maxPatterns": 20,
+      "maxBranchExpansions": 10000
+    },
+    "searchPolicy": "EXACT_CONSTRUCTIVE",
+    "participantMeals": [
+      {
+        "id": "participant-meal:3",
+        "sourceTaskId": "task:3",
+        "participantId": "participant:1",
+        "duration": 20,
+        "window": {
+          "start": 720,
+          "end": 780
+        },
+        "status": "pending",
+        "dependencies": []
+      },
+      {
+        "id": "participant-meal:6",
+        "sourceTaskId": "task:6",
+        "participantId": "participant:2",
+        "duration": 20,
+        "window": {
+          "start": 720,
+          "end": 780
+        },
+        "status": "pending",
+        "dependencies": []
+      }
+    ],
+    "participantMealCapacity": {
+      "maxSimultaneous": 1
+    },
+    "auxiliaryPolicy": {
+      "participantPresencePreference": "OFF"
+    },
+    "analyticalFutureParticipantTasks": [],
+    "analyticalRemainingParticipantTasks": [],
+    "analyticalFutureParticipantSupportingTaskIds": [],
+    "analyticalFutureTechnicalChains": [],
+    "analyticalFutureRoundSynchronizations": [],
+    "analyticalFutureItinerantAgendas": [],
+    "operationalMealPolicies": []
+  },
+  "analyticalParticipantMeals": [],
+  "scope": {
+    "selector": {
+      "kind": "DAY",
+      "value": "u00g-causal"
+    },
+    "metadata": {},
+    "resolvedTaskIds": [
+      "task:1",
+      "task:2",
+      "task:3",
+      "task:4",
+      "task:5",
+      "task:6"
+    ]
+  },
+  "protectedPlacements": [],
+  "protectedOperationalMeals": [],
+  "protectedSetupPreparations": [],
+  "protectedRoundPreparations": [],
+  "protectedParticipantMeals": [],
+  "retainedParticipantMealSourceIds": [
+    "task:3",
+    "task:6"
+  ],
+  "automaticTaskIds": [
+    "task:1",
+    "task:2",
+    "task:4",
+    "task:5"
+  ],
+  "supportingTaskIds": [],
+  "supportingReasonByTaskId": {},
+  "priorFutureStructuralWitnesses": []
+}

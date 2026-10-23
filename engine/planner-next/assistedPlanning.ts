@@ -354,6 +354,7 @@ export function buildAssistedProblem(
     if(protectedMealBySourceId.has(fixed.sourceTaskId)||!obligation||fixed.id!==obligation.id
       ||fixed.participantId!==obligation.participantId||fixed.duration!==obligation.duration
       ||fixed.start>=fixed.end||fixed.end-fixed.start!==fixed.duration
+      ||(obligation.fixedInterval&&(fixed.start!==obligation.fixedInterval.start||fixed.end!==obligation.fixedInterval.end))
       ||fixed.start<obligation.window.start||fixed.end>obligation.window.end)
       throw new Error(`UNREPRESENTABLE_PROTECTED_PARTICIPANT_MEAL:${fixed.sourceTaskId}`);
     protectedMealBySourceId.set(fixed.sourceTaskId,fixed);
@@ -441,7 +442,7 @@ export function buildAssistedProblem(
     });
     continuation.participantMeals=continuation.participantMeals?.map(meal=>{
       const fixed=protectedMealBySourceId.get(meal.sourceTaskId);
-      return fixed?{...meal,fixedInterval:{start:fixed.start,end:fixed.end}}:meal;
+      return fixed?{...meal,protectedInterval:{start:fixed.start,end:fixed.end}}:meal;
     });
     continuation.operationalMealPolicies=continuation.operationalMealPolicies?.map(policy=>{
       const fixed=protectedOperationalMeals.find(meal=>meal.id===policy.id);
@@ -454,7 +455,7 @@ export function buildAssistedProblem(
     problem.analyticalFutureParticipantClosure = {
       tasks: structuredClone(problem.tasks),
       meals: structuredClone((problem.participantMeals ?? []).map(meal => ({ ...meal,
-        ...(protectedMealBySourceId.has(meal.sourceTaskId) ? { fixedInterval: {
+        ...(protectedMealBySourceId.has(meal.sourceTaskId) ? { protectedInterval: {
           start: protectedMealBySourceId.get(meal.sourceTaskId)!.start, end: protectedMealBySourceId.get(meal.sourceTaskId)!.end } } : {}) }))),
       departure: structuredClone(problem.transportPolicy.departure),
     };
@@ -557,7 +558,7 @@ export function buildAssistedProblem(
   problem.participantMeals = problem.participantMeals?.filter((meal) => retainedMealSourceIds.has(meal.sourceTaskId))
     .map((meal) => ({ ...meal,
       dependencies: meal.dependencies?.filter((id) => included.has(id) || retainedMealSourceIds.has(id)),
-      ...(protectedMealBySourceId.has(meal.sourceTaskId)?{fixedInterval:{start:protectedMealBySourceId.get(meal.sourceTaskId)!.start,end:protectedMealBySourceId.get(meal.sourceTaskId)!.end}}:{}),
+      ...(protectedMealBySourceId.has(meal.sourceTaskId)?{protectedInterval:{start:protectedMealBySourceId.get(meal.sourceTaskId)!.start,end:protectedMealBySourceId.get(meal.sourceTaskId)!.end}}:{}),
     }));
   // Structured-space policies describe the tasks that survive projection. An
   // unrelated required-continuity/setup space must not make a small scope fail

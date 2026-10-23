@@ -1,3 +1,4 @@
+import { participantMealInterval } from "./participantMeals";
 import type {SetupPolicy} from "./contracts";
 import { assessOperationContinuity, operationContinuityPreflight } from "./operationContinuity";
 import type {
@@ -217,7 +218,8 @@ export function preflight(problem: PlannerNextProblem): string[] {
     if (meal.status!=="pending"&&meal.status!=="interrupted"&&meal.status!=="done"&&meal.status!=="in_progress") reasons.add("INVALID_PARTICIPANT_MEAL_STATUS");
     if ((meal.status==="done"||meal.status==="in_progress")&&!meal.fixedInterval) reasons.add("PROTECTED_PARTICIPANT_MEAL_WITHOUT_FIXED_INTERVAL");
     if ((meal.status==="pending"||meal.status==="interrupted")&&meal.fixedInterval) reasons.add("FLEXIBLE_PARTICIPANT_MEAL_WITH_FIXED_INTERVAL");
-    if (meal.fixedInterval && (invalidWindow(meal.fixedInterval, day) || meal.fixedInterval.end - meal.fixedInterval.start !== meal.duration || meal.fixedInterval.start < meal.window.start || meal.fixedInterval.end > meal.window.end)) reasons.add("INVALID_PROTECTED_PARTICIPANT_MEAL");
+    for(const interval of [meal.fixedInterval,meal.protectedInterval])if(interval && (invalidWindow(interval, day) || interval.end - interval.start !== meal.duration || interval.start < meal.window.start || interval.end > meal.window.end)) reasons.add("INVALID_PROTECTED_PARTICIPANT_MEAL");
+    if(meal.fixedInterval&&meal.protectedInterval&&(meal.fixedInterval.start!==meal.protectedInterval.start||meal.fixedInterval.end!==meal.protectedInterval.end)) reasons.add("INVALID_PROTECTED_PARTICIPANT_MEAL");
   }
   const resourceMeals=Array.isArray(problem.resourceMeals)?problem.resourceMeals:[];
   if(hasDuplicateIds(resourceMeals)||new Set(resourceMeals.map(meal=>meal.sourceTaskId)).size!==resourceMeals.length)reasons.add("RESOURCE_MEAL_IDENTITY_CONFLICT");
@@ -776,7 +778,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     const person = participants.get(meal.participantId);
     if (!expected || meal.id !== expected.id || meal.participantId !== expected.participantId || meal.duration !== expected.duration || meal.end - meal.start !== expected.duration
       || meal.start < expected.window.start || meal.end > expected.window.end || !person || !contains(person.availability, meal.start, meal.end)
-      || (expected.fixedInterval && (meal.start !== expected.fixedInterval.start || meal.end !== expected.fixedInterval.end))
+      || (participantMealInterval(expected) && (meal.start !== participantMealInterval(expected)!.start || meal.end !== participantMealInterval(expected)!.end))
       || scheduled.some((task) => task.participantId === meal.participantId && overlaps(task, meal))) participantMeal += 1;
   }
   for (const expected of expectedParticipantMeals.values()) if (actualCounts.get(expected.sourceTaskId) !== 1) participantMeal += 1;

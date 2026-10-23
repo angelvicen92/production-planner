@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "protectedSourceTaskId": 3,
+  "pendingExecution": true,
+  "rejected": "RUN_RESULT_INVALID",
+  "hashAndScopeAndDraftMatched": true,
+  "canonicalDraftContentFingerprintMatched": true
+}
