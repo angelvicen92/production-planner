@@ -1,0 +1,25 @@
+name: P0 U00f causal gate
+on:
+  pull_request:
+    paths:
+      - 'script/diagnostics/*U00f*'
+      - 'script/diagnostics/u00f*'
+      - 'script/demo/smokeNewDayTransportDiagnostic.ts'
+      - 'script/diagnostics/tsconfig.u00f.json'
+      - 'docs/evidence/p0-u00f/**'
+      - '.github/workflows/p0-u00f-causal-gate.yml'
+  workflow_dispatch:
+jobs:
+  offline-causal-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install tsc -p script/diagnostics/tsconfig.u00f.json
+      - run: node node_modules/tsx/dist/cli.mjs --test script/diagnostics/u00fTransportGate.spec.ts
+      - run: node --import tsx script/diagnostics/analyseU00fTransportGate.ts docs/evidence/p0-u00f/native work/u00f-causal-analysis.json
