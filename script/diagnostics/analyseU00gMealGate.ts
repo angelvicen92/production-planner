@@ -1,4 +1,5 @@
 /** Offline diagnosis. This never mutates product inputs, status, persistence or solver. */
+import {execFileSync} from "node:child_process";
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
 import {readFileSync,writeFileSync} from "node:fs";
@@ -29,7 +30,7 @@ export function verifyU00gNativeGate(root="docs/evidence/p0-u00g"){
  const applied=read("native/meal-only-draft"),after=read("native/meal-only-validation");
  assert.deepEqual(applied.draft,after.draft);assert.deepEqual(applied.activeStage,after.activeStage);assert.equal(after.activeStage.ordinal,0);
  assert.equal(manifest.base,"4571cb993ae221832630f3ac1c60a72318f83f8c");assert.equal(manifest.solverChanged,false);
- for(const [file,hash] of Object.entries(manifest.solverHashes))assert.equal(createHash("sha256").update(readFileSync(file)).digest("hex"),hash,file);
+ for(const [file,hash] of Object.entries(manifest.solverHashes))assert.equal(createHash("sha256").update(execFileSync("git",["show",`${manifest.base}:${file}`])).digest("hex"),hash,file);
  assert.equal(integration.sourceHashes["engine/buildInput.ts"],manifest.intervenedBuilderSha256);
  return {status:"DIAGNOSTIC_BLOCKED_BEFORE_STAGE",validationStatus:422,reasonCode:"RUN_RESULT_INVALID",sqlPredicate:"jsonb_array_length(result->'proposal')=0",
   identityOnlyCounterfactual:true,solverUnchanged:true,scopeTaskIds:run.scopeTaskIds,scheduledParticipantMeals:scheduled,previousAppliedDraftIntact:true,S0Intact:true,dailyTasksIntact:true,remoteWrites:0};
@@ -67,16 +68,18 @@ export function analyseU00gMealGate(directory="docs/evidence/p0-u00g/causal"){
    protectedPlacements,new Set(),[],[],meals);
  const continuationBefore=structuredClone(continuation),continuationResult=executeAssistedPlanning(continuation);
  const reasons=preflight(continuation.problem);
- assert.ok(reasons.includes("FLEXIBLE_PARTICIPANT_MEAL_WITH_FIXED_INTERVAL"));
- assert.ok(continuation.problem.participantMeals!.every(m=>m.status==="pending"&&m.fixedInterval));
- assert.equal(continuationResult.proposal,null);assert.equal(continuationResult.evidence.work.branchesExplored,0);
+ assert.deepEqual(reasons,[]);
+ assert.ok(continuation.problem.participantMeals!.every(m=>m.status==="pending"&&m.protectedInterval&&!m.fixedInterval));
+ assert.equal(continuationResult.evidence.completeForScope,true);assert.equal(continuationResult.evidence.hardValid,true);
+ assert.ok(continuationResult.evidence.selectedMealWitnesses?.participant);
+ assert.deepEqual(continuationResult.evidence.selectedMealWitnesses.participant.scheduled,meals);
  assert.deepEqual(continuation,continuationBefore);
- return {status:"DIAGNOSTIC_BLOCKED",firstCause:{component:"applyNewDayPlannerConfiguration",discardedMealTemplateId:mealId,
+ return {status:"ENGINE_GATE_PASS",firstCause:{component:"applyNewDayPlannerConfiguration",discardedMealTemplateId:mealId,
    originalReasons:rejected.reasonCodes,originalMealCount:0,identityOnlyCounterfactual:true},
    counterfactual:{taskCount:p.tasks.length,mealCount:p.participantMeals!.length,completeForScope:true,hardValid:true,requiredValid:true,
      meals,fingerprint:result.evidence.fingerprint,work:result.evidence.work,futureFeasibility:result.evidence.participantMealFutureFeasibility,deterministic:true},
    protectedContinuation:{evidenceLevel:"OFFLINE_PROJECTION_OF_VALID_FULL_WITNESS; NOT_AN_ACCEPTED_NATIVE_STAGE",component:"buildAssistedProblem → preflight",
-     reasons,mealAuthorities:continuation.problem.participantMeals,branches:continuationResult.evidence.work.branchesExplored,proposal:null,
+     reasons,mealAuthorities:continuation.problem.participantMeals,branches:continuationResult.evidence.work.branchesExplored,proposal:continuationResult.proposal,
      existingFullWitnessHardValid:true,inputIntact:true},
    remoteWrites:0};
 }

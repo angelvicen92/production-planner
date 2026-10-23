@@ -1204,7 +1204,9 @@ ${reasonMessage}` : message,
     const taskName = String(t?.template?.name ?? "")
       .trim()
       .toLowerCase();
-    const isMealTask = mealName.length > 0 && taskName === mealName;
+    const mealId=(plan as any)?.mealTaskTemplateId;
+    const isMealTask = mealId!=null ? Number(t?.templateId??t?.template_id)===Number(mealId)
+      : mealName.length > 0 && taskName === mealName;
 
     if (isMealTask) return false;
 

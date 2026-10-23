@@ -1,7 +1,13 @@
-name: P0 U00g participant meal diagnosis
+name: P0 U00g participant meals
 on:
   pull_request:
     paths:
+      - 'engine/**'
+      - 'server/**'
+      - 'shared/**'
+      - 'supabase/migrations/**'
+      - 'client/src/components/general-program-settings.tsx'
+      - 'script/validation/**'
       - 'script/demo/smokeNewDayIntegration.ts'
       - 'script/diagnostics/*U00g*'
       - 'script/diagnostics/u00g*'
@@ -22,6 +28,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: git fetch --no-tags --depth=1 origin 4571cb993ae221832630f3ac1c60a72318f83f8c
       - run: npx --no-install tsc -p script/diagnostics/tsconfig.u00g.json
       - run: node --import tsx --test script/diagnostics/u00gMealGate.spec.ts
       - run: mkdir -p work && node --import tsx script/diagnostics/analyseU00gMealGate.ts docs/evidence/p0-u00g/causal work/u00g-analysis.json
@@ -47,3 +54,32 @@ jobs:
             work/u00g-native/identity-counterfactual.patch
             work/u00g-native/native/*.json
             work/u00g-native/native/*.png
+  functional:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install tsc -p script/validation/tsconfig.u00g.json
+      - name: Select installed Chromium or provision Playwright
+        shell: bash
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [[ -n "$task_browser_path" ]]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+          fi
+      - run: node --import tsx script/validation/runU00gFunctional.ts work/u00g-functional
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: u00g-functional
+          path: |
+            work/u00g-functional/source-manifest.json
+            work/u00g-functional/native/*.json
+            work/u00g-functional/native/*.png

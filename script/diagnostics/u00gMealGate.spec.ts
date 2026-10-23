@@ -15,9 +15,9 @@ const solve=(i:EngineInput)=>{
  return executeAssistedPlanning(buildAssistedProblem(a.problem,createPlanningScope({kind:"DAY",value:"probe"},{},
   [...a.problem.tasks.map(t=>t.id),...a.problem.participantMeals!.map(m=>m.sourceTaskId)]),[]));
 };
-test("original UI loss, identity-only restoration and protected projection blocker are reproducible",()=>{
- const r=analyseU00gMealGate();assert.equal(r.status,"DIAGNOSTIC_BLOCKED");assert.equal(r.counterfactual.mealCount,2);
- assert.equal(r.protectedContinuation.branches,0);assert.equal(r.protectedContinuation.proposal,null);
+test("historical UI loss and identity counterfactual remain reproducible; current engine repairs protected projection",()=>{
+ const r=analyseU00gMealGate();assert.equal(r.status,"ENGINE_GATE_PASS");assert.equal(r.counterfactual.mealCount,2);
+ assert.ok(r.protectedContinuation.branches>0);assert.ok(r.protectedContinuation.proposal);
 });
 test("the actual meal capacity conditions feasibility rather than only persisting a value",()=>{
  const i=input();i.mealWindow={start:"12:00",end:"12:20"};const before=structuredClone(i),blocked=solve(i);

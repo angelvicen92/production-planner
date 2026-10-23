@@ -44,6 +44,9 @@ const intervalOverlaps = (a: Window, b: Window): boolean => a.start < b.end && b
 const freeze = <T>(value: T): T => { if (value && typeof value === "object" && !Object.isFrozen(value)) { Object.freeze(value); Object.values(value as Record<string, unknown>).forEach(freeze); } return value; };
 const GRID = PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES;
 
+/** Execution and accepted Stage protection share geometry, never status. */
+export const participantMealInterval = (meal:ParticipantMealObligation):Window|undefined => meal.fixedInterval ?? meal.protectedInterval;
+
 export interface AnalyticParticipantMealStartDomain { ranges: { first:number; last:number }[]; logicalStarts:number; validStarts:number }
 const rangeCount = ({first,last}:{first:number;last:number}):number => last < first ? 0 : Math.floor((last-first)/GRID)+1;
 const firstGridAtOrAfter = (base:number, minute:number):number => base + Math.ceil((minute-base)/GRID)*GRID;
@@ -52,8 +55,8 @@ const lastGridAtOrBefore = (base:number, minute:number):number => base + Math.fl
 /** Builds grid-aligned start ranges using interval arithmetic only; it never visits an individual start. */
 export function analyticParticipantMealDomain(problem:PlannerNextProblem, obligation:ParticipantMealObligation, tasks:readonly ScheduledTask[]):AnalyticParticipantMealStartDomain {
   const base=obligation.window.start, duration=obligation.duration;
-  const initialFirst=obligation.fixedInterval?.start??base;
-  const initialLast=obligation.fixedInterval?.start??lastGridAtOrBefore(base,obligation.window.end-duration);
+  const initialFirst=participantMealInterval(obligation)?.start??base;
+  const initialLast=participantMealInterval(obligation)?.start??lastGridAtOrBefore(base,obligation.window.end-duration);
   const logicalStarts=Math.max(0,rangeCount({first:initialFirst,last:initialLast}));
   const participant=problem.participants.find(({id})=>id===obligation.participantId);
   if(!participant||logicalStarts===0||initialFirst<obligation.window.start||initialLast+duration>obligation.window.end)return {ranges:[],logicalStarts,validStarts:0};
@@ -100,7 +103,7 @@ export function participantMealCandidates(problem: PlannerNextProblem, obligatio
   const mealBySourceTaskId = new Map(placed.map((meal) => [meal.sourceTaskId, meal]));
   const obligationBySourceTaskId = new Map((problem.participantMeals ?? []).map((meal) => [meal.sourceTaskId, meal]));
   const result: ScheduledParticipantMeal[] = [];
-  const starts = obligation.fixedInterval ? [obligation.fixedInterval.start] : Array.from(
+  const starts = participantMealInterval(obligation) ? [participantMealInterval(obligation)!.start] : Array.from(
     { length: Math.max(0, Math.floor((obligation.window.end - obligation.duration - obligation.window.start) / PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES) + 1) },
     (_, index) => obligation.window.start + index * PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES,
   );
@@ -174,7 +177,7 @@ export function assessParticipantMealFutureFeasibility(problem: PlannerNextProbl
   const consume = (): boolean => { if (budget.remaining <= 0) { exhausted = true; return false; } if (budget.consume && !budget.consume(1)) { exhausted = true; return false; } budget.remaining -= 1; branches += 1; return true; };
   const search = (pending: ParticipantMealObligation[], placed: ScheduledParticipantMeal[], path: string[]): ScheduledParticipantMeal[] | null => {
     if (pending.length === 0) { acceptedOrder = path; return placed; }
-    const domains = pending.map((obligation) => {const logical=obligation.fixedInterval?1:Math.max(0,Math.floor((obligation.window.end-obligation.duration-obligation.window.start)/GRID)+1);logicalGridStarts+=logical;actuallyEvaluatedStarts+=logical;return { obligation, candidates: participantMealCandidates(problem, obligation, tasks, placed) };})
+    const domains = pending.map((obligation) => {const logical=participantMealInterval(obligation)?1:Math.max(0,Math.floor((obligation.window.end-obligation.duration-obligation.window.start)/GRID)+1);logicalGridStarts+=logical;actuallyEvaluatedStarts+=logical;return { obligation, candidates: participantMealCandidates(problem, obligation, tasks, placed) };})
       .sort((a, b) => a.candidates.length - b.candidates.length || byIdentity(a.obligation, b.obligation));
     const selected = domains[0]!;
     counts[selected.obligation.sourceTaskId] = selected.candidates.length;

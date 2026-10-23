@@ -1705,6 +1705,7 @@ function mapDeleteError(err: any, fallback: string) {
         spaceMealBreakMinutes: Number(data.space_meal_break_minutes ?? 75),
         itinerantMealBreakMinutes: Number(data.itinerant_meal_break_minutes ?? 75),
         mealTaskTemplateName: String(data.meal_task_template_name ?? "Comer"),
+        mealTaskTemplateId: data.meal_task_template_id == null ? null : Number(data.meal_task_template_id),
         clockMode: data.clock_mode === "manual" ? "manual" : "auto",
         simulatedTime:
           typeof data.simulated_time === "string" && /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(data.simulated_time)
@@ -1729,6 +1730,11 @@ function mapDeleteError(err: any, fallback: string) {
   app.patch(api.programSettings.update.path, async (req, res) => {
     return sendSpatialAvailability(res, async () => {
       const input = parseSpatialRequestBody(api.programSettings.update.input, req.body);
+      if(input.mealTaskTemplateId!=null){
+        const {data,error}=await supabaseAdmin.from("task_templates").select("id").eq("id",input.mealTaskTemplateId).maybeSingle();
+        if(error)throw error;
+        if(!data)throw new z.ZodError([{code:z.ZodIssueCode.custom,path:["mealTaskTemplateId"],message:"Selecciona una plantilla de comida existente."}]);
+      }
       await storage.updateProgramSettingsAtomic(input);
       return { success: true };
     });
@@ -3042,6 +3048,7 @@ function mapDeleteError(err: any, fallback: string) {
           mealMode: p.meal_mode ?? p.mealMode ?? null,
 
           mealTaskTemplateName: String(p.mealTaskTemplateName ?? "Comer"),
+          mealTaskTemplateId: p.planner_next_profile?.mealTaskTemplateId ?? null,
 
           contestantMealDurationMinutes:
             p.contestant_meal_duration_minutes ?? p.contestantMealDurationMinutes ?? 75,

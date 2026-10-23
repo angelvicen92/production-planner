@@ -23,3 +23,10 @@ test("meal-only update does not require workday and preserves fields", () => {
 test("shared contract still rejects unsupported program settings", () => {
   assert.equal(api.programSettings.update.input.safeParse({ unsupported: true }).success, false);
 });
+
+test('meal identities are explicit, nullable and never inferred from a label',()=>{
+  assert.deepEqual(buildProgramSettingsAtomicPatch({mealTaskTemplateId:42},[],[],now),{meal_task_template_id:42});
+  assert.deepEqual(buildProgramSettingsAtomicPatch({mealTaskTemplateId:null},[],[],now),{meal_task_template_id:null});
+  assert.equal(api.programSettings.update.input.safeParse({mealTaskTemplateId:0}).success,false);
+  assert.equal(api.programSettings.update.input.safeParse({mealTaskTemplateId:'42'}).success,false);
+});

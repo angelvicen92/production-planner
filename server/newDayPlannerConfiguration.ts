@@ -11,6 +11,7 @@ export function applyNewDayPlannerConfiguration(input:EngineInput,raw:unknown,
   if(!parsed.success)throw new PlanPlannerNextConfigurationError("INVALID_CONTRACT");
   const config=parsed.data.configuration;
   if(!config)return input;
+  const mealTaskTemplateId=parsed.data.mealTaskTemplateId??null;
   const templates=new Map(snapshots.map(snapshot=>[snapshot.sourceTemplateId,snapshot]));
   const setup=config.setup==="FAMILIES"?config.setupFamilies:undefined;
   const transport=config.transport!=="NONE"?config.transport:undefined;
@@ -24,7 +25,8 @@ export function applyNewDayPlannerConfiguration(input:EngineInput,raw:unknown,
         candidate.contestantId===task.contestantId && candidate.status!=="cancelled").map(candidate=>candidate.id));
     const coach=task.contestantId==null?undefined:input.vocalCoachPlanResourceItemIdByContestantId?.[task.contestantId];
     const operationalRole=transport&&task.templateId===transport.arrivalTemplateId?"transport_arrival" as const
-      :transport&&task.templateId===transport.departureTemplateId?"transport_departure" as const:"productive_task" as const;
+      :transport&&task.templateId===transport.departureTemplateId?"transport_departure" as const
+      :input.mealMode==="flexible_meal_window"&&task.templateId===mealTaskTemplateId?"meal_break_placeholder" as const:"productive_task" as const;
     return {...task,...(kind?{plannerNextKind:kind}:{}),operationalRole,
       ...(template?.setupId!=null&&validSetupMapping(input,task,template,setup)?{setupFamilyId:String(template.setupId)}:{}),
       ...(template?.requiresCoach && coach!=null?{declaredResourceIds:[...new Set([...(task.declaredResourceIds??[]),coach])].sort((a,b)=>a-b)}:{}),
@@ -54,7 +56,7 @@ export function applyNewDayPlannerConfiguration(input:EngineInput,raw:unknown,
     arrivalMinimumGroupSize:undefined,departureMinimumGroupSize:undefined,
     arrivalMaximumGroupSize:undefined,departureMaximumGroupSize:undefined,
     arrivalMinGapMinutes:undefined,departureMinGapMinutes:undefined}:{}),
-    mealTaskTemplateId:null,mealTaskTemplateName:undefined,
+    mealTaskTemplateId,mealTaskTemplateName:undefined,
     ...(input.mealMode==="global_hard_break"?{mealWindow:undefined,mealWindowStart:undefined,mealWindowEnd:undefined,
       contestantMealDurationMinutes:undefined,contestantMealMaxSimultaneous:undefined}:{}),
     groupingBySpaceId:{},minimizeChangesBySpace:{},groupingZoneIds:[],maxTemplateChangesByZoneId:{},

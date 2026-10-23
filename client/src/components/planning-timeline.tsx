@@ -1639,6 +1639,8 @@ function TaskStatusMenuTrigger({
       .toLowerCase();
 
     const isMeal = (t: Task) => {
+      const id=(plan as any)?.mealTaskTemplateId;
+      if(id!=null)return Number(t.templateId)===Number(id);
       const n = String(t?.template?.name ?? "")
         .trim()
         .toLowerCase();

@@ -664,6 +664,9 @@ export async function buildEngineInput(
       p.meal_task_template_name ?? p.mealTaskTemplateName ?? "Comer",
     ),
     mealTaskTemplateId: (() => {
+      // New days freeze the selected identity. Never reinterpret a rename or a
+      // later change of general settings as a different daily meal template.
+      if (p.planner_next_profile?.configuration) return p.planner_next_profile.mealTaskTemplateId ?? null;
       const explicit = Number(p.meal_task_template_id ?? p.mealTaskTemplateId ?? NaN);
       if (Number.isFinite(explicit) && explicit > 0) return explicit;
 

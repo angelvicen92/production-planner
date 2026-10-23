@@ -1056,6 +1056,7 @@ export const api = {
           spaceMealBreakMinutes: z.number(),
           itinerantMealBreakMinutes: z.number(),
           mealTaskTemplateName: z.string(),
+          mealTaskTemplateId: z.number().int().positive().nullable().optional(),
           clockMode: z.enum(["auto", "manual"]),
           simulatedTime: z
             .string()
@@ -1098,6 +1099,7 @@ export const api = {
           spaceMealBreakMinutes: z.number().int().min(0).max(240).optional(),
           itinerantMealBreakMinutes: z.number().int().min(1).max(240).optional(),
           mealTaskTemplateName: z.string().min(1).max(80).optional(),
+          mealTaskTemplateId: z.number().int().positive().nullable().optional(),
           clockMode: z.enum(["auto", "manual"]).optional(),
           simulatedTime: z
             .string()

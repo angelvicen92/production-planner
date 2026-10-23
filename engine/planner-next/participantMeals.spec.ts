@@ -129,3 +129,18 @@ test("meals occupy only their participant and exact boundaries remain valid",()=
 test("both search policies publish a complete hard-valid participant meal result",()=>{
   for(const policy of ["COMPATIBILITY_PRESERVING","EXACT_CONSTRUCTIVE"] as const){const source=mainFlowVocalScenario();source.searchPolicy=policy;source.budget={bestK:20,maxBacktracks:10000,maxPatterns:10000,maxBranchExpansions:300000};source.participantMeals=[meal("source","participant-c",{start:780,end:900},45)];source.participantMealCapacity={maxSimultaneous:1};const execution=executePlannerNext(source);assert.ok(execution.result?.complete);const result=execution.result!;assert.equal(result.scheduledParticipantMeals?.length,1);const validation=validatePlan(source,result.scheduledTasks,"scheduledSetupPreparations" in result?result.scheduledSetupPreparations:[],result.scheduledSpaceMeals,result.scheduledParticipantMeals);assert.equal(validation.hardValid,true,validation.reasonCodes.join(","));}
 });
+
+test('Stage protection keeps pending execution and rejects movement without weakening external fixed-interval preflight',()=>{
+  const source=problem([{...meal('1','p1',{start:780,end:840},20),protectedInterval:{start:800,end:820}}],1);
+  delete source.protectedMeal;
+  assert.deepEqual(preflight(source),[]);
+  const witness=scheduleParticipantMeals(source,[],500);
+  assert.equal(witness.complete,true);assert.equal(witness.scheduled[0].start,800);
+  assert.equal(source.participantMeals![0].status,'pending');
+  assert.equal(validatePlan(source,[],[],[],[...witness.scheduled]).hardValid,true);
+  assert.equal(validatePlan(source,[],[],[],[{...witness.scheduled[0],start:805,end:825}]).hardValid,false);
+  const invalid=structuredClone(source);invalid.participantMeals![0].fixedInterval={start:800,end:820};
+  assert.ok(preflight(invalid).includes('FLEXIBLE_PARTICIPANT_MEAL_WITH_FIXED_INTERVAL'));
+  const outside=structuredClone(source);outside.participantMeals![0].protectedInterval={start:830,end:850};
+  assert.ok(preflight(outside).includes('INVALID_PROTECTED_PARTICIPANT_MEAL'));
+});

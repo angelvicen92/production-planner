@@ -29,6 +29,7 @@ type ProgramSettings = {
   contestantMealMaxSimultaneous: number;
   spaceMealBreakMinutes: number;
   mealTaskTemplateName: string;
+  mealTaskTemplateId?: number | null;
   clockMode: "auto" | "manual";
   simulatedTime: string | null;
   simulatedSetAt?: string | null;
@@ -89,18 +90,8 @@ export function GeneralProgramSettings() {
     );
   }
 
-  const mealName = String(
-    (draft as any)?.mealTaskTemplateName ?? "Comer",
-  ).trim();
   const templates = templatesQ.data ?? [];
-  const mealTemplateExists =
-    mealName.length > 0 &&
-    templates.some(
-      (t: any) =>
-        String(t?.name ?? "")
-          .trim()
-          .toLowerCase() === mealName.toLowerCase(),
-    );
+  const mealTemplateExists = templates.some((t:any)=>Number(t.id)===draft?.mealTaskTemplateId);
   const workdayInvalid = !draft?.defaultWorkStart || !draft?.defaultWorkEnd || draft.defaultWorkStart >= draft.defaultWorkEnd;
 
   const setSimulatedNow = () => {
@@ -283,34 +274,36 @@ export function GeneralProgramSettings() {
             ) : null}
 
           <div className="col-span-2">
-            <Label htmlFor="meal-task-template">Nombre de la tarea que representa “comida” (default)</Label>
+            <Label htmlFor="meal-task-template">Plantilla de comida individual (default)</Label>
             <Select
-              value={draft?.mealTaskTemplateName ?? ""}
+              value={draft?.mealTaskTemplateId==null?"NONE":String(draft.mealTaskTemplateId)}
               onValueChange={(value) =>
-                setDraft((p) => (p ? { ...p, mealTaskTemplateName: value } : p))
+                setDraft((p) => (p ? { ...p, mealTaskTemplateId:value==="NONE"?null:Number(value),
+                  mealTaskTemplateName:templates.find((t:any)=>String(t.id)===value)?.name??p.mealTaskTemplateName } : p))
               }
             >
               <SelectTrigger id="meal-task-template" aria-describedby="meal-template-help">
                 <SelectValue placeholder="Selecciona plantilla" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="NONE">Sin plantilla de comida individual</SelectItem>
                 {templates.map((t: any) => (
-                  <SelectItem key={t.id} value={String(t.name)}>
+                  <SelectItem key={t.id} value={String(t.id)}>
                     {String(t.name)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <p id="meal-template-help" className="text-xs text-muted-foreground mt-1">
-              Se guarda por nombre por compatibilidad.
+              Los días nuevos conservan esta plantilla por su identidad, junto con su duración, ventana y capacidad.
             </p>
-            {mealName.length > 0 && templatesQ.isLoading ? (
+            {draft?.mealTaskTemplateId != null && templatesQ.isLoading ? (
               <p className="text-xs text-muted-foreground mt-1">
                 Comprobando si existe el Task Template…
               </p>
-            ) : mealName.length > 0 && !mealTemplateExists ? (
+            ) : draft?.mealTaskTemplateId != null && !mealTemplateExists ? (
               <p className="text-xs text-destructive mt-1">
-                ⚠️ No existe ninguna Plantilla de Tarea llamada “{mealName}”.
+                La plantilla de comida seleccionada ya no está disponible. Selecciona otra plantilla.
               </p>
             ) : null}
           </div>
@@ -334,6 +327,7 @@ export function GeneralProgramSettings() {
                   draft.contestantMealMaxSimultaneous,
                 spaceMealBreakMinutes: draft.spaceMealBreakMinutes,
                 mealTaskTemplateName: draft.mealTaskTemplateName,
+                mealTaskTemplateId: draft.mealTaskTemplateId ?? null,
                 clockMode: draft.clockMode,
                 simulatedTime: draft.clockMode === "manual" ? (draft.simulatedTime ?? "09:00") : null,
               });

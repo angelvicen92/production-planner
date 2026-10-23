@@ -71,7 +71,8 @@ export const newDayPlannerConfigurationSchema = z.discriminatedUnion("scenario",
 });
 export type NewDayPlannerConfiguration = z.infer<typeof newDayPlannerConfigurationSchema>;
 export const newDayPlannerSnapshotSchema = z.object({contractVersion:z.literal(1),
-  sourceRevision:z.number().int().nonnegative(), configuration:newDayPlannerConfigurationSchema.nullable()}).strict();
+  sourceRevision:z.number().int().nonnegative(), configuration:newDayPlannerConfigurationSchema.nullable(),
+  mealTaskTemplateId:positive.nullable().optional()}).strict();
 export type NewDayPlannerSnapshot = z.infer<typeof newDayPlannerSnapshotSchema>;
 
 // Legacy rules remain opaque; the new operational declaration is always typed.

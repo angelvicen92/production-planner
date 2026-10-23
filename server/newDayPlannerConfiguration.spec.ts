@@ -101,3 +101,16 @@ test("structural profiles are strict and retain the main profile contract",()=>{
   const {mainFlow:_,...missing}=profile.configuration;
   assert.equal(newDayPlannerConfigurationSchema.safeParse(missing).success,false);
 });
+
+test("individual meals use a frozen identity and keep all existing daily authorities",()=>{
+  const source=input();source.mealMode='flexible_meal_window';source.mealWindow={start:'13:00',end:'14:00'};
+  source.contestantMealDurationMinutes=20;source.contestantMealMaxSimultaneous=1;
+  const snapshots=[template(7),template(8)];
+  const result=applyNewDayPlannerConfiguration(source,{...standaloneProfile(),mealTaskTemplateId:7},snapshots);
+  assert.equal(result.mealTaskTemplateId,7);assert.equal(result.tasks[0].operationalRole,'meal_break_placeholder');
+  assert.equal(result.tasks[1].operationalRole,'productive_task');assert.deepEqual(result.mealWindow,source.mealWindow);
+  assert.equal(result.contestantMealDurationMinutes,20);assert.equal(result.contestantMealMaxSimultaneous,1);
+  assert.deepEqual(result.tasks.map(t=>t.status),source.tasks.map(t=>t.status));
+  const renamed=snapshots.map(t=>({...t,templateName:'A different name'}));
+  assert.deepEqual(applyNewDayPlannerConfiguration(source,{...standaloneProfile(),mealTaskTemplateId:7},renamed),result);
+});
