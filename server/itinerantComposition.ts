@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { api } from '../shared/routes';
 import { dailyItinerantUnitSchema, type ItinerantTeam } from '../shared/itinerantComposition';
 import type { EngineInput } from '../engine/types';
-import {resolveConcreteTaskResourceRequirements} from '../engine/planner-next/integration/effectiveTaskResourceAssignments';
+import {resolveConcreteTaskResourceRequirements} from '../engine/concreteTaskResourceRequirements';
 
 export class ItinerantCompositionError extends Error {
   readonly code = 'ITINERANT_CONFIGURATION_ERROR';

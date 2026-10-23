@@ -11,7 +11,7 @@
         {
           "ordinal": 1,
           "runId": 1,
-          "elapsedMs": 1785.9758899999997,
+          "elapsedMs": 3390.784341000006,
           "fingerprint": "58276cd6db59bf067de67b6852b5c2437e8c98f4ee1af19e493ac7c14a37bda2",
           "work": {
             "coreBranches": 0,
@@ -85,7 +85,7 @@
         {
           "ordinal": 1,
           "runId": 3,
-          "elapsedMs": 1686.4947130000019,
+          "elapsedMs": 2069.9668859999947,
           "fingerprint": "1581f2e159bcd1c18cb997e4973062a26bcb144500e9655d880f401f1f9ef8bc",
           "work": {
             "coreBranches": 0,
@@ -150,7 +150,7 @@
         {
           "ordinal": 2,
           "runId": 5,
-          "elapsedMs": 1162.5704960000003,
+          "elapsedMs": 2780.5648710000023,
           "fingerprint": "50ff6c9067a3e16a959e7f47899267e45cb3f0310adfc33c24dc89f3cf07c0b0",
           "work": {
             "coreBranches": 0,

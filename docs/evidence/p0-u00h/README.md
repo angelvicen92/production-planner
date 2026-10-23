@@ -10,7 +10,7 @@ El [recibo causal](causal/causal.json) procede de una jornada API nueva, dos par
 
 ## Autoridad e intervención
 
-`resolveConcreteTaskResourceRequirements`, en la autoridad de asignaciones efectiva existente, admite cantidad 1 y una única correspondencia `resourceItemId → planResourceItem.id`. Identidad ausente/ambigua o cantidad no representable dan diagnóstico explícito. La misma resolución sustituye el mapeo local anterior de U00d; no se añade un selector paralelo.
+`resolveConcreteTaskResourceRequirements`, utilidad pura de la capa de entrada compartida por la autoridad de asignaciones efectiva y U00d, admite cantidad 1 y una única correspondencia `resourceItemId → planResourceItem.id`. Identidad ausente/ambigua o cantidad no representable dan diagnóstico explícito. La misma resolución sustituye el mapeo local anterior de U00d; no se añade un selector paralelo.
 
 La unión determinista con recursos directos/declarados y heredados elimina duplicados. Preflight aplica la disponibilidad existente; adapter publica el consumo HARD y su carácter no sustituible. Presencia, transiciones, Future Feasibility, búsqueda y validación reciben las mismas identidades. Assisted proyecta los recursos concretos al snapshot de propuesta, Draft, Stage y filas diarias; las siguientes propuestas los conservan como trabajo protegido.
 

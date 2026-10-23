@@ -12,10 +12,10 @@
     "API day A: 4/4 through native Stage, same concrete resource and deterministic replay",
     "API day B: 4/4 through native Stage, same concrete resource and deterministic replay"
   ],
-  "startedAt": "2026-10-23T20:42:44.201Z",
+  "startedAt": "2026-10-23T20:48:03.476Z",
   "sourceHashes": {
     "server/newDayPlannerConfiguration.ts": "516163256ac825953deb828baf44bb5332661cfea6632970f00e5e8d7741f50f",
-    "server/assistedProposalService.ts": "8df5fd74633f75cbbf1d19519ddbe25ad21f4582f3bedb3f21e4622fda86ba39",
+    "server/assistedProposalService.ts": "5518a41cb1a3a3984c1064d875eb4a10d147b523a71ebfd38508e32ef7c9bed8",
     "engine/buildInput.ts": "5ba57c883b8eac1f2eb37252b861349b6a57be44c66f0e7bc4eb65ccb2b06bec",
     "engine/planner-next/exactMainAndFeederCore.ts": "0c4d42cfdfe002fb088d33a9810c1cb88b43b87c56aa340f7ec7b2670f2db9db",
     "server/storage.ts": "7bfa3c4816d8aaf1b4166b57f3d07d70bad4f47f399c8adc2b906b82d155e385",
@@ -35,7 +35,7 @@
     "client/src/components/new-day-planner-editor.tsx": "34a5566a2138e162ac8560b3521e6ff04f1e6f82093e8e3aeff32fd3bd2ee902",
     "client/src/pages/settings.tsx": "d9b35ec50cfcc5542c7ac7ead815949d10084f318c40075dade24e167efc0c8c"
   },
-  "sourceCommit": "5256102bf5c7eb925fd24ab1d868c2d22bc91a6e",
+  "sourceCommit": "ffdb2f075e3af1d402d80fe2741abb52b6fca673",
   "postgresVersion": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
   "migrations": [
     {
@@ -802,7 +802,7 @@
           {
             "ordinal": 1,
             "runId": 1,
-            "elapsedMs": 1785.9758899999997,
+            "elapsedMs": 3390.784341000006,
             "fingerprint": "58276cd6db59bf067de67b6852b5c2437e8c98f4ee1af19e493ac7c14a37bda2",
             "work": {
               "coreBranches": 0,
@@ -876,7 +876,7 @@
           {
             "ordinal": 1,
             "runId": 3,
-            "elapsedMs": 1686.4947130000019,
+            "elapsedMs": 2069.9668859999947,
             "fingerprint": "1581f2e159bcd1c18cb997e4973062a26bcb144500e9655d880f401f1f9ef8bc",
             "work": {
               "coreBranches": 0,
@@ -941,7 +941,7 @@
           {
             "ordinal": 2,
             "runId": 5,
-            "elapsedMs": 1162.5704960000003,
+            "elapsedMs": 2780.5648710000023,
             "fingerprint": "50ff6c9067a3e16a959e7f47899267e45cb3f0310adfc33c24dc89f3cf07c0b0",
             "work": {
               "coreBranches": 0,
@@ -1009,5 +1009,5 @@
     "remoteWrites": 0
   },
   "status": "PASS",
-  "finishedAt": "2026-10-23T20:43:04.703Z"
+  "finishedAt": "2026-10-23T20:48:51.262Z"
 }
