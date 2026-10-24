@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "base": "4733938cad61897a2a3ea89cf77dd6a1c0de0383",
+  "positive": {
+    "status": "COMPLETE",
+    "obligations": 11,
+    "hardValid": true,
+    "draft": "current-B/draft.json",
+    "persisted": false
+  },
+  "negative": {
+    "status": "INFEASIBLE",
+    "branches": 117
+  },
+  "currentNominalRejection": "UNSUPPORTED_RESOURCE_REQUIREMENT: ANYOF_REQUIRES_ORDINARY_STANDALONE_AUXILIARY",
+  "firstDownstreamLoss": "residualMatching.evaluate -> materializeAnchoredOperation -> canPlaceTask: unselected Main rejected as NOMINAL_RESOURCE_ASSIGNMENT; prepareLegacyPipelineBundleGraph independently has the same missing variant before insertion",
+  "y2": "NOT_DEMONSTRATED: no A/B alternatives coexist in the generated graph; not the first causal loss",
+  "baselines": [
+    {
+      "path": "docs/evidence/p0-u00a/native/first-input.json",
+      "fingerprint": "7724221da7683e49760aee6525ac35941656f340a637bfb255e003043a4bc073",
+      "obligations": 4
+    },
+    {
+      "path": "docs/evidence/p0-u00a/native/second-input.json",
+      "fingerprint": "39938c7d66219ddf0f364c49b8f4b5e88ea29e11fd7b487e1daf0e228f587ad4",
+      "obligations": 9
+    }
+  ],
+  "assertions": "PASS"
+}

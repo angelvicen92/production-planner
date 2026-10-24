@@ -1,0 +1,6 @@
+{
+  "extends": "../../../tsconfig.json",
+  "include": ["./*.ts"],
+  "exclude": ["./receipts", "node_modules"],
+  "compilerOptions": {"noEmit": true, "incremental": false}
+}
