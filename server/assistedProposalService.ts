@@ -1,3 +1,4 @@
+import {resolveEffectiveTaskResourceAssignments} from "../engine/planner-next/integration/effectiveTaskResourceAssignments";
 import type { IStorage } from "./storage";
 import { supabaseAdmin } from "./supabase";
 import { buildEngineInput } from "../engine/buildInput";
@@ -292,7 +293,33 @@ export class AssistedProposalService {
       protectedOperationalMeals,protectedSetupPreparations,protectedParticipantMeals,protectedRoundPreparations,
       priorFutureStructuralWitnesses);
     const execution=this.runner(assistedProblem,{violations:baselineViolations});
-    const proposal=execution.proposal?.map(item=>{const taskId=productByCanonical.get(item.id)!;const selectedUnit=item.itinerantUnitId===undefined?undefined:sourceUnitByCanonical.get(item.itinerantUnitId);if(item.itinerantUnitId!==undefined&&!selectedUnit)throw new Error(`UNPROJECTABLE_ITINERANT_UNIT:${item.itinerantUnitId}`);let assignedResourceIds:readonly number[]|undefined;if(item.itinerantUnitId!==undefined){const sourceTask=taskInputById.get(taskId)!;const declared=sourceTask.declaredResourceIds === undefined ? undefined : projectDirectResourcesToCanonical(adapter.identityMap,sourceTask.declaredResourceIds);const direct=projectDirectResourcesToCanonical(adapter.identityMap,sourceTask.assignedResourceIds??[]);const domain=item.allowedItinerantUnitIds?.length?item.allowedItinerantUnitIds:item.itinerantUnitId?[item.itinerantUnitId]:[];const domainResources=new Set((adapter.problem.itinerantUnits??[]).filter(unit=>domain.includes(unit.id)).flatMap(unit=>unit.resourceIds??[]));const selectedResources=(adapter.problem.itinerantUnits??[]).find(unit=>unit.id===item.itinerantUnitId)?.resourceIds;if(!selectedResources)throw new Error(`UNPROJECTABLE_ITINERANT_UNIT:${item.itinerantUnitId}`);assignedResourceIds=projectDirectResourcesToProduct(adapter.identityMap,[...direct.filter(id=>(sourceTask.resourceInheritance === "OPERATION_ONLY" && (declared === undefined || declared.includes(id))) || !domainResources.has(id)),...selectedResources,...(sourceTask.resourceInheritance === "OPERATION_ONLY" ? item.nonSubstitutableResourceIds ?? [] : declared ?? [])]);}return {taskId,startPlanned:minuteToEngineTime(item.start),endPlanned:minuteToEngineTime(item.end),spaceId:spaceByCanonical.get(item.spaceId)!,zoneId:taskInputById.get(taskId)?.zoneId??null,...(selectedUnit===undefined?{}:{itinerantTeamId:selectedUnit,assignedResourceIds})};})??null;
+    const concreteByTaskId=new Map(resolveEffectiveTaskResourceAssignments(input).assignments.map(a=>[a.taskId,a.byItemResourceIds??[]]));
+    const proposal=execution.proposal?.map(item=>{
+      const taskId=productByCanonical.get(item.id)!;
+      const sourceTask=taskInputById.get(taskId)!;
+      const selectedUnit=item.itinerantUnitId===undefined?undefined:sourceUnitByCanonical.get(item.itinerantUnitId);
+      if(item.itinerantUnitId!==undefined&&!selectedUnit)throw new Error(`UNPROJECTABLE_ITINERANT_UNIT:${item.itinerantUnitId}`);
+      const concrete=concreteByTaskId.get(taskId)??[];
+      let assignedResourceIds:readonly number[]|undefined;
+      if(concrete.length)assignedResourceIds=[...new Set([...(sourceTask.assignedResourceIds??[]),...concrete])].sort((a,b)=>a-b);
+      if(item.itinerantUnitId!==undefined){
+        const declared=sourceTask.declaredResourceIds === undefined ? undefined : projectDirectResourcesToCanonical(adapter.identityMap,sourceTask.declaredResourceIds);
+        const direct=projectDirectResourcesToCanonical(adapter.identityMap,sourceTask.assignedResourceIds??[]);
+        const domain=item.allowedItinerantUnitIds?.length?item.allowedItinerantUnitIds:item.itinerantUnitId?[item.itinerantUnitId]:[];
+        const domainResources=new Set((adapter.problem.itinerantUnits??[]).filter(unit=>domain.includes(unit.id)).flatMap(unit=>unit.resourceIds??[]));
+        const selectedResources=(adapter.problem.itinerantUnits??[]).find(unit=>unit.id===item.itinerantUnitId)?.resourceIds;
+        if(!selectedResources)throw new Error(`UNPROJECTABLE_ITINERANT_UNIT:${item.itinerantUnitId}`);
+        assignedResourceIds=projectDirectResourcesToProduct(adapter.identityMap,[
+          ...direct.filter(id=>(sourceTask.resourceInheritance === "OPERATION_ONLY" && (declared === undefined || declared.includes(id))) || !domainResources.has(id)),
+          ...selectedResources,...projectDirectResourcesToCanonical(adapter.identityMap,concrete),
+          ...(sourceTask.resourceInheritance === "OPERATION_ONLY" ? item.nonSubstitutableResourceIds ?? [] : declared ?? []),
+        ]);
+      }
+      return {taskId,startPlanned:minuteToEngineTime(item.start),endPlanned:minuteToEngineTime(item.end),
+        spaceId:spaceByCanonical.get(item.spaceId)!,zoneId:sourceTask.zoneId??null,
+        ...(selectedUnit===undefined?{}:{itinerantTeamId:selectedUnit}),
+        ...(assignedResourceIds===undefined?{}:{assignedResourceIds})};
+    })??null;
     const proposalById=new Map((proposal??[]).map(item=>[item.taskId,item]));
     const mealProposalById=new Map<number,{startPlanned:string;endPlanned:string;spaceId:null}>();
     const retainedMealSources=new Set(assistedProblem.retainedParticipantMealSourceIds);

@@ -1,0 +1,19 @@
+{
+  "mode": "ISOLATED_ARCHIVED_S0_RUNS_IN_SERIES",
+  "otherTestLoads": false,
+  "remoteWrites": 0,
+  "sources": {
+    "base": {
+      "ref": "5256102bf5c7eb925fd24ab1d868c2d22bc91a6e",
+      "tree": "349f558e8908d7f97e6d2dc6d72ffc83834fc58e"
+    },
+    "candidate": {
+      "ref": "0c6515ce1fa7714b5a1f7e64289ecbed45c6d2cd",
+      "tree": "7589b91d72673e467f44b9f4d4896004d481e604"
+    },
+    "repeat": {
+      "ref": "0c6515ce1fa7714b5a1f7e64289ecbed45c6d2cd",
+      "tree": "7589b91d72673e467f44b9f4d4896004d481e604"
+    }
+  }
+}

@@ -187,7 +187,8 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
       ...(source.blocksSpace === false ? { blocksSpace: false } : {}),
       dependencies: [...new Set(source.dependsOnTaskIds ?? (source.dependsOnTaskId != null ? [source.dependsOnTaskId] : []))].sort((a, b) => a - b).map((id) => canonical("task", id)),
       ...(resources.length ? { requiredResourceIds: resources.map((id) => canonical("plan-resource", id)) } : {}),
-      ...(source.resourceInheritance === "OPERATION_ONLY" ? { nonSubstitutableResourceIds: [...new Set([...(source.declaredResourceIds ?? source.assignedResourceIds ?? []), ...projection.lockedResourceIds])].sort((a,b)=>a-b).map(id=>canonical("plan-resource",id)) } : {}),
+      ...(assignmentByTaskId.get(source.id)?.byItemResourceIds?.length ? {nonSubstitutableResourceIds: assignmentByTaskId.get(source.id)!.byItemResourceIds!.map(id=>canonical("plan-resource",id))} : {}),
+      ...(source.resourceInheritance === "OPERATION_ONLY" ? { nonSubstitutableResourceIds: [...new Set([...(source.declaredResourceIds ?? source.assignedResourceIds ?? []), ...(assignmentByTaskId.get(source.id)?.byItemResourceIds ?? []), ...projection.lockedResourceIds])].sort((a,b)=>a-b).map(id=>canonical("plan-resource",id)) } : {}),
       // LOCATION resources remain independent of an itinerant alternative choice.
       ...(input.itinerantCompositionSnapshot && (source.itinerantTeamId != null || source.allowedItinerantTeamIds?.length) && source.resourceInheritance !== "OPERATION_ONLY"
         ? {nonSubstitutableResourceIds: resources.map(id=>canonical("plan-resource",id))} : {}),

@@ -1,0 +1,37 @@
+name: P0 U00h concrete resources
+on:
+  pull_request:
+    paths:
+      - 'engine/**'
+      - 'server/**'
+      - 'script/validation/**'
+      - 'docs/evidence/p0-u00h/**'
+      - '.github/workflows/p0-u00h-resources.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  concrete-resources:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: git fetch --no-tags --depth=1 origin 5256102bf5c7eb925fd24ab1d868c2d22bc91a6e
+      - run: npx --no-install tsc -p script/validation/tsconfig.u00h.json
+      - run: node node_modules/tsx/dist/cli.mjs --test engine/planner-next/integration/concreteResourceRequirements.spec.ts
+      - run: node --import tsx script/validation/runU00hResources.ts work/u00h-baseline --baseline
+      - run: node --import tsx script/validation/runU00hResources.ts work/u00h-candidate
+      - run: python3 docs/evidence/p0-u00h/verify.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: u00h-native-resources
+          path: |
+            work/u00h-baseline/manifest.json
+            work/u00h-baseline/native/*.json
+            work/u00h-candidate/manifest.json
+            work/u00h-candidate/native/*.json
