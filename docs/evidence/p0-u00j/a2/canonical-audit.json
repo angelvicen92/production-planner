@@ -1,0 +1,808 @@
+{
+  "status": "PASS",
+  "base": "438d92ca9a4f3db6358809b904268f6da33b4ecd",
+  "runtime": {
+    "node": "v20.20.2",
+    "v8": "11.3.244.8-node.38",
+    "packages": {
+      "tsx": "4.20.5",
+      "typescript": "5.6.3",
+      "esbuild": "0.25.12"
+    },
+    "lockfileSha256": "cbe75a531336356a5d3baa75202818f1a7060b72f10d205449b8036295ffeaaa"
+  },
+  "deterministic": true,
+  "snapshotsUnchanged": true,
+  "before": {
+    "participants": [
+      {
+        "participantId": 201,
+        "arrivalStart": 600,
+        "arrivalEnd": 605,
+        "entry": 635,
+        "exit": 865,
+        "out": 870,
+        "waitInToEntry": 30,
+        "firstLocalFeasibleEntry": 635,
+        "firstConstructedEntry": 635,
+        "presenceMinutes": 275,
+        "waitExitToOut": 0
+      },
+      {
+        "participantId": 202,
+        "arrivalStart": 540,
+        "arrivalEnd": 545,
+        "entry": 550,
+        "exit": 1055,
+        "out": 1075,
+        "waitInToEntry": 5,
+        "firstLocalFeasibleEntry": 550,
+        "firstConstructedEntry": 645,
+        "presenceMinutes": 540,
+        "waitExitToOut": 15
+      },
+      {
+        "participantId": 203,
+        "arrivalStart": 540,
+        "arrivalEnd": 545,
+        "entry": 560,
+        "exit": 885,
+        "out": 890,
+        "waitInToEntry": 15,
+        "firstLocalFeasibleEntry": 560,
+        "firstConstructedEntry": 685,
+        "presenceMinutes": 355,
+        "waitExitToOut": 0
+      },
+      {
+        "participantId": 204,
+        "arrivalStart": 570,
+        "arrivalEnd": 575,
+        "entry": 580,
+        "exit": 1080,
+        "out": 1095,
+        "waitInToEntry": 5,
+        "firstLocalFeasibleEntry": 580,
+        "firstConstructedEntry": 655,
+        "presenceMinutes": 530,
+        "waitExitToOut": 10
+      },
+      {
+        "participantId": 205,
+        "arrivalStart": 570,
+        "arrivalEnd": 575,
+        "entry": 605,
+        "exit": 1050,
+        "out": 1055,
+        "waitInToEntry": 30,
+        "firstLocalFeasibleEntry": 590,
+        "firstConstructedEntry": 605,
+        "presenceMinutes": 490,
+        "waitExitToOut": 0
+      },
+      {
+        "participantId": 206,
+        "arrivalStart": 630,
+        "arrivalEnd": 635,
+        "entry": 675,
+        "exit": 1130,
+        "out": 1135,
+        "waitInToEntry": 40,
+        "firstLocalFeasibleEntry": 675,
+        "firstConstructedEntry": 675,
+        "presenceMinutes": 510,
+        "waitExitToOut": 0
+      },
+      {
+        "participantId": 207,
+        "arrivalStart": 660,
+        "arrivalEnd": 665,
+        "entry": 755,
+        "exit": 1065,
+        "out": 1075,
+        "waitInToEntry": 90,
+        "firstLocalFeasibleEntry": 755,
+        "firstConstructedEntry": 755,
+        "presenceMinutes": 420,
+        "waitExitToOut": 5
+      },
+      {
+        "participantId": 208,
+        "arrivalStart": 540,
+        "arrivalEnd": 545,
+        "entry": 570,
+        "exit": 975,
+        "out": 980,
+        "waitInToEntry": 25,
+        "firstLocalFeasibleEntry": 570,
+        "firstConstructedEntry": 595,
+        "presenceMinutes": 445,
+        "waitExitToOut": 0
+      },
+      {
+        "participantId": 209,
+        "arrivalStart": 570,
+        "arrivalEnd": 575,
+        "entry": 615,
+        "exit": 1075,
+        "out": 1095,
+        "waitInToEntry": 40,
+        "firstLocalFeasibleEntry": 590,
+        "firstConstructedEntry": 615,
+        "presenceMinutes": 530,
+        "waitExitToOut": 15
+      },
+      {
+        "participantId": 210,
+        "arrivalStart": 720,
+        "arrivalEnd": 725,
+        "entry": 775,
+        "exit": 1125,
+        "out": 1135,
+        "waitInToEntry": 50,
+        "firstLocalFeasibleEntry": 775,
+        "firstConstructedEntry": 775,
+        "presenceMinutes": 420,
+        "waitExitToOut": 5
+      },
+      {
+        "participantId": 211,
+        "arrivalStart": 690,
+        "arrivalEnd": 695,
+        "entry": 765,
+        "exit": 1085,
+        "out": 1095,
+        "waitInToEntry": 70,
+        "firstLocalFeasibleEntry": 765,
+        "firstConstructedEntry": 765,
+        "presenceMinutes": 410,
+        "waitExitToOut": 5
+      },
+      {
+        "participantId": 212,
+        "arrivalStart": 600,
+        "arrivalEnd": 605,
+        "entry": 695,
+        "exit": 1090,
+        "out": 1095,
+        "waitInToEntry": 90,
+        "firstLocalFeasibleEntry": 645,
+        "firstConstructedEntry": 695,
+        "presenceMinutes": 500,
+        "waitExitToOut": 0
+      },
+      {
+        "participantId": 213,
+        "arrivalStart": 630,
+        "arrivalEnd": 635,
+        "entry": 665,
+        "exit": 1095,
+        "out": 1115,
+        "waitInToEntry": 30,
+        "firstLocalFeasibleEntry": 660,
+        "firstConstructedEntry": 665,
+        "presenceMinutes": 490,
+        "waitExitToOut": 15
+      },
+      {
+        "participantId": 214,
+        "arrivalStart": 630,
+        "arrivalEnd": 635,
+        "entry": 735,
+        "exit": 1070,
+        "out": 1075,
+        "waitInToEntry": 100,
+        "firstLocalFeasibleEntry": 685,
+        "firstConstructedEntry": 735,
+        "presenceMinutes": 450,
+        "waitExitToOut": 0
+      },
+      {
+        "participantId": 215,
+        "arrivalStart": 660,
+        "arrivalEnd": 665,
+        "entry": 725,
+        "exit": 1100,
+        "out": 1135,
+        "waitInToEntry": 60,
+        "firstLocalFeasibleEntry": 725,
+        "firstConstructedEntry": 725,
+        "presenceMinutes": 480,
+        "waitExitToOut": 30
+      },
+      {
+        "participantId": 216,
+        "arrivalStart": 660,
+        "arrivalEnd": 665,
+        "entry": 745,
+        "exit": 1105,
+        "out": 1135,
+        "waitInToEntry": 80,
+        "firstLocalFeasibleEntry": 745,
+        "firstConstructedEntry": 745,
+        "presenceMinutes": 480,
+        "waitExitToOut": 25
+      },
+      {
+        "participantId": 217,
+        "arrivalStart": 690,
+        "arrivalEnd": 695,
+        "entry": 705,
+        "exit": 1060,
+        "out": 1075,
+        "waitInToEntry": 10,
+        "firstLocalFeasibleEntry": 705,
+        "firstConstructedEntry": 705,
+        "presenceMinutes": 390,
+        "waitExitToOut": 10
+      },
+      {
+        "participantId": 218,
+        "arrivalStart": 600,
+        "arrivalEnd": 605,
+        "entry": 625,
+        "exit": 1025,
+        "out": 1030,
+        "waitInToEntry": 20,
+        "firstLocalFeasibleEntry": 625,
+        "firstConstructedEntry": 625,
+        "presenceMinutes": 435,
+        "waitExitToOut": 0
+      },
+      {
+        "participantId": 219,
+        "arrivalStart": 690,
+        "arrivalEnd": 695,
+        "entry": 715,
+        "exit": 980,
+        "out": 1000,
+        "waitInToEntry": 20,
+        "firstLocalFeasibleEntry": 715,
+        "firstConstructedEntry": 715,
+        "presenceMinutes": 315,
+        "waitExitToOut": 15
+      }
+    ],
+    "totalPresenceMinutes": 8465,
+    "waitInToEntryMinutes": 810,
+    "waitExitToOutMinutes": 150,
+    "stylingGapCount": 9,
+    "stylingGapMinutes": 300,
+    "stylingWorkMinutes": 285,
+    "branches": 27049,
+    "durationMs": 67807,
+    "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d"
+  },
+  "after": {
+    "participants": [
+      {
+        "participantId": 201,
+        "arrivalStart": 600,
+        "arrivalEnd": 605,
+        "entry": 635,
+        "exit": 865,
+        "out": 870,
+        "waitInToEntry": 30,
+        "firstLocalFeasibleEntry": 635,
+        "firstConstructedEntry": 635,
+        "presenceMinutes": 275,
+        "waitExitToOut": 0
+      },
+      {
+        "participantId": 202,
+        "arrivalStart": 540,
+        "arrivalEnd": 545,
+        "entry": 550,
+        "exit": 1055,
+        "out": 1075,
+        "waitInToEntry": 5,
+        "firstLocalFeasibleEntry": 550,
+        "firstConstructedEntry": 645,
+        "presenceMinutes": 540,
+        "waitExitToOut": 15
+      },
+      {
+        "participantId": 203,
+        "arrivalStart": 540,
+        "arrivalEnd": 545,
+        "entry": 560,
+        "exit": 885,
+        "out": 890,
+        "waitInToEntry": 15,
+        "firstLocalFeasibleEntry": 560,
+        "firstConstructedEntry": 685,
+        "presenceMinutes": 355,
+        "waitExitToOut": 0
+      },
+      {
+        "participantId": 204,
+        "arrivalStart": 570,
+        "arrivalEnd": 575,
+        "entry": 580,
+        "exit": 1080,
+        "out": 1095,
+        "waitInToEntry": 5,
+        "firstLocalFeasibleEntry": 580,
+        "firstConstructedEntry": 655,
+        "presenceMinutes": 530,
+        "waitExitToOut": 10
+      },
+      {
+        "participantId": 205,
+        "arrivalStart": 570,
+        "arrivalEnd": 575,
+        "entry": 605,
+        "exit": 1050,
+        "out": 1055,
+        "waitInToEntry": 30,
+        "firstLocalFeasibleEntry": 590,
+        "firstConstructedEntry": 605,
+        "presenceMinutes": 490,
+        "waitExitToOut": 0
+      },
+      {
+        "participantId": 206,
+        "arrivalStart": 630,
+        "arrivalEnd": 635,
+        "entry": 675,
+        "exit": 1130,
+        "out": 1135,
+        "waitInToEntry": 40,
+        "firstLocalFeasibleEntry": 675,
+        "firstConstructedEntry": 675,
+        "presenceMinutes": 510,
+        "waitExitToOut": 0
+      },
+      {
+        "participantId": 207,
+        "arrivalStart": 660,
+        "arrivalEnd": 665,
+        "entry": 755,
+        "exit": 1065,
+        "out": 1075,
+        "waitInToEntry": 90,
+        "firstLocalFeasibleEntry": 755,
+        "firstConstructedEntry": 755,
+        "presenceMinutes": 420,
+        "waitExitToOut": 5
+      },
+      {
+        "participantId": 208,
+        "arrivalStart": 540,
+        "arrivalEnd": 545,
+        "entry": 570,
+        "exit": 975,
+        "out": 980,
+        "waitInToEntry": 25,
+        "firstLocalFeasibleEntry": 570,
+        "firstConstructedEntry": 595,
+        "presenceMinutes": 445,
+        "waitExitToOut": 0
+      },
+      {
+        "participantId": 209,
+        "arrivalStart": 570,
+        "arrivalEnd": 575,
+        "entry": 615,
+        "exit": 1075,
+        "out": 1095,
+        "waitInToEntry": 40,
+        "firstLocalFeasibleEntry": 590,
+        "firstConstructedEntry": 615,
+        "presenceMinutes": 530,
+        "waitExitToOut": 15
+      },
+      {
+        "participantId": 210,
+        "arrivalStart": 720,
+        "arrivalEnd": 725,
+        "entry": 775,
+        "exit": 1125,
+        "out": 1135,
+        "waitInToEntry": 50,
+        "firstLocalFeasibleEntry": 775,
+        "firstConstructedEntry": 775,
+        "presenceMinutes": 420,
+        "waitExitToOut": 5
+      },
+      {
+        "participantId": 211,
+        "arrivalStart": 690,
+        "arrivalEnd": 695,
+        "entry": 765,
+        "exit": 1085,
+        "out": 1095,
+        "waitInToEntry": 70,
+        "firstLocalFeasibleEntry": 765,
+        "firstConstructedEntry": 765,
+        "presenceMinutes": 410,
+        "waitExitToOut": 5
+      },
+      {
+        "participantId": 212,
+        "arrivalStart": 600,
+        "arrivalEnd": 605,
+        "entry": 695,
+        "exit": 1090,
+        "out": 1095,
+        "waitInToEntry": 90,
+        "firstLocalFeasibleEntry": 645,
+        "firstConstructedEntry": 695,
+        "presenceMinutes": 500,
+        "waitExitToOut": 0
+      },
+      {
+        "participantId": 213,
+        "arrivalStart": 630,
+        "arrivalEnd": 635,
+        "entry": 665,
+        "exit": 1095,
+        "out": 1115,
+        "waitInToEntry": 30,
+        "firstLocalFeasibleEntry": 660,
+        "firstConstructedEntry": 665,
+        "presenceMinutes": 490,
+        "waitExitToOut": 15
+      },
+      {
+        "participantId": 214,
+        "arrivalStart": 630,
+        "arrivalEnd": 635,
+        "entry": 735,
+        "exit": 1070,
+        "out": 1075,
+        "waitInToEntry": 100,
+        "firstLocalFeasibleEntry": 685,
+        "firstConstructedEntry": 735,
+        "presenceMinutes": 450,
+        "waitExitToOut": 0
+      },
+      {
+        "participantId": 215,
+        "arrivalStart": 660,
+        "arrivalEnd": 665,
+        "entry": 725,
+        "exit": 1100,
+        "out": 1135,
+        "waitInToEntry": 60,
+        "firstLocalFeasibleEntry": 725,
+        "firstConstructedEntry": 725,
+        "presenceMinutes": 480,
+        "waitExitToOut": 30
+      },
+      {
+        "participantId": 216,
+        "arrivalStart": 660,
+        "arrivalEnd": 665,
+        "entry": 745,
+        "exit": 1105,
+        "out": 1135,
+        "waitInToEntry": 80,
+        "firstLocalFeasibleEntry": 745,
+        "firstConstructedEntry": 745,
+        "presenceMinutes": 480,
+        "waitExitToOut": 25
+      },
+      {
+        "participantId": 217,
+        "arrivalStart": 690,
+        "arrivalEnd": 695,
+        "entry": 705,
+        "exit": 1060,
+        "out": 1075,
+        "waitInToEntry": 10,
+        "firstLocalFeasibleEntry": 705,
+        "firstConstructedEntry": 705,
+        "presenceMinutes": 390,
+        "waitExitToOut": 10
+      },
+      {
+        "participantId": 218,
+        "arrivalStart": 600,
+        "arrivalEnd": 605,
+        "entry": 625,
+        "exit": 1025,
+        "out": 1030,
+        "waitInToEntry": 20,
+        "firstLocalFeasibleEntry": 625,
+        "firstConstructedEntry": 625,
+        "presenceMinutes": 435,
+        "waitExitToOut": 0
+      },
+      {
+        "participantId": 219,
+        "arrivalStart": 690,
+        "arrivalEnd": 695,
+        "entry": 715,
+        "exit": 980,
+        "out": 1000,
+        "waitInToEntry": 20,
+        "firstLocalFeasibleEntry": 715,
+        "firstConstructedEntry": 715,
+        "presenceMinutes": 315,
+        "waitExitToOut": 15
+      }
+    ],
+    "totalPresenceMinutes": 8465,
+    "waitInToEntryMinutes": 810,
+    "waitExitToOutMinutes": 150,
+    "stylingGapCount": 9,
+    "stylingGapMinutes": 300,
+    "stylingWorkMinutes": 285,
+    "branches": 27049,
+    "durationMs": 67723,
+    "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d"
+  },
+  "stagesBefore": [
+    {
+      "ordinal": 1,
+      "branches": 22053,
+      "durationMs": 64500,
+      "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    },
+    {
+      "ordinal": 2,
+      "branches": 293,
+      "durationMs": 263,
+      "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    },
+    {
+      "ordinal": 3,
+      "branches": 293,
+      "durationMs": 222,
+      "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    },
+    {
+      "ordinal": 4,
+      "branches": 293,
+      "durationMs": 329,
+      "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    },
+    {
+      "ordinal": 5,
+      "branches": 293,
+      "durationMs": 290,
+      "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    },
+    {
+      "ordinal": 6,
+      "branches": 293,
+      "durationMs": 215,
+      "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    },
+    {
+      "ordinal": 7,
+      "branches": 293,
+      "durationMs": 245,
+      "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    },
+    {
+      "ordinal": 8,
+      "branches": 1507,
+      "durationMs": 464,
+      "certificate": "bfdbe415effe6d9d827c5ae6dd9d95ed1e5953f43252df64def69234b4a50343",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    },
+    {
+      "ordinal": 9,
+      "branches": 293,
+      "durationMs": 194,
+      "certificate": "bfdbe415effe6d9d827c5ae6dd9d95ed1e5953f43252df64def69234b4a50343",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    },
+    {
+      "ordinal": 10,
+      "branches": 293,
+      "durationMs": 201,
+      "certificate": "bfdbe415effe6d9d827c5ae6dd9d95ed1e5953f43252df64def69234b4a50343",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    },
+    {
+      "ordinal": 11,
+      "branches": 1145,
+      "durationMs": 884,
+      "certificate": "9a918ed64990241b3d5b4e914ef38df059dc18f7e6802c45d022efbfd48f3e2a",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    }
+  ],
+  "stagesAfter": [
+    {
+      "ordinal": 1,
+      "branches": 22053,
+      "durationMs": 64630,
+      "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    },
+    {
+      "ordinal": 2,
+      "branches": 293,
+      "durationMs": 214,
+      "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    },
+    {
+      "ordinal": 3,
+      "branches": 293,
+      "durationMs": 196,
+      "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    },
+    {
+      "ordinal": 4,
+      "branches": 293,
+      "durationMs": 232,
+      "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    },
+    {
+      "ordinal": 5,
+      "branches": 293,
+      "durationMs": 256,
+      "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    },
+    {
+      "ordinal": 6,
+      "branches": 293,
+      "durationMs": 206,
+      "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    },
+    {
+      "ordinal": 7,
+      "branches": 293,
+      "durationMs": 185,
+      "certificate": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    },
+    {
+      "ordinal": 8,
+      "branches": 1507,
+      "durationMs": 444,
+      "certificate": "bfdbe415effe6d9d827c5ae6dd9d95ed1e5953f43252df64def69234b4a50343",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    },
+    {
+      "ordinal": 9,
+      "branches": 293,
+      "durationMs": 268,
+      "certificate": "bfdbe415effe6d9d827c5ae6dd9d95ed1e5953f43252df64def69234b4a50343",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    },
+    {
+      "ordinal": 10,
+      "branches": 293,
+      "durationMs": 208,
+      "certificate": "bfdbe415effe6d9d827c5ae6dd9d95ed1e5953f43252df64def69234b4a50343",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    },
+    {
+      "ordinal": 11,
+      "branches": 1145,
+      "durationMs": 884,
+      "certificate": "9a918ed64990241b3d5b4e914ef38df059dc18f7e6802c45d022efbfd48f3e2a",
+      "replay": "PASS",
+      "completeForScope": true,
+      "reasonCodes": [
+        "ASSISTED_SCOPE_COMPLETE"
+      ],
+      "offlineAuditBranches": 293
+    }
+  ],
+  "repeatDurationMs": 67585,
+  "localFeasibilityDefinition": "Exact task domain with all other final tasks, IN and meals fixed; not a global earliest-start proof.",
+  "offlineAuditAccounting": "Separate from product branch counts.",
+  "verifierOriginalBaseLabel": "49d826c9a5ecdd3e0488a64d2b6a05dd3aad98b5"
+}

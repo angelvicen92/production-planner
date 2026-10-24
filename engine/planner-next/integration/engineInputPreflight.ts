@@ -1179,12 +1179,11 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       if (!resourceItemIds.has(id)) missingResource("task", task.id, `${path}.resourceRequirements.byItem.${id}`, id, "resource-item");
       if (quantity !== 1) addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT", "task", task.id, `${path}.resourceRequirements.byItem.${id}`, "Resource quantity is not representable.", { quantity });
     }
-    for (const [id, quantity] of Object.entries(requirements?.byType ?? {})) {
+    for (const id of Object.keys(requirements?.byType ?? {})) {
       if (!resourceTypeIds.has(id)) missingResource("task", task.id, `${path}.resourceRequirements.byType.${id}`, id, "resource-type");
-      addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT", "task", task.id, `${path}.resourceRequirements.byType.${id}`, "Resource type cannot be selected without loss.", { quantity });
     }
     for(const issue of resolveNominalResourceRequirements(input,task).issues)
-      addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT","task",task.id,`${path}.resourceRequirements.anyOf`,"Nominal physical choice requires one quantity-one group on an ordinary standalone auxiliary, with unique available daily identities.",issue);
+      addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT","task",task.id,`${path}.resourceRequirements.${Object.keys(requirements?.byType??{}).length?"byType":"anyOf"}`,"Nominal physical choice requires one quantity-one group on an ordinary standalone auxiliary, with unique available daily identities.",issue);
     requirements?.anyOf?.forEach((group, index) => {
       group.resourceItemIds.forEach((id) => {
         if (!resourceItemIds.has(String(id))) missingResource("task", task.id, `${path}.resourceRequirements.anyOf.${index}`, id, "resource-item");

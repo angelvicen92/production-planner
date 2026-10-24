@@ -1,0 +1,28 @@
+{
+  "ref": "HEAD",
+  "beforeIntegrity": true,
+  "head": "438d92ca9a4f3db6358809b904268f6da33b4ecd",
+  "node": "20.20.2",
+  "patchSha256": "ae6520c514476451ce9df0cc17c3f1aadf5629d3626b865285830cd04e829716",
+  "originalHarnessSha256": "f797d62083a6988d795540b25a5a8435b169baf8e789c84caeb55d2be286430e",
+  "journeySha256": "d34f53eb84f7d5d990181d145591c966561b196151007503c40d577d64d15356",
+  "lockfileSha256": "cbe75a531336356a5d3baa75202818f1a7060b72f10d205449b8036295ffeaaa",
+  "sourceHashes": {
+    "engine/planner-next/nominalResourceChoice.ts": "da4182d341edb408cf75156741453c04f0bf7f14e64b8de8668ad52ab46131c1",
+    "engine/planner-next/integration/nominalResourceRequirements.ts": "bccbd8bd3373e6b0394f1fc00771c2a43023983740c2dbd035af77f6d685bceb",
+    "engine/planner-next/assistedPlanning.ts": "6dfd3708ed47e0ed0cbe2903c1b550cb5c70e775e079a7757d40e0ac97fb70eb",
+    "engine/planner-next/exactItinerantPlan.ts": "27f2a39a5eda98d5fa972ba4c58a0fc09d76d17d3091ade255dcdb21d15d1c80",
+    "engine/planner-next/validate.ts": "1aff35d36ed34752b202775a6a891172ba9795e1f5ffa39997bf5aad87056089",
+    "engine/planner-next/fingerprint.ts": "36c3b9fa1240a2162f0a211171a26131c0e65bf788f0b71d5d4b10bdc805911a",
+    "engine/concreteTaskResourceRequirements.ts": "042273c03937da0d88eae02098460d9dcd59f3d2abb10663c01f61eb2c7c918f",
+    "engine/planner-next/integration/effectiveTaskResourceAssignments.ts": "794011911e1ec0104eb863cd9c14385962706f1ba27316bba2f5b87c6c4c703a",
+    "engine/planner-next/integration/engineInputPreflight.ts": "87914aa6cd4679ce4a17ea63c0b5199a8d0b37e9eec9653ca9e446c00912ac57",
+    "engine/planner-next/integration/engineInputAdapter.ts": "ab7c7f56918a9d6f12a5b7e2a034f29d4ba5de75cdd7d91c740af1333977fb95",
+    "server/itinerantComposition.ts": "3a64ebf87fa04ac760723abbd8c3830a1465d769efcce4440321236f7e32183b",
+    "server/assistedProposalService.ts": "592608bdb7365937eb86f875319df713a4f4ab03fa2debe72ee1f1379b6bfd8c",
+    "server/assistedPlanningService.ts": "ac9eae974c1d4ba2cc9cd61f9b72e9a67e3aaaca975c55490680c7639f0684cc",
+    "engine/planner-next/placement.ts": "c2ac8daefdbd23e5537a580fce4187ae31680bfbcdd1d464ba9f80720bce53dc",
+    "supabase/migrations/110_nominal_resource_integrity.sql": "5700017caeff09473fea1ae69891850a1c9d7f2deefc97b89a81a1b734c2d528"
+  },
+  "remoteWrites": 0
+}

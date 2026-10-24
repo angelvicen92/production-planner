@@ -2,6 +2,7 @@ import type {Task} from './contracts';
 
 const canonical=(ids:readonly string[])=>[...new Set(ids)].sort();
 export const canonicalNominalResourceChoice=(choice:NonNullable<Task['nominalResourceChoice']>)=>({
+  ...(choice.requestedResourceTypeId===undefined?{}:{requestedResourceTypeId:choice.requestedResourceTypeId}),
   resourceIds:canonical(choice.resourceIds),fixedResourceIds:canonical(choice.fixedResourceIds),
   ...(choice.selectedResourceId===undefined?{}:{selectedResourceId:choice.selectedResourceId}),
 });

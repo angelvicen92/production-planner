@@ -1,0 +1,20 @@
+{
+  "status": "PASS_WITH_REMOTE_FULL_SUITE_REQUIRED",
+  "focalTests": 69,
+  "typecheck": "PASS",
+  "harnessTypecheck": "PASS",
+  "build": "PASS",
+  "migrationSequence": "PASS",
+  "nativeLedgerExecution": "PASS",
+  "initialSuite": {
+    "passed": 3185,
+    "failed": 1,
+    "cause": "U00h test asserted universal byType rejection; its boundary is now quantity>1. Corrected focused test passes.",
+    "specFiles": 412,
+    "exclusions": [
+      "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts",
+      "server/benchmarks/runA2Assist7Evidence.spec.ts"
+    ]
+  },
+  "finalFullSuiteAuthority": "PR #1188 final head planner-engine-ci check; expected 3195 tests in 413 files with the same two exclusions."
+}

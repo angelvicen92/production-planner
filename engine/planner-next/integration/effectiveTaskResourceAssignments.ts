@@ -20,6 +20,7 @@ export interface EffectiveTaskResourceAssignment {
   nominalResourceIds?: readonly number[];
   nominalAvailableResourceIds?: readonly number[];
   nominalSelectedResourceId?: number;
+  nominalRequestedResourceTypeId?: string;
   independentResourceIds?: readonly number[];
   spaceResourceIds: readonly number[];
   zoneResourceIds: readonly number[];
@@ -100,6 +101,7 @@ export function resolveEffectiveTaskResourceAssignments(input: EngineInput): Eff
     const effectiveResourceIds = normalizedIds([...directResourceIds, ...spaceResourceIds, ...zoneResourceIds, ...teamResourceIds]);
     assignments.push(Object.freeze({ taskId: task.id, status: task.status, spaceId, explicitZoneId, mappedZoneId, effectiveZoneId, zoneResolution, directResourceIds, ...(byItemResourceIds.length ? {byItemResourceIds} : {}), spaceResourceIds, zoneResourceIds, effectiveResourceIds,
       ...(nominal.resourceIds.length?{nominalResourceIds:nominal.resourceIds,nominalAvailableResourceIds:nominal.availableResourceIds,
+        ...(nominal.requestedResourceTypeId===undefined?{}:{nominalRequestedResourceTypeId:nominal.requestedResourceTypeId}),
         ...(nominal.selectedResourceId===undefined?{}:{nominalSelectedResourceId:nominal.selectedResourceId}),
         independentResourceIds:normalizedIds([...(task.assignedResourceIds??[]).filter(id=>!nominal.resourceIds.includes(id)),...(task.declaredResourceIds??[]),...byItemResourceIds,...spaceResourceIds,...zoneResourceIds,...teamResourceIds])}:{}),
     }));

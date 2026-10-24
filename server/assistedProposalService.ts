@@ -165,7 +165,7 @@ export function materializeAssistedSnapshotOccupations(problem:PlannerNextProble
 
 /** Revalidate the persisted physical witness, never rediscover it with another search. */
 export function assertNominalProposalWitness(input:EngineInput,draft:AssistedPlanningSnapshotV1,result:AssistedProposalRunResultV1){
-  if(!input.tasks.some(task=>task.resourceRequirements?.anyOf?.length))return;
+  if(!input.tasks.some(task=>task.resourceRequirements?.anyOf?.length||Object.keys(task.resourceRequirements?.byType??{}).length))return;
   const adapter=adaptEngineInputToPlannerNextProblem(input);
   if(adapter.status!=='SUPPORTED')throw new Error('INVALID_NOMINAL_PHYSICAL_WITNESS');
   const problem=adapter.problem,proof=result.evidence.nominalPhysicalFutureWitness as any;

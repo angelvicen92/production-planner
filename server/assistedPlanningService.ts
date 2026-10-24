@@ -63,7 +63,7 @@ export class AssistedPlanningService {
   }
   private async assertNominalDraftWitness(planId:number,session:any,input?:Awaited<ReturnType<typeof buildEngineInput>>){
     input??=await this.buildInput(planId);
-    if(!input.tasks.some(task=>task.resourceRequirements?.anyOf?.length))return;
+    if(!input.tasks.some(task=>task.resourceRequirements?.anyOf?.length||Object.keys(task.resourceRequirements?.byType??{}).length))return;
     if(session.draftScopeJson?.editKind==='MANUAL')return; // Manual validator separately fails closed on uncertified future.
     const runId=Number(session.draftScopeJson?.proposalRunId);
     try{await assertPersistedNominalProposalWitness(planId,runId,input,session.draftSnapshotJson);}
