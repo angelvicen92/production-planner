@@ -85,6 +85,7 @@ for(const [name,edit] of [
   ['quantity two',(s:EngineInput)=>s.tasks[0].resourceRequirements!.anyOf![0].quantity=2],
   ['multiple groups',(s:EngineInput)=>s.tasks[0].resourceRequirements!.anyOf!.push({quantity:1,resourceItemIds:[2,3]})],
   ['all unavailable',(s:EngineInput)=>s.planResourceItems.forEach(r=>r.isAvailable=false)],
+  ['composite resource',(s:EngineInput)=>s.resourceItemComponents={2:[{componentResourceItemId:3,quantity:1}]}],
   ['shared auxiliary',(s:EngineInput)=>s.planResourceItems.find(r=>r.id===5)!.typeCode='auxiliar'],
   ['grouped task',(s:EngineInput)=>s.tasks[0].jointGroupId='joint'],
   ['Vocal',(s:EngineInput)=>s.tasks[0].plannerNextKind='vocal'],

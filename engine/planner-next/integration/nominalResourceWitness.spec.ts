@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {readFileSync} from 'node:fs';
-import {assertNominalProposalWitness} from './assistedProposalService';
-import {fingerprint} from '../engine/planner-next/fingerprint';
+import {assertNominalProposalWitness} from '../../../server/assistedProposalService';
+import {fingerprint} from '../fingerprint';
 const read=(name:string)=>JSON.parse(readFileSync(`docs/evidence/p0-u00i/implementation/causal-sql-boundary/${name}.json`,'utf8'));
 test('canonical validation rechecks a stored physical witness without another search',()=>{
   const input=read('A-input'),result=read('A-S1-run').assisted_result_json,draft=read('A-S1-draft').draft;

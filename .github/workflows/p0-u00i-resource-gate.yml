@@ -37,7 +37,7 @@ jobs:
             npx --no-install playwright install --with-deps chromium
           fi
       - run: npx --no-install tsc -p script/validation/tsconfig.u00i.json
-      - run: node node_modules/tsx/dist/cli.mjs --test engine/planner-next/integration/nominalResourceRequirements.spec.ts server/nominalResourceWitness.spec.ts
+      - run: node node_modules/tsx/dist/cli.mjs --test engine/planner-next/integration/nominalResourceRequirements.spec.ts engine/planner-next/integration/nominalResourceWitness.spec.ts
       - name: Two UI/API days, SQL attacks and protected continuation
         run: node --import tsx script/validation/runU00iFunctional.ts work/u00i-functional
       - run: node --import tsx script/validation/replayU00iFrozen.ts work/u00i-functional/native work/u00i-cold.json

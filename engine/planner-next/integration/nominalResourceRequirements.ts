@@ -17,14 +17,15 @@ export function resolveNominalResourceRequirements(input:EngineInput,task:TaskIn
   if(input.plannerNext?.profile!=='STANDALONE_ONLY'||task.plannerNextKind!=='auxiliary'||structured)
     issues.push({reason:'ANYOF_REQUIRES_ORDINARY_STANDALONE_AUXILIARY'});
   if(input.plannerNext?.searchPolicy!=='EXACT_CONSTRUCTIVE')issues.push({reason:'ANYOF_REQUIRES_EXACT_ORDINARY_CONSTRUCTOR'});
-  if(groups.length!==1)issues.push({reason:'ANYOF_REQUIRES_SINGLE_GROUP'});
+  if(groups.length!==1){issues.push({reason:'ANYOF_REQUIRES_SINGLE_GROUP'});return {resourceIds,availableResourceIds,issues};}
   const group=groups[0];
   if(!Array.isArray(group.resourceItemIds)||group.resourceItemIds.length===0)issues.push({reason:'EMPTY_NOMINAL_RESOURCE_DOMAIN'});
   if(group.quantity!==1)issues.push({reason:'UNREPRESENTABLE_QUANTITY',quantity:group.quantity});
-  for(const id of [...new Set(group.resourceItemIds??[])]){
+  for(const id of [...new Set(group.resourceItemIds??[])].sort((a,b)=>a-b)){
     const resolved=resolveConcreteResourceItem(input,String(id),group.quantity);
     if(resolved.issue){issues.push(resolved.issue);continue;}
     const resource=resolved.resource!;resourceIds.push(resource.id);
+    if(input.resourceItemComponents?.[id]?.length)issues.push({reason:'NOMINAL_COMPOSITE_RESOURCE_UNSUPPORTED',resourceItemId:id});
     if(Object.values(input.vocalCoachPlanResourceItemIdByContestantId??{}).includes(resource.id))issues.push({reason:'NOMINAL_COACH_SELECTION_UNSUPPORTED',resourceId:resource.id});
     const availability=resolveEffectivePlanResourceAvailability(input.workDay,resource);
     if(availability.status==='INVALID')issues.push({reason:'INVALID_NOMINAL_RESOURCE_AVAILABILITY',resourceId:resource.id,availability});
@@ -32,7 +33,7 @@ export function resolveNominalResourceRequirements(input:EngineInput,task:TaskIn
     if(input.resourcePresenceConcentrationPolicies?.[resource.id]&&input.resourcePresenceConcentrationPolicies[resource.id]!=='OFF')
       issues.push({reason:'ANYOF_RESOURCE_MACRO_UNSUPPORTED',resourceId:resource.id});
   }
-  const selected=(task.assignedResourceIds??[]).filter(id=>resourceIds.includes(id));
+  const selected=[...new Set((task.assignedResourceIds??[]).filter(id=>resourceIds.includes(id)))].sort((a,b)=>a-b);
   if(new Set(selected).size>1)issues.push({reason:'MULTIPLE_NOMINAL_RESOURCE_ASSIGNMENTS',selected});
   if((task.status==='done'||task.status==='in_progress')&&selected.length!==1)issues.push({reason:'PROTECTED_NOMINAL_CHOICE_MISSING'});
   if(!availableResourceIds.length)issues.push({reason:'NO_AVAILABLE_NOMINAL_RESOURCE',resourceIds});

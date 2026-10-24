@@ -1,7 +1,9 @@
 -- P0-U00i: physical identity/future integrity on the existing validation write.
 -- Created with Supabase CLI; renamed 110 under the audited sequential ledger.
 -- No RPC replacement, caller-supplied authority, grants, or historical edits.
-CREATE OR REPLACE FUNCTION public.guard_nominal_physical_validation()
+CREATE SCHEMA nominal_resource_private;
+REVOKE ALL ON SCHEMA nominal_resource_private FROM PUBLIC,anon,authenticated,service_role;
+CREATE FUNCTION nominal_resource_private.guard_nominal_physical_validation()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
 DECLARE
  s public.assisted_planning_sessions%rowtype;
@@ -123,7 +125,7 @@ BEGIN
  NEW.report_json:=NEW.report_json||jsonb_build_object('nominalResourceFuture','CERTIFIED');
  RETURN NEW;
 END $$;
-REVOKE ALL ON FUNCTION public.guard_nominal_physical_validation() FROM PUBLIC,anon,authenticated,service_role;
+REVOKE ALL ON FUNCTION nominal_resource_private.guard_nominal_physical_validation() FROM PUBLIC,anon,authenticated,service_role;
 CREATE TRIGGER nominal_physical_validation_before_insert
  BEFORE INSERT ON public.planning_stage_validations
- FOR EACH ROW EXECUTE FUNCTION public.guard_nominal_physical_validation();
+ FOR EACH ROW EXECUTE FUNCTION nominal_resource_private.guard_nominal_physical_validation();

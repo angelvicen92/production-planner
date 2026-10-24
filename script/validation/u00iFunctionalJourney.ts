@@ -15,6 +15,18 @@ export async function runU00iFunctionalJourney({appUrl,users,db,directory,pass}:
     return {status:r.status,body:await r.json() as any};
   };
   const api=async(path:string,method='GET',body?:unknown)=>{const r=await request(path,method,body);assert.ok(r.status<300,JSON.stringify({path,...r}));return r.body;};
+  if(process.env.OPTIPLAN_U00I_BEFORE_INTEGRITY!=='1'){
+    const security=(await db.query(`SELECT p.prosecdef, p.proconfig,
+      has_schema_privilege(role,n.oid,'USAGE') AS schema_usage,
+      has_function_privilege(role,p.oid,'EXECUTE') AS executable,role
+      FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace,
+      unnest(ARRAY['anon','authenticated','service_role']) role
+      WHERE n.nspname='nominal_resource_private' AND p.proname='guard_nominal_physical_validation'`)).rows;
+    assert.equal(security.length,3);
+    for(const row of security){assert.equal(row.prosecdef,false);assert.deepEqual(row.proconfig,['search_path=""']);assert.equal(row.schema_usage,false);assert.equal(row.executable,false);}
+    assert.equal(Number((await db.query("SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='guard_nominal_physical_validation'")).rows[0].count),0);
+    save('guard-security',{privateSchema:true,publicRpcAdded:false,roles:security});
+  }
   const expected=(s:any)=>({expectedDraftFingerprint:s.draftFingerprint,expectedBaseStageId:s.draftBaseStageId});
   const poll=async(path:string,id:number)=>{const end=Date.now()+180_000;while(Date.now()<end){const run=await api(`${path}/proposals/${id}`);if(!['pending','running'].includes(run.status))return run;await new Promise(r=>setTimeout(r,100));}throw Error('proposal timeout');};
   const browser=await chromium.launch({headless:true,args:['--no-sandbox'],executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH});
