@@ -1,0 +1,150 @@
+TAP version 13
+# Subtest: captured API day chooses B alongside critical A, deterministically without input mutation
+ok 1 - captured API day chooses B alongside critical A, deterministically without input mutation
+  ---
+  duration_ms: 113.952409
+  ...
+# Subtest: single search certifies cross-participant physical future without protecting its ephemeral choice
+ok 2 - single search certifies cross-participant physical future without protecting its ephemeral choice
+  ---
+  duration_ms: 39.801409
+  ...
+# Subtest: ordinary validator rejects omitted, invented, duplicate-choice and altered fixed consumption
+ok 3 - ordinary validator rejects omitted, invented, duplicate-choice and altered fixed consumption
+  ---
+  duration_ms: 16.551868
+  ...
+# Subtest: resource choice is a backtracking decision; unavailable alternative does not become a fixed obligation
+ok 4 - resource choice is a backtracking decision; unavailable alternative does not become a fixed obligation
+  ---
+  duration_ms: 17.261383
+  ...
+# Subtest: ordinary backtracking replaces a previously materialized A by B after a collective dead end
+ok 5 - ordinary backtracking replaces a previously materialized A by B after a collective dead end
+  ---
+  duration_ms: 22.857281
+  ...
+# Subtest: independent byItem survives selection and cannot be omitted or substituted
+ok 6 - independent byItem survives selection and cannot be omitted or substituted
+  ---
+  duration_ms: 7.095609
+  ...
+# Subtest: a lock on A cannot silently select B to manufacture a completion
+ok 7 - a lock on A cannot silently select B to manufacture a completion
+  ---
+  duration_ms: 28.363364
+  ...
+# Subtest: different valid nominal choices have different fingerprints, while domain order is immaterial
+ok 8 - different valid nominal choices have different fingerprints, while domain order is immaterial
+  ---
+  duration_ms: 1.692659
+  ...
+# Subtest: empty domain remains fail-closed
+ok 9 - empty domain remains fail-closed
+  ---
+  duration_ms: 1.42094
+  ...
+# Subtest: missing identity remains fail-closed
+ok 10 - missing identity remains fail-closed
+  ---
+  duration_ms: 1.284271
+  ...
+# Subtest: ambiguous daily identity remains fail-closed
+ok 11 - ambiguous daily identity remains fail-closed
+  ---
+  duration_ms: 1.143223
+  ...
+# Subtest: quantity two remains fail-closed
+ok 12 - quantity two remains fail-closed
+  ---
+  duration_ms: 1.173625
+  ...
+# Subtest: multiple groups remains fail-closed
+ok 13 - multiple groups remains fail-closed
+  ---
+  duration_ms: 1.128839
+  ...
+# Subtest: all unavailable remains fail-closed
+ok 14 - all unavailable remains fail-closed
+  ---
+  duration_ms: 1.171239
+  ...
+# Subtest: composite resource remains fail-closed
+ok 15 - composite resource remains fail-closed
+  ---
+  duration_ms: 1.247542
+  ...
+# Subtest: shared auxiliary remains fail-closed
+ok 16 - shared auxiliary remains fail-closed
+  ---
+  duration_ms: 2.381268
+  ...
+# Subtest: grouped task remains fail-closed
+ok 17 - grouped task remains fail-closed
+  ---
+  duration_ms: 1.50474
+  ...
+# Subtest: Vocal remains fail-closed
+ok 18 - Vocal remains fail-closed
+  ---
+  duration_ms: 1.192452
+  ...
+# Subtest: incompatible lock remains fail-closed
+ok 19 - incompatible lock remains fail-closed
+  ---
+  duration_ms: 1.046008
+  ...
+# Subtest: explicit double assignment remains fail-closed
+ok 20 - explicit double assignment remains fail-closed
+  ---
+  duration_ms: 1.054263
+  ...
+# Subtest: byType remains fail-closed
+ok 21 - byType remains fail-closed
+  ---
+  duration_ms: 1.045618
+  ...
+# Subtest: Main remains fail-closed
+ok 22 - Main remains fail-closed
+  ---
+  duration_ms: 1.003498
+  ...
+# Subtest: canonical validation rechecks a stored physical witness without another search
+ok 23 - canonical validation rechecks a stored physical witness without another search
+  ---
+  duration_ms: 49.306839
+  ...
+# Subtest: persisted witness rejects omitted choice, even with recalculated certificate hash
+ok 24 - persisted witness rejects omitted choice, even with recalculated certificate hash
+  ---
+  duration_ms: 3.425633
+  ...
+# Subtest: persisted witness rejects future resource omitted, even with recalculated certificate hash
+ok 25 - persisted witness rejects future resource omitted, even with recalculated certificate hash
+  ---
+  duration_ms: 2.854266
+  ...
+# Subtest: persisted witness rejects invented alternative, even with recalculated certificate hash
+ok 26 - persisted witness rejects invented alternative, even with recalculated certificate hash
+  ---
+  duration_ms: 3.07303
+  ...
+# Subtest: persisted witness rejects future identity omitted, even with recalculated certificate hash
+ok 27 - persisted witness rejects future identity omitted, even with recalculated certificate hash
+  ---
+  duration_ms: 3.830759
+  ...
+# Subtest: persisted witness rejects collision with critical future, even with recalculated certificate hash
+ok 28 - persisted witness rejects collision with critical future, even with recalculated certificate hash
+  ---
+  duration_ms: 3.688937
+  ...
+1..28
+# tests 28
+# suites 0
+# pass 28
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1147.947797

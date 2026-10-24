@@ -1,0 +1,77 @@
+{
+  "status": "PASS",
+  "authorizedBase": "e79f8ee1a13ef5f5df58371abc851b4746385412",
+  "productionCommit": "a310e543052df63a5d5b40223c9b658be5aa7469",
+  "nativeCases": [
+    {
+      "case": "regression-main",
+      "exitCode": 0
+    },
+    {
+      "case": "regression-standalone",
+      "exitCode": 0
+    },
+    {
+      "case": "regression-itinerant",
+      "exitCode": 0
+    },
+    {
+      "case": "regression-setup",
+      "exitCode": 0
+    },
+    {
+      "case": "regression-transport",
+      "exitCode": 0
+    },
+    {
+      "case": "regression-meals",
+      "exitCode": 0
+    },
+    {
+      "case": "regression-resources",
+      "exitCode": 0
+    },
+    {
+      "case": "nominal-before-110",
+      "exitCode": 0
+    },
+    {
+      "case": "nominal-candidate",
+      "exitCode": 0
+    }
+  ],
+  "mainStandaloneItinerant": {
+    "exactProblemsAndFingerprints": 6,
+    "exactAcceptedSnapshots": 6
+  },
+  "historicalRebootstrapStagesUnchanged": true,
+  "setup": {
+    "method": "same frozen UI authorities in archived base and candidate, no ID normalization",
+    "days": [
+      4,
+      6
+    ],
+    "fullReplaysIdentical": true
+  },
+  "mealSnapshotsIdentical": 5,
+  "byItemSnapshotsIdentical": 3,
+  "transportColdPersistedReplay": "PASS",
+  "a2": {
+    "obligations": 266,
+    "stages": 11,
+    "fullReportsIdenticalExceptDurations": true,
+    "allSnapshotsIdentical": true,
+    "canonicalCertificatesRevalidated": 22,
+    "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+    "branches": [
+      27049,
+      27049,
+      27049
+    ],
+    "durationMs": {
+      "base": 66434,
+      "candidate": 64831,
+      "repeat": 65980
+    }
+  }
+}

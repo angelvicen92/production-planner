@@ -2,6 +2,7 @@ import {resolveConcreteTaskResourceRequirements} from "../../concreteTaskResourc
 export {resolveConcreteTaskResourceRequirements} from "../../concreteTaskResourceRequirements";
 import type { EngineInput, TaskStatus } from "../../types";
 import { resolveEffectivePlanSpatialAvailability } from "./effectivePlanSpatialAvailability";
+import {resolveNominalResourceRequirements} from './nominalResourceRequirements';
 
 export type EffectiveTaskResourceZoneResolution = "NONE" | "TASK" | "DAILY_SPACE" | "MATCH" | "CONFLICT";
 
@@ -16,6 +17,10 @@ export interface EffectiveTaskResourceAssignment {
   directResourceIds: readonly number[];
   /** Fixed catalogue requirements resolved by identity in this day's inventory. */
   byItemResourceIds?: readonly number[];
+  nominalResourceIds?: readonly number[];
+  nominalAvailableResourceIds?: readonly number[];
+  nominalSelectedResourceId?: number;
+  independentResourceIds?: readonly number[];
   spaceResourceIds: readonly number[];
   zoneResourceIds: readonly number[];
   effectiveResourceIds: readonly number[];
@@ -85,6 +90,7 @@ export function resolveEffectiveTaskResourceAssignments(input: EngineInput): Eff
     }
 
     const byItemResourceIds = resolveConcreteTaskResourceRequirements(input, task).resourceIds;
+    const nominal=resolveNominalResourceRequirements(input,task);
     const directResourceIds = normalizedIds([...normalizedIds(task.assignedResourceIds), ...normalizedIds(task.declaredResourceIds), ...byItemResourceIds]);
     const ownResources = task.resourceInheritance === "OPERATION_ONLY";
     const spaceResourceIds = ownResources ? Object.freeze([] as number[]) : normalizedIds(mapValue(input.spaceResourceAssignments, spaceId));
@@ -92,7 +98,11 @@ export function resolveEffectiveTaskResourceAssignments(input: EngineInput): Eff
     const teamResourceIds = ownResources && isPositiveInteger(task.itinerantTeamId)
       ? normalizedIds(input.itinerantTeamAvailability?.find(team => team.itinerantTeamId === task.itinerantTeamId)?.planResourceItemIds) : [];
     const effectiveResourceIds = normalizedIds([...directResourceIds, ...spaceResourceIds, ...zoneResourceIds, ...teamResourceIds]);
-    assignments.push(Object.freeze({ taskId: task.id, status: task.status, spaceId, explicitZoneId, mappedZoneId, effectiveZoneId, zoneResolution, directResourceIds, ...(byItemResourceIds.length ? {byItemResourceIds} : {}), spaceResourceIds, zoneResourceIds, effectiveResourceIds }));
+    assignments.push(Object.freeze({ taskId: task.id, status: task.status, spaceId, explicitZoneId, mappedZoneId, effectiveZoneId, zoneResolution, directResourceIds, ...(byItemResourceIds.length ? {byItemResourceIds} : {}), spaceResourceIds, zoneResourceIds, effectiveResourceIds,
+      ...(nominal.resourceIds.length?{nominalResourceIds:nominal.resourceIds,nominalAvailableResourceIds:nominal.availableResourceIds,
+        ...(nominal.selectedResourceId===undefined?{}:{nominalSelectedResourceId:nominal.selectedResourceId}),
+        independentResourceIds:normalizedIds([...(task.assignedResourceIds??[]).filter(id=>!nominal.resourceIds.includes(id)),...(task.declaredResourceIds??[]),...byItemResourceIds,...spaceResourceIds,...zoneResourceIds,...teamResourceIds])}:{}),
+    }));
   }
 
   assignments.sort((left, right) => left.taskId - right.taskId);

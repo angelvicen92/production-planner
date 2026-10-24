@@ -1,0 +1,11 @@
+{
+  "status": "FAILED_PRE_FIX",
+  "failures": [
+    "invariancia completa de colecciones set-like y claves de mapas",
+    "planner-next remains isolated from legacy and production"
+  ],
+  "resolution": [
+    "Canonical diagnostic iteration and selected-ID ordering",
+    "Witness test moved to the Planner Next integration test area; allowlist unchanged"
+  ]
+}

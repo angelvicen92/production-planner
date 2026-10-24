@@ -1,0 +1,10 @@
+{
+  "head": "82019c3fca169ec0caf1bd4bcd1732e9641e04e5",
+  "job": "concrete-resources",
+  "url": "https://github.com/angelvicen92/production-planner/actions/runs/40088882846/job/120857286488",
+  "nativeBaseline": "PASS",
+  "nativeCandidate": "PASS",
+  "failure": "Historical receipt source hash compared to evolved resolver",
+  "correction": "Unmodified historical verifier executes in pinned integrated e79f8ee archive; fresh candidate snapshots compared exactly to all three integrated U00h snapshots. No source/receipt relabeling.",
+  "localRecheck": "PASS"
+}

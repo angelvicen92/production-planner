@@ -160,7 +160,8 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     sourceRoundSynchronizations.flatMap((policy) => policy.lanes.map((lane) => lane.spaceId)),
     operationalMealPolicies.flatMap((policy) => [...policy.spaceIds]),
   ));
-  const requiredResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => [...projection.genericResourceIds]).concat([...mealResourceIds].filter(id=>!coachResourceIds.has(id)), (input.itinerantTeamAvailability ?? []).flatMap(unit=>unit.planResourceItemIds ?? [])));
+  const nominalResourceIds=assignments.flatMap(assignment=>[...(assignment.nominalAvailableResourceIds??[])]);
+  const requiredResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => [...projection.genericResourceIds]).concat([...mealResourceIds].filter(id=>!coachResourceIds.has(id)), (input.itinerantTeamAvailability ?? []).flatMap(unit=>unit.planResourceItemIds ?? []),nominalResourceIds));
 
   const itinerantUnits = [...(input.itinerantTeamAvailability ?? [])].sort((a, b) => a.itinerantTeamId - b.itinerantTeamId).map((availability) => {
     const id = availability.itinerantTeamId;
@@ -178,8 +179,15 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     const fixed = fixedResolution.status === "EXACT" ? fixedResolution.interval : undefined;
     const coachResourceId = projection.coachResourceId;
     const resources = projection.genericResourceIds;
+    const assignment=assignmentByTaskId.get(source.id)!;
+    const nominal=assignment.nominalResourceIds?{
+      resourceIds:assignment.nominalAvailableResourceIds!.map(id=>canonical('plan-resource',id)),
+      fixedResourceIds:[...new Set([...(assignment.independentResourceIds??[]),...projection.lockedResourceIds])].sort((a,b)=>a-b).map(id=>canonical('plan-resource',id)),
+      ...(assignment.nominalSelectedResourceId===undefined?{}:{selectedResourceId:canonical('plan-resource',assignment.nominalSelectedResourceId)}),
+    }:undefined;
     const base = {
       id: canonical("task", source.id),
+      ...(nominal?{nominalResourceChoice:nominal}:{}),
       duration: protectedInterval && (protectedInterval.status === "COMPLETE_REAL" || protectedInterval.status === "COMPLETE_PLANNED")
         ? engineTimeToMinute(protectedInterval.interval.end) - engineTimeToMinute(protectedInterval.interval.start)
         : source.durationOverrideMin!,

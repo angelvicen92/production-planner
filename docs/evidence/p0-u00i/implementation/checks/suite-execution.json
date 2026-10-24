@@ -1,0 +1,10 @@
+{
+  "sourceCommit": "a310e543052df63a5d5b40223c9b658be5aa7469",
+  "node": "20.20.2",
+  "specFiles": 411,
+  "historicalExclusions": [
+    "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts",
+    "server/benchmarks/runA2Assist7Evidence.spec.ts"
+  ],
+  "exitCode": 0
+}

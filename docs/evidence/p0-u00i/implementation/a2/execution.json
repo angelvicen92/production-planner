@@ -1,0 +1,28 @@
+{
+  "mode": "ISOLATED_ARCHIVED_S0_RUNS_IN_SERIES",
+  "otherTestLoads": false,
+  "remoteWrites": 0,
+  "sources": {
+    "base": {
+      "ref": "e79f8ee1a13ef5f5df58371abc851b4746385412",
+      "tree": "ff9e1ee7ee70b8daa3c1e01bf0cb64714d76c7c1",
+      "node": "20.20.2",
+      "exitCode": 0,
+      "wallSeconds": 67.85712229800265
+    },
+    "candidate": {
+      "ref": "a310e543052df63a5d5b40223c9b658be5aa7469",
+      "tree": "36fd8fc52673e3a8584245b7406d4f351783d9c8",
+      "node": "20.20.2",
+      "exitCode": 0,
+      "wallSeconds": 66.98828541400144
+    },
+    "repeat": {
+      "ref": "a310e543052df63a5d5b40223c9b658be5aa7469",
+      "tree": "36fd8fc52673e3a8584245b7406d4f351783d9c8",
+      "node": "20.20.2",
+      "exitCode": 0,
+      "wallSeconds": 67.28807216199857
+    }
+  }
+}

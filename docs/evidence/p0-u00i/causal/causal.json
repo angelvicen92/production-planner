@@ -1,0 +1,15 @@
+{
+  "status": "PREFLIGHT_REJECTION_REPRODUCED",
+  "planId": 2,
+  "globalIds": [
+    2,
+    3
+  ],
+  "dailyIds": [
+    5,
+    6
+  ],
+  "witnessComplete": true,
+  "hardValid": true,
+  "remoteWrites": 0
+}

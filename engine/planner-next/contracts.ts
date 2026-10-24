@@ -93,6 +93,8 @@ interface BaseTask {
   /** Explicit non-physical/transport occupancy; availability still applies. */
   blocksSpace?: boolean;
   requiredResourceIds?: string[];
+  /** Ordinary standalone opt-in. Required IDs contain only fixed consumption until selection. */
+  nominalResourceChoice?: {resourceIds:string[];fixedResourceIds:string[];selectedResourceId?:string};
   /** Explicit operation-only assignments/locks cannot be substituted by unit choice. */
   nonSubstitutableResourceIds?: string[];
   availability?: Window[];

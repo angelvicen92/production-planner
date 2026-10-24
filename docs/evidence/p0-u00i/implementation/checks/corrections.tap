@@ -1,0 +1,1225 @@
+TAP version 13
+# Subtest: resource meal conflicts use direct, effective, coach, and locked projected resources
+ok 1 - resource meal conflicts use direct, effective, coach, and locked projected resources
+  ---
+  duration_ms: 99.39633
+  ...
+# Subtest: resource meal permits protected intervals touching either boundary
+ok 2 - resource meal permits protected intervals touching either boundary
+  ---
+  duration_ms: 6.876806
+  ...
+# Subtest: participant-scoped meal preflight accepts exact scope and rejects its hard defects
+ok 3 - participant-scoped meal preflight accepts exact scope and rejects its hard defects
+  ---
+  duration_ms: 15.471724
+  ...
+# Subtest: participant meal never moves a protected task and rejects overlap explicitly
+ok 4 - participant meal never moves a protected task and rejects overlap explicitly
+  ---
+  duration_ms: 4.170138
+  ...
+# Subtest: SPEC10-005: conflicto espacio-zona activo es blocker exacto y determinista
+ok 5 - SPEC10-005: conflicto espacio-zona activo es blocker exacto y determinista
+  ---
+  duration_ms: 2.362264
+  ...
+# Subtest: SPEC10-005: conflicto espacio-zona de cancelled no produce issue
+ok 6 - SPEC10-005: conflicto espacio-zona de cancelled no produce issue
+  ---
+  duration_ms: 0.69459
+  ...
+# Subtest: SPEC10-005: asignación directa cancelled no cambia el preflight completo
+ok 7 - SPEC10-005: asignación directa cancelled no cambia el preflight completo
+  ---
+  duration_ms: 30.111426
+  ...
+# Subtest: SPEC10-005: referencia inexistente cancelled no crea blocker ni incrementa diagnostics
+ok 8 - SPEC10-005: referencia inexistente cancelled no crea blocker ni incrementa diagnostics
+  ---
+  duration_ms: 1.022332
+  ...
+# Subtest: SPEC10-005: referencia concreta inexistente activa conserva blocker
+ok 9 - SPEC10-005: referencia concreta inexistente activa conserva blocker
+  ---
+  duration_ms: 0.922122
+  ...
+# Subtest: SPEC10-005: mismo recurso en tres niveles mantiene identidad canónica única
+ok 10 - SPEC10-005: mismo recurso en tres niveles mantiene identidad canónica única
+  ---
+  duration_ms: 1.296842
+  ...
+# Subtest: SPEC10-005: misma obligación con procedencia distinta cambia sólo source fingerprint
+ok 11 - SPEC10-005: misma obligación con procedencia distinta cambia sólo source fingerprint
+  ---
+  duration_ms: 1.385295
+  ...
+# Subtest: SPEC10-005: relación de coach sin canal efectivo no añade inferencias
+ok 12 - SPEC10-005: relación de coach sin canal efectivo no añade inferencias
+  ---
+  duration_ms: 1.3778
+  ...
+# Subtest: SPEC10-005: inversión conserva conflicto y fingerprints
+ok 13 - SPEC10-005: inversión conserva conflicto y fingerprints
+  ---
+  duration_ms: 2.041798
+  ...
+# Subtest: pureza: no modifica un EngineInput profundamente congelado
+ok 14 - pureza: no modifica un EngineInput profundamente congelado
+  ---
+  duration_ms: 1.015616
+  ...
+# Subtest: output profundamente frozen
+ok 15 - output profundamente frozen
+  ---
+  duration_ms: 0.757675
+  ...
+# Subtest: determinismo: misma entrada produce resultado idéntico
+ok 16 - determinismo: misma entrada produce resultado idéntico
+  ---
+  duration_ms: 1.246606
+  ...
+# Subtest: invariancia completa de colecciones set-like y claves de mapas
+ok 17 - invariancia completa de colecciones set-like y claves de mapas
+  ---
+  duration_ms: 4.416737
+  ...
+# Subtest: namespaces separados y round-trip exacto
+ok 18 - namespaces separados y round-trip exacto
+  ---
+  duration_ms: 1.237624
+  ...
+# Subtest: identity map cubre referencias explícitas de tareas, mapas, componentes y breaks
+ok 19 - identity map cubre referencias explícitas de tareas, mapas, componentes y breaks
+  ---
+  duration_ms: 1.751753
+  ...
+# Subtest: DUPLICATE_ID sólo para definiciones autoritativas
+ok 20 - DUPLICATE_ID sólo para definiciones autoritativas
+  ---
+  duration_ms: 1.517777
+  ...
+# Subtest: tiempos y aliases incompletos, inválidos y contradictorios
+ok 21 - tiempos y aliases incompletos, inválidos y contradictorios
+  ---
+  duration_ms: 2.136342
+  ...
+# Subtest: valida hard breaks, fixed windows, disponibilidad y horarios protegidos
+ok 22 - valida hard breaks, fixed windows, disponibilidad y horarios protegidos
+  ---
+  duration_ms: 2.286241
+  ...
+# Subtest: duración ausente usa MISSING_TASK_DURATION
+ok 23 - duración ausente usa MISSING_TASK_DURATION
+  ---
+  duration_ms: 0.922424
+  ...
+# Subtest: duración cero usa UNSUPPORTED_TIME_VALUE
+ok 24 - duración cero usa UNSUPPORTED_TIME_VALUE
+  ---
+  duration_ms: 1.231618
+  ...
+# Subtest: duración negativa usa UNSUPPORTED_TIME_VALUE
+ok 25 - duración negativa usa UNSUPPORTED_TIME_VALUE
+  ---
+  duration_ms: 1.076048
+  ...
+# Subtest: duración NaN usa UNSUPPORTED_TIME_VALUE
+ok 26 - duración NaN usa UNSUPPORTED_TIME_VALUE
+  ---
+  duration_ms: 1.384643
+  ...
+# Subtest: duración válida no genera issue de duración
+ok 27 - duración válida no genera issue de duración
+  ---
+  duration_ms: 0.81937
+  ...
+# Subtest: pending, interrupted y cancelled tienen contadores y semántica separada
+ok 28 - pending, interrupted y cancelled tienen contadores y semántica separada
+  ---
+  duration_ms: 0.831895
+  ...
+# Subtest: done e in_progress completos e incompletos
+ok 29 - done e in_progress completos e incompletos
+  ---
+  duration_ms: 1.437669
+  ...
+# Subtest: posible tarea técnica sin concursante no crea falso participante
+ok 30 - posible tarea técnica sin concursante no crea falso participante
+  ---
+  duration_ms: 1.122245
+  ...
+# Subtest: plannerNextKind ausente emite el blocker contractual exacto
+ok 31 - plannerNextKind ausente emite el blocker contractual exacto
+  ---
+  duration_ms: 1.130681
+  ...
+# Subtest: plannerNextKind válido main elimina exclusivamente el blocker de role
+ok 32 - plannerNextKind válido main elimina exclusivamente el blocker de role
+  ---
+  duration_ms: 2.780914
+  ...
+# Subtest: plannerNextKind válido vocal elimina exclusivamente el blocker de role
+ok 33 - plannerNextKind válido vocal elimina exclusivamente el blocker de role
+  ---
+  duration_ms: 0.826416
+  ...
+# Subtest: plannerNextKind válido auxiliary elimina exclusivamente el blocker de role
+ok 34 - plannerNextKind válido auxiliary elimina exclusivamente el blocker de role
+  ---
+  duration_ms: 2.896385
+  ...
+# Subtest: plannerNextKind válido technical elimina exclusivamente el blocker de role
+ok 35 - plannerNextKind válido technical elimina exclusivamente el blocker de role
+  ---
+  duration_ms: 0.915495
+  ...
+# Subtest: plannerNextKind runtime inválido: undefined
+ok 36 - plannerNextKind runtime inválido: undefined
+  ---
+  duration_ms: 0.752349
+  ...
+# Subtest: plannerNextKind runtime inválido: null
+ok 37 - plannerNextKind runtime inválido: null
+  ---
+  duration_ms: 0.555082
+  ...
+# Subtest: plannerNextKind runtime inválido: vacío
+ok 38 - plannerNextKind runtime inválido: vacío
+  ---
+  duration_ms: 0.651117
+  ...
+# Subtest: plannerNextKind runtime inválido: casing
+ok 39 - plannerNextKind runtime inválido: casing
+  ---
+  duration_ms: 0.509592
+  ...
+# Subtest: plannerNextKind runtime inválido: operationalRole
+ok 40 - plannerNextKind runtime inválido: operationalRole
+  ---
+  duration_ms: 0.464994
+  ...
+# Subtest: plannerNextKind runtime inválido: unknown
+ok 41 - plannerNextKind runtime inválido: unknown
+  ---
+  duration_ms: 0.522988
+  ...
+# Subtest: plannerNextKind runtime inválido: número
+ok 42 - plannerNextKind runtime inválido: número
+  ---
+  duration_ms: 2.853652
+  ...
+# Subtest: plannerNextKind runtime inválido: objeto
+ok 43 - plannerNextKind runtime inválido: objeto
+  ---
+  duration_ms: 0.557527
+  ...
+# Subtest: plannerNextKind runtime inválido: array
+ok 44 - plannerNextKind runtime inválido: array
+  ---
+  duration_ms: 0.561475
+  ...
+# Subtest: plannerNextKind no se infiere desde operationalRole
+ok 45 - plannerNextKind no se infiere desde operationalRole
+  ---
+  duration_ms: 1.182087
+  ...
+# Subtest: plannerNextKind no se infiere desde main-flow flag
+ok 46 - plannerNextKind no se infiere desde main-flow flag
+  ---
+  duration_ms: 0.83393
+  ...
+# Subtest: plannerNextKind no se infiere desde template name
+ok 47 - plannerNextKind no se infiere desde template name
+  ---
+  duration_ms: 0.704926
+  ...
+# Subtest: plannerNextKind no se infiere desde main space
+ok 48 - plannerNextKind no se infiere desde main space
+  ---
+  duration_ms: 0.714313
+  ...
+# Subtest: plannerNextKind no se infiere desde main zone
+ok 49 - plannerNextKind no se infiere desde main zone
+  ---
+  duration_ms: 0.71669
+  ...
+# Subtest: plannerNextKind no se infiere desde participant
+ok 50 - plannerNextKind no se infiere desde participant
+  ---
+  duration_ms: 0.718616
+  ...
+# Subtest: plannerNextKind no se infiere desde resource
+ok 51 - plannerNextKind no se infiere desde resource
+  ---
+  duration_ms: 0.915305
+  ...
+# Subtest: plannerNextKind no se infiere desde dependency
+ok 52 - plannerNextKind no se infiere desde dependency
+  ---
+  duration_ms: 0.772036
+  ...
+# Subtest: main exige participante positivo entero: válido
+ok 53 - main exige participante positivo entero: válido
+  ---
+  duration_ms: 0.626009
+  ...
+# Subtest: main exige participante positivo entero: ausente
+ok 54 - main exige participante positivo entero: ausente
+  ---
+  duration_ms: 0.591872
+  ...
+# Subtest: main exige participante positivo entero: cero
+ok 55 - main exige participante positivo entero: cero
+  ---
+  duration_ms: 0.800036
+  ...
+# Subtest: main exige participante positivo entero: negativo
+ok 56 - main exige participante positivo entero: negativo
+  ---
+  duration_ms: 0.564269
+  ...
+# Subtest: main exige participante positivo entero: decimal
+ok 57 - main exige participante positivo entero: decimal
+  ---
+  duration_ms: 0.672672
+  ...
+# Subtest: main exige participante positivo entero: NaN
+ok 58 - main exige participante positivo entero: NaN
+  ---
+  duration_ms: 0.749851
+  ...
+# Subtest: main exige participante positivo entero: string runtime
+ok 59 - main exige participante positivo entero: string runtime
+  ---
+  duration_ms: 0.581852
+  ...
+# Subtest: vocal exige participante positivo entero: válido
+ok 60 - vocal exige participante positivo entero: válido
+  ---
+  duration_ms: 0.53473
+  ...
+# Subtest: vocal exige participante positivo entero: ausente
+ok 61 - vocal exige participante positivo entero: ausente
+  ---
+  duration_ms: 0.641084
+  ...
+# Subtest: vocal exige participante positivo entero: cero
+ok 62 - vocal exige participante positivo entero: cero
+  ---
+  duration_ms: 0.58076
+  ...
+# Subtest: vocal exige participante positivo entero: negativo
+ok 63 - vocal exige participante positivo entero: negativo
+  ---
+  duration_ms: 3.570741
+  ...
+# Subtest: vocal exige participante positivo entero: decimal
+ok 64 - vocal exige participante positivo entero: decimal
+  ---
+  duration_ms: 0.872139
+  ...
+# Subtest: vocal exige participante positivo entero: NaN
+ok 65 - vocal exige participante positivo entero: NaN
+  ---
+  duration_ms: 0.572196
+  ...
+# Subtest: vocal exige participante positivo entero: string runtime
+ok 66 - vocal exige participante positivo entero: string runtime
+  ---
+  duration_ms: 0.664049
+  ...
+# Subtest: auxiliary exige participante positivo entero: válido
+ok 67 - auxiliary exige participante positivo entero: válido
+  ---
+  duration_ms: 0.604757
+  ...
+# Subtest: auxiliary exige participante positivo entero: ausente
+ok 68 - auxiliary exige participante positivo entero: ausente
+  ---
+  duration_ms: 0.535562
+  ...
+# Subtest: auxiliary exige participante positivo entero: cero
+ok 69 - auxiliary exige participante positivo entero: cero
+  ---
+  duration_ms: 0.556669
+  ...
+# Subtest: auxiliary exige participante positivo entero: negativo
+ok 70 - auxiliary exige participante positivo entero: negativo
+  ---
+  duration_ms: 0.609758
+  ...
+# Subtest: auxiliary exige participante positivo entero: decimal
+ok 71 - auxiliary exige participante positivo entero: decimal
+  ---
+  duration_ms: 0.393843
+  ...
+# Subtest: auxiliary exige participante positivo entero: NaN
+ok 72 - auxiliary exige participante positivo entero: NaN
+  ---
+  duration_ms: 0.54171
+  ...
+# Subtest: auxiliary exige participante positivo entero: string runtime
+ok 73 - auxiliary exige participante positivo entero: string runtime
+  ---
+  duration_ms: 0.483845
+  ...
+# Subtest: technical sin participante conserva una clasificación compatible
+ok 74 - technical sin participante conserva una clasificación compatible
+  ---
+  duration_ms: 0.405937
+  ...
+# Subtest: technical con participante rechaza la relación sin mutarla
+ok 75 - technical con participante rechaza la relación sin mutarla
+  ---
+  duration_ms: 1.094057
+  ...
+# Subtest: technical con participante y disponibilidad rechaza la relación sin mutarla
+ok 76 - technical con participante y disponibilidad rechaza la relación sin mutarla
+  ---
+  duration_ms: 0.798027
+  ...
+# Subtest: pending exige plannerNextKind
+ok 77 - pending exige plannerNextKind
+  ---
+  duration_ms: 0.74323
+  ...
+# Subtest: interrupted exige plannerNextKind
+ok 78 - interrupted exige plannerNextKind
+  ---
+  duration_ms: 0.474121
+  ...
+# Subtest: in_progress exige plannerNextKind
+ok 79 - in_progress exige plannerNextKind
+  ---
+  duration_ms: 0.460965
+  ...
+# Subtest: done exige plannerNextKind
+ok 80 - done exige plannerNextKind
+  ---
+  duration_ms: 0.381159
+  ...
+# Subtest: cancelled ignora plannerNextKind por completo
+ok 81 - cancelled ignora plannerNextKind por completo
+  ---
+  duration_ms: 19.966918
+  ...
+# Subtest: plannerNextKind cambia sólo el source fingerprint y nunca identidades
+ok 82 - plannerNextKind cambia sólo el source fingerprint y nunca identidades
+  ---
+  duration_ms: 2.737742
+  ...
+# Subtest: plannerNextKind explícito preserva pureza, frozen e invariancia
+ok 83 - plannerNextKind explícito preserva pureza, frozen e invariancia
+  ---
+  duration_ms: 1.678502
+  ...
+# Subtest: dependencias: array autoritativo y fallback legacy
+ok 84 - dependencias: array autoritativo y fallback legacy
+  ---
+  duration_ms: 1.46563
+  ...
+# Subtest: dependencia duplicada no es ciclo
+ok 85 - dependencia duplicada no es ciclo
+  ---
+  duration_ms: 1.2742
+  ...
+# Subtest: dependencias detectan autorreferencia, ciclo de dos y transitivo
+ok 86 - dependencias detectan autorreferencia, ciclo de dos y transitivo
+  ---
+  duration_ms: 2.008622
+  ...
+# Subtest: dependencias protegida↔pendiente son verificadas sin falsos issues
+ok 87 - dependencias protegida↔pendiente son verificadas sin falsos issues
+  ---
+  duration_ms: 1.421794
+  ...
+# Subtest: locks usan MISSING_TASK_REFERENCE y auditan plan y tipo
+ok 88 - locks usan MISSING_TASK_REFERENCE y auditan plan y tipo
+  ---
+  duration_ms: 1.884103
+  ...
+# Subtest: locks time, resource, space y full auditan cada dimensión
+ok 89 - locks time, resource, space y full auditan cada dimensión
+  ---
+  duration_ms: 3.76886
+  ...
+# Subtest: coaches existentes, inexistentes y renombrados
+ok 90 - coaches existentes, inexistentes y renombrados
+  ---
+  duration_ms: 2.259209
+  ...
+# Subtest: recursos, asignaciones, alternativas y componentes auditan namespaces
+ok 91 - recursos, asignaciones, alternativas y componentes auditan namespaces
+  ---
+  duration_ms: 1.267041
+  ...
+# Subtest: espacio ausente, sólo referenciado y descrito sin disponibilidad
+ok 92 - espacio ausente, sólo referenciado y descrito sin disponibilidad
+  ---
+  duration_ms: 1.558062
+  ...
+# Subtest: SPEC10-009: toda tarea activa sin identidad espacial positiva bloquea exactamente una vez
+ok 93 - SPEC10-009: toda tarea activa sin identidad espacial positiva bloquea exactamente una vez
+  ---
+  duration_ms: 2.803516
+  ...
+# Subtest: SPEC10-009: snapshots diarios duplicados bloquean sin last-write-wins ni blockers espaciales falsos
+ok 94 - SPEC10-009: snapshots diarios duplicados bloquean sin last-write-wins ni blockers espaciales falsos
+  ---
+  duration_ms: 1.763971
+  ...
+# Subtest: SPEC10-009: relación diaria gobierna recursos y el catálogo legacy es irrelevante
+ok 95 - SPEC10-009: relación diaria gobierna recursos y el catálogo legacy es irrelevante
+  ---
+  duration_ms: 2.326491
+  ...
+# Subtest: SPEC10-009: partial-real no cae a planificación para espacio ni recursos
+ok 96 - SPEC10-009: partial-real no cae a planificación para espacio ni recursos
+  ---
+  duration_ms: 2.307352
+  ...
+# Subtest: SPEC10-009: locks time/full se auditan contra la ventana espacial diaria
+ok 97 - SPEC10-009: locks time/full se auditan contra la ventana espacial diaria
+  ---
+  duration_ms: 5.879411
+  ...
+# Subtest: capacidad mayor que uno y aliases contradictorios
+ok 98 - capacidad mayor que uno y aliases contradictorios
+  ---
+  duration_ms: 1.243054
+  ...
+# Subtest: breaks distinguen legacy, flexible, actual global/scoped y global hard
+ok 99 - breaks distinguen legacy, flexible, actual global/scoped y global hard
+  ---
+  duration_ms: 3.639508
+  ...
+# Subtest: breaks participant, space, zone, itinerant y multiplicidad conservan scope
+ok 100 - breaks participant, space, zone, itinerant y multiplicidad conservan scope
+  ---
+  duration_ms: 2.583379
+  ...
+# Subtest: transporte detectado sólo por contrato estructurado
+ok 101 - transporte detectado sólo por contrato estructurado
+  ---
+  duration_ms: 1.102974
+  ...
+# Subtest: transport preflight accepts integer sizes and zero-valued gap and weight
+ok 102 - transport preflight accepts integer sizes and zero-valued gap and weight
+  ---
+  duration_ms: 2.179619
+  ...
+# Subtest: transport preflight rejects partial, contradictory, and invalid numeric aliases
+ok 103 - transport preflight rejects partial, contradictory, and invalid numeric aliases
+  ---
+  duration_ms: 14.303363
+  ...
+# Subtest: setup detectado sin inferir familia por nombre
+ok 104 - setup detectado sin inferir familia por nombre
+  ---
+  duration_ms: 1.08763
+  ...
+# Subtest: política y presupuesto se comprueban sin selección implícita
+ok 105 - política y presupuesto se comprueban sin selección implícita
+  ---
+  duration_ms: 0.768881
+  ...
+# Subtest: fingerprint ignora nombres, orden y valores descartados pero cambia con presencia del seed
+ok 106 - fingerprint ignora nombres, orden y valores descartados pero cambia con presencia del seed
+  ---
+  duration_ms: 2.028738
+  ...
+# Subtest: fingerprint cambia con duración, dependencia, lock y scope
+ok 107 - fingerprint cambia con duración, dependencia, lock y scope
+  ---
+  duration_ms: 2.740733
+  ...
+# Subtest: comida concreta: sólo meal cuenta un único contrato
+ok 108 - comida concreta: sólo meal cuenta un único contrato
+  ---
+  duration_ms: 1.178753
+  ...
+# Subtest: comida concreta equivalente: meal y actualMeal idénticos
+ok 109 - comida concreta equivalente: meal y actualMeal idénticos
+  ---
+  duration_ms: 0.966085
+  ...
+# Subtest: comida concreta equivalente: meal y aliases idénticos
+ok 110 - comida concreta equivalente: meal y aliases idénticos
+  ---
+  duration_ms: 0.821048
+  ...
+# Subtest: comida concreta equivalente: actualMeal y aliases idénticos
+ok 111 - comida concreta equivalente: actualMeal y aliases idénticos
+  ---
+  duration_ms: 0.909217
+  ...
+# Subtest: comida concreta equivalente: meal y protected meal idénticos
+ok 112 - comida concreta equivalente: meal y protected meal idénticos
+  ---
+  duration_ms: 1.202285
+  ...
+# Subtest: comida concreta equivalente: las cuatro representaciones idénticas
+ok 113 - comida concreta equivalente: las cuatro representaciones idénticas
+  ---
+  duration_ms: 0.991397
+  ...
+# Subtest: comidas concretas: meal y actualMeal diferentes producen un issue canónico
+ok 114 - comidas concretas: meal y actualMeal diferentes producen un issue canónico
+  ---
+  duration_ms: 0.585455
+  ...
+# Subtest: comidas concretas: meal y aliases diferentes producen un issue canónico
+ok 115 - comidas concretas: meal y aliases diferentes producen un issue canónico
+  ---
+  duration_ms: 23.749056
+  ...
+# Subtest: comidas concretas: actualMeal y aliases contradictorios conservan ambas fuentes
+ok 116 - comidas concretas: actualMeal y aliases contradictorios conservan ambas fuentes
+  ---
+  duration_ms: 1.185703
+  ...
+# Subtest: comidas concretas: dos protected meals diferentes producen un único issue
+ok 117 - comidas concretas: dos protected meals diferentes producen un único issue
+  ---
+  duration_ms: 1.131032
+  ...
+# Subtest: comida concreta y hard break global mantienen contratos separados
+ok 118 - comida concreta y hard break global mantienen contratos separados
+  ---
+  duration_ms: 1.039593
+  ...
+# Subtest: comida concreta y break scoped mantienen contratos separados
+ok 119 - comida concreta y break scoped mantienen contratos separados
+  ---
+  duration_ms: 1.411488
+  ...
+# Subtest: contrato ausente y canales top-level legacy ignorados
+ok 120 - contrato ausente y canales top-level legacy ignorados
+  ---
+  duration_ms: 4.778159
+  ...
+# Subtest: configuración completa válida elimina exclusivamente blockers de integración
+ok 121 - configuración completa válida elimina exclusivamente blockers de integración
+  ---
+  duration_ms: 0.760484
+  ...
+# Subtest: política acepta sólo los dos valores explícitos
+ok 122 - política acepta sólo los dos valores explícitos
+  ---
+  duration_ms: 2.721962
+  ...
+# Subtest: presupuesto distingue ausencia, incompletitud e inválidos y omite extras
+ok 123 - presupuesto distingue ausencia, incompletitud e inválidos y omite extras
+  ---
+  duration_ms: 5.153378
+  ...
+# Subtest: mainFlow exige espacio físico descrito y preferredEnd HH:mm dentro de jornada
+ok 124 - mainFlow exige espacio físico descrito y preferredEnd HH:mm dentro de jornada
+  ---
+  duration_ms: 3.622407
+  ...
+# Subtest: rejilla valida forma, alineación y capacidad canónica fija de cinco minutos
+ok 125 - rejilla valida forma, alineación y capacidad canónica fija de cinco minutos
+  ---
+  duration_ms: 5.255377
+  ...
+# Subtest: transiciones requieren ambos enteros finitos no negativos
+ok 126 - transiciones requieren ambos enteros finitos no negativos
+  ---
+  duration_ms: 6.290189
+  ...
+# Subtest: identidad y fingerprints dependen sólo de configuración canónica auditada
+ok 127 - identidad y fingerprints dependen sólo de configuración canónica auditada
+  ---
+  duration_ms: 6.263021
+  ...
+# Subtest: canonicaliza la referencia runtime de mainFlow.spaceId para el identity-map fingerprint
+ok 128 - canonicaliza la referencia runtime de mainFlow.spaceId para el identity-map fingerprint
+  ---
+  duration_ms: 1.523113
+  ...
+# Subtest: cambiar sólo searchBudget.bestK no cambia identidades
+ok 129 - cambiar sólo searchBudget.bestK no cambia identidades
+  ---
+  duration_ms: 1.211134
+  ...
+# Subtest: operaciones ancladas runtime distinguen incompletitud y ambigüedad
+ok 130 - operaciones ancladas runtime distinguen incompletitud y ambigüedad
+  ---
+  duration_ms: 2.53834
+  ...
+# Subtest: operación anclada rechaza anchor inexistente
+ok 131 - operación anclada rechaza anchor inexistente
+  ---
+  duration_ms: 1.216997
+  ...
+# Subtest: operación anclada rechaza before inexistente
+ok 132 - operación anclada rechaza before inexistente
+  ---
+  duration_ms: 1.136841
+  ...
+# Subtest: operación anclada rechaza after inexistente
+ok 133 - operación anclada rechaza after inexistente
+  ---
+  duration_ms: 1.433845
+  ...
+# Subtest: operación anclada rechaza varios IDs inexistentes
+ok 134 - operación anclada rechaza varios IDs inexistentes
+  ---
+  duration_ms: 1.20112
+  ...
+# Subtest: operación anclada sin contrato de segmentos es incompleta
+ok 135 - operación anclada sin contrato de segmentos es incompleta
+  ---
+  duration_ms: 0.626758
+  ...
+# Subtest: operación anclada con before/after vacíos es incompleta
+ok 136 - operación anclada con before/after vacíos es incompleta
+  ---
+  duration_ms: 0.63703
+  ...
+# Subtest: operación anclada completa exige y encuentra todas sus tareas
+ok 137 - operación anclada completa exige y encuentra todas sus tareas
+  ---
+  duration_ms: 0.840269
+  ...
+# Subtest: operación anclada completa pero ambigua permanece rechazada
+ok 138 - operación anclada completa pero ambigua permanece rechazada
+  ---
+  duration_ms: 0.734212
+  ...
+# Subtest: dos operaciones ancladas válidas e independientes son completas
+ok 139 - dos operaciones ancladas válidas e independientes son completas
+  ---
+  duration_ms: 0.929803
+  ...
+# Subtest: orden exterior de operaciones ancladas no cambia Evidence
+ok 140 - orden exterior de operaciones ancladas no cambia Evidence
+  ---
+  duration_ms: 1.728377
+  ...
+# Subtest: camerasOverride undefined audita cantidad sin elegir recurso
+ok 141 - camerasOverride undefined audita cantidad sin elegir recurso
+  ---
+  duration_ms: 0.680786
+  ...
+# Subtest: camerasOverride 0 audita cantidad sin elegir recurso
+ok 142 - camerasOverride 0 audita cantidad sin elegir recurso
+  ---
+  duration_ms: 0.567005
+  ...
+# Subtest: camerasOverride 1 audita cantidad sin elegir recurso
+ok 143 - camerasOverride 1 audita cantidad sin elegir recurso
+  ---
+  duration_ms: 0.500292
+  ...
+# Subtest: camerasOverride 2 audita cantidad sin elegir recurso
+ok 144 - camerasOverride 2 audita cantidad sin elegir recurso
+  ---
+  duration_ms: 0.539967
+  ...
+# Subtest: camerasOverride -1 audita cantidad sin elegir recurso
+ok 145 - camerasOverride -1 audita cantidad sin elegir recurso
+  ---
+  duration_ms: 0.464339
+  ...
+# Subtest: camerasOverride NaN audita cantidad sin elegir recurso
+ok 146 - camerasOverride NaN audita cantidad sin elegir recurso
+  ---
+  duration_ms: 0.523313
+  ...
+# Subtest: ocupación de tarea allowsSpaceOverlap=true no se degrada a exclusiva
+ok 147 - ocupación de tarea allowsSpaceOverlap=true no se degrada a exclusiva
+  ---
+  duration_ms: 1.594811
+  ...
+# Subtest: ocupación de tarea spaceOccupancyMode=shared no se degrada a exclusiva
+ok 148 - ocupación de tarea spaceOccupancyMode=shared no se degrada a exclusiva
+  ---
+  duration_ms: 0.586059
+  ...
+# Subtest: ocupación de tarea spaceOccupancyMode=non_blocking no se degrada a exclusiva
+ok 149 - ocupación de tarea spaceOccupancyMode=non_blocking no se degrada a exclusiva
+  ---
+  duration_ms: 0.519425
+  ...
+# Subtest: espacio explícitamente no exclusivo no se degrada
+ok 150 - espacio explícitamente no exclusivo no se degrada
+  ---
+  duration_ms: 0.607473
+  ...
+# Subtest: transporte detecta aliases, pesos y metadata de tarea e inventaría IDs
+ok 151 - transporte detecta aliases, pesos y metadata de tarea e inventaría IDs
+  ---
+  duration_ms: 4.849893
+  ...
+# Subtest: setup detecta zonas, niveles y pesos activos sin colapsar main zone a espacio
+ok 152 - setup detecta zonas, niveles y pesos activos sin colapsar main zone a espacio
+  ---
+  duration_ms: 2.454119
+  ...
+# Subtest: comidas adicionales auditan aliases, concursantes, zonas y tareas
+ok 153 - comidas adicionales auditan aliases, concursantes, zonas y tareas
+  ---
+  duration_ms: 30.411501
+  ...
+# Subtest: identity map incluye locks y dependencias aunque sus referencias falten
+ok 154 - identity map incluye locks y dependencias aunque sus referencias falten
+  ---
+  duration_ms: 0.807127
+  ...
+# Subtest: diagnostics de recursos cuentan definiciones y no referencias inexistentes
+ok 155 - diagnostics de recursos cuentan definiciones y no referencias inexistentes
+  ---
+  duration_ms: 0.999819
+  ...
+# Subtest: fingerprint excluye bundles soft y unifica cualquier planning pending presente
+ok 156 - fingerprint excluye bundles soft y unifica cualquier planning pending presente
+  ---
+  duration_ms: 2.024493
+  ...
+# Subtest: tareas protegidas no mezclan extremos reales y planificados
+ok 157 - tareas protegidas no mezclan extremos reales y planificados
+  ---
+  duration_ms: 2.942465
+  ...
+# Subtest: mapping ausente conserva compatibilidad y mapping vacío cambia sólo source fingerprint
+ok 158 - mapping ausente conserva compatibilidad y mapping vacío cambia sólo source fingerprint
+  ---
+  duration_ms: 0.844538
+  ...
+# Subtest: mapping válido conserva participantes y plan-resources aunque compartan coach
+ok 159 - mapping válido conserva participantes y plan-resources aunque compartan coach
+  ---
+  duration_ms: 0.575216
+  ...
+# Subtest: contenedor runtime inválido: null
+ok 160 - contenedor runtime inválido: null
+  ---
+  duration_ms: 0.57145
+  ...
+# Subtest: contenedor runtime inválido: array
+ok 161 - contenedor runtime inválido: array
+  ---
+  duration_ms: 0.602344
+  ...
+# Subtest: contenedor runtime inválido: string
+ok 162 - contenedor runtime inválido: string
+  ---
+  duration_ms: 0.567718
+  ...
+# Subtest: contenedor runtime inválido: number
+ok 163 - contenedor runtime inválido: number
+  ---
+  duration_ms: 0.543519
+  ...
+# Subtest: clave runtime inválida: "0"
+ok 164 - clave runtime inválida: "0"
+  ---
+  duration_ms: 1.407895
+  ...
+# Subtest: clave runtime inválida: "-1"
+ok 165 - clave runtime inválida: "-1"
+  ---
+  duration_ms: 0.951554
+  ...
+# Subtest: clave runtime inválida: "1.5"
+ok 166 - clave runtime inválida: "1.5"
+  ---
+  duration_ms: 1.015032
+  ...
+# Subtest: clave runtime inválida: "01"
+ok 167 - clave runtime inválida: "01"
+  ---
+  duration_ms: 1.137453
+  ...
+# Subtest: clave runtime inválida: " 1 "
+ok 168 - clave runtime inválida: " 1 "
+  ---
+  duration_ms: 1.02947
+  ...
+# Subtest: clave runtime inválida: "NaN"
+ok 169 - clave runtime inválida: "NaN"
+  ---
+  duration_ms: 1.025005
+  ...
+# Subtest: clave runtime inválida: "abc"
+ok 170 - clave runtime inválida: "abc"
+  ---
+  duration_ms: 0.984244
+  ...
+# Subtest: clave inválida conserva independientemente la identidad de un coach existente
+ok 171 - clave inválida conserva independientemente la identidad de un coach existente
+  ---
+  duration_ms: 0.910445
+  ...
+# Subtest: clave inválida deduplica el blocker legacy equivalente sin convertir la relación en válida
+ok 172 - clave inválida deduplica el blocker legacy equivalente sin convertir la relación en válida
+  ---
+  duration_ms: 1.90041
+  ...
+# Subtest: clave válida y coach inexistente deduplican exactamente el agregado legacy
+ok 173 - clave válida y coach inexistente deduplican exactamente el agregado legacy
+  ---
+  duration_ms: 0.9214
+  ...
+# Subtest: identidades válidas de coach son independientes de dos claves no canónicas
+ok 174 - identidades válidas de coach son independientes de dos claves no canónicas
+  ---
+  duration_ms: 1.297166
+  ...
+# Subtest: valor runtime inválido: zero
+ok 175 - valor runtime inválido: zero
+  ---
+  duration_ms: 0.645587
+  ...
+# Subtest: valor runtime inválido: negative
+ok 176 - valor runtime inválido: negative
+  ---
+  duration_ms: 0.575827
+  ...
+# Subtest: valor runtime inválido: decimal
+ok 177 - valor runtime inválido: decimal
+  ---
+  duration_ms: 0.684892
+  ...
+# Subtest: valor runtime inválido: NaN
+ok 178 - valor runtime inválido: NaN
+  ---
+  duration_ms: 0.784197
+  ...
+# Subtest: valor runtime inválido: infinite
+ok 179 - valor runtime inválido: infinite
+  ---
+  duration_ms: 0.637241
+  ...
+# Subtest: valor runtime inválido: numeric string
+ok 180 - valor runtime inválido: numeric string
+  ---
+  duration_ms: 0.525777
+  ...
+# Subtest: valor runtime inválido: null
+ok 181 - valor runtime inválido: null
+  ---
+  duration_ms: 0.616897
+  ...
+# Subtest: valor runtime inválido: object
+ok 182 - valor runtime inválido: object
+  ---
+  duration_ms: 0.558121
+  ...
+# Subtest: valor runtime inválido: array
+ok 183 - valor runtime inválido: array
+  ---
+  duration_ms: 0.65153
+  ...
+# Subtest: recurso asignado inexistente conserva referencia reversible y details exactos
+ok 184 - recurso asignado inexistente conserva referencia reversible y details exactos
+  ---
+  duration_ms: 0.847826
+  ...
+# Subtest: agregado legacy y metadata no reconstruyen una relación
+ok 185 - agregado legacy y metadata no reconstruyen una relación
+  ---
+  duration_ms: 1.23715
+  ...
+# Subtest: intercambiar asignaciones cambia source pero no las identidades
+ok 186 - intercambiar asignaciones cambia source pero no las identidades
+  ---
+  duration_ms: 1.104041
+  ...
+# Subtest: orden y display metadata no afectan Evidence de la relación
+ok 187 - orden y display metadata no afectan Evidence de la relación
+  ---
+  duration_ms: 1.483205
+  ...
+# Subtest: diagnostics deduplican mapping explícito y agregado legacy derivado
+ok 188 - diagnostics deduplican mapping explícito y agregado legacy derivado
+  ---
+  duration_ms: 2.276306
+  ...
+# Subtest: mapping congelado permanece inmutable y output frozen
+ok 189 - mapping congelado permanece inmutable y output frozen
+  ---
+  duration_ms: 0.873394
+  ...
+# Subtest: escenarios representativos quedan congelados exactamente
+ok 190 - escenarios representativos quedan congelados exactamente
+  ---
+  duration_ms: 14.35145
+  ...
+# Subtest: SPEC10-007: sólo recursos efectivos activos requieren disponibilidad y se deduplican
+ok 191 - SPEC10-007: sólo recursos efectivos activos requieren disponibilidad y se deduplican
+  ---
+  duration_ms: 0.595884
+  ...
+# Subtest: SPEC10-007: causas primarias de disponibilidad son únicas y tipadas
+ok 192 - SPEC10-007: causas primarias de disponibilidad son únicas y tipadas
+  ---
+  duration_ms: 1.939088
+  ...
+# Subtest: SPEC10-007: lock aplicable requiere recurso pero lock de cancelada no
+ok 193 - SPEC10-007: lock aplicable requiere recurso pero lock de cancelada no
+  ---
+  duration_ms: 1.081238
+  ...
+# Subtest: SPEC10-007: disponibilidad protege intervalos reales completos sin mezclar extremos
+ok 194 - SPEC10-007: disponibilidad protege intervalos reales completos sin mezclar extremos
+  ---
+  duration_ms: 1.575941
+  ...
+# Subtest: SPEC10-007: ventana e isAvailable cambian source pero no identidad
+ok 195 - SPEC10-007: ventana e isAvailable cambian source pero no identidad
+  ---
+  duration_ms: 2.210985
+  ...
+# Subtest: SPEC10-007: ausencia omitida, undefined y build projection son Evidence equivalente
+ok 196 - SPEC10-007: ausencia omitida, undefined y build projection son Evidence equivalente
+  ---
+  duration_ms: 2.506127
+  ...
+# Subtest: SPEC10-007: recurso requerido sólo por espacio exacto
+ok 197 - SPEC10-007: recurso requerido sólo por espacio exacto
+  ---
+  duration_ms: 0.72623
+  ...
+# Subtest: SPEC10-007: recurso requerido sólo por zona efectiva
+ok 198 - SPEC10-007: recurso requerido sólo por zona efectiva
+  ---
+  duration_ms: 0.6129
+  ...
+# Subtest: SPEC10-007: coach sólo de referencia no consume disponibilidad
+ok 199 - SPEC10-007: coach sólo de referencia no consume disponibilidad
+  ---
+  duration_ms: 0.678298
+  ...
+# Subtest: SPEC10-007: lock es el único origen requerido y publica su procedencia
+ok 200 - SPEC10-007: lock es el único origen requerido y publica su procedencia
+  ---
+  duration_ms: 1.184692
+  ...
+# Subtest: SPEC10-007: varias tareas comparten una sola causa primaria no utilizable
+ok 201 - SPEC10-007: varias tareas comparten una sola causa primaria no utilizable
+  ---
+  duration_ms: 1.665734
+  ...
+# Subtest: SPEC10-007: intervalo protegido planificado se contiene o explica conflicto
+ok 202 - SPEC10-007: intervalo protegido planificado se contiene o explica conflicto
+  ---
+  duration_ms: 1.301364
+  ...
+# Subtest: SPEC10-007: conflicto protegido conserva las tres procedencias una sola vez
+ok 203 - SPEC10-007: conflicto protegido conserva las tres procedencias una sola vez
+  ---
+  duration_ms: 1.046441
+  ...
+# Subtest: SPEC10-007: recurso requerido inexistente conserva identidad sin issue temporal inventada
+ok 204 - SPEC10-007: recurso requerido inexistente conserva identidad sin issue temporal inventada
+  ---
+  duration_ms: 0.675694
+  ...
+# Subtest: SPEC10-020 accepts valid flexible setup order deterministically
+ok 205 - SPEC10-020 accepts valid flexible setup order deterministically
+  ---
+  duration_ms: 4.808737
+  ...
+# Subtest: full-A2 main/vocal relation allows additional canonical prerequisites
+ok 206 - full-A2 main/vocal relation allows additional canonical prerequisites
+  ---
+  duration_ms: 1.91701
+  ...
+# Subtest: transport accepts an absent target alias and unspecified zero target
+ok 207 - transport accepts an absent target alias and unspecified zero target
+  ---
+  duration_ms: 23.093533
+  ...
+# Subtest: captured API day chooses B alongside critical A, deterministically without input mutation
+ok 208 - captured API day chooses B alongside critical A, deterministically without input mutation
+  ---
+  duration_ms: 142.189044
+  ...
+# Subtest: single search certifies cross-participant physical future without protecting its ephemeral choice
+ok 209 - single search certifies cross-participant physical future without protecting its ephemeral choice
+  ---
+  duration_ms: 73.235696
+  ...
+# Subtest: ordinary validator rejects omitted, invented, duplicate-choice and altered fixed consumption
+ok 210 - ordinary validator rejects omitted, invented, duplicate-choice and altered fixed consumption
+  ---
+  duration_ms: 17.769381
+  ...
+# Subtest: resource choice is a backtracking decision; unavailable alternative does not become a fixed obligation
+ok 211 - resource choice is a backtracking decision; unavailable alternative does not become a fixed obligation
+  ---
+  duration_ms: 18.048899
+  ...
+# Subtest: ordinary backtracking replaces a previously materialized A by B after a collective dead end
+ok 212 - ordinary backtracking replaces a previously materialized A by B after a collective dead end
+  ---
+  duration_ms: 71.025503
+  ...
+# Subtest: independent byItem survives selection and cannot be omitted or substituted
+ok 213 - independent byItem survives selection and cannot be omitted or substituted
+  ---
+  duration_ms: 12.128061
+  ...
+# Subtest: a lock on A cannot silently select B to manufacture a completion
+ok 214 - a lock on A cannot silently select B to manufacture a completion
+  ---
+  duration_ms: 12.267093
+  ...
+# Subtest: different valid nominal choices have different fingerprints, while domain order is immaterial
+ok 215 - different valid nominal choices have different fingerprints, while domain order is immaterial
+  ---
+  duration_ms: 3.143371
+  ...
+# Subtest: empty domain remains fail-closed
+ok 216 - empty domain remains fail-closed
+  ---
+  duration_ms: 5.688225
+  ...
+# Subtest: missing identity remains fail-closed
+ok 217 - missing identity remains fail-closed
+  ---
+  duration_ms: 1.818377
+  ...
+# Subtest: ambiguous daily identity remains fail-closed
+ok 218 - ambiguous daily identity remains fail-closed
+  ---
+  duration_ms: 1.940154
+  ...
+# Subtest: quantity two remains fail-closed
+ok 219 - quantity two remains fail-closed
+  ---
+  duration_ms: 2.385931
+  ...
+# Subtest: multiple groups remains fail-closed
+ok 220 - multiple groups remains fail-closed
+  ---
+  duration_ms: 2.00498
+  ...
+# Subtest: all unavailable remains fail-closed
+ok 221 - all unavailable remains fail-closed
+  ---
+  duration_ms: 2.062995
+  ...
+# Subtest: composite resource remains fail-closed
+ok 222 - composite resource remains fail-closed
+  ---
+  duration_ms: 6.218089
+  ...
+# Subtest: shared auxiliary remains fail-closed
+ok 223 - shared auxiliary remains fail-closed
+  ---
+  duration_ms: 2.508604
+  ...
+# Subtest: grouped task remains fail-closed
+ok 224 - grouped task remains fail-closed
+  ---
+  duration_ms: 21.151327
+  ...
+# Subtest: Vocal remains fail-closed
+ok 225 - Vocal remains fail-closed
+  ---
+  duration_ms: 1.93535
+  ...
+# Subtest: incompatible lock remains fail-closed
+ok 226 - incompatible lock remains fail-closed
+  ---
+  duration_ms: 6.836045
+  ...
+# Subtest: explicit double assignment remains fail-closed
+ok 227 - explicit double assignment remains fail-closed
+  ---
+  duration_ms: 3.508296
+  ...
+# Subtest: byType remains fail-closed
+ok 228 - byType remains fail-closed
+  ---
+  duration_ms: 1.493181
+  ...
+# Subtest: Main remains fail-closed
+ok 229 - Main remains fail-closed
+  ---
+  duration_ms: 2.198266
+  ...
+# Subtest: canonical validation rechecks a stored physical witness without another search
+ok 230 - canonical validation rechecks a stored physical witness without another search
+  ---
+  duration_ms: 38.212128
+  ...
+# Subtest: persisted witness rejects omitted choice, even with recalculated certificate hash
+ok 231 - persisted witness rejects omitted choice, even with recalculated certificate hash
+  ---
+  duration_ms: 37.06104
+  ...
+# Subtest: persisted witness rejects future resource omitted, even with recalculated certificate hash
+ok 232 - persisted witness rejects future resource omitted, even with recalculated certificate hash
+  ---
+  duration_ms: 4.074994
+  ...
+# Subtest: persisted witness rejects invented alternative, even with recalculated certificate hash
+ok 233 - persisted witness rejects invented alternative, even with recalculated certificate hash
+  ---
+  duration_ms: 3.99096
+  ...
+# Subtest: persisted witness rejects future identity omitted, even with recalculated certificate hash
+ok 234 - persisted witness rejects future identity omitted, even with recalculated certificate hash
+  ---
+  duration_ms: 3.813187
+  ...
+# Subtest: persisted witness rejects collision with critical future, even with recalculated certificate hash
+ok 235 - persisted witness rejects collision with critical future, even with recalculated certificate hash
+  ---
+  duration_ms: 7.801503
+  ...
+# Subtest: NEXT-001 retains its frozen complete, hard-valid result
+ok 236 - NEXT-001 retains its frozen complete, hard-valid result
+  ---
+  duration_ms: 60.326779
+  ...
+# Subtest: the adversarial scenario proves genuine bounded backtracking
+ok 237 - the adversarial scenario proves genuine bounded backtracking
+  ---
+  duration_ms: 58.070322
+  ...
+# Subtest: partial branch rejection is not counted as backtracking
+ok 238 - partial branch rejection is not counted as backtracking
+  ---
+  duration_ms: 10.639165
+  ...
+# Subtest: logical search budgets stop atomically with specific reasons
+ok 239 - logical search budgets stop atomically with specific reasons
+  ---
+  duration_ms: 0.892454
+  ...
+# Subtest: missing relationships and invalid availability never crash
+ok 240 - missing relationships and invalid availability never crash
+  ---
+  duration_ms: 1.788341
+  ...
+# Subtest: unsupported focal structures are rejected explicitly
+ok 241 - unsupported focal structures are rejected explicitly
+  ---
+  duration_ms: 2.219408
+  ...
+# Subtest: results and logical metrics are deterministic and array-order independent
+ok 242 - results and logical metrics are deterministic and array-order independent
+  ---
+  duration_ms: 70.907906
+  ...
+# Subtest: planner-next remains isolated from legacy and production
+ok 243 - planner-next remains isolated from legacy and production
+  ---
+  duration_ms: 19.47136
+  ...
+1..243
+# tests 243
+# suites 0
+# pass 243
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2640.068685

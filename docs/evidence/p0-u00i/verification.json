@@ -1,0 +1,14 @@
+{
+  "status": "DIAGNOSTIC_PASS_IMPLEMENTATION_BLOCKED",
+  "base": "e79f8ee1a13ef5f5df58371abc851b4746385412",
+  "productFilesUnchanged": 1534,
+  "nativeRejection": 422,
+  "concreteWitness": "B/A simultaneous, 2/2",
+  "crossScopePhysicalFutureGap": "REPRODUCED",
+  "ordinaryIdentityIntegrityGap": "REPRODUCED",
+  "guardOnlyProjectionLoss": "REPRODUCED",
+  "migrationFilesExecuted": 112,
+  "productTestsPassed": 3141,
+  "diagnosticTestsPassed": 3,
+  "remoteWrites": 0
+}

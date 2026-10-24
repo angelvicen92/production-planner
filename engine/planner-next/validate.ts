@@ -1,3 +1,4 @@
+import {nominalResourceAssignmentMatches,nominalResourceVariants} from "./nominalResourceChoice";
 import { participantMealInterval } from "./participantMeals";
 import type {SetupPolicy} from "./contracts";
 import { assessOperationContinuity, operationContinuityPreflight } from "./operationContinuity";
@@ -309,6 +310,19 @@ export function preflight(problem: PlannerNextProblem): string[] {
   }
 
   for (const task of tasks) {
+    if(task.nominalResourceChoice){
+      const choice=task.nominalResourceChoice;
+      if(!Array.isArray(choice.resourceIds)||!Array.isArray(choice.fixedResourceIds)||!standaloneOnly||problem.searchPolicy!=='EXACT_CONSTRUCTIVE'||task.kind!=="auxiliary"||task.jointGroupId||task.setupFamilyId||task.itinerantUnitId||task.allowedItinerantUnitIds?.length
+        ||problem.spaces.find(space=>space.id===task.spaceId)?.setupPolicy
+        ||problem.spaces.find(space=>space.id===task.spaceId)?.secondaryContinuity==='REQUIRED'
+        ||[...choice.resourceIds,...choice.fixedResourceIds].some(id=>{const policy=problem.resources.find(resource=>resource.id===id)?.presenceConcentrationPolicy;return policy&&policy!=='OFF';})
+        ||problem.technicalChains?.some(chain=>chain.orderedTaskIds.includes(task.id))
+        ||problem.roundSynchronizations?.some(policy=>policy.lanes.some(lane=>lane.taskIds.includes(task.id)))
+        ||!choice.resourceIds.length||new Set(choice.resourceIds).size!==choice.resourceIds.length
+        ||choice.resourceIds.some(id=>!resourceIds.has(id))
+        ||choice.fixedResourceIds.some(id=>!resourceIds.has(id))||!nominalResourceVariants(task).length)
+        reasons.add('UNSUPPORTED_NOMINAL_RESOURCE_CHOICE');
+    }
     if (usableDay && !validateTaskAvailability(task, day)) reasons.add(`INVALID_TASK_AVAILABILITY:${task.id}`);
     if (task.setupFamilyId !== undefined && !spaces.find((space) => space.id === task.spaceId)?.setupPolicy) reasons.add("SETUP_FAMILY_OUTSIDE_SETUP_SPACE");
     const requirements = task.requiredResourceIds;
@@ -466,6 +480,9 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
 
   for (const task of scheduled) {
     const expectedUnit=expectedTaskById.get(task.id);
+    if(expectedUnit&&!nominalResourceAssignmentMatches(expectedUnit,task)){
+      addViolation('NOMINAL_RESOURCE_ASSIGNMENT','HARD',[task],task.requiredResourceIds??[],[task.spaceId],{expectedDomain:expectedUnit.nominalResourceChoice?.resourceIds??[]});
+    }
     if(expectedUnit?.itinerantUnitId!==task.itinerantUnitId
       &&!(expectedUnit&&assignedItinerantResourcesValid(expectedUnit,task)))itinerantUnitMeal+=1;
     if(task.itinerantUnitId!==undefined&&(task.requiredResourceIds??[]).includes(task.itinerantUnitId))itinerantUnitResourceAlias=true;
@@ -842,6 +859,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   // Never manufacture an accept/grandfather identity from an aggregate counter.
   // Until each remaining family exposes its exact entities it is explicitly
   // unsupported at the Assisted acceptance boundary.
+  if(violations.some(item=>item.ruleCode==='NOMINAL_RESOURCE_ASSIGNMENT'))reasonCodes.push('NOMINAL_RESOURCE_ASSIGNMENT');
   const structuredRules=new Set(violations.map(item=>item.ruleCode));
   const unstructuredReasonCodes=reasonCodes.filter(encoded=>!structuredRules.has(encoded.split(":",1)[0]!));
   return {

@@ -20,12 +20,31 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: git fetch --no-tags --depth=1 origin 5256102bf5c7eb925fd24ab1d868c2d22bc91a6e
+      - run: git fetch --no-tags --depth=1 origin 5256102bf5c7eb925fd24ab1d868c2d22bc91a6e e79f8ee1a13ef5f5df58371abc851b4746385412
       - run: npx --no-install tsc -p script/validation/tsconfig.u00h.json
       - run: node node_modules/tsx/dist/cli.mjs --test engine/planner-next/integration/concreteResourceRequirements.spec.ts
       - run: node --import tsx script/validation/runU00hResources.ts work/u00h-baseline --baseline
       - run: node --import tsx script/validation/runU00hResources.ts work/u00h-candidate
-      - run: python3 docs/evidence/p0-u00h/verify.py
+      - name: Compare fresh candidate byItem Stages with integrated U00h
+        run: |
+          python3 - <<'PY'
+          import gzip, json
+          from pathlib import Path
+          for label, count in [('A', 1), ('B', 2)]:
+              for stage in range(1, count + 1):
+                  name = f'{label}-S{stage}-stage.json'
+                  old = Path('docs/evidence/p0-u00h/native') / name
+                  old = json.loads(old.read_bytes() if old.exists() else gzip.decompress(Path(str(old) + '.gz').read_bytes()))['activeStage']
+                  new = json.loads((Path('work/u00h-candidate/native') / name).read_bytes())['activeStage']
+                  assert new['snapshotJson'] == old['snapshotJson']
+                  assert new['snapshotFingerprint'] == old['snapshotFingerprint']
+          print('PASS three fresh byItem snapshots exactly equal integrated U00h')
+          PY
+      - name: Verify historical receipts against their own integrated source
+        run: |
+          task_u00h_historical_source="$(mktemp -d)"
+          git archive e79f8ee1a13ef5f5df58371abc851b4746385412 | tar -x -C "$task_u00h_historical_source"
+          python3 "$task_u00h_historical_source/docs/evidence/p0-u00h/verify.py"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
