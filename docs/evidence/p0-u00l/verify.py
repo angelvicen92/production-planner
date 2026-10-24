@@ -5,6 +5,7 @@ parser=argparse.ArgumentParser();parser.add_argument('--extract',type=pathlib.Pa
 def read(path):
  p=root/path;return json.loads(gzip.decompress(p.read_bytes()) if p.suffix=='.gz' else p.read_bytes())
 checks=read('checks.json');assert checks['suiteTests']==checks['suitePassed']==3225 and checks['suiteFailed']==0
+ci=read('ci-historical-gates.json');assert ci['historicalVerifier']['status']=='PASS' and ci['before111']=={'accepted':True,'hashesRecomputed':True,'rolledBack':True} and not ci['productChanges']
 native=read('native/receipts.json.gz');assert native['integration.json']['status']=='PASS'
 for label,count,stages in [('A',11,1),('B',6,2)]:
  source=native[f'{label}-input.json'];assert len(source['tasks'])==count and not source['locks']

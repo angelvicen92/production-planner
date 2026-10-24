@@ -41,7 +41,7 @@ export async function runU00lFunctionalJourney({appUrl,users,db,directory,pass}:
   const zone=await api('/api/zones','POST',{name:'Nominal production'}),rooms:any[]=[];
   for(let i=0;i<4;i++)rooms.push(await api('/api/spaces','POST',{name:`Nominal station ${i}`,zoneId:zone.id}));
   const type=await api('/api/resource-types','POST',{code:'physical_exclusive',name:'Physical exclusive equipment'});
-  
+
   const resources:any[]=[];const otherType=await api('/api/resource-types','POST',{code:'independent',name:'Independent'});
   for(const [i,name] of ['A','B','Independent kit'].entries())resources.push(await api('/api/resource-items','POST',{typeId:i<2?type.id:otherType.id,name}));
   await api('/api/program-settings','PATCH',{defaultWorkStart:'09:00',defaultWorkEnd:'14:00',mealStart:'13:00',mealEnd:'14:00',mealTaskTemplateId:null,mealMode:'global_hard_break'});
