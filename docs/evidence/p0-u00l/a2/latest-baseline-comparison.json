@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "baseline": "docs/evidence/p0-u00j/a2/candidate",
+  "reportsIdenticalExceptDurationMs": true,
+  "snapshotsIdentical": true,
+  "runtimeIdentical": true,
+  "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d"
+}

@@ -1,0 +1,719 @@
+{
+  "status": "PASS",
+  "attacks": 89,
+  "foreignKeyRejections": 6,
+  "cases": [
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "block-key",
+      "error": "RUN_RESULT_INVALID: WITNESS_COACH_AUTHORITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "blocks-space",
+      "error": "RUN_RESULT_INVALID: WITNESS_AUTHORITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "coach-missing",
+      "error": "RUN_RESULT_INVALID: WITNESS_COACH_AUTHORITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "coach-changed",
+      "error": "RUN_RESULT_INVALID: WITNESS_COACH_AUTHORITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "coach-unavailable",
+      "error": "RUN_RESULT_INVALID: WITNESS_COACH_AUTHORITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "coach-overlap",
+      "error": "RUN_RESULT_INVALID: COACH_OVERLAP_OR_TRANSITION",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "coach-lock",
+      "error": "insert or update on table \"locks\" violates foreign key constraint \"locks_locked_resource_id_fkey\"",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "LOCK_FOREIGN_KEY"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "resource-lock",
+      "error": "insert or update on table \"locks\" violates foreign key constraint \"locks_locked_resource_id_fkey\"",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "LOCK_FOREIGN_KEY"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "nonexistent",
+      "error": "RUN_RESULT_INVALID: NOMINAL_SELECTION",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "omit",
+      "error": "RUN_RESULT_INVALID: NOMINAL_SELECTION",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "double",
+      "error": "RUN_RESULT_INVALID: NOMINAL_SELECTION",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "invented",
+      "error": "RUN_RESULT_INVALID: NOMINAL_SELECTION",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "missing-choice",
+      "error": "RUN_RESULT_INVALID: NOMINAL_SELECTION",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "future-omission",
+      "error": "RUN_RESULT_INVALID",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "future-collision",
+      "error": "RUN_RESULT_INVALID: RESOURCE_OVERLAP_OR_TRANSITION",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "future-identity",
+      "error": "RUN_RESULT_INVALID: WITNESS_AUTHORITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "future-dependencies",
+      "error": "RUN_RESULT_INVALID: WITNESS_AUTHORITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "type-identity",
+      "error": "RUN_RESULT_INVALID: NOMINAL_DOMAIN",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "domain",
+      "error": "RUN_RESULT_INVALID: NOMINAL_DOMAIN",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "unavailable",
+      "error": "RUN_RESULT_INVALID: NOMINAL_DOMAIN",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "time-lock",
+      "error": "RUN_RESULT_INVALID: WITNESS_WINDOW_OR_LOCK",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "space-availability",
+      "error": "RUN_RESULT_INVALID: WITNESS_WINDOW_OR_LOCK",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "draft",
+      "error": "STALE_DRAFT",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "base",
+      "error": "STALE_BASE_STAGE",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "revision",
+      "error": "STALE_CONFIG_REVISION",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "A-S1-sql-adversaries.json",
+      "guard": "permission",
+      "error": "permission denied for function assisted_record_proposal_clean_validation",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "block-key",
+      "error": "RUN_RESULT_INVALID: WITNESS_COACH_AUTHORITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "blocks-space",
+      "error": "RUN_RESULT_INVALID: WITNESS_AUTHORITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "coach-missing",
+      "error": "RUN_RESULT_INVALID: WITNESS_COACH_AUTHORITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "coach-changed",
+      "error": "RUN_RESULT_INVALID: WITNESS_COACH_AUTHORITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "coach-unavailable",
+      "error": "RUN_RESULT_INVALID: WITNESS_COACH_AUTHORITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "coach-overlap",
+      "error": "RUN_RESULT_INVALID: COACH_OVERLAP_OR_TRANSITION",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "coach-transition",
+      "error": "RUN_RESULT_INVALID: COACH_OVERLAP_OR_TRANSITION",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "coach-lock",
+      "error": "insert or update on table \"locks\" violates foreign key constraint \"locks_locked_resource_id_fkey\"",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "LOCK_FOREIGN_KEY"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "resource-lock",
+      "error": "insert or update on table \"locks\" violates foreign key constraint \"locks_locked_resource_id_fkey\"",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "LOCK_FOREIGN_KEY"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "nonexistent",
+      "error": "RUN_RESULT_INVALID: NOMINAL_SELECTION",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "fixed-omission",
+      "error": "RUN_RESULT_INVALID: BYTYPE_FIXED_RESOURCES",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "omit",
+      "error": "RUN_RESULT_INVALID: NOMINAL_SELECTION",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "double",
+      "error": "RUN_RESULT_INVALID: NOMINAL_SELECTION",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "invented",
+      "error": "RUN_RESULT_INVALID: NOMINAL_SELECTION",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "missing-choice",
+      "error": "RUN_RESULT_INVALID: NOMINAL_SELECTION",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "future-omission",
+      "error": "RUN_RESULT_INVALID",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "future-collision",
+      "error": "RUN_RESULT_INVALID: RESOURCE_OVERLAP_OR_TRANSITION",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "future-identity",
+      "error": "RUN_RESULT_INVALID: WITNESS_AUTHORITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "future-dependencies",
+      "error": "RUN_RESULT_INVALID: WITNESS_AUTHORITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "type-identity",
+      "error": "RUN_RESULT_INVALID: BYTYPE_IDENTITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "domain",
+      "error": "RUN_RESULT_INVALID: BYTYPE_DOMAIN",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "unavailable",
+      "error": "RUN_RESULT_INVALID: BYTYPE_DOMAIN",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "time-lock",
+      "error": "RUN_RESULT_INVALID: WITNESS_WINDOW_OR_LOCK",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "space-availability",
+      "error": "RUN_RESULT_INVALID: WITNESS_WINDOW_OR_LOCK",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "draft",
+      "error": "STALE_DRAFT",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "base",
+      "error": "STALE_BASE_STAGE",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "revision",
+      "error": "STALE_CONFIG_REVISION",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "permission",
+      "error": "permission denied for function assisted_record_proposal_clean_validation",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "independent-byItem",
+      "error": "RUN_RESULT_INVALID: BYITEM_REQUIRED",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "future-availability",
+      "error": "RUN_RESULT_INVALID",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S1-sql-adversaries.json",
+      "guard": "outside-scope",
+      "error": "RUN_RESULT_INVALID",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "block-key",
+      "error": "RUN_RESULT_INVALID: WITNESS_COACH_AUTHORITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "blocks-space",
+      "error": "RUN_RESULT_INVALID: WITNESS_AUTHORITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "coach-missing",
+      "error": "RUN_RESULT_INVALID: WITNESS_COACH_AUTHORITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "coach-changed",
+      "error": "RUN_RESULT_INVALID: WITNESS_COACH_AUTHORITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "coach-unavailable",
+      "error": "RUN_RESULT_INVALID: WITNESS_COACH_AUTHORITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "coach-overlap",
+      "error": "RUN_RESULT_INVALID: COACH_OVERLAP_OR_TRANSITION",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "coach-transition",
+      "error": "RUN_RESULT_INVALID",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "coach-lock",
+      "error": "insert or update on table \"locks\" violates foreign key constraint \"locks_locked_resource_id_fkey\"",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "LOCK_FOREIGN_KEY"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "resource-lock",
+      "error": "insert or update on table \"locks\" violates foreign key constraint \"locks_locked_resource_id_fkey\"",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "LOCK_FOREIGN_KEY"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "nonexistent",
+      "error": "RUN_RESULT_INVALID",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "fixed-omission",
+      "error": "RUN_RESULT_INVALID: BYTYPE_FIXED_RESOURCES",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "omit",
+      "error": "RUN_RESULT_INVALID",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "double",
+      "error": "RUN_RESULT_INVALID",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "invented",
+      "error": "RUN_RESULT_INVALID",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "missing-choice",
+      "error": "RUN_RESULT_INVALID: NOMINAL_SELECTION",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "future-omission",
+      "error": "RUN_RESULT_INVALID",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "future-collision",
+      "error": "RUN_RESULT_INVALID",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "future-identity",
+      "error": "RUN_RESULT_INVALID: WITNESS_AUTHORITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "future-dependencies",
+      "error": "RUN_RESULT_INVALID: WITNESS_AUTHORITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "type-identity",
+      "error": "RUN_RESULT_INVALID: BYTYPE_IDENTITY",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "domain",
+      "error": "RUN_RESULT_INVALID: BYTYPE_DOMAIN",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "unavailable",
+      "error": "RUN_RESULT_INVALID: BYTYPE_DOMAIN",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "time-lock",
+      "error": "RUN_RESULT_INVALID: WITNESS_WINDOW_OR_LOCK",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "space-availability",
+      "error": "RUN_RESULT_INVALID: WITNESS_WINDOW_OR_LOCK",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "draft",
+      "error": "STALE_DRAFT",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "base",
+      "error": "STALE_BASE_STAGE",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "revision",
+      "error": "STALE_CONFIG_REVISION",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "permission",
+      "error": "permission denied for function assisted_record_proposal_clean_validation",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "independent-byItem",
+      "error": "RUN_RESULT_INVALID",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "future-availability",
+      "error": "RUN_RESULT_INVALID",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "outside-scope",
+      "error": "RUN_RESULT_INVALID",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    },
+    {
+      "case": "B-S2-sql-adversaries.json",
+      "guard": "protected",
+      "error": "RUN_RESULT_INVALID",
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "boundary": "VALIDATION_RPC"
+    }
+  ]
+}
