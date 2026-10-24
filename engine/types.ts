@@ -118,7 +118,7 @@ export interface LockInput {
 
 export interface PlanResourceItemInput {
   id: number; // plan_resource_items.id
-  resourceItemId: number; // resource_items.id
+  resourceItemId: number | null; // resource_items.id; null for a daily ad hoc identity
   typeId: number; // resource_types.id
   typeCode?: string | null;
   typeName?: string | null;

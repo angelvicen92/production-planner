@@ -1,0 +1,58 @@
+name: P0 U00j typed nominal resources
+on:
+  pull_request:
+    paths:
+      - 'engine/**'
+      - 'server/**'
+      - 'supabase/migrations/**'
+      - 'script/validation/*U00j*'
+      - 'script/validation/u00j*'
+      - 'script/validation/tsconfig.u00j.json'
+      - 'docs/evidence/p0-u00j/**'
+      - '.github/workflows/p0-u00j-resource-type-gate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  typed-nominal-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$task_browser_path" ]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+          fi
+      - run: npx --no-install tsc -p script/validation/tsconfig.u00j.json
+      - run: node --import tsx --test engine/planner-next/integration/typedNominalResourceRequirements.spec.ts
+      - name: Red main and single-authority anyOf counterfactual
+        run: node --import tsx script/validation/runU00jFunctional.ts work/u00j-gate1 --baseline
+      - name: SQL omission before 111 (reverted transaction)
+        run: node --import tsx script/validation/runU00jFunctional.ts work/u00j-before111 --before-integrity-guard
+      - name: Two native days through Stage, attacks and replay
+        run: node --import tsx script/validation/runU00jFunctional.ts work/u00j-native
+      - run: node --import tsx script/validation/replayU00iFrozen.ts work/u00j-native/native work/u00j-cold.json
+      - run: python3 docs/evidence/p0-u00j/verify.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: u00j-native
+          path: |
+            work/u00j-gate1/manifest.json
+            work/u00j-gate1/native/*.json
+            work/u00j-before111/native/*.json
+            work/u00j-native/manifest.json
+            work/u00j-native/native/*.json
+            work/u00j-native/native/*.png
+            work/u00j-cold.json

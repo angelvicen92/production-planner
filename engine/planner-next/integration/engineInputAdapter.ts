@@ -181,6 +181,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     const resources = projection.genericResourceIds;
     const assignment=assignmentByTaskId.get(source.id)!;
     const nominal=assignment.nominalResourceIds?{
+      ...(assignment.nominalRequestedResourceTypeId===undefined?{}:{requestedResourceTypeId:canonical('resource-type',assignment.nominalRequestedResourceTypeId)}),
       resourceIds:assignment.nominalAvailableResourceIds!.map(id=>canonical('plan-resource',id)),
       fixedResourceIds:[...new Set([...(assignment.independentResourceIds??[]),...projection.lockedResourceIds])].sort((a,b)=>a-b).map(id=>canonical('plan-resource',id)),
       ...(assignment.nominalSelectedResourceId===undefined?{}:{selectedResourceId:canonical('plan-resource',assignment.nominalSelectedResourceId)}),

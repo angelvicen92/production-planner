@@ -1,0 +1,505 @@
+{
+  "authorities": {
+    "plan_workday": [
+      {
+        "meal": {
+          "end": "14:00",
+          "start": "13:00"
+        },
+        "workDay": {
+          "end": "14:00",
+          "start": "09:00"
+        },
+        "mealMode": "global_hard_break",
+        "itinerantComposition": {
+          "units": [],
+          "contractVersion": 1
+        },
+        "plannerNextAuthorities": {
+          "plannerNext": {
+            "profile": "STANDALONE_ONLY",
+            "searchBudget": {
+              "bestK": 3,
+              "maxPatterns": 20,
+              "maxBacktracks": 50,
+              "maxBranchExpansions": 10000
+            },
+            "searchPolicy": "EXACT_CONSTRUCTIVE",
+            "timeGridMinutes": 5,
+            "resourceTransitionMinutes": 5,
+            "participantTransitionMinutes": 0
+          },
+          "taskOperations": [
+            {
+              "taskId": 3,
+              "itinerantTeamId": null,
+              "operationalRole": "productive_task",
+              "plannerNextKind": "auxiliary",
+              "dependsOnTaskIds": [],
+              "allowedItinerantTeamIds": [],
+              "itinerantTeamRequirement": "none"
+            },
+            {
+              "taskId": 4,
+              "itinerantTeamId": null,
+              "operationalRole": "productive_task",
+              "plannerNextKind": "auxiliary",
+              "dependsOnTaskIds": [],
+              "allowedItinerantTeamIds": [],
+              "itinerantTeamRequirement": "none"
+            },
+            {
+              "taskId": 5,
+              "itinerantTeamId": null,
+              "operationalRole": "productive_task",
+              "plannerNextKind": "auxiliary",
+              "dependsOnTaskIds": [],
+              "allowedItinerantTeamIds": [],
+              "itinerantTeamRequirement": "none"
+            },
+            {
+              "taskId": 6,
+              "itinerantTeamId": null,
+              "operationalRole": "productive_task",
+              "plannerNextKind": "auxiliary",
+              "dependsOnTaskIds": [
+                5
+              ],
+              "allowedItinerantTeamIds": [],
+              "itinerantTeamRequirement": "none"
+            }
+          ],
+          "mealTaskTemplateId": null,
+          "itinerantTeamAvailability": []
+        },
+        "itinerantTeamAvailability": [],
+        "defaultParticipantTransitionMinutes": 0
+      }
+    ],
+    "resource_bundles": [],
+    "spatial_configuration": [
+      {
+        "kind": "space",
+        "name": "Nominal station 0",
+        "zoneId": 1,
+        "spaceId": 1,
+        "groupingLevel": 0,
+        "parentSpaceId": null,
+        "priorityLevel": 1,
+        "availabilityEnd": null,
+        "groupingMinChain": 4,
+        "availabilityStart": null,
+        "groupingApplyToDescendants": false
+      },
+      {
+        "kind": "space",
+        "name": "Nominal station 1",
+        "zoneId": 1,
+        "spaceId": 2,
+        "groupingLevel": 0,
+        "parentSpaceId": null,
+        "priorityLevel": 1,
+        "availabilityEnd": null,
+        "groupingMinChain": 4,
+        "availabilityStart": null,
+        "groupingApplyToDescendants": false
+      },
+      {
+        "kind": "space",
+        "name": "Nominal station 2",
+        "zoneId": 1,
+        "spaceId": 3,
+        "groupingLevel": 0,
+        "parentSpaceId": null,
+        "priorityLevel": 1,
+        "availabilityEnd": null,
+        "groupingMinChain": 4,
+        "availabilityStart": null,
+        "groupingApplyToDescendants": false
+      },
+      {
+        "kind": "space",
+        "name": "Nominal station 3",
+        "zoneId": 1,
+        "spaceId": 4,
+        "groupingLevel": 0,
+        "parentSpaceId": null,
+        "priorityLevel": 1,
+        "availabilityEnd": null,
+        "groupingMinChain": 4,
+        "availabilityStart": null,
+        "groupingApplyToDescendants": false
+      },
+      {
+        "kind": "zone",
+        "name": "Nominal production",
+        "zoneId": 1,
+        "groupingLevel": 0,
+        "availabilityEnd": null,
+        "groupingMinChain": 4,
+        "mealEndPreferred": null,
+        "availabilityStart": null,
+        "maxTemplateChanges": 4,
+        "mealStartPreferred": null,
+        "spaceMealBreakMinutes": null
+      }
+    ],
+    "resource_configuration": [
+      {
+        "id": 7,
+        "name": "A",
+        "typeId": 1,
+        "typeCode": "physical_exclusive",
+        "typeName": "Physical exclusive equipment",
+        "isAvailable": true,
+        "resourceItemId": 1,
+        "availabilityEnd": "09:20",
+        "availabilityStart": "09:00"
+      },
+      {
+        "id": 8,
+        "name": "B",
+        "typeId": 1,
+        "typeCode": "physical_exclusive",
+        "typeName": "Physical exclusive equipment",
+        "isAvailable": true,
+        "resourceItemId": 2,
+        "availabilityEnd": "10:30",
+        "availabilityStart": "09:00"
+      },
+      {
+        "id": 10,
+        "name": "Daily ad hoc camera",
+        "typeId": 1,
+        "typeCode": "physical_exclusive",
+        "typeName": "Physical exclusive equipment",
+        "isAvailable": true,
+        "resourceItemId": 0,
+        "availabilityEnd": "12:00",
+        "availabilityStart": "10:30"
+      },
+      {
+        "id": 9,
+        "name": "Independent kit",
+        "typeId": 2,
+        "typeCode": "independent",
+        "typeName": "Independent",
+        "isAvailable": true,
+        "resourceItemId": 3,
+        "availabilityEnd": null,
+        "availabilityStart": null
+      }
+    ],
+    "contestant_availability": [
+      {
+        "end": "09:20",
+        "start": "09:00",
+        "contestantId": 3
+      },
+      {
+        "end": "09:20",
+        "start": "09:00",
+        "contestantId": 4
+      },
+      {
+        "end": "12:00",
+        "start": "10:30",
+        "contestantId": 5
+      }
+    ],
+    "resource_assignments_and_requirements": [
+      {
+        "kind": "components",
+        "value": {}
+      },
+      {
+        "kind": "spaceAssignments",
+        "value": {}
+      },
+      {
+        "kind": "spaceRequirements",
+        "value": {}
+      },
+      {
+        "kind": "zoneAssignments",
+        "value": {}
+      },
+      {
+        "kind": "zoneRequirements",
+        "value": {}
+      }
+    ]
+  },
+  "contractVersion": 1,
+  "optimizerSnapshot": {
+    "source": "INHERITED",
+    "transport": {
+      "vanCapacity": 0,
+      "groupingWeight": 0,
+      "arrivalMinGapMinutes": 0,
+      "arrivalGroupingTarget": 0,
+      "departureMinGapMinutes": 0,
+      "departureGroupingTarget": 0,
+      "arrivalPlanTemplateSnapshotId": null,
+      "departurePlanTemplateSnapshotId": null
+    },
+    "heuristics": {
+      "CONTESTANT_COMPACT": {
+        "basicLevel": 0,
+        "advancedValue": 0,
+        "effectiveWeight": 0
+      },
+      "MAIN_ZONE_PRIORITY": {
+        "basicLevel": 0,
+        "advancedValue": 0,
+        "effectiveWeight": 0
+      },
+      "MAIN_ZONE_KEEP_BUSY": {
+        "basicLevel": 0,
+        "advancedValue": 0,
+        "effectiveWeight": 0
+      },
+      "CONTESTANT_TOTAL_SPAN": {
+        "basicLevel": 0,
+        "advancedValue": 0,
+        "effectiveWeight": 0
+      },
+      "GROUP_BY_SPACE_ACTIVE": {
+        "basicLevel": 2,
+        "advancedValue": 0,
+        "effectiveWeight": 6
+      },
+      "MAIN_ZONE_FINISH_EARLY": {
+        "basicLevel": 0,
+        "advancedValue": 0,
+        "effectiveWeight": 0
+      },
+      "CONTESTANT_STAY_IN_ZONE": {
+        "basicLevel": 0,
+        "advancedValue": 0,
+        "effectiveWeight": 0
+      },
+      "ARRIVAL_DEPARTURE_GROUPING": {
+        "basicLevel": 0,
+        "advancedValue": 0,
+        "effectiveWeight": 0
+      },
+      "GROUP_BY_SPACE_TEMPLATE_MATCH": {
+        "basicLevel": 2,
+        "advancedValue": 0,
+        "effectiveWeight": 6
+      }
+    },
+    "mainZoneId": null,
+    "editingMode": "BASIC",
+    "contractVersion": 1,
+    "groupingZoneIds": [],
+    "nearHardBreaksMax": 0,
+    "configurationFingerprint": "4b770099c9e87063d68e2fbef0ad2fcce91e364d9e03b2fc8967ee74ca4a422f"
+  },
+  "taskTemplateSnapshots": [
+    {
+      "source": "inherited",
+      "setupId": null,
+      "templateName": "A Flexible",
+      "defaultZoneId": 1,
+      "hasDependency": false,
+      "requiresCoach": false,
+      "defaultCameras": 0,
+      "defaultSpaceId": 1,
+      "contractVersion": 2,
+      "defaultDuration": 20,
+      "itinerantTeamId": null,
+      "requiresAuxiliar": false,
+      "sourceTemplateId": 1,
+      "exclusiveAuxiliar": false,
+      "requiresPresenter": false,
+      "sourceFingerprint": "2a8f8ffbb79cee75040950fae009f8e27b1194d0db3dc1dd87249da09a4beb00",
+      "plannerNextOperation": {
+        "kind": "auxiliary",
+        "contractVersion": 1
+      },
+      "resourceRequirements": {
+        "byType": {
+          "1": 1
+        }
+      },
+      "dependencyTemplateIds": [],
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "autoCreateOnContestantCreate": false,
+      "participantMarginAfterMinutes": 0,
+      "participantMarginBeforeMinutes": 0
+    },
+    {
+      "source": "inherited",
+      "setupId": null,
+      "templateName": "A Critical A",
+      "defaultZoneId": 1,
+      "hasDependency": false,
+      "requiresCoach": false,
+      "defaultCameras": 0,
+      "defaultSpaceId": 2,
+      "contractVersion": 2,
+      "defaultDuration": 20,
+      "itinerantTeamId": null,
+      "requiresAuxiliar": false,
+      "sourceTemplateId": 2,
+      "exclusiveAuxiliar": false,
+      "requiresPresenter": false,
+      "sourceFingerprint": "8bab2801c1230256f0f39adad3a1ee4f01e348858fc069197fd569ad0fc79171",
+      "plannerNextOperation": {
+        "kind": "auxiliary",
+        "contractVersion": 1
+      },
+      "resourceRequirements": {
+        "byItem": {
+          "1": 1
+        }
+      },
+      "dependencyTemplateIds": [],
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "autoCreateOnContestantCreate": false,
+      "participantMarginAfterMinutes": 0,
+      "participantMarginBeforeMinutes": 0
+    },
+    {
+      "source": "inherited",
+      "setupId": null,
+      "templateName": "B Flexible",
+      "defaultZoneId": 1,
+      "hasDependency": false,
+      "requiresCoach": false,
+      "defaultCameras": 0,
+      "defaultSpaceId": 1,
+      "contractVersion": 2,
+      "defaultDuration": 20,
+      "itinerantTeamId": null,
+      "requiresAuxiliar": false,
+      "sourceTemplateId": 3,
+      "exclusiveAuxiliar": false,
+      "requiresPresenter": false,
+      "sourceFingerprint": "8f6156bae0b24a2923ee7ff8b1dd2ec76534c04bb74fc510e9eae05710344038",
+      "plannerNextOperation": {
+        "kind": "auxiliary",
+        "contractVersion": 1
+      },
+      "resourceRequirements": {
+        "byItem": {
+          "3": 1
+        },
+        "byType": {
+          "1": 1
+        }
+      },
+      "dependencyTemplateIds": [],
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "autoCreateOnContestantCreate": false,
+      "participantMarginAfterMinutes": 0,
+      "participantMarginBeforeMinutes": 0
+    },
+    {
+      "source": "inherited",
+      "setupId": null,
+      "templateName": "B Critical A",
+      "defaultZoneId": 1,
+      "hasDependency": false,
+      "requiresCoach": false,
+      "defaultCameras": 0,
+      "defaultSpaceId": 2,
+      "contractVersion": 2,
+      "defaultDuration": 20,
+      "itinerantTeamId": null,
+      "requiresAuxiliar": false,
+      "sourceTemplateId": 4,
+      "exclusiveAuxiliar": false,
+      "requiresPresenter": false,
+      "sourceFingerprint": "1957c13b0385dd2967d71283a91046a8b68208291d720a1304761ef7b3972b5e",
+      "plannerNextOperation": {
+        "kind": "auxiliary",
+        "contractVersion": 1
+      },
+      "resourceRequirements": {
+        "byItem": {
+          "1": 1
+        }
+      },
+      "dependencyTemplateIds": [],
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "autoCreateOnContestantCreate": false,
+      "participantMarginAfterMinutes": 0,
+      "participantMarginBeforeMinutes": 0
+    },
+    {
+      "source": "inherited",
+      "setupId": null,
+      "templateName": "B Future flexible",
+      "defaultZoneId": 1,
+      "hasDependency": false,
+      "requiresCoach": false,
+      "defaultCameras": 0,
+      "defaultSpaceId": 3,
+      "contractVersion": 2,
+      "defaultDuration": 15,
+      "itinerantTeamId": null,
+      "requiresAuxiliar": false,
+      "sourceTemplateId": 5,
+      "exclusiveAuxiliar": false,
+      "requiresPresenter": false,
+      "sourceFingerprint": "d71da7e7e33c95df2649b8014e06feb8535eb5a432abfb10a63628b9820835ef",
+      "plannerNextOperation": {
+        "kind": "auxiliary",
+        "contractVersion": 1
+      },
+      "resourceRequirements": {
+        "byType": {
+          "1": 1
+        }
+      },
+      "dependencyTemplateIds": [],
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "autoCreateOnContestantCreate": false,
+      "participantMarginAfterMinutes": 0,
+      "participantMarginBeforeMinutes": 0
+    },
+    {
+      "source": "inherited",
+      "setupId": null,
+      "templateName": "B Tail B",
+      "defaultZoneId": 1,
+      "hasDependency": true,
+      "requiresCoach": false,
+      "defaultCameras": 0,
+      "defaultSpaceId": 4,
+      "contractVersion": 2,
+      "defaultDuration": 15,
+      "itinerantTeamId": null,
+      "requiresAuxiliar": false,
+      "sourceTemplateId": 6,
+      "exclusiveAuxiliar": false,
+      "requiresPresenter": false,
+      "sourceFingerprint": "9c6f30b96e29755734e738352b552dd0316c202fd193b514189bdca46456fa3d",
+      "plannerNextOperation": {
+        "kind": "auxiliary",
+        "contractVersion": 1
+      },
+      "resourceRequirements": {
+        "byType": {
+          "1": 1
+        }
+      },
+      "dependencyTemplateIds": [
+        5
+      ],
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "autoCreateOnContestantCreate": false,
+      "participantMarginAfterMinutes": 0,
+      "participantMarginBeforeMinutes": 0
+    }
+  ]
+}

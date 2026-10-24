@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "base": "438d92ca9a4f3db6358809b904268f6da33b4ecd",
+  "onlyRequirementChanged": true,
+  "original": "UNSUPPORTED_RESOURCE_REQUIREMENT",
+  "counterfactual": "2/2 HARD valid",
+  "dailyIds": [
+    4,
+    5,
+    6
+  ]
+}

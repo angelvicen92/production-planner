@@ -22,6 +22,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -42,8 +44,20 @@ jobs:
         run: node --import tsx script/validation/runU00iFunctional.ts work/u00i-functional
       - run: node --import tsx script/validation/replayU00iFrozen.ts work/u00i-functional/native work/u00i-cold.json
       - name: SQL counterfactual without the new integrity guard
-        run: node --import tsx script/validation/runU00iFunctional.ts work/u00i-before-integrity --before-integrity-guard
-      - run: python3 docs/evidence/p0-u00i/implementation/verify.py
+        run: |
+          mkdir -p work/u00i-before-source
+          git archive 438d92ca9a4f3db6358809b904268f6da33b4ecd | tar -x -C work/u00i-before-source
+          ln -s "$GITHUB_WORKSPACE/node_modules" work/u00i-before-source/node_modules
+          git -C work/u00i-before-source init
+          git -C work/u00i-before-source add .
+          git -C work/u00i-before-source -c user.name=Evidence -c user.email=evidence@local commit -qm 'Historical U00i source archive'
+          cd work/u00i-before-source
+          node --import tsx script/validation/runU00iFunctional.ts "$GITHUB_WORKSPACE/work/u00i-before-integrity" --before-integrity-guard
+      - name: Verify historical U00i receipts against their integrated source
+        run: |
+          mkdir -p work/u00i-integrated-source
+          git archive 438d92ca9a4f3db6358809b904268f6da33b4ecd | tar -x -C work/u00i-integrated-source
+          python3 work/u00i-integrated-source/docs/evidence/p0-u00i/implementation/verify.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:

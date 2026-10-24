@@ -1,0 +1,16 @@
+[
+  {
+    "id": "1",
+    "assigned_resource_ids": [
+      5
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "2",
+    "assigned_resource_ids": [
+      4
+    ],
+    "status": "pending"
+  }
+]
