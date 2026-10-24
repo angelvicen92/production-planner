@@ -1,8 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {readFileSync} from 'node:fs';
-import {assertNominalProposalWitness} from '../../../server/assistedProposalService';
 import {fingerprint} from '../fingerprint';
+// Pure service revalidation still imports the server clients. Keep this test
+// self-contained and forbid every network request, even outside the full suite.
+process.env.SUPABASE_URL='http://127.0.0.1:1';
+process.env.SUPABASE_SERVICE_ROLE_KEY=process.env.SUPABASE_ANON_KEY='offline-only';
+globalThis.fetch=async()=>{throw Error('Network forbidden during witness validation test');};
+const {assertNominalProposalWitness}=await import('../../../server/assistedProposalService');
 const read=(name:string)=>JSON.parse(readFileSync(`docs/evidence/p0-u00i/implementation/causal-sql-boundary/${name}.json`,'utf8'));
 test('canonical validation rechecks a stored physical witness without another search',()=>{
   const input=read('A-input'),result=read('A-S1-run').assisted_result_json,draft=read('A-S1-draft').draft;

@@ -1,0 +1,9 @@
+{
+  "head": "e54ddffbc5cbfb16d893cb895822c1522f11d404",
+  "job": "nominal-resource-functional",
+  "url": "https://github.com/angelvicen92/production-planner/actions/runs/40088728474/job/120856850272",
+  "cause": "Witness test imported service clients without local dummy environment in standalone CI invocation. Product unchanged.",
+  "correction": "Test sets loopback-only environment before dynamic service import and prohibits fetch; verified with Supabase variables unset.",
+  "focusedTests": 28,
+  "focusedResult": "PASS"
+}
