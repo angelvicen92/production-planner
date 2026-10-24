@@ -1,0 +1,50 @@
+{
+  "main": "e03f3476020fc220f9d70f86d6e9b8a05c818eeb",
+  "remoteTarget": "codex/p0-u00m-post-stage-additions-causal",
+  "remoteTargetAtStart": "e03f3476020fc220f9d70f86d6e9b8a05c818eeb",
+  "verifiedBy": "git fetch origin main + git ls-remote target; GitHub connector get_pr_info #1190",
+  "u00l": {
+    "pr": 1190,
+    "merged": true,
+    "mergeCommit": "e03f3476020fc220f9d70f86d6e9b8a05c818eeb",
+    "mergedAtUtc": "2026-10-24T19:56:13Z"
+  },
+  "hashes": {
+    "AGENTS.md": "f64c4d76819ef55c12b5b0a6d79337e21a16036e0347340a6b901b549d0da4d5",
+    "docs/source/official/00_INDICE_Y_AUTORIDAD_FUENTES_OPTIPLAN_v2.14.md": "5ab8b4985fedae52fdfa98847058325999aa5a563249385cd6806bf4bcced0aa",
+    "docs/source/official/01_PRODUCTO_DOMINIO_OPERACION_v5.3.md": "5db13d08dac7cc8d9a7f5d5ce3c44991b5a39b06aaa1f697019a3f6bb0c6edbf",
+    "docs/source/official/04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.8.md": "074b6b40cca51c0f9cdc56e8af41eab797d4153945a3f4948293d99f7c947704",
+    "docs/source/official/05_VALIDACION_CALIDAD_BENCHMARK_v2.8.md": "2d0aa69ebb5d1949b315a8ebb85c0ad96f0f9939e9441d1ef09a1f1ae9924a13",
+    "docs/source/official/07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.3.md": "7243ed2d186ef19af7ee9717c9b72d94ebca34791257a434be1aab76bed27351",
+    "docs/governance/OPTIPLAN_MASTER_ADECUACION_APP.md": "c05fd2d71d5b7e985dd5c4529adb98df60fe488890ed83623d55f88d40404583",
+    "docs/architecture/PLANNER_CAPABILITY_CATALOG.md": "e620475f272236351f871d285c258d2ff6389990d9f1320784f37f1f0747aa8e",
+    "docs/evidence/p0-u00a/README.md": "42a825e1a0374b29d03f14310cfbc8d5b89365654c852eb29b408e2dbbc13846",
+    "docs/evidence/p0-u00c/README.md": "dd7873809b6e952163e2cd5c26a792d87aac7f3660393ebfbe47e91d3be22aef",
+    "docs/evidence/p0-u00c/design.md": "1ea659139b6ae034ce26ca842e5ed397416862e92919793d3c9df84936e7bf4f"
+  },
+  "a2Baseline": {
+    "status": "protected, not rerun",
+    "obligations": 266,
+    "stages": 11,
+    "branches": 27049,
+    "certificates": 22,
+    "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+    "hashes": {
+      "docs/evidence/p0-u00l/a2/execution.json.gz": "ff154e52dc5b1a8acea5b7797b79570321a499ad8808640166369e5e18253ae0",
+      "docs/evidence/p0-u00l/a2/audit.json.gz": "7d02cacc6d06a48b0ce2ec983304a4de6383a618067de9d993d920a080283c27",
+      "docs/evidence/p0-u00l/a2/latest-baseline-comparison.json": "d7fff0bdf9c67c7bba244aa9a721ec01818d9b2bfefd64094ed4a21afcdd09b7",
+      "docs/evidence/p0-u00l/a2/final/run.json.gz": "c86650d9f48f76f4e37d6818464fb4de6a62f94374195b547f42978b2666fa6b",
+      "docs/evidence/p0-u00l/a2/final/snapshots.json.gz": "aa9b3920f71ef5730c89e797b69543b389fcc864bfd640dd2fe85d3c66a5e64f",
+      "docs/evidence/p0-u00l/a2/final/runtime.json": "45c5c01e6cb9d22d41afece17549ae3d4ff98072d5298ad03c31cc22246a4c7b",
+      "docs/evidence/p0-u00l/a2/candidate/run.json.gz": "e7b9cc88c82179b60038d4cde134611a738894b0774e8b8c965ac8d54eefc5f9",
+      "docs/evidence/p0-u00l/a2/candidate/snapshots.json.gz": "aa9b3920f71ef5730c89e797b69543b389fcc864bfd640dd2fe85d3c66a5e64f",
+      "docs/evidence/p0-u00l/a2/candidate/runtime.json": "45c5c01e6cb9d22d41afece17549ae3d4ff98072d5298ad03c31cc22246a4c7b",
+      "docs/evidence/p0-u00l/a2/repeat/run.json.gz": "8368efd0cb4a033559ad5b5b31eed0201345887ada5552d70802114a6174ae20",
+      "docs/evidence/p0-u00l/a2/repeat/snapshots.json.gz": "aa9b3920f71ef5730c89e797b69543b389fcc864bfd640dd2fe85d3c66a5e64f",
+      "docs/evidence/p0-u00l/a2/repeat/runtime.json": "45c5c01e6cb9d22d41afece17549ae3d4ff98072d5298ad03c31cc22246a4c7b",
+      "docs/evidence/p0-u00l/a2/base/run.json.gz": "185cd4eddde57570486d924744f606fbd327db852f5e2e10f40688ad5508a25b",
+      "docs/evidence/p0-u00l/a2/base/snapshots.json.gz": "aa9b3920f71ef5730c89e797b69543b389fcc864bfd640dd2fe85d3c66a5e64f",
+      "docs/evidence/p0-u00l/a2/base/runtime.json": "45c5c01e6cb9d22d41afece17549ae3d4ff98072d5298ad03c31cc22246a4c7b"
+    }
+  }
+}
