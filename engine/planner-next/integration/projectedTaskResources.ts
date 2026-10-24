@@ -15,6 +15,7 @@ export type ProjectedPlannerNextTaskResources =
       readonly status: "REPRESENTABLE";
       readonly coachResourceId?: number;
       readonly genericResourceIds: readonly number[];
+      readonly independentPhysicalResourceIds: readonly number[];
       readonly assignmentResourceIds: readonly number[];
       readonly lockedResourceIds: readonly number[];
       readonly coachLockRedundant: boolean;
@@ -39,7 +40,7 @@ export function resolveProjectedPlannerNextTaskResources(
   participantIdsByCoachResourceId: ReadonlyMap<number, readonly number[]>,
 ): ProjectedPlannerNextTaskResources {
   if (task.status === "cancelled") return Object.freeze({
-    status: "REPRESENTABLE", genericResourceIds: Object.freeze([]), assignmentResourceIds: Object.freeze([]),
+    status: "REPRESENTABLE", genericResourceIds: Object.freeze([]), independentPhysicalResourceIds: Object.freeze([]), assignmentResourceIds: Object.freeze([]),
     lockedResourceIds: Object.freeze([]), coachLockRedundant: false, readOnly: true,
   });
 
@@ -81,6 +82,8 @@ export function resolveProjectedPlannerNextTaskResources(
     status: "REPRESENTABLE",
     ...(coachResourceId === undefined ? {} : { coachResourceId }),
     genericResourceIds,
+    independentPhysicalResourceIds: unique([...(assignment.independentResourceIds ?? assignment.effectiveResourceIds), ...lockedResourceIds]
+      .filter(resourceId => resourceId !== coachResourceId)),
     assignmentResourceIds,
     lockedResourceIds,
     coachLockRedundant: coachResourceId !== undefined && lockedResourceIds.includes(coachResourceId),

@@ -1,4 +1,4 @@
-import type {Task} from './contracts';
+import type {ScheduledTask,Task} from './contracts';
 
 const canonical=(ids:readonly string[])=>[...new Set(ids)].sort();
 export const canonicalNominalResourceChoice=(choice:NonNullable<Task['nominalResourceChoice']>)=>({
@@ -28,3 +28,10 @@ export function nominalResourceAssignmentMatches(expected:Task,actual:Task):bool
 }
 /** Possible consumption, never an occupation until a variant is materialized. */
 export const possibleTaskResourceIds=(task:Task)=>canonical([...(task.requiredResourceIds??[]),...(task.nominalResourceChoice?.resourceIds??[])]);
+
+/** A physical rejection applies only to the materialized variant of a task/spot. */
+export function nominalOperationEdgeKey(taskId:string,position:number,operation:readonly ScheduledTask[]):string {
+  const choices=operation.filter(task=>task.nominalResourceChoice?.selectedResourceId)
+    .map(task=>[task.id,task.nominalResourceChoice!.selectedResourceId!]).sort(([a],[b])=>a.localeCompare(b));
+  return `${taskId}@${position}${choices.length?`#${JSON.stringify(choices)}`:''}`;
+}

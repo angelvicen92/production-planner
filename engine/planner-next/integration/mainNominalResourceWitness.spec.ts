@@ -1,0 +1,38 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {readFileSync} from 'node:fs';
+import {gunzipSync} from 'node:zlib';
+import {fingerprint} from '../fingerprint';
+process.env.SUPABASE_URL='http://127.0.0.1:1';process.env.SUPABASE_SERVICE_ROLE_KEY=process.env.SUPABASE_ANON_KEY='offline';
+globalThis.fetch=async()=>{throw Error('Network forbidden during Main witness validation');};
+const {assertNominalProposalWitness,materializeAssistedSnapshotOccupations}=await import('../../../server/assistedProposalService');
+const {adaptEngineInputToPlannerNextProblem}=await import('./engineInputAdapter');
+const receipts=JSON.parse(gunzipSync(readFileSync('docs/evidence/p0-u00l/native/receipts.json.gz')).toString());
+const read=(name:string)=>structuredClone(receipts[name+'.json']);
+for(const [label,stage] of [['A',1],['B',1],['B',2]] as const)test(`native Main ${label} S${stage} physical witness revalidates without search`,()=>{
+ const input=read(`${label}-input`),result=read(`${label}-S${stage}-run`).assisted_result_json;
+ assert.doesNotThrow(()=>assertNominalProposalWitness(input,result.proposedDraftSnapshot,result));
+});
+for(const attack of ['absent','double','invented','future','coach','unavailable','independent'])test(`Main persisted witness rejects ${attack} with a recalculated hash`,()=>{
+ const input=read('B-input'),result=read('B-S1-run').assisted_result_json,proof=result.evidence.nominalPhysicalFutureWitness;
+ const main=proof.tasks.find((t:any)=>t.id==='task:12');assert.ok(main.nominalResourceChoice);
+ if(attack==='absent')delete main.nominalResourceChoice.selectedResourceId;
+ if(attack==='double')main.requiredResourceIds.push(main.nominalResourceChoice.resourceIds.find((id:string)=>id!==main.nominalResourceChoice.selectedResourceId));
+ if(attack==='invented')main.nominalResourceChoice.selectedResourceId='plan-resource:999';
+ if(attack==='future')proof.tasks=proof.tasks.filter((t:any)=>t.kind!=='main'||t.id===main.id);
+ if(attack==='coach')main.coachId='plan-resource:1';
+ if(attack==='unavailable')input.planResourceItems.find((r:any)=>`plan-resource:${r.id}`===main.nominalResourceChoice.selectedResourceId).isAvailable=false;
+ if(attack==='independent')main.requiredResourceIds=main.requiredResourceIds.filter((id:string)=>!main.nominalResourceChoice.fixedResourceIds.includes(id));
+ proof.fingerprint=fingerprint(proof.tasks);assert.throws(()=>assertNominalProposalWitness(input,result.proposedDraftSnapshot,result),/INVALID_NOMINAL_PHYSICAL_WITNESS/);
+});
+test('explicit Main coach assignment round-trips in the snapshot while remaining separate from generic physical consumption',()=>{
+ const input=read('A-input'),result=read('A-S1-run').assisted_result_json;
+ const main=result.evidence.nominalPhysicalFutureWitness.tasks.find((t:any)=>t.nominalResourceChoice),id=Number(main.id.split(':')[1]),coach=Number(main.coachId.split(':')[1]);
+ input.tasks.find((t:any)=>t.id===id).assignedResourceIds=[coach];
+ result.proposedDraftSnapshot.tasks.find((t:any)=>t.taskId===id).assignedResourceIds.push(coach);
+ assert.doesNotThrow(()=>assertNominalProposalWitness(input,result.proposedDraftSnapshot,result));
+ const adapted=adaptEngineInputToPlannerNextProblem(input);assert.equal(adapted.status,'SUPPORTED');if(adapted.status!=='SUPPORTED')throw Error();
+ const replay=materializeAssistedSnapshotOccupations(adapted.problem,adapted.identityMap,result.proposedDraftSnapshot);
+ const selected=replay.protectedPlacements.find(t=>t.id===main.id)!;
+ assert.equal(selected.coachId,main.coachId);assert.ok(!selected.requiredResourceIds!.includes(main.coachId));
+});

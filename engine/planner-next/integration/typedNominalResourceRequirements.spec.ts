@@ -60,10 +60,10 @@ for(const [label,edit,reason] of [
  ['type and anyOf',(s:EngineInput)=>s.tasks[0].resourceRequirements!.anyOf=[{quantity:1,resourceItemIds:[1,2]}],'BYTYPE_ANYOF_COMBINATION_UNSUPPORTED'],
  ['shared auxiliary',(s:EngineInput)=>s.planResourceItems.forEach(r=>r.typeCode='auxiliar'),'NO_AVAILABLE_NOMINAL_RESOURCE'],
  ['macro resources',(s:EngineInput)=>s.resourcePresenceConcentrationPolicies={4:'REQUIRED',5:'PREFERRED'},'NO_AVAILABLE_NOMINAL_RESOURCE'],
- ['Main',(s:EngineInput)=>s.tasks[0].plannerNextKind='main','ANYOF_REQUIRES_ORDINARY_STANDALONE_AUXILIARY'],
- ['Vocal',(s:EngineInput)=>s.tasks[0].plannerNextKind='vocal','ANYOF_REQUIRES_ORDINARY_STANDALONE_AUXILIARY'],
- ['technical',(s:EngineInput)=>s.tasks[0].plannerNextKind='technical','ANYOF_REQUIRES_ORDINARY_STANDALONE_AUXILIARY'],
- ['grouped',(s:EngineInput)=>s.tasks[0].jointGroupId='joint','ANYOF_REQUIRES_ORDINARY_STANDALONE_AUXILIARY'],
+ ['Main',(s:EngineInput)=>s.tasks[0].plannerNextKind='main','NOMINAL_REQUIRES_ORDINARY_STANDALONE_AUXILIARY_OR_MAIN'],
+ ['Vocal',(s:EngineInput)=>s.tasks[0].plannerNextKind='vocal','NOMINAL_REQUIRES_ORDINARY_STANDALONE_AUXILIARY_OR_MAIN'],
+ ['technical',(s:EngineInput)=>s.tasks[0].plannerNextKind='technical','NOMINAL_REQUIRES_ORDINARY_STANDALONE_AUXILIARY_OR_MAIN'],
+ ['grouped',(s:EngineInput)=>s.tasks[0].jointGroupId='joint','NOMINAL_REQUIRES_ORDINARY_STANDALONE_AUXILIARY_OR_MAIN'],
 ] as const)test(`${label} fails explicitly`,()=>{const s=captured();edit(s);const a=adaptEngineInputToPlannerNextProblem(s);assert.equal(a.status,'UNSUPPORTED');assert.ok(JSON.stringify(a).includes(reason),JSON.stringify(a));});
 test('lock on scarce A cannot be bypassed with B',()=>{
  const s=captured();s.locks=[{id:1,planId:s.planId,taskId:1,lockType:'resource',lockedResourceId:4}];assert.equal(run(problem(s)).evidence.completeForScope,false);
