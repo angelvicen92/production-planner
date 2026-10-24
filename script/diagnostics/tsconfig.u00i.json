@@ -1,0 +1,6 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": ["runU00iResourceGate.ts", "u00iResourceJourney.ts", "analyseU00iResourceGate.ts", "u00iResourceGate.spec.ts"],
+  "exclude": [],
+  "compilerOptions": {"incremental": false}
+}

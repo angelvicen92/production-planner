@@ -1,0 +1,165 @@
+{
+  "identityMap": [
+    {
+      "namespace": "participant",
+      "sourceId": "1",
+      "canonicalId": "participant:1"
+    },
+    {
+      "namespace": "participant",
+      "sourceId": "2",
+      "canonicalId": "participant:2"
+    },
+    {
+      "namespace": "plan-resource",
+      "sourceId": "4",
+      "canonicalId": "plan-resource:4"
+    },
+    {
+      "namespace": "plan-resource",
+      "sourceId": "5",
+      "canonicalId": "plan-resource:5"
+    },
+    {
+      "namespace": "plan-resource",
+      "sourceId": "6",
+      "canonicalId": "plan-resource:6"
+    },
+    {
+      "namespace": "plan",
+      "sourceId": "2",
+      "canonicalId": "plan:2"
+    },
+    {
+      "namespace": "resource-item",
+      "sourceId": "1",
+      "canonicalId": "resource-item:1"
+    },
+    {
+      "namespace": "resource-item",
+      "sourceId": "2",
+      "canonicalId": "resource-item:2"
+    },
+    {
+      "namespace": "resource-item",
+      "sourceId": "3",
+      "canonicalId": "resource-item:3"
+    },
+    {
+      "namespace": "resource-type",
+      "sourceId": "1",
+      "canonicalId": "resource-type:1"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "1",
+      "canonicalId": "space:1"
+    },
+    {
+      "namespace": "space",
+      "sourceId": "2",
+      "canonicalId": "space:2"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "1",
+      "canonicalId": "task:1"
+    },
+    {
+      "namespace": "task",
+      "sourceId": "2",
+      "canonicalId": "task:2"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "1",
+      "canonicalId": "template:1"
+    },
+    {
+      "namespace": "template",
+      "sourceId": "2",
+      "canonicalId": "template:2"
+    },
+    {
+      "namespace": "zone",
+      "sourceId": "1",
+      "canonicalId": "zone:1"
+    }
+  ],
+  "diagnostics": {
+    "taskCount": 2,
+    "planifiableTaskCount": 2,
+    "protectedTaskCount": 0,
+    "cancelledTaskCount": 0,
+    "pendingPlanningDiscardCount": 0,
+    "lockCount": 0,
+    "participantCount": 2,
+    "coachReferenceCount": 0,
+    "missingCoachReferenceCount": 0,
+    "spaceCount": 2,
+    "referencedSpaceCount": 2,
+    "describedSpaceCount": 2,
+    "zoneCount": 1,
+    "planResourceCount": 3,
+    "requiredPlanResourceCount": 1,
+    "usableRequiredPlanResourceCount": 1,
+    "unusableRequiredPlanResourceCount": 0,
+    "protectedTaskResourceAvailabilityConflictCount": 0,
+    "requiredSpaceCount": 2,
+    "usableRequiredSpaceCount": 2,
+    "unusableRequiredSpaceCount": 0,
+    "requiredZoneCount": 1,
+    "protectedTaskSpatialAvailabilityConflictCount": 0,
+    "resourceItemCount": 3,
+    "resourceAssignmentReferenceCount": 0,
+    "resourceComponentReferenceCount": 0,
+    "missingResourceReferenceCount": 0,
+    "dependencyCount": 0,
+    "breakCount": 1,
+    "participantScopedMealCount": 0,
+    "supportedParticipantScopedMealCount": 0,
+    "unsupportedParticipantScopedMealCount": 0,
+    "transportConfigured": false,
+    "setupConfigurationDetected": false,
+    "integrationConfigurationPresent": true,
+    "mainFlowConfigurationComplete": false,
+    "searchPolicyConfigurationPresent": true,
+    "searchBudgetConfigurationComplete": true,
+    "timeGridVerifiable": true,
+    "transitionConfigurationComplete": true,
+    "anchoredOperationContractPresent": false,
+    "unresolvedTaskRoleCount": 0,
+    "missingDurationTaskCount": 0,
+    "missingAvailabilityCounts": {
+      "participants": 0,
+      "spaces": 0,
+      "resources": 0
+    },
+    "unsupportedCapabilityCodes": [
+      "UNSUPPORTED_RESOURCE_REQUIREMENT"
+    ],
+    "readOnly": true
+  },
+  "issues": [
+    {
+      "code": "UNSUPPORTED_RESOURCE_REQUIREMENT",
+      "entityKind": "task",
+      "entityId": "1",
+      "path": "tasks.1.resourceRequirements.anyOf.0",
+      "message": "Resource alternatives cannot be converted to a fixed resource.",
+      "blocking": true,
+      "details": {
+        "quantity": 1
+      }
+    }
+  ],
+  "sourceFingerprint": "77c3b6056ad02c4b5997b47dc9106dca768ca05a6cb90796b349eb18fc54dff6",
+  "identityMapFingerprint": "0cb84af928562411fd960247b3951771cf409aabfc03f4e21c4e08eaf6fd33be",
+  "readOnly": true,
+  "status": "UNSUPPORTED",
+  "problem": null,
+  "reasonCodes": [
+    "UNSUPPORTED_RESOURCE_REQUIREMENT"
+  ],
+  "problemFingerprint": null
+}

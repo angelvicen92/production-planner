@@ -1,0 +1,40 @@
+name: P0 U00i nominal resource causal gate
+on:
+  pull_request:
+    paths:
+      - 'script/diagnostics/*U00i*'
+      - 'script/diagnostics/u00i*'
+      - 'script/diagnostics/tsconfig.u00i.json'
+      - 'docs/evidence/p0-u00i/**'
+      - '.github/workflows/p0-u00i-resource-gate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  nominal-resource-diagnostic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install tsc -p script/diagnostics/tsconfig.u00i.json
+      - run: node node_modules/tsx/dist/cli.mjs --test script/diagnostics/u00iResourceGate.spec.ts
+      - name: Original rejection, feasible counterpart and exact representation boundaries
+        run: node --import tsx script/diagnostics/runU00iResourceGate.ts work/u00i-native
+      - name: Verify versioned evidence against product and diagnostic sources
+        run: python3 docs/evidence/p0-u00i/verify.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: u00i-native-diagnostic
+          path: |
+            work/u00i-native/manifest.json
+            work/u00i-native/summary.json
+            work/u00i-native/boundary.json
+            work/u00i-native/guard-released.json
+            work/u00i-native/native/*.json

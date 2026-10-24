@@ -1,0 +1,11 @@
+{
+  "status": "DIAGNOSTIC_PASS_IMPLEMENTATION_BLOCKED",
+  "base": "e79f8ee1a13ef5f5df58371abc851b4746385412",
+  "productFileCount": 1534,
+  "productUnchanged": true,
+  "nativePreflight": "REJECTED",
+  "concreteBFullWitness": "PASS",
+  "concreteAScopeClosesFuture": "REPRODUCED",
+  "guardOnlyProjectionLoss": "REPRODUCED",
+  "remoteWrites": 0
+}

@@ -1,0 +1,215 @@
+{
+  "status": "DIAGNOSTIC_PASS_IMPLEMENTATION_BLOCKED",
+  "native": {
+    "status": "DIAGNOSTIC_PASS_IMPLEMENTATION_BLOCKED",
+    "base": "e79f8ee1a13ef5f5df58371abc851b4746385412",
+    "productFileCount": 1534,
+    "productUnchanged": true,
+    "nativePreflight": "REJECTED",
+    "concreteBFullWitness": "PASS",
+    "concreteAScopeClosesFuture": "REPRODUCED",
+    "guardOnlyProjectionLoss": "REPRODUCED",
+    "remoteWrites": 0
+  },
+  "globalIds": {
+    "fixed": 2,
+    "other": 3
+  },
+  "dailyIds": {
+    "fixed": 5,
+    "other": 6
+  },
+  "fullScope": {
+    "A": {
+      "completeForScope": false,
+      "proposal": null,
+      "work": {
+        "branchesExplored": 1,
+        "coreBranches": 0,
+        "standaloneBranches": 1
+      }
+    },
+    "B": {
+      "completeForScope": true,
+      "proposal": [
+        {
+          "id": "task:1",
+          "duration": 20,
+          "spaceId": "space:1",
+          "dependencies": [],
+          "requiredResourceIds": [
+            "plan-resource:6"
+          ],
+          "nonSubstitutableResourceIds": [
+            "plan-resource:6"
+          ],
+          "participantMarginBeforeMinutes": 0,
+          "participantMarginAfterMinutes": 0,
+          "kind": "auxiliary",
+          "participantId": "participant:1",
+          "start": 540,
+          "end": 560
+        },
+        {
+          "id": "task:2",
+          "duration": 20,
+          "spaceId": "space:2",
+          "dependencies": [],
+          "requiredResourceIds": [
+            "plan-resource:5"
+          ],
+          "nonSubstitutableResourceIds": [
+            "plan-resource:5"
+          ],
+          "participantMarginBeforeMinutes": 0,
+          "participantMarginAfterMinutes": 0,
+          "kind": "auxiliary",
+          "participantId": "participant:2",
+          "start": 540,
+          "end": 560
+        }
+      ],
+      "work": {
+        "branchesExplored": 3,
+        "coreBranches": 0,
+        "standaloneBranches": 3
+      }
+    }
+  },
+  "splitScopes": {
+    "A": {
+      "first": {
+        "completeForScope": true,
+        "proposal": [
+          {
+            "id": "task:1",
+            "duration": 20,
+            "spaceId": "space:1",
+            "dependencies": [],
+            "requiredResourceIds": [
+              "plan-resource:5"
+            ],
+            "nonSubstitutableResourceIds": [
+              "plan-resource:5"
+            ],
+            "participantMarginBeforeMinutes": 0,
+            "participantMarginAfterMinutes": 0,
+            "kind": "auxiliary",
+            "participantId": "participant:1",
+            "start": 540,
+            "end": 560
+          }
+        ],
+        "work": {
+          "branchesExplored": 2,
+          "coreBranches": 0,
+          "standaloneBranches": 2
+        }
+      },
+      "second": {
+        "completeForScope": false,
+        "proposal": null,
+        "work": {
+          "branchesExplored": 0,
+          "coreBranches": 0,
+          "standaloneBranches": 0
+        }
+      }
+    },
+    "B": {
+      "first": {
+        "completeForScope": true,
+        "proposal": [
+          {
+            "id": "task:1",
+            "duration": 20,
+            "spaceId": "space:1",
+            "dependencies": [],
+            "requiredResourceIds": [
+              "plan-resource:6"
+            ],
+            "nonSubstitutableResourceIds": [
+              "plan-resource:6"
+            ],
+            "participantMarginBeforeMinutes": 0,
+            "participantMarginAfterMinutes": 0,
+            "kind": "auxiliary",
+            "participantId": "participant:1",
+            "start": 540,
+            "end": 560
+          }
+        ],
+        "work": {
+          "branchesExplored": 2,
+          "coreBranches": 0,
+          "standaloneBranches": 2
+        }
+      },
+      "second": {
+        "completeForScope": true,
+        "proposal": [
+          {
+            "id": "task:2",
+            "duration": 20,
+            "spaceId": "space:2",
+            "dependencies": [],
+            "requiredResourceIds": [
+              "plan-resource:5"
+            ],
+            "nonSubstitutableResourceIds": [
+              "plan-resource:5"
+            ],
+            "participantMarginBeforeMinutes": 0,
+            "participantMarginAfterMinutes": 0,
+            "kind": "auxiliary",
+            "participantId": "participant:2",
+            "start": 540,
+            "end": 560
+          }
+        ],
+        "work": {
+          "branchesExplored": 2,
+          "coreBranches": 0,
+          "standaloneBranches": 2
+        }
+      }
+    }
+  },
+  "ordinaryResultIntegrity": {
+    "omittedValidation": {
+      "hardValid": true,
+      "dependencyViolationCount": 0,
+      "overlapViolationCount": 0,
+      "transitionViolationCount": 0,
+      "availabilityViolationCount": 0,
+      "taskAvailabilityViolationCount": 0,
+      "blockViolationCount": 0,
+      "resourceAvailabilityViolationCount": 0,
+      "resourceOverlapViolationCount": 0,
+      "resourceTransitionViolationCount": 0,
+      "secondaryContinuityViolationCount": 0,
+      "setupViolationCount": 0,
+      "setupPreparationViolationCount": 0,
+      "jointGroupViolationCount": 0,
+      "technicalOperationViolationCount": 0,
+      "technicalChainViolationCount": 0,
+      "spaceMealViolationCount": 0,
+      "mainFlowMealViolationCount": 0,
+      "anchoredAccompanimentViolationCount": 0,
+      "participantMealViolationCount": 0,
+      "resourceMealViolationCount": 0,
+      "itinerantUnitMealViolationCount": 0,
+      "reasonCodes": [],
+      "unstructuredReasonCodes": [],
+      "violations": []
+    },
+    "originalFingerprint": "c0ab1b4411375eb93ccfaa6ff1fc9c43d3282b21ed771803681c526464af4f45",
+    "omittedFingerprint": "c0ab1b4411375eb93ccfaa6ff1fc9c43d3282b21ed771803681c526464af4f45",
+    "fingerprintsEqual": true
+  },
+  "guardOnly": {
+    "adapterStatus": "SUPPORTED",
+    "flexibleResourceIds": [],
+    "lostAlternativeResourceId": "plan-resource:6"
+  }
+}

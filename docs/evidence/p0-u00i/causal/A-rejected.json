@@ -1,0 +1,7 @@
+{
+  "status": 422,
+  "body": {
+    "code": "UNSUPPORTED_ENGINE_INPUT",
+    "message": "UNSUPPORTED_ENGINE_INPUT"
+  }
+}

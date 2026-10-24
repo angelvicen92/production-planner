@@ -1,0 +1,749 @@
+{
+  "contractVersion": 2,
+  "planId": 2,
+  "generatedFrom": "PRODUCTIVE_AUTHORITIES",
+  "plannerProfile": {
+    "sourceRevision": 1,
+    "configured": true
+  },
+  "itinerantComposition": {
+    "units": [],
+    "resources": [
+      {
+        "id": 4,
+        "name": "Unused equipment"
+      },
+      {
+        "id": 5,
+        "name": "A"
+      },
+      {
+        "id": 6,
+        "name": "B"
+      }
+    ],
+    "labels": []
+  },
+  "operationContinuity": {
+    "revisionId": 2,
+    "groups": []
+  },
+  "roundPreparations": {
+    "revisionId": 2,
+    "timeGridMinutes": 5,
+    "lanes": []
+  },
+  "mainFlowPreference": {
+    "value": {
+      "blockCountPolicy": {
+        "mode": "AUTO_MIN_FEASIBLE"
+      },
+      "mealSplitPreference": {
+        "mode": "OFF"
+      }
+    },
+    "baseline": {
+      "blockCountPolicy": {
+        "mode": "AUTO_MIN_FEASIBLE"
+      },
+      "mealSplitPreference": {
+        "mode": "OFF"
+      }
+    },
+    "defaultGeneral": {
+      "blockCountPolicy": {
+        "mode": "AUTO_MIN_FEASIBLE"
+      },
+      "mealSplitPreference": {
+        "mode": "OFF"
+      }
+    },
+    "available": false,
+    "mealApplicable": false,
+    "zeroBeforeRepresentable": false,
+    "counts": []
+  },
+  "values": [
+    {
+      "capabilityId": "WORKDAY_WINDOW",
+      "label": "Horario de la jornada",
+      "category": "Jornada y comidas",
+      "unit": "HH:mm",
+      "effectiveRevision": 2,
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "PRODUCTIVE",
+      "blockers": [],
+      "requiredForDay": false,
+      "value": {
+        "start": "09:00",
+        "end": "14:00"
+      },
+      "baseline": {
+        "start": "09:00",
+        "end": "14:00"
+      },
+      "defaultGeneral": {
+        "start": "09:00",
+        "end": "14:00"
+      },
+      "canRestoreInherited": false,
+      "overrideMetadata": {
+        "createdBy": null,
+        "createdAt": null
+      },
+      "fingerprint": "4fca043edd86299136620b68da4ec25404f9e627c91bd5859fdb99569ebe1fe2",
+      "availability": "AVAILABLE",
+      "source": "INHERITED",
+      "validationStatus": "VALID"
+    },
+    {
+      "capabilityId": "TIME_GRID",
+      "label": "Granularidad temporal",
+      "category": "Jornada y comidas",
+      "value": null,
+      "availability": "UNKNOWN",
+      "unit": "minutos",
+      "source": "UNKNOWN",
+      "validationStatus": "UNKNOWN",
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "PARTIAL",
+      "blockers": [
+        "El intervalo de jornada existe, pero no hay contrato productivo end-to-end para una granularidad de grid independiente."
+      ],
+      "requiredForDay": false
+    },
+    {
+      "capabilityId": "GLOBAL_MEAL_BREAK",
+      "label": "Pausa global de comida",
+      "category": "Jornada y comidas",
+      "unit": "HH:mm",
+      "effectiveRevision": 2,
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "PRODUCTIVE",
+      "blockers": [],
+      "requiredForDay": false,
+      "value": {
+        "mode": "global_hard_break",
+        "window": {
+          "start": "13:00",
+          "end": "14:00"
+        }
+      },
+      "baseline": {
+        "start": "13:00",
+        "end": "14:00",
+        "mode": "global_hard_break"
+      },
+      "defaultGeneral": {
+        "start": "13:00",
+        "end": "14:00",
+        "mode": "global_hard_break"
+      },
+      "canRestoreInherited": false,
+      "overrideMetadata": {
+        "createdBy": null,
+        "createdAt": null
+      },
+      "fingerprint": "4fca043edd86299136620b68da4ec25404f9e627c91bd5859fdb99569ebe1fe2",
+      "availability": "AVAILABLE",
+      "source": "INHERITED",
+      "validationStatus": "VALID"
+    },
+    {
+      "capabilityId": "OPERATIONAL_MEAL_POLICIES",
+      "label": "Comidas por participante/ámbito",
+      "category": "Jornada y comidas",
+      "value": null,
+      "availability": "UNKNOWN",
+      "unit": "minutos",
+      "source": "UNKNOWN",
+      "validationStatus": "UNKNOWN",
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "PARTIAL",
+      "blockers": [
+        "operationalMealPolicies no tiene recorrido productivo completo ni provenance diaria demostrable."
+      ],
+      "requiredForDay": false
+    },
+    {
+      "capabilityId": "PARTICIPANTS",
+      "label": "Participantes y disponibilidad",
+      "category": "Participantes",
+      "unit": "personas / HH:mm",
+      "effectiveRevision": 2,
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "BLOCKED",
+      "blockers": [
+        "daily_tasks participa en la proyección y tiene RLS desactivada."
+      ],
+      "requiredForDay": false,
+      "value": {
+        "count": 2,
+        "availabilityRules": 2
+      },
+      "availability": "AVAILABLE",
+      "source": "MIXED",
+      "validationStatus": "VALID"
+    },
+    {
+      "capabilityId": "TASKS_DEPENDENCIES",
+      "label": "Tareas y dependencias",
+      "category": "Tareas",
+      "unit": "tareas / minutos",
+      "effectiveRevision": 2,
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "BLOCKED",
+      "blockers": [
+        "daily_tasks tiene RLS desactivada."
+      ],
+      "requiredForDay": false,
+      "value": {
+        "tasks": 2,
+        "dependencies": 0
+      },
+      "availability": "AVAILABLE",
+      "source": "MIXED",
+      "fingerprint": "755c9aea3b0bd94f348600808da364a2095e33f9011e2b4de5012cdd50baf5e5",
+      "validationStatus": "VALID"
+    },
+    {
+      "capabilityId": "SPATIAL_AVAILABILITY",
+      "label": "Espacios, zonas y disponibilidad",
+      "category": "Platós y espacios",
+      "unit": "espacios / HH:mm",
+      "effectiveRevision": 2,
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "BLOCKED",
+      "blockers": [
+        "spaces tiene RLS desactivada."
+      ],
+      "requiredForDay": false,
+      "value": {
+        "zones": 1,
+        "spaces": 2
+      },
+      "availability": "AVAILABLE",
+      "source": "DAY_SNAPSHOT",
+      "validationStatus": "VALID"
+    },
+    {
+      "capabilityId": "SPACE_CAPACITY",
+      "label": "Capacidad de espacios",
+      "category": "Platós y espacios",
+      "value": null,
+      "availability": "UNAVAILABLE",
+      "unit": "personas",
+      "source": "UNKNOWN",
+      "validationStatus": "UNSUPPORTED",
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "MISSING",
+      "blockers": [
+        "La base de datos productiva no persiste capacidad espacial."
+      ],
+      "requiredForDay": false
+    },
+    {
+      "capabilityId": "RESOURCE_CATALOG",
+      "label": "Catálogo y disponibilidad de recursos",
+      "category": "Recursos",
+      "value": null,
+      "availability": "UNKNOWN",
+      "unit": "unidades",
+      "source": "UNKNOWN",
+      "validationStatus": "UNKNOWN",
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "BLOCKED",
+      "blockers": [
+        "resource_items tiene RLS desactivada."
+      ],
+      "requiredForDay": false
+    },
+    {
+      "capabilityId": "PLAN_RESOURCE_ASSIGNMENTS",
+      "label": "Asignaciones y necesidades de recursos",
+      "category": "Recursos",
+      "unit": "unidades",
+      "effectiveRevision": 2,
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "BLOCKED",
+      "blockers": [
+        "plan_resource_items tiene RLS desactivada."
+      ],
+      "requiredForDay": false,
+      "value": {
+        "items": 3,
+        "taskRequirements": 2
+      },
+      "availability": "AVAILABLE",
+      "source": "MIXED",
+      "validationStatus": "VALID"
+    },
+    {
+      "capabilityId": "ITINERANT_UNITS",
+      "label": "Unidades itinerantes",
+      "category": "Recursos",
+      "value": null,
+      "availability": "UNKNOWN",
+      "unit": "unidades / HH:mm",
+      "source": "UNKNOWN",
+      "validationStatus": "UNKNOWN",
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "PARTIAL",
+      "blockers": [
+        "buildEngineInput no proyecta itinerantTeamAvailability desde autoridades productivas."
+      ],
+      "requiredForDay": false
+    },
+    {
+      "capabilityId": "TRANSPORT_TARGET_GROUP_SIZE",
+      "label": "Tamaño objetivo preferido de agrupación",
+      "category": "Transporte",
+      "value": null,
+      "availability": "UNKNOWN",
+      "unit": "personas",
+      "source": "UNKNOWN",
+      "validationStatus": "UNKNOWN",
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "PARTIAL",
+      "blockers": [
+        "Planner Next distingue objetivo PREFERRED y mínimo HARD; la cobertura de motores legacy no está certificada."
+      ],
+      "requiredForDay": false
+    },
+    {
+      "capabilityId": "TRANSPORT_MAXIMUM_GROUP_SIZE",
+      "label": "Máximo de agrupación",
+      "category": "Transporte",
+      "value": null,
+      "availability": "UNKNOWN",
+      "unit": "personas",
+      "source": "UNKNOWN",
+      "validationStatus": "UNKNOWN",
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "PARTIAL",
+      "blockers": [
+        "maximumGroupSize procede del límite diario, pero el soporte consumidor no es universal."
+      ],
+      "requiredForDay": false
+    },
+    {
+      "capabilityId": "TRANSPORT_VEHICLE_CAPACITY",
+      "label": "Capacidad física del vehículo",
+      "category": "Transporte",
+      "value": null,
+      "availability": "UNAVAILABLE",
+      "unit": "personas/vehículo",
+      "source": "UNKNOWN",
+      "validationStatus": "UNSUPPORTED",
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "MISSING",
+      "blockers": [
+        "No existe autoridad productiva independiente para vehicleCapacity."
+      ],
+      "requiredForDay": false
+    },
+    {
+      "capabilityId": "TRANSITIONS",
+      "label": "Transiciones de participante y recurso",
+      "category": "Reglas de planificación",
+      "unit": "minutos",
+      "effectiveRevision": 2,
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "PARTIAL",
+      "blockers": [
+        "El margen general y overrides de participante tienen recorrido productivo; la transición de recursos sigue pendiente."
+      ],
+      "requiredForDay": false,
+      "value": {
+        "participantTransitionMinutes": 0
+      },
+      "baseline": {
+        "participantTransitionMinutes": 5
+      },
+      "defaultGeneral": {
+        "participantTransitionMinutes": 5
+      },
+      "canRestoreInherited": true,
+      "overrideMetadata": {
+        "createdBy": "b385ffe1-0fb1-486f-bb64-9c9afdddd6c5",
+        "createdAt": "2026-10-24T07:31:25.793+00:00"
+      },
+      "availability": "AVAILABLE",
+      "source": "DAY_OVERRIDE",
+      "validationStatus": "VALID"
+    },
+    {
+      "capabilityId": "MAIN_FLOW",
+      "label": "Flujo principal",
+      "category": "Reglas de planificación",
+      "unit": "política",
+      "effectiveRevision": 2,
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "PARTIAL",
+      "blockers": [
+        "No hay una superficie diaria lossless para todas las reglas de flujo."
+      ],
+      "requiredForDay": false,
+      "value": {
+        "profile": "STANDALONE_ONLY"
+      },
+      "source": "DAY_SNAPSHOT",
+      "availability": "UNAVAILABLE",
+      "validationStatus": "VALID"
+    },
+    {
+      "capabilityId": "BLOCK_COUNT_POLICY",
+      "label": "Número y distribución preferida de bloques",
+      "category": "Reglas de planificación",
+      "unit": "bloques",
+      "effectiveRevision": 2,
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "PRODUCTIVE",
+      "blockers": [],
+      "requiredForDay": false,
+      "value": {
+        "profile": "STANDALONE_ONLY"
+      },
+      "source": "DAY_SNAPSHOT",
+      "availability": "UNAVAILABLE",
+      "validationStatus": "VALID"
+    },
+    {
+      "capabilityId": "SETUPS",
+      "label": "Setups",
+      "category": "Operaciones y coordinación",
+      "value": null,
+      "availability": "UNKNOWN",
+      "unit": "familias / minutos",
+      "source": "UNKNOWN",
+      "validationStatus": "UNKNOWN",
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "PARTIAL",
+      "blockers": [
+        "Existe capacidad de motor sin edición diaria productiva completa."
+      ],
+      "requiredForDay": false
+    },
+    {
+      "capabilityId": "ANCHORED_OPERATIONS",
+      "label": "Operaciones ancladas",
+      "category": "Operaciones y coordinación",
+      "value": null,
+      "availability": "UNKNOWN",
+      "unit": "operaciones",
+      "source": "UNKNOWN",
+      "validationStatus": "UNKNOWN",
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "PARTIAL",
+      "blockers": [
+        "Falta configuración productiva end-to-end."
+      ],
+      "requiredForDay": false
+    },
+    {
+      "capabilityId": "JOINT_OPERATIONS",
+      "label": "Operaciones conjuntas",
+      "category": "Operaciones y coordinación",
+      "value": null,
+      "availability": "UNKNOWN",
+      "unit": "grupos",
+      "source": "UNKNOWN",
+      "validationStatus": "UNKNOWN",
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "PARTIAL",
+      "blockers": [
+        "Falta configuración productiva end-to-end."
+      ],
+      "requiredForDay": false
+    },
+    {
+      "capabilityId": "SYNCHRONIZED_ROUNDS",
+      "label": "Rondas sincronizadas",
+      "category": "Operaciones y coordinación",
+      "value": null,
+      "availability": "UNKNOWN",
+      "unit": "rondas",
+      "source": "UNKNOWN",
+      "validationStatus": "UNKNOWN",
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "PARTIAL",
+      "blockers": [
+        "U06a permite editar y restaurar los minutos de carriles existentes. Quedan pendientes el catálogo general y la edición de políticas, miembros y carriles."
+      ],
+      "requiredForDay": false
+    },
+    {
+      "capabilityId": "TECHNICAL_CHAINS",
+      "label": "Cadenas técnicas",
+      "category": "Operaciones y coordinación",
+      "value": null,
+      "availability": "UNKNOWN",
+      "unit": "cadenas",
+      "source": "UNKNOWN",
+      "validationStatus": "UNKNOWN",
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "PARTIAL",
+      "blockers": [
+        "Falta configuración productiva end-to-end."
+      ],
+      "requiredForDay": false
+    },
+    {
+      "capabilityId": "OPTIMIZATION",
+      "label": "Optimización",
+      "category": "Reglas de planificación",
+      "unit": "niveles/pesos",
+      "effectiveRevision": 2,
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "PARTIAL",
+      "blockers": [
+        "Restore inherited ya es lossless y auditable en backend, pero falta una superficie diaria para crear/editar DAY_OVERRIDE y una comparación/confirmación de refresh General→día antes de declarar el recorrido UI end-to-end."
+      ],
+      "requiredForDay": false,
+      "value": {
+        "contractVersion": 1,
+        "source": "INHERITED",
+        "editingMode": "BASIC",
+        "mainZoneId": null,
+        "heuristics": {
+          "MAIN_ZONE_PRIORITY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "MAIN_ZONE_FINISH_EARLY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "MAIN_ZONE_KEEP_BUSY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "CONTESTANT_COMPACT": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "GROUP_BY_SPACE_TEMPLATE_MATCH": {
+            "basicLevel": 2,
+            "advancedValue": 0,
+            "effectiveWeight": 6
+          },
+          "GROUP_BY_SPACE_ACTIVE": {
+            "basicLevel": 2,
+            "advancedValue": 0,
+            "effectiveWeight": 6
+          },
+          "CONTESTANT_STAY_IN_ZONE": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "CONTESTANT_TOTAL_SPAN": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "ARRIVAL_DEPARTURE_GROUPING": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          }
+        },
+        "groupingZoneIds": [],
+        "transport": {
+          "arrivalPlanTemplateSnapshotId": null,
+          "departurePlanTemplateSnapshotId": null,
+          "arrivalGroupingTarget": 0,
+          "departureGroupingTarget": 0,
+          "arrivalMinGapMinutes": 0,
+          "departureMinGapMinutes": 0,
+          "vanCapacity": 0,
+          "groupingWeight": 0
+        },
+        "nearHardBreaksMax": 0,
+        "configurationFingerprint": "4b770099c9e87063d68e2fbef0ad2fcce91e364d9e03b2fc8967ee74ca4a422f",
+        "effectiveTransport": {
+          "arrivalMinimumGroupSize": 1,
+          "arrivalGroupingTarget": 0,
+          "departureMinimumGroupSize": 1,
+          "departureGroupingTarget": 0
+        },
+        "transportSources": {
+          "arrivalGroupingTarget": "Snapshot heredado del día",
+          "arrivalMinGapMinutes": "Snapshot heredado del día",
+          "arrivalMinimumGroupSize": "Compatibilidad histórica: mínimo HARD 1",
+          "arrivalMaximumGroupSize": "Capacidad de vehículo del snapshot del día",
+          "departureGroupingTarget": "Snapshot heredado del día",
+          "departureMinGapMinutes": "Snapshot heredado del día",
+          "departureMinimumGroupSize": "Compatibilidad histórica: mínimo HARD 1",
+          "departureMaximumGroupSize": "Capacidad de vehículo del snapshot del día"
+        }
+      },
+      "baseline": {
+        "source": "INHERITED",
+        "transport": {
+          "vanCapacity": 0,
+          "groupingWeight": 0,
+          "arrivalMinGapMinutes": 0,
+          "arrivalGroupingTarget": 0,
+          "departureMinGapMinutes": 0,
+          "departureGroupingTarget": 0,
+          "arrivalPlanTemplateSnapshotId": null,
+          "departurePlanTemplateSnapshotId": null
+        },
+        "heuristics": {
+          "CONTESTANT_COMPACT": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "MAIN_ZONE_PRIORITY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "MAIN_ZONE_KEEP_BUSY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "CONTESTANT_TOTAL_SPAN": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "GROUP_BY_SPACE_ACTIVE": {
+            "basicLevel": 2,
+            "advancedValue": 0,
+            "effectiveWeight": 6
+          },
+          "MAIN_ZONE_FINISH_EARLY": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "CONTESTANT_STAY_IN_ZONE": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "ARRIVAL_DEPARTURE_GROUPING": {
+            "basicLevel": 0,
+            "advancedValue": 0,
+            "effectiveWeight": 0
+          },
+          "GROUP_BY_SPACE_TEMPLATE_MATCH": {
+            "basicLevel": 2,
+            "advancedValue": 0,
+            "effectiveWeight": 6
+          }
+        },
+        "mainZoneId": null,
+        "editingMode": "BASIC",
+        "contractVersion": 1,
+        "groupingZoneIds": [],
+        "nearHardBreaksMax": 0,
+        "configurationFingerprint": "4b770099c9e87063d68e2fbef0ad2fcce91e364d9e03b2fc8967ee74ca4a422f"
+      },
+      "canRestoreInherited": false,
+      "overrideMetadata": {
+        "createdBy": null,
+        "createdAt": null
+      },
+      "availability": "AVAILABLE",
+      "source": "INHERITED",
+      "fingerprint": "4b770099c9e87063d68e2fbef0ad2fcce91e364d9e03b2fc8967ee74ca4a422f",
+      "validationStatus": "VALID"
+    },
+    {
+      "capabilityId": "SEARCH_POLICY_BUDGET",
+      "label": "Política y presupuesto de búsqueda",
+      "category": "Avanzado",
+      "value": null,
+      "availability": "UNKNOWN",
+      "unit": "nodos/intentos",
+      "source": "UNKNOWN",
+      "validationStatus": "UNKNOWN",
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "PARTIAL",
+      "blockers": [
+        "Falta contrato de producto general/día completo."
+      ],
+      "requiredForDay": false
+    },
+    {
+      "capabilityId": "ASSISTED_PROPOSAL_TIME_LIMIT",
+      "label": "Tiempo máximo por propuesta Assisted",
+      "category": "Avanzado",
+      "value": null,
+      "availability": "UNAVAILABLE",
+      "unit": "milisegundos",
+      "source": "UNKNOWN",
+      "validationStatus": "UNSUPPORTED",
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "MISSING",
+      "blockers": [
+        "No existe persistencia general/día ni RUN_OVERRIDE."
+      ],
+      "requiredForDay": false
+    },
+    {
+      "capabilityId": "EFFECTIVE_CONFIG_REVIEW",
+      "label": "Configuración y revisión efectiva",
+      "category": "Avanzado",
+      "value": null,
+      "availability": "UNKNOWN",
+      "unit": "revisión/fingerprint",
+      "source": "UNKNOWN",
+      "validationStatus": "UNKNOWN",
+      "requiresReplan": "UNKNOWN",
+      "implementationStatus": "PARTIAL",
+      "blockers": [
+        "La revisión efectiva sólo tiene revision cuando existe sesión Assisted."
+      ],
+      "requiredForDay": false
+    },
+    {
+      "capabilityId": "PROTECTED_STATE_LOCKS",
+      "label": "Locks y estado protegido",
+      "category": "Avanzado",
+      "unit": "decisiones",
+      "effectiveRevision": 2,
+      "requiresReplan": "NO",
+      "implementationStatus": "NOT_APPLICABLE",
+      "blockers": [
+        "Es un invariante hard, no una opción configurable."
+      ],
+      "requiredForDay": false,
+      "value": {
+        "locks": 0,
+        "protectedTasks": 0
+      },
+      "availability": "AVAILABLE",
+      "source": "PROTECTED",
+      "validationStatus": "VALID"
+    }
+  ],
+  "readiness": {
+    "status": "UNSUPPORTED",
+    "issues": [
+      {
+        "capabilityId": "UNSUPPORTED_RESOURCE_REQUIREMENT",
+        "category": "Reglas de planificación",
+        "status": "UNSUPPORTED",
+        "message": "UNSUPPORTED_RESOURCE_REQUIREMENT · tasks.1.resourceRequirements.anyOf.0: Resource alternatives cannot be converted to a fixed resource.",
+        "navigationTarget": "/plans/2?tab=tasks"
+      }
+    ]
+  },
+  "productCoverage": {
+    "PRODUCTIVE": 3,
+    "PARTIAL": 15,
+    "MISSING": 3,
+    "BLOCKED": 5,
+    "NOT_APPLICABLE": 1
+  }
+}

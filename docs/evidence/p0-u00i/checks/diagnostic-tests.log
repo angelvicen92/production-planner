@@ -1,0 +1,11 @@
+✔ API counterexample is feasible with B and infeasible with A under the original authorities (92.932182ms)
+✔ different-participant future is present but a concrete A scope can consume its sole slot (39.445118ms)
+✔ ordinary validation and fingerprint lack the nominal-selection integrity contract (62.104939ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 731.139054
