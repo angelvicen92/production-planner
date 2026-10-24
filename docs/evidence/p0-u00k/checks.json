@@ -1,0 +1,34 @@
+{
+  "status": "PASS",
+  "runtime": "Node v24.19.0",
+  "harnessTypeScript": {
+    "command": "npx --no-install tsc -p docs/evidence/p0-u00k/tsconfig.json",
+    "exitCode": 0
+  },
+  "gate": {
+    "command": "node --import tsx docs/evidence/p0-u00k/run.ts /tmp/u00k-delivery-1",
+    "independentRepeat": "/tmp/u00k-delivery-2",
+    "fullReplayEqual": true,
+    "receipts": 94,
+    "comparisonExclusions": [
+      "*Ms timing fields",
+      "stack temporary path text"
+    ]
+  },
+  "focal": {
+    "command": "node --import tsx --test --test-isolation=none --test-reporter=tap engine/planner-next/integration/nominalResourceRequirements.spec.ts engine/planner-next/integration/typedNominalResourceRequirements.spec.ts engine/planner-next/integration/nominalResourceWitness.spec.ts engine/planner-next/anonymousPipelineWitness.spec.ts engine/planner-next/exactMainAndFeederCore.spec.ts engine/planner-next/residualMatchingCertificate.spec.ts",
+    "tests": 182,
+    "pass": 182,
+    "fail": 0,
+    "exitCode": 0,
+    "tapSha256": "14deaced46637ecc97426c5f1eb2d6b98ca5d8585b4fc7e885f1384dada236ed"
+  },
+  "existingNativeU00aReplay": [
+    4,
+    9
+  ],
+  "newPersistedStage": false,
+  "changedProductionFiles": [],
+  "a2Rerun": false,
+  "baselineProtectedByHashes": true
+}
