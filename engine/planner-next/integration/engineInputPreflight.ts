@@ -1183,7 +1183,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       if (!resourceTypeIds.has(id)) missingResource("task", task.id, `${path}.resourceRequirements.byType.${id}`, id, "resource-type");
     }
     for(const issue of resolveNominalResourceRequirements(input,task).issues)
-      addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT","task",task.id,`${path}.resourceRequirements.${Object.keys(requirements?.byType??{}).length?"byType":"anyOf"}`,"Nominal physical choice requires one quantity-one group on an ordinary standalone auxiliary, with unique available daily identities.",issue);
+      addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT","task",task.id,`${path}.resourceRequirements.${Object.keys(requirements?.byType??{}).length?"byType":"anyOf"}`,"Nominal physical choice requires one quantity-one group on an ordinary standalone auxiliary or Main pipeline task, with unique available daily identities.",issue);
     requirements?.anyOf?.forEach((group, index) => {
       group.resourceItemIds.forEach((id) => {
         if (!resourceItemIds.has(String(id))) missingResource("task", task.id, `${path}.resourceRequirements.anyOf.${index}`, id, "resource-item");
@@ -1523,7 +1523,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   for(const assignment of effectiveTaskResourceAssignments.assignments){
     const projection=projectedResourcesByTaskId.get(assignment.taskId);
     if(!assignment.nominalResourceIds||projection?.status!=='REPRESENTABLE')continue;
-    const fixed=[...new Set([...(assignment.independentResourceIds??[]),...projection.lockedResourceIds])];
+    const fixed=[...projection.independentPhysicalResourceIds];
     const overlap=fixed.filter(id=>assignment.nominalResourceIds!.includes(id));
     const unsupportedMacro=fixed.some(id=>input.resourcePresenceConcentrationPolicies?.[id]&&input.resourcePresenceConcentrationPolicies[id]!=='OFF');
     if(overlap.length>1||unsupportedMacro||assignment.nominalSelectedResourceId!==undefined&&overlap.some(id=>id!==assignment.nominalSelectedResourceId))addIssue('UNSUPPORTED_RESOURCE_REQUIREMENT','task',assignment.taskId,`tasks.${assignment.taskId}.resourceRequirements.anyOf`,

@@ -1,0 +1,57 @@
+{
+  "diagnostic": {
+    "message": "RUN_RESULT_INVALID: WITNESS_SPACE_OR_PARTICIPANT_OCCUPANCY",
+    "where": "PL/pgSQL function nominal_resource_private.guard_nominal_physical_validation() line 222 at RAISE\nSQL statement \"INSERT INTO public.planning_stage_validations(plan_id,session_id,base_stage_id,draft_fingerprint,\n    config_revision_id,hard_count,required_count,preferred_count,report_json)\n  VALUES(p_plan_id,s.id,s.draft_base_stage_id,s.draft_fingerprint,s.current_config_revision_id,\n    0,0,(SELECT count(*) FROM jsonb_array_elements(coalesce(evidence->'operationContinuity','[]'::jsonb)) g WHERE g->>'policy'='PREFERRED' AND (g->>'gapMinutes')::integer>0),report) RETURNING id\"\nPL/pgSQL function public.assisted_record_proposal_clean_validation(integer,text,bigint,bigint) line 175 at SQL statement",
+    "code": "P0001"
+  },
+  "sourceManifest": {
+    "ref": "HEAD",
+    "beforeIntegrity": false,
+    "head": "4eca413065d3832bce8ccbbf005b8829beaed5e7",
+    "node": "24.19.0",
+    "patchSha256": "e60b53ce3a2a9147e833f32fd0af388115095cb22f37eb0ef9f964dff10dd124",
+    "originalHarnessSha256": "f797d62083a6988d795540b25a5a8435b169baf8e789c84caeb55d2be286430e",
+    "journeySha256": "cd189f5c7ea11c6bcfb2c86814e8a9a46af3ad233c22c3112e20b6c3e3cc6739",
+    "lockfileSha256": "cbe75a531336356a5d3baa75202818f1a7060b72f10d205449b8036295ffeaaa",
+    "sourceHashes": {
+      "engine/planner-next/exactMainAndFeederCore.ts": "fece8b0d483eb306fcdd7f6aa28896614159073db186e47e9fc4c3c77f184a74",
+      "engine/planner-next/anonymousPipelineWitness.ts": "a0e280d4f8328564dc468acf39c54d17dd5b14f8414886e8977a9032567a3d8d",
+      "engine/planner-next/integration/projectedTaskResources.ts": "a67077bdf5b5be3c1c32a4b76556aeb6f9de570d1732e6430b1a51b6fc1c5463",
+      "server/storage.ts": "4542c13189926a7dbce71b049517a3f155c28060b48385a941c50e76fbbfa9c0",
+      "engine/types.ts": "0262f399677baa5216aa479530d861d298637d4f50c20671564c012b10b994dc",
+      "engine/planner-next/contracts.ts": "2b6786d9949d161056fa731474de84e65f3df4bd2ef13b15fdb844a6a6e22c1a",
+      "engine/v3/resourceDiagnostics.ts": "e00627d9e5048f8be6ab8758b4aa6badbfba1c21315383cf8525547a28a34178",
+      "supabase/migrations/112_main_nominal_resource_integrity.sql": "ee7e7ac16ef25476328b6b1c248c99a21f7fb3a7630004332545e232e41aca6e",
+      "engine/planner-next/nominalResourceChoice.ts": "5d13513f348346cb6d1be645e5a52c599590fae470146395768ce94c8f47df22",
+      "engine/planner-next/integration/nominalResourceRequirements.ts": "3a7fa1bccc7ebb6c3db97a83c5c9865ddf50b762f8acf2cb36cfbe58d5dc891b",
+      "engine/planner-next/assistedPlanning.ts": "6dfd3708ed47e0ed0cbe2903c1b550cb5c70e775e079a7757d40e0ac97fb70eb",
+      "engine/planner-next/exactItinerantPlan.ts": "514e58d0b813cbee8bad36e4ab1ac7d5f1ceb6bbfd61d3a2a1d49bdb3cb92d08",
+      "engine/planner-next/validate.ts": "3bda564a83b011fa2a71985f8893942327b84d26c65c847601b45bc320ebd948",
+      "engine/planner-next/fingerprint.ts": "36c3b9fa1240a2162f0a211171a26131c0e65bf788f0b71d5d4b10bdc805911a",
+      "engine/concreteTaskResourceRequirements.ts": "042273c03937da0d88eae02098460d9dcd59f3d2abb10663c01f61eb2c7c918f",
+      "engine/planner-next/integration/effectiveTaskResourceAssignments.ts": "794011911e1ec0104eb863cd9c14385962706f1ba27316bba2f5b87c6c4c703a",
+      "engine/planner-next/integration/engineInputPreflight.ts": "a486c6b1c57f405e94c510e4050e2c7de228f27a165606ac97970069797448d0",
+      "engine/planner-next/integration/engineInputAdapter.ts": "62e3292b77d5d4f77eba5b89f89a6b13ecac25209525e88c77b90cd58a8c158c",
+      "server/itinerantComposition.ts": "3a64ebf87fa04ac760723abbd8c3830a1465d769efcce4440321236f7e32183b",
+      "server/assistedProposalService.ts": "d05bd723c05069f331466b8bcf0d0a8a6a6020e9482f7d3bd520cefb982fc437",
+      "server/assistedPlanningService.ts": "ac9eae974c1d4ba2cc9cd61f9b72e9a67e3aaaca975c55490680c7639f0684cc",
+      "engine/planner-next/placement.ts": "c2ac8daefdbd23e5537a580fce4187ae31680bfbcdd1d464ba9f80720bce53dc",
+      "supabase/migrations/110_nominal_resource_integrity.sql": "5700017caeff09473fea1ae69891850a1c9d7f2deefc97b89a81a1b734c2d528"
+    },
+    "remoteWrites": 0
+  },
+  "packet": [
+    {
+      "id": "task:6",
+      "spaceId": "space:3",
+      "start": 540,
+      "end": 550
+    },
+    {
+      "id": "task:9",
+      "spaceId": "space:3",
+      "start": 540,
+      "end": 550
+    }
+  ]
+}

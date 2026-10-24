@@ -1,4 +1,4 @@
-import {nominalResourceVariants,possibleTaskResourceIds} from "./nominalResourceChoice";
+import {materializeNominalResourceChoice,nominalResourceVariants,possibleTaskResourceIds} from "./nominalResourceChoice";
 import { continuityPenalty } from "./operationContinuity";
 import type { MainFlowPreferenceResultEvidence } from "../../shared/mainFlowPreference";
 import type { PlannerNextProblem, ScheduledItinerantUnitMeal, ScheduledOperationalMeal, ScheduledParticipantMeal, ScheduledResourceMeal, ScheduledRoundPreparation, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
@@ -2733,9 +2733,14 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
     // materialization into this continuation. Rebuilding it here would repeat the
     // same bundle graph and arrival search before standalone can begin.
     // An empty core has no Main pipeline geometry, even though 0 === 0.
+    const physicalCoreById=new Map(candidate.tasks.filter(task=>task.nominalResourceChoice).map(task=>[task.id,task]));
+    const pipelineProblem=physicalCoreById.size?{...problem,tasks:problem.tasks.map(task=>{
+      const selected=physicalCoreById.get(task.id)?.nominalResourceChoice?.selectedResourceId;
+      return selected?materializeNominalResourceChoice(task,selected)??task:task;
+    })}:problem;
     const pipeline=orderedMains.length>0&&!conditioned&&!candidate.reusedFutureStructuralWitness
       &&orderedMains.length===problem.tasks.filter(task=>task.kind==="main").length
-      ?materializePipelineBundleMatching(problem,{pattern:orderedMains.map(task=>task.blockKey??""),slots:orderedMains.map(task=>task.start)},options.fixedPlacements,
+      ?materializePipelineBundleMatching(pipelineProblem,{pattern:orderedMains.map(task=>task.blockKey??""),slots:orderedMains.map(task=>task.start)},options.fixedPlacements,
         new Set(),undefined,()=>ledger.consume("CORE"),operation=>futureTechnicalChains.intrusion(operation))
       :null;
     const pipelinePreservesFixed=pipeline!==null&&[...fixedById].every(([id,fixed])=>{
