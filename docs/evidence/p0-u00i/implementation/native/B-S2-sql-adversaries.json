@@ -1,0 +1,86 @@
+[
+  {
+    "guard": "omit",
+    "error": "RUN_RESULT_INVALID",
+    "hashesRecomputed": true,
+    "rolledBack": true
+  },
+  {
+    "guard": "double",
+    "error": "RUN_RESULT_INVALID",
+    "hashesRecomputed": true,
+    "rolledBack": true
+  },
+  {
+    "guard": "invented",
+    "error": "RUN_RESULT_INVALID",
+    "hashesRecomputed": true,
+    "rolledBack": true
+  },
+  {
+    "guard": "missing-choice",
+    "error": "RUN_RESULT_INVALID",
+    "hashesRecomputed": true,
+    "rolledBack": true
+  },
+  {
+    "guard": "future-omission",
+    "error": "RUN_RESULT_INVALID",
+    "hashesRecomputed": true,
+    "rolledBack": true
+  },
+  {
+    "guard": "future-collision",
+    "error": "RUN_RESULT_INVALID",
+    "hashesRecomputed": true,
+    "rolledBack": true
+  },
+  {
+    "guard": "draft",
+    "error": "STALE_DRAFT",
+    "hashesRecomputed": true,
+    "rolledBack": true
+  },
+  {
+    "guard": "base",
+    "error": "STALE_BASE_STAGE",
+    "hashesRecomputed": true,
+    "rolledBack": true
+  },
+  {
+    "guard": "revision",
+    "error": "STALE_CONFIG_REVISION",
+    "hashesRecomputed": true,
+    "rolledBack": true
+  },
+  {
+    "guard": "permission",
+    "error": "permission denied for function assisted_record_proposal_clean_validation",
+    "hashesRecomputed": true,
+    "rolledBack": true
+  },
+  {
+    "guard": "independent-byItem",
+    "error": "RUN_RESULT_INVALID",
+    "hashesRecomputed": true,
+    "rolledBack": true
+  },
+  {
+    "guard": "future-transition",
+    "error": "RUN_RESULT_INVALID",
+    "hashesRecomputed": true,
+    "rolledBack": true
+  },
+  {
+    "guard": "outside-scope",
+    "error": "RUN_RESULT_INVALID",
+    "hashesRecomputed": true,
+    "rolledBack": true
+  },
+  {
+    "guard": "protected",
+    "error": "RUN_RESULT_INVALID",
+    "hashesRecomputed": true,
+    "rolledBack": true
+  }
+]

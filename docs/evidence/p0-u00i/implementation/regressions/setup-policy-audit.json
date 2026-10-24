@@ -1,0 +1,624 @@
+{
+  "status": "PASS",
+  "profiles": [
+    {
+      "label": "setup",
+      "policy": {
+        "spaceId": 1,
+        "orderConstraint": "UNSPECIFIED",
+        "continuityPolicy": "PREFERRED",
+        "groupingPolicy": "REQUIRED",
+        "oneBlockPerFamily": true,
+        "reentry": "FORBIDDEN",
+        "preparationMinutesBetweenFamilies": 10,
+        "contractVersion": 2,
+        "families": [
+          "341161908",
+          "667393225"
+        ]
+      },
+      "obligations": 4,
+      "preparations": [
+        {
+          "id": "setup-preparation:space:1:setup-family:1:667393225:1",
+          "end": 570,
+          "start": 560,
+          "spaceId": "space:1",
+          "duration": 10,
+          "entryIndex": 1,
+          "setupFamilyId": "setup-family:1:667393225",
+          "kind": "setup-preparation"
+        }
+      ],
+      "revisionFingerprint": "9a9cae303fe6dd854016ba3749e57bc7282ab87864828adb2314663f1d7acaf6",
+      "stageFingerprint": "c8e13e6eb168c8c64fe61e1df4b79d8c1d47962f66f6b12c0fe667fdec804239",
+      "validation": {
+        "hardValid": true,
+        "dependencyViolationCount": 0,
+        "overlapViolationCount": 0,
+        "transitionViolationCount": 0,
+        "availabilityViolationCount": 0,
+        "taskAvailabilityViolationCount": 0,
+        "blockViolationCount": 0,
+        "resourceAvailabilityViolationCount": 0,
+        "resourceOverlapViolationCount": 0,
+        "resourceTransitionViolationCount": 0,
+        "secondaryContinuityViolationCount": 0,
+        "setupViolationCount": 0,
+        "setupPreparationViolationCount": 0,
+        "jointGroupViolationCount": 0,
+        "technicalOperationViolationCount": 0,
+        "technicalChainViolationCount": 0,
+        "spaceMealViolationCount": 0,
+        "mainFlowMealViolationCount": 0,
+        "anchoredAccompanimentViolationCount": 0,
+        "participantMealViolationCount": 0,
+        "resourceMealViolationCount": 0,
+        "itinerantUnitMealViolationCount": 0,
+        "reasonCodes": [],
+        "unstructuredReasonCodes": [],
+        "violations": []
+      }
+    },
+    {
+      "label": "explicit",
+      "policy": {
+        "spaceId": 1,
+        "orderConstraint": "EXPLICIT",
+        "continuityPolicy": "REQUIRED",
+        "groupingPolicy": "PREFERRED",
+        "oneBlockPerFamily": false,
+        "reentry": "ALLOWED",
+        "preparationMinutesBetweenFamilies": 5,
+        "contractVersion": 2,
+        "families": [
+          "341161908",
+          "667393225",
+          "504971974"
+        ],
+        "familyOrder": [
+          "504971974",
+          "341161908",
+          "667393225"
+        ]
+      },
+      "obligations": 6,
+      "preparations": [
+        {
+          "id": "setup-preparation:space:1:setup-family:1:341161908:1",
+          "end": 560,
+          "start": 555,
+          "spaceId": "space:1",
+          "duration": 5,
+          "entryIndex": 1,
+          "setupFamilyId": "setup-family:1:341161908",
+          "kind": "setup-preparation"
+        },
+        {
+          "id": "setup-preparation:space:1:setup-family:1:667393225:1",
+          "end": 595,
+          "start": 590,
+          "spaceId": "space:1",
+          "duration": 5,
+          "entryIndex": 1,
+          "setupFamilyId": "setup-family:1:667393225",
+          "kind": "setup-preparation"
+        }
+      ],
+      "revisionFingerprint": "7947904245dcaca94154437c765a9b02bf0746c4c6bbc5c4f7ecdf95b3fe7de7",
+      "stageFingerprint": "9b04249b903e53f2a67602771071ad17c364bd2748ec1d4dc527d3c590ea1112",
+      "validation": {
+        "hardValid": true,
+        "dependencyViolationCount": 0,
+        "overlapViolationCount": 0,
+        "transitionViolationCount": 0,
+        "availabilityViolationCount": 0,
+        "taskAvailabilityViolationCount": 0,
+        "blockViolationCount": 0,
+        "resourceAvailabilityViolationCount": 0,
+        "resourceOverlapViolationCount": 0,
+        "resourceTransitionViolationCount": 0,
+        "secondaryContinuityViolationCount": 0,
+        "setupViolationCount": 0,
+        "setupPreparationViolationCount": 0,
+        "jointGroupViolationCount": 0,
+        "technicalOperationViolationCount": 0,
+        "technicalChainViolationCount": 0,
+        "spaceMealViolationCount": 0,
+        "mainFlowMealViolationCount": 0,
+        "anchoredAccompanimentViolationCount": 0,
+        "participantMealViolationCount": 0,
+        "resourceMealViolationCount": 0,
+        "itinerantUnitMealViolationCount": 0,
+        "reasonCodes": [],
+        "unstructuredReasonCodes": [],
+        "violations": []
+      }
+    }
+  ],
+  "continuations": [
+    {
+      "label": "setup",
+      "complete": true,
+      "accepted": [
+        {
+          "id": "task:1",
+          "duration": 10,
+          "spaceId": "space:1",
+          "dependencies": [],
+          "participantMarginBeforeMinutes": 0,
+          "participantMarginAfterMinutes": 0,
+          "kind": "auxiliary",
+          "participantId": "participant:1",
+          "setupFamilyId": "setup-family:1:341161908",
+          "start": 540,
+          "end": 550
+        },
+        {
+          "id": "task:3",
+          "duration": 10,
+          "spaceId": "space:1",
+          "dependencies": [],
+          "participantMarginBeforeMinutes": 0,
+          "participantMarginAfterMinutes": 0,
+          "kind": "auxiliary",
+          "participantId": "participant:2",
+          "setupFamilyId": "setup-family:1:341161908",
+          "start": 550,
+          "end": 560
+        }
+      ],
+      "proposal": [
+        {
+          "id": "task:2",
+          "duration": 10,
+          "spaceId": "space:1",
+          "dependencies": [],
+          "participantMarginBeforeMinutes": 0,
+          "participantMarginAfterMinutes": 0,
+          "kind": "auxiliary",
+          "participantId": "participant:1",
+          "setupFamilyId": "setup-family:1:667393225",
+          "start": 570,
+          "end": 580
+        },
+        {
+          "id": "task:4",
+          "duration": 10,
+          "spaceId": "space:1",
+          "dependencies": [],
+          "participantMarginBeforeMinutes": 0,
+          "participantMarginAfterMinutes": 0,
+          "kind": "auxiliary",
+          "participantId": "participant:2",
+          "setupFamilyId": "setup-family:1:667393225",
+          "start": 580,
+          "end": 590
+        }
+      ],
+      "preparations": [
+        {
+          "id": "setup-preparation:space:1:setup-family:1:667393225:1",
+          "kind": "setup-preparation",
+          "spaceId": "space:1",
+          "setupFamilyId": "setup-family:1:667393225",
+          "entryIndex": 1,
+          "duration": 10,
+          "start": 560,
+          "end": 570
+        }
+      ],
+      "protectedPreserved": true
+    },
+    {
+      "label": "explicit",
+      "complete": true,
+      "accepted": [
+        {
+          "id": "task:5",
+          "duration": 5,
+          "spaceId": "space:1",
+          "dependencies": [],
+          "requiredResourceIds": [
+            "plan-resource:1"
+          ],
+          "participantMarginBeforeMinutes": 0,
+          "participantMarginAfterMinutes": 0,
+          "kind": "auxiliary",
+          "participantId": "participant:3",
+          "setupFamilyId": "setup-family:1:504971974",
+          "start": 545,
+          "end": 550
+        },
+        {
+          "id": "task:8",
+          "duration": 5,
+          "spaceId": "space:1",
+          "dependencies": [],
+          "requiredResourceIds": [
+            "plan-resource:1"
+          ],
+          "participantMarginBeforeMinutes": 0,
+          "participantMarginAfterMinutes": 0,
+          "kind": "auxiliary",
+          "participantId": "participant:4",
+          "setupFamilyId": "setup-family:1:504971974",
+          "start": 550,
+          "end": 555
+        }
+      ],
+      "proposal": [
+        {
+          "id": "task:6",
+          "duration": 15,
+          "spaceId": "space:1",
+          "dependencies": [
+            "task:5"
+          ],
+          "requiredResourceIds": [
+            "plan-resource:1"
+          ],
+          "participantMarginBeforeMinutes": 0,
+          "participantMarginAfterMinutes": 0,
+          "kind": "auxiliary",
+          "participantId": "participant:3",
+          "setupFamilyId": "setup-family:1:341161908",
+          "start": 560,
+          "end": 575
+        },
+        {
+          "id": "task:9",
+          "duration": 15,
+          "spaceId": "space:1",
+          "dependencies": [
+            "task:8"
+          ],
+          "requiredResourceIds": [
+            "plan-resource:1"
+          ],
+          "participantMarginBeforeMinutes": 0,
+          "participantMarginAfterMinutes": 0,
+          "kind": "auxiliary",
+          "participantId": "participant:4",
+          "setupFamilyId": "setup-family:1:341161908",
+          "start": 575,
+          "end": 590
+        },
+        {
+          "id": "task:10",
+          "duration": 10,
+          "spaceId": "space:1",
+          "dependencies": [
+            "task:9"
+          ],
+          "requiredResourceIds": [
+            "plan-resource:1"
+          ],
+          "participantMarginBeforeMinutes": 0,
+          "participantMarginAfterMinutes": 0,
+          "kind": "auxiliary",
+          "participantId": "participant:4",
+          "setupFamilyId": "setup-family:1:667393225",
+          "start": 595,
+          "end": 605
+        },
+        {
+          "id": "task:7",
+          "duration": 10,
+          "spaceId": "space:1",
+          "dependencies": [
+            "task:6"
+          ],
+          "requiredResourceIds": [
+            "plan-resource:1"
+          ],
+          "participantMarginBeforeMinutes": 0,
+          "participantMarginAfterMinutes": 0,
+          "kind": "auxiliary",
+          "participantId": "participant:3",
+          "setupFamilyId": "setup-family:1:667393225",
+          "start": 605,
+          "end": 615
+        }
+      ],
+      "preparations": [
+        {
+          "id": "setup-preparation:space:1:setup-family:1:341161908:1",
+          "kind": "setup-preparation",
+          "spaceId": "space:1",
+          "setupFamilyId": "setup-family:1:341161908",
+          "entryIndex": 1,
+          "duration": 5,
+          "start": 555,
+          "end": 560
+        },
+        {
+          "id": "setup-preparation:space:1:setup-family:1:667393225:1",
+          "kind": "setup-preparation",
+          "spaceId": "space:1",
+          "setupFamilyId": "setup-family:1:667393225",
+          "entryIndex": 1,
+          "duration": 5,
+          "start": 590,
+          "end": 595
+        }
+      ],
+      "protectedPreserved": true
+    }
+  ],
+  "preferredGap": {
+    "before": [
+      {
+        "spaceId": "space:1",
+        "continuityPolicy": "PREFERRED",
+        "groupingPolicy": "REQUIRED",
+        "gapMinutes": 0,
+        "changes": 1,
+        "reentries": 0,
+        "continuityPenalty": 0,
+        "setupPenalty": 0,
+        "penalty": 0
+      }
+    ],
+    "after": [
+      {
+        "spaceId": "space:1",
+        "continuityPolicy": "PREFERRED",
+        "groupingPolicy": "REQUIRED",
+        "gapMinutes": 5,
+        "changes": 1,
+        "reentries": 0,
+        "continuityPenalty": 5,
+        "setupPenalty": 0,
+        "penalty": 5
+      }
+    ],
+    "alternative": [
+      {
+        "id": "task:1",
+        "duration": 10,
+        "spaceId": "space:1",
+        "dependencies": [],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:1",
+        "setupFamilyId": "setup-family:1:341161908",
+        "start": 540,
+        "end": 550
+      },
+      {
+        "id": "task:3",
+        "duration": 10,
+        "spaceId": "space:1",
+        "dependencies": [],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:2",
+        "setupFamilyId": "setup-family:1:341161908",
+        "start": 555,
+        "end": 565
+      },
+      {
+        "id": "task:2",
+        "duration": 10,
+        "spaceId": "space:1",
+        "dependencies": [],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:1",
+        "setupFamilyId": "setup-family:1:667393225",
+        "start": 575,
+        "end": 585
+      },
+      {
+        "id": "task:4",
+        "duration": 10,
+        "spaceId": "space:1",
+        "dependencies": [],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:2",
+        "setupFamilyId": "setup-family:1:667393225",
+        "start": 585,
+        "end": 595
+      }
+    ],
+    "preparations": [
+      {
+        "id": "setup-preparation:space:1:setup-family:1:667393225:1",
+        "kind": "setup-preparation",
+        "spaceId": "space:1",
+        "setupFamilyId": "setup-family:1:667393225",
+        "entryIndex": 1,
+        "duration": 10,
+        "start": 565,
+        "end": 575
+      }
+    ]
+  },
+  "preferredReentry": {
+    "before": [
+      {
+        "spaceId": "space:1",
+        "continuityPolicy": "REQUIRED",
+        "groupingPolicy": "PREFERRED",
+        "gapMinutes": 0,
+        "changes": 2,
+        "reentries": 0,
+        "continuityPenalty": 0,
+        "setupPenalty": 2,
+        "penalty": 2
+      }
+    ],
+    "after": [
+      {
+        "spaceId": "space:1",
+        "continuityPolicy": "REQUIRED",
+        "groupingPolicy": "PREFERRED",
+        "gapMinutes": 0,
+        "changes": 4,
+        "reentries": 2,
+        "continuityPenalty": 0,
+        "setupPenalty": 6,
+        "penalty": 6
+      }
+    ],
+    "alternative": [
+      {
+        "id": "task:5",
+        "duration": 5,
+        "spaceId": "space:1",
+        "dependencies": [],
+        "requiredResourceIds": [
+          "plan-resource:1"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:3",
+        "setupFamilyId": "setup-family:1:504971974",
+        "start": 550,
+        "end": 555
+      },
+      {
+        "id": "task:6",
+        "duration": 15,
+        "spaceId": "space:1",
+        "dependencies": [
+          "task:5"
+        ],
+        "requiredResourceIds": [
+          "plan-resource:1"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:3",
+        "setupFamilyId": "setup-family:1:341161908",
+        "start": 560,
+        "end": 575
+      },
+      {
+        "id": "task:8",
+        "duration": 5,
+        "spaceId": "space:1",
+        "dependencies": [],
+        "requiredResourceIds": [
+          "plan-resource:1"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:4",
+        "setupFamilyId": "setup-family:1:504971974",
+        "start": 580,
+        "end": 585
+      },
+      {
+        "id": "task:9",
+        "duration": 15,
+        "spaceId": "space:1",
+        "dependencies": [
+          "task:8"
+        ],
+        "requiredResourceIds": [
+          "plan-resource:1"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:4",
+        "setupFamilyId": "setup-family:1:341161908",
+        "start": 590,
+        "end": 605
+      },
+      {
+        "id": "task:7",
+        "duration": 10,
+        "spaceId": "space:1",
+        "dependencies": [
+          "task:6"
+        ],
+        "requiredResourceIds": [
+          "plan-resource:1"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:3",
+        "setupFamilyId": "setup-family:1:667393225",
+        "start": 610,
+        "end": 620
+      },
+      {
+        "id": "task:10",
+        "duration": 10,
+        "spaceId": "space:1",
+        "dependencies": [
+          "task:9"
+        ],
+        "requiredResourceIds": [
+          "plan-resource:1"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:4",
+        "setupFamilyId": "setup-family:1:667393225",
+        "start": 620,
+        "end": 630
+      }
+    ],
+    "preparations": [
+      {
+        "id": "setup-preparation:space:1:setup-family:1:341161908:1",
+        "kind": "setup-preparation",
+        "spaceId": "space:1",
+        "setupFamilyId": "setup-family:1:341161908",
+        "entryIndex": 1,
+        "duration": 5,
+        "start": 555,
+        "end": 560
+      },
+      {
+        "id": "setup-preparation:space:1:setup-family:1:504971974:2",
+        "kind": "setup-preparation",
+        "spaceId": "space:1",
+        "setupFamilyId": "setup-family:1:504971974",
+        "entryIndex": 2,
+        "duration": 5,
+        "start": 575,
+        "end": 580
+      },
+      {
+        "id": "setup-preparation:space:1:setup-family:1:341161908:2",
+        "kind": "setup-preparation",
+        "spaceId": "space:1",
+        "setupFamilyId": "setup-family:1:341161908",
+        "entryIndex": 2,
+        "duration": 5,
+        "start": 585,
+        "end": 590
+      },
+      {
+        "id": "setup-preparation:space:1:setup-family:1:667393225:1",
+        "kind": "setup-preparation",
+        "spaceId": "space:1",
+        "setupFamilyId": "setup-family:1:667393225",
+        "entryIndex": 1,
+        "duration": 5,
+        "start": 605,
+        "end": 610
+      }
+    ]
+  },
+  "hardChecks": {
+    "sameGapRequiredRejected": true,
+    "sameReentryRequiredRejected": true
+  },
+  "note": "Comparative probes retain the genuine UI-created authorities; only placement alternatives, accepted-prefix projections and the stated policy counterfactual change."
+}

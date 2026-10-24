@@ -1,6 +1,6 @@
 {
   "extends":"../../tsconfig.json",
-  "include":["runU00iFunctional.ts","u00iFunctionalJourney.ts","replayU00iFrozen.ts"],
+  "include":["runU00iFunctional.ts","u00iFunctionalJourney.ts","replayU00iFrozen.ts","replayU00iSetup.ts","../../engine/planner-next/integration/nominalResourceRequirements.spec.ts","../../engine/planner-next/integration/nominalResourceWitness.spec.ts"],
   "exclude":[],
   "compilerOptions":{"incremental":false}
 }

@@ -41,7 +41,7 @@ test('ordinary validator rejects omitted, invented, duplicate-choice and altered
     (t:any)=>({...t,nominalResourceChoice:undefined}),
   ])assert.equal(validatePlan(p,tasks.map(task=>task.id==='task:1'?edit(task):task)).hardValid,false);
   const altered=tasks.map(task=>task.id==='task:1'?{...task,requiredResourceIds:[]}:task);
-  assert.notEqual(fingerprint(tasks),fingerprint(altered));
+  assert.notEqual(fingerprint([...tasks]),fingerprint(altered));
 });
 test('resource choice is a backtracking decision; unavailable alternative does not become a fixed obligation',()=>{
   const input=captured();input.tasks=input.tasks.filter(task=>task.id===1);
@@ -50,6 +50,7 @@ test('resource choice is a backtracking decision; unavailable alternative does n
 });
 test('ordinary backtracking replaces a previously materialized A by B after a collective dead end',()=>{
   const p=structuredClone(adapted()),flex=p.tasks[0];
+  if(flex.kind!=='auxiliary')throw Error('expected ordinary auxiliary fixture');
   p.resources=p.resources.map(resource=>({...resource,availability:[{start:540,end:580}],transitionMinutes:0}));
   p.resourceTransitionMinutes=0;
   p.participants=p.participants.map(person=>({...person,availability:[p.day]}));

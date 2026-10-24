@@ -1,0 +1,42 @@
+{
+  "sourceCommit": "a310e543052df63a5d5b40223c9b658be5aa7469",
+  "cases": [
+    {
+      "case": "regression-main",
+      "exitCode": 0
+    },
+    {
+      "case": "regression-standalone",
+      "exitCode": 0
+    },
+    {
+      "case": "regression-itinerant",
+      "exitCode": 0
+    },
+    {
+      "case": "regression-setup",
+      "exitCode": 0
+    },
+    {
+      "case": "regression-transport",
+      "exitCode": 0
+    },
+    {
+      "case": "regression-meals",
+      "exitCode": 0
+    },
+    {
+      "case": "regression-resources",
+      "exitCode": 0
+    },
+    {
+      "case": "nominal-before-110",
+      "exitCode": 0
+    },
+    {
+      "case": "nominal-candidate",
+      "exitCode": 0
+    }
+  ],
+  "remoteWrites": 0
+}
