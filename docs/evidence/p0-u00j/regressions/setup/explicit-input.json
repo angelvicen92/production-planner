@@ -1,0 +1,436 @@
+{
+  "planId": 2,
+  "taskTemplateSnapshotContractVersion": 2,
+  "taskTemplateSnapshotCount": 5,
+  "taskTemplateSnapshotSources": {
+    "inherited": 5,
+    "legacy_backfill": 0,
+    "ad_hoc_from_default": 0
+  },
+  "taskTemplateSnapshotFingerprint": "364762b2bb41bfeb69dcc6c52325035ac6123e16eae74f6412d6b20a3b8159a4",
+  "planZoneSettings": [
+    {
+      "id": 2,
+      "zoneId": 1,
+      "availabilityStart": null,
+      "availabilityEnd": null,
+      "source": "default",
+      "name": "Montajes nuevos",
+      "mealStartPreferred": null,
+      "mealEndPreferred": null,
+      "groupingLevel": 0,
+      "groupingMinChain": 4,
+      "maxTemplateChanges": 4,
+      "spaceMealBreakMinutes": null
+    }
+  ],
+  "planSpaceSettings": [
+    {
+      "id": 2,
+      "spaceId": 1,
+      "zoneId": 1,
+      "availabilityStart": null,
+      "availabilityEnd": null,
+      "source": "default",
+      "name": "Espacio compartido",
+      "parentSpaceId": null,
+      "priorityLevel": 1,
+      "groupingLevel": 0,
+      "groupingMinChain": 4,
+      "groupingApplyToDescendants": false
+    }
+  ],
+  "workDay": {
+    "start": "09:00",
+    "end": "18:00"
+  },
+  "defaultParticipantTransitionMinutes": 5,
+  "mealMode": "global_hard_break",
+  "meal": {
+    "start": "13:00",
+    "end": "14:00"
+  },
+  "globalHardBreaks": [],
+  "protectedBreaks": [],
+  "mealTaskTemplateId": null,
+  "camerasAvailable": 0,
+  "taskTemplateNameById": {
+    "1": "Montaje A",
+    "2": "Montaje B",
+    "3": "Segunda jornada Montaje C",
+    "4": "Segunda jornada Montaje A",
+    "5": "Segunda jornada Montaje B"
+  },
+  "zoneResourceAssignments": {},
+  "spaceResourceAssignments": {
+    "1": [
+      1
+    ]
+  },
+  "spaceParentById": {
+    "1": null
+  },
+  "spaceNameById": {
+    "1": "Espacio compartido"
+  },
+  "spaceCapacityById": {},
+  "spaceIsExclusiveById": {
+    "1": true
+  },
+  "spacePriorityById": {
+    "1": 1
+  },
+  "zoneIdBySpaceId": {
+    "1": 1
+  },
+  "spaceIdsByZoneId": {
+    "1": [
+      1
+    ]
+  },
+  "groupingBySpaceId": {},
+  "minimizeChangesBySpace": {},
+  "zoneResourceTypeRequirements": {},
+  "spaceResourceTypeRequirements": {},
+  "planResourceItems": [
+    {
+      "id": 1,
+      "resourceItemId": 1,
+      "typeId": 1,
+      "typeCode": "setup_equipment",
+      "typeName": "Material de montaje",
+      "name": "Equipo de iluminación",
+      "isAvailable": true,
+      "availabilityStart": null,
+      "availabilityEnd": null
+    }
+  ],
+  "coachResourceIds": [],
+  "vocalCoachPlanResourceItemIdByContestantId": {},
+  "resourceItemComponents": {},
+  "resourceBundles": [],
+  "resourceBundleComponents": [],
+  "resourceBundleSpaceAffinities": [],
+  "resourceBundleLoadWarnings": [],
+  "contestantAvailabilityById": {
+    "3": {
+      "start": "09:00",
+      "end": "11:00"
+    },
+    "4": {
+      "start": "09:10",
+      "end": "12:00"
+    }
+  },
+  "optimizerSnapshotContractVersion": 1,
+  "optimizerSnapshotSource": "INHERITED",
+  "optimizerSnapshotEditingMode": "BASIC",
+  "optimizerSnapshotFingerprint": "4b770099c9e87063d68e2fbef0ad2fcce91e364d9e03b2fc8967ee74ca4a422f",
+  "optimizerLegacyAdapterVersion": 1,
+  "optimizerCompatibilityWarnings": [],
+  "optimizerIgnoredActiveHeuristics": [],
+  "optimizerMainZoneId": null,
+  "optimizerPrioritizeMainZone": false,
+  "optimizerGroupBySpaceAndTemplate": false,
+  "groupingZoneIds": [],
+  "maxTemplateChangesByZoneId": {},
+  "spaceMealBreakMinutesByZoneId": {},
+  "optimizerMainZonePriorityLevel": 0,
+  "optimizerGroupingLevel": 0,
+  "optimizerMainZoneOptFinishEarly": false,
+  "optimizerMainZoneOptKeepBusy": false,
+  "optimizerContestantCompactLevel": 0,
+  "optimizerContestantStayInZoneLevel": 0,
+  "optimizerNearHardBreaksMax": 0,
+  "optimizerWeights": {
+    "mainZoneFinishEarly": 0,
+    "mainZoneKeepBusy": 0,
+    "contestantCompact": 0,
+    "groupBySpaceTemplateMatch": 0,
+    "groupBySpaceActive": 0,
+    "contestantStayInZone": 0,
+    "contestantTotalSpan": 0
+  },
+  "tasks": [
+    {
+      "id": 5,
+      "planId": 2,
+      "templateId": 3,
+      "templateName": "Segunda jornada Montaje C",
+      "resourceRequirements": null,
+      "zoneId": 1,
+      "spaceId": 1,
+      "_invalidSpaceId": null,
+      "_unplannedHint": null,
+      "contestantId": 3,
+      "contestantName": "Carla segunda",
+      "status": "pending",
+      "itinerantTeamId": null,
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "participantMarginBeforeMinutes": 0,
+      "participantMarginAfterMinutes": 0,
+      "hasDependency": false,
+      "dependsOnTemplateIds": [],
+      "dependsOnTaskIds": [],
+      "dependsOnTemplateId": null,
+      "dependsOnTaskId": null,
+      "durationOverrideMin": 5,
+      "camerasOverride": 0,
+      "startPlanned": null,
+      "endPlanned": null,
+      "lockedStart": null,
+      "lockedEnd": null,
+      "lockType": null,
+      "startReal": null,
+      "endReal": null,
+      "assignedResourceIds": null,
+      "plannerNextKind": "auxiliary",
+      "operationalRole": "productive_task",
+      "setupFamilyId": "113074932"
+    },
+    {
+      "id": 6,
+      "planId": 2,
+      "templateId": 4,
+      "templateName": "Segunda jornada Montaje A",
+      "resourceRequirements": null,
+      "zoneId": 1,
+      "spaceId": 1,
+      "_invalidSpaceId": null,
+      "_unplannedHint": null,
+      "contestantId": 3,
+      "contestantName": "Carla segunda",
+      "status": "pending",
+      "itinerantTeamId": null,
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "participantMarginBeforeMinutes": 0,
+      "participantMarginAfterMinutes": 0,
+      "hasDependency": true,
+      "dependsOnTemplateIds": [
+        3
+      ],
+      "dependsOnTaskIds": [
+        5
+      ],
+      "dependsOnTemplateId": 3,
+      "dependsOnTaskId": 5,
+      "durationOverrideMin": 15,
+      "camerasOverride": 0,
+      "startPlanned": null,
+      "endPlanned": null,
+      "lockedStart": null,
+      "lockedEnd": null,
+      "lockType": null,
+      "startReal": null,
+      "endReal": null,
+      "assignedResourceIds": null,
+      "plannerNextKind": "auxiliary",
+      "operationalRole": "productive_task",
+      "setupFamilyId": "1644356516"
+    },
+    {
+      "id": 7,
+      "planId": 2,
+      "templateId": 5,
+      "templateName": "Segunda jornada Montaje B",
+      "resourceRequirements": null,
+      "zoneId": 1,
+      "spaceId": 1,
+      "_invalidSpaceId": null,
+      "_unplannedHint": null,
+      "contestantId": 3,
+      "contestantName": "Carla segunda",
+      "status": "pending",
+      "itinerantTeamId": null,
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "participantMarginBeforeMinutes": 0,
+      "participantMarginAfterMinutes": 0,
+      "hasDependency": true,
+      "dependsOnTemplateIds": [
+        4
+      ],
+      "dependsOnTaskIds": [
+        6
+      ],
+      "dependsOnTemplateId": 4,
+      "dependsOnTaskId": 6,
+      "durationOverrideMin": 10,
+      "camerasOverride": 0,
+      "startPlanned": null,
+      "endPlanned": null,
+      "lockedStart": null,
+      "lockedEnd": null,
+      "lockType": null,
+      "startReal": null,
+      "endReal": null,
+      "assignedResourceIds": null,
+      "plannerNextKind": "auxiliary",
+      "operationalRole": "productive_task",
+      "setupFamilyId": "19135915"
+    },
+    {
+      "id": 8,
+      "planId": 2,
+      "templateId": 3,
+      "templateName": "Segunda jornada Montaje C",
+      "resourceRequirements": null,
+      "zoneId": 1,
+      "spaceId": 1,
+      "_invalidSpaceId": null,
+      "_unplannedHint": null,
+      "contestantId": 4,
+      "contestantName": "Diana segunda",
+      "status": "pending",
+      "itinerantTeamId": null,
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "participantMarginBeforeMinutes": 0,
+      "participantMarginAfterMinutes": 0,
+      "hasDependency": false,
+      "dependsOnTemplateIds": [],
+      "dependsOnTaskIds": [],
+      "dependsOnTemplateId": null,
+      "dependsOnTaskId": null,
+      "durationOverrideMin": 5,
+      "camerasOverride": 0,
+      "startPlanned": null,
+      "endPlanned": null,
+      "lockedStart": null,
+      "lockedEnd": null,
+      "lockType": null,
+      "startReal": null,
+      "endReal": null,
+      "assignedResourceIds": null,
+      "plannerNextKind": "auxiliary",
+      "operationalRole": "productive_task",
+      "setupFamilyId": "113074932"
+    },
+    {
+      "id": 9,
+      "planId": 2,
+      "templateId": 4,
+      "templateName": "Segunda jornada Montaje A",
+      "resourceRequirements": null,
+      "zoneId": 1,
+      "spaceId": 1,
+      "_invalidSpaceId": null,
+      "_unplannedHint": null,
+      "contestantId": 4,
+      "contestantName": "Diana segunda",
+      "status": "pending",
+      "itinerantTeamId": null,
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "participantMarginBeforeMinutes": 0,
+      "participantMarginAfterMinutes": 0,
+      "hasDependency": true,
+      "dependsOnTemplateIds": [
+        3
+      ],
+      "dependsOnTaskIds": [
+        8
+      ],
+      "dependsOnTemplateId": 3,
+      "dependsOnTaskId": 8,
+      "durationOverrideMin": 15,
+      "camerasOverride": 0,
+      "startPlanned": null,
+      "endPlanned": null,
+      "lockedStart": null,
+      "lockedEnd": null,
+      "lockType": null,
+      "startReal": null,
+      "endReal": null,
+      "assignedResourceIds": null,
+      "plannerNextKind": "auxiliary",
+      "operationalRole": "productive_task",
+      "setupFamilyId": "1644356516"
+    },
+    {
+      "id": 10,
+      "planId": 2,
+      "templateId": 5,
+      "templateName": "Segunda jornada Montaje B",
+      "resourceRequirements": null,
+      "zoneId": 1,
+      "spaceId": 1,
+      "_invalidSpaceId": null,
+      "_unplannedHint": null,
+      "contestantId": 4,
+      "contestantName": "Diana segunda",
+      "status": "pending",
+      "itinerantTeamId": null,
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "participantMarginBeforeMinutes": 0,
+      "participantMarginAfterMinutes": 0,
+      "hasDependency": true,
+      "dependsOnTemplateIds": [
+        4
+      ],
+      "dependsOnTaskIds": [
+        9
+      ],
+      "dependsOnTemplateId": 4,
+      "dependsOnTaskId": 9,
+      "durationOverrideMin": 10,
+      "camerasOverride": 0,
+      "startPlanned": null,
+      "endPlanned": null,
+      "lockedStart": null,
+      "lockedEnd": null,
+      "lockType": null,
+      "startReal": null,
+      "endReal": null,
+      "assignedResourceIds": null,
+      "plannerNextKind": "auxiliary",
+      "operationalRole": "productive_task",
+      "setupFamilyId": "19135915"
+    }
+  ],
+  "locks": [],
+  "setupPolicies": [
+    {
+      "spaceId": 1,
+      "orderConstraint": "EXPLICIT",
+      "continuityPolicy": "REQUIRED",
+      "groupingPolicy": "PREFERRED",
+      "oneBlockPerFamily": false,
+      "reentry": "ALLOWED",
+      "preparationMinutesBetweenFamilies": 5,
+      "contractVersion": 2,
+      "families": [
+        "1644356516",
+        "19135915",
+        "113074932"
+      ],
+      "familyOrder": [
+        "113074932",
+        "1644356516",
+        "19135915"
+      ]
+    }
+  ],
+  "plannerNextMaterializationIssues": [],
+  "plannerNext": {
+    "searchPolicy": "EXACT_CONSTRUCTIVE",
+    "searchBudget": {
+      "bestK": 3,
+      "maxBacktracks": 50,
+      "maxPatterns": 20,
+      "maxBranchExpansions": 10000
+    },
+    "timeGridMinutes": 5,
+    "participantTransitionMinutes": 5,
+    "resourceTransitionMinutes": 5,
+    "profile": "STANDALONE_ONLY"
+  },
+  "itinerantCompositionSnapshot": {
+    "contractVersion": 1,
+    "units": []
+  },
+  "itinerantTeamAvailability": []
+}

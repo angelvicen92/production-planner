@@ -1,0 +1,48 @@
+{
+  "refs": {
+    "base": "438d92ca9a4f3db6358809b904268f6da33b4ecd",
+    "candidate": "4ac1134bbedd680bd0d03b0180bad8f33f235eac"
+  },
+  "steps": [
+    {
+      "name": "main",
+      "exitCode": 0,
+      "seconds": 201.5364799130001
+    },
+    {
+      "name": "standalone",
+      "exitCode": 0,
+      "seconds": 182.56120701300006
+    },
+    {
+      "name": "itinerant",
+      "exitCode": 0,
+      "seconds": 211.28548614700003
+    },
+    {
+      "name": "setup",
+      "exitCode": 0,
+      "seconds": 123.08749004099991
+    },
+    {
+      "name": "transport",
+      "exitCode": 0,
+      "seconds": 98.59260306800002
+    },
+    {
+      "name": "meals",
+      "exitCode": 0,
+      "seconds": 69.36203097599991
+    },
+    {
+      "name": "byItem",
+      "exitCode": 0,
+      "seconds": 14.965072233
+    },
+    {
+      "name": "anyOf",
+      "exitCode": 0,
+      "seconds": 30.65752803500004
+    }
+  ]
+}

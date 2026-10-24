@@ -1,0 +1,123 @@
+{
+  "status": "PASS",
+  "mainStandaloneItinerant": [
+    {
+      "family": "main",
+      "day": "first",
+      "fingerprint": "93468bcf6e3b8b614179d98b854f0e6a4ad94e583efe7d94dd24487475da42aa",
+      "exactProblemAndSnapshot": true
+    },
+    {
+      "family": "main",
+      "day": "second",
+      "fingerprint": "02a4784df12d039450cd97404f4480c0b27fbe016cccd747ce79d7de2ff094aa",
+      "exactProblemAndSnapshot": true
+    },
+    {
+      "family": "standalone",
+      "day": "first",
+      "fingerprint": "dc29ef5c25e7235843104d65744db65112ca1a363e8b38a76a1bd483e68f5544",
+      "exactProblemAndSnapshot": true
+    },
+    {
+      "family": "standalone",
+      "day": "second",
+      "fingerprint": "664c4e16a5812e3a2f30f35da1f471d6541fea58ba11755fb10580757907198b",
+      "exactProblemAndSnapshot": true
+    },
+    {
+      "family": "itinerant",
+      "day": "technical",
+      "fingerprint": "3423759a90622eb1a3192fd59fea8e26a43b90febdbe1f4d0ca710e0c7a5d7e0",
+      "exactProblemAndSnapshot": true
+    },
+    {
+      "family": "itinerant",
+      "day": "auxiliary",
+      "fingerprint": "53a21bdfe1c4fff8a910f44a4ccae71bfc830bfdbcd0323ee4ca4b37005e6fbc",
+      "exactProblemAndSnapshot": true
+    }
+  ],
+  "stages": [
+    {
+      "family": "meals",
+      "day": "A",
+      "stage": 1,
+      "fingerprint": "26c3119d4d34a2113c46714114f9353fa7e612a51963d31898c6270f8a7f85d4",
+      "identical": true
+    },
+    {
+      "family": "meals",
+      "day": "A",
+      "stage": 2,
+      "fingerprint": "acee08344f551163bcefcb080bfa4453ced456bddb4be015fb1c66ec2b9e88aa",
+      "identical": true
+    },
+    {
+      "family": "meals",
+      "day": "B",
+      "stage": 1,
+      "fingerprint": "af26cd7f961bc51c197cb98932cd75c887550ae8c8a4ea31263d80b2b2880c77",
+      "identical": true
+    },
+    {
+      "family": "meals",
+      "day": "B",
+      "stage": 2,
+      "fingerprint": "1dbdcc537b69b583326806822543ff45df682efe74725c8ab4dffb0fd232b904",
+      "identical": true
+    },
+    {
+      "family": "meals",
+      "day": "B",
+      "stage": 3,
+      "fingerprint": "053a2b04d10ebe801aee706bdde354c2855108b7cc1baedaac22d56926f75529",
+      "identical": true
+    },
+    {
+      "family": "byItem",
+      "day": "A",
+      "stage": 1,
+      "fingerprint": "63c1bc7f764b8d2d2c84ad297d0dbb6e5fb00267c09d61ab7bbb72f22ac5b5b9",
+      "identical": true
+    },
+    {
+      "family": "byItem",
+      "day": "B",
+      "stage": 1,
+      "fingerprint": "1e15ce2584cab7afc43d7de24770c862551e51fecb962902bd21718a0b444e83",
+      "identical": true
+    },
+    {
+      "family": "byItem",
+      "day": "B",
+      "stage": 2,
+      "fingerprint": "54d55d806d633450dd7530b12d5b697b29e1174b63c73d726ed9c4257410e607",
+      "identical": true
+    },
+    {
+      "family": "anyOf",
+      "day": "A",
+      "stage": 1,
+      "fingerprint": "fb84f73bce6a0dc745df0f163511d163623857e2592052d0a7275110b891fd5d",
+      "identical": true
+    },
+    {
+      "family": "anyOf",
+      "day": "B",
+      "stage": 1,
+      "fingerprint": "cc59d1b844b820662cdf332c199d7ed47411389431f93c9cb98cd40ce9b75b15",
+      "identical": true
+    },
+    {
+      "family": "anyOf",
+      "day": "B",
+      "stage": 2,
+      "fingerprint": "ad4deafb3e370b3184e954e0b82a9b545381136856fda632d29af196fc82bf2e",
+      "identical": true
+    }
+  ],
+  "historicalRebootstrapUnchanged": true,
+  "setupFrozenIdentical": true,
+  "transportReplay": "PASS"
+}

@@ -1,0 +1,364 @@
+{
+  "planId": 2,
+  "taskTemplateSnapshotContractVersion": 2,
+  "taskTemplateSnapshotCount": 2,
+  "taskTemplateSnapshotSources": {
+    "inherited": 2,
+    "legacy_backfill": 0,
+    "ad_hoc_from_default": 0
+  },
+  "taskTemplateSnapshotFingerprint": "22b0dd36ca9aef75e91f3c848269a262c66b55ae525f8242c03955a8b352a498",
+  "planZoneSettings": [
+    {
+      "id": 2,
+      "zoneId": 1,
+      "availabilityStart": null,
+      "availabilityEnd": null,
+      "source": "default",
+      "name": "Nuevo estudio de producción",
+      "mealStartPreferred": null,
+      "mealEndPreferred": null,
+      "groupingLevel": 0,
+      "groupingMinChain": 4,
+      "maxTemplateChanges": 4,
+      "spaceMealBreakMinutes": null
+    }
+  ],
+  "planSpaceSettings": [
+    {
+      "id": 3,
+      "spaceId": 1,
+      "zoneId": 1,
+      "availabilityStart": null,
+      "availabilityEnd": null,
+      "source": "default",
+      "name": "Escenario de entrevistas",
+      "parentSpaceId": null,
+      "priorityLevel": 1,
+      "groupingLevel": 0,
+      "groupingMinChain": 4,
+      "groupingApplyToDescendants": false
+    },
+    {
+      "id": 4,
+      "spaceId": 2,
+      "zoneId": 1,
+      "availabilityStart": null,
+      "availabilityEnd": null,
+      "source": "default",
+      "name": "Preparación de voz",
+      "parentSpaceId": null,
+      "priorityLevel": 1,
+      "groupingLevel": 0,
+      "groupingMinChain": 4,
+      "groupingApplyToDescendants": false
+    }
+  ],
+  "workDay": {
+    "start": "09:00",
+    "end": "18:00"
+  },
+  "defaultParticipantTransitionMinutes": 5,
+  "mealMode": "global_hard_break",
+  "meal": {
+    "start": "13:00",
+    "end": "14:00"
+  },
+  "globalHardBreaks": [],
+  "protectedBreaks": [],
+  "mealTaskTemplateId": null,
+  "camerasAvailable": 0,
+  "taskTemplateNameById": {
+    "1": "Preparación de voz para entrevista",
+    "2": "Entrevista individual"
+  },
+  "zoneResourceAssignments": {},
+  "spaceResourceAssignments": {},
+  "spaceParentById": {
+    "1": null,
+    "2": null
+  },
+  "spaceNameById": {
+    "1": "Escenario de entrevistas",
+    "2": "Preparación de voz"
+  },
+  "spaceCapacityById": {},
+  "spaceIsExclusiveById": {
+    "1": true,
+    "2": true
+  },
+  "spacePriorityById": {
+    "1": 1,
+    "2": 1
+  },
+  "zoneIdBySpaceId": {
+    "1": 1,
+    "2": 1
+  },
+  "spaceIdsByZoneId": {
+    "1": [
+      1,
+      2
+    ]
+  },
+  "groupingBySpaceId": {},
+  "minimizeChangesBySpace": {},
+  "zoneResourceTypeRequirements": {},
+  "spaceResourceTypeRequirements": {},
+  "planResourceItems": [
+    {
+      "id": 2,
+      "resourceItemId": 1,
+      "typeId": 1,
+      "typeCode": "vocal_coach",
+      "typeName": "Vocal Coach",
+      "name": "Coach de esta producción",
+      "isAvailable": true,
+      "availabilityStart": "09:00",
+      "availabilityEnd": "18:00"
+    }
+  ],
+  "coachResourceIds": [
+    2
+  ],
+  "vocalCoachPlanResourceItemIdByContestantId": {
+    "2": 2,
+    "3": 2
+  },
+  "resourceItemComponents": {},
+  "resourceBundles": [],
+  "resourceBundleComponents": [],
+  "resourceBundleSpaceAffinities": [],
+  "resourceBundleLoadWarnings": [],
+  "contestantAvailabilityById": {
+    "2": {
+      "start": "09:00",
+      "end": "17:00"
+    },
+    "3": {
+      "start": "09:30",
+      "end": "16:30"
+    }
+  },
+  "optimizerSnapshotContractVersion": 1,
+  "optimizerSnapshotSource": "INHERITED",
+  "optimizerSnapshotEditingMode": "BASIC",
+  "optimizerSnapshotFingerprint": "4b770099c9e87063d68e2fbef0ad2fcce91e364d9e03b2fc8967ee74ca4a422f",
+  "optimizerLegacyAdapterVersion": 1,
+  "optimizerCompatibilityWarnings": [],
+  "optimizerIgnoredActiveHeuristics": [],
+  "optimizerMainZoneId": null,
+  "optimizerPrioritizeMainZone": false,
+  "optimizerGroupBySpaceAndTemplate": false,
+  "groupingZoneIds": [],
+  "maxTemplateChangesByZoneId": {},
+  "spaceMealBreakMinutesByZoneId": {},
+  "optimizerMainZonePriorityLevel": 0,
+  "optimizerGroupingLevel": 0,
+  "optimizerMainZoneOptFinishEarly": false,
+  "optimizerMainZoneOptKeepBusy": false,
+  "optimizerContestantCompactLevel": 0,
+  "optimizerContestantStayInZoneLevel": 0,
+  "optimizerNearHardBreaksMax": 0,
+  "optimizerWeights": {
+    "mainZoneFinishEarly": 0,
+    "mainZoneKeepBusy": 0,
+    "contestantCompact": 0,
+    "groupBySpaceTemplateMatch": 0,
+    "groupBySpaceActive": 0,
+    "contestantStayInZone": 0,
+    "contestantTotalSpan": 0
+  },
+  "tasks": [
+    {
+      "id": 3,
+      "planId": 2,
+      "templateId": 1,
+      "templateName": "Preparación de voz para entrevista",
+      "resourceRequirements": null,
+      "zoneId": 1,
+      "spaceId": 2,
+      "_invalidSpaceId": null,
+      "_unplannedHint": null,
+      "contestantId": 2,
+      "contestantName": "Ana entrevista",
+      "status": "pending",
+      "itinerantTeamId": null,
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "participantMarginBeforeMinutes": 0,
+      "participantMarginAfterMinutes": 0,
+      "hasDependency": false,
+      "dependsOnTemplateIds": [],
+      "dependsOnTaskIds": [],
+      "dependsOnTemplateId": null,
+      "dependsOnTaskId": null,
+      "durationOverrideMin": 10,
+      "camerasOverride": 0,
+      "startPlanned": "11:30",
+      "endPlanned": "11:40",
+      "lockedStart": null,
+      "lockedEnd": null,
+      "lockType": null,
+      "startReal": null,
+      "endReal": null,
+      "assignedResourceIds": [],
+      "plannerNextKind": "vocal",
+      "operationalRole": "productive_task",
+      "declaredResourceIds": [
+        2
+      ]
+    },
+    {
+      "id": 4,
+      "planId": 2,
+      "templateId": 2,
+      "templateName": "Entrevista individual",
+      "resourceRequirements": null,
+      "zoneId": 1,
+      "spaceId": 1,
+      "_invalidSpaceId": null,
+      "_unplannedHint": null,
+      "contestantId": 2,
+      "contestantName": "Ana entrevista",
+      "status": "pending",
+      "itinerantTeamId": null,
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "participantMarginBeforeMinutes": 0,
+      "participantMarginAfterMinutes": 0,
+      "hasDependency": true,
+      "dependsOnTemplateIds": [
+        1
+      ],
+      "dependsOnTaskIds": [
+        3
+      ],
+      "dependsOnTemplateId": 1,
+      "dependsOnTaskId": 3,
+      "durationOverrideMin": 10,
+      "camerasOverride": 0,
+      "startPlanned": "11:50",
+      "endPlanned": "12:00",
+      "lockedStart": null,
+      "lockedEnd": null,
+      "lockType": null,
+      "startReal": null,
+      "endReal": null,
+      "assignedResourceIds": [],
+      "plannerNextKind": "main",
+      "operationalRole": "productive_task",
+      "declaredResourceIds": [
+        2
+      ]
+    },
+    {
+      "id": 5,
+      "planId": 2,
+      "templateId": 1,
+      "templateName": "Preparación de voz para entrevista",
+      "resourceRequirements": null,
+      "zoneId": 1,
+      "spaceId": 2,
+      "_invalidSpaceId": null,
+      "_unplannedHint": null,
+      "contestantId": 3,
+      "contestantName": "Luis entrevista",
+      "status": "pending",
+      "itinerantTeamId": null,
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "participantMarginBeforeMinutes": 0,
+      "participantMarginAfterMinutes": 0,
+      "hasDependency": false,
+      "dependsOnTemplateIds": [],
+      "dependsOnTaskIds": [],
+      "dependsOnTemplateId": null,
+      "dependsOnTaskId": null,
+      "durationOverrideMin": 10,
+      "camerasOverride": 0,
+      "startPlanned": "11:20",
+      "endPlanned": "11:30",
+      "lockedStart": null,
+      "lockedEnd": null,
+      "lockType": null,
+      "startReal": null,
+      "endReal": null,
+      "assignedResourceIds": [],
+      "plannerNextKind": "vocal",
+      "operationalRole": "productive_task",
+      "declaredResourceIds": [
+        2
+      ]
+    },
+    {
+      "id": 6,
+      "planId": 2,
+      "templateId": 2,
+      "templateName": "Entrevista individual",
+      "resourceRequirements": null,
+      "zoneId": 1,
+      "spaceId": 1,
+      "_invalidSpaceId": null,
+      "_unplannedHint": null,
+      "contestantId": 3,
+      "contestantName": "Luis entrevista",
+      "status": "pending",
+      "itinerantTeamId": null,
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "participantMarginBeforeMinutes": 0,
+      "participantMarginAfterMinutes": 0,
+      "hasDependency": true,
+      "dependsOnTemplateIds": [
+        1
+      ],
+      "dependsOnTaskIds": [
+        5
+      ],
+      "dependsOnTemplateId": 1,
+      "dependsOnTaskId": 5,
+      "durationOverrideMin": 10,
+      "camerasOverride": 0,
+      "startPlanned": "11:40",
+      "endPlanned": "11:50",
+      "lockedStart": null,
+      "lockedEnd": null,
+      "lockType": null,
+      "startReal": null,
+      "endReal": null,
+      "assignedResourceIds": [],
+      "plannerNextKind": "main",
+      "operationalRole": "productive_task",
+      "declaredResourceIds": [
+        2
+      ]
+    }
+  ],
+  "locks": [],
+  "plannerNextMaterializationIssues": [],
+  "plannerNext": {
+    "searchPolicy": "EXACT_CONSTRUCTIVE",
+    "searchBudget": {
+      "bestK": 3,
+      "maxBacktracks": 50,
+      "maxPatterns": 20,
+      "maxBranchExpansions": 10000
+    },
+    "timeGridMinutes": 5,
+    "participantTransitionMinutes": 5,
+    "resourceTransitionMinutes": 0,
+    "mainFlow": {
+      "spaceId": 1,
+      "preferredEnd": "12:00",
+      "continuity": "REQUIRED",
+      "maxBlocksByKey": 1,
+      "minTasksPerBlock": 1
+    }
+  },
+  "itinerantCompositionSnapshot": {
+    "contractVersion": 1,
+    "units": []
+  },
+  "itinerantTeamAvailability": []
+}

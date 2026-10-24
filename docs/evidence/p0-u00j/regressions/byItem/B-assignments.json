@@ -1,0 +1,86 @@
+{
+  "assignments": [
+    {
+      "taskId": 5,
+      "status": "pending",
+      "spaceId": 1,
+      "explicitZoneId": 1,
+      "mappedZoneId": 1,
+      "effectiveZoneId": 1,
+      "zoneResolution": "MATCH",
+      "directResourceIds": [
+        9
+      ],
+      "byItemResourceIds": [
+        9
+      ],
+      "spaceResourceIds": [],
+      "zoneResourceIds": [],
+      "effectiveResourceIds": [
+        9
+      ]
+    },
+    {
+      "taskId": 6,
+      "status": "pending",
+      "spaceId": 2,
+      "explicitZoneId": 1,
+      "mappedZoneId": 1,
+      "effectiveZoneId": 1,
+      "zoneResolution": "MATCH",
+      "directResourceIds": [
+        9
+      ],
+      "byItemResourceIds": [
+        9
+      ],
+      "spaceResourceIds": [],
+      "zoneResourceIds": [],
+      "effectiveResourceIds": [
+        9
+      ]
+    },
+    {
+      "taskId": 7,
+      "status": "pending",
+      "spaceId": 3,
+      "explicitZoneId": 1,
+      "mappedZoneId": 1,
+      "effectiveZoneId": 1,
+      "zoneResolution": "MATCH",
+      "directResourceIds": [
+        9
+      ],
+      "byItemResourceIds": [
+        9
+      ],
+      "spaceResourceIds": [],
+      "zoneResourceIds": [],
+      "effectiveResourceIds": [
+        9
+      ]
+    },
+    {
+      "taskId": 8,
+      "status": "pending",
+      "spaceId": 4,
+      "explicitZoneId": 1,
+      "mappedZoneId": 1,
+      "effectiveZoneId": 1,
+      "zoneResolution": "MATCH",
+      "directResourceIds": [
+        9
+      ],
+      "byItemResourceIds": [
+        9
+      ],
+      "spaceResourceIds": [],
+      "zoneResourceIds": [],
+      "effectiveResourceIds": [
+        9
+      ]
+    }
+  ],
+  "zoneConflicts": [],
+  "readOnly": true
+}

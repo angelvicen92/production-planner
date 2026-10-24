@@ -61,9 +61,9 @@ for day in summary['days']:
   previous=current
   adversaries=read(prefix+'-sql-adversaries.json');attacks+=len(adversaries)
   assert all(x['rolledBack'] and x['hashesRecomputed'] and x['error'] for x in adversaries)
-  assert {'omit','double','invented','missing-choice','future-identity','future-dependencies','type-identity','domain','unavailable','future-omission','future-collision','draft','base','revision','permission'}<={x['guard'] for x in adversaries}
+  assert {'omit','double','invented','missing-choice','future-identity','future-dependencies','type-identity','domain','unavailable','time-lock','space-availability','future-omission','future-collision','draft','base','revision','permission'}<={x['guard'] for x in adversaries}
  assert len(previous)==day['obligations']
-assert attacks>=54
+assert attacks==60
 b=read('native/B-input.json');adhoc=next(r for r in b['planResourceItems'] if r['resourceItemId'] is None)
 b1=read('native/B-S1-stage.json')['activeStage']['snapshotJson']['tasks'];b2=read('native/B-S2-stage.json')['activeStage']['snapshotJson']['tasks']
 assert not b1[2]['assignedResourceIds'] and b2[2]['assignedResourceIds']==[adhoc['id']]
@@ -71,3 +71,21 @@ assert all(x['adapter']['status']=='UNSUPPORTED' for x in read('native/native-ne
 assert len(read('native/native-negatives.json'))==8
 assert read('cold-replay.json')['status']=='PASS'
 print(json.dumps({'status':'PASS','nativeDays':[2,4],'stages':3,'sqlAdversaries':attacks,'adHocSelection':True,'nativeNegativeDays':8}))
+
+# Preserve full material reports, certificates and snapshots, not just counters.
+a2=read('a2/execution.json');assert a2['status']=='PASS' and a2['certificatesRevalidated']==22
+assert a2['obligations']==266 and a2['stages']==11 and a2['branches']==27049
+assert a2['a2RuntimeSourcesIdenticalToFinal'] and a2['latestU00iBaselineIdentical']
+reports=[read(f'a2/{label}/run.json') for label in ['base','candidate','repeat']]
+without_times=lambda r:{**r,'iterations':[{k:v for k,v in t.items() if k!='durationMs'} for t in r['iterations']]}
+assert without_times(reports[0])==without_times(reports[1])==without_times(reports[2])
+snapshots=[read(f'a2/{label}/snapshots.json') for label in ['base','candidate','repeat']]
+assert snapshots[0]==snapshots[1]==snapshots[2]
+audit=read('a2/canonical-audit.json');assert audit['status']=='PASS'
+assert len(audit['stagesBefore'])+len(audit['stagesAfter'])==22
+reg=read('regressions/regression-comparison.json');assert reg['status']=='PASS'
+assert len(reg['mainStandaloneItinerant'])==6 and len(reg['stages'])==11
+assert reg['historicalRebootstrapUnchanged'] and reg['setupFrozenIdentical'] and reg['transportReplay']=='PASS'
+for family in ['main','standalone','itinerant','setup','transport','meals','byItem','anyOf']:
+ assert read(f'regressions/{family}/integration.json')['status']=='PASS'
+print(json.dumps({'status':'PASS','a2':[266,11,27049],'certificates':22,'historicalSnapshots':17}))

@@ -66,6 +66,18 @@
     "rolledBack": true
   },
   {
+    "guard": "time-lock",
+    "error": "RUN_RESULT_INVALID: WITNESS_WINDOW_OR_LOCK",
+    "hashesRecomputed": true,
+    "rolledBack": true
+  },
+  {
+    "guard": "space-availability",
+    "error": "RUN_RESULT_INVALID: WITNESS_WINDOW_OR_LOCK",
+    "hashesRecomputed": true,
+    "rolledBack": true
+  },
+  {
     "guard": "draft",
     "error": "STALE_DRAFT",
     "hashesRecomputed": true,

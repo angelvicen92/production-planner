@@ -1,0 +1,306 @@
+{
+  "planId": 2,
+  "taskTemplateSnapshotContractVersion": 2,
+  "taskTemplateSnapshotCount": 5,
+  "taskTemplateSnapshotSources": {
+    "inherited": 5,
+    "legacy_backfill": 0,
+    "ad_hoc_from_default": 0
+  },
+  "taskTemplateSnapshotFingerprint": "5b73ad9a5ad85ab048bacc4cdb8ebf08c85edea9f6e13c5395ef6b4a2d5e5f3c",
+  "planZoneSettings": [
+    {
+      "id": 2,
+      "zoneId": 1,
+      "availabilityStart": null,
+      "availabilityEnd": null,
+      "source": "default",
+      "name": "Producción independiente",
+      "mealStartPreferred": null,
+      "mealEndPreferred": null,
+      "groupingLevel": 0,
+      "groupingMinChain": 4,
+      "maxTemplateChanges": 4,
+      "spaceMealBreakMinutes": null
+    }
+  ],
+  "planSpaceSettings": [
+    {
+      "id": 3,
+      "spaceId": 1,
+      "zoneId": 1,
+      "availabilityStart": "09:00",
+      "availabilityEnd": "12:00",
+      "source": "override",
+      "name": "Sala de preparación",
+      "parentSpaceId": null,
+      "priorityLevel": 1,
+      "groupingLevel": 0,
+      "groupingMinChain": 4,
+      "groupingApplyToDescendants": false
+    },
+    {
+      "id": 4,
+      "spaceId": 2,
+      "zoneId": 1,
+      "availabilityStart": "10:00",
+      "availabilityEnd": "16:00",
+      "source": "override",
+      "name": "Sala de grabación",
+      "parentSpaceId": null,
+      "priorityLevel": 1,
+      "groupingLevel": 0,
+      "groupingMinChain": 4,
+      "groupingApplyToDescendants": false
+    }
+  ],
+  "workDay": {
+    "start": "09:00",
+    "end": "18:00"
+  },
+  "defaultParticipantTransitionMinutes": 5,
+  "mealMode": "global_hard_break",
+  "meal": {
+    "start": "13:00",
+    "end": "14:00"
+  },
+  "globalHardBreaks": [],
+  "protectedBreaks": [],
+  "mealTaskTemplateId": null,
+  "camerasAvailable": 0,
+  "taskTemplateNameById": {
+    "1": "Preparar entrevista auxiliar",
+    "2": "Grabar entrevista auxiliar",
+    "3": "Instalar sistema técnico",
+    "4": "Calibrar sistema técnico",
+    "5": "Verificar sistema técnico"
+  },
+  "zoneResourceAssignments": {},
+  "spaceResourceAssignments": {
+    "1": [
+      1
+    ],
+    "2": [
+      1
+    ]
+  },
+  "spaceParentById": {
+    "1": null,
+    "2": null
+  },
+  "spaceNameById": {
+    "1": "Sala de preparación",
+    "2": "Sala de grabación"
+  },
+  "spaceCapacityById": {},
+  "spaceIsExclusiveById": {
+    "1": true,
+    "2": true
+  },
+  "spacePriorityById": {
+    "1": 1,
+    "2": 1
+  },
+  "zoneIdBySpaceId": {
+    "1": 1,
+    "2": 1
+  },
+  "spaceIdsByZoneId": {
+    "1": [
+      1,
+      2
+    ]
+  },
+  "groupingBySpaceId": {},
+  "minimizeChangesBySpace": {},
+  "zoneResourceTypeRequirements": {},
+  "spaceResourceTypeRequirements": {},
+  "planResourceItems": [
+    {
+      "id": 1,
+      "resourceItemId": 1,
+      "typeId": 1,
+      "typeCode": "measurement_kit",
+      "typeName": "Equipo de medición",
+      "name": "Kit físico compartido",
+      "isAvailable": true,
+      "availabilityStart": "09:30",
+      "availabilityEnd": "16:00"
+    }
+  ],
+  "coachResourceIds": [],
+  "vocalCoachPlanResourceItemIdByContestantId": {},
+  "resourceItemComponents": {},
+  "resourceBundles": [],
+  "resourceBundleComponents": [],
+  "resourceBundleSpaceAffinities": [],
+  "resourceBundleLoadWarnings": [],
+  "contestantAvailabilityById": {},
+  "optimizerSnapshotContractVersion": 1,
+  "optimizerSnapshotSource": "INHERITED",
+  "optimizerSnapshotEditingMode": "BASIC",
+  "optimizerSnapshotFingerprint": "4b770099c9e87063d68e2fbef0ad2fcce91e364d9e03b2fc8967ee74ca4a422f",
+  "optimizerLegacyAdapterVersion": 1,
+  "optimizerCompatibilityWarnings": [],
+  "optimizerIgnoredActiveHeuristics": [],
+  "optimizerMainZoneId": null,
+  "optimizerPrioritizeMainZone": false,
+  "optimizerGroupBySpaceAndTemplate": false,
+  "groupingZoneIds": [],
+  "maxTemplateChangesByZoneId": {},
+  "spaceMealBreakMinutesByZoneId": {},
+  "optimizerMainZonePriorityLevel": 0,
+  "optimizerGroupingLevel": 0,
+  "optimizerMainZoneOptFinishEarly": false,
+  "optimizerMainZoneOptKeepBusy": false,
+  "optimizerContestantCompactLevel": 0,
+  "optimizerContestantStayInZoneLevel": 0,
+  "optimizerNearHardBreaksMax": 0,
+  "optimizerWeights": {
+    "mainZoneFinishEarly": 0,
+    "mainZoneKeepBusy": 0,
+    "contestantCompact": 0,
+    "groupBySpaceTemplateMatch": 0,
+    "groupBySpaceActive": 0,
+    "contestantStayInZone": 0,
+    "contestantTotalSpan": 0
+  },
+  "tasks": [
+    {
+      "id": 7,
+      "planId": 2,
+      "templateId": 3,
+      "templateName": "Instalar sistema técnico",
+      "resourceRequirements": null,
+      "zoneId": 1,
+      "spaceId": 1,
+      "_invalidSpaceId": null,
+      "_unplannedHint": null,
+      "contestantId": null,
+      "contestantName": null,
+      "status": "pending",
+      "itinerantTeamId": null,
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "participantMarginBeforeMinutes": 0,
+      "participantMarginAfterMinutes": 0,
+      "hasDependency": false,
+      "dependsOnTemplateIds": [],
+      "dependsOnTaskIds": [],
+      "dependsOnTemplateId": null,
+      "dependsOnTaskId": null,
+      "durationOverrideMin": 10,
+      "camerasOverride": 0,
+      "startPlanned": "09:30",
+      "endPlanned": "09:40",
+      "lockedStart": null,
+      "lockedEnd": null,
+      "lockType": null,
+      "startReal": null,
+      "endReal": null,
+      "assignedResourceIds": [],
+      "plannerNextKind": "technical",
+      "operationalRole": "productive_task"
+    },
+    {
+      "id": 8,
+      "planId": 2,
+      "templateId": 4,
+      "templateName": "Calibrar sistema técnico",
+      "resourceRequirements": null,
+      "zoneId": 1,
+      "spaceId": 2,
+      "_invalidSpaceId": null,
+      "_unplannedHint": null,
+      "contestantId": null,
+      "contestantName": null,
+      "status": "pending",
+      "itinerantTeamId": null,
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "participantMarginBeforeMinutes": 0,
+      "participantMarginAfterMinutes": 0,
+      "hasDependency": true,
+      "dependsOnTemplateIds": [
+        3
+      ],
+      "dependsOnTaskIds": [
+        7
+      ],
+      "dependsOnTemplateId": 3,
+      "dependsOnTaskId": 7,
+      "durationOverrideMin": 10,
+      "camerasOverride": 0,
+      "startPlanned": "10:00",
+      "endPlanned": "10:10",
+      "lockedStart": null,
+      "lockedEnd": null,
+      "lockType": null,
+      "startReal": null,
+      "endReal": null,
+      "assignedResourceIds": [],
+      "plannerNextKind": "technical",
+      "operationalRole": "productive_task"
+    },
+    {
+      "id": 9,
+      "planId": 2,
+      "templateId": 5,
+      "templateName": "Verificar sistema técnico",
+      "resourceRequirements": null,
+      "zoneId": 1,
+      "spaceId": 1,
+      "_invalidSpaceId": null,
+      "_unplannedHint": null,
+      "contestantId": null,
+      "contestantName": null,
+      "status": "pending",
+      "itinerantTeamId": null,
+      "allowedItinerantTeamIds": [],
+      "itinerantTeamRequirement": "none",
+      "participantMarginBeforeMinutes": 0,
+      "participantMarginAfterMinutes": 0,
+      "hasDependency": true,
+      "dependsOnTemplateIds": [
+        4
+      ],
+      "dependsOnTaskIds": [
+        8
+      ],
+      "dependsOnTemplateId": 4,
+      "dependsOnTaskId": 8,
+      "durationOverrideMin": 10,
+      "camerasOverride": 0,
+      "startPlanned": "10:15",
+      "endPlanned": "10:25",
+      "lockedStart": null,
+      "lockedEnd": null,
+      "lockType": null,
+      "startReal": null,
+      "endReal": null,
+      "assignedResourceIds": [],
+      "plannerNextKind": "technical",
+      "operationalRole": "productive_task"
+    }
+  ],
+  "locks": [],
+  "plannerNextMaterializationIssues": [],
+  "plannerNext": {
+    "searchPolicy": "EXACT_CONSTRUCTIVE",
+    "searchBudget": {
+      "bestK": 3,
+      "maxBacktracks": 50,
+      "maxPatterns": 20,
+      "maxBranchExpansions": 10000
+    },
+    "timeGridMinutes": 5,
+    "participantTransitionMinutes": 5,
+    "resourceTransitionMinutes": 5,
+    "profile": "STANDALONE_ONLY"
+  },
+  "itinerantCompositionSnapshot": {
+    "contractVersion": 1,
+    "units": []
+  },
+  "itinerantTeamAvailability": []
+}

@@ -1,0 +1,27 @@
+[
+  {
+    "guard": "draft",
+    "rejected": "STALE_DRAFT",
+    "canonicalHashesMatched": false
+  },
+  {
+    "guard": "base",
+    "rejected": "STALE_BASE_STAGE",
+    "canonicalHashesMatched": false
+  },
+  {
+    "guard": "config",
+    "rejected": "STALE_CONFIG_REVISION",
+    "canonicalHashesMatched": false
+  },
+  {
+    "guard": "scope",
+    "rejected": "RUN_RESULT_INVALID",
+    "canonicalHashesMatched": true
+  },
+  {
+    "guard": "permission",
+    "rejected": "permission denied for function assisted_record_proposal_clean_validation",
+    "canonicalHashesMatched": false
+  }
+]

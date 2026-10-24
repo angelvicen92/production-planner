@@ -1,0 +1,46 @@
+{
+  "status": "PASS",
+  "base": "438d92ca9a4f3db6358809b904268f6da33b4ecd",
+  "archivedCandidateRef": "f6af6b8ff8b2d74b9591e3167dbe113afd403c04",
+  "finalProductRef": "47ae0389050b508165134f201ad7686db613ca75",
+  "a2RuntimeSourcesIdenticalToFinal": true,
+  "sourceDifferenceAfterCapture": "SQL guard and native attack harness only, neither is loaded by offline A2",
+  "node": "20.20.2",
+  "mode": "ISOLATED_S0_PROCESSES_IN_SERIES",
+  "otherTestLoads": false,
+  "remoteWrites": 0,
+  "obligations": 266,
+  "stages": 11,
+  "branches": 27049,
+  "certificatesRevalidated": 22,
+  "fullReportsSnapshotsCertificatesIdentical": true,
+  "latestU00iBaselineIdentical": true,
+  "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+  "iterationDurationsMs": {
+    "base": 67807,
+    "candidate": 67723,
+    "repeat": 67585
+  },
+  "steps": [
+    {
+      "name": "a2-base",
+      "exitCode": 0,
+      "seconds": 69.81266965199984
+    },
+    {
+      "name": "a2-candidate",
+      "exitCode": 0,
+      "seconds": 69.83182234300011
+    },
+    {
+      "name": "a2-repeat",
+      "exitCode": 0,
+      "seconds": 69.50345221999987
+    },
+    {
+      "name": "a2-audit",
+      "exitCode": 0,
+      "seconds": 2.7858877000003304
+    }
+  ]
+}
