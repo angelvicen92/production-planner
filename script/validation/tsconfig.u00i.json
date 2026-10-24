@@ -1,0 +1,6 @@
+{
+  "extends":"../../tsconfig.json",
+  "include":["runU00iFunctional.ts","u00iFunctionalJourney.ts","replayU00iFrozen.ts"],
+  "exclude":[],
+  "compilerOptions":{"incremental":false}
+}

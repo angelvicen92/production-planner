@@ -1,3 +1,4 @@
+import {materializeNominalResourceChoice} from "./nominalResourceChoice";
 import {assessSpacePolicies} from "./operationContinuity";
 import type {
   ParticipantMealObligation,
@@ -32,7 +33,7 @@ export type AssistedPlanningReasonCode =
 
 export interface AssistedProblem {
   readonly problem: PlannerNextProblem;
-  /** Ephemeral core producer for pending Main/Vocal outside the authorized projection. */
+  /** Ephemeral producer for future Main/Vocal or physically coupled nominal work. Never grants scope/protection. */
   readonly collectiveCoreProjection?: Pick<AssistedProblem, "problem" | "analyticalParticipantMeals">;
   readonly originalValidationProblem: PlannerNextProblem;
   /** Pending obligations outside the executable projection, for read-only future-feasibility probes. */
@@ -79,6 +80,7 @@ export interface AssistedPlanningEvidence {
   readonly priorFutureStructuralWitnessRejectDetails?:Readonly<Record<string,unknown>>|null;
   readonly priorFutureStructuralWitnessReused?:boolean;
   readonly priorFutureStructuralWitnessFallbackEntered?:boolean;
+  readonly nominalPhysicalFutureWitness?:{tasks:ScheduledTask[];fingerprint:string;[key:string]:unknown};
   readonly futureItinerantWitnessSearchInvocations?:number;
   readonly futureWitnessSet?:import("./futureStructuralWitnessSet").FutureWitnessSetEvidence;
   readonly futureWitnessSetCandidateTraces?:import("./exactItinerantPlan").ExactItinerantPlanEvidence["futureWitnessSetCandidateTraces"];
@@ -344,8 +346,9 @@ export function buildAssistedProblem(
     if (!task) throw new Error("UNKNOWN_PROTECTED_PLACEMENT_TASK_ID");
     if (placement.start >= placement.end || placement.end - placement.start !== placement.duration) throw new Error("INVALID_PROTECTED_PLACEMENT");
     const { start: _start, end: _end, ...placedTask } = placement;
+    const selected=task.nominalResourceChoice?materializeNominalResourceChoice(task,placement.nominalResourceChoice?.selectedResourceId??""):task;
     const expected=placement.itinerantUnitId!==task.itinerantUnitId
-      ?materializeItinerantUnitAssignment(problem,task,placement.itinerantUnitId??""):task;
+      ?materializeItinerantUnitAssignment(problem,task,placement.itinerantUnitId??""):selected;
     if (!expected||JSON.stringify({...placedTask,duration:task.duration}) !== JSON.stringify(expected)) throw new Error("PROTECTED_PLACEMENT_TASK_MISMATCH");
   }
   const protectedMealBySourceId=new Map<string,ScheduledParticipantMeal>();
@@ -603,8 +606,14 @@ export function buildAssistedProblem(
     .filter(task=>(task.kind==="main"||task.kind==="vocal")&&!included.has(task.id))??[];
   const futureCoreRoots=futureCore.filter(task=>task.kind==="main"
     ||!source.tasks.some(main=>main.kind==="main"&&main.dependencies.includes(task.id))).map(task=>task.id);
-  const collectiveCore=futureCore.length?buildAssistedProblem(source,
-    createPlanningScope(scope.selector,scope.metadata,[...scopeIds,...futureCoreRoots]),protectedPlacements,
+  // A Stage with nominal physical choices needs one joint witness of pending
+  // hard obligations. Produce it through this same search/ledger, then retain
+  // only authorized scope placements. Future selections remain ephemeral.
+  const physicalFutureIds=source.tasks.some(task=>task.nominalResourceChoice)
+    ?source.tasks.filter(task=>!included.has(task.id)&&analyticalFutureEligibleTaskIds.has(task.id)).map(task=>task.id):[];
+  const producerRoots=[...new Set([...futureCoreRoots,...physicalFutureIds])];
+  const collectiveCore=futureCore.length||physicalFutureIds.length?buildAssistedProblem(source,
+    createPlanningScope(scope.selector,scope.metadata,[...scopeIds,...producerRoots]),protectedPlacements,
     analyticalFutureEligibleTaskIds,protectedOperationalMeals,protectedSetupPreparations,
     protectedParticipantMeals,protectedRoundPreparations,priorFutureStructuralWitnesses):undefined;
 
@@ -815,6 +824,13 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     // the combined state retains an inherited, human-accepted HARD exception.
     requiredValid: searchHardValid,
     fingerprint: proposal ? fingerprint([...input.protectedPlacements, ...proposal]) : null,
+    ...(searchProblem.tasks.some(task=>task.nominalResourceChoice)&&execution.result?.complete?{
+      nominalPhysicalFutureWitness:{tasks:structuredClone(execution.result.scheduledTasks),fingerprint:fingerprint(execution.result.scheduledTasks),
+        participantMeals:structuredClone(execution.result.scheduledParticipantMeals),spaceMeals:structuredClone(execution.result.scheduledSpaceMeals),
+        resourceMeals:structuredClone(execution.result.scheduledResourceMeals),itinerantUnitMeals:structuredClone(execution.result.scheduledItinerantUnitMeals),
+        setupPreparations:structuredClone(execution.result.scheduledSetupPreparations),
+        roundPreparations:structuredClone(execution.result.scheduledRoundPreparations??[]),operationalMeals:structuredClone(execution.result.scheduledOperationalMeals??[])},
+    }:{}),
     priorFutureStructuralWitnessFound:Boolean(evidenceRecord.priorFutureStructuralWitnessFound),
     priorFutureStructuralWitnessFingerprint:(evidenceRecord.priorFutureStructuralWitnessFingerprint as string|null|undefined)??null,
     priorFutureStructuralWitnessRevalidation:(evidenceRecord.priorFutureStructuralWitnessRevalidation as "PASS"|"REJECT"|"STALE"|null|undefined)??null,

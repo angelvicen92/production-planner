@@ -3,6 +3,8 @@ import gzip
 import hashlib
 import json
 import re
+import subprocess
+import io
 from pathlib import Path
 
 root = Path(__file__).resolve().parent
@@ -25,8 +27,14 @@ assert manifest["ref"] == "e79f8ee1a13ef5f5df58371abc851b4746385412"
 assert manifest["baseTree"] == "ff9e1ee7ee70b8daa3c1e01bf0cb64714d76c7c1"
 assert manifest["remoteWrites"] == 0
 assert digest(repo / "package-lock.json") == manifest["lockfileSha256"]
-for path, expected in manifest["sourceHashes"].items():
-    assert digest(repo / path) == expected, path
+# Historical receipt authority is its exact Git base, not today's implementation.
+paths=list(manifest["sourceHashes"])
+objects=subprocess.check_output(["git","cat-file","--batch"],cwd=repo,input="".join(manifest["ref"]+":"+path+"\n" for path in paths).encode())
+stream=io.BytesIO(objects)
+for path in paths:
+    header=stream.readline().split();assert len(header)==3,(path,header)
+    content=stream.read(int(header[2]));assert stream.read(1)==b"\n"
+    assert hashlib.sha256(content).hexdigest()==manifest["sourceHashes"][path],path
 for name, expected in manifest["diagnosticHashes"].items():
     assert digest(repo / "script/diagnostics" / name) == expected, name
 assert digest(repo / "script/demo/smokeNewDayIntegration.ts") == manifest["originalHarnessSha256"]
@@ -34,7 +42,7 @@ assert digest(repo / "script/demo/smokeNewDayIntegration.ts") == manifest["origi
 native = read("causal/integration.json")
 assert native["status"] == "PASS" and native["remoteWrites"] == 0
 assert native["journey"]["status"] == "PREFLIGHT_REJECTION_REPRODUCED"
-expected_migrations = {path.name: digest(path) for path in (repo / "supabase/migrations").glob("*.sql")}
+expected_migrations = {Path(path).name: digest(repo / path) for path in paths if path.startswith("supabase/migrations/") and path.endswith(".sql")}
 assert {row["file"]: row["sha256"] for row in native["migrations"]} == expected_migrations
 rejected = read("causal/A-rejected.json")
 assert rejected == {"status": 422, "body": {"code": "UNSUPPORTED_ENGINE_INPUT", "message": "UNSUPPORTED_ENGINE_INPUT"}}

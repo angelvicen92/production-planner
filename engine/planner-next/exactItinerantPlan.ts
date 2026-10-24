@@ -1,3 +1,4 @@
+import {nominalResourceVariants,possibleTaskResourceIds} from "./nominalResourceChoice";
 import { continuityPenalty } from "./operationContinuity";
 import type { MainFlowPreferenceResultEvidence } from "../../shared/mainFlowPreference";
 import type { PlannerNextProblem, ScheduledItinerantUnitMeal, ScheduledOperationalMeal, ScheduledParticipantMeal, ScheduledResourceMeal, ScheduledRoundPreparation, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
@@ -873,7 +874,7 @@ export function tasksCanAffectEachOther(a: Task, b: Task): boolean {
   return (aParticipant !== undefined && aParticipant === bParticipant)
     || (aCoach !== undefined && aCoach === bCoach)
     || a.spaceId === b.spaceId
-    || (a.requiredResourceIds ?? []).some((id) => (b.requiredResourceIds ?? []).includes(id))
+    || possibleTaskResourceIds(a).some((id) => possibleTaskResourceIds(b).includes(id))
     || a.dependencies.includes(b.id) || b.dependencies.includes(a.id);
 }
 
@@ -959,7 +960,7 @@ function searchStandaloneForCoreCandidate(sourceProblem: PlannerNextProblem, cor
   const ordinaryDomainCache = new Map<string, StandaloneForwardDynamicDomain>();
   const ordinaryStaticDomainCache = new Map<string, StandaloneForwardStaticDomain>();
   const ordinaryStaticDomain = (task: Task): StandaloneForwardStaticDomain => {
-    const key=`${task.id}|${task.itinerantUnitId??"-"}`;
+    const key=`${task.id}|${task.itinerantUnitId??"-"}${task.nominalResourceChoice?`|${task.nominalResourceChoice.selectedResourceId??"?"}`:""}`;
     const cached = ordinaryStaticDomainCache.get(key);
     if (cached) return cached;
     const domain = standaloneForwardStaticDomain(problem, task, coreMeals);
@@ -1455,7 +1456,7 @@ function searchStandaloneForCoreCandidate(sourceProblem: PlannerNextProblem, cor
     for (const task of [...remaining].sort(byId)) {
       const variants=(task.allowedItinerantUnitIds?.length&&!task.itinerantUnitId
         ?[...task.allowedItinerantUnitIds].sort().map(itinerantUnitId=>({...task,itinerantUnitId}))
-        :[task]);
+        :nominalResourceVariants(task));
       const variantDomains:Array<{task:Task;starts:number[]}>=[];
       let largestStaticDomain=0;
       evidence.ordinaryDomainQueries += 1;
@@ -1526,6 +1527,7 @@ function searchStandaloneForCoreCandidate(sourceProblem: PlannerNextProblem, cor
     const orderedStarts = feasibleAssignments.map(({task,start}) => scoreAuxiliaryTask(problem, task, start,
       allPlaced)).sort((a, b) => a.cost - b.cost || a.scheduled.start - b.scheduled.start
         ||(a.scheduled.itinerantUnitId??"").localeCompare(b.scheduled.itinerantUnitId??"")
+        ||(a.scheduled.nominalResourceChoice?.selectedResourceId??"").localeCompare(b.scheduled.nominalResourceChoice?.selectedResourceId??"")
         || a.scheduled.id.localeCompare(b.scheduled.id));
     const ordinaryForwardObligations = remaining
       .filter((task) => task.id !== choice.task.id)
@@ -1678,7 +1680,7 @@ for(const task of pending.filter(task=>(task.allowedItinerantUnitIds?.length??0)
 const agendaItems=[...agendaGroups].map(([domain,tasks])=>({id:`itinerant-agenda:${domain}`,kind:"ITINERANT_AGENDA" as const,
   unitIds:domain.split("+"),tasks:tasks.sort(byId)}));
 const agendaTaskIds=new Set(agendaItems.flatMap(item=>item.tasks.map(task=>task.id)));
-const rawResourceTasks = pending.filter((task) => (task.requiredResourceIds?.length ?? 0) > 0
+const rawResourceTasks = pending.filter((task) => !task.nominalResourceChoice && (task.requiredResourceIds?.length ?? 0) > 0
   && !coupledTaskIds.has(task.id) && !agendaTaskIds.has(task.id) && !roundTaskIds.has(task.id) && task.setupFamilyId === undefined && !setupSpaceIds.includes(task.spaceId)
   && !dynamicTransportIds.has(task.id));
 const preferredGroups=new Map<string,Task[]>();

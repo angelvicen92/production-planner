@@ -18,6 +18,7 @@ import { createViolationKey, type StageViolation } from "../shared/assistedStage
 import type { ValidationViolationDetail } from "../engine/planner-next/contracts";
 import { affectedTasksUnchanged, resolveActiveStageLineage } from "./assistedAcceptedBaseline";
 import { materializeItinerantUnitAssignment } from "../engine/planner-next/itinerantUnitAssignment";
+import {materializeNominalResourceChoice,nominalResourceAssignmentMatches} from '../engine/planner-next/nominalResourceChoice';
 import { materializeScheduledItinerantUnitMeals } from "../engine/planner-next/itinerantUnitMeals";
 import { roundPreparationId } from "../engine/planner-next/roundSynchronization";
 import { structuralWitnessIdentity, type FutureStructuralWitness } from "../engine/planner-next/anonymousPipelineWitness";
@@ -106,7 +107,15 @@ function projectDirectResourcesToProduct(identityMap:readonly {namespace:string;
 }
 function materializeSnapshotTask(problem:PlannerNextProblem,source:ScheduledTask|PlannerNextProblem["tasks"][number],row:AssistedPlanningSnapshotV1["tasks"][number],identityMap:readonly {namespace:string;sourceId:string;canonicalId:string}[],unitByProduct:ReadonlyMap<number,string>){
   if(row.assignedResourceIds!==undefined)projectDirectResourcesToCanonical(identityMap,row.assignedResourceIds);
-  const selected=row.itinerantTeamId===undefined?source:materializeItinerantUnitAssignment(problem,source,unitByProduct.get(row.itinerantTeamId)??"");
+  let selected=row.itinerantTeamId===undefined?source:materializeItinerantUnitAssignment(problem,source,unitByProduct.get(row.itinerantTeamId)??"");
+  if(selected?.nominalResourceChoice){
+    const ids=projectDirectResourcesToCanonical(identityMap,row.assignedResourceIds??[]);
+    const choices=ids.filter(id=>selected!.nominalResourceChoice!.resourceIds.includes(id));
+    if(choices.length!==1)throw new Error(`INVALID_SNAPSHOT_NOMINAL_RESOURCE:${row.taskId}`);
+    selected=materializeNominalResourceChoice(selected,choices[0]);
+    if(!selected||JSON.stringify([...(selected.requiredResourceIds??[])].sort())!==JSON.stringify(ids.sort()))
+      throw new Error(`INVALID_SNAPSHOT_NOMINAL_RESOURCE:${row.taskId}`);
+  }
   return selected;
 }
 
@@ -154,6 +163,44 @@ export function materializeAssistedSnapshotOccupations(problem:PlannerNextProble
   return {protectedPlacements,protectedOperationalMeals,protectedSetupPreparations,protectedRoundPreparations,protectedParticipantMeals};
 }
 
+/** Revalidate the persisted physical witness, never rediscover it with another search. */
+export function assertNominalProposalWitness(input:EngineInput,draft:AssistedPlanningSnapshotV1,result:AssistedProposalRunResultV1){
+  if(!input.tasks.some(task=>task.resourceRequirements?.anyOf?.length))return;
+  const adapter=adaptEngineInputToPlannerNextProblem(input);
+  if(adapter.status!=='SUPPORTED')throw new Error('INVALID_NOMINAL_PHYSICAL_WITNESS');
+  const problem=adapter.problem,proof=result.evidence.nominalPhysicalFutureWitness as any;
+  if(!proof||!Array.isArray(proof.tasks)||proof.tasks.length!==problem.tasks.length
+    ||new Set(proof.tasks.map((task:ScheduledTask)=>task.id)).size!==problem.tasks.length
+    ||proof.fingerprint!==fingerprint(proof.tasks))throw new Error('INVALID_NOMINAL_PHYSICAL_WITNESS');
+  for(const actual of proof.tasks as ScheduledTask[]){
+    const base=problem.tasks.find(task=>task.id===actual.id);
+    const expected=base&&actual.itinerantUnitId?materializeItinerantUnitAssignment(problem,base,actual.itinerantUnitId):base;
+    if(!expected||!nominalResourceAssignmentMatches(expected,actual)
+      ||actual.kind!==expected.kind||actual.spaceId!==expected.spaceId||actual.participantId!==expected.participantId
+      ||actual.coachId!==expected.coachId||actual.duration!==expected.duration
+      ||JSON.stringify([...actual.dependencies].sort())!==JSON.stringify([...expected.dependencies].sort())
+      ||!expected.nominalResourceChoice&&JSON.stringify([...(actual.requiredResourceIds??[])].sort())!==JSON.stringify([...(expected.requiredResourceIds??[])].sort()))
+      throw new Error('INVALID_NOMINAL_PHYSICAL_WITNESS');
+  }
+  const context=materializeAssistedSnapshotOccupations(problem,adapter.identityMap,draft);
+  for(const placed of context.protectedPlacements){
+    const certified=proof.tasks.find((task:ScheduledTask)=>task.id===placed.id);
+    if(!certified||placed.start!==certified.start||placed.end!==certified.end||placed.spaceId!==certified.spaceId
+      ||JSON.stringify([...(placed.requiredResourceIds??[])].sort())!==JSON.stringify([...(certified.requiredResourceIds??[])].sort()))
+      throw new Error('INVALID_NOMINAL_PHYSICAL_WITNESS');
+  }
+  if(!validatePlan(problem,proof.tasks,proof.setupPreparations??[],proof.spaceMeals??[],proof.participantMeals??[],
+    proof.resourceMeals??[],proof.itinerantUnitMeals??[],proof.roundPreparations??[],proof.operationalMeals??[]).hardValid)
+    throw new Error('INVALID_NOMINAL_PHYSICAL_WITNESS');
+}
+
+/** Proposal persistence remains owned here; workflow only asks for revalidation. */
+export async function assertPersistedNominalProposalWitness(planId:number,runId:number,input:EngineInput,draft:AssistedPlanningSnapshotV1){
+  const {data,error}=await defaultRunAccess.find(planId,runId);
+  if(error||!data)throw new Error('INVALID_NOMINAL_PHYSICAL_WITNESS');
+  assertNominalProposalWitness(input,draft,data.assisted_result_json);
+}
+
 export class ManualValidationUnsupportedError extends Error {
   constructor(readonly phase:'ENGINE_INPUT'|'SNAPSHOT'|'OCCUPATIONS'|'VIOLATION_IDENTITY',readonly reasonCodes:readonly string[]){
     super('ASSISTED_DELTA_VALIDATION_UNSUPPORTED');
@@ -167,7 +214,7 @@ export function validateManualAssistedDelta(input:EngineInput,draft:AssistedPlan
   catch(error){
     if(error instanceof Error&&error.message.startsWith('UNPROJECTABLE_VALIDATION_IDENTITY:'))
       throw new ManualValidationUnsupportedError('VIOLATION_IDENTITY',['VALIDATION_IDENTITY_UNREPRESENTABLE']);
-    if(error instanceof Error&&['UNREPRESENTABLE_PROTECTED_','UNPROJECTABLE_PLAN_RESOURCE:','INVALID_SNAPSHOT_ITINERANT_UNIT:'].some(prefix=>error.message.startsWith(prefix)))
+    if(error instanceof Error&&['UNREPRESENTABLE_PROTECTED_','UNPROJECTABLE_PLAN_RESOURCE:','INVALID_SNAPSHOT_ITINERANT_UNIT:','INVALID_SNAPSHOT_NOMINAL_RESOURCE:'].some(prefix=>error.message.startsWith(prefix)))
       throw new ManualValidationUnsupportedError('OCCUPATIONS',['SNAPSHOT_OCCUPATION_UNREPRESENTABLE']);
     throw error;
   }
@@ -182,6 +229,8 @@ function validateMaterializedManualDelta(problem:PlannerNextProblem,
     ||(row.startPlanned!==null&&!materializableIds.has(canonicalByProduct.get(row.taskId)??""))))throw new ManualValidationUnsupportedError('SNAPSHOT',['SNAPSHOT_TASK_UNREPRESENTABLE']);
   const context=materializeAssistedSnapshotOccupations(problem,identityMap,draft);
   const {protectedPlacements,protectedOperationalMeals,protectedSetupPreparations,protectedParticipantMeals,protectedRoundPreparations}=context;
+  if(problem.tasks.some(task=>task.nominalResourceChoice))
+    throw new ManualValidationUnsupportedError('OCCUPATIONS',['NOMINAL_PHYSICAL_FUTURE_REQUIRES_CERTIFIED_PROPOSAL']);
   const scopeIds=touched.map(id=>canonicalByProduct.get(id)!);
   const assisted=buildAssistedProblem(problem,createPlanningScope({kind:"TASK_IDS",value:scopeIds.join(",")},
     {validationMode:"MANUAL_DELTA_CLEAN_V1"},scopeIds),protectedPlacements,undefined,
@@ -314,6 +363,11 @@ export class AssistedProposalService {
           ...selectedResources,...projectDirectResourcesToCanonical(adapter.identityMap,concrete),
           ...(sourceTask.resourceInheritance === "OPERATION_ONLY" ? item.nonSubstitutableResourceIds ?? [] : declared ?? []),
         ]);
+      }
+      const canonicalTask=adapter.problem.tasks.find(task=>task.id===item.id)!;
+      if(canonicalTask.nominalResourceChoice){
+        if(!nominalResourceAssignmentMatches(canonicalTask,item))throw new Error(`INVALID_PROPOSAL_NOMINAL_RESOURCE:${taskId}`);
+        assignedResourceIds=projectDirectResourcesToProduct(adapter.identityMap,item.requiredResourceIds??[]);
       }
       return {taskId,startPlanned:minuteToEngineTime(item.start),endPlanned:minuteToEngineTime(item.end),
         spaceId:spaceByCanonical.get(item.spaceId)!,zoneId:sourceTask.zoneId??null,

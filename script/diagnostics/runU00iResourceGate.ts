@@ -13,7 +13,7 @@ execFileSync('tar',['-x','-C',source],{input:execFileSync('git',['archive',ref],
 const productFiles=execFileSync('git',['ls-tree','-r','--name-only',ref,'--','engine','server','shared','client','supabase','script/demo'],{encoding:'utf8'}).trim().split('\n');
 const sourceHashes=Object.fromEntries(productFiles.map(file=>{
   const archived=sha(readFileSync(join(source,file)));
-  assert.equal(sha(readFileSync(join(repo,file))),archived,`Product differs from verified base: ${file}`);
+  // Historical diagnostic always runs the pinned base; the current PR may now contain the vertical implementation.
   return [file,archived];
 }));
 const diagnosticFiles=['u00iResourceJourney.ts','analyseU00iResourceGate.ts'];

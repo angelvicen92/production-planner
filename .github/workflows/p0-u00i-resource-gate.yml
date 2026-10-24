@@ -5,12 +5,56 @@ on:
       - 'script/diagnostics/*U00i*'
       - 'script/diagnostics/u00i*'
       - 'script/diagnostics/tsconfig.u00i.json'
+      - 'engine/**'
+      - 'server/**'
+      - 'supabase/migrations/**'
+      - 'script/validation/*U00i*'
+      - 'script/validation/u00i*'
+      - 'script/validation/tsconfig.u00i.json'
       - 'docs/evidence/p0-u00i/**'
       - '.github/workflows/p0-u00i-resource-gate.yml'
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
+  nominal-resource-functional:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        shell: bash
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [[ -n "$task_browser_path" ]]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+          fi
+      - run: npx --no-install tsc -p script/validation/tsconfig.u00i.json
+      - run: node node_modules/tsx/dist/cli.mjs --test engine/planner-next/integration/nominalResourceRequirements.spec.ts server/nominalResourceWitness.spec.ts
+      - name: Two UI/API days, SQL attacks and protected continuation
+        run: node --import tsx script/validation/runU00iFunctional.ts work/u00i-functional
+      - run: node --import tsx script/validation/replayU00iFrozen.ts work/u00i-functional/native work/u00i-cold.json
+      - name: SQL counterfactual without the new integrity guard
+        run: node --import tsx script/validation/runU00iFunctional.ts work/u00i-before-integrity --before-integrity-guard
+      - run: python3 docs/evidence/p0-u00i/implementation/verify.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: u00i-functional
+          path: |
+            work/u00i-functional/manifest.json
+            work/u00i-functional/native/*.json
+            work/u00i-functional/native/*.png
+            work/u00i-before-integrity/manifest.json
+            work/u00i-before-integrity/native/*.json
+            work/u00i-cold.json
   nominal-resource-diagnostic:
     runs-on: ubuntu-latest
     steps:

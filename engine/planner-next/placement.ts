@@ -4,6 +4,7 @@ import { occupationAvoidsProtectedMeal, protectedMealBlocksSpace } from "./space
 import { taskFitsAvailability } from "./taskAvailability";
 import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 import { participantGapMinutes } from "./participantTransition";
+import {nominalResourceVariants,nominalResourceAssignmentMatches} from './nominalResourceChoice';
 
 /** Resolves the resource-specific margin without mutation or throwing for an unknown id. */
 export function effectiveResourceTransitionMinutes(problem: PlannerNextProblem, resourceId: string): number {
@@ -56,7 +57,7 @@ export type PlacementRejectionReason = "DAY_BOUNDS" | "TASK_AVAILABILITY" | "ITI
   | "COACH_AVAILABILITY" | "SPACE_AVAILABILITY" | "REQUIRED_RESOURCE_AVAILABILITY"
   | "SCHEDULED_SPACE_MEAL" | "SCHEDULED_RESOURCE_MEAL" | "OVERLAP_PARTICIPANT" | "OVERLAP_COACH"
   | "OVERLAP_SPACE" | "OVERLAP_REQUIRED_RESOURCE" | "TRANSITION_PARTICIPANT" | "TRANSITION_COACH"
-  | "TRANSITION_REQUIRED_RESOURCE" | "MISSING_AUTHORITY";
+  | "TRANSITION_REQUIRED_RESOURCE" | "MISSING_AUTHORITY" | "NOMINAL_RESOURCE_ASSIGNMENT";
 
 export interface PlacementDiagnostic { valid: boolean; firstRejectionReason: PlacementRejectionReason | null; blockingPlacedTaskId: string | null }
 
@@ -97,6 +98,8 @@ export const exactStartDomainContains=(problem:PlannerNextProblem,domain:ExactTa
 
 /** Exact placed-independent projection of every static hard authority used by canPlaceTask. */
 export function exactTaskStaticStartDomain(problem:PlannerNextProblem,task:Task,scheduledSpaceMeals:ScheduledSpaceMeal[]=[]):ExactTaskStartDomain {
+  if(task.nominalResourceChoice&&!task.nominalResourceChoice.selectedResourceId)return exactStartDomainFromIntervals(problem,
+    nominalResourceVariants(task).flatMap(variant=>exactTaskStaticStartDomain(problem,variant,scheduledSpaceMeals).intervals.map(interval=>({...interval}))));
   const participant=task.kind==="technical"?undefined:problem.participants.find(({id})=>id===task.participantId);
   const coach=task.coachId===undefined?undefined:problem.coaches.find(({id})=>id===task.coachId);
   const space=problem.spaces.find(({id})=>id===task.spaceId);
@@ -116,6 +119,10 @@ export function exactTaskStaticStartDomain(problem:PlannerNextProblem,task:Task,
 
 /** Exact projection of materialized dependencies, occupations and transitions. */
 export function exactTaskDynamicStartDomain(problem:PlannerNextProblem,task:Task,placed:ScheduledTask[],staticDomain:ExactTaskStartDomain):ExactTaskStartDomain {
+  if(task.nominalResourceChoice&&!task.nominalResourceChoice.selectedResourceId)return exactStartDomainFromIntervals(problem,
+    nominalResourceVariants(task).flatMap(variant=>exactTaskDynamicStartDomain(problem,variant,placed,
+      exactStartDomainFromIntervals(problem,intersectExactStartIntervals(staticDomain.intervals.map(interval=>({...interval})),
+        exactTaskStaticStartDomain(problem,variant).intervals.map(interval=>({...interval}))))).intervals.map(interval=>({...interval}))));
   let domain=staticDomain.intervals.map(interval=>({...interval}));
   for(const other of placed){
     if(task.dependencies.includes(other.id))domain=intersectExactStartIntervals(domain,[{start:other.end,end:Number.POSITIVE_INFINITY}]);
@@ -158,6 +165,8 @@ export function prepareTaskPlacementAuthority(problem:PlannerNextProblem,task:Ta
 
 /** Read-only projection of the same ordered authorities used by canPlaceTask. */
 export function diagnoseTaskPlacement(problem: PlannerNextProblem, task: Task, start: number, placed: ScheduledTask[], scheduledSpaceMeals:ScheduledSpaceMeal[]=[]): PlacementDiagnostic {
+  if(task.nominalResourceChoice&&!nominalResourceAssignmentMatches(problem.tasks.find(source=>source.id===task.id)??task,task))
+    return {valid:false,firstRejectionReason:'NOMINAL_RESOURCE_ASSIGNMENT',blockingPlacedTaskId:null};
   const end = start + task.duration;
   const participant = problem.participants.find((x) => x.id === task.participantId);
   const coach = task.coachId === undefined ? undefined : problem.coaches.find((x) => x.id === task.coachId);
@@ -219,5 +228,6 @@ export function diagnoseTaskPlacement(problem: PlannerNextProblem, task: Task, s
 }
 
 export function canPlaceTask(problem: PlannerNextProblem, task: Task, start: number, placed: ScheduledTask[], scheduledSpaceMeals:ScheduledSpaceMeal[]=[]): boolean {
+  if(task.nominalResourceChoice&&!nominalResourceAssignmentMatches(problem.tasks.find(source=>source.id===task.id)??task,task))return false;
   return diagnoseTaskPlacement(problem,task,start,placed,scheduledSpaceMeals).valid;
 }

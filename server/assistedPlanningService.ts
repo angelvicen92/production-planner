@@ -7,7 +7,7 @@ import { buildEffectivePlanConfigRevisionV1, projectEffectiveAuthoritiesFromEngi
 import { buildEffectivePlanConfigReplaySnapshotV1 } from "./assistedPlanningConfigRevision";
 import { buildAssistedPlanningSnapshotV1, rebuildAssistedPlanningSnapshotV1, fingerprintAssistedPlanningSnapshotV1, type AssistedPlanningSnapshotV1 } from "./assistedPlanningSnapshot";
 import { engineTimeToMinute } from "./assistedTime";
-import { validateManualAssistedDelta, ManualValidationUnsupportedError } from "./assistedProposalService";
+import { validateManualAssistedDelta, ManualValidationUnsupportedError,assertPersistedNominalProposalWitness } from "./assistedProposalService";
 import { applyPlanningBlockOperation, type PlanningBlockOperation } from "./assistedPlanningBlocks";
 import { assertPlanningBlockTemporalOrder } from "../shared/assistedPlanningTaskOrdering";
 import type { StageValidationReport } from "../shared/assistedStageValidation";
@@ -60,6 +60,14 @@ export class AssistedPlanningService {
 
   private buildInput(planId: number) {
     return (this.dependencies.buildInput ?? buildEngineInput)(planId, this.storage);
+  }
+  private async assertNominalDraftWitness(planId:number,session:any,input?:Awaited<ReturnType<typeof buildEngineInput>>){
+    input??=await this.buildInput(planId);
+    if(!input.tasks.some(task=>task.resourceRequirements?.anyOf?.length))return;
+    if(session.draftScopeJson?.editKind==='MANUAL')return; // Manual validator separately fails closed on uncertified future.
+    const runId=Number(session.draftScopeJson?.proposalRunId);
+    try{await assertPersistedNominalProposalWitness(planId,runId,input,session.draftSnapshotJson);}
+    catch{throw new AssistedPlanningError('RUN_RESULT_INVALID',422);}
   }
 
   /** Read-only recommendation. The operator sees the selection before generating. */
@@ -250,6 +258,7 @@ export class AssistedPlanningService {
     // rechecks its locked validation and cannot accept a new HARD with NONE/REQUIRED.
     if (role !== 'admin' && (confirmation === 'HARD_EXCEPTIONS' || (current && newStageDeviationCounts(validation).newHardCount > 0)))
       throw new AssistedPlanningError('HARD_ADMIN_AUTHORIZATION_REQUIRED', 403);
+    if(validation?.reportJson?.nominalResourceFuture==='CERTIFIED'&&session)await this.assertNominalDraftWitness(planId,session);
     const { error } = await this.rpc("assisted_accept_stage", { p_plan_id: planId, p_user_id: userId, p_expected_fingerprint: expectedDraftFingerprint, p_expected_base: expectedBaseStageId, p_confirmation: confirmation });
     if (error) dbError(error); return this.state(planId);
   }
@@ -270,6 +279,7 @@ export class AssistedPlanningService {
     if (!persistedRevision || persistedRevision.planId !== planId || persistedRevision.fingerprint !== actual.configurationFingerprint)
       throw new AssistedPlanningError("STALE_CONFIG_REVISION", 409);
     if ((session.draftScopeJson as any)?.editKind !== "MANUAL") {
+      await this.assertNominalDraftWitness(planId,session,input);
       const { error } = await this.rpc("assisted_record_proposal_clean_validation", { p_plan_id: planId,
         p_expected_fingerprint: expectedDraftFingerprint, p_expected_base: expectedBaseStageId,
         p_expected_config: session.currentConfigRevisionId });

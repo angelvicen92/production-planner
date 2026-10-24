@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import type { EngineInput, ProtectedBreakInput, TimeWindow } from "../../types";
 import { resolveConcreteTaskResourceRequirements, resolveEffectiveTaskResourceAssignments } from "./effectiveTaskResourceAssignments";
 import { resolveEffectivePlanResourceAvailability } from "./effectivePlanResourceAvailability";
+import {resolveNominalResourceRequirements} from './nominalResourceRequirements';
 import { resolveEffectivePlanSpatialAvailability } from "./effectivePlanSpatialAvailability";
 import { resolveEffectiveTaskFixedInterval } from "./effectiveTaskFixedInterval";
 import { PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES } from "./plannerNextCapabilities";
@@ -1182,8 +1183,9 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       if (!resourceTypeIds.has(id)) missingResource("task", task.id, `${path}.resourceRequirements.byType.${id}`, id, "resource-type");
       addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT", "task", task.id, `${path}.resourceRequirements.byType.${id}`, "Resource type cannot be selected without loss.", { quantity });
     }
+    for(const issue of resolveNominalResourceRequirements(input,task).issues)
+      addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT","task",task.id,`${path}.resourceRequirements.anyOf`,"Nominal physical choice requires one quantity-one group on an ordinary standalone auxiliary, with unique available daily identities.",issue);
     requirements?.anyOf?.forEach((group, index) => {
-      addIssue("UNSUPPORTED_RESOURCE_REQUIREMENT", "task", task.id, `${path}.resourceRequirements.anyOf.${index}`, "Resource alternatives cannot be converted to a fixed resource.", { quantity: group.quantity });
       group.resourceItemIds.forEach((id) => {
         if (!resourceItemIds.has(String(id))) missingResource("task", task.id, `${path}.resourceRequirements.anyOf.${index}`, id, "resource-item");
       });
@@ -1519,6 +1521,17 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
   });
 
   (input.itinerantTeamAvailability ?? []).forEach(unit=>unit.planResourceItemIds?.forEach(id=>requireResource(id)));
+  for(const assignment of effectiveTaskResourceAssignments.assignments){
+    const projection=projectedResourcesByTaskId.get(assignment.taskId);
+    if(!assignment.nominalResourceIds||projection?.status!=='REPRESENTABLE')continue;
+    const fixed=[...new Set([...(assignment.independentResourceIds??[]),...projection.lockedResourceIds])];
+    const overlap=fixed.filter(id=>assignment.nominalResourceIds!.includes(id));
+    const unsupportedMacro=fixed.some(id=>input.resourcePresenceConcentrationPolicies?.[id]&&input.resourcePresenceConcentrationPolicies[id]!=='OFF');
+    if(overlap.length>1||unsupportedMacro||assignment.nominalSelectedResourceId!==undefined&&overlap.some(id=>id!==assignment.nominalSelectedResourceId))addIssue('UNSUPPORTED_RESOURCE_REQUIREMENT','task',assignment.taskId,`tasks.${assignment.taskId}.resourceRequirements.anyOf`,
+      'A nominal choice cannot consume several alternatives or participate in a resource macro.',{reason:overlap.length>1?'INCOMPATIBLE_FIXED_NOMINAL_RESOURCES':'ANYOF_RESOURCE_MACRO_UNSUPPORTED'});
+    for(const id of projection.lockedResourceIds)if(!assignment.nominalResourceIds.includes(id)&&!assignment.independentResourceIds?.includes(id))
+      addIssue('UNREPRESENTABLE_RESOURCE_LOCK','task',assignment.taskId,`tasks.${assignment.taskId}.resourceRequirements.anyOf`,'Resource lock is outside the nominal domain and independent fixed assignments.',{lockedResourceId:id});
+  }
   const resourceById = new Map(input.planResourceItems.map((resource) => [resource.id, resource]));
   const effectiveAvailabilityById = new Map<number, ReturnType<typeof resolveEffectivePlanResourceAvailability>>();
   let usableRequiredPlanResourceCount = 0;
