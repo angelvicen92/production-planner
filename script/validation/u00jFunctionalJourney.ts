@@ -72,6 +72,7 @@ export async function runU00jFunctionalJourney({appUrl,users,db,directory,pass}:
       assert.equal(daily[3].resourceItemId,null);
     }
     const input=await buildEngineInput(planId,storage),adapter=adaptEngineInputToPlannerNextProblem(input);
+    if(index)assert.equal(input.planResourceItems.find(r=>r.id===daily[3].id)!.resourceItemId,null);
     save(`${label}-input`,input);save(`${label}-adapter`,adapter);
     if(process.env.OPTIPLAN_U00J_FUNCTIONAL_BASELINE==='1'){
       assert.equal(adapter.status,'UNSUPPORTED');

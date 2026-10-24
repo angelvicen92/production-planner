@@ -193,7 +193,6 @@ const calculateDeclaredBundleMetricsFromScheduled = (input: EngineV3Input, sched
   for (const scheduledTask of scheduled) {
     const assignedCounts = new Map<number, number>();
     for (const resource of scheduledTask.assignedResources) {
-      if(resource.resourceItemId===null)continue; // Daily ad hoc identities have no catalogue bundle component.
       assignedCounts.set(resource.resourceItemId, (assignedCounts.get(resource.resourceItemId) ?? 0) + 1);
     }
     const usedBundleIds: string[] = [];

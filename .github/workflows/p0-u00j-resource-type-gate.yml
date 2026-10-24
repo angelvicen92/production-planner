@@ -35,7 +35,7 @@ jobs:
             npx --no-install playwright install --with-deps chromium
           fi
       - run: npx --no-install tsc -p script/validation/tsconfig.u00j.json
-      - run: node --import tsx --test engine/planner-next/integration/typedNominalResourceRequirements.spec.ts
+      - run: node --import tsx --test engine/planner-next/integration/typedNominalResourceRequirements.spec.ts engine/planner-next/integration/typedNominalResourceWitness.spec.ts
       - name: Red main and single-authority anyOf counterfactual
         run: node --import tsx script/validation/runU00jFunctional.ts work/u00j-gate1 --baseline
       - name: SQL omission before 111 (reverted transaction)

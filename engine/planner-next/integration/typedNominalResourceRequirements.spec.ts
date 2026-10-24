@@ -23,7 +23,7 @@ test('native type request preserves scarce A and uses B, without mutating input'
  assert.equal(run(p,['task:2'],first.proposal).evidence.completeForScope,true);
 });
 test('type resolution separates inventory, available alternatives and selected identity; ad hoc has no global dependency',()=>{
- const input=captured();input.planResourceItems[1].resourceItemId=null;
+ const input=captured();Object.assign(input.planResourceItems[1],{resourceItemId:null});
  input.planResourceItems[0].isAvailable=false;input.tasks=input.tasks.slice(0,1);
  const domain=resolveNominalResourceRequirements(input,input.tasks[0]);
  assert.deepEqual(domain.compatibleResourceIds,[4,5]);assert.deepEqual(domain.resourceIds,[4,5]);assert.deepEqual(domain.availableResourceIds,[5]);assert.equal(domain.selectedResourceId,undefined);

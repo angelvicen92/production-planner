@@ -3205,7 +3205,8 @@ export class SupabaseStorage implements IStorage {
 
     return (data ?? []).map((r: any) => ({
       id: Number(r.id),
-      resourceItemId: Number(r.resource_item_id),
+      // Preserve the raw nullable catalogue identity of a daily ad hoc resource.
+      resourceItemId: r.resource_item_id == null ? r.resource_item_id : Number(r.resource_item_id),
       typeId: Number(r.type_id),
       typeCode: r.resource_types?.code == null ? null : String(r.resource_types.code),
       typeName: r.resource_types?.name == null ? null : String(r.resource_types.name),

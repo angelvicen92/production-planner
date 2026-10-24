@@ -1,5 +1,5 @@
 {
  "extends":"../../tsconfig.json",
- "include":["runU00jFunctional.ts","u00jFunctionalJourney.ts","../../engine/planner-next/integration/typedNominalResourceRequirements.spec.ts"],
+ "include":["../../engine/planner-next/integration/typedNominalResourceWitness.spec.ts","runU00jFunctional.ts","u00jFunctionalJourney.ts","../../engine/planner-next/integration/typedNominalResourceRequirements.spec.ts"],
  "exclude":[],"compilerOptions":{"incremental":false}
 }
