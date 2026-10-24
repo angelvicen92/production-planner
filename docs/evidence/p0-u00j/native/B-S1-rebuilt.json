@@ -42,11 +42,6 @@
     },
     {
       "namespace": "resource-item",
-      "sourceId": "0",
-      "canonicalId": "resource-item:0"
-    },
-    {
-      "namespace": "resource-item",
       "sourceId": "1",
       "canonicalId": "resource-item:1"
     },
@@ -189,8 +184,8 @@
     "readOnly": true
   },
   "issues": [],
-  "sourceFingerprint": "8e6f15398faf63995f57eb3061420cecd891ed40ebeae5ff41e939c652573f8e",
-  "identityMapFingerprint": "129c5b7368e4d5ca1084a247a8dc3a9b2350ff488696f0b5f8445c9c4361d257",
+  "sourceFingerprint": "f97715292f447bad66928f9d7efcf285183eecb224d08bb2e3933d8db3583522",
+  "identityMapFingerprint": "69313e820354e28d59a681bb3e18cd178b94120252673ebb6e00f7c8590b9933",
   "readOnly": true,
   "status": "SUPPORTED",
   "problem": {

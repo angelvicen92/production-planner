@@ -19,7 +19,7 @@
   },
   {
     "guard": "missing-choice",
-    "error": "RUN_RESULT_INVALID",
+    "error": "RUN_RESULT_INVALID: NOMINAL_SELECTION",
     "hashesRecomputed": true,
     "rolledBack": true
   },
@@ -97,7 +97,7 @@
   },
   {
     "guard": "future-transition",
-    "error": "RUN_RESULT_INVALID: WITNESS_PARTICIPANT_AVAILABILITY",
+    "error": "RUN_RESULT_INVALID",
     "hashesRecomputed": true,
     "rolledBack": true
   },

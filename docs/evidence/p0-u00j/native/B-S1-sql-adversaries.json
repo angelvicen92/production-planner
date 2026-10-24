@@ -1,25 +1,25 @@
 [
   {
     "guard": "omit",
-    "error": "RUN_RESULT_INVALID",
+    "error": "RUN_RESULT_INVALID: NOMINAL_SELECTION",
     "hashesRecomputed": true,
     "rolledBack": true
   },
   {
     "guard": "double",
-    "error": "RUN_RESULT_INVALID",
+    "error": "RUN_RESULT_INVALID: NOMINAL_SELECTION",
     "hashesRecomputed": true,
     "rolledBack": true
   },
   {
     "guard": "invented",
-    "error": "RUN_RESULT_INVALID",
+    "error": "RUN_RESULT_INVALID: NOMINAL_SELECTION",
     "hashesRecomputed": true,
     "rolledBack": true
   },
   {
     "guard": "missing-choice",
-    "error": "RUN_RESULT_INVALID",
+    "error": "RUN_RESULT_INVALID: NOMINAL_SELECTION",
     "hashesRecomputed": true,
     "rolledBack": true
   },
@@ -31,7 +31,7 @@
   },
   {
     "guard": "future-collision",
-    "error": "RUN_RESULT_INVALID",
+    "error": "RUN_RESULT_INVALID: RESOURCE_OVERLAP_OR_TRANSITION",
     "hashesRecomputed": true,
     "rolledBack": true
   },
@@ -91,13 +91,13 @@
   },
   {
     "guard": "independent-byItem",
-    "error": "RUN_RESULT_INVALID",
+    "error": "RUN_RESULT_INVALID: BYITEM_REQUIRED",
     "hashesRecomputed": true,
     "rolledBack": true
   },
   {
     "guard": "future-transition",
-    "error": "RUN_RESULT_INVALID: WITNESS_PARTICIPANT_AVAILABILITY",
+    "error": "RUN_RESULT_INVALID: RESOURCE_OVERLAP_OR_TRANSITION",
     "hashesRecomputed": true,
     "rolledBack": true
   },

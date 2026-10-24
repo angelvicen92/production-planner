@@ -174,7 +174,7 @@
         "typeCode": "physical_exclusive",
         "typeName": "Physical exclusive equipment",
         "isAvailable": true,
-        "resourceItemId": 0,
+        "resourceItemId": null,
         "availabilityEnd": "12:00",
         "availabilityStart": "10:30"
       },

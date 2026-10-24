@@ -185,7 +185,7 @@
     },
     {
       "id": 10,
-      "resourceItemId": 0,
+      "resourceItemId": null,
       "typeId": 1,
       "typeCode": "physical_exclusive",
       "typeName": "Physical exclusive equipment",
