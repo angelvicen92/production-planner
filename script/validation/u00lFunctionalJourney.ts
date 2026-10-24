@@ -132,7 +132,7 @@ export async function runU00lFunctionalJourney({appUrl,users,db,directory,pass}:
       await page.getByRole('button',{name:'Aplicar al borrador',exact:true}).waitFor();await action('Aplicar al borrador',`/proposals/${run.id}/apply`);const draft=await api(path);save(`${label}-S${stage+1}-draft`,draft);
       save(`${label}-S${stage+1}-workday`,(await db.query('SELECT replay_snapshot_json FROM public.plan_config_revisions WHERE id=$1',[draft.currentConfigRevisionId])).rows[0].replay_snapshot_json);
       const adversaries:any[]=[];
-      const guards=['coach-missing','coach-changed','coach-unavailable','coach-overlap',...(index?['coach-transition']:[]),'coach-lock','resource-lock','nonexistent',...(index?['fixed-omission']:[]),'omit','double','invented','missing-choice','future-omission','future-collision','future-identity','future-dependencies','type-identity','domain','unavailable','time-lock','space-availability','draft','base','revision','permission',
+      const guards=['block-key','blocks-space','coach-missing','coach-changed','coach-unavailable','coach-overlap',...(index?['coach-transition']:[]),'coach-lock','resource-lock','nonexistent',...(index?['fixed-omission']:[]),'omit','double','invented','missing-choice','future-omission','future-collision','future-identity','future-dependencies','type-identity','domain','unavailable','time-lock','space-availability','draft','base','revision','permission',
         ...(index?['independent-byItem','future-availability']:[]),...(index?['outside-scope']:[]),...(stage?['protected']:[])];
       for(const guard of guards){
         await db.query('BEGIN');let failure:any;
@@ -150,6 +150,8 @@ export async function runU00lFunctionalJourney({appUrl,users,db,directory,pass}:
           if(guard==='future-identity')proof.tasks.find((t:any)=>t.id===`task:${tasks[1].id}`).participantId='participant:999';
           if(guard==='type-identity')nominal.nominalResourceChoice.requestedResourceTypeId=`resource-type:${otherType.id}`;
           if(guard==='domain')nominal.nominalResourceChoice.resourceIds=[`plan-resource:${daily[1].id}`];
+          if(guard==='block-key')nominal.blockKey='plan-resource:999';
+          if(guard==='blocks-space')nominal.blocksSpace=false;
           if(guard==='coach-missing')delete nominal.coachId;
           if(guard==='coach-changed')nominal.coachId=`plan-resource:${daily[2].id}`;
           if(guard==='coach-unavailable')await db.query('UPDATE public.plan_resource_items SET is_available=false WHERE id=$1',[dailyCoach.id]);

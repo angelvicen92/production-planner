@@ -13,7 +13,7 @@ for(const [label,stage] of [['A',1],['B',1],['B',2]] as const)test(`native Main 
  const input=read(`${label}-input`),result=read(`${label}-S${stage}-run`).assisted_result_json;
  assert.doesNotThrow(()=>assertNominalProposalWitness(input,result.proposedDraftSnapshot,result));
 });
-for(const attack of ['absent','double','invented','future','coach','unavailable','independent'])test(`Main persisted witness rejects ${attack} with a recalculated hash`,()=>{
+for(const attack of ['absent','double','invented','future','coach','unavailable','independent','block-key','blocks-space'])test(`Main persisted witness rejects ${attack} with a recalculated hash`,()=>{
  const input=read('B-input'),result=read('B-S1-run').assisted_result_json,proof=result.evidence.nominalPhysicalFutureWitness;
  const main=proof.tasks.find((t:any)=>t.id==='task:12');assert.ok(main.nominalResourceChoice);
  if(attack==='absent')delete main.nominalResourceChoice.selectedResourceId;
@@ -21,6 +21,8 @@ for(const attack of ['absent','double','invented','future','coach','unavailable'
  if(attack==='invented')main.nominalResourceChoice.selectedResourceId='plan-resource:999';
  if(attack==='future')proof.tasks=proof.tasks.filter((t:any)=>t.kind!=='main'||t.id===main.id);
  if(attack==='coach')main.coachId='plan-resource:1';
+ if(attack==='block-key')main.blockKey='plan-resource:999';
+ if(attack==='blocks-space')main.blocksSpace=false;
  if(attack==='unavailable')input.planResourceItems.find((r:any)=>`plan-resource:${r.id}`===main.nominalResourceChoice.selectedResourceId).isAvailable=false;
  if(attack==='independent')main.requiredResourceIds=main.requiredResourceIds.filter((id:string)=>!main.nominalResourceChoice.fixedResourceIds.includes(id));
  proof.fingerprint=fingerprint(proof.tasks);assert.throws(()=>assertNominalProposalWitness(input,result.proposedDraftSnapshot,result),/INVALID_NOMINAL_PHYSICAL_WITNESS/);

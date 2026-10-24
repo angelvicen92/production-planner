@@ -177,7 +177,8 @@ export function assertNominalProposalWitness(input:EngineInput,draft:AssistedPla
     const expected=base&&actual.itinerantUnitId?materializeItinerantUnitAssignment(problem,base,actual.itinerantUnitId):base;
     if(!expected||!nominalResourceAssignmentMatches(expected,actual)
       ||actual.kind!==expected.kind||actual.spaceId!==expected.spaceId||actual.participantId!==expected.participantId
-      ||actual.coachId!==expected.coachId||actual.duration!==expected.duration
+      ||actual.coachId!==expected.coachId||actual.blockKey!==expected.blockKey
+      ||(actual.blocksSpace??true)!==(expected.blocksSpace??true)||actual.duration!==expected.duration
       ||JSON.stringify([...actual.dependencies].sort())!==JSON.stringify([...expected.dependencies].sort())
       ||!expected.nominalResourceChoice&&JSON.stringify([...(actual.requiredResourceIds??[])].sort())!==JSON.stringify([...(expected.requiredResourceIds??[])].sort()))
       throw new Error('INVALID_NOMINAL_PHYSICAL_WITNESS');
