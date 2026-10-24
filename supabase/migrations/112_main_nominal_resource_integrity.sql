@@ -36,7 +36,7 @@ BEGIN
   DECLARE
    proof jsonb:=evidence->'nominalPhysicalFutureWitness'->'tasks'; certified jsonb;
    source_row record; requirements jsonb; operation jsonb; domain_ids text[]; required_ids text[];
-   item record; mapped_id bigint; fixed_id bigint; margin integer; requested_type text; typed boolean; independent_ids text[]; participant public.contestants%rowtype; nominal_expected_coach_id bigint; transport_contract record;
+   item record; mapped_id bigint; fixed_id bigint; margin integer; requested_type text; typed boolean; independent_ids text[]; participant public.contestants%rowtype; nominal_expected_coach_id bigint; transport_contract record; main_flow jsonb;
   BEGIN
 
    IF coalesce(workday#>>'{plannerNextAuthorities,plannerNext,profile}','MAIN_WITH_VOCAL_FEEDER') NOT IN ('STANDALONE_ONLY','MAIN_WITH_VOCAL_FEEDER')
@@ -96,6 +96,7 @@ BEGIN
      SELECT c.vocal_coach_plan_resource_item_id INTO nominal_expected_coach_id FROM public.contestants c
        WHERE c.id=source_row.contestant_id AND c.plan_id=r.plan_id;
      IF nominal_expected_coach_id IS NULL OR certified->>'coachId' IS DISTINCT FROM 'plan-resource:'||nominal_expected_coach_id
+       OR operation->>'plannerNextKind'='main' AND certified->>'blockKey' IS DISTINCT FROM 'plan-resource:'||nominal_expected_coach_id
        OR NOT EXISTS (SELECT 1 FROM public.plan_resource_items q WHERE q.plan_id=r.plan_id AND q.id=nominal_expected_coach_id
          AND q.is_available
          AND (certified->>'start')::integer>=split_part(coalesce(q.availability_start,p.work_start),':',1)::integer*60+split_part(coalesce(q.availability_start,p.work_start),':',2)::integer
@@ -217,6 +218,44 @@ BEGIN
      THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
     END IF;
    END LOOP;
+   IF coalesce(workday#>>'{plannerNextAuthorities,plannerNext,profile}','MAIN_WITH_VOCAL_FEEDER')='MAIN_WITH_VOCAL_FEEDER' THEN
+    main_flow:=workday#>'{plannerNextAuthorities,plannerNext,mainFlow}';
+    IF main_flow->>'continuity' IS DISTINCT FROM 'REQUIRED'
+      OR coalesce((main_flow->>'maxBlocksByKey')::integer,0)<1 OR coalesce((main_flow->>'minTasksPerBlock')::integer,0)<1
+      OR EXISTS (SELECT 1 FROM jsonb_array_elements(proof) x WHERE x->>'kind'='main'
+        AND x->>'spaceId' IS DISTINCT FROM 'space:'||(main_flow->>'spaceId'))
+    THEN RAISE EXCEPTION 'RUN_RESULT_INVALID: MAIN_FLOW_AUTHORITY'; END IF;
+    -- A physical witness must also retain the existing required Main geometry.
+    -- Only a real operational Main-space meal may bridge a positive gap. Its
+    -- identity, interval and consumption are checked against the daily revision.
+    IF EXISTS (WITH ordered AS (
+      SELECT x,lag((x->>'end')::integer) OVER (ORDER BY (x->>'start')::integer,x->>'id') AS previous_end
+       FROM jsonb_array_elements(proof) x WHERE x->>'kind'='main')
+     SELECT 1 FROM ordered WHERE previous_end<(x->>'start')::integer AND NOT EXISTS (
+      SELECT 1 FROM jsonb_array_elements(coalesce(evidence#>'{nominalPhysicalFutureWitness,operationalMeals}','[]'::jsonb)) m,
+        jsonb_array_elements(coalesce(workday#>'{plannerNextAuthorities,operationalMealPolicies}','[]'::jsonb)) policy
+      WHERE m->>'id'='break:'||(policy->>'id')
+        AND (policy->'spaceIds') @> jsonb_build_array((main_flow->>'spaceId')::bigint)
+        AND (m->>'start')::integer=previous_end AND (m->>'end')::integer=(x->>'start')::integer
+        AND (m->>'end')::integer-(m->>'start')::integer=(policy->>'durationMinutes')::integer
+        AND (m->>'duration')::integer=(policy->>'durationMinutes')::integer
+        AND (m->>'start')::integer>=split_part(policy#>>'{window,start}',':',1)::integer*60+split_part(policy#>>'{window,start}',':',2)::integer
+        AND (m->>'end')::integer<=split_part(policy#>>'{window,end}',':',1)::integer*60+split_part(policy#>>'{window,end}',':',2)::integer
+        AND (SELECT coalesce(array_agg(value ORDER BY value),'{}'::text[]) FROM jsonb_array_elements_text(m->'resourceIds'))
+          =(SELECT coalesce(array_agg('plan-resource:'||value ORDER BY 'plan-resource:'||value),'{}'::text[]) FROM jsonb_array_elements_text(policy->'planResourceItemIds'))
+        AND (SELECT coalesce(array_agg(value ORDER BY value),'{}'::text[]) FROM jsonb_array_elements_text(m->'spaceIds'))
+          =(SELECT coalesce(array_agg('space:'||value ORDER BY 'space:'||value),'{}'::text[]) FROM jsonb_array_elements_text(policy->'spaceIds'))))
+    THEN RAISE EXCEPTION 'RUN_RESULT_INVALID: MAIN_FLOW_CONTINUITY'; END IF;
+    IF EXISTS (WITH ordered AS (
+       SELECT x,lag(x->>'coachId') OVER (ORDER BY (x->>'start')::integer,x->>'id') AS previous_coach
+        FROM jsonb_array_elements(proof) x WHERE x->>'kind'='main'),
+      numbered AS (SELECT x,sum(CASE WHEN previous_coach IS DISTINCT FROM x->>'coachId' THEN 1 ELSE 0 END)
+        OVER (ORDER BY (x->>'start')::integer,x->>'id') AS run FROM ordered),
+      runs AS (SELECT x->>'coachId' AS coach,count(*) AS size FROM numbered GROUP BY run,x->>'coachId')
+      SELECT 1 FROM runs GROUP BY coach HAVING min(size)<(main_flow->>'minTasksPerBlock')::integer
+        OR count(*)>(main_flow->>'maxBlocksByKey')::integer)
+    THEN RAISE EXCEPTION 'RUN_RESULT_INVALID: MAIN_FLOW_BLOCKS'; END IF;
+   END IF;
    -- Existing transport packets may share a space only when their persisted
    -- template, equal interval, HARD cardinality and inter-packet gap all agree.
    FOR transport_contract IN
