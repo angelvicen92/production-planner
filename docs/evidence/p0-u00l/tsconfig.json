@@ -1,0 +1,6 @@
+{
+  "extends":"../../../tsconfig.json",
+  "include":["run.ts","choice-probe.ts","pre-identity-probe.ts"],
+  "exclude":[],
+  "compilerOptions":{"incremental":false}
+}

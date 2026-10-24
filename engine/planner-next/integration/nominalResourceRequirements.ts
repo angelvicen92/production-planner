@@ -2,7 +2,7 @@ import type {EngineInput,TaskInput} from '../../types';
 import {resolveConcreteResourceItem} from '../../concreteTaskResourceRequirements';
 import {resolveEffectivePlanResourceAvailability} from './effectivePlanResourceAvailability';
 
-/** Explicit opt-in: one physical choice in an ordinary standalone auxiliary. */
+/** One exclusive physical choice in an ordinary auxiliary or Main pipeline task. */
 export function resolveNominalResourceRequirements(input:EngineInput,task:TaskInput){
   const groups=task.resourceRequirements?.anyOf;
   const types=Object.entries(task.resourceRequirements?.byType??{});
@@ -23,8 +23,10 @@ export function resolveNominalResourceRequirements(input:EngineInput,task:TaskIn
     ||input.technicalChains?.some(policy=>policy.orderedTaskIds.includes(task.id))
     ||input.roundSynchronizations?.some(policy=>policy.lanes.some(lane=>lane.taskIds.includes(task.id)))
     ||input.anchoredAccompaniments?.some(anchor=>[anchor.anchorTaskId,...anchor.beforeTaskIds,...anchor.afterTaskIds].includes(task.id));
-  if(input.plannerNext?.profile!=='STANDALONE_ONLY'||task.plannerNextKind!=='auxiliary'||structured)
-    issues.push({reason:'ANYOF_REQUIRES_ORDINARY_STANDALONE_AUXILIARY'});
+  const ordinaryRole=input.plannerNext?.profile==='STANDALONE_ONLY'&&task.plannerNextKind==='auxiliary'
+    ||(input.plannerNext?.profile??'MAIN_WITH_VOCAL_FEEDER')==='MAIN_WITH_VOCAL_FEEDER'&&task.plannerNextKind==='main';
+  if(!ordinaryRole||structured)
+    issues.push({reason:'NOMINAL_REQUIRES_ORDINARY_STANDALONE_AUXILIARY_OR_MAIN'});
   if(input.plannerNext?.searchPolicy!=='EXACT_CONSTRUCTIVE')issues.push({reason:'ANYOF_REQUIRES_EXACT_ORDINARY_CONSTRUCTOR'});
   if(!typed&&groups!.length!==1){issues.push({reason:'ANYOF_REQUIRES_SINGLE_GROUP'});return {resourceIds,availableResourceIds,issues};}
   const group=typed?{quantity:types[0][1],resourceItemIds:[] as number[]}:groups![0];

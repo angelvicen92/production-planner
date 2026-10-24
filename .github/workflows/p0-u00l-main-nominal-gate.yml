@@ -1,0 +1,54 @@
+name: P0 U00l Main nominal resources
+on:
+  pull_request:
+    paths:
+      - 'engine/**'
+      - 'server/**'
+      - 'supabase/migrations/**'
+      - 'script/validation/*U00l*'
+      - 'script/validation/u00l*'
+      - 'script/validation/tsconfig.u00l.json'
+      - 'docs/evidence/p0-u00l/**'
+      - '.github/workflows/p0-u00l-main-nominal-gate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  main-nominal-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$task_browser_path" ]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+          fi
+      - run: npx --no-install tsc -p script/validation/tsconfig.u00l.json
+      - run: node --import tsx --test engine/planner-next/integration/mainNominalResourceChoice.spec.ts engine/planner-next/integration/mainNominalResourceWitness.spec.ts
+      - name: Both variants, rejection ablation and recovery in the same spot
+        run: node --import tsx docs/evidence/p0-u00l/run.ts work/u00l-causal
+      - name: Two new native days through Draft, validation and three Stages
+        run: node --import tsx script/validation/runU00lFunctional.ts work/u00l-native
+      - run: node --import tsx script/validation/replayU00iFrozen.ts work/u00l-native/native work/u00l-cold.json
+      - run: python3 docs/evidence/p0-u00l/verify.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: u00l-main-nominal
+          path: |
+            work/u00l-causal/*.json
+            work/u00l-native/manifest.json
+            work/u00l-native/native/*.json
+            work/u00l-native/native/*.png
+            work/u00l-cold.json

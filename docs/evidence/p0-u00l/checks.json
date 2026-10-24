@@ -1,0 +1,48 @@
+{
+  "suite": {
+    "status": "PASS",
+    "sha256": "8bb903ca17a8afc474fa7ce164ada4549e7c3cd69f5549f96d219594d4163189"
+  },
+  "typescript": {
+    "status": "PASS",
+    "sha256": "72ac1ed211f823743a774392fa4dc0fb8691ef0f291806b8f05cb716496d57f3"
+  },
+  "harness": {
+    "status": "PASS",
+    "sha256": "fe5cf9f03b4fda5899dda56722e712447012a719da9aff3d720b80f638ca9695"
+  },
+  "evidenceTypescript": {
+    "status": "PASS",
+    "sha256": "fe5cf9f03b4fda5899dda56722e712447012a719da9aff3d720b80f638ca9695"
+  },
+  "build": {
+    "status": "PASS",
+    "sha256": "8284e3b0cbb0a06ecfc76be6e94f9334cdd90d267d237e9991134e844d2615ac"
+  },
+  "migrations": {
+    "status": "PASS",
+    "sha256": "7590cb357e655b18fee3388be7bef33f01bc5c5a484d25ac065dece058bb7163"
+  },
+  "node": "20.20.2",
+  "productRef": "a356169fc2bd72bdee2af8afb8607e5af349b558",
+  "suiteTests": 3225,
+  "suitePassed": 3225,
+  "suiteFailed": 0,
+  "historicalExclusions": [
+    "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts",
+    "server/benchmarks/runA2Assist7Evidence.spec.ts"
+  ],
+  "finalNativeDays": [
+    {
+      "obligations": 11,
+      "stages": 1
+    },
+    {
+      "obligations": 6,
+      "stages": 2
+    }
+  ],
+  "sqlNegativeCount": 90,
+  "sqlLockForeignKeyRejections": 6,
+  "remoteWrites": 0
+}

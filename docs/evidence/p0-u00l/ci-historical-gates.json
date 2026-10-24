@@ -1,0 +1,31 @@
+{
+  "historicalU00jRef": "4733938cad61897a2a3ea89cf77dd6a1c0de0383",
+  "candidateHistoricalVerifier": {
+    "status": "REJECTED",
+    "path": "engine/planner-next/nominalResourceChoice.ts",
+    "reason": "Historical source hashes must be checked against their own integrated source"
+  },
+  "historicalVerifier": {
+    "status": "PASS",
+    "nativeDays": [
+      2,
+      4
+    ],
+    "stages": 3,
+    "sqlAdversaries": 60,
+    "adHocSelection": true,
+    "nativeNegativeDays": 8
+  },
+  "before111": {
+    "accepted": true,
+    "hashesRecomputed": true,
+    "rolledBack": true
+  },
+  "supersededCiRun": {
+    "url": "https://github.com/angelvicen92/production-planner/actions/runs/40124312416",
+    "head": "0c39b4933980370aaa38eaf3717ded53709dcd46",
+    "failure": "The before-111 counterfactual retained migration 112 and correctly rejected NOMINAL_SELECTION"
+  },
+  "workflowSyntax": "PASS YAML and bash -n",
+  "productChanges": false
+}

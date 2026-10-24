@@ -38,12 +38,21 @@ jobs:
       - run: node --import tsx --test engine/planner-next/integration/typedNominalResourceRequirements.spec.ts engine/planner-next/integration/typedNominalResourceWitness.spec.ts
       - name: Red main and single-authority anyOf counterfactual
         run: node --import tsx script/validation/runU00jFunctional.ts work/u00j-gate1 --baseline
-      - name: SQL omission before 111 (reverted transaction)
-        run: node --import tsx script/validation/runU00jFunctional.ts work/u00j-before111 --before-integrity-guard
+      - name: SQL omission before 111 on the integrated U00j source (reverted transaction)
+        run: |
+          mkdir -p work/u00j-integrated-source
+          git archive 4733938cad61897a2a3ea89cf77dd6a1c0de0383 | tar -x -C work/u00j-integrated-source
+          ln -s "$GITHUB_WORKSPACE/node_modules" work/u00j-integrated-source/node_modules
+          git -C work/u00j-integrated-source init
+          git -C work/u00j-integrated-source add .
+          git -C work/u00j-integrated-source -c user.name=Evidence -c user.email=evidence@local commit -qm 'Historical U00j source archive'
+          cd work/u00j-integrated-source
+          node --import tsx script/validation/runU00jFunctional.ts "$GITHUB_WORKSPACE/work/u00j-before111" --before-integrity-guard
       - name: Two native days through Stage, attacks and replay
         run: node --import tsx script/validation/runU00jFunctional.ts work/u00j-native
       - run: node --import tsx script/validation/replayU00iFrozen.ts work/u00j-native/native work/u00j-cold.json
-      - run: python3 docs/evidence/p0-u00j/verify.py
+      - name: Verify historical U00j receipts against their integrated source
+        run: python3 work/u00j-integrated-source/docs/evidence/p0-u00j/verify.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:

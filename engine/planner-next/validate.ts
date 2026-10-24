@@ -312,12 +312,13 @@ export function preflight(problem: PlannerNextProblem): string[] {
   for (const task of tasks) {
     if(task.nominalResourceChoice){
       const choice=task.nominalResourceChoice;
-      if(!Array.isArray(choice.resourceIds)||!Array.isArray(choice.fixedResourceIds)||!standaloneOnly||problem.searchPolicy!=='EXACT_CONSTRUCTIVE'||task.kind!=="auxiliary"||task.jointGroupId||task.setupFamilyId||task.itinerantUnitId||task.allowedItinerantUnitIds?.length
+      if(!Array.isArray(choice.resourceIds)||!Array.isArray(choice.fixedResourceIds)||!(standaloneOnly&&task.kind==='auxiliary'||(problem.profile??'MAIN_WITH_VOCAL_FEEDER')==='MAIN_WITH_VOCAL_FEEDER'&&task.kind==='main')||problem.searchPolicy!=='EXACT_CONSTRUCTIVE'||task.jointGroupId||task.setupFamilyId||task.itinerantUnitId||task.allowedItinerantUnitIds?.length
         ||problem.spaces.find(space=>space.id===task.spaceId)?.setupPolicy
         ||problem.spaces.find(space=>space.id===task.spaceId)?.secondaryContinuity==='REQUIRED'
         ||[...choice.resourceIds,...choice.fixedResourceIds].some(id=>{const policy=problem.resources.find(resource=>resource.id===id)?.presenceConcentrationPolicy;return policy&&policy!=='OFF';})
         ||problem.technicalChains?.some(chain=>chain.orderedTaskIds.includes(task.id))
         ||problem.roundSynchronizations?.some(policy=>policy.lanes.some(lane=>lane.taskIds.includes(task.id)))
+        ||problem.anchoredAccompaniments?.some(anchor=>[anchor.anchorTaskId,...anchor.beforeTaskIds,...anchor.afterTaskIds].includes(task.id))
         ||!choice.resourceIds.length||new Set(choice.resourceIds).size!==choice.resourceIds.length
         ||choice.resourceIds.some(id=>!resourceIds.has(id))
         ||choice.fixedResourceIds.some(id=>!resourceIds.has(id))||!nominalResourceVariants(task).length)

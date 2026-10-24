@@ -109,7 +109,7 @@ function materializeSnapshotTask(problem:PlannerNextProblem,source:ScheduledTask
   if(row.assignedResourceIds!==undefined)projectDirectResourcesToCanonical(identityMap,row.assignedResourceIds);
   let selected=row.itinerantTeamId===undefined?source:materializeItinerantUnitAssignment(problem,source,unitByProduct.get(row.itinerantTeamId)??"");
   if(selected?.nominalResourceChoice){
-    const ids=projectDirectResourcesToCanonical(identityMap,row.assignedResourceIds??[]);
+    const ids=projectDirectResourcesToCanonical(identityMap,row.assignedResourceIds??[]).filter(id=>id!==selected!.coachId);
     const choices=ids.filter(id=>selected!.nominalResourceChoice!.resourceIds.includes(id));
     if(choices.length!==1)throw new Error(`INVALID_SNAPSHOT_NOMINAL_RESOURCE:${row.taskId}`);
     selected=materializeNominalResourceChoice(selected,choices[0]);
@@ -177,7 +177,8 @@ export function assertNominalProposalWitness(input:EngineInput,draft:AssistedPla
     const expected=base&&actual.itinerantUnitId?materializeItinerantUnitAssignment(problem,base,actual.itinerantUnitId):base;
     if(!expected||!nominalResourceAssignmentMatches(expected,actual)
       ||actual.kind!==expected.kind||actual.spaceId!==expected.spaceId||actual.participantId!==expected.participantId
-      ||actual.coachId!==expected.coachId||actual.duration!==expected.duration
+      ||actual.coachId!==expected.coachId||actual.blockKey!==expected.blockKey
+      ||(actual.blocksSpace??true)!==(expected.blocksSpace??true)||actual.duration!==expected.duration
       ||JSON.stringify([...actual.dependencies].sort())!==JSON.stringify([...expected.dependencies].sort())
       ||!expected.nominalResourceChoice&&JSON.stringify([...(actual.requiredResourceIds??[])].sort())!==JSON.stringify([...(expected.requiredResourceIds??[])].sort()))
       throw new Error('INVALID_NOMINAL_PHYSICAL_WITNESS');
@@ -367,7 +368,8 @@ export class AssistedProposalService {
       const canonicalTask=adapter.problem.tasks.find(task=>task.id===item.id)!;
       if(canonicalTask.nominalResourceChoice){
         if(!nominalResourceAssignmentMatches(canonicalTask,item))throw new Error(`INVALID_PROPOSAL_NOMINAL_RESOURCE:${taskId}`);
-        assignedResourceIds=projectDirectResourcesToProduct(adapter.identityMap,item.requiredResourceIds??[]);
+        assignedResourceIds=projectDirectResourcesToProduct(adapter.identityMap,[...(item.requiredResourceIds??[]),
+          ...projectDirectResourcesToCanonical(adapter.identityMap,sourceTask.assignedResourceIds??[]).filter(id=>id===item.coachId)]);
       }
       return {taskId,startPlanned:minuteToEngineTime(item.start),endPlanned:minuteToEngineTime(item.end),
         spaceId:spaceByCanonical.get(item.spaceId)!,zoneId:sourceTask.zoneId??null,

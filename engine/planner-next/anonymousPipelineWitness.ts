@@ -1,3 +1,4 @@
+import {nominalOperationEdgeKey,nominalResourceVariants} from './nominalResourceChoice';
 import { participantGapMinutes } from "./participantTransition";
 import { createHash } from "node:crypto";
 import type { ParticipantMealObligation, ParticipantTask, PlannerNextProblem, ScheduledTask, Task, Window } from "./contracts";
@@ -200,6 +201,7 @@ export interface PreparedPipelineBundleGraph {
   readonly architecture:MainFeederArchitecture;readonly witness:AnonymousPipelineWitness;
   readonly protectedPlacements:readonly ScheduledTask[];readonly mainIds:readonly string[];
   readonly candidates:ReadonlyMap<string,ReadonlyMap<number,readonly ScheduledTask[]>>;
+  readonly nominalVariants?:ReadonlyMap<string,ReadonlyMap<number,readonly (readonly ScheduledTask[])[]>>;
   readonly preparedBundleEdges:number;
   readonly participantEdgeEvidence:{checked:number;pruned:number;abstained:number;firstPrune:({mainTaskId:string;position:number;
     mainStart:number;mainEnd:number}&ParticipantFutureReservationProbe)|null};
@@ -974,7 +976,8 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
   return prepareLegacyPipelineBundleGraph();
 
   function prepareLegacyPipelineBundleGraph():PreparedPipelineBundleGraph {
-  const candidates=new Map<string,Map<number,ScheduledTask[]>>();let bundleEdgesBeforeReservation=0;
+  const candidates=new Map<string,Map<number,ScheduledTask[]>>();
+  const nominalVariants=new Map<string,Map<number,ScheduledTask[][]>>();let bundleEdgesBeforeReservation=0;
   const participantEdgeEvidence:PreparedPipelineBundleGraph["participantEdgeEvidence"]={checked:0,pruned:0,abstained:0,firstPrune:null};
   for(const main of mains){
     const feeder=problem.tasks.find((task):task is ParticipantTask=>task.kind==="vocal"&&task.participantId===main.participantId&&main.dependencies.includes(task.id));
@@ -982,6 +985,7 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
     const styling=problem.tasks.find((task):task is ParticipantTask=>task.kind==="auxiliary"&&task.participantId===main.participantId
       &&task.dependencies.includes(arrival?.id??"")&&main.dependencies.includes(task.id));
     const valid:number[]=[];const byPosition=new Map<number,ScheduledTask[]>();
+    const byVariant=new Map<number,ScheduledTask[][]>();nominalVariants.set(main.id,byVariant);
     if(!feeder||!arrival||!styling){candidates.set(main.id,byPosition);continue;}
     assignments.forEach((assignment,position)=>{
       const mainSpot=witness.mainSpots.find(spot=>spot.id===assignment.mainSpotId)!;
@@ -989,20 +993,21 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
       const stylingSpot=witness.stylingSpots.find(spot=>spot.id===assignment.stylingSpotId)!;
       const arrivalSpot=witness.inGroups.find(spot=>spot.id===assignment.inGroupId)!;
       if((main.blockKey??"")!==witness.pattern[Number(mainSpot.id.slice(5))])return;
+      for(const variant of nominalResourceVariants(main)){
       const contract=anchorIndex.get(main.id);
       const operationIds=new Set(contract?[main.id,...contract.beforeTaskIds,...contract.afterTaskIds]:[]);
-      const operation=contract?materializeAnchoredOperation(problem,main,mainSpot.start,
+      const operation=contract?materializeAnchoredOperation(problem,variant,mainSpot.start,
         protectedPlacements.filter(task=>!operationIds.has(task.id))):null;
-      if(anchorIndex.has(main.id)&&!operation)return;
+      if(anchorIndex.has(main.id)&&!operation)continue;
       const bundle:ScheduledTask[]=[
         {...arrival,start:arrivalSpot.start,end:arrivalSpot.end},
         {...styling,start:stylingSpot.start,end:stylingSpot.end},
         {...feeder,start:feederSpot.start,end:feederSpot.end},
-        ...(operation?.tasks??[{...main,start:mainSpot.start,end:mainSpot.end}]),
+        ...(operation?.tasks??[{...variant,start:mainSpot.start,end:mainSpot.end}]),
       ];
       const protectedMismatch=bundle.some(task=>{const fixed=protectedById.get(task.id);return fixed
         &&(fixed.start!==task.start||fixed.end!==task.end||fixed.spaceId!==task.spaceId);});
-      if(protectedMismatch)return;
+      if(protectedMismatch)continue;
       bundleEdgesBeforeReservation++;
       const local:ScheduledTask[]=[...protectedPlacements.filter(task=>!bundle.some(item=>item.id===task.id))];
       const protectedCompatible=bundle.every(task=>canPlaceTask(problem,task,task.start,local));
@@ -1017,7 +1022,7 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
       // never use it to override an incompatibility with an external placement.
       const nominalMain=nominal.scheduledTasks.find(task=>task.id===main.id);
       if(protectedCompatible&&nominalMain?.start===mainSpot.start&&nominalMain.end===mainSpot.end)edgeValid=true;
-      if(!edgeValid)return;
+      if(!edgeValid)continue;
       if((problem.analyticalFutureParticipantTasks?.length??0)>0){
         const placed=normalizeParticipantFuturePlacements([...protectedPlacements,...bundle]);
         const probe=probeParticipantFutureReservations(problem,placed,bundle,undefined,"ANALYTIC_ONLY");
@@ -1025,15 +1030,19 @@ export function preparePipelineBundleGraph(problem:Readonly<PlannerNextProblem>,
         if(probe.status==="PRUNE"){
           participantEdgeEvidence.pruned++;
           participantEdgeEvidence.firstPrune??={mainTaskId:main.id,position,mainStart:mainSpot.start,mainEnd:mainSpot.end,...probe};
-          return;
+          continue;
         }
         if(probe.status==="ABSTAIN")participantEdgeEvidence.abstained++;
       }
-      valid.push(position);byPosition.set(position,bundle);
+      valid.push(position);
+      if(!byPosition.has(position))byPosition.set(position,bundle);
+      const variants=byVariant.get(position)??[];variants.push(bundle);byVariant.set(position,variants);
+      }
     });
     candidates.set(main.id,byPosition);
   }
   return {architecture,witness,protectedPlacements:[...protectedPlacements],mainIds:mains.map(x=>x.id),candidates,
+    ...(mains.some(task=>task.nominalResourceChoice)?{nominalVariants}:{}),
     preparedBundleEdges:bundleEdgesBeforeReservation,participantEdgeEvidence};
   }
 }
@@ -1046,9 +1055,20 @@ export function materializePreparedPipelineBundleMatching(problem:Readonly<Plann
   if(diagnostic)Object.assign(diagnostic,{attempts:0,perfectMatchingFound:false,arrivalResult:null,arrivalPacketCount:0,
     fullMatchingBuilds:0,incrementalRepairs:0,uniquePerfectMatchings:0,duplicatePerfectMatchingsSkipped:0,
     matchingTraversals:0,arrivalEvaluations:0,terminalCause:null});
-  const {witness,protectedPlacements,candidates}=prepared;const protectedById=new Map(protectedPlacements.map(x=>[x.id,x]));
+  const {witness,protectedPlacements}=prepared;
+  // Keep the bipartite task/spot matcher. Each edge retains its physical variants;
+  // an exact physical nogood removes only that variant before repairing the matching.
+  const nominalCandidates=prepared.nominalVariants?new Map<string,Map<number,readonly ScheduledTask[]>>():undefined;
+  const candidates=nominalCandidates??prepared.candidates;const protectedById=new Map(protectedPlacements.map(x=>[x.id,x]));
   let bundleEdgesRejectedByReservation=0;const positions=new Map<string,number[]>();
-  for(const [id,row] of candidates){const valid:number[]=[];for(const [position,bundle] of row){let edgeValid=true;
+  for(const [id,row] of prepared.candidates){const valid:number[]=[];const selectedRow=nominalCandidates?new Map<number,readonly ScheduledTask[]>():undefined;
+  if(selectedRow)nominalCandidates!.set(id,selectedRow);
+  for(const [position,base] of row){
+   if(prepared.nominalVariants&&forbiddenEdges.has(`${id}@${position}`))continue;
+   for(const bundle of prepared.nominalVariants?.get(id)?.get(position)??[base]){
+    if(prepared.nominalVariants&&forbiddenEdges.has(nominalOperationEdgeKey(id,position,bundle)))continue;
+    if(prepared.nominalVariants&&!consumeTraversal()){if(diagnostic)diagnostic.terminalCause="BUDGET_EXHAUSTED";return null;}
+    let edgeValid=true;
     if(analyticalReservedPlacements.length){const withReservations=[...protectedPlacements,...analyticalReservedPlacements];
       edgeValid=[...bundle].sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id)).every(task=>
         protectedById.has(task.id)||canPlaceTask(problem,task,task.start,withReservations.filter(x=>x.id!==task.id)));
@@ -1067,8 +1087,8 @@ export function materializePreparedPipelineBundleMatching(problem:Readonly<Plann
         prepared.participantEdgeEvidence.firstPrune??={mainTaskId:id,position,mainStart:main.start,mainEnd:main.end,...probe};
       }else if(probe.status==="ABSTAIN")prepared.participantEdgeEvidence.abstained++;
     }
-    if(edgeValid)valid.push(position);
-  }positions.set(id,valid);}
+    if(edgeValid){valid.push(position);selectedRow?.set(position,bundle);break;}
+  }}positions.set(id,valid);}
   const pressure=new Map<string,Map<number,number>>();let safeGraphEdgeCount=0,intrusiveGraphEdgeCount=0;
   for(const [id,byPosition] of candidates){const row=new Map<number,number>();for(const [position,bundle] of byPosition){const value=futureEdgeIntrusion?.(bundle)??0;
     row.set(position,value);if(value===0)safeGraphEdgeCount++;else intrusiveGraphEdgeCount++;}pressure.set(id,row);}
@@ -1086,7 +1106,7 @@ export function materializePreparedPipelineBundleMatching(problem:Readonly<Plann
     .filter(([id,position])=>positions.get(id)?.includes(position))):new Map<string,number>();
   if(!initial){if(previous)incrementalRepairs++;else fullMatchingBuilds++;
     initial=incrementallyRepairMatchingWitness(prepared.mainIds,positions,forbiddenEdges,
-      previous?.forbiddenEdges??new Set(),previous?.matching??nominalPrevious,consumeTraversal,
+      previous?.forbiddenEdges??new Set(),new Map([...(previous?.matching??nominalPrevious)].filter(([id,position])=>positions.get(id)?.includes(position))),consumeTraversal,
       (id,left,right)=>(pressure.get(id)?.get(left)??0)-(pressure.get(id)?.get(right)??0));
     matchingTraversals+=initial.traversals;}
   if(initial.outcome!=="PERFECT"){if(diagnostic){diagnostic.attempts=1;

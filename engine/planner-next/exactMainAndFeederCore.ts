@@ -1,3 +1,4 @@
+import {nominalOperationEdgeKey,nominalResourceVariants} from './nominalResourceChoice';
 import type { PlannerNextProblem, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask, Task, ValidationSummary } from "./contracts";
 import { anchoredTaskIds, firstParticipantObligationTask, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { fingerprint } from "./fingerprint";
@@ -348,7 +349,7 @@ export function forcedMainSingletonTaskId(certificate: Readonly<{
 }> | undefined, position: number): string | undefined {
   if (certificate === undefined) return undefined;
   return [...certificate.validEdges]
-    .find(([, edges]) => edges.length === 1 && edges[0]?.position === position)?.[0];
+    .find(([, edges]) => new Set(edges.map(edge=>edge.position)).size === 1 && edges[0]?.position === position)?.[0];
 }
 
 /** Immutable, derived view exposed only to experimental candidate-ordering code. */
@@ -1342,6 +1343,21 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     }
     evidence.bundlePendingContinuations=deferredBundles.length;
   };
+  const enqueueNominalBundleRepairs=()=>{
+    if(!bundleState)return;
+    const repair=structuralCandidate?.repair??options.repairPreferredBundleCandidate;
+    if(!repair)return;
+    for(const task of bundleState.scheduledTasks.filter((task:ScheduledTask)=>task.kind==='main'&&task.nominalResourceChoice)){
+      const position=bundleState.matching.get(task.id);if(position===undefined)continue;
+      const key=nominalOperationEdgeKey(task.id,position,[task]);
+      const forbidden=new Set(bundleState.forbiddenEdges).add(key),signature=[...forbidden].sort().join("\u0000");
+      if(seenBundleForbidden.has(signature))continue;seenBundleForbidden.add(signature);
+      evidence.bundleMatchingRepairs++;
+      const repaired=repair(bundleState,forbidden,consumeMatchingBranch);
+      evidence.bundleRepairSequence.push({causingTaskId:task.id,oldPosition:position,forbiddenEdge:key,newPosition:repaired?.matching.get(task.id)??null});
+      if(repaired)bundleQueue.push(repaired);
+    }
+  };
   if(bundleState)seenBundleForbidden.add([...bundleState.forbiddenEdges].sort().join("\u0000"));
   while(bundleState){
     // A task@position edge denotes this graph's complete bundle. Its exclusion
@@ -1377,6 +1393,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     }
     if(!gated||structuralCandidate?.acceptComplete?.(gated)===false){evidence.bundleHardValidationRejects++;if(structuralCandidate)options.onStructuralHardGateReject?.(structuralCandidate.architecture);
       evidence.bundleTerminalCause=lastHardGateReason??"STRUCTURAL_RESERVATION_REJECTED";
+      enqueueNominalBundleRepairs();
       advanceBundle();continue;}
     const retainedContinuation=deferredContinuation;deferredContinuation=undefined;
     const continuation=retainedContinuation?.resume()??(options.onStructuralCoreContinuation??options.onHardValidCoreLeaf)?.call(options,{tasks:gated,meals,
@@ -1404,11 +1421,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       evidence.bundleContinuationDeferrals++;evidence.bundleTerminalCause="DEFERRED";
       advanceBundle();continue;
     }
-    if(typeof continuation!=="object"){evidence.bundleTerminalCause="UNCERTIFIED_REJECT";advanceBundle();continue;}
+    if(typeof continuation!=="object"){evidence.bundleTerminalCause="UNCERTIFIED_REJECT";enqueueNominalBundleRepairs();advanceBundle();continue;}
     const orderedMains=gated.filter(task=>task.kind==="main").sort((a,b)=>a.start-b.start||a.id.localeCompare(b.id));
     const depths=[...(continuation.conflictDecisionDepths?.length?continuation.conflictDecisionDepths:[continuation.targetDepth])].sort((a,b)=>a-b);
     const conflict=depths.map(depth=>orderedMains[depth-1]).map(causing=>{const oldPosition=causing===undefined?undefined:bundleState!.matching.get(causing.id);
-      return causing&&oldPosition!==undefined?{causing,oldPosition,edge:`${causing.id}@${oldPosition}`} : null;});
+      return causing&&oldPosition!==undefined?{causing,oldPosition,edge:nominalOperationEdgeKey(causing.id,oldPosition,bundleState!.scheduledTasks.filter((task:ScheduledTask)=>task.id===causing.id))} : null;});
     const repair=structuralCandidate?.repair??options.repairPreferredBundleCandidate;
     if(conflict.some(x=>x===null)||!repair){evidence.bundleTerminalCause="UNMAPPED_CONFLICT_GROUP";advanceBundle(true);continue;}
     evidence.conflictEdges=conflict.map(x=>x!.edge);evidence.bundleNogoodsCreated++;
@@ -1940,7 +1957,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           !blockUsed.has(task.id) && task.id !== forcedTaskId && task.blockKey === pattern[position]
           && taskFitsRequiredCompositePosition(task, position, requiredBlocks, composite)).length;
       }
-      for (const task of mains) {
+      for (const source of mains) for(const task of nominalResourceVariants(source)) {
         if (blockUsed.has(task.id) || task.blockKey !== pattern[position]
           || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, composite)
           || (forcedTaskId !== undefined && task.id !== forcedTaskId)) continue;
@@ -1971,19 +1988,19 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         feeder:readonlyTaskCopy(choice.feeder), placedTasks:Object.freeze(blockPlaced.map(readonlyTaskCopy)),
         meals:Object.freeze(meals.map(meal=>Object.freeze({...meal}))), slot, depth:position,
         pattern:Object.freeze([...pattern]), participantSlack:choice.participantSlack, firstObligation:choice.firstObligation });
-      const byId=new Map(choices.map(choice=>[choice.task.id,describe(choice)]));
-      const baseline=choices.map(choice=>byId.get(choice.task.id)!);
+      const byId=new Map(choices.map(choice=>[choice,describe(choice)]));
+      const baseline=choices.map(choice=>byId.get(choice)!);
       const witnessTaskId = [...(blockCertificate?.matching ?? [])]
         .find(([, witnessPosition]) => witnessPosition === position)?.[0];
       choices.sort((a,b)=>compareFutureFreedom(a.operation,b.operation)
-        ||(options.mainChoiceComparator?.(byId.get(a.task.id)!,byId.get(b.task.id)!)??0)
+        ||(options.mainChoiceComparator?.(byId.get(a)!,byId.get(b)!)??0)
         ||Number(b.task.id===witnessTaskId)-Number(a.task.id===witnessTaskId));
-      options.onMainChoicesRanked?.(Object.freeze([...baseline]),Object.freeze(choices.map(choice=>byId.get(choice.task.id)!)));
+      options.onMainChoicesRanked?.(Object.freeze([...baseline]),Object.freeze(choices.map(choice=>byId.get(choice)!)));
       for(const choice of choices){
         cohortCandidatesExplored += 1;
         if (choice.task.id === witnessTaskId) evidence.mainWitnessChoicesFollowed += 1;
         else if (witnessTaskId !== undefined) evidence.mainWitnessFallbacks += 1;
-        const descriptor=byId.get(choice.task.id)!; options.onMainChoiceEntered?.(descriptor); descriptors.push(descriptor);
+        const descriptor=byId.get(choice)!; options.onMainChoiceEntered?.(descriptor); descriptors.push(descriptor);
         const nextPlaced=[...blockPlaced,...choice.operation], nextUsed=new Set(blockUsed).add(choice.task.id);
         if(feederRunOptimisticallyImpossible(depth,runEnd,position+1,[...cohort,choice],nextPlaced,nextUsed)){
           descriptors.pop();evidence.backtracks+=1;continue;
@@ -2054,9 +2071,11 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const forbidden=witnessState.forbidden;
       const descriptorBase=descriptors.length;
       evidence.mainRunWitnessAttempts++;
-      const repaired=incrementallyRepairMatchingWitness(initialCertificate.taskIds,
-        new Map([...initialCertificate.validEdges].map(([taskId,edges])=>[taskId,edges.map(({position})=>position)])),
-        forbidden,witnessState.previousForbidden,witnessState.matching,()=>consumeMatchingBranch());
+      const validPositions=new Map([...initialCertificate.validEdges].map(([taskId,edges])=>[taskId,
+        [...new Set(edges.filter(edge=>!forbidden.has(nominalOperationEdgeKey(taskId,edge.position,edge.operation))).map(({position})=>position))]]));
+      const previousMatching=new Map([...witnessState.matching].filter(([id,position])=>validPositions.get(id)?.includes(position)));
+      const repaired=incrementallyRepairMatchingWitness(initialCertificate.taskIds,validPositions,
+        forbidden,witnessState.previousForbidden,previousMatching,()=>consumeMatchingBranch());
       evidence.residualMatchingAugmentTraversals+=repaired.traversals;
       if(repaired.outcome==="BUDGET_EXHAUSTED")return "BUDGET_EXHAUSTED";
       if(repaired.outcome==="NO_PERFECT_MATCH")continue;
@@ -2064,7 +2083,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       const runAssignments=[...matching].filter(([,position])=>depth<=position&&position<runEnd)
         .sort((left,right)=>left[1]-right[1]);
       const assignedEdges=runAssignments.map(([taskId,position])=>({taskId,position,
-        operation:(initialCertificate!.validEdges.get(taskId)??[]).find(edge=>edge.position===position)!.operation}));
+        operation:(initialCertificate!.validEdges.get(taskId)??[]).find(edge=>edge.position===position&&!forbidden.has(nominalOperationEdgeKey(taskId,position,edge.operation)))!.operation}));
       /** Contextual, identity-free proof of assignment equivalence.  A task profile contains
        * every active authority that can make assigning that contestant to this position
        * observable downstream.  Unknown/different profiles remain distinct; only equal
@@ -2109,7 +2128,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       let conflict:[string,number,string,number]|undefined;
       for(const [taskId,position] of runAssignments){
         const task=mains.find(candidate=>candidate.id===taskId)!;
-        const edge=(initialCertificate.validEdges.get(taskId)??[]).find(candidate=>candidate.position===position)!;
+        const edge=(initialCertificate.validEdges.get(taskId)??[]).find(candidate=>candidate.position===position&&!forbidden.has(nominalOperationEdgeKey(taskId,position,candidate.operation)))!;
         const previous=witnessCohort.find(choice=>residualMatchingOperationsMayInteract(problem,choice.operation,edge.operation));
         if(previous){
           const operationValid=edge.operation.every((scheduled,index)=>canPlaceCoreTask(scheduled,scheduled.start,
@@ -2155,8 +2174,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       if(conflict){
         descriptors.length=descriptorBase;
         evidence.mainRunWitnessRepairs++;
-        enqueueForbidden(forbidden,matching,edgeKey(conflict[0],conflict[1]));
-        enqueueForbidden(forbidden,matching,edgeKey(conflict[2],conflict[3]));
+        enqueueForbidden(forbidden,matching,nominalOperationEdgeKey(conflict[0],conflict[1],assignedEdges.find(edge=>edge.taskId===conflict![0])!.operation));
+        enqueueForbidden(forbidden,matching,nominalOperationEdgeKey(conflict[2],conflict[3],assignedEdges.find(edge=>edge.taskId===conflict![2])!.operation));
         continue;
       }
       cohortCandidatesExplored+=witnessCohort.length;
@@ -2174,7 +2193,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           if(child.targetDepth<=depth)return child;
           const target=runAssignments.find(([,position])=>position===child.targetDepth-1);
           descriptors.length=descriptorBase;
-          if(target){evidence.mainRunWitnessRepairs++;enqueueForbidden(forbidden,matching,edgeKey(target[0],target[1]));}
+          if(target){evidence.mainRunWitnessRepairs++;enqueueForbidden(forbidden,matching,nominalOperationEdgeKey(target[0],target[1],assignedEdges.find(edge=>edge.taskId===target[0])!.operation));}
           continue;
         }
         if(child!=="DEAD_END")return child;
@@ -2183,6 +2202,8 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       // A feeder failure changes cohort membership, not nominal order.  Exclude one
       // selected edge at a time so matching can produce every structurally distinct
       // cohort without regenerating permutations of a cohort already evaluated.
+      for(const edge of assignedEdges)if(edge.operation.some(task=>task.nominalResourceChoice))
+        enqueueForbidden(forbidden,matching,nominalOperationEdgeKey(edge.taskId,edge.position,edge.operation));
       for(const [taskId] of runAssignments)enqueueCohortExclusion(forbidden,matching,taskId);
     }
     if(runWitnessBudgetExhausted)return "BUDGET_EXHAUSTED";
@@ -2229,9 +2250,12 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         for (const position of positions) {
           if (task.blockKey !== pattern[position]
             || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, composite)) continue;
-          const edge = evaluate(task, position);
-          if (edge === "BUDGET_EXHAUSTED") return { outcome: "BUDGET_EXHAUSTED" };
-          if (edge) taskEdges.push(edge); else taskInvalid.add(position);
+          for(const variant of nominalResourceVariants(task)){
+            const edge = evaluate(variant, position);
+            if (edge === "BUDGET_EXHAUSTED") return { outcome: "BUDGET_EXHAUSTED" };
+            if (edge) taskEdges.push(edge);
+          }
+          if(!taskEdges.some(edge=>edge.position===position))taskInvalid.add(position);
         }
         taskEdges.sort((a,b)=>compareFutureFreedom(a.operation,b.operation)||a.position-b.position);
         validEdges.set(task.id, taskEdges);
@@ -2260,7 +2284,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             continue;
           }
           evidence.residualMatchingEdgeCacheMisses += 1;
-          const refreshed = evaluate(task, edge.position);
+          const refreshed = evaluate(edge.operation.find(item=>item.id===task.id)??task, edge.position);
           if (refreshed === "BUDGET_EXHAUSTED") return { outcome: "BUDGET_EXHAUSTED" };
           if (refreshed) taskEdges.push(refreshed);
           else {
@@ -2269,6 +2293,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             else invalidatedUnmatchedEdges += 1;
           }
         }
+        for(const edge of taskEdges)invalidPositions.get(task.id)!.delete(edge.position);
         taskEdges.sort((a,b)=>compareFutureFreedom(a.operation,b.operation)||a.position-b.position);
         validEdges.set(task.id, taskEdges);
         if (taskEdges.length === 0) return { outcome: "DEAD_END" };
