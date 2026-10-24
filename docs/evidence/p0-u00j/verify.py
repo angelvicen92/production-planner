@@ -6,7 +6,11 @@ root=Path(__file__).resolve().parent
 repo=root.parents[2]
 def read(path):
  p=root/path
- if not p.exists():p=Path(str(p)+'.gz')
+ if not p.exists():
+  compressed=Path(str(p)+'.gz')
+  if compressed.exists():p=compressed
+  elif (p.parent/'receipts.json.gz').exists():
+   return json.loads(gzip.decompress((p.parent/'receipts.json.gz').read_bytes()))[p.name]
  return json.loads(gzip.decompress(p.read_bytes()) if p.suffix=='.gz' else p.read_bytes())
 def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 manifest=read('native-manifest.json')
