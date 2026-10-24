@@ -178,7 +178,9 @@ export async function runU00jFunctionalJourney({appUrl,users,db,directory,pass}:
             pass('before 111: recalculated resource omission accepted by existing RPC; transaction rolled back');
             return {status:'SQL_OMISSION_REPRODUCED',remoteWrites:0};
           }
-          assert.ok(failure,`SQL accepted forged ${guard}`);assert.match(String(failure.message),/RUN_RESULT_INVALID|STALE_|permission denied/);
+          assert.ok(failure,`SQL accepted forged ${guard}`);
+          if(index&&stage===0&&guard==='future-transition')assert.match(failure.message,/RESOURCE_OVERLAP_OR_TRANSITION/);
+          assert.match(String(failure.message),/RUN_RESULT_INVALID|STALE_|permission denied/);
           adversaries.push({guard,error:failure.message,hashesRecomputed:true,rolledBack:true});
         }finally{await db.query('ROLLBACK');}
       }

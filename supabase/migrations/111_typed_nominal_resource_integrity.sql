@@ -103,6 +103,8 @@ BEGIN
       SELECT array_agg('plan-resource:'||q.id ORDER BY q.id) INTO domain_ids
        FROM public.plan_resource_items q JOIN public.resource_types rt ON rt.id=q.type_id
        WHERE q.plan_id=r.plan_id AND q.type_id::text=requested_type AND rt.code<>'auxiliar'
+        AND coalesce(workday#>>ARRAY['plannerNextAuthorities','resourcePresenceConcentrationPolicies',q.id::text],'OFF')='OFF'
+        AND NOT EXISTS (SELECT 1 FROM public.contestants c WHERE c.plan_id=r.plan_id AND c.vocal_coach_plan_resource_item_id=q.id)
         AND NOT EXISTS (SELECT 1 FROM public.resource_item_components c WHERE c.parent_resource_item_id=q.resource_item_id);
       IF coalesce(cardinality(domain_ids),0)=0 THEN RAISE EXCEPTION 'RUN_RESULT_INVALID: BYTYPE_EMPTY_DOMAIN'; END IF;
       IF (SELECT coalesce(array_agg(value ORDER BY value),'{}'::text[]) FROM jsonb_array_elements_text(certified#>'{nominalResourceChoice,resourceIds}'))

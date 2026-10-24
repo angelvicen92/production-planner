@@ -75,3 +75,12 @@ test('resource IDs and inventory order cannot override scarce physical demand',(
  assert.equal(a.proposal?.[0].nominalResourceChoice?.selectedResourceId,'plan-resource:400');
  assert.deepEqual(a.proposal?.[1].requiredResourceIds,['plan-resource:500']);
 });
+
+test('type domains exclude configured coaches and resource macros while keeping a physical alternative',()=>{
+ const input=captured();input.tasks=input.tasks.slice(0,1);input.vocalCoachPlanResourceItemIdByContestantId={1:4};
+ assert.deepEqual(resolveNominalResourceRequirements(input,input.tasks[0]).resourceIds,[5]);
+ assert.equal(run(problem(input)).proposal?.[0].nominalResourceChoice?.selectedResourceId,'plan-resource:5');
+ delete input.vocalCoachPlanResourceItemIdByContestantId;input.resourcePresenceConcentrationPolicies={4:'REQUIRED'};
+ assert.deepEqual(resolveNominalResourceRequirements(input,input.tasks[0]).resourceIds,[5]);
+ assert.equal(run(problem(input)).proposal?.[0].nominalResourceChoice?.selectedResourceId,'plan-resource:5');
+});
