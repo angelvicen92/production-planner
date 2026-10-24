@@ -124,7 +124,7 @@ export async function runU00jFunctionalJourney({appUrl,users,db,directory,pass}:
       await page.getByRole('button',{name:'Aplicar al borrador',exact:true}).waitFor();await action('Aplicar al borrador',`/proposals/${run.id}/apply`);const draft=await api(path);save(`${label}-S${stage+1}-draft`,draft);
       save(`${label}-S${stage+1}-workday`,(await db.query('SELECT replay_snapshot_json FROM public.plan_config_revisions WHERE id=$1',[draft.currentConfigRevisionId])).rows[0].replay_snapshot_json);
       const adversaries:any[]=[];
-      const guards=['omit','double','invented','missing-choice','future-omission','future-collision','future-identity','future-dependencies','type-identity','domain','unavailable','draft','base','revision','permission',
+      const guards=['omit','double','invented','missing-choice','future-omission','future-collision','future-identity','future-dependencies','type-identity','domain','unavailable','time-lock','space-availability','draft','base','revision','permission',
         ...(index?['independent-byItem','future-transition','future-availability']:[]),...(index?['outside-scope']:[]),...(stage?['protected']:[])];
       for(const guard of guards){
         await db.query('BEGIN');let failure:any;
@@ -144,6 +144,8 @@ export async function runU00jFunctionalJourney({appUrl,users,db,directory,pass}:
           if(guard==='domain')nominal.nominalResourceChoice.resourceIds=[`plan-resource:${daily[1].id}`];
           if(guard==='unavailable')await db.query('UPDATE public.plan_resource_items SET is_available=false WHERE id=$1',[daily[1].id]);
 
+          if(guard==='time-lock')await db.query("INSERT INTO public.locks(plan_id,task_id,lock_type,locked_start,locked_end,created_by,reason) VALUES ($1,$2,'time','10:00','10:20',$3,'reverted adversary')",[planId,tasks[0].id,users.admin.id]);
+          if(guard==='space-availability')await db.query("UPDATE public.plan_space_settings SET availability_start='10:00',availability_end='12:00' WHERE plan_id=$1 AND space_id=$2",[planId,rooms[0].id]);
           if(guard==='omit')replace([]);
           if(guard==='double')replace([daily[0].id,daily[1].id],daily[1].id);
           if(guard==='invented')replace([daily[2].id],daily[2].id);

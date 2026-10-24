@@ -66,6 +66,7 @@ BEGIN
     -- The witness carries observations, never caller-controlled identities.
     IF certified->>'participantId' IS DISTINCT FROM (CASE WHEN source_row.contestant_id IS NULL THEN NULL ELSE 'participant:'||source_row.contestant_id END)
       OR certified->>'kind' IS DISTINCT FROM operation->>'plannerNextKind'
+      OR coalesce(certified->>'blocksSpace','true') IS DISTINCT FROM coalesce(operation->>'blocksSpace','true')
       OR (certified->>'duration')::integer IS DISTINCT FROM coalesce(source_row.duration_override,source_row.default_duration)
       OR (SELECT coalesce(array_agg(value ORDER BY value),'{}'::text[]) FROM jsonb_array_elements_text(coalesce(certified->'dependencies','[]'::jsonb)))
         IS DISTINCT FROM (SELECT coalesce(array_agg('task:'||value ORDER BY 'task:'||value),'{}'::text[]) FROM jsonb_array_elements_text(coalesce(operation->'dependsOnTaskIds','[]'::jsonb)))
@@ -73,6 +74,17 @@ BEGIN
         WHERE NOT EXISTS (SELECT 1 FROM jsonb_array_elements(proof) predecessor WHERE predecessor->>'id'='task:'||dep
           AND (predecessor->>'end')::integer<=(certified->>'start')::integer))
     THEN RAISE EXCEPTION 'RUN_RESULT_INVALID: WITNESS_AUTHORITY'; END IF;
+    -- Ordinary physical witnesses also retain day/space windows and real time locks.
+    IF (certified->>'start')::integer<split_part(p.work_start,':',1)::integer*60+split_part(p.work_start,':',2)::integer
+      OR (certified->>'end')::integer>split_part(p.work_end,':',1)::integer*60+split_part(p.work_end,':',2)::integer
+      OR EXISTS (SELECT 1 FROM public.plan_space_settings sp JOIN public.plan_zone_settings z ON z.plan_id=sp.plan_id AND z.zone_id=sp.zone_id
+        WHERE sp.plan_id=r.plan_id AND sp.space_id=coalesce(source_row.space_id,source_row.default_space_id)
+          AND ((certified->>'start')::integer<split_part(greatest(coalesce(sp.availability_start,p.work_start),coalesce(z.availability_start,p.work_start)),':',1)::integer*60+split_part(greatest(coalesce(sp.availability_start,p.work_start),coalesce(z.availability_start,p.work_start)),':',2)::integer
+            OR (certified->>'end')::integer>split_part(least(coalesce(sp.availability_end,p.work_end),coalesce(z.availability_end,p.work_end)),':',1)::integer*60+split_part(least(coalesce(sp.availability_end,p.work_end),coalesce(z.availability_end,p.work_end)),':',2)::integer))
+      OR EXISTS (SELECT 1 FROM public.locks l WHERE l.plan_id=r.plan_id AND l.task_id=source_row.id AND l.lock_type IN ('time','full')
+        AND ((l.locked_start IS NOT NULL AND (certified->>'start')::integer<>split_part(l.locked_start,':',1)::integer*60+split_part(l.locked_start,':',2)::integer)
+          OR (l.locked_end IS NOT NULL AND (certified->>'end')::integer<>split_part(l.locked_end,':',1)::integer*60+split_part(l.locked_end,':',2)::integer)))
+    THEN RAISE EXCEPTION 'RUN_RESULT_INVALID: WITNESS_WINDOW_OR_LOCK'; END IF;
     IF source_row.contestant_id IS NOT NULL THEN
      SELECT * INTO participant FROM public.contestants WHERE id=source_row.contestant_id AND plan_id=r.plan_id;
      IF NOT FOUND OR (certified->>'start')::integer<split_part(coalesce(participant.availability_start,p.work_start),':',1)::integer*60+split_part(coalesce(participant.availability_start,p.work_start),':',2)::integer
@@ -90,6 +102,11 @@ BEGIN
       IF operation->>'plannerNextKind' IS DISTINCT FROM 'auxiliary' OR source_row.requires_auxiliar OR source_row.requires_presenter
         OR operation->>'jointGroupId' IS NOT NULL OR operation->>'setupFamilyId' IS NOT NULL OR operation->>'itinerantTeamId' IS NOT NULL
         OR coalesce(operation->>'operationalRole','productive_task')<>'productive_task'
+        OR EXISTS (SELECT 1 FROM jsonb_array_elements(coalesce(workday#>'{plannerNextAuthorities,setupPolicies}','[]'::jsonb)) g WHERE g->>'spaceId'=source_row.space_id::text)
+        OR EXISTS (SELECT 1 FROM jsonb_array_elements(coalesce(workday#>'{plannerNextAuthorities,operationContinuityGroups}','[]'::jsonb)) g WHERE g->'taskIds' @> jsonb_build_array(source_row.id))
+        OR EXISTS (SELECT 1 FROM jsonb_array_elements(coalesce(workday#>'{plannerNextAuthorities,technicalChains}','[]'::jsonb)) g WHERE g->'orderedTaskIds' @> jsonb_build_array(source_row.id))
+        OR EXISTS (SELECT 1 FROM jsonb_array_elements(coalesce(workday#>'{plannerNextAuthorities,roundSynchronizations}','[]'::jsonb)) g,jsonb_array_elements(g->'lanes') lane WHERE lane->'taskIds' @> jsonb_build_array(source_row.id))
+        OR EXISTS (SELECT 1 FROM jsonb_array_elements(coalesce(workday#>'{plannerNextAuthorities,anchoredAccompaniments}','[]'::jsonb)) g WHERE g->>'anchorTaskId'=source_row.id::text OR g->'beforeTaskIds' @> jsonb_build_array(source_row.id) OR g->'afterTaskIds' @> jsonb_build_array(source_row.id))
         OR (SELECT count(*) FROM jsonb_object_keys(requirements->'byType'))<>1
         OR jsonb_array_length(coalesce(requirements->'anyOf','[]'::jsonb))<>0
         OR workday#>>'{plannerNextAuthorities,plannerNext,searchPolicy}' IS DISTINCT FROM 'EXACT_CONSTRUCTIVE'
@@ -164,6 +181,16 @@ BEGIN
      THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
     END IF;
    END LOOP;
+   IF EXISTS (SELECT 1 FROM jsonb_array_elements(proof) a,jsonb_array_elements(proof) b
+     JOIN public.daily_tasks db ON b->>'id'='task:'||db.id AND db.plan_id=r.plan_id
+     JOIN public.plan_task_template_snapshots tb ON tb.plan_id=db.plan_id AND tb.source_template_id=db.template_id,
+     public.daily_tasks da JOIN public.plan_task_template_snapshots ta ON ta.plan_id=da.plan_id AND ta.source_template_id=da.template_id
+     WHERE a->>'id'='task:'||da.id AND da.plan_id=r.plan_id AND a->>'id'<>b->>'id'
+      AND ((a->>'spaceId'=b->>'spaceId' AND coalesce(a->>'blocksSpace','true')='true' AND coalesce(b->>'blocksSpace','true')='true'
+        AND (a->>'start')::integer<(b->>'end')::integer AND (b->>'start')::integer<(a->>'end')::integer)
+       OR (da.contestant_id=db.contestant_id AND (a->>'start')::integer<=(b->>'start')::integer
+        AND (b->>'start')::integer-(a->>'end')::integer<coalesce(greatest(coalesce(da.participant_margin_after_minutes,ta.participant_margin_after_minutes),coalesce(db.participant_margin_before_minutes,tb.participant_margin_before_minutes)),(workday#>>'{plannerNextAuthorities,plannerNext,participantTransitionMinutes}')::integer,0))))
+   THEN RAISE EXCEPTION 'RUN_RESULT_INVALID: WITNESS_SPACE_OR_PARTICIPANT_OCCUPANCY'; END IF;
    IF EXISTS (SELECT 1 FROM jsonb_array_elements(proof) a,jsonb_array_elements(proof) b
      WHERE a->>'id'<b->>'id' AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(coalesce(a->'requiredResourceIds','[]'::jsonb)) x
        JOIN jsonb_array_elements_text(coalesce(b->'requiredResourceIds','[]'::jsonb)) y ON x=y)
