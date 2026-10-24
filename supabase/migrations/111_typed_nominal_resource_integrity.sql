@@ -81,7 +81,7 @@ BEGIN
     END IF;
     SELECT coalesce(array_agg(value),'{}'::text[]) INTO required_ids
       FROM jsonb_array_elements_text(coalesce(certified->'requiredResourceIds','[]'::jsonb));
-    IF cardinality(required_ids)<>(SELECT count(DISTINCT x) FROM unnest(required_ids) x) THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
+    IF cardinality(required_ids)<>(SELECT count(DISTINCT x) FROM unnest(required_ids) x) THEN RAISE EXCEPTION 'RUN_RESULT_INVALID: DUPLICATE_RESOURCE'; END IF;
     independent_ids:='{}'::text[];
     domain_ids:='{}'::text[];
     typed:=EXISTS (SELECT 1 FROM jsonb_object_keys(coalesce(requirements->'byType','{}'::jsonb)));
@@ -121,13 +121,13 @@ BEGIN
      IF (SELECT count(*) FROM unnest(required_ids) x WHERE x=ANY(domain_ids))<>1
        OR NOT coalesce((certified#>>'{nominalResourceChoice,selectedResourceId}')=ANY(domain_ids),false)
        OR NOT coalesce((certified#>>'{nominalResourceChoice,selectedResourceId}')=ANY(required_ids),false)
-     THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
+     THEN RAISE EXCEPTION 'RUN_RESULT_INVALID: NOMINAL_SELECTION'; END IF;
     END IF;
     FOR item IN SELECT key,value FROM jsonb_each(coalesce(requirements->'byItem','{}'::jsonb)) LOOP
      SELECT min(q.id) INTO mapped_id FROM public.plan_resource_items q WHERE q.plan_id=r.plan_id AND q.resource_item_id::text=item.key;
      IF item.value<>'1'::jsonb OR mapped_id IS NULL OR NOT ('plan-resource:'||mapped_id=ANY(required_ids))
        OR (SELECT count(*) FROM public.plan_resource_items q WHERE q.plan_id=r.plan_id AND q.resource_item_id::text=item.key)<>1
-     THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
+     THEN RAISE EXCEPTION 'RUN_RESULT_INVALID: BYITEM_REQUIRED'; END IF;
      independent_ids:=array_append(independent_ids,'plan-resource:'||mapped_id);
     END LOOP;
     FOR fixed_id IN SELECT value::bigint FROM jsonb_array_elements_text(coalesce(source_row.assigned_resource_ids,'[]'::jsonb)) WHERE NOT ('plan-resource:'||value=ANY(domain_ids))
@@ -152,7 +152,7 @@ BEGIN
        WHERE q.id IS NULL OR NOT q.is_available
         OR (certified->>'start')::integer<split_part(coalesce(q.availability_start,p.work_start),':',1)::integer*60+split_part(coalesce(q.availability_start,p.work_start),':',2)::integer
         OR (certified->>'end')::integer>split_part(coalesce(q.availability_end,p.work_end),':',1)::integer*60+split_part(coalesce(q.availability_end,p.work_end),':',2)::integer)
-    THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
+    THEN RAISE EXCEPTION 'RUN_RESULT_INVALID: RESOURCE_AVAILABILITY'; END IF;
     SELECT value INTO row FROM jsonb_array_elements(candidate->'tasks') x WHERE x->>'taskId'=source_row.id::text;
     IF row->>'startPlanned' IS NOT NULL THEN
      IF (certified->>'start')::integer<>split_part(row->>'startPlanned',':',1)::integer*60+split_part(row->>'startPlanned',':',2)::integer
@@ -168,7 +168,7 @@ BEGIN
      AND ((a->>'start')::integer<(b->>'end')::integer AND (b->>'start')::integer<(a->>'end')::integer
        OR a->>'spaceId'<>b->>'spaceId' AND CASE WHEN (a->>'start')::integer<=(b->>'start')::integer
          THEN (b->>'start')::integer-(a->>'end')::integer ELSE (a->>'start')::integer-(b->>'end')::integer END<margin))
-   THEN RAISE EXCEPTION 'RUN_RESULT_INVALID'; END IF;
+   THEN RAISE EXCEPTION 'RUN_RESULT_INVALID: RESOURCE_OVERLAP_OR_TRANSITION'; END IF;
   END;
  END IF;
  NEW.report_json:=NEW.report_json||jsonb_build_object('nominalResourceFuture','CERTIFIED');

@@ -57,7 +57,7 @@ test('protected Stage occupation constrains the remaining scope and preserves li
 test('a time lock outside the concrete resource availability has no hard-valid completion',()=>{
   const s=fixture();s.locks=[{id:1,planId:701,taskId:101,lockType:'time',lockedStart:'08:00',lockedEnd:'08:20'}];const p=problem(s);assert.equal(run(p).evidence.completeForScope,false);
 });
-for(const requirement of [{byType:{13:1}}])test('generic selection remains explicitly unsupported',()=>{const s=fixture();s.tasks[0].resourceRequirements=requirement;const a=adaptEngineInputToPlannerNextProblem(s);assert.equal(a.status,'UNSUPPORTED');assert.ok(a.reasonCodes.includes('UNSUPPORTED_RESOURCE_REQUIREMENT'));});
+for(const requirement of [{byType:{13:2}}])test('generic quantity greater than one remains explicitly unsupported',()=>{const s=fixture();s.tasks[0].resourceRequirements=requirement;const a=adaptEngineInputToPlannerNextProblem(s);assert.equal(a.status,'UNSUPPORTED');assert.ok(a.reasonCodes.includes('UNSUPPORTED_RESOURCE_REQUIREMENT'));});
 for(const inheritance of ['OPERATION_ONLY','LOCATION'] as const)test(`${inheritance} keeps byItem even when it is a member of an unchosen itinerant alternative`,()=>{
   const s=fixture();s.tasks[0].resourceInheritance=inheritance;const p=problem(s),task={...p.tasks[0],allowedItinerantUnitIds:['u1','u2']};
   const selected=materializeItinerantUnitAssignment({itinerantUnits:[{id:'u1',availability:[p.day],resourceIds:['plan-resource:503']},{id:'u2',availability:[p.day],resourceIds:['plan-resource:504']}]},task,'u2');

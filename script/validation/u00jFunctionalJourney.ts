@@ -154,8 +154,8 @@ export async function runU00jFunctionalJourney({appUrl,users,db,directory,pass}:
           if(guard==='future-availability'){const future=proof.tasks.find((t:any)=>t.id===`task:${tasks[2].id}`);future.start=570;future.end=585;}
           if(guard==='future-transition'){
             const future=proof.tasks.find((t:any)=>t.id===`task:${tasks[2].id}`),tail=proof.tasks.find((t:any)=>t.id===`task:${tasks[3].id}`);
-            future.start=570;future.end=585;future.requiredResourceIds=[`plan-resource:${daily[1].id}`];future.nominalResourceChoice.selectedResourceId=`plan-resource:${daily[1].id}`;
-            tail.start=585;tail.end=600;
+            future.start=630;future.end=645;future.requiredResourceIds=[`plan-resource:${daily[3].id}`];future.nominalResourceChoice.selectedResourceId=`plan-resource:${daily[3].id}`;
+            tail.start=645;tail.end=660;tail.requiredResourceIds=[`plan-resource:${daily[3].id}`];tail.nominalResourceChoice.selectedResourceId=`plan-resource:${daily[3].id}`;
           }
           if(guard==='protected'||guard==='outside-scope'){
             const target=forged.proposedDraftSnapshot.tasks.find((t:any)=>!ids.includes(t.taskId)&&(guard==='protected'?t.startPlanned:!t.startPlanned))??row;

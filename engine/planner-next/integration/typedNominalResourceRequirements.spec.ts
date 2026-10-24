@@ -68,3 +68,10 @@ for(const [label,edit,reason] of [
 test('lock on scarce A cannot be bypassed with B',()=>{
  const s=captured();s.locks=[{id:1,planId:s.planId,taskId:1,lockType:'resource',lockedResourceId:4}];assert.equal(run(problem(s)).evidence.completeForScope,false);
 });
+
+test('resource IDs and inventory order cannot override scarce physical demand',()=>{
+ const input=captured();input.planResourceItems[0].id=500;input.planResourceItems[1].id=400;input.planResourceItems.reverse();
+ const a=run(problem(input));assert.ok(a.evidence.completeForScope);
+ assert.equal(a.proposal?.[0].nominalResourceChoice?.selectedResourceId,'plan-resource:400');
+ assert.deepEqual(a.proposal?.[1].requiredResourceIds,['plan-resource:500']);
+});
