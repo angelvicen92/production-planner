@@ -46,10 +46,10 @@ try{
  await db.query("INSERT INTO user_roles(user_id,role_id) SELECT $1,id FROM roles WHERE key='admin'",[actor]);
  await db.query(`SET optiplan.confirmed_demo_project='dyqusivzgxebkxkwohwn';SET optiplan.backup_sha256='${'a'.repeat(64)}';SET optiplan.schema_approved='yes';SET optiplan.security_approved='yes';SET optiplan.import_approved='yes';SET optiplan.demo_actor='${actor}';`);
  const historical=await seedA2HistoricalRehearsal(db,actor);
- const sourceLockControl=async()=>{
+ const sourceLockControl=async(table:'plans'|'daily_tasks')=>{
   const holder=new pg.Client({host:'127.0.0.1',port,user:'postgres',password,database:'postgres'});await holder.connect();
   try{
-   await holder.query('BEGIN');await holder.query('LOCK TABLE public.plans IN ROW EXCLUSIVE MODE');
+   await holder.query('BEGIN');await holder.query('LOCK TABLE public.'+table+' IN ROW EXCLUSIVE MODE');
    // A source read stays legal; the existing commit guard must fail closed.
    await db!.query('SELECT assisted_read_bootstrap_sources(27001)');
    let rejected:any;
@@ -58,7 +58,7 @@ try{
    assert.equal(rejected?.code,'55P03');return rejected;
   }finally{await holder.query('ROLLBACK');await holder.end();}
  };
- const lockBefore=await sourceLockControl();
+ const lockBefore={plans:await sourceLockControl('plans'),dailyTasks:await sourceLockControl('daily_tasks')};
  const original=(await db.query('SELECT snapshot_json,snapshot_fingerprint,config_revision_id FROM assisted_planning_stages WHERE plan_id=27001 ORDER BY ordinal')).rows;
  const replayBefore=(await db.query('SELECT replay_snapshot_json FROM plan_config_revisions WHERE plan_id=27001')).rows;
  const sourcesBefore=(await db.query('SELECT assisted_read_bootstrap_sources(27001) sources')).rows[0].sources;
@@ -67,7 +67,7 @@ try{
  const sql=readFileSync('supabase/migrations/115_daily_required_technical_chains.sql','utf8');await db.query(sql);
  ledger.push({file:'115_daily_required_technical_chains.sql',sha256:createHash('sha256').update(sql).digest('hex')});
  const after=await dataApiCatalog(db);save('catalog-115',after);save('privileges-observed',privilegeContract(after));save('rpc-115',await definitions());
- const lockAfter=await sourceLockControl();assert.deepEqual(lockAfter,lockBefore);
+ const lockAfter={plans:await sourceLockControl('plans'),dailyTasks:await sourceLockControl('daily_tasks')};assert.deepEqual(lockAfter,lockBefore);
  save('triggers-115',await triggers());
  assert.deepEqual((await db.query('SELECT snapshot_json,snapshot_fingerprint,config_revision_id FROM assisted_planning_stages WHERE plan_id=27001 ORDER BY ordinal')).rows,original);
  assert.deepEqual((await db.query('SELECT replay_snapshot_json FROM plan_config_revisions WHERE plan_id=27001')).rows,replayBefore);

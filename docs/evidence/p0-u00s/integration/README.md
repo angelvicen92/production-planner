@@ -115,6 +115,15 @@ acepta S11 y conserva 266/266. No se cambia la validación manual, los locks, lo
 de Draft, los límites ni el tratamiento fail-closed de conflictos. La entrega requiere
 además repetir todos los jobs en el head final.
 
+En `896c1fb`, el job Main flow acepta S1–S5 y el run 6 falla **antes de buscar**:
+`could not obtain lock on relation "public.daily_tasks" · 55P03`.
+El [artefacto original de CI](ci-mainflow-lock-896c1fb.json.gz) conserva los cinco
+PROPOSAL anteriores, el run en error con outcome NULL y sus instantes. El control
+PostgreSQL reproduce ahora los locks de plans y daily_tasks en 114 y 115 con el
+mismo resultado. Se mantiene el guard y se solicita repetir sólo el job fallido,
+sin cambios de fuentes, presupuestos, timeouts ni aserciones. No se presenta como
+dominio vacío ni como agotamiento de búsqueda.
+
 ## Frontera de reloj detectada al repetir CI
 
 El job `live-day-execution` de `7843f33` encuentra otro fallo, en
@@ -133,6 +142,14 @@ en Europe/Madrid, conservando la aserción de rechazo. El gate focal completo
 de ejecución pasa 59/59 y se conserva el before/after en `clock-gates.json.gz`.
 
 ## Resultados del candidato integrado
+
+[CI completa de 896c1fb](ci-896c1fb-green.json): **20 workflows y 35 checks verdes**.
+La suite de producto ejecuta 3.249 tests: 3.248 PASS, cero fallos y un skip histórico;
+no se añade ninguna exclusión. La repetición de Main flow conserva el primer
+recibo 55P03 y cambia únicamente el intento de CI. El commit documental de entrega
+mantiene las mismas fuentes productivas y se vuelve a comprobar íntegramente en
+los [checks del PR #1197](https://github.com/angelvicen92/production-planner/pull/1197/checks);
+la descripción del PR registra su head y las URLs inmutables de la verificación final.
 
 - Check, build, migraciones y TypeScript de producto/harness/integración: PASS.
 - 140 pruebas focales de servicios/SQL y nueve de catálogo/preflight/equivalencia: PASS.
@@ -171,6 +188,12 @@ que todos sus artefactos permanecen literales salvo el enlace del README y el
 proyecto TypeScript ampliado para este gate SQL. `execution-notes.json` separa
 dos intentos locales descartados por cambio de fuentes durante la ejecución y
 falta de espacio del resultado certificado.
+
+La corrección de integración no modifica engine, cliente ni shared respecto al
+head revisado dd4c61e. En producción sólo cambia el guard de inserción de revisiones
+en 115. El resto del diff de cierre son auditorías, contratos de test, el testigo
+de día civil, documentación y sus recibos. No se modifican migraciones 001–114,
+fixtures históricos, presupuestos, timeouts ni el diagnóstico ASST-010.
 
 ## Reproducción del candidato integrado
 
