@@ -1,0 +1,30 @@
+
+2026-10-25T18:54:23.9275222Z PASS S7 UI → run → apply → validate → accept → SQL persistence → reload (151/266)
+2026-10-25T18:54:39.5888834Z PASS S8 UI → run → apply → validate → accept → SQL persistence → reload (189/266)
+2026-10-25T18:54:56.9844584Z PASS S9 UI → run → apply → validate → accept → SQL persistence → reload (191/266)
+2026-10-25T18:55:15.3749200Z PASS S10 UI → run → apply → validate → accept → SQL persistence → reload (209/266)
+2026-10-25T18:55:34.2296782Z AssertionError [ERR_ASSERTION]: Validar borrador: {"code":"REBOOTSTRAP_STALE_SOURCES","message":"REBOOTSTRAP_STALE_SOURCES"}
+2026-10-25T18:55:34.2298007Z 
+2026-10-25T18:55:34.2298165Z 409 !== 200
+2026-10-25T18:55:34.2298387Z 
+2026-10-25T18:55:34.2299008Z     at action (/home/runner/work/production-planner/production-planner/script/demo/smokeA2Journey.ts:91:92)
+2026-10-25T18:55:34.2300532Z     at async runA2BrowserJourney (/home/runner/work/production-planner/production-planner/script/demo/smokeA2Journey.ts:130:21)
+2026-10-25T18:55:34.2302293Z     at async <anonymous> (/home/runner/work/production-planner/production-planner/script/demo/smokeA2Integration.ts:356:74)
+2026-10-25T18:55:34.9179967Z {"status":"FAIL","evidence":"/home/runner/work/production-planner/production-planner/work/data-api-grants/integration.json","remoteWrites":0}
+2026-10-25T18:55:37.2726266Z ##[error]Process completed with exit code 1.
+2026-10-25T18:55:37.2831741Z ##[group]Run actions/upload-artifact@v4
+2026-10-25T18:55:37.2832045Z with:
+2026-10-25T18:55:37.2832257Z   name: data-api-grants-assisted
+2026-10-25T18:55:37.2833745Z   path: work/data-api-grants/integration.json
+work/data-api-grants/data-api-*.json
+work/data-api-grants/day-workspace-setup.json
+work/data-api-grants/manual-validation-probe.json
+work/data-api-grants/transport-policy.json
+work/data-api-grants/*.png
+work/data-api-required/integration.json
+work/data-api-required/data-api-*.json
+work/data-api-required/required-acceptance.json
+
+2026-10-25T18:55:37.2835260Z   if-no-files-found: warn
+2026-10-25T18:55:37.2835512Z   compression-level: 6
+2026-10-25T18:55:37.2835805Z   over

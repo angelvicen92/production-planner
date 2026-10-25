@@ -1,0 +1,56 @@
+2026-10-25T18:51:41.7401647Z   ---
+2026-10-25T18:51:41.7402022Z   duration_ms: 386.433408
+2026-10-25T18:51:41.7402457Z   ...
+2026-10-25T18:51:41.7405964Z # Subtest: actual 086 bootstrap rejects resource staleness, materializes S0 and persists physical assignments
+2026-10-25T18:51:41.7415510Z not ok 13 - actual 086 bootstrap rejects resource staleness, materializes S0 and persists physical assignments
+2026-10-25T18:51:41.7416332Z   ---
+2026-10-25T18:51:41.7416562Z   duration_ms: 668.207449
+2026-10-25T18:51:41.7417177Z   location: '/home/runner/work/production-planner/production-planner/script/demo/a2ExistingDatabase.spec.ts:1:11004'
+2026-10-25T18:51:41.7417782Z   failureType: 'testCodeFailure'
+2026-10-25T18:51:41.7418066Z   error: |-
+2026-10-25T18:51:41.7418418Z     exported PostgreSQL definitions must match the preflight contracts
+2026-10-25T18:51:41.7418811Z     + actual - expected
+2026-10-25T18:51:41.7419030Z     
+2026-10-25T18:51:41.7419216Z     + [
+2026-10-25T18:51:41.7419526Z     +   'RPC_BODY_DRIFT:assisted_expected_obligation_sources',
+2026-10-25T18:51:41.7419943Z     +   'RPC_BODY_DRIFT:assisted_preview_s0_additions',
+2026-10-25T18:51:41.7420328Z     +   'RPC_BODY_DRIFT:assisted_read_bootstrap_sources',
+2026-10-25T18:51:41.7420786Z     +   'RPC_BODY_DRIFT:apply_day_config_operation_before_technical_chains',
+2026-10-25T18:51:41.7421232Z     +   'RPC_BODY_DRIFT:apply_day_config_operation_v5'
+2026-10-25T18:51:41.7421521Z     + ]
+2026-10-25T18:51:41.7421707Z     - []
+2026-10-25T18:51:41.7421917Z   code: 'ERR_ASSERTION'
+2026-10-25T18:51:41.7422157Z   name: 'AssertionError'
+2026-10-25T18:51:41.7422386Z   expected:
+2026-10-25T18:51:41.7422578Z   actual:
+2026-10-25T18:51:41.7422882Z     0: 'RPC_BODY_DRIFT:assisted_expected_obligation_sources'
+2026-10-25T18:51:41.7423305Z     1: 'RPC_BODY_DRIFT:assisted_preview_s0_additions'
+2026-10-25T18:51:41.7423708Z     2: 'RPC_BODY_DRIFT:assisted_read_bootstrap_sources'
+2026-10-25T18:51:41.7424164Z     3: 'RPC_BODY_DRIFT:apply_day_config_operation_before_technical_chains'
+2026-10-25T18:51:41.7424611Z     4: 'RPC_BODY_DRIFT:apply_day_config_operation_v5'
+2026-10-25T18:51:41.7425107Z   operator: 'deepStrictEqual'
+2026-10-25T18:51:41.7425465Z   stack: |-
+2026-10-25T18:51:41.7426194Z     TestContext.<anonymous> (/home/runner/work/production-planner/production-planner/script/demo/a2ExistingDatabase.spec.ts:150:10)
+2026-10-25T18:51:41.7426911Z     async Test.run (node:internal/test_runner/test:797:9)
+2026-10-25T18:51:41.7427617Z     async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+2026-10-25T18:51:41.7428005Z   ...
+2026-10-25T18:51:42.7027339Z # Subtest: preflight rejects schema/RPC/security drift, broad policy expressions, false policy roles and missing sequences
+2026-10-25T18:51:42.7029419Z ok 14 - preflight rejects schema/RPC/security drift, broad policy expressions, false policy roles and missing sequences
+2026-10-25T18:51:42.7030923Z   ---
+2026-10-25T18:51:42.7031688Z   duration_ms: 278.230392
+2026-10-25T18:51:42.7032366Z   ...
+2026-10-25T18:51:42.7034541Z # Subtest: security rollback is based on the captured original state and requires separate approval
+2026-10-25T18:51:42.7036771Z ok 15 - security rollback is based on the captured original state and requires separate approval
+2026-10-25T18:51:42.7037865Z   ---
+2026-10-25T18:51:42.7038506Z   duration_ms: 22.378054
+2026-10-25T18:51:42.7039164Z   ...
+2026-10-25T18:51:42.7052988Z # Subtest: each extended 115 RPC remains independently protected against body drift
+2026-10-25T18:51:42.7054666Z ok 16 - each extended 115 RPC remains independently protected against body drift
+2026-10-25T18:51:42.7056063Z   ---
+2026-10-25T18:51:42.7056782Z   duration_ms: 83.067698
+2026-10-25T18:51:42.7057534Z   ...
+2026-10-25T18:51:43.2840256Z # Subtest: itinerant catalog writes require ADMIN for Express casing and trailing slash variants
+2026-10-25T18:51:43.2848209Z ok 17 - itinerant catalog writes require ADMIN for Express casing and trailing slash variants
+2026-10-25T18:51:43.2849356Z   ---
+2026-10-25T18:51:43.2849950Z   duration_ms: 75.206629
+2026-10-25T18:51:43.2850511Z   ...

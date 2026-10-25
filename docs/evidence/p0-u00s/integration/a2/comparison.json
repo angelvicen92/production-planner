@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "fullReportsEqualExceptDurationMs": true,
+  "snapshotsEqual": true,
+  "completed": 266,
+  "stages": 11,
+  "branches": 27049,
+  "certificatesRevalidated": 22,
+  "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d"
+}

@@ -46,6 +46,19 @@ try{
  await db.query("INSERT INTO user_roles(user_id,role_id) SELECT $1,id FROM roles WHERE key='admin'",[actor]);
  await db.query(`SET optiplan.confirmed_demo_project='dyqusivzgxebkxkwohwn';SET optiplan.backup_sha256='${'a'.repeat(64)}';SET optiplan.schema_approved='yes';SET optiplan.security_approved='yes';SET optiplan.import_approved='yes';SET optiplan.demo_actor='${actor}';`);
  const historical=await seedA2HistoricalRehearsal(db,actor);
+ const sourceLockControl=async()=>{
+  const holder=new pg.Client({host:'127.0.0.1',port,user:'postgres',password,database:'postgres'});await holder.connect();
+  try{
+   await holder.query('BEGIN');await holder.query('LOCK TABLE public.plans IN ROW EXCLUSIVE MODE');
+   // A source read stays legal; the existing commit guard must fail closed.
+   await db!.query('SELECT assisted_read_bootstrap_sources(27001)');
+   let rejected:any;
+   try{await db!.query('SELECT assisted_read_bootstrap_sources(27001,true)');}
+   catch(e:any){rejected={code:e.code,message:e.message};}
+   assert.equal(rejected?.code,'55P03');return rejected;
+  }finally{await holder.query('ROLLBACK');await holder.end();}
+ };
+ const lockBefore=await sourceLockControl();
  const original=(await db.query('SELECT snapshot_json,snapshot_fingerprint,config_revision_id FROM assisted_planning_stages WHERE plan_id=27001 ORDER BY ordinal')).rows;
  const replayBefore=(await db.query('SELECT replay_snapshot_json FROM plan_config_revisions WHERE plan_id=27001')).rows;
  const sourcesBefore=(await db.query('SELECT assisted_read_bootstrap_sources(27001) sources')).rows[0].sources;
@@ -54,6 +67,7 @@ try{
  const sql=readFileSync('supabase/migrations/115_daily_required_technical_chains.sql','utf8');await db.query(sql);
  ledger.push({file:'115_daily_required_technical_chains.sql',sha256:createHash('sha256').update(sql).digest('hex')});
  const after=await dataApiCatalog(db);save('catalog-115',after);save('privileges-observed',privilegeContract(after));save('rpc-115',await definitions());
+ const lockAfter=await sourceLockControl();assert.deepEqual(lockAfter,lockBefore);
  save('triggers-115',await triggers());
  assert.deepEqual((await db.query('SELECT snapshot_json,snapshot_fingerprint,config_revision_id FROM assisted_planning_stages WHERE plan_id=27001 ORDER BY ordinal')).rows,original);
  assert.deepEqual((await db.query('SELECT replay_snapshot_json FROM plan_config_revisions WHERE plan_id=27001')).rows,replayBefore);
@@ -87,6 +101,10 @@ try{
   assert.equal(receipt.accepted,false,name);assert.equal(receipt.message,message,name);assert.deepEqual(await material(),baseline,name);
   results.push({name,...receipt,atomicRollback:true});
  };
+ await reject('historic-insert-and-late-failure',async()=>{
+  await db!.query("INSERT INTO plan_config_revisions(plan_id,source,fingerprint,identity_json,replay_snapshot_json,created_by) SELECT plan_id,'EDIT',fingerprint,identity_json,replay_snapshot_json,created_by FROM plan_config_revisions WHERE plan_id=27001 ORDER BY id LIMIT 1");
+  await db!.query("DO $$ BEGIN RAISE EXCEPTION 'HISTORICAL_ROLLBACK_PROBE'; END $$");
+ },'HISTORICAL_ROLLBACK_PROBE');
  for(const writer of ['apply_day_config_operation_v5','apply_day_config_operation_before_technical_chains']){
   await reject(writer+'-coherent-native-forgery',async()=>{
    await db!.query('SET LOCAL ROLE service_role');
@@ -101,6 +119,6 @@ try{
  },'STALE_CONFIG_REVISION');
  await db.query("INSERT INTO plan_config_revisions(plan_id,source,fingerprint,identity_json,replay_snapshot_json,created_by) VALUES($1,'EDIT',$2,$3,$4,$5)",[input.planId,current.identity.configurationFingerprint,current.identity,current.replay,actor]);
  save('revision-results',{postgres:(await db.query('SELECT version()')).rows[0],ledger,remoteWrites:0,historical:historical.summary,originalStages:original,originalReplay:replayBefore,
-  historicalSparseReplayAccepted:true,historicalSnapshotsPreserved:true,nullColumnSourceCaptureIdentical:true,historicalReadersIdentical:true,nativeAbsentPolicyAccepted:true,forgedIdentity:forged.identity,forgedReplay:forged.replay,results});
+  historicalSparseReplayAccepted:true,historicalSnapshotsPreserved:true,nullColumnSourceCaptureIdentical:true,historicalReadersIdentical:true,sourceLockBefore:lockBefore,sourceLockAfter:lockAfter,nativeAbsentPolicyAccepted:true,forgedIdentity:forged.identity,forgedReplay:forged.replay,results});
  console.log('PASS PostgreSQL historical replay, unchanged snapshots/sources, native coherent forgery, atomic rollback, stale revision and 088 immutability');
 }finally{await db?.end();docker('rm','-f',container);}

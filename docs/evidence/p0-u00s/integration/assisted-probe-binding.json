@@ -1,0 +1,14 @@
+{
+  "productFilesEqualCheckout": true,
+  "productFileCount": 1451,
+  "harnessChange": "Failure-only PostgreSQL error/lock capture; no request or solver changes",
+  "originalHarnessSha256": "86a0dc1278f0cd60d29e0dbb02348475aa23c03426fdce95b54d20f71c0de6f2",
+  "diagnosticHarnessSha256": "8eb0a902035cb3d11d47d37ebfbec3ce26211d3667c1f515073410ec1dbd7cb3",
+  "arguments": [
+    "--restricted-data-api",
+    "--full",
+    "--manual-validation",
+    "--transport-policy"
+  ],
+  "remoteWrites": 0
+}

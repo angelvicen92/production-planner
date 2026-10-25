@@ -89,7 +89,65 @@ con los recorridos productivos de continuidad, configuración, rounds, adiciones
 además de los tests de integridad. Los resultados y hashes del candidato se registran
 separadamente de los de la primera implementación.
 
-## Reproducción
+## Cuarta frontera detectada en CI
+
+En `88b8348`, el job `native-rounds` de U00p llegó a los tests y detectó un desfase
+adicional: `a2ExistingDatabase.spec.ts` aplicaba el ledger sólo hasta 114 y comparaba
+ese catálogo con el contrato actual 115. [Log original del job](ci-rounds-binding-88b8348.log).
+Se añade 115 a la aplicación explícita del ledger de ese test. Su reparación histórica
+acotada a 099, sus fixtures y sus aserciones permanecen intactos. Los nueve tests del
+catálogo/preflight/equivalencia pasan con las definiciones PostgreSQL efectivamente aplicadas.
+No es otro rechazo del seed histórico ni una modificación del solver o de rounds.
+
+## Conflicto de concurrencia observado en la matriz Assisted
+
+En el mismo candidato, cinco recorridos Data API pasan y `assisted` recibe
+`REBOOTSTRAP_STALE_SOURCES` al validar S11; se conserva el [log original](ci-assisted-source-88b8348.log).
+En esta ruta de validación ese código lo produce el mapper existente para 55P03/40P01,
+no el trigger de revisiones ni un diagnóstico de inviabilidad. La prueba PostgreSQL
+mantiene un lock concurrente real y comprueba el mismo 55P03 antes y después de 115,
+con lectura ordinaria permitida y commit protegido rechazado. No se identifica
+retroactivamente qué proceso mantuvo el lock del runner remoto.
+
+El job `manual-draft-validation` del mismo head pasa el recorrido completo, y la
+reproducción aislada de `--restricted-data-api --full --manual-validation --transport-policy`
+acepta S11 y conserva 266/266. No se cambia la validación manual, los locks, los contratos
+de Draft, los límites ni el tratamiento fail-closed de conflictos. La entrega requiere
+además repetir todos los jobs en el head final.
+
+## Resultados del candidato integrado
+
+- Check, build, migraciones y TypeScript de producto/harness/integración: PASS.
+- 140 pruebas focales de servicios/SQL y nueve de catálogo/preflight/equivalencia: PASS.
+- PostgreSQL 17: replay histórico literal aceptado, 11 snapshots originales intactos,
+  rollback tras inserción histórica y fallo posterior; falsificación nativa coherente
+  rechazada por wrapper/delegado, source histórico falso, CAS y 088 inmutable.
+- Data API, New day, Atomic template y continuidad: recorridos completos PASS.
+  La repetición aislada de Assisted/manual/transporte acepta 11 Stages y 266/266.
+- U00s candidato/repetición: cuatro jornadas y seis Stages por ejecución; 272 recibos
+  por stack. [Determinismo](determinism.json) con IDs distintos: mismas decisiones,
+  equipos, contadores y certificados futuros. [Candidato](native/receipts.json.gz),
+  [repetición](repeat/receipts.json.gz), capturas y manifests en esos directorios.
+- U00p: dos jornadas, siete Stages, seis sincronizados, 40 rechazos materiales.
+  U00r: dos jornadas 4/4 con prefijos protegidos de dos y una tarea.
+  U00n: dos jornadas con admisión posterior a Stage y checkpoints conservados.
+  Recibos completos en `rounds-certified.json.gz`, `prefix-certified.json.gz`
+  y `additions-certified.json.gz`.
+- Replays fríos U00q 7/7, U00r 10/10 y U00s 5/5 por ejecución: PASS.
+- [A2 candidato/repetición](a2/comparison.json): 266/266, 11 Stages, 27.049 ramas,
+  22 certificados revalidados, fingerprint
+  `2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d`.
+  Informes completos iguales al baseline salvo durationMs; snapshots idénticos.
+
+[Binding de fuentes actuales](source-binding.json), `verify.py` y el SHA256SUMS
+del directorio padre permiten contrastar el paquete con el checkout. El manifest
+original se conserva también en `initial-SHA256SUMS`; el verificador comprueba
+que todos sus artefactos permanecen literales salvo el enlace del README y el
+proyecto TypeScript ampliado para este gate SQL. `execution-notes.json` separa
+dos intentos locales descartados por cambio de fuentes durante la ejecución y
+falta de espacio del resultado certificado.
+
+## Reproducción del candidato integrado
 
 ```sh
 npm ci
