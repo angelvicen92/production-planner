@@ -854,7 +854,10 @@ function unsupportedShapeReasons(problem: PlannerNextProblem, pending: Task[], c
     const unitIds=task.itinerantUnitId?[task.itinerantUnitId]:task.allowedItinerantUnitIds??[];
     const physicalTechnical=task.kind==="technical" && unitIds.length>0 && unitIds.every(id=>
       problem.itinerantUnits?.some(unit=>unit.id===id && (unit.resourceIds?.length??0)>0));
-    if (task.kind !== "auxiliary" && !physicalTechnical && !technicalChainIds.has(task.id)) reasons.push(`UNSUPPORTED_STANDALONE_TASK_KIND:${task.id}`);
+    const inferredRoot=task.kind==="technical"&&task.dependencies.length===0
+      &&problem.inferredTechnicalChainRootIds?.includes(task.id)
+      &&!problem.tasks.some(other=>other.kind==="technical"&&other.dependencies.includes(task.id));
+    if (task.kind !== "auxiliary" && !physicalTechnical && !technicalChainIds.has(task.id) && !inferredRoot) reasons.push(`UNSUPPORTED_STANDALONE_TASK_KIND:${task.id}`);
     if (anchoredIds.has(task.id)) reasons.push(`UNSUPPORTED_PENDING_ANCHORED_TASK:${task.id}`);
     if (isSetupTask && space?.setupPolicy === undefined) reasons.push(`UNSUPPORTED_STANDALONE_SETUP:${task.id}`);
     if (space?.secondaryContinuity === "REQUIRED" && !isSetupTask)

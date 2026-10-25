@@ -23,6 +23,7 @@ import { mainFlowMealPolicy } from "./mainFlowMeal";
 import { setupPreparationId } from "./setupPreparation";
 import { roundPreparationId } from "./roundSynchronization";
 import { materializeItinerantUnitAssignment } from "./itinerantUnitAssignment";
+import { getTechnicalChains, technicalChainHasBranching, technicalChainHasCycle } from "./technicalChains";
 import { futureCollectiveClosureEvidenceKeys, type FutureCollectiveClosureEvidence } from "./futureCollectiveParticipantClosure";
 
 export type AssistedPlanningReasonCode =
@@ -528,6 +529,15 @@ export function buildAssistedProblem(
     return {identity,unitIds:identity.split("+"),tasks:members.slice().sort((a,b)=>a.id.localeCompare(b.id)).map(task=>structuredClone(task)),
       prerequisiteTasks:[...prerequisiteIds].sort().map(id=>structuredClone(tasksById.get(id)!))};
   });
+  // A visible root may be a one-operation prefix of an inferred source chain.
+  // Retain only its identity, without adding successors to search or creating a policy.
+  const explicitTechnicalIds=new Set((problem.technicalChains??[]).flatMap(chain=>chain.orderedTaskIds));
+  const inferredRoots=technicalChainHasBranching(problem.tasks)||technicalChainHasCycle(problem.tasks)?[]:
+    [...new Set([...(problem.inferredTechnicalChainRootIds??[]),...getTechnicalChains(problem.tasks,problem.technicalChains)
+      .filter(chain=>!chain.some(task=>explicitTechnicalIds.has(task.id))).map(chain=>chain[0]!.id)])]
+      .filter(id=>included.has(id)&&problem.tasks.some(task=>task.id===id&&task.kind==="technical"&&task.dependencies.length===0)
+        &&!problem.tasks.some(task=>included.has(task.id)&&task.kind==="technical"&&task.dependencies.includes(id))).sort();
+  if(inferredRoots.length)problem.inferredTechnicalChainRootIds=inferredRoots;else delete problem.inferredTechnicalChainRootIds;
   problem.tasks = problem.tasks.filter(({ id }) => included.has(id));
   if (problem.operationContinuityGroups) problem.operationContinuityGroups = problem.operationContinuityGroups.map(group => {
     const taskIds = group.taskIds.filter(id => included.has(id));

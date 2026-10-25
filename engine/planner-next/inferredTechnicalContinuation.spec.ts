@@ -38,6 +38,16 @@ test('residual recognition requires a fixed prefix and never accepts an interior
 test('a genuinely isolated technical operation remains unsupported',()=>{
  const p=fixture();p.tasks=[p.tasks[0]!];const r=solve(p,0);assert.equal(r.proposal,null);assert.ok(r.evidence.reasonCodes.some(c=>c.includes('UNSUPPORTED_STANDALONE_TASK_KIND')));
 });
+test('a visible one-operation prefix retains inferred source identity without pulling successors into scope',()=>{
+ const p=fixture(),scope=createPlanningScope({kind:'ids',value:'root'},{},['t1']);
+ const scoped=buildAssistedProblem(p,scope,[]);assert.deepEqual(scoped.problem.tasks.map(t=>t.id),['t1']);
+ assert.equal(scoped.problem.technicalChains,undefined);assert.deepEqual(scoped.problem.inferredTechnicalChainRootIds,['t1']);
+ const r=executeAssistedPlanning(scoped);assert.ok(r.proposal);assert.deepEqual(r.proposal.map(t=>t.id),['t1']);assert.equal(r.proposal[0]!.start,0);
+ // A physically impossible future suffix is not silently promoted to REQUIRED.
+ p.spaces[2]!.availability=[{start:80,end:85}];assert.ok(executeAssistedPlanning(buildAssistedProblem(p,scope,[])).proposal);
+ for(const kind of ['branch','cycle']){const bad=fixture();if(kind==='branch')bad.tasks[2]!.dependencies=['t1'];else bad.tasks[0]!.dependencies=['t3'];
+  assert.deepEqual(buildAssistedProblem(bad,scope,[]).problem.inferredTechnicalChainRootIds??[],[]);assert.equal(executeAssistedPlanning(buildAssistedProblem(bad,scope,[])).proposal,null);}
+});
 for(const [name,mutate,reason] of [
  ['missing reference',(p:PlannerNextProblem)=>{p.tasks[1]!.dependencies=['absent'];},'MISSING_TASK_REFERENCE'],
  ['cycle',(p:PlannerNextProblem)=>{p.tasks[0]!.dependencies=['t3'];},'TECHNICAL_CHAIN_CYCLE'],
