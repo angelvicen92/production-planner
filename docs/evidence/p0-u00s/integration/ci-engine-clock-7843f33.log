@@ -1,0 +1,54 @@
+2026-10-25T22:20:31.9826856Z   ...
+2026-10-25T22:20:31.9827329Z # Subtest: required version/reason/offset, unsupported states, future/date/planning deviation and atomic rollback
+2026-10-25T22:20:31.9828128Z not ok 2976 - required version/reason/offset, unsupported states, future/date/planning deviation and atomic rollback
+2026-10-25T22:20:31.9828647Z   ---
+2026-10-25T22:20:31.9828822Z   duration_ms: 1405.605679
+2026-10-25T22:20:31.9829326Z   location: '/home/runner/work/production-planner/production-planner/server/executionTimeCorrections.spec.ts:5:4546'
+2026-10-25T22:20:31.9829828Z   failureType: 'testCodeFailure'
+2026-10-25T22:20:31.9830097Z   error: 'Missing expected rejection.'
+2026-10-25T22:20:31.9830337Z   code: 'ERR_ASSERTION'
+2026-10-25T22:20:31.9830541Z   name: 'AssertionError'
+2026-10-25T22:20:31.9830741Z   expected:
+2026-10-25T22:20:31.9830927Z   operator: 'rejects'
+2026-10-25T22:20:31.9831126Z   stack: |-
+2026-10-25T22:20:31.9831655Z     async TestContext.<anonymous> (/home/runner/work/production-planner/production-planner/server/executionTimeCorrections.spec.ts:96:5)
+2026-10-25T22:20:31.9832257Z     async Test.run (node:internal/test_runner/test:797:9)
+2026-10-25T22:20:31.9832672Z     async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+2026-10-25T22:20:31.9832998Z   ...
+2026-10-25T22:20:31.9833412Z # Subtest: pause boundaries remain facts; impossible chronology rejected before and after Finish
+2026-10-25T22:20:31.9834033Z ok 2977 - pause boundaries remain facts; impossible chronology rejected before and after Finish
+2026-10-25T22:20:31.9834405Z   ---
+2026-10-25T22:20:31.9834580Z   duration_ms: 1574.692436
+2026-10-25T22:20:31.9834777Z   ...
+2026-10-25T22:20:31.9835196Z # Subtest: Madrid DST: explicit fold instants, offset normalization and same-day planning deviations
+2026-10-25T22:20:31.9835833Z ok 2978 - Madrid DST: explicit fold instants, offset normalization and same-day planning deviations
+2026-10-25T22:20:31.9836209Z   ---
+2026-10-25T22:20:31.9836388Z   duration_ms: 1735.276814
+2026-10-25T22:20:32.0085154Z   ...
+2026-10-25T22:20:32.0085201Z 1..3184
+2026-10-25T22:20:32.0085255Z # tests 3249
+2026-10-25T22:20:32.0085377Z # suites 9
+2026-10-25T22:20:32.0085427Z # pass 3247
+2026-10-25T22:20:32.0085476Z # fail 1
+2026-10-25T22:20:32.0085530Z # cancelled 0
+2026-10-25T22:20:32.0085686Z # skipped 1
+2026-10-25T22:20:32.0085739Z # todo 0
+2026-10-25T22:20:32.0085807Z # duration_ms 267426.159335
+2026-10-25T22:20:32.0096045Z ##[error]Process completed with exit code 1.
+2026-10-25T22:20:32.0210840Z Post job cleanup.
+2026-10-25T22:20:32.0793574Z [command]/usr/bin/git version
+2026-10-25T22:20:32.0812232Z git version 2.55.0
+2026-10-25T22:20:32.0835460Z Temporarily overriding HOME='/home/runner/work/_temp/b068dd49-a5e8-4103-892a-573a904c258c' before making global git config changes
+2026-10-25T22:20:32.0836243Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-25T22:20:32.0839505Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/production-planner/production-planner
+2026-10-25T22:20:32.0872651Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-25T22:20:32.0907096Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-25T22:20:32.1119324Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-25T22:20:32.1142527Z http.https://github.com/.extraheader
+2026-10-25T22:20:32.1148246Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-25T22:20:32.1178343Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-25T22:20:32.1383199Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-25T22:20:32.1414757Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-25T22:20:32.1716469Z Cleaning up orphan processes
+2026-10-25T22:20:32.1946362Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+

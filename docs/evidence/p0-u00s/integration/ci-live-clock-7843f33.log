@@ -1,0 +1,44 @@
+2026-10-25T22:14:26.1440638Z   ---
+2026-10-25T22:14:26.1441412Z   duration_ms: 1530.817519
+2026-10-25T22:14:26.1441814Z   ...
+2026-10-25T22:14:27.7380902Z # Subtest: required version/reason/offset, unsupported states, future/date/planning deviation and atomic rollback
+2026-10-25T22:14:27.7427635Z not ok 31 - required version/reason/offset, unsupported states, future/date/planning deviation and atomic rollback
+2026-10-25T22:14:27.7432591Z   ---
+2026-10-25T22:14:27.7433103Z   duration_ms: 1592.808973
+2026-10-25T22:14:27.7434542Z   location: '/home/runner/work/production-planner/production-planner/server/executionTimeCorrections.spec.ts:5:4546'
+2026-10-25T22:14:27.7435728Z   failureType: 'testCodeFailure'
+2026-10-25T22:14:27.7436392Z   error: 'Missing expected rejection.'
+2026-10-25T22:14:27.7437037Z   code: 'ERR_ASSERTION'
+2026-10-25T22:14:27.7437567Z   name: 'AssertionError'
+2026-10-25T22:14:27.7438070Z   expected:
+2026-10-25T22:14:27.7444902Z   operator: 'rejects'
+2026-10-25T22:14:27.7445475Z   stack: |-
+2026-10-25T22:14:27.7446734Z     async TestContext.<anonymous> (/home/runner/work/production-planner/production-planner/server/executionTimeCorrections.spec.ts:96:5)
+2026-10-25T22:14:27.7448036Z     async Test.run (node:internal/test_runner/test:797:9)
+2026-10-25T22:14:27.7448708Z     async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
+2026-10-25T22:14:27.7449245Z   ...
+2026-10-25T22:14:29.1505485Z # Subtest: pause boundaries remain facts; impossible chronology rejected before and after Finish
+2026-10-25T22:14:29.1506818Z ok 32 - pause boundaries remain facts; impossible chronology rejected before and after Finish
+2026-10-25T22:14:29.1507858Z   ---
+2026-10-25T22:14:29.1508223Z   duration_ms: 1411.929149
+2026-10-25T22:14:29.1515987Z   ...
+2026-10-25T22:14:30.5601111Z # Subtest: Madrid DST: explicit fold instants, offset normalization and same-day planning deviations
+2026-10-25T22:14:30.5602818Z ok 33 - Madrid DST: explicit fold instants, offset normalization and same-day planning deviations
+2026-10-25T22:14:30.5604271Z   ---
+2026-10-25T22:14:30.5604681Z   duration_ms: 1411.29323
+2026-10-25T22:14:30.5605073Z   ...
+2026-10-25T22:14:31.0000156Z # Subtest: incident contract trims mandatory facts, leaves unknown links/notes null and rejects forged authority
+2026-10-25T22:14:31.0002420Z ok 34 - incident contract trims mandatory facts, leaves unknown links/notes null and rejects forged authority
+2026-10-25T22:14:31.0003407Z   ---
+2026-10-25T22:14:31.0004080Z   duration_ms: 4.209616
+2026-10-25T22:14:31.0004523Z   ...
+2026-10-25T22:14:31.0007218Z # Subtest: partial updates preserve omitted fields and require observed version; transitions require a decision
+2026-10-25T22:14:31.0008995Z ok 35 - partial updates preserve omitted fields and require observed version; transitions require a decision
+2026-10-25T22:14:31.0010218Z   ---
+2026-10-25T22:14:31.0010669Z   duration_ms: 1.544305
+2026-10-25T22:14:31.0011267Z   ...
+2026-10-25T22:14:31.0015083Z # Subtest: incident HTTP policy admits aux only to the database scope check, viewer only to queries
+2026-10-25T22:14:31.0017254Z ok 36 - incident HTTP policy admits aux only to the database scope check, viewer only to queries
+2026-10-25T22:14:31.0018327Z   ---
+2026-10-25T22:14:31.0018822Z   duration_ms: 0.583521
+2026-10-25T22:14:31.0019333Z   ...

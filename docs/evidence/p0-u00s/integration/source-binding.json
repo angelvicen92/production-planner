@@ -2,8 +2,9 @@
   "status": "PASS",
   "base": "ed4cc0b32c6a5850292c7157f07dee570180696b",
   "implementationCommit": "88b8348f822b2b812fc0596464938dde422216cf",
-  "additionalDelta": "script/demo/a2ExistingDatabase.spec.ts applies 115 in current-ledger audit; historical repair unchanged",
+  "subsequentChanges": "Current-ledger and Madrid civil-date test corrections; diagnostic workflow/evidence only. No further runtime change.",
   "allCapturedSourcesEqualCheckout": true,
+  "candidateRepeatSourcesEqual": true,
   "sourceHashes": {
     "client/index.html": "78d320cec1e1d400e55ce1cf2282139ffefd94a5080b8063f22255f8b9f5aac4",
     "client/public/favicon.png": "b6acb73abb0b7e8e808d72c016e81d97860bc7e7e0eb4f06ff76ba1d16a5b04f",
@@ -1391,7 +1392,7 @@
     "server/effectiveConfigurationView.ts": "9da0707d6b133b8aa0bf05ff02a94303ad91053610aba7f320e4e0a6c9b328a2",
     "server/effectivePlanConfigRevision.spec.ts": "d3ac996ef672d6085b12c41aa62cbf43020a8623f687261a086502acf68ae652",
     "server/effectivePlanConfigRevision.ts": "e5129905ed1194bb5a75f9d75248e2d7c6a950366c5cde1ff7d08b706132f953",
-    "server/executionTimeCorrections.spec.ts": "4c44e5c04e360e1a32a22e8e59f8cd6d4614747d2c0e5b2a6d10f962e930a94b",
+    "server/executionTimeCorrections.spec.ts": "3367fdab80b3cef62276ade5e86c7bf5bc3e4d39bb3d2ed138098e0f95844e22",
     "server/executionTimeCorrections.ts": "20c247d08c2ac51f88f41c6f40fe9dd79a3c371e6a92928f603d5c7c6343b838",
     "server/fixtures/assistedA2S10.json": "58cd5c0a49d7e8ff71ffbd0875192ef87fd95738f8870aeee06b82374e266500",
     "server/fixtures/assistedP9A2.json.gz": "43aa5b0e7a0701518cce561f4565e48076f8929c45362e12336836793869d99a",
@@ -1635,7 +1636,8 @@
     "supabase/migrations/114_daily_round_synchronization.sql": "6f057ad221b820e37c18d5241ef54ec5a9100e7d838aafd0b7d0e44e7af60fe2",
     "supabase/migrations/115_daily_required_technical_chains.sql": "2f836aa0bfa18d731ea266b6f2cc0f56ae331dc0e4d8d90f920feba84577e49e",
     "docs/evidence/p0-u00s/integration/sql-gate.ts": "2c826e5b085d9641b5cf9629aeee20739cfe4cb53658edbc12584d81f1eba521",
-    "docs/evidence/p0-u00s/tsconfig.json": "aeef22b5aa83977931344fbceb2b9852a296ae1ea8517d3bc8fad07b5378530d",
-    ".github/workflows/p0-u00s-technical-chains.yml": "5124710691a7de64e6e6507642c71d3c85d1813f8633241d7948b75406cc0b5c"
+    "docs/evidence/p0-u00s/integration/clock-regression.ts": "6c8bc0a60489e457b9d31bc8b4e26c49345cdea4472bf7b37a66eefc8e8561ba",
+    "docs/evidence/p0-u00s/tsconfig.json": "7cc455c1d9f6493b8ec8e205a73810df275a8151d4bcb6b33bb498f015c8a03b",
+    ".github/workflows/p0-u00s-technical-chains.yml": "7db94551d978fed3bb46677761f718a5b31203708bda556e7d4d78f24c06c5f4"
   }
 }

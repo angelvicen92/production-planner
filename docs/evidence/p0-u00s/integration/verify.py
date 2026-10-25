@@ -44,6 +44,11 @@ for label in ['native','repeat']:
   assert len([t for t in stage['snapshotJson']['tasks'] if t['startPlanned']])==4
   assert receipts[day+'-SQL-U00q-replay-without-material-authority.json']['message']=='TECHNICAL_CHAIN_AUTHORITY_NOT_MATERIALIZED'
 assert read(HERE/'determinism.json')['status']=='PASS'
+historical=read(HERE/'asst010-comparison.json')
+assert historical['base']=='ed4cc0b32c6a5850292c7157f07dee570180696b' and historical['identicalMaterialFailure']
+base=read(HERE/'asst010-base.json');candidate=read(HERE/'asst010-candidate.json')
+assert {k:base[k] for k in historical['fieldsCompared']}=={k:candidate[k] for k in historical['fieldsCompared']}==historical['material']
+assert not historical['budgetsAndAssertionsChanged']
 for label in ['candidate','repeat']:
  a2=read(HERE/'a2'/label/'comparison.json')
  assert a2['completed']==266 and a2['stages']==11 and a2['branches']==27049

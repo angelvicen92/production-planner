@@ -115,10 +115,28 @@ acepta S11 y conserva 266/266. No se cambia la validación manual, los locks, lo
 de Draft, los límites ni el tratamiento fail-closed de conflictos. La entrega requiere
 además repetir todos los jobs en el head final.
 
+## Frontera de reloj detectada al repetir CI
+
+El job `live-day-execution` de `7843f33` encuentra otro fallo, en
+`executionTimeCorrections.spec.ts:96`: [log original](ci-live-clock-7843f33.log).
+El negativo calculaba «otro día» restando 86.400 segundos. A las 23:14 de Madrid
+del 25 de octubre de 2026, el instante menos 24 horas todavía pertenece al mismo
+25 de octubre, que dura 25 horas. SQL acepta correctamente esa corrección real.
+
+El mismo test falla literalmente en la base `ed4cc0b` y en el candidato.
+`clock-regression.ts` fija el instante observado por CI y llama al SQL original:
+ambos aceptan el testigo de 24h, ambos rechazan el día civil anterior con
+EXECUTION_WORKDAY. [Resultados idénticos y hashes](clock-regression.json).
+No se carga 115 en esa fixture; 097, 098 y la fixture de ejecución permanecen
+idénticos a la base. Se corrige sólo el dato negativo para restar un día civil
+en Europe/Madrid, conservando la aserción de rechazo. El gate focal completo
+de ejecución pasa 59/59 y se conserva el before/after en `clock-gates.json.gz`.
+
 ## Resultados del candidato integrado
 
 - Check, build, migraciones y TypeScript de producto/harness/integración: PASS.
 - 140 pruebas focales de servicios/SQL y nueve de catálogo/preflight/equivalencia: PASS.
+- Gate de ejecución y correcciones de hora después del ajuste del testigo civil: 59/59 PASS.
 - PostgreSQL 17: replay histórico literal aceptado, 11 snapshots originales intactos,
   rollback tras inserción histórica y fallo posterior; falsificación nativa coherente
   rechazada por wrapper/delegado, source histórico falso, CAS y 088 inmutable.
@@ -138,6 +156,13 @@ además repetir todos los jobs en el head final.
   22 certificados revalidados, fingerprint
   `2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d`.
   Informes completos iguales al baseline salvo durationMs; snapshots idénticos.
+- [ASST-010 contra la base exacta](asst010-comparison.json): el diagnóstico aislado
+  reproduce en `ed4cc0b` y candidato el mismo ERR_ASSERTION, NO_PROPOSAL frente a
+  PROPOSAL y los mismos ASSISTED_SCOPE_INCOMPLETE/SEARCH_TIME_LIMIT_REACHED.
+  Ambas ejecuciones usan Node 20.19.5, unos 371 segundos y el mismo script/benchmark
+  literal. Se conservan las dos salidas completas; no se incrementan presupuestos,
+  timeouts ni aserciones. Este fallo histórico no se declara inviabilidad ni se
+  confunde con el recorrido A2 certificado completo.
 
 [Binding de fuentes actuales](source-binding.json), `verify.py` y el SHA256SUMS
 del directorio padre permiten contrastar el paquete con el checkout. El manifest

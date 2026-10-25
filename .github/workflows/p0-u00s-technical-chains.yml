@@ -37,6 +37,8 @@ jobs:
       - run: npx --no-install tsc -p docs/evidence/p0-u00s/tsconfig.json
       - name: Historical 088 replay, native coherent forgery and catalog audit on PostgreSQL
         run: node --import tsx docs/evidence/p0-u00s/integration/sql-gate.ts work/u00s-integration-sql
+      - name: Previous civil workday remains distinct across Madrid DST
+        run: node --import tsx docs/evidence/p0-u00s/integration/clock-regression.ts work/u00s-integration-sql/clock-regression.json
       - run: node --import tsx --test script/demo/assistedSQLContracts.spec.ts script/demo/a2Preflight.spec.ts
       - run: node --import tsx --test --test-concurrency=1 server/technicalChainStructure.spec.ts server/technicalChainSql.spec.ts server/roundSynchronizationStructure.spec.ts server/roundPreparationSql.spec.ts server/dayConfiguration.spec.ts server/assistedNextScope.spec.ts server/effectivePlanConfigRevision.spec.ts server/apiAuthorization.spec.ts engine/planner-next/planMainFlowAndFeeders.spec.ts engine/planner-next/inferredTechnicalContinuation.spec.ts client/src/lib/technical-chain-result.test.ts
       - name: Native REQUIRED chains, physical negative, future witness and SQL attacks

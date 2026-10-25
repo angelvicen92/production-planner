@@ -1,0 +1,12 @@
+{
+  "node": "v20.19.5",
+  "seconds": 370.75967400400003,
+  "remoteWrites": 0,
+  "status": "FAIL",
+  "code": "ERR_ASSERTION",
+  "message": "[\"ASSISTED_SCOPE_INCOMPLETE\",\"SEARCH_TIME_LIMIT_REACHED\"]\n+ actual - expected\n\n+ 'NO_PROPOSAL'\n- 'PROPOSAL'",
+  "actual": "NO_PROPOSAL",
+  "expected": "PROPOSAL",
+  "operator": "strictEqual",
+  "stack": "AssertionError [ERR_ASSERTION]: [\"ASSISTED_SCOPE_INCOMPLETE\",\"SEARCH_TIME_LIMIT_REACHED\"]\n+ actual - expected\n\n+ 'NO_PROPOSAL'\n- 'PROPOSAL'\n    at acceptProposal (/tmp/u00s-int-asst-base/server/benchmarks/runA2Assist7Evidence.ts:168:354)\n    at async runA2Assist7Evidence (/tmp/u00s-int-asst-base/server/benchmarks/runA2Assist7Evidence.ts:181:14)\n    at async <anonymous> (/tmp/u00s-int-asst-base/docs/evidence/p0-u00p/asst010.ts:7:35)"
+}

@@ -80,8 +80,45 @@
         "/tmp/u00s-int-a2-repeat"
       ],
       "cwd": "/workspace/production-planner"
+    },
+    {
+      "gate": "asst-base",
+      "exit": 0,
+      "command": [
+        "docs/evidence/p0-u00p/asst010.ts",
+        "/tmp/u00s-int-asst-base.json"
+      ],
+      "cwd": "/tmp/u00s-int-asst-base"
+    },
+    {
+      "gate": "asst-candidate",
+      "exit": 0,
+      "command": [
+        "docs/evidence/p0-u00p/asst010.ts",
+        "/tmp/u00s-int-asst-candidate.json"
+      ],
+      "cwd": "/workspace/production-planner"
     }
   ],
   "budgetOrTimeoutChanges": false,
-  "remoteDatabaseWrites": 0
+  "remoteDatabaseWrites": 0,
+  "asst010": "Identical historical failure reproduced on exact base ed4cc0b and candidate; see asst010-comparison.json",
+  "finalNativeRuns": [
+    {
+      "name": "native-delivery",
+      "exit": 0,
+      "output": "/tmp/u00s-int-native-delivery"
+    },
+    {
+      "name": "repeat-delivery",
+      "exit": 0,
+      "output": "/tmp/u00s-int-repeat-delivery"
+    }
+  ],
+  "liveExecutionGate": {
+    "tests": 59,
+    "passed": 59,
+    "failed": 0,
+    "source": "clock-gates.json.gz"
+  }
 }
