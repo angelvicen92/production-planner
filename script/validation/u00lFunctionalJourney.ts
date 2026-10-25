@@ -192,12 +192,19 @@ export async function runU00lFunctionalJourney({appUrl,users,db,directory,pass}:
           }
           if(guard==='protected'){
             forged.scopeTaskIds=[...new Set([...forged.scopeTaskIds,tasks[0].id])].sort((a:any,b:any)=>a-b);
-            await db.query('UPDATE public.planning_runs SET scope_task_ids_json=$2 WHERE id=$1',[run.id,JSON.stringify(forged.scopeTaskIds)]);
-            await db.query("UPDATE public.assisted_planning_sessions SET draft_scope_json=jsonb_set(draft_scope_json,'{resolvedTaskIds}',$2) WHERE id=$1",[draft.session.id,JSON.stringify(forged.scopeTaskIds)]);
           }
           proof.fingerprint=fingerprint(proof.tasks);
           forged.proposedDraftFingerprint=fingerprintAssistedPlanningSnapshotV1(forged.proposedDraftSnapshot);
           await db.query(`UPDATE public.planning_runs SET assisted_result_json=$2::jsonb,result_fingerprint=encode(extensions.digest(convert_to($2::jsonb::text,'UTF8'),'sha256'),'hex') WHERE id=$1`,[run.id,JSON.stringify(forged)]);
+          if(guard==='protected'){
+            // 113 freezes the authenticated scope. Keep the recalculated SQL
+            // result hash above, and record the earlier rejection without bypass.
+            try{await db.query('UPDATE public.planning_runs SET scope_task_ids_json=$2 WHERE id=$1',[run.id,JSON.stringify(forged.scopeTaskIds)]);}
+            catch(error){failure=error;}
+            assert.equal(failure?.message,'RUN_ORIGIN_IMMUTABLE');
+            adversaries.push({guard,error:failure.message,hashesRecomputed:true,rolledBack:true,blockedAt:'RUN_ORIGIN_IMMUTABLE'});
+            continue;
+          }
           await db.query('UPDATE public.assisted_planning_sessions SET draft_snapshot_json=$2,draft_fingerprint=$3 WHERE id=$1',[draft.session.id,JSON.stringify(forged.proposedDraftSnapshot),forged.proposedDraftFingerprint]);
           if(guard==='coach-lock'||guard==='resource-lock')try{await db.query("INSERT INTO public.locks(plan_id,task_id,lock_type,locked_resource_id,created_by,reason) VALUES ($1,$2,'resource',$3,$4,'rollback only')",[planId,tasks[0].id,guard==='coach-lock'?dailyOtherCoach.id:daily[0].id,users.admin.id]);}catch(error){failure=error;}
           if(guard==='permission')await db.query('SET LOCAL ROLE authenticated');
@@ -211,7 +218,7 @@ export async function runU00lFunctionalJourney({appUrl,users,db,directory,pass}:
           assert.ok(failure,`SQL accepted forged ${guard}`);
           if(index&&stage===0&&(guard==='coach-overlap'||guard==='coach-transition'))assert.match(failure.message,/COACH_OVERLAP_OR_TRANSITION/);
 
-          assert.match(String(failure.message),guard==='coach-lock'||guard==='resource-lock'?/RUN_RESULT_INVALID|locks_locked_resource_id_fkey/:/RUN_RESULT_INVALID|STALE_|permission denied/);
+          assert.match(String(failure.message),guard==='coach-lock'||guard==='resource-lock'?/RUN_RESULT_INVALID|STALE_OBLIGATION_SOURCES|locks_locked_resource_id_fkey/:/RUN_RESULT_INVALID|STALE_|permission denied/);
           adversaries.push({guard,error:failure.message,hashesRecomputed:true,rolledBack:true});
         }finally{await db.query('ROLLBACK');}
       }

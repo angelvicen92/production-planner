@@ -92,7 +92,7 @@ Sé breve. Incluye únicamente:
 ## Fuentes oficiales de OptiPlan
 
 Los originales vigentes están en `docs/source/official/` del repositorio. Lee
-`docs/source/official/00_INDICE_Y_AUTORIDAD_FUENTES_OPTIPLAN_v2.13.md`
+`docs/source/official/00_INDICE_Y_AUTORIDAD_FUENTES_OPTIPLAN_v2.15.md`
 para autoridad por ámbito, y
 `docs/source/official/07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.3.md`
 para el método de trabajo y la auditoría causal. Según el alcance, consulta las

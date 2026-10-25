@@ -1,9 +1,13 @@
 # OPTIPLAN — ÍNDICE Y AUTORIDAD DE FUENTES
 
-**Versión:** 2.14<br>
-**Fecha:** 22 de octubre de 2026<br>
+**Versión:** 2.15<br>
+**Fecha:** 24 de octubre de 2026<br>
 **Estado:** Fuente oficial de gobierno documental  
 **Principio rector:** La producción tiene que salir.
+
+## Actualización v2.15 — obligaciones posteriores y rollback (24/10/2026)
+
+Eleva 01 a v5.4 y 04 a v2.9 para aclarar la decisión humana P0-U00n: restaurar decisiones exactas del checkpoint conservando altas posteriores pendientes en una proyección operativa explícita. Los snapshots históricos permanecen inmutables. No cambia las demás autoridades ni el canon A2.
 
 ## Actualización v2.14 — decisión humana de continuidad y setup (22/10/2026)
 
@@ -43,10 +47,10 @@ Actualiza el corpus para incorporar el contrato genérico de márgenes específi
 
 ## 2. Corpus oficial único
 
-1. `01_PRODUCTO_DOMINIO_OPERACION_v5.3.md`
+1. `01_PRODUCTO_DOMINIO_OPERACION_v5.4.md`
 2. `02_ORC_CORE_CONSOLIDADO_v2.2.md`
 3. `03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.8.md`
-4. `04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.8.md`
+4. `04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.9.md`
 5. `05_VALIDACION_CALIDAD_BENCHMARK_v2.8.md`
 6. `06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.10.md`
 7. `07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.3.md`
@@ -62,10 +66,10 @@ No existe una única escalera documental capaz de resolver correctamente todos l
 
 | Ámbito | Autoridad principal | Regla de conflicto |
 |---|---|---|
-| Producto, actores, dominio y operación | `01_PRODUCTO_DOMINIO_OPERACION_v5.2` | Define qué producto existe, autoridad humana, entidades y semántica operativa. |
+| Producto, actores, dominio y operación | `01_PRODUCTO_DOMINIO_OPERACION_v5.4` | Define qué producto existe, autoridad humana, entidades y semántica operativa. |
 | Arquitectura y contratos internos ORC | `02_ORC_CORE_CONSOLIDADO_v2.2` | Gobierna sólo el razonamiento interno; no puede redefinir WorkingPlan, Stage, publicación o aceptación humana. |
 | Construcción, scopes, método de bloques y búsqueda | `03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.7` | En Assisted prevalece sobre contratos legacy del ORC sobre “estado oficial”, completitud global o mejora-only. SPEC-07 v2.2 es la autoridad del método constructivo dentro de este documento. |
-| EffectiveConfig, snapshots, adaptación, persistencia Assisted, AcceptedException y publicación | `04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.7` | Gobierna configuración efectiva, provenance, Stage/Draft, grandfathering, rollback y frontera EngineInput/producto. |
+| EffectiveConfig, snapshots, adaptación, persistencia Assisted, AcceptedException y publicación | `04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.9` | Gobierna configuración efectiva, provenance, Stage/Draft, grandfathering, rollback y frontera EngineInput/producto. |
 | Gates, regresión, Evidence, KPIs y benchmark | `05_VALIDACION_CALIDAD_BENCHMARK_v2.7` | Define qué debe demostrarse; no crea reglas de dominio nuevas. |
 | Hechos y parámetros **específicos del A2 canónico** | `06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.10` | Prevalece sobre defaults, ejemplos y valores genéricos de 01–05. Los PDFs sólo prevalecen cuando 06 no contiene una corrección/interpretación expresa. |
 | Método de trabajo y continuidad de desarrollo | `07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.2` | Gobierna cómo trabajar; nunca redefine producto, dominio ni A2. |

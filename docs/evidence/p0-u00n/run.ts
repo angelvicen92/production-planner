@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {execFileSync,spawnSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
+import {existsSync,mkdirSync,readFileSync,writeFileSync} from 'node:fs';
+import {resolve} from 'node:path';
+const output=resolve(process.argv[2]);assert.ok(!existsSync(output),'Choose a fresh output directory');mkdirSync(output,{recursive:true});
+const files=execFileSync('git',['ls-files','--cached','--others','--exclude-standard','--','engine','server','client','shared','supabase/migrations','package.json','package-lock.json'],{encoding:'utf8'}).trim().split('\n').filter(f=>existsSync(f));
+const sha=(s:Buffer)=>createHash('sha256').update(s).digest('hex');
+const hashes=Object.fromEntries(files.map(file=>[file,sha(readFileSync(file))]));
+writeFileSync(output+'/manifest.json',JSON.stringify({base:'382e7966ea1fe3508978f92cf5afcc05fe3c3157',node:process.version,remoteWrites:0,sourceHashes:hashes},null,2));
+const run=spawnSync(process.execPath,['--import','tsx','script/demo/smokeNewDayIntegration.ts',output+'/native','--post-stage-additions'],{stdio:'inherit',env:process.env});
+for(const [file,hash] of Object.entries(hashes))assert.equal(sha(readFileSync(file)),hash,`Changed while executing: ${file}`);
+assert.equal(run.status,0);

@@ -1,0 +1,20 @@
+{
+  "base": "382e7966ea1fe3508978f92cf5afcc05fe3c3157",
+  "hashes": {
+    "docs/source/official/03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.8.md": "7073930bb7bcbff09cb05553eecd28d357daf1860e55c6a6b9ab1ffe73172ffd",
+    "docs/source/official/05_VALIDACION_CALIDAD_BENCHMARK_v2.8.md": "2d0aa69ebb5d1949b315a8ebb85c0ad96f0f9939e9441d1ef09a1f1ae9924a13",
+    "docs/source/official/07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.3.md": "7243ed2d186ef19af7ee9717c9b72d94ebca34791257a434be1aab76bed27351",
+    "docs/source/official/04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.9.md": "d85981443e4e8e1bd073c59684e0b1e7d4a2fae6113a647007dee0f65eb1e8a4",
+    "docs/source/official/01_PRODUCTO_DOMINIO_OPERACION_v5.4.md": "e55dc386d647888b913ed55457bb71564b16ccc4c088310c820bf57d984957bc",
+    "docs/source/official/00_INDICE_Y_AUTORIDAD_FUENTES_OPTIPLAN_v2.15.md": "7082cee03feb295c71104f559d118608e85c5946f81de1139d6ad902f0e3810f",
+    "AGENTS.md": "911a1fbee8f6f2d74330413e8b17e070de4ec3d2fbb365e0394a097d662da7d3",
+    "docs/governance/OPTIPLAN_MASTER_ADECUACION_APP.md": "6daa03ce136d47a4e39bc557650ca9ab8675e7d032bdd6b6942aa9ab1e58b551",
+    "docs/evidence/p0-u00m/README.md": "637ab86acc3bb308c81f6b01dbc5f39e478429f1b65ba90726275876c972886e",
+    "docs/evidence/p0-u00m/design.md": "bb790cf61a4f2411f3b56b58316d9c6d8044afc4c35412b1872738f2d27e62e4",
+    "docs/evidence/p0-u00m/validation.json": "b4ea382104f0a2fe9c39dbbfe862f1773edcff8688789baefb61cf6efeea1c36",
+    "docs/evidence/p0-u00m/verify.py": "7893a5114df899d8dcc83660288960ff40dfc56b6ed25e1812a2b2285df4e89b",
+    "docs/evidence/p0-u00m/journey.ts": "a889b505e5bb86d242091a130b3aca0d1352129bf47a67bc4f251ac804f0d7e9"
+  },
+  "historicalMigrationsUnchanged": 115,
+  "engineDiffFiles": 0
+}

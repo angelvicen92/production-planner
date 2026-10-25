@@ -1,9 +1,13 @@
 # OPTIPLAN — PRODUCTO, DOMINIO Y OPERACIÓN
 
-**Versión:** 5.3  
-**Fecha:** 22 de octubre de 2026  
+**Versión:** 5.4<br>
+**Fecha:** 24 de octubre de 2026<br>
 **Estado:** Fuente oficial consolidada  
 **Sustituye:** PRD v2.1, Especificación Maestra de Dominio y Operación v4, Documento de Operativa/UI/Inteligencia v0.1 y el contrato estable del Reenfoque Assisted v1.0.
+
+## Aclaración v5.4 — obligaciones posteriores y restauración (24/10/2026)
+
+Aclara §§3.5 y 3.10 según decisión humana P0-U00n: el checkpoint histórico permanece literal; la proyección operativa conserva las altas posteriores pendientes. No altera configuración, locks ni realidad de ejecución.
 
 ## Aclaración v5.3 — continuidad y setup independientes (22/10/2026)
 
@@ -51,6 +55,8 @@ Estado mutable entre el último Stage aceptado y el siguiente checkpoint.
 Checkpoint inmutable del **planning completo** después de propuesta, edición, validación y aceptación humana. No es un delta ni pertenece a un scope: el scope describe qué se pidió resolver y el Stage conserva el estado completo resultante, su `snapshotFingerprint`, la revisión de configuración usada como provenance, la validación y la Evidence aplicable.
 
 Rollback a un Stage restaura exactamente su snapshot de planning. Los Stages posteriores permanecen en historial. Puede existir redo mientras no se haya aceptado una nueva rama; si desde un Stage antiguo se acepta un nuevo hijo, el futuro anterior queda archivado como otra rama histórica.
+
+Cuando existen obligaciones admitidas después del Stage restaurado, se restauran exactamente sus decisiones de planning y se conservan las obligaciones posteriores pendientes, sin placement aceptado. El estado operativo resultante es una proyección explícita del Stage y esas obligaciones, con origen y provenance propios; no es el snapshot histórico del Stage ni modifica su identidad o fingerprint. El Draft y el origen vigente contienen todas las obligaciones actuales. Redo restaura las decisiones del hijo y conserva pendientes las obligaciones posteriores que aún no existían en él. La divergencia archiva el futuro anterior sin borrar obligaciones. Una restauración incompatible con tareas `done` o `in_progress` se bloquea con diagnóstico específico.
 
 ### 3.6 AutomaticProtection
 Una posición aceptada queda fija para **movimientos automáticos posteriores**. El humano puede editarla de nuevo en otro Stage. No se materializan cientos de locks sólo por aceptar un Stage.

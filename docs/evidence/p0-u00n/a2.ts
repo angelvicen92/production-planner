@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import {mkdirSync,writeFileSync,readFileSync} from 'node:fs';
+import {gzipSync,gunzipSync} from 'node:zlib';
+import {resolve} from 'node:path';
+process.env.SUPABASE_URL='http://127.0.0.1:1';process.env.SUPABASE_SERVICE_ROLE_KEY='isolated-evidence';process.env.SUPABASE_ANON_KEY='isolated-evidence';
+const {runA2Assist8Evidence}=await import('../../../server/benchmarks/runA2Assist8Evidence');
+const {certificates}=await import('./certificates');
+const output=resolve(process.argv[2]);mkdirSync(output,{recursive:true});
+const snapshots:unknown[]=[];const start=performance.now();
+const report=await runA2Assist8Evidence({onAcceptedStage:s=>snapshots.push(s)});
+writeFileSync(output+'/run.json.gz',gzipSync(JSON.stringify(report)));
+writeFileSync(output+'/snapshots.json.gz',gzipSync(JSON.stringify(snapshots)));
+const baseline=JSON.parse(gunzipSync(readFileSync('docs/evidence/p0-u00l/a2/final/run.json.gz')).toString());
+// Compare the persisted JSON contract: JavaScript-only undefined keys are omitted by persistence.
+const strip=(r:any)=>JSON.parse(JSON.stringify({...r,iterations:r.iterations.map(({durationMs,...row}:any)=>row)}));
+assert.deepEqual(strip(report),strip(baseline));
+const priorSnapshots=JSON.parse(gunzipSync(readFileSync('docs/evidence/p0-u00l/a2/final/snapshots.json.gz')).toString());
+assert.deepEqual(snapshots,priorSnapshots);
+const certified=certificates(report,snapshots);writeFileSync(output+'/certificates.json',JSON.stringify(certified,null,2));
+writeFileSync(output+'/comparison.json',JSON.stringify({status:'PASS',isolated:true,node:process.version,seconds:(performance.now()-start)/1000,completed:report.completedObligationCount,stages:report.stageCount,branches:report.iterations.reduce((n,r)=>n+(r.branchesExplored??0),0),fingerprint:report.deterministicFingerprint,fullReportEqualExceptDurationMs:true,snapshotsEqual:true,certificatesRevalidated:certified.length},null,2));
+console.log('PASS isolated A2: full report and all snapshots identical');

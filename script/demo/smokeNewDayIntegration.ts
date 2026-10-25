@@ -118,7 +118,8 @@ if(process.argv.includes("--app")) {
     :process.argv.includes("--standalone-only")
     ?{runNewDayJourney:(await import("./smokeStandaloneDayJourney")).runStandaloneDayJourney}
     :await import("./smokeNewDayJourney");
-  report.journey=await runNewDayJourney({appUrl,url,anon,service,users,db,directory,pass});
+  const journey=process.argv.includes("--post-stage-additions")?(await import("../../docs/evidence/p0-u00n/journey")).journey:runNewDayJourney;
+  report.journey=await journey({appUrl,url,anon,service,users,db,directory,pass});
   report.status="PASS";
  } catch(error) {
   report.status="FAIL";report.error=(error instanceof Error?error.stack??error.message:String(error)).replaceAll(password,"[local secret]").replaceAll(secret,"[local secret]");process.exitCode=1;console.error(report.error);

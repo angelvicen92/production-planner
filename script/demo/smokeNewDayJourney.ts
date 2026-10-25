@@ -181,7 +181,7 @@ export async function runNewDayJourney({appUrl,url,anon,service,users,db,directo
       reasonCode:staleRun.message,protectedStageUnchanged:true};
     writeFileSync(`${directory}/added-after-s0-state.json`,JSON.stringify({prior,afterAddition,run:staleRun},null,2));
     if(process.argv.includes("--post-bootstrap-additions")){
-      const noChanges=await api(`/api/plans/${first}/assisted/bootstrap-additions`);assert.equal(noChanges.reason,"REBOOTSTRAP_ACCEPTED_STAGE");
+      const noChanges=await api(`/api/plans/${first}/assisted/bootstrap-additions`);assert.equal(noChanges.reason,"REBOOTSTRAP_NO_ADDITIONS");assert.equal(noChanges.mode,"POST_STAGE");
       await incorporateBootstrapAdditions({page,appUrl,planId:changed,db,api,request,directory,label:"main-additions",pass:check,negatives:true});
       report.additions=await planToStage(changed,"main-additions");
       assert.equal(report.additions.completed,6);

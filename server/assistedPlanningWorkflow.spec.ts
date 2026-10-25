@@ -180,6 +180,7 @@ test("state coherently projects the session's active stage, config, draft, valid
     session: baseSession, activeStage, draft, draftBaseStageId: 20,
     draftFingerprint: baseSession.draftFingerprint, currentConfigRevisionId: 30,
     validation, acceptedExceptions: [], history,
+    workingOrigin:{snapshot:draft,fingerprint:baseSession.draftFingerprint,transitionId:null,restoredStageId:20,restoredStageFingerprint:baseSession.draftFingerprint,pendingLaterTaskIds:[]},
   });
 });
 

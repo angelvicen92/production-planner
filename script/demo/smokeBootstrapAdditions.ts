@@ -12,7 +12,7 @@ export async function incorporateBootstrapAdditions({page,appUrl,planId,db,api,r
  const preview=await api(path+'/bootstrap-additions');assert.equal(preview.allowed,true,JSON.stringify(preview));
  const body={expectedSessionId:preview.expectedSessionId,expectedBaseStageId:preview.expectedBaseStageId,
   expectedDraftFingerprint:preview.expectedDraftFingerprint,expectedConfigRevisionId:preview.expectedConfigRevisionId,
-  sourceToken:preview.sourceToken,confirmation:'INCORPORATE_NEW_TASKS'};
+  sourceToken:preview.sourceToken,addedTaskIds:preview.addedTaskIds,confirmation:'INCORPORATE_NEW_TASKS'};
  if(negatives){
   const rejected=async(reason:string)=>{const p=await api(path+'/bootstrap-additions');assert.equal(p.allowed,false);assert.equal(p.reason,reason);};
   const transactionalNegative=async(sql:string,reason:string)=>{
@@ -37,7 +37,7 @@ export async function incorporateBootstrapAdditions({page,appUrl,planId,db,api,r
   const run=(await db.query(`INSERT INTO planning_runs(plan_id,status,engine,execution_kind,assisted_session_id,base_stage_id,config_revision_id,scope_json,scope_task_ids_json,include_prerequisites,source_draft_fingerprint)
    VALUES($1,'running','planner-next','ASSISTED_SCOPE',$2,$3,$4,'{}',$5,false,$6) RETURNING id`,[planId,before.session.id,before.draftBaseStageId,before.currentConfigRevisionId,JSON.stringify([taskId]),before.draftFingerprint])).rows[0];
   await rejected('REBOOTSTRAP_PENDING_PROPOSAL');
-  await transactionalNegative(`UPDATE planning_runs SET execution_kind='FULL_PLAN',assisted_session_id=NULL,base_stage_id=NULL WHERE id=${Number(run.id)}`,'REBOOTSTRAP_PENDING_PROPOSAL');
+  await transactionalNegative(`UPDATE planning_runs SET status='error' WHERE id=${Number(run.id)}; INSERT INTO planning_runs(plan_id,status,engine,execution_kind) VALUES(${Number(planId)},'running','planner-next','FULL_PLAN')`,'REBOOTSTRAP_PENDING_PROPOSAL');
   await db.query(`UPDATE planning_runs SET status='success',assisted_result_json='{"contractVersion":1,"outcome":"PROPOSAL"}' WHERE id=$1`,[run.id]);
   await rejected('REBOOTSTRAP_PENDING_PROPOSAL');
   assert.equal((await request(path+`/proposals/${run.id}/discard`,'POST',{expectedBaseStageId:before.draftBaseStageId,expectedDraftFingerprint:before.draftFingerprint},'production')).status,200);

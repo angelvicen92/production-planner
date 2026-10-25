@@ -1,0 +1,28 @@
+[
+  {
+    "label": "base",
+    "command": [
+      "/workspace/.production-planner-tools/node_modules/node/bin/node",
+      "--import",
+      "tsx",
+      "--test",
+      "server/benchmarks/runA2Assist7Evidence.spec.ts"
+    ],
+    "cwd": "/tmp/p0-u00n-base-source",
+    "exitCode": 1,
+    "seconds": 367.0211962639996
+  },
+  {
+    "label": "candidate",
+    "command": [
+      "/workspace/.production-planner-tools/node_modules/node/bin/node",
+      "--import",
+      "tsx",
+      "--test",
+      "server/benchmarks/runA2Assist7Evidence.spec.ts"
+    ],
+    "cwd": "/workspace/production-planner",
+    "exitCode": 1,
+    "seconds": 369.1392353619999
+  }
+]

@@ -9,6 +9,7 @@ type Stage = {
 export interface AutopilotState {
   session: { id: number; status: string };
   activeStage: Stage;
+  workingOrigin?: {snapshot:AssistedPlanningSnapshotV1;fingerprint:string};
   draft: AssistedPlanningSnapshotV1;
   draftFingerprint: string;
   draftBaseStageId: number;
@@ -65,7 +66,7 @@ const guard = (s: AutopilotState): Guard => ({ expectedDraftFingerprint: s.draft
 
 export function isAutopilotClean(s: AutopilotState | undefined): boolean {
   return Boolean(s?.session.status === "ACTIVE" && s.activeStage && Number(s.activeStage.id) === Number(s.draftBaseStageId)
-    && s.activeStage.snapshotFingerprint === s.draftFingerprint && equal(s.activeStage.snapshotJson, s.draft));
+    && (s.workingOrigin?.fingerprint??s.activeStage.snapshotFingerprint) === s.draftFingerprint && equal(s.workingOrigin?.snapshot??s.activeStage.snapshotJson, s.draft));
 }
 function protectedSnapshot(before: AssistedPlanningSnapshotV1, after: AssistedPlanningSnapshotV1) {
   assert(equal(before.tasks.map(t => t.taskId).sort((a, b) => a - b), after.tasks.map(t => t.taskId).sort((a, b) => a - b)), "TASK_SET_MISMATCH");
@@ -80,7 +81,7 @@ function progress(s: AutopilotState, plan: AutopilotPlan) {
   return { pending, completed: plan.dailyTasks.length - pending.length, total: plan.dailyTasks.length };
 }
 function persisted(s: AutopilotState, plan: AutopilotPlan) {
-  for (const task of s.activeStage.snapshotJson.tasks) {
+  for (const task of (s.workingOrigin?.snapshot??s.activeStage.snapshotJson).tasks) {
     const row = plan.dailyTasks.find(t => Number(t.id) === task.taskId);
     assert(row, "TASK_SET_MISMATCH");
     for (const field of ["startPlanned", "endPlanned", "zoneId", "spaceId", "locationLabel", "durationOverride", "camerasOverride"] as const)
@@ -229,7 +230,7 @@ export class AssistedAutopilot {
           assert(preserved && equal(stage.snapshotJson, preserved.snapshotJson) && stage.snapshotFingerprint === preserved.snapshotFingerprint, "PROTECTION_CHANGED");
         }
         assert(equal(current.s.acceptedExceptions, after.s.acceptedExceptions), "EXCEPTION_CHANGED");
-        protectedSnapshot(current.s.activeStage.snapshotJson, after.s.activeStage.snapshotJson); persisted(after.s, after.plan);
+        protectedSnapshot(current.s.workingOrigin?.snapshot??current.s.activeStage.snapshotJson, after.s.activeStage.snapshotJson); persisted(after.s, after.plan);
         current = after;
         this.emit("VERIFYING", "Etapa aceptada y persistida.", { stage: after.s.activeStage.ordinal, completed: after.counts.completed, total: after.counts.total });
       }
