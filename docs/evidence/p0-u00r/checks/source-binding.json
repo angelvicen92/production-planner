@@ -1,0 +1,16 @@
+{
+  "base": "eb3facfb6a935ee4d7daf84770e9b6a20ae91b2d",
+  "candidate": {
+    "engine/planner-next/exactItinerantPlan.ts": "435e42002a9410f69485c18210c55b2c232996bdb2a642eb0727f7dd7aaf7288",
+    "engine/planner-next/technicalChains.ts": "66a6964d46de5fb752d80ad4b2389511ee720d41d14ed124ad149cccea4a93be",
+    "engine/planner-next/inferredTechnicalContinuation.spec.ts": "162e214061d5a99064d2a6a3ddb933bd3cf397fb3cfcbe37cbd2984638ac8efd"
+  },
+  "sourceChanges": [
+    "engine/planner-next/exactItinerantPlan.ts",
+    "engine/planner-next/technicalChains.ts"
+  ],
+  "newTests": [
+    "engine/planner-next/inferredTechnicalContinuation.spec.ts"
+  ],
+  "implementationCommit": "d6992e70bb305be5dbb9c143c1796dee35bdaaea"
+}

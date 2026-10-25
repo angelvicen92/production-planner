@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "isolated": true,
+  "node": "v24.19.0",
+  "seconds": 58.525797663,
+  "completed": 266,
+  "stages": 11,
+  "branches": 27049,
+  "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+  "fullReportEqualExceptDurationMs": true,
+  "snapshotsEqual": true,
+  "certificatesRevalidated": 11
+}

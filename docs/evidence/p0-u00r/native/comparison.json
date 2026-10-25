@@ -1,0 +1,109 @@
+{
+  "status": "PASS",
+  "normalizedPlacementsAndCountersEqual": true,
+  "distinctTaskPlanResourceIdentities": true,
+  "runs": [
+    {
+      "label": "A",
+      "bundle": "receipts.json.gz",
+      "planId": 1,
+      "taskIds": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "kitId": 2,
+      "stageIds": [
+        2,
+        3,
+        4
+      ],
+      "fingerprints": [
+        "40aa119894e3dc88ff838d1d381e84ceb90d7775849e3f3eb3cdcb7dace327d0",
+        "f6e2a0fed5c7793c71a13d5a72f30671b9f65b034c66031d9a46116aef7a802e",
+        "f11ddb90ebf4a016188bd96e2ae90dd5ad76a445d37861a0fb758d352ad47849"
+      ],
+      "branches": [
+        7,
+        2,
+        2
+      ]
+    },
+    {
+      "label": "A",
+      "bundle": "repeat-receipts.json.gz",
+      "planId": 2,
+      "taskIds": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "kitId": 4,
+      "stageIds": [
+        2,
+        3,
+        4
+      ],
+      "fingerprints": [
+        "55935d23a7b65d9c3a6eb0dbf1e98bf693ea6004c5d3895212949773d9c29b66",
+        "a5e1faa3cbaaba9f24fc1dea9bf51bb708112dd310e67c992ba91eebf9ef81af",
+        "ea47891869ed91d99910710f5e3d9325209a03b3f01ae291642118a5ba6a19da"
+      ],
+      "branches": [
+        7,
+        2,
+        2
+      ]
+    },
+    {
+      "label": "B",
+      "bundle": "receipts.json.gz",
+      "planId": 2,
+      "taskIds": [
+        5,
+        6,
+        7,
+        8
+      ],
+      "kitId": 7,
+      "stageIds": [
+        6,
+        7
+      ],
+      "fingerprints": [
+        "e0972a96b1be0cf43c09047006c0cd040ab33b1f34f4ad6a8d01627ae749479e",
+        "9550255fdc43929bd77692b59ff49fc01cdeb0a1fc0d5d00564cc17e7579d9b2"
+      ],
+      "branches": [
+        17,
+        2
+      ]
+    },
+    {
+      "label": "B",
+      "bundle": "repeat-receipts.json.gz",
+      "planId": 3,
+      "taskIds": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "kitId": 10,
+      "stageIds": [
+        6,
+        7
+      ],
+      "fingerprints": [
+        "93c65c94d05614022928b693110cfb1cf3db968940017edd9e152ee8d4dad655",
+        "a7767fda5d270755280848a4e54257dce3571a5714b01bffc7e0b5d1b73a927f"
+      ],
+      "branches": [
+        17,
+        2
+      ]
+    }
+  ]
+}

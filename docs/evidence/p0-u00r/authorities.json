@@ -1,0 +1,24 @@
+{
+  "base": "eb3facfb6a935ee4d7daf84770e9b6a20ae91b2d",
+  "reading": "Directed: official authority, task/resource/dependency/protection contracts, scope and supporting semantics, snapshots/freshness, physical infeasibility vs unsupported/exhaustion, 07 \u00a74.4; P0 master; U00q diagnosis and native receipts. No general re-investigation.",
+  "files": {
+    "AGENTS.md": "911a1fbee8f6f2d74330413e8b17e070de4ec3d2fbb365e0394a097d662da7d3",
+    "docs/governance/OPTIPLAN_MASTER_ADECUACION_APP.md": "6daa03ce136d47a4e39bc557650ca9ab8675e7d032bdd6b6942aa9ab1e58b551",
+    "docs/architecture/PLANNER_CAPABILITY_CATALOG.md": "90a3f7a86239faef66f7da5a634390236f327f6e9fe59d6d20aa3dbde8cd2fc2",
+    "docs/source/official/00_INDICE_Y_AUTORIDAD_FUENTES_OPTIPLAN_v2.15.md": "7082cee03feb295c71104f559d118608e85c5946f81de1139d6ad902f0e3810f",
+    "docs/source/official/01_PRODUCTO_DOMINIO_OPERACION_v5.4.md": "e55dc386d647888b913ed55457bb71564b16ccc4c088310c820bf57d984957bc",
+    "docs/source/official/02_ORC_CORE_CONSOLIDADO_v2.2.md": "1c5d58017ed3b0931cd4d0bc9c121e19c5edc9acb10005c5b759ccd94b937bdf",
+    "docs/source/official/03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.8.md": "7073930bb7bcbff09cb05553eecd28d357daf1860e55c6a6b9ab1ffe73172ffd",
+    "docs/source/official/04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.9.md": "d85981443e4e8e1bd073c59684e0b1e7d4a2fae6113a647007dee0f65eb1e8a4",
+    "docs/source/official/05_VALIDACION_CALIDAD_BENCHMARK_v2.8.md": "2d0aa69ebb5d1949b315a8ebb85c0ad96f0f9939e9441d1ef09a1f1ae9924a13",
+    "docs/source/official/07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.3.md": "7243ed2d186ef19af7ee9717c9b72d94ebca34791257a434be1aab76bed27351",
+    "docs/evidence/p0-u00q/README.md": "e4c52023fb46c3e5bbf5135371d36b8ab149102fbcfb72c0884b1f8e7a216699",
+    "docs/evidence/p0-u00q/causal-path.md": "987d869a1b4f5920c59ea41dfdb5ec621ee22ec461097c46144c7d3fd8c3043c",
+    "docs/evidence/p0-u00q/native-days.md": "9ce52699607e9860240728278bb59c746315d209a66e7b731cbca4a19254b82d",
+    "docs/evidence/p0-u00q/contracts.md": "d75075aff2dc48bf30fc93d4e77f1fa27cfd80c67cd2d376b247ad40915c8bb9",
+    "docs/evidence/p0-u00q/journey.ts": "7c78dab3ec3a3b1f90b3a2c95881e7d6d3ce2337e2eca2c07d53f4841b83f482",
+    "docs/evidence/p0-u00q/validation.json": "ff6bc6803a35ea975b25645c6a88a4fe4b9dfc7efaecfd68aa30367f6f9a76e5",
+    "docs/evidence/p0-u00q/native/receipts.json.gz": "407b363909e5ccd4d0b1cd18b6505c2e8be7a065db1110bb4803441681bc566f",
+    "docs/evidence/p0-u00q/native/repeat-receipts.json.gz": "6ef0aa452738adc2cbe4dba077be7856c734a583f5da8152b9b8f0be4626d4d7"
+  }
+}
