@@ -32,7 +32,8 @@
     "newFocal": 14,
     "explicitRequiredReplays": 6,
     "nativeColdReplays": 20,
-    "failed": 0
+    "failed": 0,
+    "literalBlockerReplays": 2
   },
   "check": "PASS",
   "build": "PASS",
@@ -75,7 +76,9 @@
     "status": "RUNNING",
     "validatedImplementationCommit": "d6992e70bb305be5dbb9c143c1796dee35bdaaea",
     "receipt": "checks/ci.json",
-    "note": "Evidence-only descendant does not change bound implementation/test sources; live head checks also monitored."
+    "note": "Evidence-only descendant does not change bound implementation/test sources; live head checks also monitored.",
+    "liveChecks": "https://github.com/angelvicen92/production-planner/pull/1196/checks",
+    "observationType": "Historical code-head observation; final live checks and result recorded in PR description."
   },
   "residualLimits": [
     "Literal case B first T1-only proposal acceptance is not covered; PR must stay draft.",
