@@ -1,0 +1,24 @@
+{
+  "base": "2d95be9fd74fdf60433b1b71ad3704522d558eb4",
+  "status": "BASELINE_FAILURE_REPRODUCED",
+  "identicalMaterialFailure": true,
+  "fieldsCompared": [
+    "status",
+    "code",
+    "message",
+    "actual",
+    "expected",
+    "operator"
+  ],
+  "material": {
+    "status": "FAIL",
+    "code": "ERR_ASSERTION",
+    "message": "[\"ASSISTED_SCOPE_INCOMPLETE\",\"SEARCH_TIME_LIMIT_REACHED\"]\n+ actual - expected\n\n+ 'NO_PROPOSAL'\n- 'PROPOSAL'",
+    "actual": "NO_PROPOSAL",
+    "expected": "PROPOSAL",
+    "operator": "strictEqual"
+  },
+  "baseSeconds": 371.571409064,
+  "candidateSeconds": 370.579330249,
+  "budgetsAndAssertionsChanged": false
+}

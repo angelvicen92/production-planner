@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "days": 2,
+  "acceptedStages": 7,
+  "synchronizedStages": 6,
+  "sqlAndCertificateRejections": 40,
+  "publicReceipts": 136,
+  "migrations": 117,
+  "independentFreshGeometryRepeat": true
+}

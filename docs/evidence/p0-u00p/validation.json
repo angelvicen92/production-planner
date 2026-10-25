@@ -1,0 +1,185 @@
+{
+  "status": "PASS_WITH_REPRODUCED_BASELINE_FAILURE",
+  "base": "2d95be9fd74fdf60433b1b71ad3704522d558eb4",
+  "branch": "codex/p0-u00p-native-daily-round-synchronization",
+  "remoteDatabaseWrites": 0,
+  "deployments": 0,
+  "algorithmChanges": false,
+  "historicalMigrationsChanged": false,
+  "native": {
+    "runs": 2,
+    "daysPerRun": 2,
+    "acceptedStagesPerRun": 7,
+    "synchronizedStagesPerRun": 6,
+    "allObligationsFinal": {
+      "A": 6,
+      "B": 5
+    },
+    "firstSynchronizedStages": {
+      "A": 2,
+      "B": 8
+    },
+    "firstCompleteStages": {
+      "A": 3,
+      "B": 9
+    },
+    "migrationsPerRun": 117,
+    "publicReceiptsPerRun": 136,
+    "sqlAndCertificateRejectionsPerRun": 40,
+    "sourceConcurrencyHttpRejectionsPerRun": 2,
+    "realStack": [
+      "PostgreSQL 17",
+      "GoTrue",
+      "PostgREST",
+      "API",
+      "Chromium"
+    ],
+    "geometryAndDecisionRepeat": true,
+    "manifest": "native/manifest.json.gz",
+    "repeatManifest": "native/repeat-manifest.json.gz"
+  },
+  "checks": {
+    "typescript": {
+      "command": "node node_modules/typescript/bin/tsc --incremental false",
+      "exitCode": 0
+    },
+    "build": {
+      "command": "node --import tsx script/build.ts",
+      "exitCode": 0
+    },
+    "harnessTypescript": {
+      "command": "node node_modules/typescript/bin/tsc -p docs/evidence/p0-u00p/tsconfig.json",
+      "exitCode": 0
+    },
+    "migrations": {
+      "command": "npm run check:migrations",
+      "exitCode": 0
+    },
+    "focused": {
+      "command": "Node 20 --import tsx --test --test-concurrency=1 (10 specs named in checks/focused.log.gz)",
+      "tests": 57,
+      "passed": 57
+    },
+    "coldReplay": {
+      "command": "node --import tsx docs/evidence/p0-u00p/replay.spec.ts",
+      "tests": 4,
+      "passed": 4
+    },
+    "uiAndU00o": {
+      "command": "node --import tsx --test client/src/components/effective-configuration.test.tsx client/src/components/create-plan-dialog.test.ts docs/evidence/p0-u00o/replay.spec.ts",
+      "files": 3,
+      "passedFiles": 3
+    },
+    "u00n": {
+      "command": "Native --post-stage-additions; python3 docs/evidence/p0-u00n/verify.py fresh-directory",
+      "checks": 118,
+      "status": "PASS"
+    },
+    "global": {
+      "command": "Node 20 --import tsx script/run-test-suite.mjs engine server",
+      "tests": 3231,
+      "passedOnInitialRun": 3228,
+      "failedOnInitialRun": 3,
+      "reconciliation": [
+        {
+          "test": "runFullA2FirstExecutionBenchmark.spec.ts",
+          "classification": "Node 20 lacks Object.groupBy; unchanged benchmark passes in Node 24",
+          "receipt": "checks/node24-groupby.log.gz"
+        },
+        {
+          "test": "planner-next isolation",
+          "classification": "Registered the authorized read-only consumer without changing isolation assertions; focal rerun PASS"
+        },
+        {
+          "test": "ASST-010",
+          "classification": "Exact material failure reproduced on authorized base and candidate; no budget/timeout/assertion changes",
+          "receipt": "checks/asst010-comparison.json"
+        }
+      ]
+    }
+  },
+  "a2": {
+    "status": "PASS",
+    "mode": "SERIAL_FRESH_NODE20_PROCESSES",
+    "completed": 266,
+    "stages": 11,
+    "branches": 27049,
+    "certificatesRevalidated": 22,
+    "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+    "fullReportSnapshotsAndCertificatesEqual": true,
+    "receipt": "a2/comparison.json"
+  },
+  "ci": {
+    "mode": "LIVE_PULL_REQUEST_WORKFLOWS",
+    "workflow": ".github/workflows/p0-u00p-daily-rounds.yml",
+    "snapshotPendingPublication": true
+  },
+  "limits": [
+    "One daily policy, STANDALONE_ONLY, transport/setup NONE",
+    "Two physical lanes, at least two auxiliary participant-bound tasks per lane",
+    "Uniform duration inside structure; preparation in multiples of five",
+    "No heterogeneous rounds, chains, setups, joint groups, itinerant or anchored structural mixtures",
+    "Policies touching accepted placements remain literal; no retroactive Stage adoption",
+    "ASST-010 remains a reproduced historical search-time failure"
+  ],
+  "artifacts": {
+    "README.md": "a6aa89c1caba2409925b9d682f60c234c9288ca3cf6c9393b8140c2605594e4c",
+    "a2/base/certificates.json": "56840288fb23ed47d09e0c7502f7bf27a8cbe0aac655ff4f2b147328cf88e457",
+    "a2/base/comparison.json": "5dd503ee08cb2e5d42c3c18ad5498618ac1489b163f65511fc64951e7591efc5",
+    "a2/base/run.json.gz": "b6d2b254073d103c92678d6efb7f158554f8cc8c64c1fe75bc3cafbe72aab06a",
+    "a2/base/snapshots.json.gz": "32ca8b6ef3d8e523410821f6192d070a66bb270df1fdc88e937d89431270bd92",
+    "a2/candidate/certificates.json": "56840288fb23ed47d09e0c7502f7bf27a8cbe0aac655ff4f2b147328cf88e457",
+    "a2/candidate/comparison.json": "86f3a8d6878975e151df63e54c252049c7cf0796a76f127205112628f49db205",
+    "a2/candidate/run.json.gz": "f6d3c4a01d6691685f2bb0efd49a0f1ab72fabf0a36e9423ee2c8dde1715fae1",
+    "a2/candidate/snapshots.json.gz": "32ca8b6ef3d8e523410821f6192d070a66bb270df1fdc88e937d89431270bd92",
+    "a2/comparison.json": "a2f83969042c929ec344636579a1848dea6eb33cffc9f9b7e8c01155584cef10",
+    "a2/repeat/certificates.json": "56840288fb23ed47d09e0c7502f7bf27a8cbe0aac655ff4f2b147328cf88e457",
+    "a2/repeat/comparison.json": "be1160ae3592512d69be3b5bccb8f88a21f34e0875a820f29b19811add1ab5b8",
+    "a2/repeat/run.json.gz": "b34884465ca81452174edef07e9f8d30a6cdbab2cfff5fc04af6ad897c2496a2",
+    "a2/repeat/snapshots.json.gz": "32ca8b6ef3d8e523410821f6192d070a66bb270df1fdc88e937d89431270bd92",
+    "architecture.md": "f4c9c19534c7dd679520dc5230bc0c815eafc1e0070d53ac2b3cf564e411e299",
+    "asst010.ts": "af462442651c274f086ad56104ffa2cdb925c424367ea92978627f40ce9824e8",
+    "attacks.ts": "3714dcd612bffba9e48704613159cdb890f2de14ec70da25dc7a16df33ed6556",
+    "authorities.json": "93beed049488823ffe62efbfe2cd7ec0f724bb89d8d5830fcdd25f883d9d2681",
+    "causal/S0-source-difference.json.gz": "2659d568831d1f38e4a880dcb72ab982d1c39392a5b8935a8b53cfe2d1ead2f9",
+    "causal/first-rejections.json": "d1fcb98f6266f3db8039fbf01059eef8d36c5943e070673669e538ca37440570",
+    "causal/source-concurrency-before.json": "a628e9e7a32668ae9c7ba818bef97e6b9b63494cf3d5faf033e31ea92b04e996",
+    "causal-path.md": "5a614e08d4c9a94fd4fc23c3d4e9b8b8555daa9071f29a77a19ed3bd0809461e",
+    "checks/a2.log.gz": "09019e8b37ee6eea852d9788227933c5fae0dc3151d06370d322a8d99ce99364",
+    "checks/asst010-base-test.log.gz": "b460d97031294a6a65fd35234c03412e463c8f50578cf5b2ca00d9f3dfdbb7dd",
+    "checks/asst010-base.json": "9a0a8b9f558352b668e84783615c55d12c4fb81a52bd26bce18af1092aa3e700",
+    "checks/asst010-candidate.json": "9ea64e52a2e1c2069358a063b1b5c4004a80b8857e65327e6f0053060cc04425",
+    "checks/asst010-comparison.json": "dfe95e65c508f6b245db38690845e937a311e0d271a519ac6e1ecfad060bcf8b",
+    "checks/build.log.gz": "7cbc5f2bc31bedb479105b13cae8c3230e56bb50ed658853a1d25c923b22a621",
+    "checks/cold-replay.log.gz": "b539db05cfa12b0bd1fca9c266ee4a6d9b2aa6b3f457265a409c782c62fcf6ca",
+    "checks/focused.log.gz": "6754702fa98894c0c1fad441d6b1aa4c2235b373a47325d2646fecb98421d226",
+    "checks/global.log.gz": "a67a53365dc7f7501886ab9dbea7414320759b9fcb0ecb6dd3c9286bb9b9c08e",
+    "checks/harness-typescript.log.gz": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+    "checks/migrations.log.gz": "0eced39be762c72afec75c6af388ce0bfd35a27b48a9fefc8818cfb740e21b0c",
+    "checks/native-verification.json": "636331ec9ff98837a04893f6b54adcc28135bde0dd48a59ef19b4325f638650b",
+    "checks/node24-groupby.log.gz": "ac5312acba21f822e0704eb1e6affd9472b386dbca153e45d78ea866de9f1d22",
+    "checks/protected-history.json": "527d98dc1febe459e6bd95b2cd85a73e4cd809e5f187f6698f7e561b3299da46",
+    "checks/source-tree-binding.json": "101231c7606da0f64e7f562f7d17b3609630eb45f179cbdab1cb6372a1e73ffd",
+    "checks/typescript.log.gz": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+    "checks/u00n-verification.json": "8200070a07a77c06b222818729afe355687c2acaa24cf2a757599aec6e99cdfe",
+    "checks/ui-and-u00o.log.gz": "e5062b69cfec58d1d0436e44c7b7754b8d2e89b816cf16e9484b0b6137d41417",
+    "journey.ts": "4bb4471d71c816359716cf1b0409fca694b8e6fd2a8de3d072bdaee03e112be5",
+    "native/A-S1.png": "9f0b1138c8eb20550bec5398815337a9b2735af560b3152768f371af75e58cf6",
+    "native/A-S2.png": "35c52c8c9071ef744492df3492e7b93a348343ed4ee0bdd87f6898176ff3ae88",
+    "native/A-configuration.png": "c07d6135025aedef0e786917f0bd5c09b153913480e2cf13c43a76caf46cfdb3",
+    "native/B-S1.png": "d6f4ceb11fa52a2f8af9818c066e490cc08137792a706ff340e67b53698673f2",
+    "native/B-S2.png": "f7c4bfbabbeb8584bc69d547fe94857eabbfa9431d30717c97e87120e8a4c37b",
+    "native/B-configuration.png": "686b62d316bb73a30f84f312c61c6a1b5b117b8fd21ba8744dccdf157c7c747b",
+    "native/manifest.json.gz": "b8b9732e8f1261fd317d3a54695a9dbaecb41f10a505f4b4b330776cfdf43273",
+    "native/receipts.json.gz": "c05222434a3f530337ae86e981d572cb47c6c96a218877692ec6a975e45f8219",
+    "native/repeat-manifest.json.gz": "b8b9732e8f1261fd317d3a54695a9dbaecb41f10a505f4b4b330776cfdf43273",
+    "native/repeat-receipts.json.gz": "a1c98e8ae59f1ed46838f0d1b21bd338d92b0e78f5ded1d5fc3ccc16d5947ef6",
+    "pack.py": "3a0697d89fa28f3d8379441abd304b371e24d60a69ef0e37def8d3a7419b08bf",
+    "regressions/u00n-receipts.json.gz": "4d84d3b8ace8f5e581f2cf557ecd953b31d917b1b2531e676bfcdb280af2ca74",
+    "replay.spec.ts": "f7d51f9ff0ada178bd4f0217686ebc72720e134eb0a2b03ab18e4725890f8030",
+    "run-a2.py": "75a92e2d3d37a357e95424f12fec1aff9a178850623f1db89bec197d39a04ba0",
+    "run.ts": "1cbc8aebdf35699cc93c314058ffe0eefa616f0193012e78478b57dafe78b24c",
+    "tsconfig.json": "e6d7197083d88e2cbaf63d56b29cfd377d7db822ac84a0559da25abbec5f6d70",
+    "verify.py": "498ab7bc204a228135bff9a996082e8199196f5fbd2457c6136c51308b567f33"
+  }
+}

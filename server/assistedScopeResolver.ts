@@ -21,7 +21,7 @@ export function resolveAssistedScope(input: EngineInput, adapter: EngineInputAda
   if (input.planId <= 0) throw new ScopeResolutionError("INVALID_SCOPE");
   const eligible = new Map(input.tasks.filter(task => task.status === "pending" || task.status === "interrupted")
     .map(task => [task.id, task] as const));
-  const productIds = selector.kind === "TASK_IDS"
+  let productIds = selector.kind === "TASK_IDS"
     ? [...new Set(selector.taskIds)].sort((a, b) => a - b)
     : [...eligible.values()].filter(task => task.spaceId === selector.spaceId).map(task => task.id).sort((a, b) => a - b);
   if (selector.kind === "TASK_IDS" && (productIds.length !== selector.taskIds.length || productIds.some(id => !eligible.has(id))))
@@ -29,6 +29,15 @@ export function resolveAssistedScope(input: EngineInput, adapter: EngineInputAda
   if (selector.kind === "SPACE" && !adapter.identityMap.some(i => i.namespace === "space" && i.sourceId === String(selector.spaceId)))
     throw new ScopeResolutionError("INVALID_SCOPE");
   if (!productIds.length) throw new ScopeResolutionError("EMPTY_SCOPE");
+  // Daily REQUIRED rounds are an explicit operational selection unit. Legacy scope semantics stay literal.
+  if (input.dailyRoundSynchronizationVersion === 1) {
+    const ids = new Set(productIds);
+    for (const policy of input.roundSynchronizations ?? []) {
+      const members = policy.lanes.flatMap(lane=>lane.taskIds);
+      if (members.some(id=>ids.has(id))) for (const id of members) if(eligible.has(id)) ids.add(id);
+    }
+    productIds = [...ids].sort((a,b)=>a-b);
+  }
   const canonicalByProduct = new Map(adapter.identityMap.filter(i => i.namespace === "task").map(i => [Number(i.sourceId), i.canonicalId]));
   const canonicalIds = productIds.map(id => canonicalByProduct.get(id));
   if (canonicalIds.some(id => !id)) throw new ScopeResolutionError("INVALID_SCOPE");
