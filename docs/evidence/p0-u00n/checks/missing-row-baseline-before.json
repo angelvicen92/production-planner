@@ -1,0 +1,14 @@
+{
+  "status": "RED_MEASURED",
+  "sourceCommit": "a409e742b5513840b2177851226b3bfc1c70a2a6",
+  "sqlSha256": "6b6378f91522544b1e060e9f9641a249d2eceb17a027453ee6a4c50820357b39",
+  "mutation": "Remove one pre-existing task row from bootstrap capture, retaining every source key; local transaction rolled back.",
+  "observedPreviewReason": null,
+  "expectedPreviewReason": "REBOOTSTRAP_BASELINE_UNAVAILABLE",
+  "nativeAssertion": {
+    "ok": false,
+    "code": "ERR_ASSERTION",
+    "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ null\n- 'REBOOTSTRAP_BASELINE_UNAVAILABLE'"
+  },
+  "remoteWrites": 0
+}

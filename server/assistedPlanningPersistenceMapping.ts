@@ -1,4 +1,6 @@
 const columnMap: Record<string, string> = {
+  stageId:'stage_id',
+  workingSnapshotJson: 'working_snapshot_json', workingFingerprint: 'working_fingerprint', obligationTransitionId: 'obligation_transition_id',
   planId: "plan_id", parentRevisionId: "parent_revision_id", createdBy: "created_by", createdAt: "created_at",
   identityJson: "identity_json", replaySnapshotJson: "replay_snapshot_json", diffJson: "diff_json",
   activeStageId: "active_stage_id", draftBaseStageId: "draft_base_stage_id", currentConfigRevisionId: "current_config_revision_id",

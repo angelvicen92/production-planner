@@ -43,12 +43,12 @@ export function evaluateAcceptedViolationDelta(candidateViolations:readonly Stag
     proposalEligible:newHardViolationCount===0&&newRequiredViolationCount===0};
 }
 
-export type AssistedProposalErrorCode = "INVALID_SCOPE"|"EMPTY_SCOPE"|"STALE_DRAFT"|"STALE_BASE_STAGE"|"DIRTY_DRAFT"|"STALE_CONFIG_REVISION"|"RUN_NOT_FOUND"|"RUN_NOT_READY"|"RUN_HAS_NO_PROPOSAL"|"RUN_SESSION_MISMATCH"|"RUN_RESULT_INVALID"|"UNSUPPORTED_ENGINE_INPUT";
+export type AssistedProposalErrorCode = "STALE_OBLIGATION_SOURCES"|"INVALID_SCOPE"|"EMPTY_SCOPE"|"STALE_DRAFT"|"STALE_BASE_STAGE"|"DIRTY_DRAFT"|"STALE_CONFIG_REVISION"|"RUN_NOT_FOUND"|"RUN_NOT_READY"|"RUN_HAS_NO_PROPOSAL"|"RUN_SESSION_MISMATCH"|"RUN_RESULT_INVALID"|"UNSUPPORTED_ENGINE_INPUT";
 export class AssistedProposalError extends Error {
   constructor(readonly code: AssistedProposalErrorCode, readonly status: 404|409|422) { super(code); }
 }
 const mapDbError = (error: any): never => {
-  const code = (["STALE_DRAFT","STALE_BASE_STAGE","STALE_CONFIG_REVISION","RUN_NOT_FOUND","RUN_NOT_READY","RUN_HAS_NO_PROPOSAL","RUN_SESSION_MISMATCH","RUN_RESULT_INVALID"] as const)
+  const code = (["STALE_OBLIGATION_SOURCES","STALE_DRAFT","STALE_BASE_STAGE","STALE_CONFIG_REVISION","RUN_NOT_FOUND","RUN_NOT_READY","RUN_HAS_NO_PROPOSAL","RUN_SESSION_MISMATCH","RUN_RESULT_INVALID"] as const)
     .find(candidate => String(error?.message ?? "").includes(candidate));
   if (code) throw new AssistedProposalError(code, code === "RUN_NOT_FOUND" ? 404 : code === "RUN_HAS_NO_PROPOSAL" ? 422 : 409);
   throw error;
@@ -276,7 +276,7 @@ export class AssistedProposalService {
     if (session.draftFingerprint !== request.expectedDraftFingerprint) throw new AssistedProposalError("STALE_DRAFT",409);
     const base = await this.storage.getAssistedPlanningStage(request.expectedBaseStageId);
     if (!base || base.sessionId !== session.id || base.planId !== planId) throw new AssistedProposalError("STALE_BASE_STAGE",409);
-    if (base.snapshotFingerprint !== session.draftFingerprint) throw new AssistedProposalError("DIRTY_DRAFT",409);
+    if ((session.workingFingerprint ?? base.snapshotFingerprint) !== session.draftFingerprint) throw new AssistedProposalError("DIRTY_DRAFT",409);
     const input = await this.dependencies.buildInput(planId,this.storage); const adapter=adaptEngineInputToPlannerNextProblem(input);
     if(adapter.status!=="SUPPORTED") throw new AssistedProposalError("UNSUPPORTED_ENGINE_INPUT",422);
     let resolution;
@@ -306,7 +306,9 @@ export class AssistedProposalService {
     if(adapter.status!=="SUPPORTED") return this.finish(planId,run,{contractVersion:1,outcome:"UNSUPPORTED",selector,scopeTaskIds:run.scope_task_ids_json,includePrerequisites:run.include_prerequisites,proposal:null,proposedDraftSnapshot:null,proposedDraftFingerprint:null,evidence:adapter.diagnostics as unknown as Record<string,unknown>,reasonCodes:adapter.reasonCodes});
     const resolution=resolveAssistedScope(input,adapter,{kind:"TASK_IDS",taskIds:run.scope_task_ids_json});
     const stage=await this.storage.getAssistedPlanningStage(Number(run.base_stage_id)); if(!stage) throw new AssistedProposalError("STALE_BASE_STAGE",409);
-    const baseSnapshot=stage.snapshotJson as unknown as AssistedPlanningSnapshotV1;
+    if(run.source_origin_snapshot_json && (session.draftBaseStageId!==Number(run.base_stage_id)||session.draftFingerprint!==run.source_draft_fingerprint))
+      throw new AssistedProposalError("STALE_DRAFT",409);
+    const baseSnapshot=(run.source_origin_snapshot_json ?? session.workingSnapshotJson ?? stage.snapshotJson) as unknown as AssistedPlanningSnapshotV1;
     const {protectedPlacements,protectedOperationalMeals,protectedSetupPreparations,protectedRoundPreparations,protectedParticipantMeals}=
       materializeAssistedSnapshotOccupations(adapter.problem,adapter.identityMap,baseSnapshot);
     const operationalPolicyById=new Map((adapter.problem.operationalMealPolicies??[]).map(policy=>[policy.id,policy]));
@@ -317,7 +319,7 @@ export class AssistedProposalService {
     const taskInputById=new Map(input.tasks.map(t=>[t.id,t]));
     const lineage=resolveActiveStageLineage(await this.storage.listAssistedPlanningStages(session.id),stage.id);
     const acceptedBaseline=(await Promise.all(lineage.map(async origin=>(await this.storage.listPlanningAcceptedExceptions(origin.id)).filter(exception=>exception.status==="ACTIVE"&&affectedTasksUnchanged(origin.snapshotJson,baseSnapshot,exception.affectedTaskIdsJson))))).flat();
-    const canonicalIds=(namespace:string,ids:readonly number[])=>ids.map(id=>{const match=adapter.identityMap.find(item=>item.namespace===namespace&&Number(item.sourceId)===id);if(!match)throw new Error(`UNPROJECTABLE_VALIDATION_IDENTITY:${namespace}:${id}`);return match.canonicalId;});
+    const canonicalIds=(namespace:string,ids:readonly number[])=>ids.map(id=>{const match=adapter.identityMap.find(item=>(namespace==="resource"?["resource","plan-resource","resource-item"].includes(item.namespace):item.namespace===namespace)&&Number(item.sourceId)===id);if(!match)throw new Error(`UNPROJECTABLE_VALIDATION_IDENTITY:${namespace}:${id}`);return match.canonicalId;});
     const baselineViolations=acceptedBaseline.map(item=>({ruleCode:item.ruleCode,severity:item.severity as "HARD"|"REQUIRED",affectedTaskIds:canonicalIds("task",item.affectedTaskIdsJson),affectedResourceIds:canonicalIds("resource",item.affectedResourceIdsJson??[]),affectedSpaceIds:canonicalIds("space",item.affectedSpaceIdsJson??[]),dimensions:(item.detailsJson as any)?.dimensions??{}}));
     const lineageWitnessSets:FutureStructuralWitness[][]=[];
     for(const witnessStage of lineage){

@@ -1,0 +1,42 @@
+{
+  "head": "74bb7340099280b5c1e1b0df043b0b99cf6ebdc7",
+  "pr": "https://github.com/angelvicen92/production-planner/pull/1192",
+  "nativeU00n": {
+    "status": "PASS",
+    "run": 40151758696
+  },
+  "nativeU00l": {
+    "status": "PASS",
+    "run": 40151758711
+  },
+  "causes": [
+    {
+      "code": "RPC_BODY_DRIFT",
+      "functions": [
+        "assisted_apply_snapshot",
+        "assisted_patch_draft",
+        "assisted_accept_stage",
+        "assisted_move_stage",
+        "assisted_finish_proposal",
+        "assisted_apply_proposal",
+        "assisted_record_proposal_clean_validation"
+      ],
+      "resolution": "Audit the complete current definitions from 113, retaining exact body/privilege checks; verified by native catalog matrix and seven focused tests."
+    },
+    {
+      "code": "RUN_ORIGIN_IMMUTABLE",
+      "resolution": "U00g/i/j adversaries now assert rejection of scope rewrite after recalculating result hashes; rollback retained; complete fresh journeys PASS."
+    },
+    {
+      "code": "HISTORICAL_HARNESS_HASH",
+      "resolution": "U00i diagnostic uses the already audited exact historical Git object, rather than the current product harness."
+    }
+  ],
+  "limitsChanged": false,
+  "productionSourcesChangedAfterNativeU00nPass": false,
+  "localBrowserRetry": {
+    "gate": "U00g",
+    "firstAttempt": "Template-tab locator timeout",
+    "repeat": "Complete 6/6 and 12/12, PASS; same timeout and product"
+  }
+}

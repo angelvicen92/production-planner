@@ -1,0 +1,214 @@
+{
+  "status": "PASS",
+  "sections": {
+    "tables": {
+      "previousRowsUnchanged": 198,
+      "addedRows": 3,
+      "removedOrChangedRows": 0
+    },
+    "sequences": {
+      "previousRowsUnchanged": 144,
+      "addedRows": 3,
+      "removedOrChangedRows": 0
+    },
+    "functions": {
+      "previousRowsUnchanged": 237,
+      "addedRows": 27,
+      "removedOrChangedRows": 0
+    }
+  },
+  "newRows": {
+    "tables": [
+      {
+        "columns": {},
+        "kind": "r",
+        "name": "assisted_obligation_transitions",
+        "options": null,
+        "privileges": [
+          "SELECT",
+          "INSERT"
+        ],
+        "rls": true,
+        "role": "service_role"
+      },
+      {
+        "columns": {},
+        "kind": "r",
+        "name": "assisted_obligation_transitions",
+        "options": null,
+        "privileges": [],
+        "rls": true,
+        "role": "anon"
+      },
+      {
+        "columns": {},
+        "kind": "r",
+        "name": "assisted_obligation_transitions",
+        "options": null,
+        "privileges": [],
+        "rls": true,
+        "role": "authenticated"
+      }
+    ],
+    "sequences": [
+      {
+        "name": "assisted_obligation_transitions_id_seq",
+        "owned_by": "assisted_obligation_transitions",
+        "privileges": [
+          "USAGE",
+          "SELECT"
+        ],
+        "role": "service_role"
+      },
+      {
+        "name": "assisted_obligation_transitions_id_seq",
+        "owned_by": "assisted_obligation_transitions",
+        "privileges": [],
+        "role": "anon"
+      },
+      {
+        "name": "assisted_obligation_transitions_id_seq",
+        "owned_by": "assisted_obligation_transitions",
+        "privileges": [],
+        "role": "authenticated"
+      }
+    ],
+    "functions": [
+      {
+        "execute": false,
+        "role": "anon",
+        "signature": "assisted_assert_execution_compatible(integer,jsonb)"
+      },
+      {
+        "execute": false,
+        "role": "anon",
+        "signature": "assisted_expected_obligation_sources(bigint)"
+      },
+      {
+        "execute": false,
+        "role": "anon",
+        "signature": "assisted_guard_obligation_validation()"
+      },
+      {
+        "execute": false,
+        "role": "anon",
+        "signature": "assisted_guard_run_origin_immutable()"
+      },
+      {
+        "execute": false,
+        "role": "anon",
+        "signature": "assisted_incorporate_stage_additions(integer,uuid,bigint,bigint,text,bigint,text,jsonb,jsonb,jsonb,text,jsonb,jsonb)"
+      },
+      {
+        "execute": false,
+        "role": "anon",
+        "signature": "assisted_inherited_violation_report(bigint,bigint,jsonb,jsonb)"
+      },
+      {
+        "execute": false,
+        "role": "anon",
+        "signature": "assisted_preview_s0_additions(integer)"
+      },
+      {
+        "execute": false,
+        "role": "anon",
+        "signature": "assisted_set_working_origin()"
+      },
+      {
+        "execute": false,
+        "role": "anon",
+        "signature": "assisted_task_planning_fields(jsonb)"
+      },
+      {
+        "execute": false,
+        "role": "authenticated",
+        "signature": "assisted_assert_execution_compatible(integer,jsonb)"
+      },
+      {
+        "execute": false,
+        "role": "authenticated",
+        "signature": "assisted_expected_obligation_sources(bigint)"
+      },
+      {
+        "execute": false,
+        "role": "authenticated",
+        "signature": "assisted_guard_obligation_validation()"
+      },
+      {
+        "execute": false,
+        "role": "authenticated",
+        "signature": "assisted_guard_run_origin_immutable()"
+      },
+      {
+        "execute": false,
+        "role": "authenticated",
+        "signature": "assisted_incorporate_stage_additions(integer,uuid,bigint,bigint,text,bigint,text,jsonb,jsonb,jsonb,text,jsonb,jsonb)"
+      },
+      {
+        "execute": false,
+        "role": "authenticated",
+        "signature": "assisted_inherited_violation_report(bigint,bigint,jsonb,jsonb)"
+      },
+      {
+        "execute": false,
+        "role": "authenticated",
+        "signature": "assisted_preview_s0_additions(integer)"
+      },
+      {
+        "execute": false,
+        "role": "authenticated",
+        "signature": "assisted_set_working_origin()"
+      },
+      {
+        "execute": false,
+        "role": "authenticated",
+        "signature": "assisted_task_planning_fields(jsonb)"
+      },
+      {
+        "execute": true,
+        "role": "service_role",
+        "signature": "assisted_assert_execution_compatible(integer,jsonb)"
+      },
+      {
+        "execute": true,
+        "role": "service_role",
+        "signature": "assisted_expected_obligation_sources(bigint)"
+      },
+      {
+        "execute": true,
+        "role": "service_role",
+        "signature": "assisted_guard_obligation_validation()"
+      },
+      {
+        "execute": true,
+        "role": "service_role",
+        "signature": "assisted_guard_run_origin_immutable()"
+      },
+      {
+        "execute": true,
+        "role": "service_role",
+        "signature": "assisted_incorporate_stage_additions(integer,uuid,bigint,bigint,text,bigint,text,jsonb,jsonb,jsonb,text,jsonb,jsonb)"
+      },
+      {
+        "execute": true,
+        "role": "service_role",
+        "signature": "assisted_inherited_violation_report(bigint,bigint,jsonb,jsonb)"
+      },
+      {
+        "execute": true,
+        "role": "service_role",
+        "signature": "assisted_preview_s0_additions(integer)"
+      },
+      {
+        "execute": true,
+        "role": "service_role",
+        "signature": "assisted_set_working_origin()"
+      },
+      {
+        "execute": true,
+        "role": "service_role",
+        "signature": "assisted_task_planning_fields(jsonb)"
+      }
+    ]
+  }
+}

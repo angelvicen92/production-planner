@@ -311,3 +311,7 @@ U00f no es sólo wiring: **se detiene antes de implementar producto o modificar 
 ### P0-U00j — tipo exclusivo quantity=1 (candidato #1188)
 
 El contrafactual sobre main #1187 prueba que byType se rechazaba antes de una solución B/A factible. El candidato amplía la autoridad nominal existente a un tipo diario exacto y conserva selección, recursos independientes y alternativas futuras entre Stages. La migración 111 se justifica mediante una omisión aceptada por SQL con hashes recalculados antes de su activación. Dos jornadas API/UI completan 2/2 y 4/4; la segunda selecciona una identidad diaria ad hoc y conserva S1 en S2. [Gates, límites, auditoría causal y estado](../evidence/p0-u00j/README.md). Mantiene la frontera ordinary auxiliary/STANDALONE_ONLY/EXACT_CONSTRUCTIVE; sin merge, demo, producción ni despliegue. P0 general sigue abierto.
+
+### P0-U00n — candidato: incorporación después de Stage
+
+Sobre U00m integrado (#1191, `382e796`), la transición de obligaciones avanza revisión, replay y origen operativo en la misma sesión, manteniendo el Stage histórico literal. La proyección explícita conserva altas posteriores pendientes en rollback/redo; una rama nueva archiva el futuro sin borrar tareas. La aclaración humana está consolidada en 01 v5.4 y 04 v2.9 mediante 00 v2.15. [Evidence, gates, límites y diagnóstico comparativo](../evidence/p0-u00n/README.md). El estado del candidato se verifica en su PR/CI; no declara cierre de todo P0, merge ni publicación.

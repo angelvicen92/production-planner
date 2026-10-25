@@ -1,0 +1,15 @@
+{
+  "head": "a409e742b5513840b2177851226b3bfc1c70a2a6",
+  "run": 40152263751,
+  "job": 121046180565,
+  "url": "https://github.com/angelvicen92/production-planner/actions/runs/40152263751/job/121046180565",
+  "status": "PASS",
+  "productSuite": {
+    "tests": 3226,
+    "passed": 3225,
+    "failed": 0,
+    "skipped": 1,
+    "skip": "Historical SPEC10-012R2 commits unavailable in the CI checkout; same test passed locally with full Git history."
+  },
+  "sqlBeforeFinalBaselineRowGuard": true
+}

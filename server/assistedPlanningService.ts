@@ -15,8 +15,9 @@ import { affectedTasksUnchanged, resolveActiveStageLineage } from "./assistedAcc
 import {recommendNextAssistedScope} from './assistedScopeOrchestrator';
 import {getUserRole} from './authz';
 import {newStageDeviationCounts} from '../shared/assistedStageValidation';
+import { assistedWorkingOrigin, projectAssistedWorkingOrigin } from './assistedWorkingOrigin';
 
-export type AssistedPlanningErrorCode = keyof typeof bootstrapAdditionReasons | "ASSISTED_ACCEPT_FORBIDDEN" | "HARD_ADMIN_AUTHORIZATION_REQUIRED" | "SESSION_NOT_FOUND" | "STALE_DRAFT" | "STALE_BASE_STAGE" | "STALE_CONFIG_REVISION" | "STALE_VALIDATION" | "VALIDATION_REQUIRED" | "VALIDATION_NOT_ACCEPTABLE" | "HARD_CONFIRMATION_REQUIRED" | "REQUIRED_CONFIRMATION_REQUIRED" | "RUN_RESULT_INVALID" | "UNSUPPORTED_ENGINE_INPUT" | "TASK_SET_MISMATCH" | "IMMUTABLE_TASK" | "UNSUPPORTED_MANUAL_FIELD" | "INVALID_MANUAL_DURATION" | "INVALID_MANUAL_RESET" | "INVALID_BLOCK_OPERATION" | "PLANNING_BLOCK_ORDER_CONFLICT" | "CORRUPT_EDIT_LEDGER" | "ASSISTED_DELTA_VALIDATION_UNSUPPORTED" | "INVALID_STAGE_TARGET" | "NO_REDO_AVAILABLE" | "NO_UNDO_AVAILABLE" | "CONCURRENT_ACCEPT" | "RESTART_PROTECTED_DAY" | "RESTART_RUNNING_PROPOSAL";
+export type AssistedPlanningErrorCode = keyof typeof bootstrapAdditionReasons | "ASSISTED_ACCEPT_FORBIDDEN" | "HARD_ADMIN_AUTHORIZATION_REQUIRED" | "SESSION_NOT_FOUND" | "STALE_DRAFT" | "STALE_BASE_STAGE" | "STALE_CONFIG_REVISION" | "STALE_VALIDATION" | "VALIDATION_REQUIRED" | "VALIDATION_NOT_ACCEPTABLE" | "HARD_CONFIRMATION_REQUIRED" | "REQUIRED_CONFIRMATION_REQUIRED" | "RUN_RESULT_INVALID" | "UNSUPPORTED_ENGINE_INPUT" | "TASK_SET_MISMATCH" | "IMMUTABLE_TASK" | "UNSUPPORTED_MANUAL_FIELD" | "INVALID_MANUAL_DURATION" | "INVALID_MANUAL_RESET" | "INVALID_BLOCK_OPERATION" | "PLANNING_BLOCK_ORDER_CONFLICT" | "CORRUPT_EDIT_LEDGER" | "ASSISTED_DELTA_VALIDATION_UNSUPPORTED" | "INVALID_STAGE_TARGET" | "NO_REDO_AVAILABLE" | "NO_UNDO_AVAILABLE" | "CONCURRENT_ACCEPT" | "STALE_OBLIGATION_SOURCES" | "RESTORE_EXECUTION_CONFLICT" | "RESTART_PROTECTED_DAY" | "RESTART_RUNNING_PROPOSAL";
 export class AssistedPlanningError extends Error {
   constructor(readonly code: AssistedPlanningErrorCode, readonly status: 403 | 404 | 409 | 422,
     readonly validationDiagnostics?:{phase:string;reasonCodes:readonly string[]}) { super(code); this.name = "AssistedPlanningError"; }
@@ -26,6 +27,7 @@ const statuses: Record<AssistedPlanningErrorCode, 403 | 404 | 409 | 422> = {
   ASSISTED_ACCEPT_FORBIDDEN: 403, HARD_ADMIN_AUTHORIZATION_REQUIRED: 403,
   SESSION_NOT_FOUND: 404, STALE_DRAFT: 409, STALE_BASE_STAGE: 409, STALE_VALIDATION: 409,
   STALE_CONFIG_REVISION: 409, VALIDATION_REQUIRED: 422, VALIDATION_NOT_ACCEPTABLE: 422, RUN_RESULT_INVALID: 422, UNSUPPORTED_ENGINE_INPUT: 422, TASK_SET_MISMATCH: 409,
+  STALE_OBLIGATION_SOURCES:409, RESTORE_EXECUTION_CONFLICT:422,
   RESTART_PROTECTED_DAY: 422, RESTART_RUNNING_PROPOSAL: 409,
   INVALID_STAGE_TARGET: 422, NO_REDO_AVAILABLE: 409, CONCURRENT_ACCEPT: 409,
   IMMUTABLE_TASK: 422, UNSUPPORTED_MANUAL_FIELD: 422, INVALID_MANUAL_DURATION: 422, INVALID_MANUAL_RESET: 422, CORRUPT_EDIT_LEDGER: 409,
@@ -122,7 +124,13 @@ export class AssistedPlanningService {
     if (JSON.stringify(preview) !== JSON.stringify(after)) throw new AssistedPlanningError("REBOOTSTRAP_STALE_SOURCES",409);
     if (plannerReadiness(input,{status:"READY",issues:[]}).status !== "READY")
       return {preview:{...preview,allowed:false,reason:"UNSUPPORTED_ENGINE_INPUT" as const}};
-    return {preview,identity,replay,snapshot};
+    if(preview.mode === 'POST_STAGE') {
+      const stages = await this.storage.listAssistedPlanningStages(preview.expectedSessionId);
+      const pending = [...(preview.pendingTaskSnapshots ?? []), ...snapshot.tasks.filter(task => preview.addedTaskIds.includes(task.taskId))];
+      const projections = Object.fromEntries(stages.map(stage => [String(stage.id), projectAssistedWorkingOrigin(stage.snapshotJson as unknown as AssistedPlanningSnapshotV1, pending)]));
+      return {preview,identity,replay,snapshot,projections};
+    }
+    return {preview,identity,replay,snapshot,projections:undefined};
   }
 
   async previewAdditions(planId: number) { return (await this.additionsCandidate(planId)).preview; }
@@ -131,18 +139,20 @@ export class AssistedPlanningService {
     const role = await (this.dependencies.lookupRole ?? getUserRole)(userId);
     if(role!=="admin" && role!=="production") throw new AssistedPlanningError("ASSISTED_ACCEPT_FORBIDDEN",403);
     const candidate = await this.additionsCandidate(planId);
-    const {preview,identity,replay,snapshot} = candidate;
+    const {preview,identity,replay,snapshot,projections} = candidate;
     if (preview.expectedSessionId!==expected.expectedSessionId || preview.expectedBaseStageId!==expected.expectedBaseStageId)
       throw new AssistedPlanningError("STALE_BASE_STAGE",409);
     if(preview.expectedDraftFingerprint!==expected.expectedDraftFingerprint) throw new AssistedPlanningError("STALE_DRAFT",409);
     if(preview.expectedConfigRevisionId!==expected.expectedConfigRevisionId) throw new AssistedPlanningError("STALE_CONFIG_REVISION",409);
     if(preview.sourceToken!==expected.sourceToken) throw new AssistedPlanningError("REBOOTSTRAP_STALE_SOURCES",409);
+    if(JSON.stringify(preview.addedTaskIds)!==JSON.stringify(expected.addedTaskIds)) throw new AssistedPlanningError("REBOOTSTRAP_STALE_SOURCES",409);
     if(!preview.allowed || !snapshot) throw new AssistedPlanningError(preview.reason ?? "REBOOTSTRAP_STALE_SOURCES",409);
-    const {error} = await this.rpc("assisted_rebootstrap_additions", {p_plan_id:planId,p_user_id:userId,
+    const {error} = await this.rpc(preview.mode==='POST_STAGE'?"assisted_incorporate_stage_additions":"assisted_rebootstrap_additions", {p_plan_id:planId,p_user_id:userId,
       p_expected_session:expected.expectedSessionId,p_expected_base:expected.expectedBaseStageId,
       p_expected_fingerprint:expected.expectedDraftFingerprint,p_expected_config:expected.expectedConfigRevisionId,
       p_source_token:expected.sourceToken,p_identity:identity,p_replay:replay,p_snapshot:snapshot,
-      p_fingerprint:fingerprintAssistedPlanningSnapshotV1(snapshot)});
+      p_fingerprint:fingerprintAssistedPlanningSnapshotV1(snapshot),
+      ...(projections?{p_added_task_ids:expected.addedTaskIds,p_projections:projections}:{})});
     if(error) dbError(error);
     return this.state(planId);
   }
@@ -159,6 +169,9 @@ export class AssistedPlanningService {
     const acceptedExceptions=(await Promise.all(lineage.map(async stage=>(await this.storage.listPlanningAcceptedExceptions(stage.id)??[]).filter(item=>item.status==="ACTIVE"&&item.severity==="HARD"&&affectedTasksUnchanged(stage.snapshotJson,session.draftSnapshotJson,item.affectedTaskIdsJson))))).flat();
     return { session, activeStage, draft: session.draftSnapshotJson, draftBaseStageId: session.draftBaseStageId,
       draftFingerprint: session.draftFingerprint, currentConfigRevisionId: session.currentConfigRevisionId, validation,
+      workingOrigin: activeStage ? {...assistedWorkingOrigin(session,activeStage), transitionId:session.obligationTransitionId ?? null,
+        restoredStageId:activeStage.id, restoredStageFingerprint:activeStage.snapshotFingerprint,
+        pendingLaterTaskIds:(session.workingSnapshotJson as unknown as AssistedPlanningSnapshotV1 | null)?.tasks.filter(task=>!(activeStage.snapshotJson as unknown as AssistedPlanningSnapshotV1).tasks.some(old=>old.taskId===task.taskId)).map(task=>task.taskId)??[]} : null,
       acceptedExceptions: (acceptedExceptions ?? []).filter(item=>item.status==="ACTIVE"), history: stages };
   }
 
@@ -232,12 +245,12 @@ export class AssistedPlanningService {
     if (session.draftBaseStageId !== expectedBaseStageId) throw new AssistedPlanningError("STALE_BASE_STAGE", 409);
     const base = await this.storage.getAssistedPlanningStage(expectedBaseStageId);
     if (!base || base.sessionId !== session.id || base.planId !== planId) throw new AssistedPlanningError("STALE_BASE_STAGE", 409);
-    const baseSnapshot=base.snapshotJson as unknown as AssistedPlanningSnapshotV1;
+    const baseSnapshot=assistedWorkingOrigin(session,base).snapshot;
     const snapshot = rebuildAssistedPlanningSnapshotV1(baseSnapshot);
     const fingerprint = fingerprintAssistedPlanningSnapshotV1(snapshot);
-    if (fingerprint !== base.snapshotFingerprint) throw new AssistedPlanningError("CORRUPT_EDIT_LEDGER", 409);
+    if (fingerprint !== assistedWorkingOrigin(session,base).fingerprint) throw new AssistedPlanningError("CORRUPT_EDIT_LEDGER", 409);
     const { error } = await this.rpc("assisted_patch_draft", { p_plan_id: planId, p_expected_fingerprint: expectedDraftFingerprint,
-      p_expected_base: expectedBaseStageId, p_snapshot: snapshot, p_fingerprint: base.snapshotFingerprint });
+      p_expected_base: expectedBaseStageId, p_snapshot: snapshot, p_fingerprint: fingerprint });
     if (error) dbError(error);
     return this.state(planId);
   }
@@ -269,6 +282,8 @@ export class AssistedPlanningService {
     if (session.draftBaseStageId !== expectedBaseStageId) throw new AssistedPlanningError("STALE_BASE_STAGE", 409);
     try { assertPlanningBlockTemporalOrder(session.draftSnapshotJson as unknown as AssistedPlanningSnapshotV1); }
     catch { throw new AssistedPlanningError("PLANNING_BLOCK_ORDER_CONFLICT", 422); }
+    const sourceCheck=session.workingSnapshotJson?await this.rpc('assisted_bootstrap_source_token',{p_plan_id:planId}):null;
+    if(sourceCheck?.error)dbError(sourceCheck.error);
     const [input, optimizerSnapshot, taskTemplateSnapshots, persistedRevision] = await Promise.all([
       this.buildInput(planId), this.storage.getPlanOptimizerSnapshot(planId),
       this.storage.getPlanTaskTemplateSnapshots(planId), this.storage.getPlanConfigRevision(session.currentConfigRevisionId),
@@ -290,7 +305,7 @@ export class AssistedPlanningService {
     const base = await this.storage.getAssistedPlanningStage(expectedBaseStageId);
     if (!base || base.sessionId !== session.id) throw new AssistedPlanningError("STALE_BASE_STAGE", 409);
     const draft = session.draftSnapshotJson as unknown as AssistedPlanningSnapshotV1;
-    const baseSnapshot = base.snapshotJson as unknown as AssistedPlanningSnapshotV1;
+    const baseSnapshot = assistedWorkingOrigin(session,base).snapshot;
     const baseById = new Map(baseSnapshot.tasks.map(task => [task.taskId, task]));
     const touched = draft.tasks.filter(task => {
       const prior = baseById.get(task.taskId);
@@ -326,7 +341,7 @@ export class AssistedPlanningService {
     const hardCount=violations.filter(item=>item.severity==="HARD").length,requiredCount=violations.filter(item=>item.severity==="REQUIRED").length;
     const newHardCount=violations.filter(item=>item.severity==="HARD"&&item.inheritedAcceptedExceptionId==null).length;
     const newRequiredCount=violations.filter(item=>item.severity==="REQUIRED"&&item.inheritedAcceptedExceptionId==null).length;
-    const report:StageValidationReport={contractVersion:1,mode:"MANUAL_STAGE_VALIDATION_V1",changedTaskIds:touched,completeForScope:evidence.completeForScope,
+    const report:StageValidationReport={...(sourceCheck?.data?{sourceToken:sourceCheck.data}:{}),contractVersion:1,mode:"MANUAL_STAGE_VALIDATION_V1",changedTaskIds:touched,completeForScope:evidence.completeForScope,
       protectedPlacementsPreserved:evidence.protectedPlacementsPreserved,hardValid:hardCount===0,hardCount,requiredCount,newHardCount,newRequiredCount,preferredCount:evidence.validationSummary?.operationContinuity?.filter(group=>group.policy==="PREFERRED"&&group.gapMinutes>0).length??0,violations,
       preferredAssessment:evidence.validationSummary?.operationContinuity?"OPERATION_CONTINUITY_QUANTIFIED":"NOT_CLASSIFIED",
       ...(evidence.validationSummary?.operationContinuity?{operationContinuity:evidence.validationSummary?.operationContinuity}:{}),supportingTaskIds:evidence.supportingTaskIds,supportingReasonByTaskId:evidence.supportingReasonByTaskId,

@@ -180,3 +180,15 @@ test("polling uses the existing stale-run gate and never calls a stale run compl
   h.api.run = async id => ({ ...await readRun(id), status: "running", updated_at: "2000-01-01T00:00:00Z" });
   const result = await h.controller.start(); assert.equal(result.phase, "FAILED"); assert.equal(result.code, "RUN_STALE"); assert.equal(h.calls.filter(c => c.operation === "apply").length, 0);
 });
+
+test('an admitted operational origin is clean while the historical checkpoint keeps its smaller universe',()=>{
+ const h=harness();
+ const state=h.state;
+ const historical=structuredClone(state.activeStage);
+ const expanded=structuredClone(state.draft);
+ expanded.tasks.push({...expanded.tasks[1],taskId:4,startPlanned:null,endPlanned:null});
+ const projected={...state,draft:expanded,draftFingerprint:fp(expanded),workingOrigin:{snapshot:expanded,fingerprint:fp(expanded)}};
+ assert.equal(isAutopilotClean(projected),true);
+ assert.deepEqual(state.activeStage,historical);
+ assert.equal(isAutopilotClean({...projected,draftFingerprint:'stale'}),false);
+});

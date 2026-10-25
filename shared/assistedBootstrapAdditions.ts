@@ -1,6 +1,6 @@
 export const bootstrapAdditionReasons = {
  REBOOTSTRAP_ACCEPTED_STAGE: 'Ya existe una etapa aceptada posterior a S0. Esta actualización sólo está disponible antes de aceptar la primera etapa.',
- REBOOTSTRAP_DIRTY_DRAFT: 'El borrador difiere del Stage 0. Revisa o restaura sus cambios antes de incorporar tareas.',
+ REBOOTSTRAP_DIRTY_DRAFT: 'El borrador difiere del origen de trabajo. Revisa o restaura sus cambios antes de incorporar tareas.',
  REBOOTSTRAP_PENDING_PROPOSAL: 'Hay una propuesta activa o pendiente. Termina o descarta la propuesta antes de incorporar tareas.',
  REBOOTSTRAP_PROTECTED_DAY: 'La jornada tiene ejecución o bloqueos protegidos. No se puede sustituir su sesión.',
  REBOOTSTRAP_BASELINE_UNAVAILABLE: 'Esta sesión antigua no conserva la referencia completa necesaria para comprobar las altas. Se conserva su histórico y no puede actualizarse con esta operación.',
@@ -12,6 +12,8 @@ export const bootstrapAdditionReasons = {
 } as const;
 export type BootstrapAdditionReason = keyof typeof bootstrapAdditionReasons;
 export interface BootstrapAdditionsPreview {
+ mode?: 'S0_REPLACEMENT' | 'POST_STAGE';
+ pendingTaskSnapshots?: import('./assistedPlanningSnapshotContracts').AssistedPlanningTaskSnapshotV1[];
  allowed: boolean;
  reason: BootstrapAdditionReason | 'UNSUPPORTED_ENGINE_INPUT' | null;
  addedTaskIds: number[];

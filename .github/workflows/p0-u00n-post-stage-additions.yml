@@ -1,0 +1,49 @@
+name: P0 U00n post-Stage additions
+on:
+  pull_request:
+    paths:
+      - 'server/**'
+      - 'shared/**'
+      - 'supabase/migrations/**'
+      - 'client/src/components/planning/assisted-planning-workspace.tsx'
+      - 'script/demo/smokeNewDayIntegration.ts'
+      - 'docs/evidence/p0-u00n/**'
+      - '.github/workflows/p0-u00n-post-stage-additions.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  post-stage-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$task_browser_path" ]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+          fi
+      - run: npm run check && npm run check:migrations
+      - run: npx --no-install tsc -p docs/evidence/p0-u00n/tsconfig.json
+      - run: node --import tsx --test --test-concurrency=1 server/assistedWorkingOrigin.spec.ts server/assistedBootstrapAdditions.spec.ts server/assistedProposalService.spec.ts server/assistedAcceptedBaseline.spec.ts server/assistedStageAcceptanceAuthorization.spec.ts shared/assistedAutopilot.test.ts
+      - name: Two actual days, atomic admission, attacks, restore and branch
+        run: node --import tsx docs/evidence/p0-u00n/run.ts work/u00n-native
+      - run: python3 docs/evidence/p0-u00n/verify.py work/u00n-native/native
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: u00n-post-stage-native
+          path: |
+            work/u00n-native/manifest.json
+            work/u00n-native/native/*.json
+            work/u00n-native/native/*.png

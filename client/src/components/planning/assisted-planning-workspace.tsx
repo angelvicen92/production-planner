@@ -42,6 +42,7 @@ const operatorError=(error:any)=>{
   for(const [reason,text] of Object.entries(bootstrapAdditionReasons)) if(code.includes(reason))return text;
   if(code.includes("RESTART_PROTECTED_DAY"))return "No se puede reiniciar un día con tareas ejecutadas, en curso o bloqueos explícitos. Revisa su estado operativo.";
   if(code.includes("RESTART_RUNNING_PROPOSAL"))return "Espera a que termine la propuesta antes de reiniciar.";
+  if(code.includes("RESTORE_EXECUTION_CONFLICT"))return "No se puede restaurar esta etapa: contradice una tarea en curso o terminada.";
   if(code.includes("STALE_"))return "El borrador cambió en otra operación. Se ha actualizado la vista; revisa los cambios e inténtalo de nuevo.";
   if(code.includes("CONFIRMATION_REQUIRED"))return "Esta decisión necesita confirmación explícita antes de aceptarse.";
   if(code.includes("VALIDATION"))return "El borrador debe validarse de nuevo antes de continuar.";
@@ -81,7 +82,7 @@ export const AssistedPlanningWorkspace = memo(function AssistedPlanningWorkspace
   const taskSetChanged=Boolean(draft && ((plan.dailyTasks??[]).length!==draft.tasks.length || (plan.dailyTasks??[]).some((task:any)=>!draft.tasks.some((row:any)=>Number(row.taskId)===Number(task.id)))));
   const historyModel=useMemo(()=>buildAssistedHistory(state?.history??[],active,historyTimingsQ.isError?[]:historyTimingsQ.data??[]),[state,active,historyTimingsQ.data,historyTimingsQ.isError]);
   const operationalMeals=useMemo(()=>resolvePlanningOperationalMeals(plan.plannerNextConfiguration,viewAuthority==="accepted"?active?.snapshotJson:draft,viewAuthority),[plan.plannerNextConfiguration,active,draft,viewAuthority]);
-  const base=useMemo(()=>state?.history?.find((stage:any)=>Number(stage.id)===Number(state?.draftBaseStageId))?.snapshotJson??active?.snapshotJson??null,[state,active]);
+  const base=useMemo(()=>state?.workingOrigin?.snapshot??state?.history?.find((stage:any)=>Number(stage.id)===Number(state?.draftBaseStageId))?.snapshotJson??active?.snapshotJson??null,[state,active]);
   const scopeSpaces:ScopeSpace[]=spaces.map(space=>({id:Number(space.id),name:space.name,zoneId:space.zoneId==null?null:Number(space.zoneId)}));
   const scopeZones:ScopeZone[]=Array.isArray(timelineProps.zones)?timelineProps.zones as ScopeZone[]:[];
   const eligibleTasks=useMemo(()=>pendingScopeTasks(plan.dailyTasks??[],base),[plan.dailyTasks,base]);
@@ -187,11 +188,11 @@ export const AssistedPlanningWorkspace = memo(function AssistedPlanningWorkspace
   const reviewAdditions=async()=>{setBusy("additions-preview");setMessage(null);try{setAdditionsPreview(await apiRequest<BootstrapAdditionsPreview>("GET",`/api/plans/${planId}/assisted/bootstrap-additions`));}catch(error){setMessage(operatorError(error));}finally{setBusy(null);}};
   const incorporateAdditions=async()=>{
     const reviewed=additionsPreview;if(!reviewed?.allowed)return;
-    if(!await requestConsent({title:"Incorporar nuevas tareas",description:`Se incorporarán ${reviewed.addedTaskIds.length} tareas a una nueva sesión Assisted.`,secondaryText:"La sesión anterior y su Stage 0 se conservarán en el histórico. Revisa las tareas antes de confirmar.",confirmText:"Confirmar incorporación"}))return;
+    if(!await requestConsent({title:"Incorporar nuevas tareas",description:`Se incorporarán ${reviewed.addedTaskIds.length} tareas. Revisión actual: R${reviewed.expectedConfigRevisionId}.`,secondaryText:reviewed.mode==='POST_STAGE'?"Se creará una revisión en esta sesión. Las decisiones aceptadas y las etapas históricas se conservarán. Las nuevas obligaciones quedarán pendientes.":"La sesión anterior y su Stage 0 se conservarán en el histórico.",confirmText:"Confirmar incorporación"}))return;
     const done=await mutate("additions-apply",()=>apiRequest("POST",`/api/plans/${planId}/assisted/bootstrap-additions`,{
       expectedSessionId:reviewed.expectedSessionId,expectedBaseStageId:reviewed.expectedBaseStageId,
       expectedDraftFingerprint:reviewed.expectedDraftFingerprint,expectedConfigRevisionId:reviewed.expectedConfigRevisionId,
-      sourceToken:reviewed.sourceToken,confirmation:"INCORPORATE_NEW_TASKS"}),true);
+      sourceToken:reviewed.sourceToken,addedTaskIds:reviewed.addedTaskIds,confirmation:"INCORPORATE_NEW_TASKS"}),true);
     setAdditionsPreview(null);if(done){setSelected([]);setSelectedSpaces([]);}
   };
   const previewConfig=async()=>{setBusy("config-preview");setMessage(null);try{const result=await apiRequest<any>("GET",`/api/plans/${planId}/assisted/config-refresh`);setConfigPreview(result);setConfigSelection(result.changes.map((x:any)=>x.key));}catch(e:any){setMessage(operatorError(e));}finally{setBusy(null);}};
@@ -251,6 +252,8 @@ export const AssistedPlanningWorkspace = memo(function AssistedPlanningWorkspace
     </Card>:null;
   const acceptedSnapshot=autopilotProgress&&autopilotCheckpoint?autopilotCheckpoint.activeStage.snapshotJson:active?.snapshotJson;
   return <div className="space-y-3" data-testid="assisted-workspace">
+    <p className="text-sm" data-testid="assisted-working-origin">Revisión vigente R{state.currentConfigRevisionId}. Decisiones aceptadas: S{active?.ordinal}, revisión R{active?.configRevisionId}.</p>
+    {(state.workingOrigin?.pendingLaterTaskIds?.length??0)>0?<Card className="p-3" data-testid="assisted-pending-overlay"><strong>Obligaciones posteriores pendientes</strong><p>Decisiones conservadas de S{active?.ordinal}. Estas obligaciones actuales todavía no existían en esa etapa y siguen sin posición aceptada: {taskContext(state.workingOrigin.pendingLaterTaskIds)}.</p></Card>:null}
     {taskSetChanged?<Card className="border-amber-500 p-3 space-y-2" data-testid="assisted-new-tasks"><strong>Nuevas tareas pendientes de incorporar a Assisted</strong><p className="text-sm">El conjunto de tareas ha cambiado. Revisa las diferencias para actualizar la sesión antes de continuar.</p><Button disabled={!!busy} variant="outline" onClick={reviewAdditions}>Revisar nuevas tareas</Button>
       {additionsPreview?<><ul>{additionsPreview.addedTaskIds.map(id=><li key={id}>{taskContext([id])}</li>)}</ul>{!additionsPreview.allowed?<p role="alert">{additionsPreview.reason==="UNSUPPORTED_ENGINE_INPUT"?"La configuración actual no supera el preflight de Planner Next.":bootstrapAdditionReasons[additionsPreview.reason??"REBOOTSTRAP_STALE_SOURCES"]}</p>:<Button disabled={!authorized.current||!!busy||pendingTimelineEdits>0} onClick={incorporateAdditions}>Actualizar Assisted con nuevas tareas</Button>}{(additionsPreview.pendingProposalIds??[]).map(id=><Button key={id} disabled={!authorized.current||!!busy} variant="outline" onClick={async()=>{if(await mutate("discard",()=>apiRequest("POST",`/api/plans/${planId}/assisted/proposals/${id}/discard`,guard())))await reviewAdditions();}}>Descartar propuesta pendiente</Button>)}</>:null}
     </Card>:null}

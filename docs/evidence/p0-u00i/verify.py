@@ -37,7 +37,8 @@ for path in paths:
     assert hashlib.sha256(content).hexdigest()==manifest["sourceHashes"][path],path
 for name, expected in manifest["diagnosticHashes"].items():
     assert digest(repo / "script/diagnostics" / name) == expected, name
-assert digest(repo / "script/demo/smokeNewDayIntegration.ts") == manifest["originalHarnessSha256"]
+# The preceding Git-object audit verifies this exact historical harness too.
+assert manifest["sourceHashes"]["script/demo/smokeNewDayIntegration.ts"] == manifest["originalHarnessSha256"]
 
 native = read("causal/integration.json")
 assert native["status"] == "PASS" and native["remoteWrites"] == 0

@@ -1,9 +1,13 @@
 # OPTIPLAN — INTEGRACIÓN Y CONFIGURACIÓN OPERATIVA EFECTIVA
 
-**Versión:** 2.8<br>
-**Fecha:** 22 de octubre de 2026<br>
+**Versión:** 2.9<br>
+**Fecha:** 24 de octubre de 2026<br>
 **Estado:** Fuente oficial consolidada  
 **Absorbe:** SPEC-10, SPEC-11 y Addenda oficiales consolidados de dominio/operación.
+
+## Actualización v2.9 — restauración con obligaciones posteriores (24/10/2026)
+
+Aclara §9 conforme a la decisión humana P0-U00n. La transición admitida de obligaciones y su proyección operativa se distinguen del snapshot histórico inmutable.
 
 ## Actualización v2.8 — dos políticas de espacio independientes (22/10/2026)
 
@@ -142,6 +146,14 @@ Con una línea `S0 → S1 → … → S6`, rollback `S6 → S3`:
 - si desde S3 se acepta S4′, la línea antigua S4–S6 queda archivada como rama histórica y deja de ser redo normal.
 
 `daily_tasks` representa **el último planning aceptado**, nunca el Draft. Aplicar una ScopeProposal al Draft no escribe `daily_tasks`; aceptar Stage sí lo actualiza de forma atómica.
+
+### 9.1 Obligaciones admitidas después del checkpoint
+
+Una alta pura posterior se incorpora mediante transición explícita, versionada y atómica dentro de la misma sesión, con revisión efectiva, identidad, replay, actor, fuentes y lista exacta de altas verificadas. No edita obligaciones anteriores ni decisiones aceptadas. El origen de trabajo y el Draft vigentes contienen todas las obligaciones admitidas; cada nueva tarea permanece pendiente hasta su aceptación humana.
+
+Al restaurar un Stage anterior, sus decisiones se restituyen exactamente y las obligaciones que aún no existían en él permanecen pendientes, sin placement aceptado. La respuesta distingue las decisiones del checkpoint de las obligaciones actuales posteriores y declara la provenance de la proyección. Esta combinación derivada no se denomina «snapshot exacto del Stage»: el snapshot, revisión histórica y fingerprint del Stage permanecen literalmente inmutables. `daily_tasks` conserva todas las obligaciones actuales con las decisiones restauradas y las posteriores pendientes.
+
+Redo recupera las decisiones aceptadas del hijo mientras no exista divergencia, manteniendo pendientes las obligaciones posteriores que aún no correspondan. Aceptar una rama desde un Stage antiguo archiva el futuro anterior sin borrar obligaciones. La configuración efectiva vigente permanece separada de la provenance histórica. Nunca se crean locks ni se acepta automáticamente una tarea por incorporarla o proyectarla. Una restauración que contradiga `done`/`in_progress` se bloquea con diagnóstico específico y sin sobrescribir ejecución.
 
 ## 10. Configuración, provenance y grandfathering
 
