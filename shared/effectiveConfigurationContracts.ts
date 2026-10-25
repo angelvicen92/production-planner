@@ -27,6 +27,12 @@ export interface EffectiveConfigurationView {
     available:boolean;mealApplicable:boolean;zeroBeforeRepresentable:boolean;counts:number[]};
   operationContinuity?: { revisionId:number|null; groups: ReturnType<typeof import("../server/operationContinuity").operationContinuityValues> };
   roundPreparations?: { revisionId: number | null; timeGridMinutes: number; lanes: RoundPreparationValue[] };
+  roundSynchronization?: {
+    revisionId:number|null; authority:import("./roundSynchronizationStructure").RoundSynchronizationStructure|null;
+    supported:boolean; blockedReason:string|null; by:string|null; at:string|null;
+    spaces:{id:number;name:string}[];
+    tasks:{id:number;spaceId:number|null;label:string;duration:number;eligible:boolean}[];
+  };
   itinerantComposition?: {units: NonNullable<import('../engine/types').EngineInput['itinerantTeamAvailability']>; resources:{id:number;name:string}[]; labels?:{id:number;name:string}[]; presencePolicies?:Record<number,'OFF'|'PREFERRED'|'REQUIRED'>};
   productCoverage:Record<CapabilityStatus,number>;
 }

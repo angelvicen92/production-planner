@@ -56,6 +56,17 @@ export function assertPrivilegeContract(catalog:DataApiCatalog) {
       assert.deepEqual(fn.settings,['search_path=""'],`${signature} must keep an empty search_path`);
     }
   }
+  // 114 reuses plans' table grants; its new authority still requires the
+  // versioned writer. Internal helpers remain invoker and private to the server.
+  for(const role of ['anon','authenticated','service_role']) {
+    const plan=catalog.tables.find(t=>t.name==='plans'&&t.role===role);assert.ok(plan);
+    assert.deepEqual(plan.columns.daily_round_synchronization,role==='service_role'?['SELECT','INSERT','UPDATE']:role==='authenticated'?['SELECT']:[],`114 daily authority privileges for ${role}`);
+    for(const signature of ['assert_daily_round_structure(integer,jsonb)','assert_daily_round_snapshot(integer,jsonb,bigint)','round_structure_canonical_json(jsonb)','guard_daily_round_synchronization()']) {
+      const fn=catalog.functions.find(f=>f.signature===signature&&f.role===role);assert.ok(fn);
+      assert.equal(fn.definer,false);assert.deepEqual(fn.settings,['search_path=""']);
+      assert.equal(fn.execute,role==='service_role'&&signature!=='guard_daily_round_synchronization()');
+    }
+  }
 }
 
 export function assertSourcePrivileges(catalog:DataApiCatalog) {

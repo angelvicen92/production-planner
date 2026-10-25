@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {execFileSync,spawnSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
+import {existsSync,mkdirSync,readFileSync,writeFileSync} from 'node:fs';
+import {resolve} from 'node:path';
+const output=resolve(process.argv[2]);assert.ok(!existsSync(output),'Choose a fresh output');mkdirSync(output,{recursive:true});
+const files=execFileSync('git',['ls-files','--cached','--others','--exclude-standard','--','engine','server','client','shared','supabase/migrations','script','docs/source/official','package.json','package-lock.json'],{encoding:'utf8'}).trim().split('\n').filter(existsSync);
+const sha=(v:Buffer)=>createHash('sha256').update(v).digest('hex');
+const hashes=Object.fromEntries(files.map(f=>[f,sha(readFileSync(f))]));
+const harnessHashes=Object.fromEntries(['run.ts','journey.ts','attacks.ts'].map(f=>[f,sha(readFileSync('docs/evidence/p0-u00p/'+f))]));
+writeFileSync(output+'/manifest.json',JSON.stringify({base:'2d95be9fd74fdf60433b1b71ad3704522d558eb4',node:process.version,remoteWrites:0,sourceHashes:hashes,harnessHashes},null,2));
+const run=spawnSync(process.execPath,['--import','tsx','script/demo/smokeNewDayIntegration.ts',output+'/native','--daily-rounds'],{stdio:'inherit',env:process.env});
+for(const [f,hash] of Object.entries(hashes))assert.equal(sha(readFileSync(f)),hash,f);
+for(const [f,hash] of Object.entries(harnessHashes))assert.equal(sha(readFileSync('docs/evidence/p0-u00p/'+f)),hash,f);
+assert.equal(run.status,0);

@@ -1,3 +1,4 @@
+import { validateDailyRoundStructure, dailyRoundAuthority } from "./roundSynchronizationStructure";
 import { applyEffectiveOperationContinuity, candidateOperationContinuity } from "./operationContinuity";
 import { transportBoundsSchema } from "../shared/transportPolicy";
 import { mainFlowPreferenceFromRow } from "../shared/mainFlowPreference";
@@ -129,13 +130,14 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
   if (planError || !plan) throw Object.assign(new Error("PLAN_NOT_FOUND"), { status: 404, cause: planError });
   if (generalError || !general) throw generalError;
   if (optimizerStateError || !optimizerState) throw optimizerStateError;
+  const structureEdit = operation === "EDIT" ? (payload as DayConfigEdit).roundSynchronization : undefined;
   const roundEdit = operation === "EDIT" ? (payload as DayConfigEdit).roundPreparation : undefined;
   const roundRestore = operation === "RESTORE" && (payload as DayConfigRestore).capability === "SYNCHRONIZED_ROUNDS"
     ? payload as Extract<DayConfigRestore, { capability: "SYNCHRONIZED_ROUNDS" }> : undefined;
   const continuityEdit = operation === "EDIT" ? (payload as DayConfigEdit).operationContinuity : undefined;
   const continuityRestore = operation === "RESTORE" && (payload as DayConfigRestore).capability === "OPERATION_CONTINUITY" ? payload as Extract<DayConfigRestore,{capability:"OPERATION_CONTINUITY"}> : undefined;
   const expectedRevision = plan.current_config_revision_id == null ? null : Number(plan.current_config_revision_id);
-  if ((roundEdit || roundRestore || continuityEdit || continuityRestore) && (payload as DayConfigEdit).expectedRevisionId !== expectedRevision)
+  if ((structureEdit || roundEdit || roundRestore || continuityEdit || continuityRestore) && (payload as DayConfigEdit).expectedRevisionId !== expectedRevision)
     throw Object.assign(new Error("STALE_CONFIG_REVISION"), { status: 409 });
   const mainPreferenceBaseline=operation==="REFRESH"&&(payload as DayConfigRefresh).capabilities.includes("BLOCK_COUNT_POLICY")
     ?mainFlowPreferenceFromRow(general):undefined;
@@ -169,7 +171,17 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
   }});
   const optimizerInput = optimizerSelected ? await buildEngineInput(planId,candidateRepository) : current.input;
   transportBoundsSchema.parse(optimizerInput);
-  let nextInput = candidateInput(optimizerInput, plan, general, operation, payload);
+  let nextInput = structureEdit ? optimizerInput : candidateInput(optimizerInput, plan, general, operation, payload);
+  if (structureEdit) {
+    dailyRoundAuthority(plan);
+    if (!plan.planner_next_profile || plan.planner_next_configuration != null) throw Object.assign(new Error("ROUND_STRUCTURE_AUTHORITY_CONFLICT"),{status:422});
+    const profile=plan.planner_next_profile as {configuration?:{scenario?:string;transport?:string;setup?:string}};
+    if(profile.configuration?.scenario!=="STANDALONE_ONLY"||profile.configuration.transport!=="NONE"||profile.configuration.setup!=="NONE")
+      throw Object.assign(new Error("UNSUPPORTED_ROUND_STRUCTURE_COMBINATION"),{status:422});
+    nextInput = validateDailyRoundStructure(nextInput,structureEdit);
+    const readiness = preflightEngineInputForPlannerNext(nextInput);
+    if (readiness.status !== "SUPPORTED") throw Object.assign(new Error(`UNSUPPORTED_ROUND_STRUCTURE: ${readiness.reasonCodes.join(", ")}`),{status:422});
+  }
   if (roundEdit || roundRestore) {
     nextInput = candidateRoundPreparations(nextInput, plan, (roundEdit ?? roundRestore!.roundPreparation), roundEdit?.preparationMinutesBetweenRounds, actorId);
     const readiness = preflightEngineInputForPlannerNext(nextInput);
@@ -190,7 +202,9 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
     p_candidate_identity: candidate.identity, p_candidate_replay: candidate.replay,
     p_diff: { operation, payload,...(mainPreferenceBaseline?{mainPreferenceBaseline}: {}) },
   });
-  if (error) throw Object.assign(error, { status: error.message.includes("PERMISSION_DENIED") ? 403 : /STALE_|ROUND_PREPARATION|OPERATION_CONTINUITY/.test(error.message) ? 409 : 500 });
+  if (error?.code === "55P03" || error?.code === "40P01")
+    throw Object.assign(new Error("STALE_CONFIG_SOURCES"),{status:409,cause:error});
+  if (error) throw Object.assign(error, { status: error.message.includes("PERMISSION_DENIED") ? 403 : /STALE_|ROUND_|OPERATION_CONTINUITY/.test(error.message) ? 409 : 500 });
   const { data: updated, error: updatedError } = await supabaseAdmin.from("plans").select("*").eq("id", planId).single();
   if (updatedError || !updated) throw updatedError;
   return { ...mapPlan(updated), revisionId: Number(data) };

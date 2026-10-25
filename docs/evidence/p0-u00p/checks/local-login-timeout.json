@@ -1,0 +1,7 @@
+{
+  "status": "TRANSIENT_RETRY_REQUIRED",
+  "error": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByLabel('Email', { exact: true })\u001b[22m\n\n    at journey (/workspace/production-planner/docs/evidence/p0-u00p/journey.ts:27:80)\n    at async <anonymous> (/workspace/production-planner/script/demo/smokeNewDayIntegration.ts:122:18)",
+  "solverStarted": false,
+  "timeoutsChanged": false,
+  "nextExecution": "serial with identical source and limits"
+}

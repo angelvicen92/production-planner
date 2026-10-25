@@ -23,7 +23,12 @@ def verify(data):
     integration = data['integration.json']
     check(integration['status'] == 'PASS' and integration['remoteWrites'] == 0, 'native stack, no remote writes')
     check('PostgreSQL 17' in integration['postgresVersion'], 'PostgreSQL 17')
-    check(len(integration['migrations']) == 116 and integration['migrations'][-1]['file'].startswith('113_'), 'complete ledger through 113')
+    # Archived U00n receipts end at 113; a fresh regression must apply the current
+    # complete ledger, including every incremental migration with its exact hash.
+    ledger=sorted((ROOT/'supabase/migrations').glob('*.sql'))
+    expected_count=len(ledger) if len(sys.argv)>1 else 116
+    expected_ledger=[{'file':p.name,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in ledger[:expected_count]]
+    check(integration['migrations']==expected_ledger, 'complete, hash-exact migration ledger')
     for day in data['days.json']:
         label, added = day['label'], day['addedTaskId']
         def get(name): return data[f'{label}-{name}.json']

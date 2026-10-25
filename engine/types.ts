@@ -306,6 +306,8 @@ export interface EngineInputItinerantTeamAvailabilityInput {
 }
 
 export interface EngineInput {
+  /** Product selection provenance; omitted for legacy/no structure. */
+  dailyRoundSynchronizationVersion?: 1;
   /** Only new days carry an explicit, immutable catalog-to-day composition map. */
   itinerantCompositionSnapshot?: {contractVersion: 1; units: import('../shared/itinerantComposition').DailyItinerantUnit[]};
 

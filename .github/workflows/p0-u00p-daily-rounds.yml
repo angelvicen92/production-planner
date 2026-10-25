@@ -1,0 +1,50 @@
+name: P0 U00p daily synchronized rounds
+on:
+  pull_request:
+    paths:
+      - 'engine/**'
+      - 'server/**'
+      - 'shared/**'
+      - 'supabase/migrations/**'
+      - 'client/src/components/*configuration*'
+      - 'client/src/components/round-synchronization-editor.tsx'
+      - 'script/demo/smokeNewDayIntegration.ts'
+      - 'docs/evidence/p0-u00p/**'
+      - '.github/workflows/p0-u00p-daily-rounds.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-rounds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$task_browser_path" ]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+          fi
+      - run: npm run check && npm run check:migrations && npm run build
+      - run: npx --no-install tsc -p docs/evidence/p0-u00p/tsconfig.json
+      - run: node --import tsx --test --test-concurrency=1 script/demo/a2Preflight.spec.ts script/demo/a2ExistingDatabase.spec.ts server/roundSynchronizationStructure.spec.ts server/roundPreparation.spec.ts server/roundPreparationSql.spec.ts server/dayConfiguration.spec.ts server/assistedNextScope.spec.ts server/effectivePlanConfigRevision.spec.ts server/apiAuthorization.spec.ts engine/planner-next/planMainFlowAndFeeders.spec.ts
+      - name: Two native days, genuine synchronized Stages, SQL attacks and restoration
+        run: node --import tsx docs/evidence/p0-u00p/run.ts work/u00p-native
+      - run: python3 docs/evidence/p0-u00p/verify.py work/u00p-native/native
+      - run: node --import tsx docs/evidence/p0-u00p/replay.spec.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: u00p-daily-rounds
+          path: |
+            work/u00p-native/manifest.json
+            work/u00p-native/native/*.json
+            work/u00p-native/native/*.png

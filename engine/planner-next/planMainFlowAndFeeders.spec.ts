@@ -162,6 +162,10 @@ test("planner-next remains isolated from legacy and production", () => {
     // P0-U00a readiness reuses the productive adapter/preflight read-only.
     "server/plannerReadiness.ts",
     "server/roundPreparation.spec.ts",
+    // P0-U00p consumes the existing reference preflight read-only. Configuration
+    // never dispatches search; the core isolation assertions remain unchanged.
+    "server/roundSynchronizationStructure.ts",
+    "server/roundSynchronizationStructure.spec.ts",
     "server/operationContinuity.spec.ts",
   ]);
   // Historical server-side evidence runners are diagnostics, not production

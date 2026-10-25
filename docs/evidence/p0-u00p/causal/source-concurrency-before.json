@@ -1,0 +1,6 @@
+{
+  "status": 500,
+  "body": {
+    "message": "could not obtain lock on relation \"public.daily_tasks\""
+  }
+}
