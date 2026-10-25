@@ -1,0 +1,24 @@
+{
+  "base": "3b5f5de5bb534f9f0fcd8cc46614895bc0845ee8",
+  "remoteRefsObserved": {
+    "main": "3b5f5de5bb534f9f0fcd8cc46614895bc0845ee8",
+    "codex/p0-u00o-round-sync-authority-causal": "3b5f5de5bb534f9f0fcd8cc46614895bc0845ee8"
+  },
+  "scope": "Directed reading; official 07 \u00a74.4; P0 decision; SPA-06 DEP-04/05 AST; historical catalogue entries contrasted with current call path",
+  "sources": {
+    "AGENTS.md": "911a1fbee8f6f2d74330413e8b17e070de4ec3d2fbb365e0394a097d662da7d3",
+    "docs/governance/EXECUTION_ROUTING_PROTOCOL.md": "491ab25cc4f1a55b15a1d7bfcc723672728a30f2d7536925f473dfc5d5625cc6",
+    "docs/governance/OPTIPLAN_MASTER_ADECUACION_APP.md": "6daa03ce136d47a4e39bc557650ca9ab8675e7d032bdd6b6942aa9ab1e58b551",
+    "docs/architecture/PLANNER_CAPABILITY_CATALOG.md": "306d73a86013e8aec7c826c5c01e874eb92b3af583cce9a01cca4639692a8589",
+    "docs/evidence/p0-u00a/README.md": "42a825e1a0374b29d03f14310cfbc8d5b89365654c852eb29b408e2dbbc13846",
+    "docs/evidence/p0-u00n/README.md": "9f054f70538035306a0bc13dcd6fc06767431646816d93d0ecbe2c31adc32e92",
+    "docs/evidence/p0-u00n/design.md": "f61ff5068c0178c6548ef5d0156b7034275f8e08f434fb96f39d87d9a8c4b7ca",
+    "docs/evidence/p0-u00n/a2/comparison.json": "498645e60b003aa302a44165340d3eb1d76b3d6765ae4edf808218cc1b93b1f2",
+    "docs/source/official/00_INDICE_Y_AUTORIDAD_FUENTES_OPTIPLAN_v2.15.md": "7082cee03feb295c71104f559d118608e85c5946f81de1139d6ad902f0e3810f",
+    "docs/source/official/01_PRODUCTO_DOMINIO_OPERACION_v5.4.md": "e55dc386d647888b913ed55457bb71564b16ccc4c088310c820bf57d984957bc",
+    "docs/source/official/03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.8.md": "7073930bb7bcbff09cb05553eecd28d357daf1860e55c6a6b9ab1ffe73172ffd",
+    "docs/source/official/04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.9.md": "d85981443e4e8e1bd073c59684e0b1e7d4a2fae6113a647007dee0f65eb1e8a4",
+    "docs/source/official/05_VALIDACION_CALIDAD_BENCHMARK_v2.8.md": "2d0aa69ebb5d1949b315a8ebb85c0ad96f0f9939e9441d1ef09a1f1ae9924a13",
+    "docs/source/official/07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.3.md": "7243ed2d186ef19af7ee9717c9b72d94ebca34791257a434be1aab76bed27351"
+  }
+}
