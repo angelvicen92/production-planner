@@ -41,7 +41,7 @@ import { roundSynchronizationTaskIds, validateRoundSynchronizations } from "./ro
 import { exploreExactRoundSynchronizationPolicy, revalidateFutureRoundSynchronizationWitness, probeExactRoundSynchronizationMacroDomain, type ExactRoundSynchronizationEvidence } from "./exactRoundSynchronization";
 import { assessCoreArrivalTransportFeasibility, materializeTerminalTransportDetailed, transportTaskIds, transportPartitionFailures, type TransportMaterializationEvidence } from "./transportGrouping";
 import { canPlaceJointGroup, jointGroupIds, jointGroupMembers, jointWorkItemKey, scheduleJointGroup } from "./jointTasks";
-import { createTechnicalChainExplorer, getTechnicalChains, partialTechnicalChainContext, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
+import { createTechnicalChainExplorer, pendingTechnicalChains, partialTechnicalChainContext, probeExactTechnicalChainMacroDomain, technicalChainWorkItemKey, type TechnicalChainStartDomainMode } from "./technicalChains";
 import { selectMostConstrainedUnit } from "./macroScheduling";
 import { exploreExactPreferredResourceUnit } from "./exactPreferredResourceUnit";
 import { checkIndividualPendingPrerequisiteReservations, checkMacroPendingPrerequisites, type MacroPendingPrerequisiteForwardCache } from "./macroPendingPrerequisiteForwardCheck";
@@ -844,17 +844,20 @@ function effectiveDeadline(problem: PlannerNextProblem, task: Task): number {
   return Math.min(problem.day.end, ...windows.flat().map(({ end }) => end));
 }
 
-function unsupportedShapeReasons(problem: PlannerNextProblem, pending: Task[], coreIds: Set<string>): string[] {
+function unsupportedShapeReasons(problem: PlannerNextProblem, pending: Task[], coreIds: Set<string>, fixedIds: ReadonlySet<string>): string[] {
   const anchoredIds = anchoredTaskIds(problem), reasons: string[] = [];
   void coreIds;
-  const technicalChainIds = new Set(getTechnicalChains(pending,problem.technicalChains).flat().map(({ id }) => id));
+  const technicalChainIds = new Set(pendingTechnicalChains(problem.tasks,pending,fixedIds,problem.technicalChains).flat().map(({ id }) => id));
   for (const task of [...pending].sort(byId)) {
     const space = problem.spaces.find(({ id }) => id === task.spaceId);
     const isSetupTask = task.setupFamilyId !== undefined||space?.setupPolicy?.contractVersion===2;
     const unitIds=task.itinerantUnitId?[task.itinerantUnitId]:task.allowedItinerantUnitIds??[];
     const physicalTechnical=task.kind==="technical" && unitIds.length>0 && unitIds.every(id=>
       problem.itinerantUnits?.some(unit=>unit.id===id && (unit.resourceIds?.length??0)>0));
-    if (task.kind !== "auxiliary" && !physicalTechnical && !technicalChainIds.has(task.id)) reasons.push(`UNSUPPORTED_STANDALONE_TASK_KIND:${task.id}`);
+    const inferredRoot=task.kind==="technical"&&task.dependencies.length===0
+      &&problem.inferredTechnicalChainRootIds?.includes(task.id)
+      &&!problem.tasks.some(other=>other.kind==="technical"&&other.dependencies.includes(task.id));
+    if (task.kind !== "auxiliary" && !physicalTechnical && !technicalChainIds.has(task.id) && !inferredRoot) reasons.push(`UNSUPPORTED_STANDALONE_TASK_KIND:${task.id}`);
     if (anchoredIds.has(task.id)) reasons.push(`UNSUPPORTED_PENDING_ANCHORED_TASK:${task.id}`);
     if (isSetupTask && space?.setupPolicy === undefined) reasons.push(`UNSUPPORTED_STANDALONE_SETUP:${task.id}`);
     if (space?.secondaryContinuity === "REQUIRED" && !isSetupTask)
@@ -1660,7 +1663,7 @@ const directDeparturePrerequisiteCandidates=new Set(problem.tasks
   .filter(task=>departureIds.has(task.id))
   .flatMap(task=>task.dependencies)
   .filter(id=>pendingById.has(id)&&!dynamicTransportIds.has(id)));
-const technicalItems = getTechnicalChains(pending,problem.technicalChains).filter(tasks=>{
+const technicalItems = pendingTechnicalChains(problem.tasks,pending,new Set(coreTasks.map(task=>task.id)),problem.technicalChains).filter(tasks=>tasks.length>=2).filter(tasks=>{
   // An inferred dependency chain has no adjacency/continuity policy of its own.
   // Its physical alternatives belong to the existing itinerant agenda, which
   // materializes a unit per operation. Do not give those tasks two macro owners.
@@ -2440,7 +2443,7 @@ export function runExactItinerantPlanSearch(problem: PlannerNextProblem,
   const fixedIds=new Set((options.fixedPlacements??[]).map(item=>item.id));
   for (const id of anchoredTaskIds(problem)) staticCoreIds.add(id);
   const standaloneTasks = problem.tasks.filter(({ id }) => !staticCoreIds.has(id)&&!fixedIds.has(id)).sort(byId);
-  const unsupported = unsupportedShapeReasons(problem, standaloneTasks, staticCoreIds);
+  const unsupported = unsupportedShapeReasons(problem, standaloneTasks, staticCoreIds, fixedIds);
   const collectiveClosure = new PreparedFutureCollectiveParticipantClosure(problem);
   // A dependency outside every context-producing explorer cannot be supplied by
   // any current scope/future alternative. Report this missing proof as unsupported,

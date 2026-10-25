@@ -1,0 +1,97 @@
+{
+  "base": "eb3facfb6a935ee4d7daf84770e9b6a20ae91b2d",
+  "productFilesChanged": 4,
+  "configurationChanges": 0,
+  "officialSourceChanges": 0,
+  "migrationChanges": 0,
+  "remoteDatabaseWrites": 0,
+  "gateStatus": "NATIVE_AND_LOCAL_GATES_PASS",
+  "native": {
+    "status": "PASS",
+    "runs": 2,
+    "daysPerRun": 2,
+    "receiptsPerRun": 88,
+    "acceptStageCallsPerRun": 6,
+    "protectedRootBootstrapPerRun": 0,
+    "completeDaysPerRun": 2,
+    "postgres": 17,
+    "migrationsPerRun": 117,
+    "independentIdentities": true,
+    "apiSqlStateMutation": false,
+    "onlySqlInJourney": "SELECT daily_tasks for observations",
+    "A": "S1(T1,T2) -> S2(T3) -> S3(independent), 4/4",
+    "B": "S1(proposal T1 only) -> S2(T2,T3) -> S3(independent), 4/4",
+    "C": "B retains 20m and 5m waits",
+    "rollbackRedo": "PASS",
+    "staleDraftBaseConfig": "PASS"
+  },
+  "tests": {
+    "focalAndRegressions": 252,
+    "files": 16,
+    "newFocal": 15,
+    "explicitRequiredReplays": 6,
+    "nativeColdReplays": 20,
+    "failed": 0,
+    "literalBlockerReplays": 2
+  },
+  "check": "PASS",
+  "build": "PASS",
+  "checkMigrations": "PASS",
+  "diagnosticTypescript": "PASS",
+  "integrity": "PASS",
+  "a2": {
+    "candidate": {
+      "status": "PASS",
+      "isolated": true,
+      "node": "v24.19.0",
+      "seconds": 152.461495048,
+      "completed": 266,
+      "stages": 11,
+      "branches": 27049,
+      "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+      "fullReportEqualExceptDurationMs": true,
+      "snapshotsEqual": true,
+      "certificatesRevalidated": 11
+    },
+    "repeat": {
+      "status": "PASS",
+      "isolated": true,
+      "node": "v24.19.0",
+      "seconds": 97.99945649899999,
+      "completed": 266,
+      "stages": 11,
+      "branches": 27049,
+      "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+      "fullReportEqualExceptDurationMs": true,
+      "snapshotsEqual": true,
+      "certificatesRevalidated": 11
+    },
+    "status": "PASS",
+    "certificatesRevalidated": 22,
+    "baseline": "docs/evidence/p0-u00p/a2/comparison.json",
+    "snapshotsAndCertificatesIdentical": true
+  },
+  "ci": {
+    "status": "AWAITING_FINAL_REMOTE_HEAD",
+    "validatedImplementationCommit": "ea63171fef40b354b95688eb88b7d79d1eed26bd",
+    "receipt": "checks/ci.json",
+    "liveChecks": "https://github.com/angelvicen92/production-planner/pull/1196/checks",
+    "note": "Historical observations label their own head. Final CI result is recorded in PR description without a self-referential evidence commit."
+  },
+  "residualLimits": [
+    "Manual trimming of a complete technical proposal remains unsupported; final gate requests T1 directly and uses authentic proposal/accept_stage.",
+    "Known byItem resource ID alteration is not rejected by isolated manual validation seam; native Draft API rejects the forbidden write and preserves state.",
+    "Forbidden Draft resource key returns existing HTTP 500 schema rejection.",
+    "No new branching/cycle/missing-reference/interior-cut topology support."
+  ],
+  "preparationNotes": [
+    "Restored missing Playwright/PGlite using exact npm ci; manifests/lockfile unchanged.",
+    "Sandbox prevented tsx IPC/build and Docker socket; authorized checks executed with local-socket access.",
+    "Harness assertions corrected for existing schema HTTP 500, bigint JSON strings and persistence omission of JS undefined.",
+    "Native stale configuration negative runs after completed checkpoint and never accepts the negative Draft.",
+    "The literal B gate is closed by retaining derived source root identity before scope projection, not by changing manual validation.",
+    "A concurrent Chromium screenshot timed out at its unchanged default; the independent repeat passed in isolation without any timeout/budget increase."
+  ],
+  "implementationCommit": "ea63171fef40b354b95688eb88b7d79d1eed26bd",
+  "identityContract": "Derived inferredTechnicalChainRootIds retains only source root identity across scope projection; no policy, configurable parameter, stored authority or duplicated graph."
+}

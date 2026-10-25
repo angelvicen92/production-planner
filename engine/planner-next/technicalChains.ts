@@ -15,7 +15,7 @@ export function buildTechnicalPrerequisiteMap(tasks: Task[]): Map<string,string[
 export function buildTechnicalDependentMap(tasks: Task[]): Map<string,string[]> { const map=new Map(getTechnicalTasks(tasks).map(t=>[t.id,[] as string[]])); for(const t of getTechnicalTasks(tasks)) for(const d of Array.isArray(t.dependencies)?t.dependencies:[]) if(map.has(d)) map.get(d)!.push(t.id); for(const v of map.values())v.sort(); return map; }
 export function technicalChainHasBranching(tasks:Task[]):boolean { const p=buildTechnicalPrerequisiteMap(tasks),d=buildTechnicalDependentMap(tasks); return [...p.values()].some(x=>new Set(x).size>1)||[...d.values()].some(x=>new Set(x).size>1); }
 export function technicalChainHasCycle(tasks:Task[]):boolean { const p=buildTechnicalPrerequisiteMap(tasks); const visiting=new Set<string>(),done=new Set<string>(); const visit=(id:string):boolean=>{if(visiting.has(id))return true;if(done.has(id))return false;visiting.add(id);for(const x of p.get(id)??[])if(p.has(x)&&visit(x))return true;visiting.delete(id);done.add(id);return false};return [...p.keys()].sort().some(visit); }
-export function orderedTechnicalChainMembers(tasks:Task[]):Task[] { const p=buildTechnicalPrerequisiteMap(tasks),d=buildTechnicalDependentMap(tasks); const root=getTechnicalTasks(tasks).find(t=>(p.get(t.id)?.length??0)===0); if(!root)return [];const out:Task[]=[];let current:Task|undefined=root;while(current){out.push(current);const nextId:string|undefined=d.get(current.id)?.[0];current=nextId?getTechnicalTasks(tasks).find(t=>t.id===nextId):undefined;}return out; }
+export function orderedTechnicalChainMembers(tasks:Task[],placed:readonly ScheduledTask[]=[]):Task[] { const p=buildTechnicalPrerequisiteMap(tasks),d=buildTechnicalDependentMap(tasks),fixedIds=new Set(placed.map(task=>task.id)),memberIds=new Set(tasks.map(task=>task.id)); const root=getTechnicalTasks(tasks).find(t=>(p.get(t.id)??[]).every(id=>!memberIds.has(id)&&fixedIds.has(id))); if(!root)return [];const out:Task[]=[];let current:Task|undefined=root;while(current){out.push(current);const nextId:string|undefined=d.get(current.id)?.[0];current=nextId?getTechnicalTasks(tasks).find(t=>t.id===nextId):undefined;}return out; }
 export const technicalChainRoot=(tasks:Task[])=>orderedTechnicalChainMembers(tasks)[0];
 export const technicalChainRootTaskId=(tasks:Task[])=>technicalChainRoot(tasks)?.id;
 export const technicalChainWorkItemKey=(rootTaskId:string)=>`technical-chain:${rootTaskId}`;
@@ -24,6 +24,19 @@ export function getTechnicalChains(tasks:Task[],policies:readonly TechnicalChain
   const owned=new Set(explicit.flatMap(chain=>chain.map(task=>task.id))),dep=buildTechnicalDependentMap(tech),roots=tech.filter(t=>!owned.has(t.id)&&t.dependencies.length===0&&(dep.get(t.id)?.length??0)>0).sort((a,b)=>a.id.localeCompare(b.id));
   return [...explicit,...roots.map(r=>{const out:Task[]=[];let x:Task|undefined=r;while(x&&!owned.has(x.id)){out.push(x);const nextId:string|undefined=dep.get(x.id)?.[0];x=nextId?byId.get(nextId):undefined;}return out;}).filter(chain=>chain.length>=2)]; }
 export function technicalChainForTask(tasks:Task[],id:string):Task[]|undefined{return getTechnicalChains(tasks).find(c=>c.some(t=>t.id===id));}
+/** Extend existing recognition with inferred suffixes whose omitted prefix is fixed.
+ * Explicit policies keep their existing pending projection and REQUIRED consumer. */
+export function pendingTechnicalChains(tasks:Task[],pending:Task[],fixedIds:ReadonlySet<string>,policies:readonly TechnicalChainPolicy[]=[]):Task[][] {
+  const pendingIds=new Set(pending.map(task=>task.id));
+  const explicitIds=new Set(policies.flatMap(policy=>policy.orderedTaskIds));
+  const existing=getTechnicalChains(pending,policies);
+  const inferred=getTechnicalChains(tasks,policies).filter(chain=>!chain.some(task=>explicitIds.has(task.id))).flatMap(chain=>{
+    const first=chain.findIndex(task=>pendingIds.has(task.id));
+    if(first<=0||chain.slice(0,first).some(task=>!fixedIds.has(task.id))||chain.slice(first).some(task=>!pendingIds.has(task.id)))return [];
+    return [chain.slice(first)];
+  });
+  return [...existing,...inferred];
+}
 export const isTechnicalChainMember=(tasks:Task[],id:string)=>technicalChainForTask(tasks,id)!==undefined;
 export const technicalChainResourceIds=(tasks:Task[])=>[...new Set(tasks.flatMap(t=>t.requiredResourceIds??[]))].sort();
 export const technicalChainProductiveDuration=(tasks:Task[])=>tasks.reduce((n,t)=>n+t.duration,0);
@@ -232,7 +245,7 @@ export function createTechnicalChainExplorer(problem:PlannerNextProblem,chainTas
   allowance:number,startDomainMode:TechnicalChainStartDomainMode="ANALYTIC_DOMAIN",
   scheduledSpaceMeals:ScheduledSpaceMeal[]=[],deferredQueueMode:TechnicalChainDeferredQueueMode="INCREMENTAL_HEAP",
   measureTimings=false,placementAuthorityMode:TechnicalChainPlacementAuthorityMode="PREPARED_AUTHORITY"):TechnicalChainExplorer {
-  const policy=explicitPolicyFor(problem,chainTasks,placed),ordered=policy?policy.orderedTaskIds.map(id=>chainTasks.find(task=>task.id===id)!).filter(Boolean):orderedTechnicalChainMembers(chainTasks),root=ordered[0];
+  const policy=explicitPolicyFor(problem,chainTasks,placed),ordered=policy?policy.orderedTaskIds.map(id=>chainTasks.find(task=>task.id===id)!).filter(Boolean):orderedTechnicalChainMembers(chainTasks,placed),root=ordered[0];
   if(policy?.adjacency==="REQUIRED")return createContiguousTechnicalChainExplorer(problem,ordered,policy,placed,allowance,scheduledSpaceMeals);
   const preparedAuthorities=placementAuthorityMode==="PREPARED_AUTHORITY"
     ?ordered.map(task=>prepareTaskPlacementAuthority(problem,task,placed,scheduledSpaceMeals)):[];

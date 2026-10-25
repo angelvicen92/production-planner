@@ -208,6 +208,8 @@ export interface PlannerNextProblem {
   coachRouteTransitions?: CoachRouteTransition[];
   roundSynchronizations?: RoundSynchronizationPolicy[];
   technicalChains?: TechnicalChainPolicy[];
+  /** Derived inferred-chain identity retained by Assisted scope projection; never a policy. */
+  inferredTechnicalChainRootIds?: string[];
   operationContinuityGroups?: Array<import("../../shared/operationContinuity").OperationContinuityGroup<string> & { declaredTaskCount?: number }>;
   budget: SearchBudget;
   auxiliaryPolicy?: { participantPresencePreference: PreferenceLevel };

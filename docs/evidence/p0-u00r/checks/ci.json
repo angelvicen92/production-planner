@@ -1,0 +1,175 @@
+{
+  "implementationCommit": "d6992e70bb305be5dbb9c143c1796dee35bdaaea",
+  "pr": 1196,
+  "status": "RUNNING",
+  "workflowRuns": [
+    {
+      "id": 40207580298,
+      "name": "New day Planner Next",
+      "status": "in_progress",
+      "conclusion": null,
+      "run_number": 43,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580298/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580298/logs",
+      "workflow_id": 392597524
+    },
+    {
+      "id": 40207580313,
+      "name": "Itinerant physical composition",
+      "status": "in_progress",
+      "conclusion": null,
+      "run_number": 42,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580313/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580313/logs",
+      "workflow_id": 392207210
+    },
+    {
+      "id": 40207580302,
+      "name": "P0 U00p daily synchronized rounds",
+      "status": "in_progress",
+      "conclusion": null,
+      "run_number": 4,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580302/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580302/logs",
+      "workflow_id": 395900871
+    },
+    {
+      "id": 40207580387,
+      "name": "P0 U00l Main nominal resources",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 9,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580387/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580387/logs",
+      "workflow_id": 395358384
+    },
+    {
+      "id": 40207580400,
+      "name": "P0 U00h concrete resources",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 21,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580400/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580400/logs",
+      "workflow_id": 394548592
+    },
+    {
+      "id": 40207580383,
+      "name": "Planner Engine CI",
+      "status": "in_progress",
+      "conclusion": null,
+      "run_number": 589,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580383/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580383/logs",
+      "workflow_id": 330215660
+    },
+    {
+      "id": 40207580307,
+      "name": "Baseline CI",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 3031,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580307/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580307/logs",
+      "workflow_id": 323964867
+    },
+    {
+      "id": 40207580417,
+      "name": "Data API grants",
+      "status": "in_progress",
+      "conclusion": null,
+      "run_number": 119,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580417/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580417/logs",
+      "workflow_id": 390707482
+    },
+    {
+      "id": 40207580408,
+      "name": "P0 U00g participant meals",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 28,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580408/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580408/logs",
+      "workflow_id": 394321665
+    },
+    {
+      "id": 40207580369,
+      "name": "P0 U00j typed nominal resources",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 14,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580369/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580369/logs",
+      "workflow_id": 395089381
+    },
+    {
+      "id": 40207580373,
+      "name": "P0 U00f transport gate",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 30,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580373/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580373/logs",
+      "workflow_id": 393589662
+    },
+    {
+      "id": 40207580319,
+      "name": "Operation continuity",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 45,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580319/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580319/logs",
+      "workflow_id": 392463062
+    },
+    {
+      "id": 40207580416,
+      "name": "P0 U00i nominal resource causal gate",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 18,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580416/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40207580416/logs",
+      "workflow_id": 394918367
+    }
+  ],
+  "engineJobs": [
+    {
+      "id": 121211722620,
+      "name": "main-flow-preference-integration",
+      "status": "in_progress",
+      "conclusion": null
+    },
+    {
+      "id": 121211722844,
+      "name": "planner-engine-ci",
+      "status": "in_progress",
+      "conclusion": null
+    },
+    {
+      "id": 121211722862,
+      "name": "a2-assisted-catalog-integration",
+      "status": "in_progress",
+      "conclusion": null
+    },
+    {
+      "id": 121211722904,
+      "name": "a2-assisted-canonical-integration",
+      "status": "in_progress",
+      "conclusion": null
+    },
+    {
+      "id": 121211722929,
+      "name": "manual-draft-validation",
+      "status": "in_progress",
+      "conclusion": null
+    },
+    {
+      "id": 121211722947,
+      "name": "autopilot-workspace",
+      "status": "in_progress",
+      "conclusion": null
+    }
+  ]
+}

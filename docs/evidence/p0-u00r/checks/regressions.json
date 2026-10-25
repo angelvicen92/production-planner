@@ -1,0 +1,82 @@
+[
+  {
+    "file": "engine/planner-next/inferredTechnicalContinuation.spec.ts",
+    "exit": 0,
+    "tests": 15
+  },
+  {
+    "file": "engine/planner-next/technicalChains.spec.ts",
+    "exit": 0,
+    "tests": 26
+  },
+  {
+    "file": "engine/planner-next/technicalOperations.spec.ts",
+    "exit": 0,
+    "tests": 6
+  },
+  {
+    "file": "engine/planner-next/assistedPlanning.spec.ts",
+    "exit": 0,
+    "tests": 28
+  },
+  {
+    "file": "engine/planner-next/exactItinerantPlan.spec.ts",
+    "exit": 0,
+    "tests": 66
+  },
+  {
+    "file": "engine/planner-next/integration/nominalResourceWitness.spec.ts",
+    "exit": 0,
+    "tests": 6
+  },
+  {
+    "file": "engine/planner-next/integration/nominalResourceRequirements.spec.ts",
+    "exit": 0,
+    "tests": 22
+  },
+  {
+    "file": "server/assistedScopeResolver.spec.ts",
+    "exit": 0,
+    "tests": 3
+  },
+  {
+    "file": "server/assistedScopeOrchestrator.spec.ts",
+    "exit": 0,
+    "tests": 15
+  },
+  {
+    "file": "server/assistedProposalService.spec.ts",
+    "exit": 0,
+    "tests": 26
+  },
+  {
+    "file": "server/assistedPlanningWorkflow.spec.ts",
+    "exit": 0,
+    "tests": 18
+  },
+  {
+    "file": "server/assistedPlanningStorage.spec.ts",
+    "exit": 0,
+    "tests": 1
+  },
+  {
+    "file": "server/assistedPlanningSnapshot.spec.ts",
+    "exit": 0,
+    "tests": 11
+  },
+  {
+    "file": "server/assistedPlanningConfigRevision.spec.ts",
+    "exit": 0,
+    "tests": 3
+  },
+  {
+    "file": "server/assistedPlanningBlocks.spec.ts",
+    "exit": 0,
+    "tests": 4
+  },
+  {
+    "file": "server/assistedNextScope.spec.ts",
+    "exit": 0,
+    "tests": 2
+  }
+]
