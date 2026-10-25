@@ -96,7 +96,8 @@
         "incompatible preferred end is diagnosed; complete native table/function privilege matrix agrees with the reviewed contract",
         "snapshot isolation, immutable day profile, catalog permissions, stale writes and direct REST denial"
       ],
-      "remoteWrites": 0
+      "remoteWrites": 0,
+      "finalBaselineRowGuard": true
     },
     {
       "label": "u00c-standalone",
@@ -120,7 +121,8 @@
         "three technical operations with no participants, shared physical resource, dependencies and distinct spatial/resource windows reach Stage through the UI",
         "incompatible roles block readiness; physically infeasible resource window gives an explicit NO_PROPOSAL without partial Draft or Stage"
       ],
-      "remoteWrites": 0
+      "remoteWrites": 0,
+      "finalBaselineRowGuard": true
     },
     {
       "label": "u00l",
@@ -434,5 +436,11 @@
     "status": "PASS",
     "source": "382e7966ea1fe3508978f92cf5afcc05fe3c3157",
     "command": "python3 BASE_ARCHIVE/docs/evidence/p0-u00l/verify.py"
-  }
+  },
+  "finalGuardCoverage": [
+    "U00n two complete fresh passes",
+    "U00c Main",
+    "U00c Standalone"
+  ],
+  "otherBundlesBeforeFinalBaselineRowGuard": true
 }

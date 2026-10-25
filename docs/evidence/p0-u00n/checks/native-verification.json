@@ -1,6 +1,6 @@
 {
   "status": "PASS",
-  "checks": 115,
+  "checks": 119,
   "details": [
     "native stack, no remote writes",
     "PostgreSQL 17",
@@ -50,6 +50,8 @@
     "A: pure-addition boundary authority",
     "A: pure-addition boundary baseline",
     "A: pure-addition boundary partial-baseline",
+    "A: pure-addition boundary task-row-baseline",
+    "A: pure-addition boundary participant-row-baseline",
     "A: recalculated-hash attack omit",
     "A: recalculated-hash attack move-protected",
     "A: permissions, obsolete proposal and duplicate admission",
@@ -103,6 +105,8 @@
     "B: pure-addition boundary authority",
     "B: pure-addition boundary baseline",
     "B: pure-addition boundary partial-baseline",
+    "B: pure-addition boundary task-row-baseline",
+    "B: pure-addition boundary participant-row-baseline",
     "B: recalculated-hash attack omit",
     "B: recalculated-hash attack move-protected",
     "B: permissions, obsolete proposal and duplicate admission",

@@ -46,13 +46,24 @@ $$;
 -- still come from the demonstrable bootstrap/admission capture.
 CREATE FUNCTION public.assisted_expected_obligation_sources(p_session bigint) RETURNS jsonb
 LANGUAGE plpgsql STABLE SECURITY INVOKER SET search_path='' AS $$
-DECLARE s public.assisted_planning_sessions%rowtype; result jsonb; tasks jsonb;
+DECLARE s public.assisted_planning_sessions%rowtype; result jsonb; tasks jsonb; participants jsonb;
 BEGIN
  SELECT * INTO s FROM public.assisted_planning_sessions WHERE id=p_session;
  SELECT sources_json INTO result FROM public.assisted_obligation_transitions WHERE id=s.obligation_transition_id AND session_id=s.id;
  IF result IS NULL THEN SELECT sources_json INTO result FROM public.assisted_bootstrap_sources WHERE session_id=s.id; END IF;
  IF result IS NULL OR NOT (result ?& ARRAY['plans','daily_tasks','contestants','locks','plan_breaks','plan_task_template_snapshots','plan_optimizer_snapshots','plan_optimizer_snapshot_heuristics','plan_optimizer_snapshot_grouping_zones','plan_zone_settings','plan_space_settings','plan_resource_items','plan_resource_bundle_snapshots','plan_zone_resource_assignments','plan_space_resource_assignments','plan_zone_resource_type_requirements','plan_space_resource_type_requirements','resource_availability','plan_itinerant_unit_snapshots','program_settings','resource_types','resource_item_components'])
  OR EXISTS(SELECT 1 FROM jsonb_each(result) WHERE jsonb_typeof(value)<>'array') THEN RETURN NULL; END IF;
+ -- A capture with all keys but missing rows cannot prove a pure addition.
+ IF (SELECT jsonb_agg(t->'id' ORDER BY (t->>'id')::bigint) FROM jsonb_array_elements(result->'daily_tasks') t)
+  IS DISTINCT FROM (SELECT jsonb_agg(t->'taskId' ORDER BY (t->>'taskId')::bigint) FROM jsonb_array_elements(s.working_snapshot_json->'tasks') t)
+  OR EXISTS(SELECT 1 FROM jsonb_array_elements(result->'daily_tasks') t WHERE t->>'contestant_id' IS NOT NULL
+   AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(result->'contestants') c WHERE c->'id'=t->'contestant_id'))
+ THEN RETURN NULL; END IF;
+ SELECT replay_snapshot_json->'authorities'->'contestant_availability' INTO participants
+  FROM public.plan_config_revisions WHERE id=s.current_config_revision_id AND plan_id=s.plan_id;
+ IF jsonb_typeof(participants) IS DISTINCT FROM 'array' OR EXISTS(
+  SELECT 1 FROM jsonb_array_elements(participants) p WHERE NOT EXISTS(
+   SELECT 1 FROM jsonb_array_elements(result->'contestants') c WHERE c->'id'=p->'contestantId')) THEN RETURN NULL; END IF;
  SELECT jsonb_agg(t || public.assisted_task_planning_fields(p) ORDER BY (t->>'id')::bigint) INTO tasks
  FROM jsonb_array_elements(result->'daily_tasks') t JOIN jsonb_array_elements(s.working_snapshot_json->'tasks') p ON t->'id'=p->'taskId';
  IF jsonb_array_length(coalesce(tasks,'[]'))<>jsonb_array_length(result->'daily_tasks') THEN RETURN NULL; END IF;
@@ -771,7 +782,7 @@ BEGIN
   (status NOT IN ('pending','interrupted') OR start_real IS NOT NULL OR end_real IS NOT NULL
    OR to_jsonb(daily_tasks)->>'start_real_at' IS NOT NULL OR to_jsonb(daily_tasks)->>'end_real_at' IS NOT NULL))
   OR EXISTS(SELECT 1 FROM public.locks WHERE plan_id=p_plan_id) THEN reason:='REBOOTSTRAP_PROTECTED_DAY';
- ELSIF old_sources IS NULL THEN reason:='REBOOTSTRAP_BASELINE_UNAVAILABLE';
+ ELSIF old_sources IS NULL OR public.assisted_expected_obligation_sources(s.id) IS NULL THEN reason:='REBOOTSTRAP_BASELINE_UNAVAILABLE';
  ELSIF old_sources-ARRAY['daily_tasks','contestants'] IS DISTINCT FROM current_sources-ARRAY['daily_tasks','contestants'] THEN reason:='REBOOTSTRAP_AUTHORITY_CHANGED';
  ELSIF EXISTS(SELECT 1 FROM jsonb_array_elements(old_sources->'daily_tasks') old WHERE NOT EXISTS(SELECT 1 FROM jsonb_array_elements(current_sources->'daily_tasks') current_row WHERE current_row=old)) THEN reason:='REBOOTSTRAP_TASK_CHANGED_OR_REMOVED';
  ELSIF EXISTS(SELECT 1 FROM jsonb_array_elements(old_sources->'contestants') old WHERE NOT EXISTS(SELECT 1 FROM jsonb_array_elements(current_sources->'contestants') current_row WHERE current_row=old)) THEN reason:='REBOOTSTRAP_PARTICIPANT_CHANGED_OR_REMOVED';

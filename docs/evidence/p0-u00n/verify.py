@@ -63,7 +63,7 @@ def verify(data):
             check(get('attack-' + name)['ok'] is False, f'{label}: rejection {name}')
         check(get('attack-finish-versus-admission')['code'] == '55P03', f'{label}: two-connection finish race')
         check(get('attack-atomic-counts')['before'] == get('attack-atomic-counts')['after'], f'{label}: no partial transaction effects')
-        for name in ['edit','delete','participant','assignment','authority','baseline','partial-baseline']:
+        for name in ['edit','delete','participant','assignment','authority','baseline','partial-baseline','task-row-baseline','participant-row-baseline']:
             check(get('negative-' + name)['ok'] and not get('negative-' + name)['value']['allowed'], f'{label}: pure-addition boundary {name}')
         for name in ['omit','move-protected']:
             attack = get('attack-' + name)

@@ -103,6 +103,8 @@ export async function journey({appUrl,users,db,directory,pass}:{appUrl:string;us
           ['authority','UPDATE public.plan_resource_items SET is_available=false WHERE plan_id=$1',[planId],'REBOOTSTRAP_AUTHORITY_CHANGED'],
           ['delete','DELETE FROM public.daily_tasks WHERE id=$1',[pending.id],'REBOOTSTRAP_TASK_CHANGED_OR_REMOVED'],
           ['partial-baseline',"UPDATE public.assisted_bootstrap_sources SET sources_json=sources_json-'resource_types' WHERE session_id=$1",[s1.session.id],'REBOOTSTRAP_BASELINE_UNAVAILABLE'],
+          ['task-row-baseline',"UPDATE public.assisted_bootstrap_sources SET sources_json=jsonb_set(sources_json,'{daily_tasks}',(SELECT jsonb_agg(t) FROM jsonb_array_elements(sources_json->'daily_tasks') t WHERE t->>'id'<>$2::text)) WHERE session_id=$1",[s1.session.id,initial[0].id],'REBOOTSTRAP_BASELINE_UNAVAILABLE'],
+          ['participant-row-baseline',"UPDATE public.assisted_bootstrap_sources SET sources_json=jsonb_set(sources_json,'{contestants}','[]') WHERE session_id=$1",[s1.session.id],'REBOOTSTRAP_BASELINE_UNAVAILABLE'],
           ['baseline','DELETE FROM public.assisted_bootstrap_sources WHERE session_id=$1',[s1.session.id],'REBOOTSTRAP_BASELINE_UNAVAILABLE'],
         ] as const){
           if(!reason)continue;
