@@ -1,0 +1,66 @@
+{
+  "base": "8868ebc365a4941977050d337b4b00a5d2ca553f",
+  "productChanges": 0,
+  "officialSourceChanges": 0,
+  "historicalMigrationChanges": 0,
+  "remoteDatabaseWrites": 0,
+  "a2": "Hash protected through 4223 baseline files; U00p comparison 266/266, 11 Stages, 27049 branches; not rerun",
+  "native": {
+    "command": "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium node --import tsx docs/evidence/p0-u00q/run.ts <fresh-output>",
+    "runs": 2,
+    "status": "PASS",
+    "receiptsPerRun": 122,
+    "migrationsPerRun": 117,
+    "realStagesPerRun": 5,
+    "completeDaysPerRun": 2,
+    "explicitStagesAccepted": 0,
+    "images": "pinned in integration receipt",
+    "isolatedPostgres": 17
+  },
+  "focalTests": {
+    "command": "node --import tsx <spec.ts> for each FILE in checks/focal-tests.tap.gz",
+    "files": 8,
+    "tests": 120,
+    "failed": 0,
+    "status": "PASS"
+  },
+  "coldReplay": {
+    "command": "node --import tsx docs/evidence/p0-u00q/replay.spec.ts",
+    "tests": 7,
+    "failed": 0,
+    "status": "PASS"
+  },
+  "typescript": {
+    "command": "npx --no-install tsc -p docs/evidence/p0-u00q/tsconfig.json",
+    "scope": "Diagnostic tsconfig and its product imports; full product npm run check also passes.",
+    "status": "PASS"
+  },
+  "migrations": {
+    "command": "node script/check-migration-sequence.mjs",
+    "status": "PASS",
+    "last": 114
+  },
+  "integrity": {
+    "command": "python3 docs/evidence/p0-u00q/verify.py",
+    "status": "PASS",
+    "protectedFiles": 4223
+  },
+  "notRun": [
+    "Full A2 (product intact)",
+    "Global suite/build (documentation and evidence only)"
+  ],
+  "preparationNotes": [
+    "Initial checkout U00o was advanced to authorized base before experiments.",
+    "Initial local playwright missing; restored exact lockfile with npm ci, no manifest or lockfile changes.",
+    "Harness development corrected numeric namespace assumption and redo step count. A SQL rejection assumption was falsified; final diagnostic records the actual metadata acceptance and rollback. These were diagnostic harness corrections, not product fixes."
+  ],
+  "limits": [
+    "No native explicit Stage: absence of writer and real revision gate retained.",
+    "Native inferred-prefix continuation fails after real accepted prefix.",
+    "No claim for phases/joint/round/setup mixed chains or nominal alternatives."
+  ],
+  "productTypescript": {
+    "command": "npm run check",
+    "status": "PASS"
+  }
+}
