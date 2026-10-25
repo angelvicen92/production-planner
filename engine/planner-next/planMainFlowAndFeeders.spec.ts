@@ -154,6 +154,10 @@ test("planner-next remains isolated from legacy and production", () => {
     "server/assistedProposalService.spec.ts",
     "server/assistedManualSnapshotFidelity.spec.ts",
     "server/assistedProposalService.ts",
+    // U00s certifies a context-only daily chain witness with the existing exact
+    // explorer and Assisted validator; configuration never invokes search.
+    "server/technicalChainCertificate.ts",
+    "server/technicalChainStructure.spec.ts",
     "server/assistedScopeResolver.ts",
     // U06a consumes the existing preflight/grid and proves the daily round
     // projection. These boundaries never dispatch search from configuration.

@@ -1,0 +1,50 @@
+name: P0 U00s daily REQUIRED technical chains
+on:
+  pull_request:
+    paths:
+      - 'engine/**'
+      - 'server/**'
+      - 'shared/**'
+      - 'supabase/migrations/**'
+      - 'client/src/**'
+      - 'client/src/components/technical-chain-editor.tsx'
+      - 'script/demo/smokeNewDayIntegration.ts'
+      - 'docs/evidence/p0-u00s/**'
+      - '.github/workflows/p0-u00s-technical-chains.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-chains:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$task_browser_path" ]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+          fi
+      - run: npm run check && npm run check:migrations && npm run build
+      - run: npx --no-install tsc -p docs/evidence/p0-u00s/tsconfig.json
+      - run: node --import tsx --test --test-concurrency=1 server/technicalChainStructure.spec.ts server/technicalChainSql.spec.ts server/roundSynchronizationStructure.spec.ts server/roundPreparationSql.spec.ts server/dayConfiguration.spec.ts server/assistedNextScope.spec.ts server/effectivePlanConfigRevision.spec.ts server/apiAuthorization.spec.ts engine/planner-next/planMainFlowAndFeeders.spec.ts engine/planner-next/inferredTechnicalContinuation.spec.ts client/src/lib/technical-chain-result.test.ts
+      - name: Native REQUIRED chains, physical negative, future witness and SQL attacks
+        run: node --import tsx docs/evidence/p0-u00s/run.ts work/u00s-native
+      - run: python3 docs/evidence/p0-u00s/pack.py work/u00s-native work/u00s-public
+      - run: U00S_RECEIPTS=work/u00s-public/receipts.json.gz node --import tsx docs/evidence/p0-u00s/replay.spec.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: u00s-required-chains
+          path: |
+            work/u00s-native/manifest.json
+            work/u00s-native/native/*.json
+            work/u00s-native/native/*.png

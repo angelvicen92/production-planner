@@ -334,6 +334,7 @@ export interface EngineInput {
   /** Explicit dynamic round synchronization across independent spaces. */
   roundSynchronizations?: EngineInputRoundSynchronizationInput[];
   /** Explicit ordered technical operation; dependencies alone remain precedence-only. */
+  dailyTechnicalChainsVersion?: 1;
   technicalChains?: EngineInputTechnicalChainInput[];
   /** Directional hard travel time for one concrete coach between two spaces. */
   coachRouteTransitions?: EngineInputCoachRouteTransitionInput[];

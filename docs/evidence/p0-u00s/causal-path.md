@@ -1,0 +1,15 @@
+# Antes / después — 07 §4.4
+
+X: producción puede ordenar técnicas por dependencias, pero no exigir continuidad física desde producto. Y: falta autoridad diaria materializada y vínculo SQL de revisión/certificado. Z: una secuencia con esperas sigue aceptable. W: autoridad diaria REQUIRED limitada, operación autenticada y guard material en revisión y Stage. M: A/C aceptan cadena contigua real; B guarda una regla válida pero no obtiene propuesta; D acepta independiente sin consumir el último witness futuro.
+
+El primer cambio causal está antes de EngineInput: `applyDailyTechnicalChains`, no en la búsqueda. `orderedTaskIds` es semántico, no un catálogo que se pueda ordenar por ID. Los días crean T3 antes de T1/T2 para probarlo. El adapter y el consumidor contiguo existentes reciben esa autoridad sin reconstrucción.
+
+La macro REQUIRED busca un tramo completo contiguo de tres operaciones y conserva el mismo recurso nominal; no realiza un matching libre entre sustitutos. En B las ventanas permiten 10:00–10:20 → 10:40–10:55 → 11:00–11:25 bajo dependencias ordinarias, pero el probe exacto certifica dominio cero para la unidad REQUIRED. C amplía únicamente la ventana inicial antes de crear otra jornada y obtiene un tramo 10:25–11:25. No se edita EngineInput para presentar ningún Stage.
+
+D selecciona la independiente primero. La autoridad analítica anterior poda posiciones que destruyen el último witness. El producto propone la independiente a 09:45, conserva la cadena 09:00–09:45 como contexto, certifica ese futuro en SQL y acepta únicamente la independiente. La continuación programa la cadena conservando el placement previo. Una reserva no se escribe al Draft ni crea AutomaticProtection.
+
+En revisión, el delta ya no se justifica sólo con hashes: el guard universal observa la autoridad real y rechaza el replay coherente sin materialización. En Stage, la coincidencia de fingerprint tampoco basta: se recomprueban los miembros, equipo, ventanas y cero huecos. No se mueve ni se asocia retroactivamente una nueva policy a un Stage anterior.
+
+Los fallos de desarrollo de alias SQL, parsing estricto de provenance y orden de captura canónica se reprodujeron en el recorrido nativo antes de alcanzar los positivos; se corrigieron en estas fronteras, sin relajar validación manual ni modificar consumidores/budgets. Los timeouts de UI al solapar suites pesadas se clasifican como carga del entorno y se repiten secuencialmente, sin declararlos dominio cero ni aumentar límites.
+
+Dos contrafactuales materiales adicionales del certificado se ejecutan antes del guard final: un miembro puede omitir equipo heredado por ubicación, y un competidor puede borrar de su snapshot el recurso que realmente exige su plantilla para ocultar un solape futuro. Los tests PostgreSQL focales aceptaban esos datos con hashes coherentes. El guard final deriva también esos requisitos de sus fuentes reales y el productor nativo persiste los recursos realmente consumidos. Las omisiones pasan a TECHNICAL_CHAIN_CERTIFICATE_INVALID; el mismo caso con la asignación física completa pasa. No se añade búsqueda SQL ni se amplía el dominio soportado.

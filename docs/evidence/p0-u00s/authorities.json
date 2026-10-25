@@ -1,0 +1,25 @@
+{
+  "base": "ed4cc0b32c6a5850292c7157f07dee570180696b",
+  "method": "Fuente 07 \u00a74.4",
+  "files": {
+    "docs/source/official/00_INDICE_Y_AUTORIDAD_FUENTES_OPTIPLAN_v2.15.md": "7082cee03feb295c71104f559d118608e85c5946f81de1139d6ad902f0e3810f",
+    "docs/source/official/01_PRODUCTO_DOMINIO_OPERACION_v5.4.md": "e55dc386d647888b913ed55457bb71564b16ccc4c088310c820bf57d984957bc",
+    "docs/source/official/02_ORC_CORE_CONSOLIDADO_v2.2.md": "1c5d58017ed3b0931cd4d0bc9c121e19c5edc9acb10005c5b759ccd94b937bdf",
+    "docs/source/official/03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.8.md": "7073930bb7bcbff09cb05553eecd28d357daf1860e55c6a6b9ab1ffe73172ffd",
+    "docs/source/official/04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.9.md": "d85981443e4e8e1bd073c59684e0b1e7d4a2fae6113a647007dee0f65eb1e8a4",
+    "docs/source/official/05_VALIDACION_CALIDAD_BENCHMARK_v2.8.md": "2d0aa69ebb5d1949b315a8ebb85c0ad96f0f9939e9441d1ef09a1f1ae9924a13",
+    "docs/source/official/06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.10.md": "42d0b3b78e732a2e4f1a1a01be9fa39bd82fbda366dd869d3785aedf6155faab",
+    "docs/source/official/07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.3.md": "7243ed2d186ef19af7ee9717c9b72d94ebca34791257a434be1aab76bed27351",
+    "AGENTS.md": "911a1fbee8f6f2d74330413e8b17e070de4ec3d2fbb365e0394a097d662da7d3",
+    "docs/governance/OPTIPLAN_MASTER_ADECUACION_APP.md": "6daa03ce136d47a4e39bc557650ca9ab8675e7d032bdd6b6942aa9ab1e58b551",
+    "docs/architecture/PLANNER_CAPABILITY_CATALOG.md": "90a3f7a86239faef66f7da5a634390236f327f6e9fe59d6d20aa3dbde8cd2fc2",
+    "docs/evidence/p0-u00q/README.md": "e4c52023fb46c3e5bbf5135371d36b8ab149102fbcfb72c0884b1f8e7a216699",
+    "docs/evidence/p0-u00q/causal-path.md": "987d869a1b4f5920c59ea41dfdb5ec621ee22ec461097c46144c7d3fd8c3043c",
+    "docs/evidence/p0-u00q/contracts.md": "d75075aff2dc48bf30fc93d4e77f1fa27cfd80c67cd2d376b247ad40915c8bb9",
+    "docs/evidence/p0-u00q/next-implementation.md": "4cbe838df4a50ceabe2f5e1d0c48581a110bb6ac4431f6f123fa118f19c77dde",
+    "docs/evidence/p0-u00q/matching-future.md": "c7ff94104c07bd4d342d440b1f60f198ad9db7a0594ec048ce2940c92103744d",
+    "docs/evidence/p0-u00r/README.md": "f2e99d412d06e201d662afe78297bcefdc09dbe98ea6ad15b94f829186ff4efb",
+    "docs/evidence/p0-u00r/causal-path.md": "3eb3bb9d15ef2bbfed0c6eedeaa1351d472aa32063553b19f4363c627f1cbaae",
+    "supabase/migrations/114_daily_round_synchronization.sql": "6f057ad221b820e37c18d5241ef54ec5a9100e7d838aafd0b7d0e44e7af60fe2"
+  }
+}

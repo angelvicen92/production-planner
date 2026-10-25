@@ -1,0 +1,108 @@
+{
+  "status": "PASS_REQUIRED_GATES",
+  "base": "ed4cc0b32c6a5850292c7157f07dee570180696b",
+  "remoteDatabaseWrites": 0,
+  "officialSourcesChanged": false,
+  "deployment": false,
+  "merge": false,
+  "commands": {
+    "check": "PASS",
+    "build": "PASS",
+    "check:migrations": "PASS",
+    "harnessTypeScript": "PASS"
+  },
+  "native": {
+    "candidate": {
+      "days": 4,
+      "acceptedStages": 6,
+      "receipts": 272,
+      "status": "PASS"
+    },
+    "repeat": {
+      "days": 4,
+      "acceptedStages": 6,
+      "receipts": 272,
+      "status": "PASS"
+    },
+    "distinctDailyIds": true,
+    "determinism": "PASS",
+    "coldReplays": {
+      "candidate": "5/5",
+      "repeat": "5/5"
+    },
+    "protectedPolicyAfterStageAndRollback": "TECHNICAL_CHAIN_PROTECTED_DECISIONS"
+  },
+  "tests": {
+    "focused": {
+      "files": 29,
+      "passed": 469
+    },
+    "finalService": 26,
+    "finalDailyStructure": 4,
+    "finalMaterialSql": "PASS",
+    "u00qFullReplay": 7,
+    "u00qExplicitControls": 6,
+    "u00rColdReplay": 10,
+    "u00rLiteralBoundary": 2,
+    "node24HistoricalAndIsolation": 9
+  },
+  "nativeRegressions": {
+    "u00p": {
+      "status": "PASS",
+      "days": 2,
+      "acceptedStages": 7,
+      "synchronizedStages": 6,
+      "sqlAndCertificateRejections": 40,
+      "publicReceipts": 138,
+      "migrations": 118
+    },
+    "u00r": {
+      "status": "PASS",
+      "days": 2,
+      "stages": 6,
+      "completedPerDay": 4,
+      "prefixCounts": [
+        2,
+        1
+      ]
+    }
+  },
+  "a2": {
+    "status": "PASS",
+    "candidate": {
+      "status": "PASS",
+      "isolated": true,
+      "node": "v20.19.5",
+      "seconds": 114.470920794,
+      "completed": 266,
+      "stages": 11,
+      "branches": 27049,
+      "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+      "fullReportEqualExceptDurationMs": true,
+      "snapshotsEqual": true,
+      "certificatesRevalidated": 11
+    },
+    "repeat": {
+      "status": "PASS",
+      "isolated": true,
+      "node": "v20.19.5",
+      "seconds": 115.52219360299999,
+      "completed": 266,
+      "stages": 11,
+      "branches": 27049,
+      "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+      "fullReportEqualExceptDurationMs": true,
+      "snapshotsEqual": true,
+      "certificatesRevalidated": 11
+    },
+    "certificatesRevalidatedTotal": 22,
+    "baseline": "docs/evidence/p0-u00r/a2/comparison.json"
+  },
+  "wideSuite": "not globally green; historical ASST-010 timeout retained, four other original failures reconciled; see checks/wide-suite-reconciliation.json",
+  "risks": [
+    "ASST-010 retains its documented baseline SEARCH_TIME_LIMIT_REACHED failure; not infeasibility.",
+    "One linear daily chain only; unsupported topologies and mixtures remain outside this gate.",
+    "Native UI selects the complete unit; authenticated prefix material contract is tested focally, not presented as a native partial-Stage journey.",
+    "No production migration or deployment performed."
+  ]
+}

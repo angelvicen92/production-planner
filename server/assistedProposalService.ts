@@ -1,3 +1,4 @@
+import { certifyDailyTechnicalChain } from "./technicalChainCertificate";
 import {resolveEffectiveTaskResourceAssignments} from "../engine/planner-next/integration/effectiveTaskResourceAssignments";
 import type { IStorage } from "./storage";
 import { supabaseAdmin } from "./supabase";
@@ -367,6 +368,13 @@ export class AssistedProposalService {
           ...(sourceTask.resourceInheritance === "OPERATION_ONLY" ? item.nonSubstitutableResourceIds ?? [] : declared ?? []),
         ]);
       }
+      if(input.dailyTechnicalChainsVersion===1){
+        // Persist the physical resources actually consumed by this native
+        // proposal, including inherited location requirements used by its future.
+        assignedResourceIds=projectDirectResourcesToProduct(adapter.identityMap,[
+          ...(item.requiredResourceIds??[]),...projectDirectResourcesToCanonical(adapter.identityMap,assignedResourceIds??[]),
+        ]);
+      }
       const canonicalTask=adapter.problem.tasks.find(task=>task.id===item.id)!;
       if(canonicalTask.nominalResourceChoice){
         if(!nominalResourceAssignmentMatches(canonicalTask,item))throw new Error(`INVALID_PROPOSAL_NOMINAL_RESOURCE:${taskId}`);
@@ -439,11 +447,15 @@ export class AssistedProposalService {
           || execution.evidence.reasonCodes.includes("PARTICIPANT_MEALS_JOINTLY_INFEASIBLE")?blockingMealIds:[],
       });
     const globalMealGate=globalMealEvidence.globalMealGate;
-    const evidence={...execution.evidence,hardValid:candidateViolations.every(item=>item.severity!=="HARD"),requiredValid:newRequiredViolationCount===0,
+    const technicalChainCertificate=input.dailyTechnicalChainsVersion===1&&proposal
+      ?certifyDailyTechnicalChain(adapter.problem,[...protectedPlacements,...(execution.proposal??[])],
+        adapter.problem.budget.maxBranchExpansions-Number(execution.evidence.work.branchBudgetConsumed??execution.evidence.work.branchesExplored??0)):null;
+    const technicalChainGate=!technicalChainCertificate||technicalChainCertificate.status==="WITNESS";
+    const evidence={...execution.evidence,...(technicalChainCertificate?{technicalChainCertificate}:{}),hardValid:candidateViolations.every(item=>item.severity!=="HARD"),requiredValid:newRequiredViolationCount===0,
       inheritedAcceptedHardViolationCount:delta.inheritedHardViolationCount,inheritedAcceptedRequiredViolationCount:delta.inheritedRequiredViolationCount,
-      newHardViolationCount,newRequiredViolationCount,proposalEligible:proposalEligible&&globalMealGate==="PASS",violations:candidateDetails??[],
+      newHardViolationCount,newRequiredViolationCount,proposalEligible:proposalEligible&&globalMealGate==="PASS"&&technicalChainGate,violations:candidateDetails??[],
       ...globalMealEvidence};
-    const safeProposal=proposal&&proposalEligible&&globalMealGate==="PASS"?proposal:null;
+    const safeProposal=proposal&&proposalEligible&&globalMealGate==="PASS"&&technicalChainGate?proposal:null;
     const safeSnapshot=safeProposal?proposedDraftSnapshot:null,safeFingerprint=safeProposal?proposedDraftFingerprint:null;
     const result:AssistedProposalRunResultV1={contractVersion:1,outcome:safeProposal?"PROPOSAL":"NO_PROPOSAL",selector,scopeTaskIds:run.scope_task_ids_json,includePrerequisites:run.include_prerequisites,proposal:safeProposal,proposedDraftSnapshot:safeSnapshot,proposedDraftFingerprint:safeFingerprint,evidence:evidence as unknown as Record<string,unknown>,reasonCodes:execution.evidence.reasonCodes};
     return this.finish(planId,run,result);

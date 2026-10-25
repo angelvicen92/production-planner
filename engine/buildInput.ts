@@ -1,3 +1,4 @@
+import { applyDailyTechnicalChains } from "../server/technicalChainStructure";
 import { applyDailyRoundStructure } from "../server/roundSynchronizationStructure";
 import { applyDailyItinerantComposition, ItinerantCompositionError } from '../server/itinerantComposition';
 import { applyNewDayPlannerConfiguration } from "../server/newDayPlannerConfiguration";
@@ -1011,5 +1012,5 @@ export async function buildEngineInput(
     if ((p.planner_next_configuration ?? p.plannerNextConfiguration) != null) throw new ItinerantCompositionError('autoridades históricas y heredadas incompatibles');
     effectiveInput = applyDailyItinerantComposition(effectiveInput, await storage.getPlanItinerantUnitSnapshots(planId), planId);
   }
-  return applyEffectiveOperationContinuity(applyEffectiveRoundPreparations(applyDailyRoundStructure(applyEffectiveMainFlowPreference(effectiveInput,p),p),p),p,taskTemplateSnapshots);
+  return applyDailyTechnicalChains(applyEffectiveOperationContinuity(applyEffectiveRoundPreparations(applyDailyRoundStructure(applyEffectiveMainFlowPreference(effectiveInput,p),p),p),p,taskTemplateSnapshots),p);
 }

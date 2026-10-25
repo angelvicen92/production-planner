@@ -20,7 +20,7 @@ test("effective values stay readable but absent Next authorities cannot report R
     assert.equal(value?.implementationStatus,"PRODUCTIVE");
   }
   assert.deepEqual(view.productCoverage,configurabilityCounts);
-  assert.equal(view.productCoverage.PRODUCTIVE,3);
+  assert.equal(view.productCoverage.PRODUCTIVE,4);
 });
 
 test("optimizer exposes only the provenance carried by its authoritative snapshot",async()=>{
