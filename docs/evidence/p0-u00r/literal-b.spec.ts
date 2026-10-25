@@ -1,4 +1,4 @@
-/** Preserve the exact unsatisfied native B criterion rather than calling S0 a proposal. */
+/** Replay the original manual failure and verify the genuine root proposal that now replaces it. */
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {readFileSync} from 'node:fs';
@@ -10,9 +10,9 @@ import {createManualDeltaValidationHarness} from '../../../server/assistedPropos
 const r=JSON.parse(gunzipSync(readFileSync('docs/evidence/p0-u00r/checks/literal-b-blocker.json.gz')).toString());
 const input=r['B-native-input.json'],created=r['B-created.json'],a=adapt(input);
 assert.equal(a.status,'SUPPORTED');if(a.status!=='SUPPORTED')throw Error('unsupported');
-test('root-only native scope is still unsupported and is not misrepresented as a successful first proposal',()=>{
+test('the original root-only source now produces a genuine one-task proposal without policy or successor placement',()=>{
  const result=execute(buildAssistedProblem(a.problem,resolveAssistedScope(input,a,{kind:'TASK_IDS',taskIds:[created.tasks[0].id]}).scope,[]));
- assert.equal(result.proposal,null);assert.ok(result.evidence.reasonCodes.some(c=>c.includes('UNSUPPORTED_STANDALONE_TASK_KIND')));assert.equal(result.evidence.work.branchesExplored,0);
+ assert.ok(result.proposal);assert.deepEqual(result.proposal.map(t=>t.id),[`task:${created.tasks[0].id}`]);assert.equal(result.evidence.hardValid,true);
 });
 test('native manual trim response remains reproducible without changing validation or revision',()=>{
  const row=r['B-human-prefix-edit.json'];const draft=row.draft;

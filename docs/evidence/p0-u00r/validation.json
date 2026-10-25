@@ -1,19 +1,18 @@
 {
   "base": "eb3facfb6a935ee4d7daf84770e9b6a20ae91b2d",
-  "productFilesChanged": 2,
+  "productFilesChanged": 4,
   "configurationChanges": 0,
   "officialSourceChanges": 0,
   "migrationChanges": 0,
   "remoteDatabaseWrites": 0,
-  "gateStatus": "DRAFT_LITERAL_CASE_B_PENDING",
-  "literalCaseB": "No first T1-only proposal accepted: isolated root scope remains unsupported and manual full-chain trimming fails validation. B proves residual continuation from API-preplanned T1 captured by genuine S0. No new manual Stage flow was introduced.",
+  "gateStatus": "NATIVE_AND_LOCAL_GATES_PASS",
   "native": {
-    "status": "PASS_WITH_DECLARED_PREFIX_SOURCE",
+    "status": "PASS",
     "runs": 2,
     "daysPerRun": 2,
-    "receiptsPerRun": 78,
-    "acceptStageCallsPerRun": 5,
-    "protectedRootBootstrapPerRun": 1,
+    "receiptsPerRun": 88,
+    "acceptStageCallsPerRun": 6,
+    "protectedRootBootstrapPerRun": 0,
     "completeDaysPerRun": 2,
     "postgres": 17,
     "migrationsPerRun": 117,
@@ -21,15 +20,15 @@
     "apiSqlStateMutation": false,
     "onlySqlInJourney": "SELECT daily_tasks for observations",
     "A": "S1(T1,T2) -> S2(T3) -> S3(independent), 4/4",
-    "B": "S0(T1 preplanned) -> S1(T2,T3) -> S2(independent), 4/4",
+    "B": "S1(proposal T1 only) -> S2(T2,T3) -> S3(independent), 4/4",
     "C": "B retains 20m and 5m waits",
     "rollbackRedo": "PASS",
     "staleDraftBaseConfig": "PASS"
   },
   "tests": {
-    "focalAndRegressions": 251,
+    "focalAndRegressions": 252,
     "files": 16,
-    "newFocal": 14,
+    "newFocal": 15,
     "explicitRequiredReplays": 6,
     "nativeColdReplays": 20,
     "failed": 0,
@@ -45,7 +44,7 @@
       "status": "PASS",
       "isolated": true,
       "node": "v24.19.0",
-      "seconds": 191.761075917,
+      "seconds": 152.461495048,
       "completed": 266,
       "stages": 11,
       "branches": 27049,
@@ -58,7 +57,7 @@
       "status": "PASS",
       "isolated": true,
       "node": "v24.19.0",
-      "seconds": 58.525797663,
+      "seconds": 97.99945649899999,
       "completed": 266,
       "stages": 11,
       "branches": 27049,
@@ -73,16 +72,14 @@
     "snapshotsAndCertificatesIdentical": true
   },
   "ci": {
-    "status": "RUNNING",
-    "validatedImplementationCommit": "d6992e70bb305be5dbb9c143c1796dee35bdaaea",
+    "status": "AWAITING_FINAL_REMOTE_HEAD",
+    "validatedImplementationCommit": "ea63171fef40b354b95688eb88b7d79d1eed26bd",
     "receipt": "checks/ci.json",
-    "note": "Evidence-only descendant does not change bound implementation/test sources; live head checks also monitored.",
     "liveChecks": "https://github.com/angelvicen92/production-planner/pull/1196/checks",
-    "observationType": "Historical code-head observation; final live checks and result recorded in PR description."
+    "note": "Historical observations label their own head. Final CI result is recorded in PR description without a self-referential evidence commit."
   },
   "residualLimits": [
-    "Literal case B first T1-only proposal acceptance is not covered; PR must stay draft.",
-    "Root-only scope and manual removal of the rest of a technical chain remain unsupported.",
+    "Manual trimming of a complete technical proposal remains unsupported; final gate requests T1 directly and uses authentic proposal/accept_stage.",
     "Known byItem resource ID alteration is not rejected by isolated manual validation seam; native Draft API rejects the forbidden write and preserves state.",
     "Forbidden Draft resource key returns existing HTTP 500 schema rejection.",
     "No new branching/cycle/missing-reference/interior-cut topology support."
@@ -91,8 +88,10 @@
     "Restored missing Playwright/PGlite using exact npm ci; manifests/lockfile unchanged.",
     "Sandbox prevented tsx IPC/build and Docker socket; authorized checks executed with local-socket access.",
     "Harness assertions corrected for existing schema HTTP 500, bigint JSON strings and persistence omission of JS undefined.",
-    "Attempt to manually trim a full chain to T1 failed existing validation and was not bypassed; literal B acceptance is explicitly left pending.",
-    "Native stale configuration negative runs after completed checkpoint and never accepts the negative Draft."
+    "Native stale configuration negative runs after completed checkpoint and never accepts the negative Draft.",
+    "The literal B gate is closed by retaining derived source root identity before scope projection, not by changing manual validation.",
+    "A concurrent Chromium screenshot timed out at its unchanged default; the independent repeat passed in isolation without any timeout/budget increase."
   ],
-  "implementationCommit": "d6992e70bb305be5dbb9c143c1796dee35bdaaea"
+  "implementationCommit": "ea63171fef40b354b95688eb88b7d79d1eed26bd",
+  "identityContract": "Derived inferredTechnicalChainRootIds retains only source root identity across scope projection; no policy, configurable parameter, stored authority or duplicated graph."
 }

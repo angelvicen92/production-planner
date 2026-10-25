@@ -70,13 +70,16 @@
       "kitId": 7,
       "stageIds": [
         6,
-        7
+        7,
+        8
       ],
       "fingerprints": [
-        "e0972a96b1be0cf43c09047006c0cd040ab33b1f34f4ad6a8d01627ae749479e",
-        "9550255fdc43929bd77692b59ff49fc01cdeb0a1fc0d5d00564cc17e7579d9b2"
+        "5e093a940fa847432fead9c785e7434744d958e45d31b2b3b32a773c4bc51acf",
+        "6f2b5b72e26ced556fec4112c3e0e4179754282274fb0a89c17f43afb3104979",
+        "b89f5231cc16b34ba3cf72f56e81b508d4798e12cfa7f2214d399ef3e9c2372f"
       ],
       "branches": [
+        2,
         17,
         2
       ]
@@ -94,13 +97,16 @@
       "kitId": 10,
       "stageIds": [
         6,
-        7
+        7,
+        8
       ],
       "fingerprints": [
-        "93c65c94d05614022928b693110cfb1cf3db968940017edd9e152ee8d4dad655",
-        "a7767fda5d270755280848a4e54257dce3571a5714b01bffc7e0b5d1b73a927f"
+        "0bc8b1d0de3b3793ce14466a99df7682919acf8cd6411ac09b3f37f29ee6d087",
+        "5cff98c13feb64ec68a9035fc101721d1b2c1a571c600eb124a5b6251b11edbf",
+        "ac01c92798cc693ada9fa67db2275e7db51364a5ab55f0b028765582a3143b55"
       ],
       "branches": [
+        2,
         17,
         2
       ]

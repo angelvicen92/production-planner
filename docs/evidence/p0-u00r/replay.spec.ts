@@ -15,12 +15,12 @@ for(const label of ['A','B']){
  test(`${label}: authentic Stages, immutable prefix, nominal inventory and rollback/redo`,()=>{
   const created=read(label+'-created'),prefix=label==='A'?2:1;
   assert.equal(read(label+'-native-input').technicalChains,undefined);
-  let prior:any[]=label==='B'?read('B-S0').activeStage.snapshotJson.tasks.filter((t:any)=>t.startPlanned):[];
-  for(let n=1;n<=(label==='A'?3:2);n++){
+  let prior:any[]=[];
+  for(let n=1;n<=3;n++){
    const stage=read(`${label}-S${n}-accepted`).activeStage,run=read(`${label}-S${n}-run`).assisted_result_json;
    assert.equal(fingerprint(stage.snapshotJson),stage.snapshotFingerprint);assert.equal(stage.snapshotJson.tasks.length,4);
-   const placed=stage.snapshotJson.tasks.filter((t:any)=>t.startPlanned);assert.equal(placed.length,label==='A'?(n===1?prefix:n===2?3:4):(n===1?3:4));
-   assert.ok(placed.every((t:any)=>JSON.stringify(t.assignedResourceIds)===JSON.stringify(label==='B'&&t.taskId===created.tasks[0].id?[]:[created.kit.id])));
+   const placed=stage.snapshotJson.tasks.filter((t:any)=>t.startPlanned);assert.equal(placed.length,n===1?prefix:n===2?3:4);
+   assert.ok(placed.every((t:any)=>JSON.stringify(t.assignedResourceIds)===JSON.stringify([created.kit.id])));
    assert.equal(stage.validationSummaryJson.hardCount,0);assert.equal(stage.validationSummaryJson.requiredCount,0);
    for(const old of prior)assert.deepEqual(placed.find((t:any)=>t.taskId===old.taskId),old);
    const rows=read(`${label}-S${n}-persisted`);assert.equal(rows.filter((r:any)=>r.start_planned).length,placed.length);
@@ -30,10 +30,10 @@ for(const label of ['A','B']){
    assert.deepEqual(run.proposedDraftSnapshot,read(`${label}-S${n}-repeat`).assisted_result_json.proposedDraftSnapshot);
    prior=placed;
   }
-  assert.deepEqual(read(label+'-restore').redos.at(-1).activeStage,read(label+(label==='A'?'-S3-accepted':'-S2-accepted')).activeStage);
+  assert.deepEqual(read(label+'-restore').redos.at(-1).activeStage,read(label+'-S3-accepted').activeStage);
   assert.equal(read(label+'-stale-configuration-accept').body.code,'STALE_VALIDATION');
   if(label==='B'){
-   const t=read('B-S1-accepted').activeStage.snapshotJson.tasks;
+   const t=read('B-S2-accepted').activeStage.snapshotJson.tasks;
    assert.deepEqual(t.slice(0,3).map((x:any)=>[x.startPlanned,x.endPlanned]),[['10:00','10:20'],['10:40','10:55'],['11:00','11:25']]);
   }
  });
@@ -66,8 +66,8 @@ for(const label of ['A','B']){
   assert.equal(read(label+'-nominal-substitution').hardValid,false);
   const resolution=resolveAssistedScope(input,a,{kind:'TASK_IDS',taskIds:created.tasks.slice(label==='A'?2:1,3).map((t:any)=>t.id)});
   const altered=structuredClone(c.anchors);altered[0].spaceId='absent';assert.throws(()=>buildAssistedProblem(a.problem,resolution.scope,altered),/PROTECTED_PLACEMENT_TASK_MISMATCH/);
-  const snapshot=structuredClone(read(label+(label==='A'?'-S3-accepted':'-S2-accepted')).activeStage.snapshotJson);snapshot.tasks[1].assignedResourceIds=[created.substitute.id];
-  assert.notEqual(fingerprint(snapshot),read(label+(label==='A'?'-S3-accepted':'-S2-accepted')).activeStage.snapshotFingerprint);
+  const snapshot=structuredClone(read(label+'-S3-accepted').activeStage.snapshotJson);snapshot.tasks[1].assignedResourceIds=[created.substitute.id];
+  assert.notEqual(fingerprint(snapshot),read(label+'-S3-accepted').activeStage.snapshotFingerprint);
   // The isolated manual seam rematerializes fixed byItem from source; its
   // known-ID assignment is not itself a proof of snapshot authenticity.
   const validation=createManualDeltaValidationHarness(a.problem,a.identityMap)(input,snapshot,[created.tasks[1].id]);assert.equal(validation.hardValid,true);

@@ -64,9 +64,6 @@ export async function journey({appUrl,users,db,directory,pass}:{appUrl:string;us
    for(let n=0;n<4;n++)tasks.push(await api('/api/daily-tasks','POST',{planId,templateId:templates[n].id,contestantId:n===3?person.id:null,spaceId:spaces[n].id,zoneId:zone.id}));
    const inventory=await api(`/api/plans/${planId}/resource-items`),kit=inventory.find((r:any)=>r.resourceItemId===catalogue.id),substitute=inventory.find((r:any)=>r.resourceItemId===spare.id);
    assert.ok(kit&&substitute);assert.equal(kit.planId,planId);
-   // B starts from an ordinary human planned root captured by the native S0
-   // bootstrap. No policy/revision/snapshot injection or SQL state mutation.
-   if(index)await api(`/api/daily-tasks/${tasks[0].id}`,'PATCH',{plannedStart:'10:00',plannedEnd:'10:20'});
    const input=await buildEngineInput(planId,storage);
    const chainIds=tasks.slice(0,3).map(t=>t.id);
    save(`${label}-created`,{day,spaces,templates,tasks,catalogue,spare,inventory,kit,substitute,windows,durations});
@@ -74,10 +71,10 @@ export async function journey({appUrl,users,db,directory,pass}:{appUrl:string;us
    assert.equal(input.technicalChains,undefined);const adapted=adapt(input);assert.equal(adapted.status,'SUPPORTED');if(adapted.status!=='SUPPORTED')throw Error('unsupported');
    assert.deepEqual(input.tasks.filter(t=>chainIds.includes(t.id)).map(t=>t.dependsOnTaskIds),[[],[tasks[0].id],[tasks[1].id]]);
    const bootstrap=await api(path+'/session','POST',{});save(`${label}-S0`,bootstrap);
-   if(index)assert.equal(bootstrap.activeStage.snapshotJson.tasks.filter((t:any)=>t.startPlanned).length,1);
+   assert.equal(bootstrap.activeStage.snapshotJson.tasks.filter((t:any)=>t.startPlanned).length,0);
    const stages:any[]=[],runs:any[]=[];
    const prefixCount=index?1:2;
-   const selections=index?[chainIds.slice(1),[tasks[3].id]]:[chainIds.slice(0,2),chainIds.slice(2),[tasks[3].id]];
+   const selections=index?[chainIds.slice(0,1),chainIds.slice(1),[tasks[3].id]]:[chainIds.slice(0,2),chainIds.slice(2),[tasks[3].id]];
    for(const [stage,ids] of selections.entries()){
     const before=await api(path),req={...expected(before),selector:{kind:'TASK_IDS',taskIds:ids},includePrerequisites:true};save(`${label}-S${stage+1}-request`,req);
     const run=await poll(path,(await api(path+'/proposals','POST',req)).runId);save(`${label}-S${stage+1}-run`,run);runs.push(run);
@@ -87,7 +84,7 @@ export async function journey({appUrl,users,db,directory,pass}:{appUrl:string;us
     assert.equal(again.assisted_result_json.evidence.fingerprint,run.assisted_result_json.evidence.fingerprint);
     for(const old of before.activeStage.snapshotJson.tasks.filter((t:any)=>t.startPlanned))assert.deepEqual(run.assisted_result_json.proposedDraftSnapshot.tasks.find((t:any)=>t.taskId===old.taskId),old);
     const stale=await request(path+`/proposals/${run.id}/apply`,'POST',{...expected(before),expectedDraftFingerprint:'0'.repeat(64)});save(`${label}-S${stage+1}-stale`,stale);assert.equal(stale.status,409);
-    if(stage===(index?0:1)){
+    if(stage===1){
      const fixed=before.activeStage.snapshotJson.tasks.filter((t:any)=>t.startPlanned);
      // Product snapshots can use timestamps; derive canonical protected placements
      // from the first native proposal whose hours were accepted unchanged.
@@ -114,7 +111,7 @@ export async function journey({appUrl,users,db,directory,pass}:{appUrl:string;us
     const staleAccept=await request(path+'/accept-stage','POST',{...expected(validated),expectedBaseStageId:2147483000});save(`${label}-S${stage+1}-forged-stage`,staleAccept);assert.equal(staleAccept.status,409);
     const forgedSnapshot=await request(path+'/draft','PATCH',{...expected(validated),changes:[{taskId:tasks[0].id,assignedResourceIds:[substitute.id]}]});save(`${label}-S${stage+1}-forged-resource`,forgedSnapshot);assert.ok(forgedSnapshot.status>=400);assert.match(forgedSnapshot.body.message,/assignedResourceIds/);assert.deepEqual((await api(path)).draft,validated.draft);
     const accepted=await api(path+'/accept-stage','POST',expected(validated));save(`${label}-S${stage+1}-accepted`,accepted);stages.push(accepted.activeStage);
-    const complete=accepted.activeStage.snapshotJson.tasks.filter((t:any)=>t.startPlanned);assert.equal(complete.length,index?(stage===0?3:4):(stage===0?prefixCount:stage===1?3:4));
+    const complete=accepted.activeStage.snapshotJson.tasks.filter((t:any)=>t.startPlanned);assert.equal(complete.length,stage===0?prefixCount:stage===1?3:4);
     for(const old of before.activeStage.snapshotJson.tasks.filter((t:any)=>t.startPlanned))assert.deepEqual(complete.find((t:any)=>t.taskId===old.taskId),old);
     save(`${label}-S${stage+1}-persisted`,(await db.query('SELECT * FROM daily_tasks WHERE plan_id=$1 ORDER BY id',[planId])).rows);
     await page.goto(`${appUrl}/plans/${planId}?tab=planning`);await page.getByTestId('assisted-workspace').waitFor();await page.screenshot({path:`${directory}/${label}-S${stage+1}.png`,fullPage:true});

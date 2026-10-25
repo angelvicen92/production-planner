@@ -2,7 +2,7 @@
   {
     "file": "engine/planner-next/inferredTechnicalContinuation.spec.ts",
     "exit": 0,
-    "tests": 14
+    "tests": 15
   },
   {
     "file": "engine/planner-next/technicalChains.spec.ts",
