@@ -1,0 +1,145 @@
+{
+  "status": "PASS",
+  "testedCommit": "43c6d48888c01e16a5afdc226a0ca7419a033b73",
+  "workflowUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40193927736",
+  "jobs": [
+    {
+      "id": 121170601166,
+      "name": "native-rounds",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 40193927736,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Select Chromium",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run npm run check && npm run check:migrations && npm run build",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Run npx --no-install tsc -p docs/evidence/p0-u00p/tsconfig.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Run node --import tsx --test --test-concurrency=1 script/demo/a2Preflight.spec.ts script/demo/a2ExistingDatabase.spec.ts server/roundSynchronizationStructure.spec.ts server/roundPreparation.spec.ts server/roundPreparationSql.spec.ts server/dayConfiguration.spec.ts server/assistedNextScope.spec.ts server/effectivePlanConfigRevision.spec.ts server/apiAuthorization.spec.ts engine/planner-next/planMainFlowAndFeeders.spec.ts",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Two native days, genuine synchronized Stages, SQL attacks and restoration",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Run python3 docs/evidence/p0-u00p/verify.py work/u00p-native/native",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Run node --import tsx docs/evidence/p0-u00p/replay.spec.ts",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 23
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 24
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 25
+        }
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": 12598743779,
+      "name": "u00p-daily-rounds",
+      "size_in_bytes": 985791,
+      "url": "https://api.github.com/repos/angelvicen92/production-planner/actions/artifacts/12598743779",
+      "archive_download_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/artifacts/12598743779/zip",
+      "expired": false,
+      "created_at": "2026-10-25T12:39:45Z",
+      "expires_at": "2027-01-23T12:37:26Z",
+      "updated_at": "2026-10-25T12:39:45Z",
+      "digest": "sha256:a28f3e920fadc368be80be8aa716487c67f7774c118c21b59c48e708d5b0bd5d",
+      "workflow_run": {
+        "id": 40193927736,
+        "repository_id": 1158709892,
+        "head_repository_id": 1158709892,
+        "head_branch": "codex/p0-u00p-native-daily-round-synchronization",
+        "head_sha": "43c6d48888c01e16a5afdc226a0ca7419a033b73"
+      }
+    }
+  ],
+  "originalLogExcerpts": [
+    "2026-10-25T12:38:52.4602306Z # tests 46",
+    "2026-10-25T12:38:52.4603663Z # pass 46",
+    "2026-10-25T12:38:52.4604091Z # fail 0",
+    "2026-10-25T12:39:01.7969676Z PASS entire native application migration ledger",
+    "2026-10-25T12:39:03.6485541Z PASS real password login for five Auth identities",
+    "2026-10-25T12:39:30.1170881Z PASS A: UI round authority → genuine synchronized S1 → protected complete S2 → rollback/redo",
+    "2026-10-25T12:39:42.4620943Z PASS B: UI round authority → genuine synchronized S1 → protected complete S2 → rollback/redo",
+    "2026-10-25T12:39:43.3935349Z   \"status\": \"PASS\",",
+    "2026-10-25T12:39:43.4007284Z   \"acceptedStages\": 7,",
+    "2026-10-25T12:39:43.4007763Z   \"synchronizedStages\": 6,",
+    "2026-10-25T12:39:43.4008262Z   \"sqlAndCertificateRejections\": 40,",
+    "2026-10-25T12:39:43.4008766Z   \"publicReceipts\": 138,",
+    "2026-10-25T12:39:44.0887226Z # tests 4",
+    "2026-10-25T12:39:44.0888719Z # pass 4",
+    "2026-10-25T12:39:44.0888938Z # fail 0"
+  ]
+}

@@ -95,7 +95,15 @@
           "classification": "Exact material failure reproduced on authorized base and candidate; no budget/timeout/assertion changes",
           "receipt": "checks/asst010-comparison.json"
         }
-      ]
+      ],
+      "successfulCiRun": {
+        "tests": 3229,
+        "passed": 3228,
+        "failed": 0,
+        "skipped": 1,
+        "receipt": "checks/ci-final.json",
+        "jobId": 121170601891
+      }
     },
     "u00c": {
       "status": "PASS",
@@ -118,7 +126,13 @@
     "legacyLocalAttempt": {
       "status": "INCOMPLETE",
       "classification": "Legacy round-preparation save/reload/replay/protection passed; subsequent full A2 browser proposal exceeded existing 420000ms wait. Canonical A2 passes separately. No timeout changed.",
-      "receipt": "regressions/legacy-local-attempt.json.gz"
+      "receipt": "regressions/legacy-local-attempt.json.gz",
+      "subsequentCiValidation": {
+        "status": "PASS",
+        "jobId": 121170601805,
+        "classification": "Complete real legacy UI integration: 266/266, 11 Stages, preparations, rollback/redo, manual validation and REQUIRED production consent",
+        "receipt": "checks/ci-final.json"
+      }
     }
   },
   "a2": {
@@ -135,12 +149,20 @@
   "ci": {
     "mode": "LIVE_PULL_REQUEST_WORKFLOWS",
     "workflow": ".github/workflows/p0-u00p-daily-rounds.yml",
-    "snapshotPendingPublication": true,
     "initialSnapshot": "checks/ci-initial.json",
     "initialCorrections": [
       "Register exact SQL114 bodies and minimal helper privileges in existing catalog gates",
       "Preserve literal S0 bootstrap sources instead of projected planning null/[] normalization; real U00c rerun PASS"
-    ]
+    ],
+    "status": "PASS",
+    "testedCommit": "43c6d48888c01e16a5afdc226a0ca7419a033b73",
+    "workflowCount": 18,
+    "successfulWorkflows": 18,
+    "jobCount": 32,
+    "successfulJobs": 32,
+    "snapshot": "checks/ci-final.json",
+    "nativeSnapshot": "checks/ci-native.json",
+    "closureCommit": "DOCUMENTATION_ONLY_SAME_EXECUTED_PRODUCT_SOURCES"
   },
   "limits": [
     "One daily policy, STANDALONE_ONLY, transport/setup NONE",
@@ -151,7 +173,7 @@
     "ASST-010 remains a reproduced historical search-time failure"
   ],
   "artifacts": {
-    "README.md": "3332e2407b537b0ee6041b3ffb45910a29b3fb75c7d1cbaa109a0f341423032f",
+    "README.md": "dbe75eafa132bbd0a557b13b73f416e6911cb0724932f978c3d4c2e859cba261",
     "a2/base/certificates.json": "56840288fb23ed47d09e0c7502f7bf27a8cbe0aac655ff4f2b147328cf88e457",
     "a2/base/comparison.json": "ac824b9cc24fde16eb3f2b9515d4df9e5bd39c20d98bc38b88b7c160fd9546de",
     "a2/base/run.json.gz": "751d0242bf0c8a69508484eec4cf95f2528d0357cd18e964b122761e4016f082",
@@ -180,7 +202,9 @@
     "checks/asst010-candidate.json": "9ea64e52a2e1c2069358a063b1b5c4004a80b8857e65327e6f0053060cc04425",
     "checks/asst010-comparison.json": "dfe95e65c508f6b245db38690845e937a311e0d271a519ac6e1ecfad060bcf8b",
     "checks/build.log.gz": "e6b2863aec47a887c776670e1876037e38c8457498fa7b67fef61051316e5b7d",
+    "checks/ci-final.json": "fd9066b8fc917e3864d3b7675e40021712bb6528d489be53dc662301e4f5b6e4",
     "checks/ci-initial.json": "575c86b2b4f65c8ed5d0019a63fe9736ba6171a5127466b20c799db3c74a7ce6",
+    "checks/ci-native.json": "7aa1efcc6fbe380d127ed8b869b984fc6c3103e801a125f1be655b02810e3459",
     "checks/cold-replay.log.gz": "7c81453ec73fb7f782e85ba001569bf4468e4aad6b96574624e708df41195378",
     "checks/data-api.log.gz": "5abd21b90e0c647917f713fa6611d7ef8528682dde5c27bdc296966f5ab1896f",
     "checks/focused.log.gz": "357601eba87c8b323e8a0a893d7ca16b047da46a5831497ca87be058d1e15a99",
@@ -193,7 +217,7 @@
     "checks/new-day-typescript.log.gz": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
     "checks/node24-groupby.log.gz": "ac5312acba21f822e0704eb1e6affd9472b386dbca153e45d78ea866de9f1d22",
     "checks/protected-history.json": "527d98dc1febe459e6bd95b2cd85a73e4cd809e5f187f6698f7e561b3299da46",
-    "checks/source-tree-binding.json": "e5b485068182fdcff59e056245fee175179630c2f6dde359562d31c4fd7db13c",
+    "checks/source-tree-binding.json": "21ffc21d5200cef197e32f57dcd364b272e6d0bca24aea52f67bc6df85afa0c7",
     "checks/sql-contracts.log.gz": "27a107a31c581c68cddb388cbf270764a0019bd67d9413f1b655c48672620070",
     "checks/typescript.log.gz": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
     "checks/u00c.log.gz": "c94d4eb2004af7383fd0b0d56709e4a61610e99d800bc45545fe1ba8c0b215ae",

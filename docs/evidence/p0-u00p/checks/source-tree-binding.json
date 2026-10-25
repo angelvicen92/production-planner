@@ -4,5 +4,7 @@
   "a2FilesVerified": 1140,
   "base": "2d95be9fd74fdf60433b1b71ad3704522d558eb4",
   "executedCandidateIdentifiedBySha256": true,
-  "note": "Original sourceCommit fields are preserved; source and harness hashes identify the tested uncommitted content."
+  "note": "Original sourceCommit fields are preserved; source and harness hashes identify the tested uncommitted content.",
+  "testedCodeCommit": "43c6d48888c01e16a5afdc226a0ca7419a033b73",
+  "closureOnlyDocumentation": true
 }
