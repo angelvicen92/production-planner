@@ -140,6 +140,90 @@
         "nominal API day B: 6/6 through Stage"
       ],
       "remoteWrites": 0
+    },
+    {
+      "label": "u00g",
+      "status": "PASS",
+      "bundle": "u00g-receipts.json.gz",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "script/validation/runU00gFunctional.ts",
+        "OUTPUT"
+      ],
+      "checks": [
+        "entire native application migration ledger",
+        "real password login for five Auth identities",
+        "19 SQL adversaries reject forged meal-only results with matching hashes and Drafts",
+        "UI day A: 6/6, 2 native accepted Stages, pending execution and deterministic replay",
+        "UI day B: 12/12, 3 native accepted Stages, pending execution and deterministic replay"
+      ],
+      "remoteWrites": 0
+    },
+    {
+      "label": "u00i",
+      "status": "PASS",
+      "bundle": "u00i-receipts.json.gz",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "script/validation/runU00iFunctional.ts",
+        "OUTPUT"
+      ],
+      "checks": [
+        "entire native application migration ledger",
+        "real password login for five Auth identities",
+        "nominal API day A: 2/2 through Stage",
+        "nominal API day B: 4/4 through Stage"
+      ],
+      "remoteWrites": 0
+    },
+    {
+      "label": "u00j",
+      "status": "PASS",
+      "bundle": "u00j-receipts.json.gz",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "script/validation/runU00jFunctional.ts",
+        "OUTPUT"
+      ],
+      "checks": [
+        "entire native application migration ledger",
+        "real password login for five Auth identities",
+        "nominal API day A: 2/2 through Stage",
+        "nominal API day B: 4/4 through Stage",
+        "eight invalid native days fail explicitly before planning"
+      ],
+      "remoteWrites": 0
+    },
+    {
+      "label": "catalog",
+      "status": "PASS",
+      "bundle": "catalog-receipts.json.gz",
+      "command": [
+        "node",
+        "--import",
+        "tsx",
+        "script/demo/smokeA2Integration.ts",
+        "OUTPUT",
+        "--historical-topology",
+        "--catalog-authorization"
+      ],
+      "checks": [
+        "entire native application migration ledger",
+        "real password login for five Auth identities",
+        "historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import",
+        "native schema/prepared security/import and actual SQL catalog preflight; global defaults preserved",
+        "baseline real global PUT and mixed-case spatial PATCH/DELETE bypasses reproduced with all seven identities",
+        "candidate catalog matrix: ADMIN 200, other roles 403, missing/invalid Auth 401; zero handler queries/writes on denial",
+        "GET catalog role policy, plan-local Production PUT, U03a alias and pre-validation denial preserved",
+        "old day, 11 prior Stages, 333 other tasks and historical catalog remain literal after real UI/Autopilot/execution"
+      ],
+      "remoteWrites": 0
     }
   ],
   "coldReplay": {

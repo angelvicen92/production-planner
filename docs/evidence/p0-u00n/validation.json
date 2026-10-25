@@ -17,7 +17,8 @@
     "verifierChecks": 115,
     "deterministicMaterial": true,
     "bundle": "native/receipts.json.gz",
-    "repeatBundle": "native/repeat-receipts.json.gz"
+    "repeatBundle": "native/repeat-receipts.json.gz",
+    "packagedVerifierChecks": 116
   },
   "checks": {
     "typescript": "PASS",
@@ -56,7 +57,12 @@
         "server/benchmarks/runA2Assist7Evidence.spec.ts",
         "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts"
       ]
-    }
+    },
+    "catalogAuditFocused": {
+      "passed": 7,
+      "failed": 0
+    },
+    "additionalHarnessTypescript": "PASS"
   },
   "a2": {
     "status": "PASS",
@@ -71,9 +77,13 @@
   },
   "regressions": "regressions/summary.json",
   "ci": {
-    "status": "PENDING_PUBLICATION",
+    "status": "LIVE_PR_AUTHORITY",
+    "url": "https://github.com/angelvicen92/production-planner/pull/1192",
     "nativeWorkflow": ".github/workflows/p0-u00n-post-stage-additions.yml",
-    "historicalVerifierAdjustment": "U00l uses its integrated source archive; current native gate retained."
+    "firstHead": "74bb7340099280b5c1e1b0df043b0b99cf6ebdc7",
+    "firstHeadNativeU00n": "PASS",
+    "firstHeadNativeU00l": "PASS",
+    "initialAuditAndAdversaryFixes": "checks/ci-initial.json"
   },
   "limits": [
     "Pure additions with demonstrable captures and clean Draft only.",
@@ -91,10 +101,16 @@
     ".github/workflows/p0-u00l-main-nominal-gate.yml": "9beae69171d494aa0879d02d99c16f249799f83786c9713c868a869af431d13e",
     ".github/workflows/p0-u00n-post-stage-additions.yml": "5117b6d2431bb688ef0fcd716c4da8bfd39231f0474cbf3c05b4eaf2b009cbae",
     "client/src/components/planning/assisted-planning-workspace.tsx": "7d05981315cbf834dbeed3e6c6dd98b59e048919ce07ec7b89d03ea583acd54f",
+    "docs/evidence/p0-u00i/verify.py": "50bc097aa056d4b4414dff3c9ccb7c6524e37b1b9b78bf587f9bc01adde09be7",
+    "script/demo/a2ExistingDatabase.spec.ts": "6971649ed9b48476fea253b32e464a0ad5ad598841c892382caf5dbd4afaee5d",
+    "script/demo/assistedSQLContracts.ts": "7264d35957b48cd48c3135f4748da78648caaa7c904436d4151ff080b24e1ae9",
     "script/demo/fixtures/data-api-privileges.json": "638958d757113e964b471166b211d3b372219f7b4e4e44399567fe3647afafbe",
     "script/demo/smokeBootstrapAdditions.ts": "00de7f365145a1611a573caa97356a0a0c7964808ec8dd4d6c78dbcb5a8381f7",
     "script/demo/smokeNewDayIntegration.ts": "17553ec88a7b5945c8255cdf3c8a4e5071497f414f98b4cb038fc5c74895b046",
     "script/demo/smokeNewDayJourney.ts": "032e2429a0858972dcea968560ddb489ed15df539beae42eaab2b3fd3dabb782",
+    "script/validation/participantMealSqlAdversaries.ts": "44300a2736dc2d722c0ac7bfe94c3144653ccce483761d9fa52d0e3f6240c907",
+    "script/validation/u00iFunctionalJourney.ts": "32ca86d1e22efc06a8495e53e21da1651343a20e4f059c9ed603cb4513a6b923",
+    "script/validation/u00jFunctionalJourney.ts": "3d21bd9b7376d08e0645eefdc4cfc798c2734631ad54c3293d66466fdc4e93a7",
     "script/validation/u00lFunctionalJourney.ts": "95f3cc189f13a6df1d2420d31087fed42d917acb0cf87a550cd717a9a80a6696",
     "server/assistedPlanningPersistenceMapping.ts": "973c06ade631744ec70352e0175f4510ea6aa204d4564235ef4c8c9d7d7aac8b",
     "server/assistedPlanningService.ts": "7e8ae4b421f8321381d124a785081818baf34b2ce5c17f9221b5d065b5e11c0e",
@@ -110,7 +126,7 @@
     "supabase/migrations/113_assisted_post_stage_additions.sql": "6b6378f91522544b1e060e9f9641a249d2eceb17a027453ee6a4c50820357b39"
   },
   "artifacts": {
-    "README.md": "7a86a722b1fc44cc8ddf304f650550b3a8b8e4578e4cfe631b36483788069d63",
+    "README.md": "af6fe0c67a6171a97cde9d950e348ddbd5cfd2cfa15bd4c5c408c78c14a86872",
     "a2/base/certificates.json": "56840288fb23ed47d09e0c7502f7bf27a8cbe0aac655ff4f2b147328cf88e457",
     "a2/base/comparison.json": "439377103083d1887d98dbd36ec44f0395b1b0ac85e0cc79a663b03440e41251",
     "a2/base/run.json.gz": "045884bf19264add1bfb1983424027c932e3835e8e282f9330277690b13f2356",
@@ -133,14 +149,21 @@
     "checks/asst010-candidate.log.gz": "0abf4b50f99aa8212159ef6d12ca4cfad4fc4b9d7c2395f2441ebae737809baf",
     "checks/asst010-comparison.json": "5dbe8b6c8da827edcf0f5aa9e5b3dda52b8f4e3c4678bd257c7774efd1fd03a1",
     "checks/build.log.gz": "50f56c7fcad4047867512d3bf2ba8d620cb11352b50f56f2667931f36a74c137",
+    "checks/catalog-tests.log.gz": "1baf5f0e1efef23462ad3db8851c7ece648200510c9f2f8784f6f6c9858b83f4",
+    "checks/ci-initial.json": "19e38f57f8d0d11c549d882340af4a537c1fb36b1f6d00d4ce0bc2d27dd2d31b",
+    "checks/demo-typescript.log.gz": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
     "checks/focused.log.gz": "9fa47b745fe7c1b726e2254b58d60f26ca24568ed16a376a7e2d0bc62e25ea00",
     "checks/harness-typescript.log.gz": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+    "checks/historical-u00i.log.gz": "c7a7bd583d41b6a93e646e52e674b50eeac01eafd46bee7e76b9690406180872",
     "checks/historical-u00l.log.gz": "3e3381d1cdc0386a56d96e8feb3ecfe44721f07751f55d001759f345e94b6237",
     "checks/migrations.log.gz": "d4d2e90d819829ce6bd68e0305d16de976cb9566df8efd0e44351feb160b2333",
     "checks/native-verification.json": "4f64831be19826459e22db7df4d066cb88d221fd48a227504492f9fa5bdbea00",
     "checks/permissions-delta.json": "4c23229c512241061e963606196367f4ebf12775c71be05e11ad28a6b06f194e",
     "checks/suite-global.log.gz": "9f18aa34263a1e210f78bc3a7e288e1c275d4011018228b242dc7672e4af7676",
     "checks/typescript.log.gz": "0ad961eddd0b538daa2612353b08327f5466fe76d3f65bb0703219a111b8c6a5",
+    "checks/u00g-typescript.log.gz": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+    "checks/u00i-typescript.log.gz": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+    "checks/u00j-typescript.log.gz": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
     "checks/u00l-typescript.log.gz": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
     "checks/ui-tests.log.gz": "152e00c957b56bc4bcbeebe8e27ceebf8caa5abb0411e2d5f1c9da0b76187c7f",
     "design.md": "303adbbe3840ce74a1d6f5c135bbc58a413f7a4f5e406ee41b1af66b7caf0d4e",
@@ -154,17 +177,22 @@
     "native/receipts.json.gz": "1cd99614a7659e7f4f2263b32e31eb891ee6a2830b8b3b294b48f8e70f973c13",
     "native/repeat-receipts.json.gz": "eab687721588e919d89063af9cb943da3a8b1df7c5b9fa5de611b796350b18db",
     "proposalAttacks.ts": "c217907e35edcdd3cdb5f9e0a30d8ba26ccc19bffb06475e725f1ae0a8a7c38c",
+    "regressions/catalog-receipts.json.gz": "17718e2557082d1110ebce13a498d3695912b8f71cb24a65089aaee0f45eb3ab",
     "regressions/main-receipts.json.gz": "7be597f53952ad471bc2c7d4fbb76cb8cecab5a2e5293fac6906e7432d8c05c3",
     "regressions/setup-receipts.json.gz": "9a32eded7607e18bd1bbb840c79a400f58d89bbfab64a02e1a96b5b9206d4c4d",
     "regressions/standalone-receipts.json.gz": "10ed549e24efaf9da16a6797b9fcc6a4c7e3f2a593610035cca56a4966c23ab4",
-    "regressions/summary.json": "544d16376b278b48faad14492922ecffef785627d957d88caf5639e9811d9b2c",
+    "regressions/summary.json": "404da5a3b19ba62aca07ad2f0be072a87094619a2418d30c12ce2d64be12563d",
     "regressions/u00c-main-receipts.json.gz": "92257de0c66bee6a60c2942c9719b2c9e6508f16a565d20bcfb89ee4722198fe",
     "regressions/u00c-standalone-receipts.json.gz": "78e7d0f929ae64ab5f3311253517e3ffea606eb214c2d30e48408729e93d6cb6",
+    "regressions/u00g-receipts.json.gz": "8e3812e54d013ad41ed2126c5bd6835a3064d66ce2705a7d92925f02afa5f0e3",
+    "regressions/u00i-receipts.json.gz": "82c4a4035660af707a27b170d9aee06d3e24bd2bcaa392fb9fd8d3e483379641",
+    "regressions/u00j-receipts.json.gz": "b0c9daddf5bac046897687477199a2d43c6e5cab225bbe952794112cb0f5f019",
     "regressions/u00l-receipts.json.gz": "131b605733e5b00ff0cb80b7707e6e5523890f7de2a9c846af43237719ffd030",
     "repeat-manifest.json.gz": "86558955f9fa387b6391e3b52ff60bb223e0a7ed5f0a3c41486c23bc96c164b1",
     "run-a2.py": "52ef85ef9cd0359da0b13ca7a4994f22435de67a42cb1dfc1d0864c5be7cd139",
     "run.ts": "8a4f514358576c50d9a45156622c06f99d6b384cc4e625745f5ac092c0290d03",
     "tsconfig.json": "9a34b456bd3489df42aecb6b4ca34a7c423268a532151b0ad5e7e8d5c68a4755",
-    "verify.py": "5885f8a759b9b0153d0df4e9f88862759fc32da1796cccc2c1ccd084e2e5aec8"
-  }
+    "verify.py": "3a8ef058e64b01b61902df657f52187f7416c7047a163a4e0d502bef84832ee0"
+  },
+  "regressionBundles": 10
 }

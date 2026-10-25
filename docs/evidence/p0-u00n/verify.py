@@ -112,7 +112,7 @@ if len(sys.argv)==1:
     authorities=json.loads((HERE/'authorities.json').read_text())
     for name,digest in authorities['hashes'].items():assert hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==digest,name
     regressions=json.loads((HERE/'regressions/summary.json').read_text())
-    assert len(regressions['cases'])==6 and regressions['coldReplay']['status']=='PASS'
+    assert len(regressions['cases'])==10 and regressions['coldReplay']['status']=='PASS'
     for case in regressions['cases']:
         receipts=json.loads(gzip.decompress((HERE/'regressions'/case['bundle']).read_bytes()))
         integration=receipts['integration.json']

@@ -124,12 +124,19 @@ export async function runU00iFunctionalJourney({appUrl,users,db,directory,pass}:
           }
           if(guard==='protected'){
             forged.scopeTaskIds=[...new Set([...forged.scopeTaskIds,tasks[0].id])].sort((a:any,b:any)=>a-b);
-            await db.query('UPDATE public.planning_runs SET scope_task_ids_json=$2 WHERE id=$1',[run.id,JSON.stringify(forged.scopeTaskIds)]);
-            await db.query("UPDATE public.assisted_planning_sessions SET draft_scope_json=jsonb_set(draft_scope_json,'{resolvedTaskIds}',$2) WHERE id=$1",[draft.session.id,JSON.stringify(forged.scopeTaskIds)]);
           }
           proof.fingerprint=fingerprint(proof.tasks);
           forged.proposedDraftFingerprint=fingerprintAssistedPlanningSnapshotV1(forged.proposedDraftSnapshot);
           await db.query(`UPDATE public.planning_runs SET assisted_result_json=$2::jsonb,result_fingerprint=encode(extensions.digest(convert_to($2::jsonb::text,'UTF8'),'sha256'),'hex') WHERE id=$1`,[run.id,JSON.stringify(forged)]);
+          if(guard==='protected'){
+            // 113 authenticates the original scope; retain recalculated result
+            // hashes and the transaction rollback when this earlier guard fires.
+            try{await db.query('UPDATE public.planning_runs SET scope_task_ids_json=$2 WHERE id=$1',[run.id,JSON.stringify(forged.scopeTaskIds)]);}
+            catch(error){failure=error;}
+            assert.equal(failure?.message,'RUN_ORIGIN_IMMUTABLE');
+            adversaries.push({guard,error:failure.message,hashesRecomputed:true,rolledBack:true,blockedAt:'RUN_ORIGIN_IMMUTABLE'});
+            continue;
+          }
           await db.query('UPDATE public.assisted_planning_sessions SET draft_snapshot_json=$2,draft_fingerprint=$3 WHERE id=$1',[draft.session.id,JSON.stringify(forged.proposedDraftSnapshot),forged.proposedDraftFingerprint]);
           if(guard==='permission')await db.query('SET LOCAL ROLE authenticated');
           try{await db.query('SELECT public.assisted_record_proposal_clean_validation($1,$2,$3,$4)',[planId,guard==='draft'?'0'.repeat(64):forged.proposedDraftFingerprint,

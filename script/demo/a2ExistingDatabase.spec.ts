@@ -138,7 +138,10 @@ test('actual 086 bootstrap rejects resource staleness, materializes S0 and persi
   const rbac=readFileSync('supabase/migrations/037_rbac_auth_magic_link.sql','utf8');
   const roleStart=rbac.indexOf('CREATE OR REPLACE FUNCTION public.has_role');
   await db.exec(rbac.slice(roleStart,rbac.indexOf('GRANT EXECUTE ON FUNCTION public.has_role',roleStart)));
-  for(const migration of ['102_round_preparation_day_override.sql','103_atomic_task_template_inverse.sql','104_operation_continuity.sql','105_new_day_planner_configuration.sql','108_assisted_participant_meal_validation.sql'])
+  // The historical Drizzle fixture omits the composite candidate keys from 077.
+  // Apply those exact keys before the subsequent ledger references them.
+  await db.exec('ALTER TABLE public.assisted_planning_sessions ADD UNIQUE(id,plan_id); ALTER TABLE public.assisted_planning_stages ADD UNIQUE(id,session_id,plan_id); ALTER TABLE public.plan_config_revisions ADD UNIQUE(id,plan_id);');
+  for(const migration of ['102_round_preparation_day_override.sql','103_atomic_task_template_inverse.sql','104_operation_continuity.sql','105_new_day_planner_configuration.sql','107_assisted_post_bootstrap_additions.sql','108_assisted_participant_meal_validation.sql','109_new_day_meal_template_identity.sql','110_nominal_resource_integrity.sql','111_typed_nominal_resource_integrity.sql','112_main_nominal_resource_integrity.sql','113_assisted_post_stage_additions.sql'])
     await db.exec(readFileSync(`supabase/migrations/${migration}`,'utf8'));
   const auditSQL=readFileSync('script/demo/sql/catalog-audit.sql','utf8');
   const select=auditSQL.slice(auditSQL.indexOf('SELECT jsonb_build_object('),auditSQL.lastIndexOf('COMMIT;'));

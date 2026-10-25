@@ -18,9 +18,14 @@ export async function participantMealSqlAdversaries(db:pg.Client,planId:number,r
     try{
       const result=structuredClone(r.assisted_result_json);mutate(result);
       result.proposedDraftFingerprint=fingerprintAssistedPlanningSnapshotV1(result.proposedDraftSnapshot);
-      if(options.scope){result.scopeTaskIds=options.scope;await db.query('UPDATE public.planning_runs SET scope_task_ids_json=$2 WHERE id=$1',[runId,JSON.stringify(options.scope)]);}
+      if(options.scope)result.scopeTaskIds=options.scope;
       await db.query(`UPDATE public.planning_runs SET assisted_result_json=$2::jsonb,
         result_fingerprint=CASE WHEN $3 THEN encode(extensions.digest(convert_to($2::jsonb::text,'UTF8'),'sha256'),'hex') ELSE repeat('0',64) END WHERE id=$1`,[runId,JSON.stringify(result),options.hash!==false]);
+      if(options.scope){
+        await assert.rejects(()=>db.query('UPDATE public.planning_runs SET scope_task_ids_json=$2 WHERE id=$1',[runId,JSON.stringify(options.scope)]),/RUN_ORIGIN_IMMUTABLE/);
+        results.push({name,rejected:'RUN_ORIGIN_IMMUTABLE',canonicalDraftContentFingerprintMatched:true});
+        return;
+      }
       await db.query(`UPDATE public.assisted_planning_sessions SET draft_snapshot_json=$2::jsonb,draft_fingerprint=$3,
         draft_scope_json=jsonb_set(draft_scope_json,'{resolvedTaskIds}',$4::jsonb) WHERE id=$1`,[s.id,JSON.stringify(result.proposedDraftSnapshot),result.proposedDraftFingerprint,JSON.stringify(options.scope??r.scope_task_ids_json)]);
       if(options.role)await db.query('SET LOCAL ROLE authenticated');
@@ -72,11 +77,9 @@ export async function protectedMealSqlAdversary(db:pg.Client,planId:number,runId
   result.scopeTaskIds=[...new Set([...result.scopeTaskIds,id])];
   await db.query('BEGIN');
   try{
-    await db.query(`UPDATE public.planning_runs SET scope_task_ids_json=$3::jsonb,assisted_result_json=$2::jsonb,
-      result_fingerprint=encode(extensions.digest(convert_to($2::jsonb::text,'UTF8'),'sha256'),'hex') WHERE id=$1`,[runId,JSON.stringify(result),JSON.stringify(result.scopeTaskIds)]);
-    await db.query(`UPDATE public.assisted_planning_sessions SET draft_snapshot_json=$2::jsonb,draft_fingerprint=$4,
-      draft_scope_json=jsonb_set(draft_scope_json,'{resolvedTaskIds}',$3::jsonb) WHERE id=$1`,[s.id,JSON.stringify(result.proposedDraftSnapshot),JSON.stringify(result.scopeTaskIds),result.proposedDraftFingerprint]);
-    await assert.rejects(()=>db.query('SELECT public.assisted_record_proposal_clean_validation($1,$2,$3,$4)',[planId,result.proposedDraftFingerprint,r.base_stage_id,r.config_revision_id]),/RUN_RESULT_INVALID/);
+    await db.query(`UPDATE public.planning_runs SET assisted_result_json=$2::jsonb,
+      result_fingerprint=encode(extensions.digest(convert_to($2::jsonb::text,'UTF8'),'sha256'),'hex') WHERE id=$1`,[runId,JSON.stringify(result)]);
+    await assert.rejects(()=>db.query('UPDATE public.planning_runs SET scope_task_ids_json=$2::jsonb WHERE id=$1',[runId,JSON.stringify(result.scopeTaskIds)]),/RUN_ORIGIN_IMMUTABLE/);
   }finally{await db.query('ROLLBACK');}
-  return {status:'PASS',protectedSourceTaskId:id,pendingExecution:true,rejected:'RUN_RESULT_INVALID',hashAndScopeAndDraftMatched:true,canonicalDraftContentFingerprintMatched:true};
+  return {status:'PASS',protectedSourceTaskId:id,pendingExecution:true,rejected:'RUN_ORIGIN_IMMUTABLE',resultHashesRecomputed:true,scopeMutationRejected:true,canonicalDraftContentFingerprintMatched:true};
 }
