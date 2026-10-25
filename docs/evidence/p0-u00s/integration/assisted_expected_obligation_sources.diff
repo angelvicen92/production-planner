@@ -1,0 +1,14 @@
+--- 114/assisted_expected_obligation_sources
++++ 115/assisted_expected_obligation_sources
+@@ -12,9 +12,9 @@
+ 
+  SELECT config_revision_id INTO admission_revision FROM public.assisted_obligation_transitions WHERE id=s.obligation_transition_id;
+  SELECT * INTO transition_record FROM public.plan_config_revisions r WHERE r.plan_id=s.plan_id AND r.id<=s.current_config_revision_id
+-  AND r.id>coalesce(admission_revision,0) AND r.diff_json#>>'{roundSynchronizationTransition,sessionId}'=s.id::text ORDER BY r.id DESC LIMIT 1;
++  AND r.id>coalesce(admission_revision,0) AND coalesce(r.diff_json#>>'{technicalChainTransition,sessionId}',r.diff_json#>>'{roundSynchronizationTransition,sessionId}')=s.id::text ORDER BY r.id DESC LIMIT 1;
+  IF FOUND THEN
+-  result:=transition_record.diff_json#>'{roundSynchronizationTransition,sources}';
++  result:=coalesce(transition_record.diff_json#>'{technicalChainTransition,sources}',transition_record.diff_json#>'{roundSynchronizationTransition,sources}');
+   result:=jsonb_set(result,'{plans,0,current_config_revision_id}',to_jsonb(transition_record.id));
+  END IF;
+  IF result IS NULL OR NOT (result ?& ARRAY['plans','daily_tasks','contestants','locks','plan_breaks','plan_task_template_snapshots','plan_optimizer_snapshots','plan_optimizer_snapshot_heuristics','plan_optimizer_snapshot_grouping_zones','plan_zone_settings','plan_space_settings','plan_resource_items','plan_resource_bundle_snapshots','plan_zone_resource_assignments','plan_space_resource_assignments','plan_zone_resource_type_requirements','plan_space_resource_type_requirements','resource_availability','plan_itinerant_unit_snapshots','program_settings','resource_types','resource_item_components'])

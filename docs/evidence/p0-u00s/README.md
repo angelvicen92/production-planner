@@ -1,5 +1,7 @@
 # P0-U00s — REQUIRED técnico diario hasta Stage real
 
+**Candidato integrado posterior a la primera implementación:** [corrección de las tres fronteras de CI y recibos nuevos](integration/README.md). Los recibos y resultados originales de esta página corresponden al head revisado `dd4c61e` y se conservan sin sobrescribir.
+
 Base `ed4cc0b32c6a5850292c7157f07dee570180696b` (#1196). Una autoridad diaria explícita, tipada y versionada para **una cadena lineal de técnicas sin participante**: orden declarado, adyacencia exacta REQUIRED y uno o varios recursos nominales byItem presentes en todos los miembros. Se configura después de crear las tareas, desde Configuración del día, sin introducir IDs manualmente.
 
 La implementación reutiliza el consumidor técnico existente. No modifica algoritmos, heurísticas, budgets ni el reconocimiento inferido U00r. La migración incremental 115 extiende el writer diario y añade guards materiales de revisión y Stage; no modifica migraciones históricas, perfiles congelados ni 088. ADMIN/PRODUCTION pueden editar con CAS, Draft limpio y sin propuesta activa; los miembros protegidos por ejecución, locks o cualquier Stage histórico impiden cambiar/retirar la regla.

@@ -29,3 +29,10 @@ test('security rollback is based on the captured original state and requires sep
  assert.doesNotMatch(sql,/DELETE|TRUNCATE|INSERT/);
  assert.throws(()=>buildA2SecurityRollback(compatible()),/already exists/);
 });
+test('each extended 115 RPC remains independently protected against body drift',()=>{
+ for(const name of ['apply_day_config_operation_v5','assisted_expected_obligation_sources','assisted_preview_s0_additions','assisted_read_bootstrap_sources']){
+  const catalog=compatible(),fn=catalog.functions.find(f=>f.name===name);assert.ok(fn,name);
+  fn.definition=fn.definition.replace('BEGIN','BEGIN\n PERFORM 1;');
+  assert.ok(inspectA2Catalog(catalog,'2026-10-30').issues.includes('RPC_BODY_DRIFT:'+name),name);
+ }
+});

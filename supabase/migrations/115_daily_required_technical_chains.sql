@@ -89,9 +89,16 @@ GRANT EXECUTE ON FUNCTION public.assert_daily_technical_chains(integer,jsonb) TO
 -- including initialization and older generic writers. No historical revision is updated.
 CREATE FUNCTION public.guard_technical_chain_revision() RETURNS trigger
 LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
-DECLARE chains jsonb;
+DECLARE chains jsonb; p public.plans%rowtype;
 BEGIN
- SELECT nullif(coalesce(daily_technical_chains->'policies',planner_next_configuration->'technicalChains'),'[]') INTO chains FROM public.plans WHERE id=NEW.plan_id;
+ SELECT * INTO p FROM public.plans WHERE id=NEW.plan_id;
+ -- 088's immutable authority predates canonical authority replays. Its original
+ -- sparse representation declares no policies; preserve it literally. Neither
+ -- a native profile nor a replay claiming technicalChains can use this path.
+ IF p.planner_next_configuration IS NOT NULL AND p.planner_next_profile IS NULL
+  AND p.daily_technical_chains IS NULL AND NEW.replay_snapshot_json='{"contractVersion":1}'::jsonb
+ THEN RETURN NEW; END IF;
+ chains:=nullif(coalesce(p.daily_technical_chains->'policies',p.planner_next_configuration->'technicalChains'),'[]');
  IF nullif(NEW.replay_snapshot_json#>'{authorities,plan_workday,0,plannerNextAuthorities,technicalChains}','[]') IS DISTINCT FROM chains
  THEN RAISE EXCEPTION 'TECHNICAL_CHAIN_AUTHORITY_NOT_MATERIALIZED'; END IF;
  RETURN NEW;

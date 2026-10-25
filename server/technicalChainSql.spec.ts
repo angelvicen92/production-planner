@@ -32,6 +32,10 @@ test('SQL material certificate verifies complete chains, authentic prefixes and 
     INSERT INTO plan_config_revisions VALUES(1,2,'{"authorities":{"plan_workday":[{"plannerNextAuthorities":{"technicalChains":[]}}]}}');
     INSERT INTO plan_config_revisions VALUES(2,2,'{"authorities":{"plan_workday":[{"plannerNextAuthorities":{}}]}}');`);
   await assert.rejects(()=>db.query('INSERT INTO plan_config_revisions VALUES(3,2,$1)',[{authorities:{plan_workday:[{plannerNextAuthorities:{technicalChains:[{id:'forged',orderedTaskIds:[1,2]}]}}]}}]),/TECHNICAL_CHAIN_AUTHORITY_NOT_MATERIALIZED/);
+  const historical=[{id:'historic',orderedTaskIds:[8,3]}];
+  await db.query('INSERT INTO plans(id,planner_next_configuration) VALUES(3,$1)',[{technicalChains:historical}]);
+  await db.exec(`INSERT INTO plan_config_revisions VALUES(3,3,'{"contractVersion":1}');`);
+  await assert.rejects(()=>db.query('INSERT INTO plan_config_revisions VALUES(4,3,$1)',[{contractVersion:1,authorities:{plan_workday:[{plannerNextAuthorities:{technicalChains:[{id:'forged'}]}}]}}]),/TECHNICAL_CHAIN_AUTHORITY_NOT_MATERIALIZED/);
   const policy={id:'test-chain',orderedTaskIds:[8,3,5],adjacency:'REQUIRED',resourceContinuity:'REQUIRED',requiredResourceIds:[21]};
   const authority={contractVersion:1,policies:[policy],by:'00000000-0000-0000-0000-000000000001',at:'2026-10-25T00:00:00Z'};
   const profile={configuration:{scenario:'STANDALONE_ONLY',setup:'NONE',transport:'NONE',resourceTransitionMinutes:0}};
@@ -42,6 +46,7 @@ test('SQL material certificate verifies complete chains, authentic prefixes and 
    INSERT INTO plan_zone_settings VALUES(1,201,NULL,NULL);
    INSERT INTO plan_space_settings VALUES(1,101,201,'09:00','09:20'),(1,102,201,'09:15','09:50'),(1,103,201,'09:35','10:00'),(1,104,201,'09:00','11:00');`);
   await db.query('INSERT INTO plan_config_revisions VALUES(10,1,$1)',[{authorities:{plan_workday:[{plannerNextAuthorities:{technicalChains:[policy]}}]}}]);
+  await assert.rejects(()=>db.exec(`INSERT INTO plan_config_revisions VALUES(11,1,'{"contractVersion":1}')`),/TECHNICAL_CHAIN_AUTHORITY_NOT_MATERIALIZED/);
   await assert.rejects(()=>db.query('SELECT public.assert_daily_technical_chains(1,$1)',[{contractVersion:'1',policies:[policy]}]),/UNSUPPORTED_TECHNICAL_CHAIN_STRUCTURE/);
   await assert.rejects(()=>db.query('SELECT public.assert_daily_technical_chains(1,$1)',[{contractVersion:1,policies:[{...policy,adjacency:'PREFERRED'}]}]),/UNSUPPORTED_TECHNICAL_CHAIN_STRUCTURE/);
   const chain=[{taskId:8,startPlanned:'09:00',endPlanned:'09:15',spaceId:101,assignedResourceIds:[21]},{taskId:3,startPlanned:'09:15',endPlanned:'09:35',spaceId:102,assignedResourceIds:[21]},{taskId:5,startPlanned:'09:35',endPlanned:'09:45',spaceId:103,assignedResourceIds:[21]}];
