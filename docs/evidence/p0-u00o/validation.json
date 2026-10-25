@@ -1,0 +1,75 @@
+{
+  "status": "PASS",
+  "base": "3b5f5de5bb534f9f0fcd8cc46614895bc0845ee8",
+  "remoteDatabaseWrites": 0,
+  "productChanges": 0,
+  "migrationChanges": 0,
+  "officialSourceChanges": 0,
+  "nativeRuns": 2,
+  "nativeDaysPerRun": 2,
+  "ordinaryStagesPerRun": 2,
+  "synchronizedStagesAccepted": 0,
+  "migrationsPerRun": 116,
+  "protectedFileCount": 4124,
+  "checks": {
+    "productTypecheck": "npm run check: PASS",
+    "diagnosticTypecheck": "npx --no-install tsc -p docs/evidence/p0-u00o/tsconfig.json: PASS",
+    "migrationSequence": "npm run check:migrations: PASS",
+    "focalCommand": "Node 20.19.5 --import tsx <each of 5 specs, listed in checks/focal-tests.tap.gz>",
+    "focalTestsPerFile": [
+      28,
+      2,
+      15,
+      4,
+      8
+    ],
+    "focalTestTotal": 57,
+    "coldReplayCommand": "node --import tsx docs/evidence/p0-u00o/replay.spec.ts",
+    "coldReplayTests": 4
+  },
+  "repeat": {
+    "A": {
+      "counterfactualInputEqual": true,
+      "fullSolverEqual": true,
+      "identityAndReplayEqual": true,
+      "simulatedFullSnapshotEqual": true,
+      "solverFingerprint": "9eadfa0d33cd80785e2dec06c0f173385749fc35b6b2a0edd27095fe9d1e8450",
+      "simulatedSnapshotFingerprint": "871f93191a9268ac0eb780e91b6ecc037fbbe1c2c47219be0ac0ae807f7f68ec",
+      "ordinaryStageFingerprint": "fd4220f327233aa297c1e78116831cefc8d4d425a4b206676e7f8d299bbc82fa",
+      "futureWitnessFingerprint": "b53d379fb36e8c0e074ae826a5fda5ea7912b328b7989187eefab5ab6f94c64a",
+      "roundScopeBranches": 8,
+      "stageBarrier": "STALE_CONFIG_REVISION",
+      "sqlReplayBarrier": "STALE_ROUND_PREPARATION_CANDIDATE"
+    },
+    "B": {
+      "counterfactualInputEqual": true,
+      "fullSolverEqual": true,
+      "identityAndReplayEqual": true,
+      "simulatedFullSnapshotEqual": true,
+      "solverFingerprint": "492690f4bcb86c32029b2818a0ed85b8c7f155d6016fb76c5a9913dd7eca45b2",
+      "simulatedSnapshotFingerprint": "08fae431d298a96aa135167a16a4a12e12f1f55fd9c7668d029eb2a3b14a888b",
+      "ordinaryStageFingerprint": "9914d4091c1df134ac575cf83240051e83d3d04962ae2e7ef802422aa1cab314",
+      "futureWitnessFingerprint": "56f85c11073fe7ebcd7633842b08094baf7894000b0ec107ecf1ec8c35fe9698",
+      "roundScopeBranches": 6,
+      "stageBarrier": "STALE_CONFIG_REVISION",
+      "sqlReplayBarrier": "STALE_ROUND_PREPARATION_CANDIDATE"
+    }
+  },
+  "determinismExcludedFields": [
+    "futureItinerantOperationalMealsMs",
+    "futureItinerantParticipantFutureMs",
+    "futureItinerantParticipantMealsMs",
+    "futureItinerantPrerequisiteSearchMs",
+    "futureItinerantPriorRevalidationMs",
+    "futureItinerantStructuralSearchMs",
+    "futureItinerantTechnicalFutureMs"
+  ],
+  "a2": {
+    "mode": "HASH_PROTECTED_NOT_RERUN",
+    "completed": 266,
+    "stages": 11,
+    "branches": 27049,
+    "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+    "receipt": "docs/evidence/p0-u00n/a2/comparison.json"
+  }
+}
