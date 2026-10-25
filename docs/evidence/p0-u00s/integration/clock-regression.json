@@ -15,6 +15,15 @@
       "code": "P0001",
       "message": "EXECUTION_WORKDAY"
     },
+    "midnightCase": {
+      "pinnedInstant": "2026-10-25T23:03:00Z",
+      "lookbackSeconds": 600,
+      "rejection": {
+        "code": "P0001",
+        "message": "EXECUTION_WORKDAY"
+      },
+      "productionManualNoonWitnessAccepted": true
+    },
     "productMigrationsUnchanged": true
   },
   "candidateResult": {
@@ -30,6 +39,15 @@
     "civilDayWitnessRejection": {
       "code": "P0001",
       "message": "EXECUTION_WORKDAY"
+    },
+    "midnightCase": {
+      "pinnedInstant": "2026-10-25T23:03:00Z",
+      "lookbackSeconds": 600,
+      "rejection": {
+        "code": "P0001",
+        "message": "EXECUTION_WORKDAY"
+      },
+      "productionManualNoonWitnessAccepted": true
     },
     "productMigrationsUnchanged": true
   },
@@ -52,5 +70,6 @@
     "path": "server/executionTimeCorrections.spec.ts",
     "baseSha256": "4c44e5c04e360e1a32a22e8e59f8cd6d4614747d2c0e5b2a6d10f962e930a94b",
     "reviewedCandidateSha256": "4c44e5c04e360e1a32a22e8e59f8cd6d4614747d2c0e5b2a6d10f962e930a94b"
-  }
+  },
+  "sameMidnightBehavior": true
 }

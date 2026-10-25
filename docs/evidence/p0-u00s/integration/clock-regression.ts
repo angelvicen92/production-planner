@@ -11,6 +11,7 @@ try{
   INSERT INTO user_entity_links VALUES('${actor(3)}','staff_person',5,true);
   INSERT INTO plan_staff_assignments VALUES(1,5,'space',NULL,10,'production');`);
  for(const file of ['097_audited_execution_time_corrections.sql','098_execution_start_workday.sql'])await db.exec(readFileSync('supabase/migrations/'+file,'utf8'));
+ const originalClock=(await db.query("SELECT pg_get_functiondef('public.execution_clock(bigint)'::regprocedure) definition")).rows[0].definition;
  await db.exec(`CREATE OR REPLACE FUNCTION public.execution_clock(p_plan_id bigint)
   RETURNS jsonb LANGUAGE sql VOLATILE SECURITY INVOKER SET search_path='' AS $$
   SELECT jsonb_build_object('serverAt','2026-10-25T22:14:00Z','operationalAt','2026-10-25T22:14:00Z','mode','auto','revision',NULL) $$;`);
@@ -26,5 +27,21 @@ try{
  try{await db.query('SELECT * FROM correct_task_execution_time(1,$1,\'start\',$2,\'Previous date probe\',1)',[actor(3),new Date(previousCivilDay).toISOString()]);}
  catch(e:any){rejection={code:e.code,message:e.message};}
  assert.equal(rejection?.message,'EXECUTION_WORKDAY');
- writeFileSync(process.argv[2],JSON.stringify({pinnedInstant:'2026-10-25T22:14:00Z',dates,previous24Hours,previousCivilDay,oldTestWitnessAccepted:true,civilDayWitnessRejection:rejection,productMigrationsUnchanged:true},null,2));
+ await db.query('SELECT reset_task_execution(1,$1)',[actor(1)]);
+ await db.exec(`UPDATE plans SET date='2026-10-26';
+  CREATE OR REPLACE FUNCTION public.execution_clock(p_plan_id bigint)
+  RETURNS jsonb LANGUAGE sql VOLATILE SECURITY INVOKER SET search_path='' AS $$
+  SELECT jsonb_build_object('serverAt','2026-10-25T23:03:00Z','operationalAt','2026-10-25T23:03:00Z','mode','auto','revision',NULL) $$;`);
+ const midnight=(await db.query('SELECT * FROM execute_task_transition(1,$1,\'in_progress\',NULL,2)',[actor(3)])).rows[0];
+ let midnightRejection:any;
+ try{await db.query('SELECT * FROM correct_task_execution_time(1,$1,\'start\',$2,\'Pause lookback\',3)',[actor(3),new Date(new Date(midnight.start_real_at).getTime()-600_000).toISOString()]);}
+ catch(e:any){midnightRejection={code:e.code,message:e.message};}
+ assert.equal(midnightRejection?.message,'EXECUTION_WORKDAY');
+ await db.query('SELECT reset_task_execution(1,$1)',[actor(1)]);
+ await db.exec(originalClock);
+ await db.exec("UPDATE program_settings SET clock_mode='manual',simulated_time='12:00',simulated_set_at=clock_timestamp()");
+ const noon=(await db.query('SELECT * FROM execute_task_transition(1,$1,\'in_progress\',NULL,4)',[actor(3)])).rows[0];
+ await db.query('SELECT * FROM correct_task_execution_time(1,$1,\'start\',$2,\'Pause lookback\',5)',[actor(3),new Date(new Date(noon.start_real_at).getTime()-600_000).toISOString()]);
+ writeFileSync(process.argv[2],JSON.stringify({pinnedInstant:'2026-10-25T22:14:00Z',dates,previous24Hours,previousCivilDay,oldTestWitnessAccepted:true,civilDayWitnessRejection:rejection,
+  midnightCase:{pinnedInstant:'2026-10-25T23:03:00Z',lookbackSeconds:600,rejection:midnightRejection,productionManualNoonWitnessAccepted:true},productMigrationsUnchanged:true},null,2));
 }finally{await db.close();}

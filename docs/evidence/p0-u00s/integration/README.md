@@ -141,6 +141,15 @@ idénticos a la base. Se corrige sólo el dato negativo para restar un día civi
 en Europe/Madrid, conservando la aserción de rechazo. El gate focal completo
 de ejecución pasa 59/59 y se conserva el before/after en `clock-gates.json.gz`.
 
+La repetición en d680c0a cruza además medianoche: el caso de pausas usa
+«ahora menos 600/700 segundos» y sus datos positivos caen en la jornada anterior.
+El [log de CI](ci-live-midnight-d680c0a.log) y `midnight-gates.json.gz` conservan
+el mismo EXECUTION_WORKDAY reproducido en la base y en el candidato. Sólo ese
+caso de pausa pasa a usar el reloj manual productivo existente a mediodía.
+Las comprobaciones de pausa, cronología, versión, locks y auditoría permanecen;
+los otros casos y los recorridos nativos siguen ejercitando el reloj real.
+El gate completo de ejecución vuelve a pasar 59/59, sin cambio productivo.
+
 ## Resultados del candidato integrado
 
 [CI completa de 896c1fb](ci-896c1fb-green.json): **20 workflows y 35 checks verdes**.

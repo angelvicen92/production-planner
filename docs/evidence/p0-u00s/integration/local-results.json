@@ -105,20 +105,20 @@
   "asst010": "Identical historical failure reproduced on exact base ed4cc0b and candidate; see asst010-comparison.json",
   "finalNativeRuns": [
     {
-      "name": "native-delivery",
+      "name": "native-midnight",
       "exit": 0,
-      "output": "/tmp/u00s-int-native-delivery"
+      "output": "/tmp/u00s-int-native-midnight"
     },
     {
-      "name": "repeat-delivery",
+      "name": "repeat-midnight",
       "exit": 0,
-      "output": "/tmp/u00s-int-repeat-delivery"
+      "output": "/tmp/u00s-int-repeat-midnight"
     }
   ],
   "liveExecutionGate": {
     "tests": 59,
     "passed": 59,
     "failed": 0,
-    "source": "clock-gates.json.gz"
+    "source": "midnight-gates.json.gz"
   }
 }

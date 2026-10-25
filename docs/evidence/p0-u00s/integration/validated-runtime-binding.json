@@ -3,5 +3,5 @@
   "validatedHead": "896c1fb1222ada59bbc8248301d910c3f3daaa84",
   "productionFileCount": 957,
   "allRuntimeSourcesIdentical": true,
-  "finalDelta": "Evidence and SQL lock-counterfactual diagnostics only; no product or algorithm change"
+  "finalDelta": "Evidence, SQL lock counterfactuals and the midnight-only pause fixture; no production change"
 }

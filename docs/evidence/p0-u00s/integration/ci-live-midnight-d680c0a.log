@@ -1,0 +1,73 @@
+2026-10-25T23:03:37.8124036Z   ---
+2026-10-25T23:03:37.8124227Z   duration_ms: 881.446725
+2026-10-25T23:03:37.8124491Z   ...
+2026-10-25T23:03:38.6018655Z # Subtest: pause boundaries remain facts; impossible chronology rejected before and after Finish
+2026-10-25T23:03:38.6019545Z not ok 32 - pause boundaries remain facts; impossible chronology rejected before and after Finish
+2026-10-25T23:03:38.6019951Z   ---
+2026-10-25T23:03:38.6020133Z   duration_ms: 755.005334
+2026-10-25T23:03:38.6020632Z   location: '/home/runner/work/production-planner/production-planner/server/executionTimeCorrections.spec.ts:5:7173'
+2026-10-25T23:03:38.6021128Z   failureType: 'testCodeFailure'
+2026-10-25T23:03:38.6021289Z   error: 'EXECUTION_WORKDAY'
+2026-10-25T23:03:38.6021429Z   code: 'P0001'
+2026-10-25T23:03:38.6021547Z   name: 'error'
+2026-10-25T23:03:38.6021686Z   stack: |-
+2026-10-25T23:03:38.6021994Z     pe.Ue (/home/runner/work/production-planner/production-planner/node_modules/@electric-sql/pg-protocol/src/parser.ts:442:11)
+2026-10-25T23:03:38.6022477Z     pe.tt (/home/runner/work/production-planner/production-planner/node_modules/@electric-sql/pg-protocol/src/parser.ts:220:16)
+2026-10-25T23:03:38.6022954Z     pe.parse (/home/runner/work/production-planner/production-planner/node_modules/@electric-sql/pg-protocol/src/parser.ts:104:21)
+2026-10-25T23:03:38.6023422Z     N.qe (/home/runner/work/production-planner/production-planner/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+2026-10-25T23:03:38.6023892Z     <anonymous> (/home/runner/work/production-planner/production-planner/node_modules/@electric-sql/pglite/dist/index.js:5:1155)
+2026-10-25T23:03:38.6024275Z     wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+2026-10-25T23:03:38.6024487Z     wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+2026-10-25T23:03:38.6024687Z     wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+2026-10-25T23:03:38.6024882Z     wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+2026-10-25T23:03:38.6025075Z     wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+2026-10-25T23:03:38.6025230Z   ...
+2026-10-25T23:03:39.3924574Z # Subtest: Madrid DST: explicit fold instants, offset normalization and same-day planning deviations
+2026-10-25T23:03:39.3925304Z ok 33 - Madrid DST: explicit fold instants, offset normalization and same-day planning deviations
+2026-10-25T23:03:39.3925679Z   ---
+2026-10-25T23:03:39.3925910Z   duration_ms: 830.225757
+2026-10-25T23:03:39.3926163Z   ...
+2026-10-25T23:03:39.6600895Z # Subtest: incident contract trims mandatory facts, leaves unknown links/notes null and rejects forged authority
+2026-10-25T23:03:39.6605735Z ok 34 - incident contract trims mandatory facts, leaves unknown links/notes null and rejects forged authority
+2026-10-25T23:03:39.6606285Z   ---
+2026-10-25T23:03:39.6606475Z   duration_ms: 2.312204
+2026-10-25T23:03:39.6606671Z   ...
+2026-10-25T23:03:39.6607405Z # Subtest: partial updates preserve omitted fields and require observed version; transitions require a decision
+2026-10-25T23:03:39.6625722Z ok 35 - partial updates preserve omitted fields and require observed version; transitions require a decision
+2026-10-25T23:03:39.6626356Z   ---
+2026-10-25T23:03:39.6626743Z   duration_ms: 0.848639
+2026-10-25T23:03:39.6627077Z   ...
+2026-10-25T23:03:57.2485570Z # cancelled 0
+2026-10-25T23:03:57.2485762Z # skipped 0
+2026-10-25T23:03:57.2489720Z # todo 0
+2026-10-25T23:03:57.2505520Z # duration_ms 27649.499911
+2026-10-25T23:03:57.2529445Z ##[error]Process completed with exit code 1.
+2026-10-25T23:03:57.2602020Z ##[group]Run actions/upload-artifact@v4
+2026-10-25T23:03:57.2602181Z with:
+2026-10-25T23:03:57.2602301Z   name: live-day-execution
+2026-10-25T23:03:57.2603324Z   path: work/bulk-execution-reset/integration.json
+work/bulk-execution-reset/bulk-execution-reset.png
+work/execution-date-integrity/integration.json
+work/execution-date-integrity/p7-*.png
+work/time-corrections/integration.json
+work/time-corrections/p2b-*.png
+work/time-corrections/p3-*.png
+work/p3-browser/browser.json
+work/p3-browser/*.png
+work/p4-browser/browser.json
+work/p4-browser/*.png
+work/production-scope/integration.json
+work/live-day-execution/integration.json
+work/live-day-execution/mi-dia-*.png
+work/live-day-execution/workspace-*.png
+
+2026-10-25T23:03:57.2604368Z   if-no-files-found: warn
+2026-10-25T23:03:57.2604503Z   compression-level: 6
+2026-10-25T23:03:57.2604639Z   overwrite: false
+2026-10-25T23:03:57.2604761Z   include-hidden-files: false
+2026-10-25T23:03:57.2604894Z ##[endgroup]
+2026-10-25T23:03:57.3693953Z (node:2357) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-25T23:03:57.3694403Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-25T23:03:57.3759679Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2026-10-25T23:03:57.3762061Z The least common ancestor is /home/runner/work/production-planner/production-planner/work. This will be the root directory of the artifact
+2026-10-25T23:03:57.3777822Z ##[warning]No files were found with the provided path: work/bulk-execution-reset/integration.json

@@ -117,6 +117,8 @@ test('required version/reason/offset, unsupported states, future/date/planning d
 test('pause boundaries remain facts; impossible chronology rejected before and after Finish',async()=>{
   const db=await database();
   try {
+    // Keep the ten-minute lookback inside the same civil workday at midnight.
+    await db.exec("UPDATE program_settings SET clock_mode='manual',simulated_time='12:00',simulated_set_at=clock_timestamp()");
     const start=await transition(db,'in_progress',0);
     await correct(db,'start',iso(start.start_real_at,-600),1);
     const paused=await transition(db,'interrupted',2);
