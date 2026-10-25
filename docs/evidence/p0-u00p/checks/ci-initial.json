@@ -1,0 +1,199 @@
+{
+  "head": "694becc5b9c697625ee03b1524032ca5479e260f",
+  "workflowRuns": [
+    {
+      "id": 40187934605,
+      "name": "Baseline CI",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 3019,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934605/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934605/logs",
+      "workflow_id": 323964867
+    },
+    {
+      "id": 40187934751,
+      "name": "P0 U00l Main nominal resources",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 6,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934751/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934751/logs",
+      "workflow_id": 395358384
+    },
+    {
+      "id": 40187934688,
+      "name": "P0 U00h concrete resources",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 18,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934688/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934688/logs",
+      "workflow_id": 394548592
+    },
+    {
+      "id": 40187934723,
+      "name": "P0 U00i nominal resource causal gate",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 15,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934723/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934723/logs",
+      "workflow_id": 394918367
+    },
+    {
+      "id": 40187934643,
+      "name": "Admin Invites CI",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 31,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934643/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934643/logs",
+      "workflow_id": 391918464
+    },
+    {
+      "id": 40187934691,
+      "name": "Atomic task template save",
+      "status": "completed",
+      "conclusion": "failure",
+      "run_number": 37,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934691/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934691/logs",
+      "workflow_id": 391985987
+    },
+    {
+      "id": 40187934766,
+      "name": "Planner Engine CI",
+      "status": "in_progress",
+      "conclusion": null,
+      "run_number": 585,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934766/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934766/logs",
+      "workflow_id": 330215660
+    },
+    {
+      "id": 40187934651,
+      "name": "P0 U00j typed nominal resources",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 11,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934651/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934651/logs",
+      "workflow_id": 395089381
+    },
+    {
+      "id": 40187934593,
+      "name": "P0 U00g participant meals",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 25,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934593/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934593/logs",
+      "workflow_id": 394321665
+    },
+    {
+      "id": 40187934614,
+      "name": "P0 U00f transport gate",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 27,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934614/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934614/logs",
+      "workflow_id": 393589662
+    },
+    {
+      "id": 40187934712,
+      "name": "P0 U00n post-Stage additions",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 4,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934712/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934712/logs",
+      "workflow_id": 395567852
+    },
+    {
+      "id": 40187934692,
+      "name": "Operation continuity",
+      "status": "completed",
+      "conclusion": "failure",
+      "run_number": 42,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934692/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934692/logs",
+      "workflow_id": 392463062
+    },
+    {
+      "id": 40187934644,
+      "name": "Persistent War Room",
+      "status": "completed",
+      "conclusion": "failure",
+      "run_number": 88,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934644/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934644/logs",
+      "workflow_id": 384643075
+    },
+    {
+      "id": 40187934767,
+      "name": "Live day execution",
+      "status": "completed",
+      "conclusion": "failure",
+      "run_number": 103,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934767/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934767/logs",
+      "workflow_id": 384534610
+    },
+    {
+      "id": 40187934739,
+      "name": "P0 U00p daily synchronized rounds",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 1,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934739/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934739/logs",
+      "workflow_id": 395900871
+    },
+    {
+      "id": 40187934699,
+      "name": "Itinerant physical composition",
+      "status": "completed",
+      "conclusion": "failure",
+      "run_number": 39,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934699/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934699/logs",
+      "workflow_id": 392207210
+    },
+    {
+      "id": 40187935148,
+      "name": "Data API grants",
+      "status": "completed",
+      "conclusion": "failure",
+      "run_number": 113,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187935148/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187935148/logs",
+      "workflow_id": 390707482
+    },
+    {
+      "id": 40187934677,
+      "name": "New day Planner Next",
+      "status": "completed",
+      "conclusion": "failure",
+      "run_number": 40,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934677/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40187934677/logs",
+      "workflow_id": 392597524
+    }
+  ],
+  "failures": [
+    {
+      "classification": "RPC_BODY_DRIFT",
+      "originalExcerpt": "rkspace --stage-order --autopilot --reality-scope\n2026-10-25T11:14:13.2549433Z \n2026-10-25T11:14:25.0958395Z PASS entire native application migration ledger\n2026-10-25T11:14:26.8889141Z PASS real password login for five Auth identities\n2026-10-25T11:14:27.8820279Z PASS historical catalog, old 266-task/11-stage day and other 333 tasks preserved after insert-only import\n2026-10-25T11:14:28.0087123Z AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n2026-10-25T11:14:28.0087674Z + actual - expected\n2026-10-25T11:14:28.0087832Z \n2026-10-25T11:14:28.0087919Z + [\n2026-10-25T11:14:28.0088263Z +   'RPC_BODY_DRIFT:assisted_expected_obligation_sources',\n2026-10-25T11:14:28.0088747Z +   'RPC_BODY_DRIFT:assisted_guard_obligation_validation',\n2026-10-25T11:14:28.0089175Z +   'RPC_BODY_DRIFT:assisted_preview_s0_additions',\n2026-10-25T11:14:28.0089577Z +   'RPC_BODY_DRIFT:apply_day_config_operation_v4',\n2026-10-25T11:14:28.0089971Z +   'RPC_BODY_DRIFT:apply_day_config_operation_v5'\n2026-10-25T11:14:28.0090266Z + ]\n2026-10-25T11:14:28.0090450Z - []\n2026-10-25T11:14:28.0091053Z     at <anonymous> (/home/runner/work/production-planner/production-planner/script/demo/smokeA2Integration.ts:258:29)\n2026-10-25T11:14:28.0092417Z     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n2026-10-25T11:14:28.6400008Z {\"status\":\"FAIL\",\"evidence\":\"/home/runner/work/production-planner/production-planner/work/a2-integration/integration.json\",\"remoteWrites\":0}\n2026-10-25T11:14:28.6726299Z ##[error]Process completed with exit code 1.\n2026-10-25T11:14:28.6817693Z ##[group]Run actions/upload-artifact@v4\n2026-10-25T11:14:28.6818025Z with:\n2026-10-25T11:14:28.6818283Z   name: a2-assisted-integration\n2026-10-25T11:14:28.6820043Z   path: work/a2-integration/integration.json\nwork/a2-integration/stage-order.json\nwork/a2-integration/autopilot.json\nwork/a2-integration/views-history.json\nwork/a2-integration/day-workspace.json\nwork/a2-integration/workspace-*.png\nwork/a2-integration/manual-snapshot-fidelity.json\nwork/a2-integration/restart.json\nwork/a2-integration/*-real-ui.png\nwork/a2-integration/reality-scope.json\nwork/a2-integration/reality-*.png\n\n2026-10-25T11:14:28.6821847Z   if-no-files-found: warn\n2026-10-25T11:14:28.6822100Z   compression-level: 6\n2026-10-25T11:14:28.6822332Z   overwrite: false\n2026-10-25T11:14:28.6822575Z   include-hidden-files: false\n2026-10-25T11:14:28.6822840Z ##[endgroup]\n2026-10-25T11:14:28.8521473Z (node:3968) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.\n2026-10-25T11:14:28.8523071Z (Use `node --trace-deprecation ...` to show where the warning was created)"
+    },
+    {
+      "classification": "DATA_API_PRIVILEGE_CONTRACT",
+      "originalExcerpt": "up]\n2026-10-25T11:14:41.3939556Z \n2026-10-25T11:14:41.3940003Z > rest-express@1.0.0 demo:a2:smoke\n2026-10-25T11:14:41.3941041Z > node --import tsx script/demo/smokeA2Integration.ts work/atomic-template --restricted-data-api --historical-topology --atomic-template\n2026-10-25T11:14:41.3941730Z \n2026-10-25T11:14:52.2918838Z PASS entire native application migration ledger\n2026-10-25T11:14:55.6156496Z AssertionError [ERR_ASSERTION]: Data API contract changed: review every new object, required grant, column boundary and exposed role\n2026-10-25T11:14:55.6184583Z + actual - expected ... Lines skipped\n2026-10-25T11:14:55.6184983Z \n2026-10-25T11:14:55.6187700Z   {\n2026-10-25T11:14:55.6188097Z     functions: [\n2026-10-25T11:14:55.6188463Z ...\n2026-10-25T11:14:55.6188804Z         execute: false,\n2026-10-25T11:14:55.6189273Z         role: 'anon',\n2026-10-25T11:14:55.6190003Z +       signature: 'assert_daily_round_snapshot(integer,jsonb,bigint)'\n2026-10-25T11:14:55.6191129Z -       signature: 'assisted_accept_stage(integer,uuid,text,bigint,text)'\n2026-10-25T11:14:55.6191821Z       },\n2026-10-25T11:14:55.6192142Z       {\n2026-10-25T11:14:55.6192532Z         execute: false,\n2026-10-25T11:14:55.6192992Z         role: 'authenticated',\n2026-10-25T11:14:55.6194043Z +       signature: 'assert_daily_round_snapshot(integer,jsonb,bigint)'\n2026-10-25T11:14:55.6195073Z -       signature: 'assisted_accept_stage(integer,uuid,text,bigint,text)'\n2026-10-25T11:14:55.6195794Z       },\n2026-10-25T11:14:55.6196104Z       {\n2026-10-25T11:14:55.6196431Z         execute: true,\n2026-10-25T11:14:55.6196898Z         role: 'service_role',\n2026-10-25T11:14:55.6197747Z +       signature: 'assert_daily_round_snapshot(integer,jsonb,bigint)'\n2026-10-25T11:14:55.6198820Z -       signature: 'assisted_accept_stage(integer,uuid,text,bigint,text)'\n2026-10-25T11:14:55.6199514Z       },\n2026-10-25T11:14:55.6199887Z       {\n2026-10-25T11:14:55.6200227Z         execute: false,\n2026-10-25T11:14:55.6200611Z         role: 'anon',\n2026-10-25T11:14:55.6201292Z +       signature: 'assert_daily_round_structure(integer,jsonb)'\n2026-10-25T11:14:55.6202429Z -       signature: 'assisted_apply_config_refresh(integer,uuid,bigint,jsonb,jsonb,jsonb)'\n2026-10-25T11:14:55.6203209Z       },\n2026-10-25T11:14:55.6203750Z       {\n2026-10-25T11:14:55.6204142Z         execute: false,\n2026-10-25T11:14:55.6204589Z         role: 'authenticated',\n2026-10-25T11:14:55.6205326Z +       signature: 'assert_daily_round_structure(integer,jsonb)'\n2026-10-25T11:14:55.6206410Z -       signature: 'assisted_apply_config_refresh(integer,uuid,bigint,jsonb,jsonb,jsonb)'\n2026-10-25T11:14:55.6207223Z       },\n2026-10-25T11:14:55.6207552Z       {\n202"
+    },
+    {
+      "classification": "S0_CAPTURE_PROJECTION",
+      "originalExcerpt": "y UI-created day reproduces the absent authorities and never reports READY\n2026-10-25T11:16:04.9754854Z PASS first new day: productive Next proposal, Draft, validation, accepted Stage and all obligations scheduled through the UI\n2026-10-25T11:16:21.6884893Z PASS second independent new day completes nine obligations with different participants, templates and main space\n2026-10-25T11:16:29.9210797Z AssertionError [ERR_ASSERTION]: {\"mode\":\"S0_REPLACEMENT\",\"reason\":\"REBOOTSTRAP_TASK_CHANGED_OR_REMOVED\",\"allowed\":false,\"sourceToken\":\"3e921f772c73d642e60fcbad71de260256b46dd81a643a3d90af89afaff1d9cb\",\"addedTaskIds\":[19,20,21],\"expectedSessionId\":3,\"pendingProposalIds\":[],\"expectedBaseStageId\":5,\"expectedConfigRevisionId\":7,\"expectedDraftFingerprint\":\"97e60879b045460a65ef8c734828dce8777ef54dc7a2498d613771ed5e2a18e0\"}\n2026-10-25T11:16:29.9212403Z \n2026-10-25T11:16:29.9212523Z false !== true\n2026-10-25T11:16:29.9212655Z \n2026-10-25T11:16:29.9213232Z     at incorporateBootstrapAdditions (/home/runner/work/production-planner/production-planner/script/demo/smokeBootstrapAdditions.ts:12:62)\n2026-10-25T11:16:29.9214156Z     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n2026-10-25T11:16:29.9215391Z     at async runNewDayJourney (/home/runner/work/production-planner/production-planner/script/demo/smokeNewDayJourney.ts:185:7)\n2026-10-25T11:16:29.9216987Z     at async <anonymous> (/home/runner/work/production-planner/production-planner/script/demo/smokeNewDayIntegration.ts:122:18)\n2026-10-25T11:16:30.5937462Z {\"status\":\"FAIL\",\"evidence\":\"/home/runner/work/production-planner/production-planner/work/new-day-planner/integration.json\",\"remoteWrites\":0}\n2026-10-25T11:16:30.6247289Z ##[error]Process completed with exit code 1.\n2026-10-25T11:16:30.6349338Z ##[group]Run actions/upload-artifact@v4\n2026-10-25T11:16:30.6349659Z with:\n2026-10-25T11:16:30.6349866Z   name: new-day-planner\n2026-10-25T11:16:30.6351298Z   path: work/new-day-planner/*.json\nwork/new-day-planner/*.png\nwork/standalone-day-planner/*.json\nwork/standalone-day-planner/*.png\nwork/itinerant-new-day-planner/*.json\nwork/itinerant-new-day-planner/*.png\nwork/setup-new-day-planner/*.json\nwork/setup-new-day-planner/*.png\n\n2026-10-25T11:16:30.6352415Z   if-no-files-found: warn\n2026-10-25T11:16:30.6352653Z   compression-level: 6\n2026-10-25T11:16:30.6352874Z   overwrite: false\n2026-10-25T11:16:30.6353095Z   include-hidden-files: false\n2026-10-25T11:16:30.6353328Z env:\n2026-10-25T11:16:30.6353594Z   PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH: /usr/bin/google-chrome\n2026-10-25T11:16:30.6353933Z ##[endgroup]\n2026-10-25T11:16:30.8009717Z (node:3898) [DEP0040] DeprecationWarning: The `punycode` module i"
+    }
+  ]
+}

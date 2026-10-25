@@ -4,7 +4,7 @@
   "acceptedStages": 7,
   "synchronizedStages": 6,
   "sqlAndCertificateRejections": 40,
-  "publicReceipts": 136,
+  "publicReceipts": 138,
   "migrations": 117,
   "independentFreshGeometryRepeat": true
 }

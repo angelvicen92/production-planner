@@ -83,6 +83,7 @@ export async function journey({appUrl,users,db,directory,pass}:{appUrl:string;us
    await api(configPath,'PUT',{roundSynchronization:structure,expectedRevisionId:effective.roundSynchronization.revisionId});
    effective=await api(`/api/plans/${planId}/effective-configuration`);save(`${label}-effective`,effective);
    const staleApply=await request(path+`/proposals/${impossibleRun.id}/apply`,'POST',expected(await api(path)));save(`${label}-stale-run`,staleApply);assert.equal(staleApply.status,409);
+   const noAdditions=await api(path+'/bootstrap-additions');save(`${label}-S0-after-structure-additions-preview`,noAdditions);assert.equal(noAdditions.reason,'REBOOTSTRAP_NO_ADDITIONS');
    const input=await buildEngineInput(planId,storage),canonical=await buildCanonicalPlanConfig(planId,storage);save(`${label}-input`,input);save(`${label}-canonical`,canonical);
    save(`${label}-revision`,(await db.query('SELECT * FROM plan_config_revisions WHERE id=$1',[effective.roundSynchronization.revisionId])).rows[0]);
    const adapter=adaptEngineInputToPlannerNextProblem(input);save(`${label}-preflight`,preflightEngineInputForPlannerNext(input));save(`${label}-adapter`,adapter);assert.equal(adapter.status,'SUPPORTED');if(adapter.status!=='SUPPORTED')throw Error('unsupported');

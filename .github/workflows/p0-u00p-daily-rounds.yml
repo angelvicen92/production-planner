@@ -35,7 +35,7 @@ jobs:
           fi
       - run: npm run check && npm run check:migrations && npm run build
       - run: npx --no-install tsc -p docs/evidence/p0-u00p/tsconfig.json
-      - run: node --import tsx --test --test-concurrency=1 server/roundSynchronizationStructure.spec.ts server/roundPreparation.spec.ts server/roundPreparationSql.spec.ts server/dayConfiguration.spec.ts server/assistedNextScope.spec.ts server/effectivePlanConfigRevision.spec.ts server/apiAuthorization.spec.ts engine/planner-next/planMainFlowAndFeeders.spec.ts
+      - run: node --import tsx --test --test-concurrency=1 script/demo/a2Preflight.spec.ts script/demo/a2ExistingDatabase.spec.ts server/roundSynchronizationStructure.spec.ts server/roundPreparation.spec.ts server/roundPreparationSql.spec.ts server/dayConfiguration.spec.ts server/assistedNextScope.spec.ts server/effectivePlanConfigRevision.spec.ts server/apiAuthorization.spec.ts engine/planner-next/planMainFlowAndFeeders.spec.ts
       - name: Two native days, genuine synchronized Stages, SQL attacks and restoration
         run: node --import tsx docs/evidence/p0-u00p/run.ts work/u00p-native
       - run: python3 docs/evidence/p0-u00p/verify.py work/u00p-native/native

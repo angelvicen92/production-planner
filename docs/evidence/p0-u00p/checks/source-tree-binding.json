@@ -4,5 +4,5 @@
   "a2FilesVerified": 1140,
   "base": "2d95be9fd74fdf60433b1b71ad3704522d558eb4",
   "executedCandidateIdentifiedBySha256": true,
-  "note": "The original sourceCommit remains the pre-commit HEAD; complete source/harness SHA-256 manifests bind both tested candidates to the delivered tree."
+  "note": "Original sourceCommit fields are preserved; source and harness hashes identify the tested uncommitted content."
 }

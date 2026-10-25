@@ -15,7 +15,7 @@ export function requiredFunctionBodies(roundPreparation=false){
  }
  const continuity=readFileSync('supabase/migrations/104_operation_continuity.sql','utf8');
  for(const match of continuity.matchAll(/CREATE(?: OR REPLACE)? FUNCTION public\.([a-z_][a-z0-9_]*)\s*\([\s\S]*?\bAS\s*\$\$([\s\S]*?)\$\$;/gi))
-  if(['apply_day_config_operation_v5','effective_operation_continuity','save_operation_continuity_group'].includes(match[1]))bodies.set(match[1],match[2].replaceAll('\r\n','\n').trim());
+  if(['apply_day_config_operation_v5','effective_operation_continuity','save_operation_continuity_group'].includes(match[1])&&!bodies.has(match[1]))bodies.set(match[1],match[2].replaceAll('\r\n','\n').trim());
  bodies.set('guard_assisted_stage_proposal_plan',assistedStageProposalGuardBody());
  return bodies;
 }
@@ -36,9 +36,9 @@ export function inspectA2Catalog(catalog:Catalog,date:string){
   const candidates=catalog.functions?.filter(f=>f.name===name)??[];
   const matching=candidates.find(f=>body(f.definition)===expected);
   if(!matching)issues.push(`RPC_BODY_DRIFT:${name}`);
-  else if(name!=='assisted_apply_snapshot'&&name!=='guard_assisted_stage_proposal_plan'&&!matching.serviceExecute)issues.push(`RPC_SERVER_DENIED:${name}`);
+  else if(name!=='assisted_apply_snapshot'&&name!=='guard_assisted_stage_proposal_plan'&&name!=='guard_daily_round_synchronization'&&!matching.serviceExecute)issues.push(`RPC_SERVER_DENIED:${name}`);
  }
- for(const f of catalog.functions??[])if((f.name.startsWith('assisted_')||['apply_day_config_operation','apply_day_config_operation_v2','apply_day_config_operation_v3','apply_day_config_operation_v4','apply_day_config_operation_v5','effective_operation_continuity','save_operation_continuity_group','effective_round_preparations','initialize_day_config_revision'].includes(f.name))&&(f.anonExecute||f.authenticatedExecute))issues.push(`RPC_CLIENT_WRITE_GRANT:${f.name}`);
+ for(const f of catalog.functions??[])if((f.name.startsWith('assisted_')||['apply_day_config_operation','apply_day_config_operation_v2','apply_day_config_operation_v3','apply_day_config_operation_v4','apply_day_config_operation_v5','effective_operation_continuity','save_operation_continuity_group','effective_round_preparations','initialize_day_config_revision','guard_daily_round_synchronization','round_structure_canonical_json','assert_daily_round_structure','assert_daily_round_snapshot'].includes(f.name))&&(f.anonExecute||f.authenticatedExecute))issues.push(`RPC_CLIENT_WRITE_GRANT:${f.name}`);
  if(!catalog.roles?.some(r=>r.name==='service_role'&&r.bypassRLS))issues.push('SERVER_ROLE_RLS_INCOMPATIBLE');
  for(const table of securityTables){
   if(!catalog.tables?.some(t=>t.name===table&&t.rls))issues.push(`RLS_DISABLED:${table}`);

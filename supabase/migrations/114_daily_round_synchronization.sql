@@ -306,12 +306,19 @@ END $$;
 CREATE OR REPLACE FUNCTION public.assisted_preview_s0_additions(p_plan_id integer)
 RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
 DECLARE s public.assisted_planning_sessions%rowtype; base public.assisted_planning_stages%rowtype;
- old_sources jsonb; current_sources jsonb; added jsonb; reason text; item jsonb;
+ old_sources jsonb; current_sources jsonb; added jsonb; reason text; item jsonb; transition_record public.plan_config_revisions%rowtype;
 BEGIN
  SELECT * INTO s FROM public.assisted_planning_sessions WHERE plan_id=p_plan_id AND status='ACTIVE';
  IF NOT FOUND THEN RAISE EXCEPTION 'SESSION_NOT_FOUND'; END IF;
  SELECT * INTO base FROM public.assisted_planning_stages WHERE id=s.active_stage_id AND session_id=s.id;
- old_sources:=public.assisted_expected_obligation_sources(s.id);
+ -- S0 has no consolidated planning changes: preserve its literal capture.
+ SELECT sources_json INTO old_sources FROM public.assisted_bootstrap_sources WHERE session_id=s.id;
+ SELECT * INTO transition_record FROM public.plan_config_revisions r WHERE r.plan_id=s.plan_id AND r.id<=s.current_config_revision_id
+  AND r.diff_json#>>'{roundSynchronizationTransition,sessionId}'=s.id::text ORDER BY r.id DESC LIMIT 1;
+ IF FOUND THEN
+  old_sources:=transition_record.diff_json#>'{roundSynchronizationTransition,sources}';
+  old_sources:=jsonb_set(old_sources,'{plans,0,current_config_revision_id}',to_jsonb(transition_record.id));
+ END IF;
  current_sources:=public.assisted_read_bootstrap_sources(p_plan_id);
  SELECT coalesce(jsonb_agg((t->>'id')::integer ORDER BY (t->>'id')::integer),'[]') INTO added
  FROM jsonb_array_elements(current_sources->'daily_tasks') t

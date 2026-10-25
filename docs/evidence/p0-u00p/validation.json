@@ -24,7 +24,7 @@
       "B": 9
     },
     "migrationsPerRun": 117,
-    "publicReceiptsPerRun": 136,
+    "publicReceiptsPerRun": 138,
     "sqlAndCertificateRejectionsPerRun": 40,
     "sourceConcurrencyHttpRejectionsPerRun": 2,
     "realStack": [
@@ -56,9 +56,9 @@
       "exitCode": 0
     },
     "focused": {
-      "command": "Node 20 --import tsx --test --test-concurrency=1 (10 specs named in checks/focused.log.gz)",
-      "tests": 57,
-      "passed": 57
+      "command": "Node 20 --import tsx --test --test-concurrency=1 (SQL/catalog, rounds, configuration, Assisted, authorization, isolation specs; checks/focused.log.gz)",
+      "tests": 64,
+      "passed": 64
     },
     "coldReplay": {
       "command": "node --import tsx docs/evidence/p0-u00p/replay.spec.ts",
@@ -96,6 +96,29 @@
           "receipt": "checks/asst010-comparison.json"
         }
       ]
+    },
+    "u00c": {
+      "status": "PASS",
+      "mode": "REAL_NATIVE_MAIN_VOCAL_AND_S0_ADDITIONS",
+      "receipt": "regressions/u00c-receipts.json.gz"
+    },
+    "dataApi": {
+      "status": "PASS",
+      "mode": "REAL_POSTGRES17_AUTH_POSTGREST_CHROMIUM_RESTRICTED_DEFAULTS",
+      "receipt": "regressions/data-api-receipts.json.gz"
+    },
+    "integrationTypescript": {
+      "exitCode": 0,
+      "receipt": "checks/integration-typescript.log.gz"
+    },
+    "newDayTypescript": {
+      "exitCode": 0,
+      "receipt": "checks/new-day-typescript.log.gz"
+    },
+    "legacyLocalAttempt": {
+      "status": "INCOMPLETE",
+      "classification": "Legacy round-preparation save/reload/replay/protection passed; subsequent full A2 browser proposal exceeded existing 420000ms wait. Canonical A2 passes separately. No timeout changed.",
+      "receipt": "regressions/legacy-local-attempt.json.gz"
     }
   },
   "a2": {
@@ -112,7 +135,12 @@
   "ci": {
     "mode": "LIVE_PULL_REQUEST_WORKFLOWS",
     "workflow": ".github/workflows/p0-u00p-daily-rounds.yml",
-    "snapshotPendingPublication": true
+    "snapshotPendingPublication": true,
+    "initialSnapshot": "checks/ci-initial.json",
+    "initialCorrections": [
+      "Register exact SQL114 bodies and minimal helper privileges in existing catalog gates",
+      "Preserve literal S0 bootstrap sources instead of projected planning null/[] normalization; real U00c rerun PASS"
+    ]
   },
   "limits": [
     "One daily policy, STANDALONE_ONLY, transport/setup NONE",
@@ -123,63 +151,74 @@
     "ASST-010 remains a reproduced historical search-time failure"
   ],
   "artifacts": {
-    "README.md": "a6aa89c1caba2409925b9d682f60c234c9288ca3cf6c9393b8140c2605594e4c",
+    "README.md": "3332e2407b537b0ee6041b3ffb45910a29b3fb75c7d1cbaa109a0f341423032f",
     "a2/base/certificates.json": "56840288fb23ed47d09e0c7502f7bf27a8cbe0aac655ff4f2b147328cf88e457",
-    "a2/base/comparison.json": "5dd503ee08cb2e5d42c3c18ad5498618ac1489b163f65511fc64951e7591efc5",
-    "a2/base/run.json.gz": "b6d2b254073d103c92678d6efb7f158554f8cc8c64c1fe75bc3cafbe72aab06a",
+    "a2/base/comparison.json": "ac824b9cc24fde16eb3f2b9515d4df9e5bd39c20d98bc38b88b7c160fd9546de",
+    "a2/base/run.json.gz": "751d0242bf0c8a69508484eec4cf95f2528d0357cd18e964b122761e4016f082",
     "a2/base/snapshots.json.gz": "32ca8b6ef3d8e523410821f6192d070a66bb270df1fdc88e937d89431270bd92",
     "a2/candidate/certificates.json": "56840288fb23ed47d09e0c7502f7bf27a8cbe0aac655ff4f2b147328cf88e457",
-    "a2/candidate/comparison.json": "86f3a8d6878975e151df63e54c252049c7cf0796a76f127205112628f49db205",
-    "a2/candidate/run.json.gz": "f6d3c4a01d6691685f2bb0efd49a0f1ab72fabf0a36e9423ee2c8dde1715fae1",
+    "a2/candidate/comparison.json": "7e5ab9ea9fe8168798e038e252eb3c3cd4280c328aa4b82b8e46ea210de06ab4",
+    "a2/candidate/run.json.gz": "7186b4e5c99353077d0655f2103b66650f8ee2e05aab957e0616c09562969d46",
     "a2/candidate/snapshots.json.gz": "32ca8b6ef3d8e523410821f6192d070a66bb270df1fdc88e937d89431270bd92",
-    "a2/comparison.json": "a2f83969042c929ec344636579a1848dea6eb33cffc9f9b7e8c01155584cef10",
+    "a2/comparison.json": "66eee862b09ef2c191e518593de86925714571631ff552e0298226e854c9d00f",
     "a2/repeat/certificates.json": "56840288fb23ed47d09e0c7502f7bf27a8cbe0aac655ff4f2b147328cf88e457",
-    "a2/repeat/comparison.json": "be1160ae3592512d69be3b5bccb8f88a21f34e0875a820f29b19811add1ab5b8",
-    "a2/repeat/run.json.gz": "b34884465ca81452174edef07e9f8d30a6cdbab2cfff5fc04af6ad897c2496a2",
+    "a2/repeat/comparison.json": "5c5f4c8a4914e3ba0149ade4aad06ffe2deba64f93ce1d228a755d62d6b6017e",
+    "a2/repeat/run.json.gz": "d7682b8784ea51124e16883d6f58b3e21bf54f3eedd5321c30ef1d4ece2b375a",
     "a2/repeat/snapshots.json.gz": "32ca8b6ef3d8e523410821f6192d070a66bb270df1fdc88e937d89431270bd92",
-    "architecture.md": "f4c9c19534c7dd679520dc5230bc0c815eafc1e0070d53ac2b3cf564e411e299",
+    "architecture.md": "75e09ffe6de7fa68104c557e71d2a8b5699a3fbd4c96e84cea389f8595e66c61",
     "asst010.ts": "af462442651c274f086ad56104ffa2cdb925c424367ea92978627f40ce9824e8",
     "attacks.ts": "3714dcd612bffba9e48704613159cdb890f2de14ec70da25dc7a16df33ed6556",
     "authorities.json": "93beed049488823ffe62efbfe2cd7ec0f724bb89d8d5830fcdd25f883d9d2681",
+    "causal/S0-bootstrap-regression.json.gz": "2dfd097ecae72dc18cfe87997e4ae0056d46671fcbb95df3ad822c0dee6c2e4e",
     "causal/S0-source-difference.json.gz": "2659d568831d1f38e4a880dcb72ab982d1c39392a5b8935a8b53cfe2d1ead2f9",
     "causal/first-rejections.json": "d1fcb98f6266f3db8039fbf01059eef8d36c5943e070673669e538ca37440570",
     "causal/source-concurrency-before.json": "a628e9e7a32668ae9c7ba818bef97e6b9b63494cf3d5faf033e31ea92b04e996",
-    "causal-path.md": "5a614e08d4c9a94fd4fc23c3d4e9b8b8555daa9071f29a77a19ed3bd0809461e",
+    "causal-path.md": "b2d8bd47c7cb6a5e2d1473cbed79cba4dd75cff1a51f17fd95f3f8873228b294",
     "checks/a2.log.gz": "09019e8b37ee6eea852d9788227933c5fae0dc3151d06370d322a8d99ce99364",
     "checks/asst010-base-test.log.gz": "b460d97031294a6a65fd35234c03412e463c8f50578cf5b2ca00d9f3dfdbb7dd",
     "checks/asst010-base.json": "9a0a8b9f558352b668e84783615c55d12c4fb81a52bd26bce18af1092aa3e700",
     "checks/asst010-candidate.json": "9ea64e52a2e1c2069358a063b1b5c4004a80b8857e65327e6f0053060cc04425",
     "checks/asst010-comparison.json": "dfe95e65c508f6b245db38690845e937a311e0d271a519ac6e1ecfad060bcf8b",
-    "checks/build.log.gz": "7cbc5f2bc31bedb479105b13cae8c3230e56bb50ed658853a1d25c923b22a621",
-    "checks/cold-replay.log.gz": "b539db05cfa12b0bd1fca9c266ee4a6d9b2aa6b3f457265a409c782c62fcf6ca",
-    "checks/focused.log.gz": "6754702fa98894c0c1fad441d6b1aa4c2235b373a47325d2646fecb98421d226",
+    "checks/build.log.gz": "e6b2863aec47a887c776670e1876037e38c8457498fa7b67fef61051316e5b7d",
+    "checks/ci-initial.json": "575c86b2b4f65c8ed5d0019a63fe9736ba6171a5127466b20c799db3c74a7ce6",
+    "checks/cold-replay.log.gz": "7c81453ec73fb7f782e85ba001569bf4468e4aad6b96574624e708df41195378",
+    "checks/data-api.log.gz": "5abd21b90e0c647917f713fa6611d7ef8528682dde5c27bdc296966f5ab1896f",
+    "checks/focused.log.gz": "357601eba87c8b323e8a0a893d7ca16b047da46a5831497ca87be058d1e15a99",
     "checks/global.log.gz": "a67a53365dc7f7501886ab9dbea7414320759b9fcb0ecb6dd3c9286bb9b9c08e",
     "checks/harness-typescript.log.gz": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+    "checks/integration-typescript.log.gz": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+    "checks/local-login-timeout.json": "bd5c35b6f3760fd5ebaaf05307d1d7db896f9893d1707d41455eb2156dc5d59e",
     "checks/migrations.log.gz": "0eced39be762c72afec75c6af388ce0bfd35a27b48a9fefc8818cfb740e21b0c",
-    "checks/native-verification.json": "636331ec9ff98837a04893f6b54adcc28135bde0dd48a59ef19b4325f638650b",
+    "checks/native-verification.json": "d99da2dc35dc4a628ad72d9c7cd0a4dfa3985a3281c4932c7797bb0e09642262",
+    "checks/new-day-typescript.log.gz": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
     "checks/node24-groupby.log.gz": "ac5312acba21f822e0704eb1e6affd9472b386dbca153e45d78ea866de9f1d22",
     "checks/protected-history.json": "527d98dc1febe459e6bd95b2cd85a73e4cd809e5f187f6698f7e561b3299da46",
-    "checks/source-tree-binding.json": "101231c7606da0f64e7f562f7d17b3609630eb45f179cbdab1cb6372a1e73ffd",
+    "checks/source-tree-binding.json": "e5b485068182fdcff59e056245fee175179630c2f6dde359562d31c4fd7db13c",
+    "checks/sql-contracts.log.gz": "27a107a31c581c68cddb388cbf270764a0019bd67d9413f1b655c48672620070",
     "checks/typescript.log.gz": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+    "checks/u00c.log.gz": "c94d4eb2004af7383fd0b0d56709e4a61610e99d800bc45545fe1ba8c0b215ae",
     "checks/u00n-verification.json": "8200070a07a77c06b222818729afe355687c2acaa24cf2a757599aec6e99cdfe",
     "checks/ui-and-u00o.log.gz": "e5062b69cfec58d1d0436e44c7b7754b8d2e89b816cf16e9484b0b6137d41417",
-    "journey.ts": "4bb4471d71c816359716cf1b0409fca694b8e6fd2a8de3d072bdaee03e112be5",
+    "journey.ts": "e6584e387bea58e99542389110439783e8512adee4b2c6183c398fa142ce7a35",
     "native/A-S1.png": "9f0b1138c8eb20550bec5398815337a9b2735af560b3152768f371af75e58cf6",
-    "native/A-S2.png": "35c52c8c9071ef744492df3492e7b93a348343ed4ee0bdd87f6898176ff3ae88",
-    "native/A-configuration.png": "c07d6135025aedef0e786917f0bd5c09b153913480e2cf13c43a76caf46cfdb3",
+    "native/A-S2.png": "c7381a7eaaf22372fb688d858878fd7b09be0db72b275e086dccfd5d47b9646d",
+    "native/A-configuration.png": "37490d916c09e2ff1923b4375950034d8bce26a4af41ff9b51ea26dece00626f",
     "native/B-S1.png": "d6f4ceb11fa52a2f8af9818c066e490cc08137792a706ff340e67b53698673f2",
     "native/B-S2.png": "f7c4bfbabbeb8584bc69d547fe94857eabbfa9431d30717c97e87120e8a4c37b",
-    "native/B-configuration.png": "686b62d316bb73a30f84f312c61c6a1b5b117b8fd21ba8744dccdf157c7c747b",
-    "native/manifest.json.gz": "b8b9732e8f1261fd317d3a54695a9dbaecb41f10a505f4b4b330776cfdf43273",
-    "native/receipts.json.gz": "c05222434a3f530337ae86e981d572cb47c6c96a218877692ec6a975e45f8219",
-    "native/repeat-manifest.json.gz": "b8b9732e8f1261fd317d3a54695a9dbaecb41f10a505f4b4b330776cfdf43273",
-    "native/repeat-receipts.json.gz": "a1c98e8ae59f1ed46838f0d1b21bd338d92b0e78f5ded1d5fc3ccc16d5947ef6",
+    "native/B-configuration.png": "134a41b238d02e0f6eb5cd95b7b4a91286eb17bee332db191f018cba505c39e8",
+    "native/manifest.json.gz": "024ecbf0ed4522ccf5917112af95813088f251a6a79643289c8a3b9117ac929b",
+    "native/receipts.json.gz": "d1bbcef563c3e39b5f449ef24c28e9af1854bb6c879c799e1884f7ba5411da80",
+    "native/repeat-manifest.json.gz": "024ecbf0ed4522ccf5917112af95813088f251a6a79643289c8a3b9117ac929b",
+    "native/repeat-receipts.json.gz": "56fb187120f3287b5c4861db2d6fb56788149186fc855a7c41c1aa679c6ce13a",
     "pack.py": "3a0697d89fa28f3d8379441abd304b371e24d60a69ef0e37def8d3a7419b08bf",
+    "regressions/data-api-receipts.json.gz": "d0230bdac6ceb963ba62a2f10319c9028ca4de2246dae0d2bbc2e2723450f433",
+    "regressions/legacy-local-attempt.json.gz": "dc7dc8fa5a0e9e33cecc74a34a2d779ef04653db125208284a10208d4048eb58",
+    "regressions/u00c-receipts.json.gz": "4dc1828e8160d4a00f94938fa037590c1942620fec6e7ce88119bff18fddc1a5",
     "regressions/u00n-receipts.json.gz": "4d84d3b8ace8f5e581f2cf557ecd953b31d917b1b2531e676bfcdb280af2ca74",
     "replay.spec.ts": "f7d51f9ff0ada178bd4f0217686ebc72720e134eb0a2b03ab18e4725890f8030",
     "run-a2.py": "75a92e2d3d37a357e95424f12fec1aff9a178850623f1db89bec197d39a04ba0",
     "run.ts": "1cbc8aebdf35699cc93c314058ffe0eefa616f0193012e78478b57dafe78b24c",
     "tsconfig.json": "e6d7197083d88e2cbaf63d56b29cfd377d7db822ac84a0559da25abbec5f6d70",
-    "verify.py": "498ab7bc204a228135bff9a996082e8199196f5fbd2457c6136c51308b567f33"
+    "verify.py": "082102a8da6a4bac0ccd656758137cb0d3a04646338fd2020c96ed33f2a597c0"
   }
 }

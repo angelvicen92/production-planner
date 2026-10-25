@@ -2,7 +2,7 @@
   "status": "PASS",
   "isolated": true,
   "node": "v20.19.5",
-  "seconds": 79.94599029399998,
+  "seconds": 64.068533689,
   "completed": 266,
   "stages": 11,
   "branches": 27049,

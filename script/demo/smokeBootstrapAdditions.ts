@@ -9,7 +9,9 @@ export async function incorporateBootstrapAdditions({page,appUrl,planId,db,api,r
  directory:string;label:string;pass:(name:string)=>void;negatives?:boolean;concurrent?:boolean;
 }) {
  const path=`/api/plans/${planId}/assisted`,before=await api(path);
- const preview=await api(path+'/bootstrap-additions');assert.equal(preview.allowed,true,JSON.stringify(preview));
+ const preview=await api(path+'/bootstrap-additions');
+ if(!preview.allowed)writeFileSync(`${directory}/${label}-source-rejection.json`,JSON.stringify({preview,...(await db.query('SELECT public.assisted_expected_obligation_sources($1) projected,(SELECT sources_json FROM public.assisted_bootstrap_sources WHERE session_id=$1) captured,public.assisted_read_bootstrap_sources($2) actual',[before.session.id,planId])).rows[0]},null,2));
+ assert.equal(preview.allowed,true,JSON.stringify(preview));
  const body={expectedSessionId:preview.expectedSessionId,expectedBaseStageId:preview.expectedBaseStageId,
   expectedDraftFingerprint:preview.expectedDraftFingerprint,expectedConfigRevisionId:preview.expectedConfigRevisionId,
   sourceToken:preview.sourceToken,addedTaskIds:preview.addedTaskIds,confirmation:'INCORPORATE_NEW_TASKS'};

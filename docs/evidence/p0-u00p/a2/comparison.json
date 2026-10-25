@@ -2,7 +2,7 @@
   "status": "PASS",
   "isolated": true,
   "node": "v20.19.5",
-  "seconds": 79.94599029399998,
+  "seconds": 64.068533689,
   "completed": 266,
   "stages": 11,
   "branches": 27049,
@@ -17,27 +17,23 @@
     {
       "label": "base",
       "exitCode": 0,
-      "seconds": 178.51178103700022
+      "seconds": 107.62994603399966
     },
     {
       "label": "candidate",
       "exitCode": 0,
-      "seconds": 81.45463751500029
+      "seconds": 64.8005999220004
     },
     {
       "label": "repeat",
       "exitCode": 0,
-      "seconds": 63.81937243099992
+      "seconds": 64.54606804000014
     }
   ],
   "baselineCertificatesRevalidated": 11,
   "certificateAuthority": "buildA2Demo.ts: replay + validatePlan + PreparedFutureCollectiveParticipantClosure; 11 per pass",
   "fullReportSnapshotsAndCertificatesEqual": true,
   "sourceHashes": {
-    "server/roundSynchronizationStructure.spec.ts": "aedeeb0bd207fee4b4add0db3cb9c7c1cc1c0d51b2b5929593960644f0bbddcc",
-    "server/roundSynchronizationStructure.ts": "198f0db2689d9d3ab376ff0e5ff312484014f264cf027f807ecf1853f195e643",
-    "shared/roundSynchronizationStructure.ts": "23a82bd42c4128d3865a0c3b9c80142115e0290530713178dde8fe14e18fe202",
-    "supabase/migrations/114_daily_round_synchronization.sql": "0958f5296f4d8ac613349eb633c1a51685615772dcd0b58578689ecf6eb3ab7d",
     "engine/LEGACY_ENGINE_NOTES.md": "c90fbacd5da0ab09fd5027d7c7a0adee31dd12cd237fc0a50d91fe42feac0e1c",
     "engine/buildInput.operationalSnapshotGate.spec.ts": "765f12d236207429e0398a1599eb7f14f72e8013f6dd532b886e2b262aa09d3b",
     "engine/buildInput.optimizerSnapshot.spec.ts": "002b83f8618133b7bf841e4c9296a070b197a0b20f9a3524d487baeb427bf33f",
@@ -994,6 +990,8 @@
     "server/roundPreparation.spec.ts": "39332d35ce48588400c486b317683d803a2ab9c1672925e29d33ee19b3b639e6",
     "server/roundPreparation.ts": "07c82e2e8b6c24abebaed9addea94dc04205c887b863785147416741cd302f80",
     "server/roundPreparationSql.spec.ts": "d48bf872dfeb18e7683a24823a5723b22f0ede624510e483082bfbb790249aaf",
+    "server/roundSynchronizationStructure.spec.ts": "aedeeb0bd207fee4b4add0db3cb9c7c1cc1c0d51b2b5929593960644f0bbddcc",
+    "server/roundSynchronizationStructure.ts": "198f0db2689d9d3ab376ff0e5ff312484014f264cf027f807ecf1853f195e643",
     "server/routes.ts": "60a659621150e6f94a32726d25b20a2b52388a027f1b7793522964f3af2fe888",
     "server/spaceAvailabilityHierarchy.spec.ts": "85d3ae75549b634e10d1ed1d679f8e16ef0e3862fdacad0a7ec17b32fa50ac4c",
     "server/spaceAvailabilityHierarchy.ts": "75d05bc6ed68a5b2692e581c25d39f55e90645a625ce7ffebe61a6f9d27ab5ef",
@@ -1049,6 +1047,7 @@
     "shared/planning-run-state.ts": "f9498d01848625a6da3b683a5bdd6b6366f61ecaa4d992033a4975169034d14c",
     "shared/planningHeaderNotes.ts": "898d96254ee0ac8c56059d72733b95b23393085561dd9623d2883a536b9a5bbb",
     "shared/roundPreparation.ts": "20b294f68b35a69aa51498655b6a98f75221f6da1dbddd00b99a9df313c49b56",
+    "shared/roundSynchronizationStructure.ts": "23a82bd42c4128d3865a0c3b9c80142115e0290530713178dde8fe14e18fe202",
     "shared/routes.resourceAvailability.spec.ts": "70b78b21674fc00fce1327cc165ebe9dd7f62d0720d135e7fb01432e52a540f8",
     "shared/routes.ts": "00ce8dc18383ffb14517c5050e6e92c4d52038a3c4079a094484247176a16d90",
     "shared/schema.ts": "2dce2f167027bebf624c0e6442d6dab1f99f9271eb8b662f51d6a630d336926c",
@@ -1173,6 +1172,7 @@
     "supabase/migrations/110_nominal_resource_integrity.sql": "5700017caeff09473fea1ae69891850a1c9d7f2deefc97b89a81a1b734c2d528",
     "supabase/migrations/111_typed_nominal_resource_integrity.sql": "e34bf69f4874d2e43e1e0fd7ebc489f15342ae9e925a404e170620f00a5c1152",
     "supabase/migrations/112_main_nominal_resource_integrity.sql": "6ec196ece9f65170ad4c9744d2f6245e39a4e934e70725d269a1fdbd95a9e013",
-    "supabase/migrations/113_assisted_post_stage_additions.sql": "2a57334ed746f56eac209cc6fa8689e135b58f5d8c1ee4024ecd98e497d95cce"
+    "supabase/migrations/113_assisted_post_stage_additions.sql": "2a57334ed746f56eac209cc6fa8689e135b58f5d8c1ee4024ecd98e497d95cce",
+    "supabase/migrations/114_daily_round_synchronization.sql": "6f057ad221b820e37c18d5241ef54ec5a9100e7d838aafd0b7d0e44e7af60fe2"
   }
 }

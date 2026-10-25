@@ -35,6 +35,7 @@ def verify(data):
         assert get('space-scope')['resolution']['productTaskIds']==sorted(members)
         witness=get('independent-scope')['result']
         assert len(witness['proposal'])==1 and len([w for w in witness['evidence']['futureStructuralWitnesses'] if w['kind']=='ROUND_SYNCHRONIZATION'])==1
+        assert get('S0-after-structure-additions-preview')['reason']=='REBOOTSTRAP_NO_ADDITIONS'
         s0,s1,s2=get('S0'),get('S1'),get('S2')
         assert s1['activeStage']['ordinal']==1 and s2['activeStage']['ordinal']==2
         assert s0['session']['id']==s1['session']['id']==s2['session']['id']

@@ -57,7 +57,7 @@ Rollback/redo restaura decisiones y fingerprints históricos y conserva la confi
 Dos precisiones conservadoras evitan cambios retroactivos:
 
 - Una autoridad nueva `null` se omite de la captura de sources de plans, conservando literalmente los tokens previos al añadir la columna.
-- Sólo para comparar el origen S0 se normaliza la equivalencia ya documentada de asignación vacía `null`/`[]`; cada otro campo y fila se compara exactamente. No se modifica la captura histórica.
+- Sólo para comparar el origen S0 se normaliza la equivalencia ya documentada de asignación vacía `null`/`[]`; cada otro campo y fila se compara exactamente. No se modifica la captura histórica. El preview de altas anterior a S1 compara su captura literal, incluso tras una transición estructural; no sustituye datos pendientes por una proyección de decisiones.
 
 ## Límites
 
