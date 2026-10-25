@@ -1,0 +1,82 @@
+{
+  "base": "8868ebc365a4941977050d337b4b00a5d2ca553f",
+  "reading": "Dirigida por ámbito: 00 autoridad; 01 técnicas/recursos/protección; 02 frontera solver/producto; 03 scopes y witness; 04 configuración/dependencias/replay; 05 Evidence e inviabilidad; 06 canon A2; 07 §4.4; maestro P0; catálogo DEP-05 contrastado con código; Evidence cadenas/recursos U00b/U00d/U00i y U00o/U00p.",
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "911a1fbee8f6f2d74330413e8b17e070de4ec3d2fbb365e0394a097d662da7d3"
+    },
+    {
+      "path": "docs/governance/OPTIPLAN_MASTER_ADECUACION_APP.md",
+      "sha256": "6daa03ce136d47a4e39bc557650ca9ab8675e7d032bdd6b6942aa9ab1e58b551"
+    },
+    {
+      "path": "docs/governance/PLANNER_CAUSAL_DIAGNOSTIC_PROTOCOL.md",
+      "sha256": "cc62183aec77cab225e6160440dd9ccf695b406b2d01c0e4e91344177e095480"
+    },
+    {
+      "path": "docs/architecture/PLANNER_CAPABILITY_CATALOG.md",
+      "sha256": "90a3f7a86239faef66f7da5a634390236f327f6e9fe59d6d20aa3dbde8cd2fc2"
+    },
+    {
+      "path": "docs/evidence/p0-u00o/causal-path.md",
+      "sha256": "69722dbcb8af813120dc10a4f562c1645db018461ece08a1dc22c6dde9d45546"
+    },
+    {
+      "path": "docs/evidence/p0-u00p/README.md",
+      "sha256": "dbe75eafa132bbd0a557b13b73f416e6911cb0724932f978c3d4c2e859cba261"
+    },
+    {
+      "path": "docs/evidence/p0-u00p/architecture.md",
+      "sha256": "75e09ffe6de7fa68104c557e71d2a8b5699a3fbd4c96e84cea389f8595e66c61"
+    },
+    {
+      "path": "docs/evidence/p0-u00d/README.md",
+      "sha256": "0bddd8340de5a4a7b1e7ee59c738af8ea01a625c0328d05b539d6d9c83ac6cd2"
+    },
+    {
+      "path": "docs/evidence/p0-u00i/implementation/README.md",
+      "sha256": "378a4ed0d833684a349ee9adc6408e720977431c64561fd8865cfc9185193673"
+    },
+    {
+      "path": "docs/source/official/00_INDICE_Y_AUTORIDAD_FUENTES_OPTIPLAN_v2.15.md",
+      "sha256": "7082cee03feb295c71104f559d118608e85c5946f81de1139d6ad902f0e3810f"
+    },
+    {
+      "path": "docs/source/official/01_PRODUCTO_DOMINIO_OPERACION_v5.4.md",
+      "sha256": "e55dc386d647888b913ed55457bb71564b16ccc4c088310c820bf57d984957bc"
+    },
+    {
+      "path": "docs/source/official/02_ORC_CORE_CONSOLIDADO_v2.2.md",
+      "sha256": "1c5d58017ed3b0931cd4d0bc9c121e19c5edc9acb10005c5b759ccd94b937bdf"
+    },
+    {
+      "path": "docs/source/official/03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.8.md",
+      "sha256": "7073930bb7bcbff09cb05553eecd28d357daf1860e55c6a6b9ab1ffe73172ffd"
+    },
+    {
+      "path": "docs/source/official/04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.9.md",
+      "sha256": "d85981443e4e8e1bd073c59684e0b1e7d4a2fae6113a647007dee0f65eb1e8a4"
+    },
+    {
+      "path": "docs/source/official/05_VALIDACION_CALIDAD_BENCHMARK_v2.8.md",
+      "sha256": "2d0aa69ebb5d1949b315a8ebb85c0ad96f0f9939e9441d1ef09a1f1ae9924a13"
+    },
+    {
+      "path": "docs/source/official/06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.10.md",
+      "sha256": "42d0b3b78e732a2e4f1a1a01be9fa39bd82fbda366dd869d3785aedf6155faab"
+    },
+    {
+      "path": "docs/source/official/07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.3.md",
+      "sha256": "7243ed2d186ef19af7ee9717c9b72d94ebca34791257a434be1aab76bed27351"
+    },
+    {
+      "path": "docs/source/official/README.md",
+      "sha256": "3ddf7bf021644edccd9a9551c5b5016943a51aa9bb02b11c6c8fcf040fa9e054"
+    },
+    {
+      "path": "docs/evidence/p0-u00b/README.md",
+      "sha256": "731f0468695357b1c3144c6abb59846096266e1357be07989860f6a401e3a525"
+    }
+  ]
+}
