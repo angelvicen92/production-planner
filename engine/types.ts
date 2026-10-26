@@ -329,6 +329,7 @@ export interface EngineInput {
   /** Explicit ordered Planner Next anchored-operation contract. */
   anchoredAccompaniments?: EngineInputAnchoredAccompanimentInput[];
   dailyAnchoredAccompanimentsVersion?: 1;
+  dailyTaskOperationScopes?: import('../shared/dailyTaskOperationScopes').DailyTaskOperationScopes['policies'];
   operationContinuityGroups?: import("../shared/operationContinuity").OperationContinuityGroup[];
   /** Explicit setup-family grouping and preparation policies. */
   setupPolicies?: EngineInputSetupPolicyInput[];

@@ -23,10 +23,20 @@ test('115 retains the literal 114 delegate and limits existing reader deltas to 
 });
 
 test('116 binds exact source transitions and only the existing task writer loops',()=>{
- const old=latestAssistedSQLContracts(115),current=latestAssistedSQLContracts();
+ const old=latestAssistedSQLContracts(115),current=latestAssistedSQLContracts(116);
  assert.equal(current.get('apply_day_config_operation_before_anchored_accompaniments')!.body,old.get('apply_day_config_operation_v5')!.body);
  const changed=['apply_day_config_operation_v5','assisted_expected_obligation_sources','assisted_preview_s0_additions','assisted_read_bootstrap_sources','assisted_accept_stage','assisted_apply_snapshot'];
  assert.deepEqual([...old].filter(([name,v])=>current.get(name)?.body!==v.body).map(([name])=>name).sort(),changed.sort());
- for(const name of changed)assert.equal(requiredFunctionBodies().get(name),current.get(name)!.body,name);
+ for(const name of changed)assert.equal(requiredFunctionBodies(false,116).get(name),current.get(name)!.body,name);
  assert.match(current.get('assisted_apply_snapshot')!.body,/ANCHORED_RESTORE_REQUIRES_CHECKPOINT/);
+});
+
+
+test('117 retains literal 116 writers and binds only the scope transition and authority reader',()=>{
+ const old=latestAssistedSQLContracts(116),current=latestAssistedSQLContracts(117);
+ assert.equal(current.get('apply_day_config_operation_before_task_operation_scopes')!.body,old.get('apply_day_config_operation_v5')!.body);
+ const changed=['apply_day_config_operation_v5','assisted_expected_obligation_sources','assisted_preview_s0_additions','assisted_read_bootstrap_sources'];
+ assert.deepEqual([...old].filter(([name,v])=>current.get(name)?.body!==v.body).map(([name])=>name).sort(),changed.sort());
+ for(const name of changed)assert.equal(requiredFunctionBodies(false,117).get(name),current.get(name)!.body,name);
+ for(const name of ['assisted_accept_stage','assisted_apply_snapshot'])assert.equal(current.get(name)!.body,old.get(name)!.body,name);
 });

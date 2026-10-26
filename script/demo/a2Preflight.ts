@@ -32,7 +32,7 @@ export function inspectA2Catalog(catalog:Catalog,date:string){
  for(const table of dataset.order)for(const column of [...new Set(dataset.tables[table].flatMap(Object.keys))])if(!catalog.columns?.some(c=>c.table_name===table&&c.column_name===column))issues.push(`MISSING_COLUMN:${table}.${column}`);
  for(const table of dataset.order)if(!catalog.columns?.some(c=>c.table_name===table&&c.column_name==='id'&&c.sequence))issues.push(`MISSING_ID_SEQUENCE:${table}`);
  for(const [table,columns] of Object.entries({program_settings:['default_participant_transition_minutes'],task_templates:['participant_margin_before_minutes','participant_margin_after_minutes']}))for(const column of columns)if(!catalog.columns?.some(c=>c.table_name===table&&c.column_name===column))issues.push(`MISSING_COLUMN:${table}.${column}`);
- for(const [name,expected] of requiredFunctionBodies(catalog.columns?.some(c=>c.table_name==='plans'&&c.column_name==='round_preparation_overrides'),catalog.columns?.some(c=>c.table_name==='plans'&&c.column_name==='daily_anchored_accompaniments')?116:115)){
+ for(const [name,expected] of requiredFunctionBodies(catalog.columns?.some(c=>c.table_name==='plans'&&c.column_name==='round_preparation_overrides'),catalog.columns?.some(c=>c.table_name==='plans'&&c.column_name==='daily_task_operation_scopes')?117:catalog.columns?.some(c=>c.table_name==='plans'&&c.column_name==='daily_anchored_accompaniments')?116:115)){
   const candidates=catalog.functions?.filter(f=>f.name===name)??[];
   const matching=candidates.find(f=>body(f.definition)===expected);
   if(!matching)issues.push(`RPC_BODY_DRIFT:${name}`);

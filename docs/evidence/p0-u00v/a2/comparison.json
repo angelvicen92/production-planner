@@ -1,0 +1,40 @@
+{
+  "status": "PASS",
+  "baseline": "docs/evidence/p0-u00s/integration/a2/candidate",
+  "remoteWrites": 0,
+  "sql": false,
+  "results": {
+    "candidate": {
+      "status": "PASS",
+      "isolated": true,
+      "node": "v20.20.2",
+      "seconds": 80.904700953,
+      "completed": 266,
+      "stages": 11,
+      "branches": 27049,
+      "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+      "fullReportEqualExceptDurationMs": true,
+      "snapshotsEqual": true,
+      "certificatesRevalidated": 11,
+      "wallSeconds": 82.74486788599984
+    },
+    "repeat": {
+      "status": "PASS",
+      "isolated": true,
+      "node": "v20.20.2",
+      "seconds": 108.13685779899998,
+      "completed": 266,
+      "stages": 11,
+      "branches": 27049,
+      "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+      "fullReportEqualExceptDurationMs": true,
+      "snapshotsEqual": true,
+      "certificatesRevalidated": 11,
+      "wallSeconds": 109.23143770300021
+    }
+  },
+  "certificatesRevalidated": 22,
+  "onlyReportExclusion": "iterations[].durationMs",
+  "verifierOriginalBaseLabel": "3ade5d2774584f92f86b2b8670bbb3f19fc5f83c",
+  "base": "b1895fa90f52018abbdefab1c224cb7387f54a39"
+}

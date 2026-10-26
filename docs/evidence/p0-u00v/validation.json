@@ -1,0 +1,66 @@
+{
+  "base": "b1895fa90f52018abbdefab1c224cb7387f54a39",
+  "status": "LOCAL_GATES_PASS_CI_PENDING",
+  "sourceHashes": {
+    "engine/buildInput.ts": "67c5a59b188b5c14821ff2c06dd0e2681d4b62c96264bc5c19b5f3debbc10c49",
+    "engine/types.ts": "2d0eb19ea451ce1c305bd45b6cf6e90b055184275b4ba3059f136e413d86db55",
+    "server/dayConfigurationService.ts": "48fa48ca9c81c80ac68f48c23abef48d8e7b577ce7f9f60ab62841eaf3f986bd",
+    "server/dailyTaskOperationScopes.ts": "def4cb7988eb8a73565399ceed68b15a9b9e26408264a9df8d966d02ad7424ad",
+    "server/effectiveConfigurationView.ts": "1f9b9406b9b66f58fcf56b5791a4ee877c067489a32a044bd9f63c6d2c1bfa25",
+    "server/effectivePlanConfigRevision.ts": "c857fc4c095a4acddd8fc277adda0ec9101399b96d74c314a83889374b9a6f8f",
+    "server/routes.ts": "6d2d4d71b32709f49360aff087ee700102902160f14883a4f88a082ffdf02bd0",
+    "server/anchoredAccompanimentStructure.ts": "b3203b3b22d62f6b7318c8eac8fca5492c21bd2b612eb127175961856bd98f3a",
+    "server/technicalChainStructure.ts": "817ce85541547934b39529f2c33c8ed30c56ac134733e0b9f27e720ced18972c",
+    "shared/dayConfig.ts": "2a151e687d401375f54e8355a74bcf73902b31e13572a4410aff4b09854f0864",
+    "shared/dailyTaskOperationScopes.ts": "d5dc3e79a8fb2e247460ad400a2c761c2b8747b65b9f65dfd1d5021039b88948",
+    "shared/effectiveConfigurationContracts.ts": "2118316b7452c72b14c4431b79597b47be4759796b8657612bf160fe485af0ea",
+    "client/src/components/task-operation-scopes-editor.tsx": "80d9d0db97de3aec8f72834040a8ba1249b6e49002fbf56334997ea2640efd0d",
+    "client/src/components/effective-configuration.tsx": "0eda5297dc14c547c2469551b68009c55a14e0d8381917d481e4e98c84325830",
+    "supabase/migrations/117_daily_task_operation_scopes.sql": "f1477003518743e784ca861aa24888b9ac4d9173395e14a1921b5fc9a99189ed"
+  },
+  "checks": {
+    "applicationTypeScript": "PASS",
+    "harnessTypeScript": "PASS",
+    "build": "PASS",
+    "migrationSequence": "PASS",
+    "publicCredentialScan": "PASS",
+    "focal72": {
+      "pass": 72,
+      "fail": 0
+    },
+    "finalFocal26": {
+      "pass": 26,
+      "fail": 0
+    },
+    "productSuite": {
+      "pass": 3260,
+      "fail": 0,
+      "skip": 0,
+      "runner": "Node 20.20.2, test-concurrency=1",
+      "exclusions": "Only the two existing CI diagnostic exclusions; no new exclusions"
+    },
+    "native": {
+      "status": "PASS",
+      "independentStacks": 2,
+      "daysPerStack": 2,
+      "acceptedStagesPerStack": 3,
+      "completed": [
+        4,
+        6
+      ],
+      "exactReplay": "native/comparison.json"
+    },
+    "historicalUpgrade": "upgrade/upgrade117.json",
+    "regressions": "regressions/summary.json",
+    "a2": "a2/comparison.json"
+  },
+  "attempts": "checks/attempts.json",
+  "ci": {
+    "baseline": "checks/baseline-ci.json",
+    "candidate": "PENDING_PR_CREATION"
+  },
+  "remoteDatabaseWrites": 0,
+  "deployments": 0,
+  "merged": false,
+  "sourceEquivalence": "checks/source-equivalence.json"
+}

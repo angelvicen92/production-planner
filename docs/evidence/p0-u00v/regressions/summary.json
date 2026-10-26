@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "base": "b1895fa90f52018abbdefab1c224cb7387f54a39",
+  "modules": [
+    "nominal",
+    "meals",
+    "additions",
+    "rounds",
+    "required",
+    "anchored-final"
+  ],
+  "literalAssertionsAndTimeouts": true,
+  "remoteWrites": 0
+}
