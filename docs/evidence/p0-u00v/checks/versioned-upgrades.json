@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "historicalAudit": {
+    "from": 115,
+    "to": 116,
+    "maxFunctionContract": 116,
+    "allOriginalRowsExact": true,
+    "sourceReadersExact": true,
+    "privatePrivilegesExact": true
+  },
+  "currentAudit": {
+    "from": 116,
+    "to": 117,
+    "maxFunctionContract": 117,
+    "allOriginalRowsExact": true,
+    "sourceReadersExact": true,
+    "privatePrivilegesExact": true
+  },
+  "rawLogPublication": false,
+  "stdoutVerifiedAgainstExactPublicPassMessages": true,
+  "preservedAssertions": true
+}

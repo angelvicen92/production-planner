@@ -1,5 +1,6 @@
 import { dailyTechnicalChainAuthority, validateDailyTechnicalChains } from "./technicalChainStructure";
 import {dailyAnchoredAuthority,withDailyAnchoredAccompaniments} from './anchoredAccompanimentStructure';
+import {dailyTaskOperationScopesAuthority,withDailyTaskOperationScopes} from './dailyTaskOperationScopes';
 import { validateDailyRoundStructure, dailyRoundAuthority } from "./roundSynchronizationStructure";
 import { applyEffectiveOperationContinuity, candidateOperationContinuity } from "./operationContinuity";
 import { transportBoundsSchema } from "../shared/transportPolicy";
@@ -134,6 +135,7 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
   if (optimizerStateError || !optimizerState) throw optimizerStateError;
   const chainEdit = operation === "EDIT" ? (payload as DayConfigEdit).technicalChains : undefined;
   const anchoredEdit = operation === "EDIT" ? (payload as DayConfigEdit).anchoredAccompaniments : undefined;
+  const scopeEdit = operation === "EDIT" ? (payload as DayConfigEdit).taskOperationScopes : undefined;
   const structureEdit = operation === "EDIT" ? (payload as DayConfigEdit).roundSynchronization : undefined;
   const roundEdit = operation === "EDIT" ? (payload as DayConfigEdit).roundPreparation : undefined;
   const roundRestore = operation === "RESTORE" && (payload as DayConfigRestore).capability === "SYNCHRONIZED_ROUNDS"
@@ -141,7 +143,7 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
   const continuityEdit = operation === "EDIT" ? (payload as DayConfigEdit).operationContinuity : undefined;
   const continuityRestore = operation === "RESTORE" && (payload as DayConfigRestore).capability === "OPERATION_CONTINUITY" ? payload as Extract<DayConfigRestore,{capability:"OPERATION_CONTINUITY"}> : undefined;
   const expectedRevision = plan.current_config_revision_id == null ? null : Number(plan.current_config_revision_id);
-  if ((anchoredEdit || chainEdit || structureEdit || roundEdit || roundRestore || continuityEdit || continuityRestore) && (payload as DayConfigEdit).expectedRevisionId !== expectedRevision)
+  if ((scopeEdit || anchoredEdit || chainEdit || structureEdit || roundEdit || roundRestore || continuityEdit || continuityRestore) && (payload as DayConfigEdit).expectedRevisionId !== expectedRevision)
     throw Object.assign(new Error("STALE_CONFIG_REVISION"), { status: 409 });
   const mainPreferenceBaseline=operation==="REFRESH"&&(payload as DayConfigRefresh).capabilities.includes("BLOCK_COUNT_POLICY")
     ?mainFlowPreferenceFromRow(general):undefined;
@@ -176,6 +178,14 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
   const optimizerInput = optimizerSelected ? await buildEngineInput(planId,candidateRepository) : current.input;
   transportBoundsSchema.parse(optimizerInput);
   let nextInput = structureEdit || chainEdit ? optimizerInput : candidateInput(optimizerInput, plan, general, operation, payload);
+  if(scopeEdit){
+    dailyTaskOperationScopesAuthority(plan);
+    if(!plan.planner_next_profile||plan.planner_next_configuration!=null)throw Object.assign(new Error('TASK_SCOPE_AUTHORITY_CONFLICT'),{status:422});
+    const baseRepository=new Proxy(repository,{get(target,key,receiver){return key==='getPlanEngineInputDetails'?async(id:number)=>{const details=await target.getPlanEngineInputDetails(id);return {...details,plan:{...(details as any).plan,daily_task_operation_scopes:null}};}:Reflect.get(target,key,receiver);}});
+    nextInput=withDailyTaskOperationScopes({...await buildEngineInput(planId,baseRepository),dailyTaskOperationScopes:current.input.dailyTaskOperationScopes},scopeEdit);
+    const readiness=preflightEngineInputForPlannerNext(nextInput);
+    if(readiness.status!=='SUPPORTED')throw Object.assign(new Error(`UNSUPPORTED_TASK_SCOPE: ${readiness.reasonCodes.join(', ')}`),{status:422});
+  }
   if(anchoredEdit){
     dailyAnchoredAuthority(plan);
     if(!plan.planner_next_profile||plan.planner_next_configuration!=null)throw Object.assign(new Error('ANCHORED_AUTHORITY_CONFLICT'),{status:422});
@@ -224,7 +234,7 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
   });
   if (error?.code === "55P03" || error?.code === "40P01")
     throw Object.assign(new Error("STALE_CONFIG_SOURCES"),{status:409,cause:error});
-  if (error) throw Object.assign(error, { status: error.message.includes("PERMISSION_DENIED") ? 403 : /STALE_|ROUND_|TECHNICAL_CHAIN|ANCHORED_|OPERATION_CONTINUITY/.test(error.message) ? 409 : 500 });
+  if (error) throw Object.assign(error, { status: error.message.includes("PERMISSION_DENIED") ? 403 : /STALE_|ROUND_|TECHNICAL_CHAIN|ANCHORED_|TASK_SCOPE|OPERATION_CONTINUITY/.test(error.message) ? 409 : 500 });
   const { data: updated, error: updatedError } = await supabaseAdmin.from("plans").select("*").eq("id", planId).single();
   if (updatedError || !updated) throw updatedError;
   return { ...mapPlan(updated), revisionId: Number(data) };

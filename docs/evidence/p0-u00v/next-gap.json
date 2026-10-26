@@ -1,0 +1,57 @@
+{
+  "source": "Fuente 03 \u00a7\u00a76.1,7 y Fuente 06 v2.10; canon b1895fa",
+  "anchoredOperationCount": 3,
+  "nativeU00uBound": "one nominal anchored operation per day",
+  "nextSingleGap": "Whole anchored-operation A/B choice, including the three A2 declarations",
+  "otherFamiliesUnchanged": [
+    "joint operations",
+    "coordinated meals",
+    "coach transitions",
+    "requiresBand",
+    "remaining coordination"
+  ],
+  "inspection": [
+    {
+      "id": "anchored.reality-plato.C01",
+      "tasks": [
+        {
+          "name": "REALITY_PLATO_ANTES"
+        },
+        {
+          "name": "ENSAYO_ESTUDIO_7"
+        },
+        {
+          "name": "REALITY_PLATO_DESPUES"
+        }
+      ]
+    },
+    {
+      "id": "anchored.reality-plato.C05",
+      "tasks": [
+        {
+          "name": "REALITY_PLATO_ANTES"
+        },
+        {
+          "name": "ENSAYO_ESTUDIO_7"
+        },
+        {
+          "name": "REALITY_PLATO_DESPUES"
+        }
+      ]
+    },
+    {
+      "id": "anchored.reality-plato.C08",
+      "tasks": [
+        {
+          "name": "REALITY_PLATO_ANTES"
+        },
+        {
+          "name": "ENSAYO_ESTUDIO_7"
+        },
+        {
+          "name": "REALITY_PLATO_DESPUES"
+        }
+      ]
+    }
+  ]
+}

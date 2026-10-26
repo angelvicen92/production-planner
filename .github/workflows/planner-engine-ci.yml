@@ -178,7 +178,9 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npx --no-install playwright install --with-deps chromium
+      # ubuntu-latest already supplies Chromium's shared libraries. Keep the
+      # lockfile-pinned browser without charging apt mirror updates to this gate.
+      - run: npx --no-install playwright install chromium
       - run: npx --no-install tsc -p script/demo/tsconfig.integration.json
       - name: Native SQL, Auth, HTTP and UI; canonical baseline and two deterministic orders
         run: npm run demo:a2:smoke -- work/a2-integration --historical-topology --full --day-workspace --stage-order --autopilot --reality-scope

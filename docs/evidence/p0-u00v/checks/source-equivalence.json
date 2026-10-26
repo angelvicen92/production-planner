@@ -1,0 +1,8 @@
+{
+  "change": "Remove one empty final line from new migration 117",
+  "executedNativeSha256": "77962f99afdd40c27c9d0534755b412c1b34cbab54bb598fb0cae4020c8aed9c",
+  "candidateSha256": "f1477003518743e784ca861aa24888b9ac4d9173395e14a1921b5fc9a99189ed",
+  "onlyTrailingEmptyLine": true,
+  "functionBodiesExact": true,
+  "upgradeRepeatedAgainstLiteralCandidate": "upgrade/upgrade117.json"
+}

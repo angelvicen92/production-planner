@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "case": "Retire the final task-operation policy, then read a day carrying another existing structure.",
+  "before": {
+    "error": "UNSUPPORTED_TASK_SCOPE_COMBINATION",
+    "focusedRegressionFailed": true
+  },
+  "change": "Check combination support only when at least one task-operation policy is active.",
+  "after": {
+    "focalTests": 66,
+    "pass": 66,
+    "fail": 0,
+    "skip": 0,
+    "applicationTypeScript": "PASS",
+    "inputImmutable": true,
+    "taskFieldsUnchanged": true,
+    "otherStructuresUnchanged": true,
+    "activeCombinationStillRejected": true,
+    "combinationSupportStillFalse": true,
+    "materialRevisionReaderPass": true
+  },
+  "sourceSha256": "6204c06b52e1f044e5d5534d6817ad4920be1b807976029d67821961216dd916",
+  "newTest": "engine/planner-next/integration/nativeTaskOperationScopes.spec.ts: retired empty declarations leave other structures untouched without advertising combination support",
+  "sqlMigrationUnchanged": true,
+  "solverAndBudgetsUnchanged": true,
+  "currentNativeE2eAuthority": "https://github.com/angelvicen92/production-planner/pull/1200/checks"
+}

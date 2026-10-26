@@ -61,7 +61,9 @@ jobs:
       - run: node --import tsx --test client/src/lib/my-day-operational.test.ts client/src/components/my-day/activity-information.test.tsx
       - name: Nominal Production authority, incidents and accepted A2 preservation
         run: node --import tsx script/demo/smokeA2Integration.ts work/production-scope --historical-topology --production-scope
-      - run: npx --no-install playwright install --with-deps chromium
+      # ubuntu-latest already supplies Chromium's shared libraries. Keep the
+      # lockfile-pinned browser without charging apt mirror updates to this gate.
+      - run: npx --no-install playwright install chromium
       - name: ADMIN atomic whole-day execution reset, native races and real filtered UI
         run: node --import tsx script/demo/smokeA2Integration.ts work/bulk-execution-reset --historical-topology --bulk-execution-reset --restricted-data-api
       - name: SQL Start workday integrity, clock races, real HTTP and unchanged Mi Día

@@ -1,0 +1,262 @@
+{
+  "status": "PASS",
+  "productHead": "bfa557e7db46814ad6d49d4c4efb1e0067ce7636",
+  "base": "b1895fa90f52018abbdefab1c224cb7387f54a39",
+  "pullRequest": "https://github.com/angelvicen92/production-planner/pull/1200",
+  "observedAtUTC": "2026-10-26 16:41:38 UTC",
+  "workflowRecords": 25,
+  "distinctWorkflows": 24,
+  "failures": 0,
+  "pending": 0,
+  "productSuite": {
+    "tests": 3260,
+    "pass": 3259,
+    "fail": 0,
+    "skip": 1,
+    "skipReason": "historical SPEC10-012R2 commits are unavailable in this shallow checkout",
+    "newExclusions": 0,
+    "jobId": 121620687488
+  },
+  "liveExecutionRetry": {
+    "runId": 40336592031,
+    "attempt": 2,
+    "successfulJobId": 121700037731,
+    "firstAttempt": {
+      "jobId": 121619711857,
+      "conclusion": "cancelled",
+      "reason": "The existing 15-minute job expired after the Ubuntu dependency download used 12min 11s (23.7 MB at 32.4 kB/s).",
+      "testFailuresObserved": 0
+    },
+    "workflowUnchanged": true,
+    "timeoutUnchanged": true,
+    "assertionsUnchanged": true
+  },
+  "runs": [
+    {
+      "id": 40336591942,
+      "name": "Data API grants",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336591942"
+    },
+    {
+      "id": 40336592301,
+      "name": "Planner Engine CI",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336592301"
+    },
+    {
+      "id": 40336592151,
+      "name": "Atomic task template save",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336592151"
+    },
+    {
+      "id": 40336592684,
+      "name": "Operation continuity",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336592684"
+    },
+    {
+      "id": 40336592407,
+      "name": "New day Planner Next",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336592407"
+    },
+    {
+      "id": 40336592121,
+      "name": "P0 U00u native anchored operation",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336592121"
+    },
+    {
+      "id": 40336591779,
+      "name": "P0 U00i nominal resource causal gate",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336591779"
+    },
+    {
+      "id": 40336591990,
+      "name": "P0 U00f transport gate",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336591990"
+    },
+    {
+      "id": 40336591926,
+      "name": "P0-U00t release rehearsal",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336591926"
+    },
+    {
+      "id": 40336591970,
+      "name": "P0 U00n post-Stage additions",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336591970"
+    },
+    {
+      "id": 40336592076,
+      "name": "P0 U00j typed nominal resources",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336592076"
+    },
+    {
+      "id": 40336592685,
+      "name": "P0 U00h concrete resources",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336592685"
+    },
+    {
+      "id": 40336591948,
+      "name": "P0 U00p daily synchronized rounds",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336591948"
+    },
+    {
+      "id": 40336591981,
+      "name": "Baseline CI",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336591981"
+    },
+    {
+      "id": 40336592531,
+      "name": "P0 U00l Main nominal resources",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336592531"
+    },
+    {
+      "id": 40336591907,
+      "name": "Persistent War Room",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336591907"
+    },
+    {
+      "id": 40336591772,
+      "name": "Itinerant physical composition",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336591772"
+    },
+    {
+      "id": 40336592360,
+      "name": "P0 U00g participant meals",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336592360"
+    },
+    {
+      "id": 40336591775,
+      "name": "P0 U00v native standalone operational scopes",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336591775"
+    },
+    {
+      "id": 40336591802,
+      "name": "Admin Invites CI",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336591802"
+    },
+    {
+      "id": 40336592118,
+      "name": "P0 U00s daily REQUIRED technical chains",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336592118"
+    },
+    {
+      "id": 40336591983,
+      "name": "Catalog Authorization CI",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336591983"
+    },
+    {
+      "id": 40336591902,
+      "name": "Template Authorization CI",
+      "event": "pull_request",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336591902"
+    },
+    {
+      "id": 40336592031,
+      "name": "Live day execution",
+      "event": "pull_request",
+      "attempt": 2,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336592031"
+    },
+    {
+      "id": 40336585292,
+      "name": "Baseline CI",
+      "event": "push",
+      "attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40336585292"
+    }
+  ],
+  "rawLogPublication": false
+}

@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "independentDisposableStacks": true,
+  "differentActorsAndClocks": true,
+  "comparisons": {
+    "A-S1": {
+      "fingerprint": "b91d540153926c9788577a3dfc71a29abf09041d1bbff6ea9f2d7ba6b9536b71",
+      "workExact": true,
+      "snapshotExact": true,
+      "stageFingerprintExact": true,
+      "branches": 5
+    },
+    "B-S1": {
+      "fingerprint": "f9c89e24384d6493a81b37bf05e1c0d99b6850efe8b673aa87b8ce2f10fc3946",
+      "workExact": true,
+      "snapshotExact": true,
+      "stageFingerprintExact": true,
+      "branches": 3
+    },
+    "B-S2": {
+      "fingerprint": "51a7cc91fa52890a98a93cec56e44b458073bbdc638999530909da8b77ef7a2e",
+      "workExact": true,
+      "snapshotExact": true,
+      "stageFingerprintExact": true,
+      "branches": 5
+    }
+  }
+}

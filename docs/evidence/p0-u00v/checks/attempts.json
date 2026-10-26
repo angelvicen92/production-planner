@@ -1,0 +1,92 @@
+{
+  "causal-1": {
+    "status": "FAIL",
+    "error": "Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'playwright' imported from /tmp/u00v-causal-1/source/script/demo/smokeNewDayJourney.ts\nDid you mean to import \"playwright/index.js\"?\n    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:301:9)\n    at packageResolve (node:internal/modules/esm/resolve:768:81)\n    at moduleResolve (node:internal/modules/esm/resolve:859:18)\n    at defaultResolve (node:internal/modules/esm/resolve:992:11)\n    at nextResolve (node:internal/modules/esm/hooks:785:28)\n    at resolveBase (file:///workspace/production-planner/node_modules/tsx/dist/esm/index.mjs?1793019201373:2:3744)\n    at resolveDirectory (file:///workspace/production-planner/node_modules/tsx/dist/esm/index.mjs?1793019201373:2:4243)\n    at resolveTsPaths (file:///workspace/production-planner/node_modules/tsx/dist/esm/index.mjs?1793019201373:2:4984)\n    at async resolve (file:///workspace/production-planner/node_modules/tsx/dist/esm/index.mjs?1793019201373:2:5355)\n    at async nextResolve (node:internal/modules/esm/hooks:785:22)",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities"
+    ]
+  },
+  "causal-2": {
+    "status": "FAIL",
+    "error": "TypeError: Cannot read properties of undefined (reading 'start')\n    at <anonymous> (/tmp/u00v-causal-2/source/docs/evidence/p0-u00v/journey.ts:57:140)\n    at Array.map (<anonymous>)\n    at journey (/tmp/u00v-causal-2/source/docs/evidence/p0-u00v/journey.ts:57:68)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async <anonymous> (/tmp/u00v-causal-2/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities"
+    ]
+  },
+  "causal-3": {
+    "status": "PASS",
+    "error": null,
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities",
+      "same native EngineInput: physical exclusivity, fixed camera released, unit and direct kit retained; memory-only"
+    ]
+  },
+  "native-1": {
+    "status": "FAIL",
+    "error": "AssertionError [ERR_ASSERTION]: execution-done\n    at reject (/tmp/u00v-native-1/source/docs/evidence/p0-u00v/attacks.ts:11:69)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async attacks (/tmp/u00v-native-1/source/docs/evidence/p0-u00v/attacks.ts:36:46)\n    at async journey (/tmp/u00v-native-1/source/docs/evidence/p0-u00v/native.ts:71:4)\n    at async <anonymous> (/tmp/u00v-native-1/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities"
+    ]
+  },
+  "native-2": {
+    "status": "FAIL",
+    "error": "AssertionError [ERR_ASSERTION]: lock\n    at reject (/tmp/u00v-native-2/source/docs/evidence/p0-u00v/attacks.ts:11:69)\n    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at async attacks (/tmp/u00v-native-2/source/docs/evidence/p0-u00v/attacks.ts:39:3)\n    at async journey (/tmp/u00v-native-2/source/docs/evidence/p0-u00v/native.ts:71:4)\n    at async <anonymous> (/tmp/u00v-native-2/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities"
+    ]
+  },
+  "native-3": {
+    "status": "FAIL",
+    "error": "AssertionError [ERR_ASSERTION]: {\"code\":\"ASSISTED_VALIDATION_FAILED\",\"message\":\"ASSISTED_VALIDATION_FAILED\"}\n\n500 !== 200\n\n    at action (/tmp/u00v-native-3/source/docs/evidence/p0-u00v/native.ts:86:256)\n    at async journey (/tmp/u00v-native-3/source/docs/evidence/p0-u00v/native.ts:89:5)\n    at async <anonymous> (/tmp/u00v-native-3/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities"
+    ]
+  },
+  "native-4": {
+    "status": "FAIL",
+    "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('itinerant-physical-occupancy') to be visible\u001b[22m\n\n    at journey (/tmp/u00v-native-4/source/docs/evidence/p0-u00v/native.ts:104:79)\n    at async <anonymous> (/tmp/u00v-native-4/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities"
+    ]
+  },
+  "native-5": {
+    "status": "FAIL",
+    "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n2 !== 1\n\n    at journey (/tmp/u00v-native-5/source/docs/evidence/p0-u00v/native.ts:116:181)\n    at async <anonymous> (/tmp/u00v-native-5/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities"
+    ]
+  },
+  "reg-u00u": {
+    "status": "FAIL",
+    "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('daily-anchored-accompaniment').getByText(/Operación anclada efectiva y versionada/) to be visible\u001b[22m\n\n    at journey (/tmp/u00v-reg-u00u/source/docs/evidence/p0-u00u/native.ts:60:120)\n    at async <anonymous> (/tmp/u00v-reg-u00u/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities"
+    ]
+  },
+  "reg-u00u-repeat": {
+    "status": "FAIL",
+    "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('assisted-workspace') to be visible\u001b[22m\n\n    at journey (/tmp/u00v-reg-u00u-repeat/source/docs/evidence/p0-u00u/native.ts:101:108)\n    at async <anonymous> (/tmp/u00v-reg-u00u-repeat/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities",
+      "A: native UI declaration, proposal, Draft, validation, Stage, SQL and browser reload"
+    ]
+  },
+  "reg-u00l": {
+    "status": "FAIL",
+    "error": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByLabel('Email', { exact: true })\u001b[22m\n\n    at runU00lFunctionalJourney (/tmp/u00v-reg-u00l/source/script/validation/u00lFunctionalJourney.ts:38:82)\n    at async <anonymous> (/tmp/u00v-reg-u00l/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities"
+    ]
+  }
+}

@@ -3031,7 +3031,7 @@ function mapDeleteError(err: any, fallback: string) {
         if (!full) return res.status(404).json({ message: "Plan not found" });
 
         const p: any = full.plan;
-        const anchoredInput=p.daily_anchored_accompaniments?.policies?.length?await buildEngineInput(planId,storage):null;
+        const anchoredInput=p.daily_anchored_accompaniments?.policies?.length||p.daily_task_operation_scopes?.policies?.length?await buildEngineInput(planId,storage):null;
         const nativeOperationPresentation=anchoredInput?{anchoredAccompaniments:anchoredInput.anchoredAccompaniments,itinerantTeamAvailability:anchoredInput.itinerantTeamAvailability,
           dailyItinerantTeams:anchoredInput.itinerantCompositionSnapshot?.units.map(u=>({id:u.id,code:u.code,name:u.name,isActive:true})),
           taskOperations:anchoredInput.tasks.map(t=>({taskId:t.id,blocksSpace:t.blocksSpace,agendaScope:t.agendaScope,

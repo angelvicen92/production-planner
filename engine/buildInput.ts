@@ -1,5 +1,6 @@
 import { applyDailyTechnicalChains } from "../server/technicalChainStructure";
 import { applyDailyAnchoredAccompaniments } from "../server/anchoredAccompanimentStructure";
+import { applyDailyTaskOperationScopes } from "../server/dailyTaskOperationScopes";
 import { applyDailyRoundStructure } from "../server/roundSynchronizationStructure";
 import { applyDailyItinerantComposition, ItinerantCompositionError } from '../server/itinerantComposition';
 import { applyNewDayPlannerConfiguration } from "../server/newDayPlannerConfiguration";
@@ -1013,6 +1014,6 @@ export async function buildEngineInput(
     if ((p.planner_next_configuration ?? p.plannerNextConfiguration) != null) throw new ItinerantCompositionError('autoridades históricas y heredadas incompatibles');
     effectiveInput = applyDailyItinerantComposition(effectiveInput, await storage.getPlanItinerantUnitSnapshots(planId), planId);
   }
-  const anchoredRevision=p.daily_anchored_accompaniments?.policies?.length&&p.current_config_revision_id!=null?await storage.getPlanConfigRevision(Number(p.current_config_revision_id)):null;
-  return applyDailyAnchoredAccompaniments(applyDailyTechnicalChains(applyEffectiveOperationContinuity(applyEffectiveRoundPreparations(applyDailyRoundStructure(applyEffectiveMainFlowPreference(effectiveInput,p),p),p),p,taskTemplateSnapshots),p),p,anchoredRevision?.replaySnapshotJson);
+  const anchoredRevision=(p.daily_anchored_accompaniments?.policies?.length||p.daily_task_operation_scopes!=null)&&p.current_config_revision_id!=null?await storage.getPlanConfigRevision(Number(p.current_config_revision_id)):null;
+  return applyDailyTaskOperationScopes(applyDailyAnchoredAccompaniments(applyDailyTechnicalChains(applyEffectiveOperationContinuity(applyEffectiveRoundPreparations(applyDailyRoundStructure(applyEffectiveMainFlowPreference(effectiveInput,p),p),p),p,taskTemplateSnapshots),p),p,anchoredRevision?.replaySnapshotJson),p,anchoredRevision?.replaySnapshotJson);
 }

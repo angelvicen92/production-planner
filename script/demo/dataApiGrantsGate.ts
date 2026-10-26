@@ -44,7 +44,19 @@ export function assertPrivilegeContract(catalog:DataApiCatalog) {
   for(const table of catalog.tables)if(table.kind==='r'||table.kind==='p')
     assert.equal(table.rls,true,`${table.name}: every public table, including future migrations, requires RLS`);
   const anchoredSchema=Object.hasOwn(catalog.tables.find(t=>t.name==='plans')?.columns??{},'daily_anchored_accompaniments');
-  assert.deepEqual(privilegeContract(catalog),JSON.parse(readFileSync(anchoredSchema?'script/demo/fixtures/data-api-privileges-116.json':contractPath,'utf8')),
+  const taskScopeSchema=Object.hasOwn(catalog.tables.find(t=>t.name==='plans')?.columns??{},'daily_task_operation_scopes');
+  const expected=JSON.parse(readFileSync(anchoredSchema?'script/demo/fixtures/data-api-privileges-116.json':contractPath,'utf8'));
+  const scopeFunctions=['apply_day_config_operation_before_task_operation_scopes(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)','assert_daily_task_operation_scopes(integer,jsonb)','assert_task_scope_revision(integer,jsonb)','assert_task_scope_snapshot(integer,jsonb,bigint)','guard_daily_task_operation_scopes()','guard_task_scope_revision()','guard_task_scope_source()','guard_task_scope_stage()','task_scope_contracts(jsonb)','task_scope_member_ids(jsonb)','task_scope_task_operations(integer,jsonb,jsonb,jsonb)'];
+  if(taskScopeSchema){
+    for(const signature of scopeFunctions)for(const role of ['anon','authenticated','service_role'])expected.functions.push({signature,role,execute:role==='service_role'&&!signature.startsWith('guard_')});
+    expected.functions.sort((a:any,b:any)=>a.signature<b.signature?-1:a.signature>b.signature?1:a.role<b.role?-1:a.role>b.role?1:0);
+    for(const role of ['anon','authenticated','service_role']){
+      const plan=catalog.tables.find(t=>t.name==='plans'&&t.role===role);assert.ok(plan);
+      assert.deepEqual(plan.columns.daily_task_operation_scopes,role==='service_role'?['SELECT','INSERT','UPDATE']:role==='authenticated'?['SELECT']:[],`Data API contract changed: 117 effective plan-column privileges for ${role}`);
+      for(const signature of scopeFunctions){const fn=catalog.functions.find(f=>f.signature===signature&&f.role===role);assert.ok(fn,signature);assert.equal(fn.definer,false);assert.deepEqual(fn.settings,['search_path=""']);}
+    }
+  }
+  assert.deepEqual(privilegeContract(catalog),expected,
     'Data API contract changed: review every new object, required grant, column boundary and exposed role');
   // 103 adds one column covered by the existing table grants. The compact JSON
   // omits table-inherited column permissions, so verify this new column too.

@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "productHead": "bfa557e7db46814ad6d49d4c4efb1e0067ce7636",
+  "scenario": "Existing atomic-template regression after preserving Data API diagnostic prefix",
+  "completeNativeLedger": true,
+  "restrictedDefaultsAndExactDataApiPrivileges": true,
+  "realAuthHttpRoleMatrix": true,
+  "sqlFailureRollback": true,
+  "casAndConcurrentWriters": true,
+  "chromiumSaveReloadAndConflict": true,
+  "historicalCompleteTableHashesExact": true,
+  "remoteWrites": 0,
+  "rawLogPublication": false
+}

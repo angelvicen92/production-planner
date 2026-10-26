@@ -13,7 +13,7 @@ export function withDailyTechnicalChains(input:EngineInput,structure:TechnicalCh
   return {...input,dailyTechnicalChainsVersion:parsed.policies.length?1:undefined,technicalChains:parsed.policies.length?parsed.policies:undefined};
 }
 export function technicalChainCombinationSupported(input:EngineInput) {
-  return input.plannerNext?.profile==="STANDALONE_ONLY" && !input.roundSynchronizations?.length && !input.setupPolicies?.length
+  return !input.dailyTaskOperationScopes?.length && input.plannerNext?.profile==="STANDALONE_ONLY" && !input.roundSynchronizations?.length && !input.setupPolicies?.length
     && !input.operationContinuityGroups?.length && !input.anchoredAccompaniments?.length && !input.operationalMealPolicies?.length
     && !input.itinerantTeamAvailability?.length && !input.tasks.some(t=>t.jointGroupId||t.setupFamilyId);
 }

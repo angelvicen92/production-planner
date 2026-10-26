@@ -8,7 +8,7 @@ export function dailyAnchoredAuthority(row:Record<string,any>){
  return parsed.data;
 }
 export function anchoredCombinationSupported(input:EngineInput){
- return input.plannerNext?.profile!=='STANDALONE_ONLY'&&!!input.plannerNext?.mainFlow&&!input.setupPolicies?.length
+ return !input.dailyTaskOperationScopes?.length&&input.plannerNext?.profile!=='STANDALONE_ONLY'&&!!input.plannerNext?.mainFlow&&!input.setupPolicies?.length
   &&!input.roundSynchronizations?.length&&!input.technicalChains?.length&&!input.operationContinuityGroups?.length
   &&!input.operationalMealPolicies?.length&&!input.transportSettings&&!input.tasks.some(t=>t.jointGroupId||t.setupFamilyId);
 }

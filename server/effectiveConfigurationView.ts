@@ -1,5 +1,6 @@
 import { dailyTechnicalChainAuthority, technicalChainCombinationSupported } from "./technicalChainStructure";
 import {dailyAnchoredAuthority,anchoredCombinationSupported} from './anchoredAccompanimentStructure';
+import {dailyTaskOperationScopesAuthority,taskOperationScopesSupported,taskScopeDirectResources} from './dailyTaskOperationScopes';
 import { resolveEngineInputRoundSynchronizations } from "../engine/planner-next/integration/engineInputRoundSynchronizations";
 import { dailyRoundAuthority } from "./roundSynchronizationStructure";
 import { operationContinuityValues } from "./operationContinuity";
@@ -79,14 +80,16 @@ export async function buildEffectiveConfigurationView(storage:IStorage,planId:nu
   const setupSpaceLabels=rawPlan.planner_next_profile?.configuration?.setupFamilies?(await storage.getSpaces()).map(space=>({id:Number(space.id),name:String(space.name)})):undefined;
   const chainAuthority=dailyTechnicalChainAuthority(rawPlan);
   let chainProposalActive=false;
+  const protectedScopeTasks=new Set<number>();
   if(hasProvenance&&rawPlan.planner_next_profile&&session){
     const {supabaseAdmin}=await import("./supabase");
     const [runs,stages]=await Promise.all([
       supabaseAdmin.from("planning_runs").select("id,status,outcome:assisted_result_json->>outcome").eq("plan_id",planId).in("status",["queued","running","cancelling","success"]),
-      supabaseAdmin.from("assisted_planning_stages").select("proposal_run_id").eq("plan_id",planId),
+      supabaseAdmin.from("assisted_planning_stages").select("proposal_run_id,snapshot_json").eq("plan_id",planId),
     ]);
     if(runs.error)throw runs.error;if(stages.error)throw stages.error;
     const accepted=new Set((stages.data??[]).map(s=>s.proposal_run_id));
+    for(const stage of stages.data??[])for(const task of (stage.snapshot_json as any)?.tasks??[])if(task.startPlanned!=null)protectedScopeTasks.add(Number(task.taskId));
     chainProposalActive=(runs.data??[]).some(r=>r.status!=="success"||(r.outcome==="PROPOSAL"&&!accepted.has(r.id)));
   }
   const technicalChains=rawPlan.planner_next_profile?{
@@ -113,16 +116,30 @@ export async function buildEffectiveConfigurationView(storage:IStorage,planId:nu
       eligible:(t.status==='pending'||t.status==='interrupted')&&t.startPlanned==null&&!input.locks.some(l=>l.taskId===t.id)})),
     units:input.itinerantCompositionSnapshot?.units.map(u=>({id:u.id,name:u.name}))??[],
   }:undefined;
+  const scopeAuthority=dailyTaskOperationScopesAuthority(rawPlan);
+  const taskOperationScopes=rawPlan.planner_next_profile?{
+    revisionId:rawPlan.current_config_revision_id==null?null:Number(rawPlan.current_config_revision_id),
+    authority:scopeAuthority?{contractVersion:1 as const,policies:scopeAuthority.policies}:null,
+    supported:taskOperationScopesSupported(input),by:scopeAuthority?.by??null,at:scopeAuthority?.at??null,
+    blockedReason:session&&(session.draftFingerprint!==session.workingFingerprint||Object.keys(session.draftScopeJson??{}).length)?'Hay un borrador con cambios. Resuélvelo antes de editar.':chainProposalActive?'Hay una propuesta pendiente. Resuélvela antes de editar.':null,
+    tasks:input.tasks.filter(t=>['auxiliary','technical'].includes(t.plannerNextKind??'')&&t.operationalRole==='productive_task').map(t=>({id:t.id,label:`${t.templateName??'Actividad'} · ${t.contestantName??'Sin participante'}`,
+      space:input.planSpaceSettings?.find(s=>s.spaceId===t.spaceId)?.name??'Sin espacio',
+      eligible:(t.status==='pending'||t.status==='interrupted')&&t.startPlanned==null&&!input.locks.some(l=>l.taskId===t.id)&&!protectedScopeTasks.has(t.id),
+      agendaScope:t.agendaScope??'PHYSICAL_SPACE' as const,resourceInheritance:t.resourceInheritance??'LOCATION' as const,blocksSpace:t.blocksSpace!==false,
+      itinerantUnitId:t.itinerantTeamRequirement==='specific'?t.itinerantTeamId??null:null,directResourceIds:taskScopeDirectResources(input,t)})),
+    units:input.itinerantCompositionSnapshot?.units.filter(u=>u.members.length).map(u=>({id:u.id,name:u.name}))??[],
+    resources:input.planResourceItems.map(r=>({id:r.id,name:r.name})),
+  }:undefined;
   const roundsView=rawPlan.planner_next_profile?{
     revisionId:rawPlan.current_config_revision_id==null?null:Number(rawPlan.current_config_revision_id),
     authority:authority?{contractVersion:1 as const,policies:authority.policies}:null,
     by:authority?.by??null,at:authority?.at??null,
-    supported:rawPlan.planner_next_profile?.configuration?.transport==="NONE"&&rawPlan.planner_next_profile?.configuration?.setup==="NONE"&&!input.itinerantTeamAvailability?.length&&!input.anchoredAccompaniments?.length&&!input.operationalMealPolicies?.length&&input.plannerNext?.profile==="STANDALONE_ONLY"&&!input.setupPolicies?.length&&!input.technicalChains?.length&&!input.operationContinuityGroups?.length&&!resolveEngineInputRoundSynchronizations(input,5).defects.length,
+    supported:!input.dailyTaskOperationScopes?.length&&rawPlan.planner_next_profile?.configuration?.transport==="NONE"&&rawPlan.planner_next_profile?.configuration?.setup==="NONE"&&!input.itinerantTeamAvailability?.length&&!input.anchoredAccompaniments?.length&&!input.operationalMealPolicies?.length&&input.plannerNext?.profile==="STANDALONE_ONLY"&&!input.setupPolicies?.length&&!input.technicalChains?.length&&!input.operationContinuityGroups?.length&&!resolveEngineInputRoundSynchronizations(input,5).defects.length,
     blockedReason:session&&(session.draftFingerprint!==session.workingFingerprint||Object.keys(session.draftScopeJson??{}).length)?"ROUND_STRUCTURE_DIRTY_DRAFT":authority?.policies.some(p=>p.lanes.some(l=>l.taskIds.some(id=>input.tasks.some(t=>t.id===id&&(t.startPlanned!=null||t.status==="done"||t.status==="in_progress"))||input.locks.some(lock=>lock.taskId===id))))?"ROUND_STRUCTURE_PROTECTED_DECISIONS":null,
     spaces:(input.planSpaceSettings??[]).map(s=>({id:s.spaceId,name:s.name??"Espacio"})),
     tasks:input.tasks.map(t=>({id:t.id,spaceId:t.spaceId??null,label:`${t.templateName??"Tarea"} · ${t.contestantName??"Sin participante"} · ${input.planSpaceSettings?.find(s=>s.spaceId===t.spaceId)?.name??"Sin espacio"}`,duration:t.durationOverrideMin??0,
       eligible:t.plannerNextKind==="auxiliary"&&t.contestantId!=null&&(t.status==="pending"||t.status==="interrupted")&&!t.jointGroupId&&!t.setupFamilyId&&t.startPlanned==null&&!input.locks.some(lock=>lock.taskId===t.id)})),
   }:undefined;
   const values=configurabilityRegistry.map(c=>projected(c,input,rawPlan,general,Number(rawPlan.current_config_revision_id??revision?.id) || undefined,revision?.fingerprint,optimizer,optimizerStateResult.data,geometry));
-  return Object.freeze({contractVersion:2,planId,generatedFrom:"PRODUCTIVE_AUTHORITIES",...(rawPlan.planner_next_profile?{plannerProfile:{sourceRevision:rawPlan.planner_next_profile.sourceRevision,configured:rawPlan.planner_next_profile.configuration!=null,...(rawPlan.planner_next_profile.configuration?.setupFamilies?{scenario:rawPlan.planner_next_profile.configuration.scenario,setupFamilies:rawPlan.planner_next_profile.configuration.setupFamilies,setupSpaceLabels}: {})}}:{}),itinerantComposition:{units:input.itinerantTeamAvailability??[],resources:input.planResourceItems.map(resource=>({id:resource.id,name:resource.name})),labels:input.itinerantCompositionSnapshot?.units.map(unit=>({id:unit.id,name:unit.name})),presencePolicies:input.resourcePresenceConcentrationPolicies},operationContinuity:{revisionId:rawPlan.current_config_revision_id==null?null:Number(rawPlan.current_config_revision_id),groups:operationContinuityValues(input,rawPlan,input.operationContinuityGroups?.length?await storage.getPlanTaskTemplateSnapshots(planId):[])},technicalChains,anchoredAccompaniments,roundSynchronization:roundsView,roundPreparations:{revisionId:rawPlan.current_config_revision_id == null ? null : Number(rawPlan.current_config_revision_id),timeGridMinutes:input.plannerNext?.timeGridMinutes ?? PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES,lanes:roundPreparationValues(input,rawPlan)},mainFlowPreference:{value:mainFlowPreferenceFromRow(rawPlan),baseline:mainFlowPreferenceFromRow(rawPlan,"main_baseline_"),defaultGeneral:mainFlowPreferenceFromRow(general),...geometry},values:Object.freeze(values),readiness:plannerReadiness(input,deriveReadiness(values)),productCoverage:configurabilityCounts});
+  return Object.freeze({contractVersion:2,planId,generatedFrom:"PRODUCTIVE_AUTHORITIES",...(rawPlan.planner_next_profile?{plannerProfile:{sourceRevision:rawPlan.planner_next_profile.sourceRevision,configured:rawPlan.planner_next_profile.configuration!=null,...(rawPlan.planner_next_profile.configuration?.setupFamilies?{scenario:rawPlan.planner_next_profile.configuration.scenario,setupFamilies:rawPlan.planner_next_profile.configuration.setupFamilies,setupSpaceLabels}: {})}}:{}),itinerantComposition:{units:input.itinerantTeamAvailability??[],resources:input.planResourceItems.map(resource=>({id:resource.id,name:resource.name})),labels:input.itinerantCompositionSnapshot?.units.map(unit=>({id:unit.id,name:unit.name})),presencePolicies:input.resourcePresenceConcentrationPolicies},operationContinuity:{revisionId:rawPlan.current_config_revision_id==null?null:Number(rawPlan.current_config_revision_id),groups:operationContinuityValues(input,rawPlan,input.operationContinuityGroups?.length?await storage.getPlanTaskTemplateSnapshots(planId):[])},technicalChains,anchoredAccompaniments,taskOperationScopes,roundSynchronization:roundsView,roundPreparations:{revisionId:rawPlan.current_config_revision_id == null ? null : Number(rawPlan.current_config_revision_id),timeGridMinutes:input.plannerNext?.timeGridMinutes ?? PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES,lanes:roundPreparationValues(input,rawPlan)},mainFlowPreference:{value:mainFlowPreferenceFromRow(rawPlan),baseline:mainFlowPreferenceFromRow(rawPlan,"main_baseline_"),defaultGeneral:mainFlowPreferenceFromRow(general),...geometry},values:Object.freeze(values),readiness:plannerReadiness(input,deriveReadiness(values)),productCoverage:configurabilityCounts});
 }

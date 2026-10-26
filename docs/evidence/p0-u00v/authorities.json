@@ -1,0 +1,39 @@
+{
+  "base": "b1895fa90f52018abbdefab1c224cb7387f54a39",
+  "sources": {
+    "docs/source/official/00_INDICE_Y_AUTORIDAD_FUENTES_OPTIPLAN_v2.15.md": "7082cee03feb295c71104f559d118608e85c5946f81de1139d6ad902f0e3810f",
+    "docs/source/official/01_PRODUCTO_DOMINIO_OPERACION_v5.4.md": "e55dc386d647888b913ed55457bb71564b16ccc4c088310c820bf57d984957bc",
+    "docs/source/official/02_ORC_CORE_CONSOLIDADO_v2.2.md": "1c5d58017ed3b0931cd4d0bc9c121e19c5edc9acb10005c5b759ccd94b937bdf",
+    "docs/source/official/03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.8.md": "7073930bb7bcbff09cb05553eecd28d357daf1860e55c6a6b9ab1ffe73172ffd",
+    "docs/source/official/04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.9.md": "d85981443e4e8e1bd073c59684e0b1e7d4a2fae6113a647007dee0f65eb1e8a4",
+    "docs/source/official/05_VALIDACION_CALIDAD_BENCHMARK_v2.8.md": "2d0aa69ebb5d1949b315a8ebb85c0ad96f0f9939e9441d1ef09a1f1ae9924a13",
+    "docs/source/official/06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.10.md": "42d0b3b78e732a2e4f1a1a01be9fa39bd82fbda366dd869d3785aedf6155faab",
+    "docs/source/official/07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.3.md": "7243ed2d186ef19af7ee9717c9b72d94ebca34791257a434be1aab76bed27351",
+    "docs/source/official/README.md": "3ddf7bf021644edccd9a9551c5b5016943a51aa9bb02b11c6c8fcf040fa9e054",
+    "docs/source/official/ENSAYO_A2_LV 15 JUNIO 2025 -  DESGLOSE A2.pdf": "8f96af987db37a0c8b5c1fd8870aad36d46b721ed81a0535bc22b8fb10f312b3",
+    "docs/source/official/ENSAYO_A2_LV.pdf": "5b0d49fcf1c1bc58b93e212b30bbf84738654b0ca38224b1465b595ad9c01b3a"
+  },
+  "sections": [
+    "01 \u00a7\u00a73\u20139,12,7A",
+    "02 ORC boundary",
+    "03 \u00a7\u00a73\u20137,Future Feasibility, SPEC-07",
+    "04 \u00a7\u00a71\u201310, effective snapshots",
+    "05 A2-ASSIST, correctness/determinism",
+    "06 v2.10, standalone and A2 topology",
+    "07 \u00a74.4"
+  ],
+  "pdfExtraction": "pdftotext -layout; original PDFs unmodified",
+  "readiness": "Actual API, PostgreSQL17, Auth, PostgREST and Chromium discarded; production credentials excluded",
+  "continuityReferences": {
+    "AGENTS.md": "911a1fbee8f6f2d74330413e8b17e070de4ec3d2fbb365e0394a097d662da7d3",
+    "docs/governance/OPTIPLAN_MASTER_ADECUACION_APP.md": "6daa03ce136d47a4e39bc557650ca9ab8675e7d032bdd6b6942aa9ab1e58b551",
+    "docs/architecture/PLANNER_CAPABILITY_CATALOG.md": "6169028d1b7b6cd5012c0332b405a47ed394be50829c7dace547c9a0335ec7d0",
+    "docs/evidence/p0-u00d/README.md": "0bddd8340de5a4a7b1e7ee59c738af8ea01a625c0328d05b539d6d9c83ac6cd2",
+    "docs/evidence/p0-u00l/README.md": "1514577a7f2431dc318dbd45ff61f1b3fa1f9cb1681d5e627af63e39979ee0e7",
+    "docs/evidence/p0-u00n/README.md": "9f054f70538035306a0bc13dcd6fc06767431646816d93d0ecbe2c31adc32e92",
+    "docs/evidence/p0-u00s/README.md": "d3b1556db6031c74fac0c1530891791f9542ed07f13f76b84afb0d650ed4eac4",
+    "docs/evidence/p0-u00t/README.md": "679727c45ea2cb5f5e1c6a3a55a1bfd07fc099e0c28c04a32ebd4586927451f6",
+    "docs/evidence/p0-u00u/README.md": "786e6e766d5ddabede1862f023c670091a5649626538fca1364a8b0260ad986b",
+    "docs/evidence/p0-u00u/authority-audit.md": "4f70f482363effa830df2ea08e2ec8d58078e21198030bd0bc74e48a035bb8a5"
+  }
+}
