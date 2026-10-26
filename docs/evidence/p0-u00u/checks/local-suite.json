@@ -1,0 +1,30 @@
+{
+  "initial": {
+    "tests": 3254,
+    "pass": 3249,
+    "fail": 5,
+    "receipt": "initial-product-suite.tap.gz"
+  },
+  "repairs": [
+    "move native integration test under Planner Next boundary",
+    "count before only if absent from Main ancestor closure"
+  ],
+  "serialRechecks": {
+    "isolation": "PASS",
+    "determinism": "PASS",
+    "timeoutConcreteBlockers": "PASS",
+    "receipt": "isolated-rechecks-partial.tap.gz",
+    "entirePartialRun": "NOT_COMPLETE: stopped during duplicate long server benchmark; no full-suite PASS claimed"
+  },
+  "exactBaseBenchmark": {
+    "status": "PASS",
+    "tests": 2,
+    "receipt": "base-benchmark.tap.gz"
+  },
+  "correctedBenchmarkAndNative": {
+    "status": "PASS",
+    "tests": 8,
+    "receipt": "corrected-benchmark.tap.gz"
+  },
+  "ciProductSuite": "See validation.json; original two historical exclusions retained unchanged"
+}

@@ -1,5 +1,5 @@
 {
-  "status": "CANDIDATE_VALIDATION_IN_PROGRESS",
+  "status": "PASS",
   "base": "51ba8a6631f0179c0f56933ebcc6a674aaf1a2c0",
   "remoteWrites": 0,
   "native": {
@@ -7,8 +7,22 @@
     "source": "native/receipts.json.gz",
     "days": 2,
     "stages": 3,
-    "attempt": "/tmp/u00u-native-v7",
-    "productSourceHashes": "native/manifest.json.gz"
+    "publicReceipts": 145,
+    "head": "5363323f3b5ee21527dea000a1682fd533dd2864",
+    "ciRun": 40287651105,
+    "artifactOrigin": "native/ci-origin.json",
+    "productSourceHashes": "native/manifest.json.gz",
+    "productAndScriptHashesCompared": 1618,
+    "productAndScriptDifferences": [],
+    "repeat": {
+      "status": "PASS",
+      "source": "native-repeat/receipts.json.gz",
+      "publicReceipts": 146,
+      "days": 2,
+      "stages": 3,
+      "bothEditsAfterRollbackToS0Rejected": true,
+      "sourceProvenance": "native-repeat/origin.json"
+    }
   },
   "a2": {
     "status": "PASS",
@@ -21,7 +35,7 @@
         "status": "PASS",
         "isolated": true,
         "node": "v20.19.5",
-        "seconds": 172.911829672,
+        "seconds": 233.32806063299998,
         "completed": 266,
         "stages": 11,
         "branches": 27049,
@@ -29,13 +43,13 @@
         "fullReportEqualExceptDurationMs": true,
         "snapshotsEqual": true,
         "certificatesRevalidated": 11,
-        "wallSeconds": 177.1768802900001
+        "wallSeconds": 236.04985255300016
       },
       "repeat": {
         "status": "PASS",
         "isolated": true,
         "node": "v20.19.5",
-        "seconds": 184.844182301,
+        "seconds": 201.695067015,
         "completed": 266,
         "stages": 11,
         "branches": 27049,
@@ -43,22 +57,20 @@
         "fullReportEqualExceptDurationMs": true,
         "snapshotsEqual": true,
         "certificatesRevalidated": 11,
-        "wallSeconds": 186.64462647000028
+        "wallSeconds": 206.4527567619989
       }
     },
     "certificatesRevalidated": 22,
-    "onlyReportExclusion": "iterations[].durationMs"
+    "onlyReportExclusion": "iterations[].durationMs",
+    "declaredRepositoryBase": "51ba8a6631f0179c0f56933ebcc6a674aaf1a2c0",
+    "baseFieldMeaning": "Literal inherited U00t metadata identifies U00s comparison baseline; repository base is declaredRepositoryBase.",
+    "sourceHashes": "a2/source-manifest.json.gz"
   },
   "consumerNegatives": {
     "status": "PASS",
     "source": "checks/consumer-negatives.json.gz"
   },
-  "pending": [
-    "populated 115 to 116 upgrade",
-    "product suite completion",
-    "native regressions/CI head",
-    "final native expanded harness checks"
-  ],
+  "pending": [],
   "attempts": [
     {
       "name": "native-v1",
@@ -79,6 +91,74 @@
     {
       "name": "upgrade-v1",
       "failure": "reader harness lacked explicit integer casts; no product or migration failure"
+    },
+    {
+      "name": "native-v8",
+      "failure": "application health fetch failed during overlapping local verification; no Stage"
+    },
+    {
+      "name": "native-v9-v11",
+      "failure": "cold Vite page navigation reached unchanged browser timeout in v9/v11; v10 reached SQL negative and expected internal guard rather than effective permission denial. Fixed harness expectation; same product passes two complete CI native runs."
+    },
+    {
+      "name": "upgrade-v4",
+      "failure": "syntax quoting in added harness SQL-body check; corrected harness; v5 and CI pass"
+    },
+    {
+      "name": "CI-80c9e62",
+      "failure": "exact schema body/privilege registries did not yet include migration116; updated registries and retained distinct115 contract"
+    },
+    {
+      "name": "CI-8b4ec2f",
+      "failure": "historical115 rehearsals compared to116 test contract; restored115 fixture and select distinct literal bodies by actual schema; U00t/U00p/U00s/U00u pass at9fa32ba"
+    },
+    {
+      "name": "initial-wide-suite",
+      "failure": "Five failures: test outside Planner Next boundary, two timing-sensitive tests, two A2 benchmark failures. Boundary moved; timing tests pass serially; exact-base counterfactual identified double counting before already present in Main ancestors. Predicate fixed, focused counterfactual FAIL->PASS and original CI suite passes. No budgets/timeouts or exclusions changed."
+    },
+    {
+      "name": "CI-9fa32ba-infrastructure",
+      "failure": "Two unchanged integration runners hit EADDRINUSE and NOWAIT relation lock. Both pass in the full 24-workflow run at5363323; no timeout increase or lock weakening."
     }
-  ]
+  ],
+  "upgrade116": {
+    "status": "PASS",
+    "source": "upgrade/upgrade116.json",
+    "before": "upgrade/before.json.gz",
+    "after": "upgrade/after.json.gz",
+    "originalRowsExact": true,
+    "sourceReadersExact": true,
+    "policiesExact": true,
+    "literalSQLBodiesExact": true,
+    "privilegeContractExact": true
+  },
+  "checks": {
+    "typescript": "PASS",
+    "harnessTypes": "PASS",
+    "build": "PASS",
+    "migrations": "PASS",
+    "focalTests": "PASS in CI",
+    "sqlContractBodies": "PASS against actual PostgreSQL in populated upgrade",
+    "correctedBenchmarkAndNative": {
+      "status": "PASS",
+      "tests": 8,
+      "source": "checks/corrected-benchmark.tap.gz"
+    },
+    "originalProductSuite": {
+      "tests": 3255,
+      "passed": 3254,
+      "failed": 0,
+      "skipped": 1,
+      "skip": "Historical SPEC10-012R2 commits unavailable in shallow CI checkout; that test passed in local initial suite.",
+      "source": "checks/ci-product-summary.json"
+    },
+    "localInitialAndRechecks": "checks/local-suite.json"
+  },
+  "ci": {
+    "status": "PASS",
+    "productHead": "5363323f3b5ee21527dea000a1682fd533dd2864",
+    "workflows": 24,
+    "source": "checks/ci-product-head.json",
+    "evidenceCommit": "Saved receipts and the locally tested rollback-negative harness; product code unchanged. Live final-commit CI is linked on PR1199."
+  }
 }

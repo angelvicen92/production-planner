@@ -102,6 +102,7 @@ export async function journey({appUrl,url,anon,users,db,directory,pass}:{appUrl:
    }
    const denied=await request(configPath,'PUT',{anchoredAccompaniments:{contractVersion:1,policies:[]},expectedRevisionId:effective.anchoredAccompaniments.revisionId});save(`${label}-protected-removal`,denied);assert.equal(denied.status,409);
    const rollback=await api(path+'/rollback','POST',{targetStageId:s0.activeStage.id});save(`${label}-rollback`,rollback);
+   const afterRollback=await request(configPath,'PUT',{anchoredAccompaniments:{contractVersion:1,policies:[]},expectedRevisionId:effective.anchoredAccompaniments.revisionId});save(`${label}-rollback-protected-removal`,afterRollback);assert.equal(afterRollback.status,409);assert.match(afterRollback.body.message,/ANCHORED_PROTECTED_DECISIONS/);
    for(const st of stages)save(`${label}-redo-${st.ordinal}`,await api(path+'/redo','POST',{targetStageId:st.id}));
    await page.reload();save(`${label}-reconstructed`,await api(path));
    days.push({label,planId,taskIds:tasks.map(t=>t.id),structure,stages:stages.map(s=>({id:s.id,fingerprint:s.snapshotFingerprint}))});pass(`${label}: native UI declaration, proposal, Draft, validation, Stage, SQL and browser reload`);

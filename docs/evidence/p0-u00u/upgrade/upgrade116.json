@@ -1,7 +1,7 @@
 {
   "status": "PASS",
   "postgres": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
-  "migrationSha256": "24968bbcf883589bb6bbe9a5fd45057cd976f90a8bfc9f212b671af83b4062bb",
+  "migrationSha256": "9c079217f03f1a5a8cba1c51571c41da8eb0486e5324c18e5be6fa82070b0780",
   "counts": {
     "assisted_bootstrap_sources": 1,
     "assisted_obligation_transitions": 0,

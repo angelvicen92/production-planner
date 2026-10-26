@@ -9,7 +9,7 @@
       "status": "PASS",
       "isolated": true,
       "node": "v20.19.5",
-      "seconds": 172.911829672,
+      "seconds": 233.32806063299998,
       "completed": 266,
       "stages": 11,
       "branches": 27049,
@@ -17,13 +17,13 @@
       "fullReportEqualExceptDurationMs": true,
       "snapshotsEqual": true,
       "certificatesRevalidated": 11,
-      "wallSeconds": 177.1768802900001
+      "wallSeconds": 236.04985255300016
     },
     "repeat": {
       "status": "PASS",
       "isolated": true,
       "node": "v20.19.5",
-      "seconds": 184.844182301,
+      "seconds": 201.695067015,
       "completed": 266,
       "stages": 11,
       "branches": 27049,
@@ -31,7 +31,7 @@
       "fullReportEqualExceptDurationMs": true,
       "snapshotsEqual": true,
       "certificatesRevalidated": 11,
-      "wallSeconds": 186.64462647000028
+      "wallSeconds": 206.4527567619989
     }
   },
   "certificatesRevalidated": 22,

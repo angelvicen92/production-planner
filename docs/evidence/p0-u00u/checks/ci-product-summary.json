@@ -1,0 +1,15 @@
+{
+  "head": "5363323f3b5ee21527dea000a1682fd533dd2864",
+  "jobId": 121455914805,
+  "lines": [
+    "2026-10-26T07:55:28.6866975Z # tests 3255",
+    "2026-10-26T07:55:28.6867149Z # pass 3254",
+    "2026-10-26T07:55:28.6867229Z # fail 0",
+    "2026-10-26T07:55:28.6867413Z # skipped 1",
+    "2026-10-26T07:55:28.6867605Z # duration_ms 450758.812249"
+  ],
+  "skips": [
+    "2026-10-26T07:52:15.3471174Z ok 1386 - functional correction remains isolated from DB, UI and API # SKIP historical SPEC10-012R2 commits are unavailable in this checkout"
+  ],
+  "status": "PASS"
+}

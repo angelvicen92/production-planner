@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "parent": "5363323f3b5ee21527dea000a1682fd533dd2864",
+  "overlay": "docs/evidence/p0-u00u/native.ts adds two rejected edits after rollback; product source unchanged",
+  "sourceHashes": "manifest.json.gz",
+  "publicReceipts": 146,
+  "remoteWrites": 0,
+  "checkoutDelta": []
+}
