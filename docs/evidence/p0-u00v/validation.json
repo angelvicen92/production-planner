@@ -52,12 +52,14 @@
     },
     "historicalUpgrade": "upgrade/upgrade117.json",
     "regressions": "regressions/summary.json",
-    "a2": "a2/comparison.json"
+    "a2": "a2/comparison.json",
+    "versionedUpgrades": "checks/versioned-upgrades.json"
   },
   "attempts": "checks/attempts.json",
   "ci": {
     "baseline": "checks/baseline-ci.json",
-    "candidate": "PENDING_PR_CREATION"
+    "candidate": "PR #1200, correction pending checks",
+    "initialFailures": "checks/ci-initial-failures.json"
   },
   "remoteDatabaseWrites": 0,
   "deployments": 0,

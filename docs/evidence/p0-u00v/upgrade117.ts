@@ -32,7 +32,7 @@ const code=original.slice(0,boundary)+String.raw`
  const after={rows:await rows(),readers:await readers(),policies:await policies()};assert.deepEqual(after,before);
  const {assertPrivilegeContract}=await import('../../../../script/demo/dataApiGrantsGate');assertPrivilegeContract(await dataApiCatalog(db));
  const {requiredFunctionBodies}=await import('../../../../script/demo/a2Preflight');
- for(const [name,body] of requiredFunctionBodies()){
+ for(const [name,body] of requiredFunctionBodies(false,117)){
   const defs=(await db.query("SELECT pg_get_functiondef(oid) definition FROM pg_proc WHERE pronamespace='public'::regnamespace AND proname=$1",[name])).rows;
   assert.ok(defs.some(d=>{const m=d.definition.match(/\bAS\s+(\$\w*\$)([\s\S]*)/i);return m&&m[2].slice(0,m[2].indexOf(m[1])).trim()===body;}),'actual PostgreSQL body '+name);
  }

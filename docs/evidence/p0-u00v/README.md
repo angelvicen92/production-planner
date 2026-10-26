@@ -58,7 +58,7 @@ Los negativos incluyen unidad desconocida/ajena/vacía/incompatible, espacio ine
 
 ## Regresiones y límites
 
-`validation.json` separa gates finales, intentos fallidos y límites; `regressions/` conserva los recorridos reutilizados. El ensayo poblado 116→117 compara todas las filas originales, snapshots, revisiones, lectores y políticas, verifica permisos efectivos y cuerpos completos de las funciones nuevas. Mantiene las dos autoridades de seguridad históricas de U00t; no modifica ni presenta como resuelta la política de lectura del ledger anterior.
+`validation.json` separa gates finales, intentos fallidos y límites; la primera CI detecta un vínculo histórico 116→contratos 117 y un mensaje del auditor de permisos sin su prefijo estable. Se fija el máximo histórico en 116 y se conserva el diagnóstico contractual en la nueva comprobación exacta; no cambian assertions, permisos, SQL productivo ni límites. `regressions/` conserva los recorridos reutilizados. El ensayo poblado 116→117 compara todas las filas originales, snapshots, revisiones, lectores y políticas, verifica permisos efectivos y cuerpos completos de las funciones nuevas. Mantiene las dos autoridades de seguridad históricas de U00t; no modifica ni presenta como resuelta la política de lectura del ledger anterior.
 
 A2 completo, dos procesos Node 20 nuevos: **266/266, 11 Stages, 27.049 ramas**, fingerprint `2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d`. Reports íntegros iguales salvo `iterations[].durationMs`; snapshots/certificados exactos y **22 certificados revalidados**. Las duraciones no se presentan como mejora ni regresión de CPU.
 

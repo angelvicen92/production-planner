@@ -52,7 +52,7 @@ export function assertPrivilegeContract(catalog:DataApiCatalog) {
     expected.functions.sort((a:any,b:any)=>a.signature<b.signature?-1:a.signature>b.signature?1:a.role<b.role?-1:a.role>b.role?1:0);
     for(const role of ['anon','authenticated','service_role']){
       const plan=catalog.tables.find(t=>t.name==='plans'&&t.role===role);assert.ok(plan);
-      assert.deepEqual(plan.columns.daily_task_operation_scopes,role==='service_role'?['SELECT','INSERT','UPDATE']:role==='authenticated'?['SELECT']:[]);
+      assert.deepEqual(plan.columns.daily_task_operation_scopes,role==='service_role'?['SELECT','INSERT','UPDATE']:role==='authenticated'?['SELECT']:[],`Data API contract changed: 117 effective plan-column privileges for ${role}`);
       for(const signature of scopeFunctions){const fn=catalog.functions.find(f=>f.signature===signature&&f.role===role);assert.ok(fn,signature);assert.equal(fn.definer,false);assert.deepEqual(fn.settings,['search_path=""']);}
     }
   }

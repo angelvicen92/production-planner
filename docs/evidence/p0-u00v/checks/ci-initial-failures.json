@@ -1,0 +1,40 @@
+{
+  "head": "4b73aca7d66c364b25a15832d28136f3a5955fd6",
+  "failures": [
+    {
+      "jobId": 121615555471,
+      "log": [
+        "2026-10-26T14:00:40.7300000Z AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Data API contract changed/. Input:",
+        "2026-10-26T14:00:40.7300897Z 'AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\\n' +",
+        "2026-10-26T14:00:40.7303059Z     at verifyDataApiGrants (/home/runner/work/production-planner/production-planner/script/demo/dataApiGrantsGate.ts:191:12)"
+      ]
+    },
+    {
+      "jobId": 121615554842,
+      "log": [
+        "2026-10-26T14:00:38.2832305Z AssertionError [ERR_ASSERTION]: actual PostgreSQL body assisted_expected_obligation_sources",
+        "2026-10-26T14:00:38.3118170Z AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+      ]
+    },
+    {
+      "jobId": 121615555809,
+      "log": [
+        "2026-10-26T14:01:20.2085382Z AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Data API contract changed/. Input:",
+        "2026-10-26T14:01:20.2087365Z 'AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\\n' +",
+        "2026-10-26T14:01:20.2094791Z     at verifyDataApiGrants (/home/runner/work/production-planner/production-planner/script/demo/dataApiGrantsGate.ts:191:12)"
+      ]
+    },
+    {
+      "jobId": 121615555148,
+      "log": [
+        "2026-10-26T14:01:08.1833268Z AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Data API contract changed/. Input:",
+        "2026-10-26T14:01:08.1835188Z 'AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\\n' +",
+        "2026-10-26T14:01:08.1841181Z     at verifyDataApiGrants (/home/runner/work/production-planner/production-planner/script/demo/dataApiGrantsGate.ts:191:12)"
+      ]
+    }
+  ],
+  "repairs": [
+    "Pin the populated 115→116 audit to the literal 116 function contracts; retain exact assertions.",
+    "Retain the stable Data API contract changed diagnostic on the new exact column-privilege assertion. No permissions or rejection conditions change."
+  ]
+}
