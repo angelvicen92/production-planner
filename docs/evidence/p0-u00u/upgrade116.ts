@@ -10,7 +10,7 @@ const repo=process.cwd(),source=join(output,'source');mkdirSync(source,{recursiv
 execFileSync('tar',['-x','-C',source],{input:execFileSync('git',['archive','HEAD'],{maxBuffer:256*1024*1024})});
 symlinkSync(join(repo,'node_modules'),join(source,'node_modules'),'dir');
 const migration='supabase/migrations/116_daily_anchored_accompaniments.sql';copyFileSync(migration,join(source,migration));
-for(const file of ['script/demo/assistedSQLContracts.ts','script/demo/a2Preflight.ts','script/demo/dataApiGrantsGate.ts','script/demo/fixtures/data-api-privileges.json'])copyFileSync(file,join(source,file));
+for(const file of ['script/demo/assistedSQLContracts.ts','script/demo/a2Preflight.ts','script/demo/dataApiGrantsGate.ts','script/demo/fixtures/data-api-privileges.json','script/demo/fixtures/data-api-privileges-116.json'])copyFileSync(file,join(source,file));
 const original=readFileSync('docs/evidence/p0-u00s/integration/sql-gate.ts','utf8'),boundary=original.indexOf(' const before=await dataApiCatalog(db);');assert.ok(boundary>0);
 const code=original.slice(0,boundary)+String.raw`
  await db.query(readFileSync('supabase/migrations/115_daily_required_technical_chains.sql','utf8'));

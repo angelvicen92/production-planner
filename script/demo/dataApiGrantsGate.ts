@@ -43,7 +43,8 @@ export function dataApiSourceCalls(directory='server') {
 export function assertPrivilegeContract(catalog:DataApiCatalog) {
   for(const table of catalog.tables)if(table.kind==='r'||table.kind==='p')
     assert.equal(table.rls,true,`${table.name}: every public table, including future migrations, requires RLS`);
-  assert.deepEqual(privilegeContract(catalog),JSON.parse(readFileSync(contractPath,'utf8')),
+  const anchoredSchema=Object.hasOwn(catalog.tables.find(t=>t.name==='plans')?.columns??{},'daily_anchored_accompaniments');
+  assert.deepEqual(privilegeContract(catalog),JSON.parse(readFileSync(anchoredSchema?'script/demo/fixtures/data-api-privileges-116.json':contractPath,'utf8')),
     'Data API contract changed: review every new object, required grant, column boundary and exposed role');
   // 103 adds one column covered by the existing table grants. The compact JSON
   // omits table-inherited column permissions, so verify this new column too.
@@ -86,7 +87,7 @@ export function assertPrivilegeContract(catalog:DataApiCatalog) {
   }
   // 116 inherits the daily column boundary; every new helper is invoker and
   // private, and task-source guards have no directly callable server grant.
-  for(const role of ['anon','authenticated','service_role']){
+  if(anchoredSchema)for(const role of ['anon','authenticated','service_role']){
     const plan=catalog.tables.find(t=>t.name==='plans'&&t.role===role);assert.ok(plan);
     assert.deepEqual(plan.columns.daily_anchored_accompaniments,role==='service_role'?['SELECT','INSERT','UPDATE']:role==='authenticated'?['SELECT']:[]);
     for(const signature of ["anchored_contracts(jsonb)", "anchored_member_ids(jsonb)", "anchored_task_operations(integer,jsonb,jsonb,jsonb,boolean)", "apply_day_config_operation_before_anchored_accompaniments(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)", "assert_daily_anchored_accompaniments(integer,jsonb)", "assert_daily_anchored_snapshot(integer,jsonb,bigint)", "guard_daily_anchored_accompaniments()", "guard_anchored_revision()", "guard_daily_anchored_stage()", "guard_anchored_task_source()", "guard_anchored_coach_source()"]){
