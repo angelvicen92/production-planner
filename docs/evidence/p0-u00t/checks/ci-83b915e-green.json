@@ -1,0 +1,369 @@
+{
+  "autoMergeRequest": null,
+  "headRefOid": "83b915e2f2b7b0f595ab2da35ba385a62a07e2f0",
+  "isDraft": true,
+  "number": 1198,
+  "statusCheckRollup": [
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:34:08Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989584/job/121382218448",
+      "name": "admin-invites",
+      "startedAt": "2026-10-26T03:25:17Z",
+      "status": "COMPLETED",
+      "workflowName": "Admin Invites CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:30:35Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989585/job/121382218327",
+      "name": "atomic-task-template",
+      "startedAt": "2026-10-26T03:28:15Z",
+      "status": "COMPLETED",
+      "workflowName": "Atomic task template save"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:28:56Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989761/job/121382218857",
+      "name": "baseline-ci",
+      "startedAt": "2026-10-26T03:27:47Z",
+      "status": "COMPLETED",
+      "workflowName": "Baseline CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:26:15Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263985643/job/121382206799",
+      "name": "baseline-ci",
+      "startedAt": "2026-10-26T03:25:14Z",
+      "status": "COMPLETED",
+      "workflowName": "Baseline CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:29:53Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989635/job/121382218620",
+      "name": "catalog-authorization",
+      "startedAt": "2026-10-26T03:25:17Z",
+      "status": "COMPLETED",
+      "workflowName": "Catalog Authorization CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:32:46Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989565/job/121382218439",
+      "name": "data-api-grants (assisted)",
+      "startedAt": "2026-10-26T03:25:16Z",
+      "status": "COMPLETED",
+      "workflowName": "Data API grants"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:29:56Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989629/job/121382218390",
+      "name": "composition",
+      "startedAt": "2026-10-26T03:27:19Z",
+      "status": "COMPLETED",
+      "workflowName": "Itinerant physical composition"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:33:35Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989632/job/121382218376",
+      "name": "live-day-execution",
+      "startedAt": "2026-10-26T03:27:20Z",
+      "status": "COMPLETED",
+      "workflowName": "Live day execution"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:30:43Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989570/job/121382218017",
+      "name": "new-days",
+      "startedAt": "2026-10-26T03:25:16Z",
+      "status": "COMPLETED",
+      "workflowName": "New day Planner Next"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:25:58Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989735/job/121382218628",
+      "name": "offline-causal-evidence",
+      "startedAt": "2026-10-26T03:25:17Z",
+      "status": "COMPLETED",
+      "workflowName": "P0 U00f transport gate"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:29:08Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989702/job/121382218734",
+      "name": "diagnostic",
+      "startedAt": "2026-10-26T03:27:35Z",
+      "status": "COMPLETED",
+      "workflowName": "P0 U00g participant meals"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:26:22Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989669/job/121382218256",
+      "name": "concrete-resources",
+      "startedAt": "2026-10-26T03:25:16Z",
+      "status": "COMPLETED",
+      "workflowName": "P0 U00h concrete resources"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:30:05Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989610/job/121382218313",
+      "name": "nominal-resource-functional",
+      "startedAt": "2026-10-26T03:28:37Z",
+      "status": "COMPLETED",
+      "workflowName": "P0 U00i nominal resource causal gate"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:27:18Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989666/job/121382218201",
+      "name": "typed-nominal-native",
+      "startedAt": "2026-10-26T03:25:16Z",
+      "status": "COMPLETED",
+      "workflowName": "P0 U00j typed nominal resources"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:27:17Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989598/job/121382218113",
+      "name": "main-nominal-native",
+      "startedAt": "2026-10-26T03:25:59Z",
+      "status": "COMPLETED",
+      "workflowName": "P0 U00l Main nominal resources"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:27:19Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989734/job/121382218534",
+      "name": "post-stage-native",
+      "startedAt": "2026-10-26T03:25:17Z",
+      "status": "COMPLETED",
+      "workflowName": "P0 U00n post-Stage additions"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:27:48Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989503/job/121382217989",
+      "name": "native-rounds",
+      "startedAt": "2026-10-26T03:25:16Z",
+      "status": "COMPLETED",
+      "workflowName": "P0 U00p daily synchronized rounds"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:30:02Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989677/job/121382218436",
+      "name": "native-chains",
+      "startedAt": "2026-10-26T03:27:50Z",
+      "status": "COMPLETED",
+      "workflowName": "P0 U00s daily REQUIRED technical chains"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:28:35Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989694/job/121382218713",
+      "name": "upgrade-history",
+      "startedAt": "2026-10-26T03:27:20Z",
+      "status": "COMPLETED",
+      "workflowName": "P0-U00t release rehearsal"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:27:40Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989531/job/121382218170",
+      "name": "war-room",
+      "startedAt": "2026-10-26T03:25:16Z",
+      "status": "COMPLETED",
+      "workflowName": "Persistent War Room"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:35:55Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989455/job/121382217985",
+      "name": "manual-draft-validation",
+      "startedAt": "2026-10-26T03:25:17Z",
+      "status": "COMPLETED",
+      "workflowName": "Planner Engine CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:29:46Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989544/job/121382218198",
+      "name": "template-authorization",
+      "startedAt": "2026-10-26T03:27:41Z",
+      "status": "COMPLETED",
+      "workflowName": "Template Authorization CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:27:33Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989565/job/121382218042",
+      "name": "data-api-grants (configuration)",
+      "startedAt": "2026-10-26T03:25:16Z",
+      "status": "COMPLETED",
+      "workflowName": "Data API grants"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:27:45Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989565/job/121382218476",
+      "name": "data-api-grants (execution)",
+      "startedAt": "2026-10-26T03:25:16Z",
+      "status": "COMPLETED",
+      "workflowName": "Data API grants"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:30:17Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989565/job/121382218352",
+      "name": "data-api-grants (control-room)",
+      "startedAt": "2026-10-26T03:25:16Z",
+      "status": "COMPLETED",
+      "workflowName": "Data API grants"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:27:00Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989565/job/121382218425",
+      "name": "data-api-grants (war-room)",
+      "startedAt": "2026-10-26T03:25:16Z",
+      "status": "COMPLETED",
+      "workflowName": "Data API grants"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:28:13Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989565/job/121382218431",
+      "name": "data-api-grants (headers)",
+      "startedAt": "2026-10-26T03:25:16Z",
+      "status": "COMPLETED",
+      "workflowName": "Data API grants"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:28:14Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989735/job/121382218821",
+      "name": "native-transport",
+      "startedAt": "2026-10-26T03:26:17Z",
+      "status": "COMPLETED",
+      "workflowName": "P0 U00f transport gate"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:28:12Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989702/job/121382218461",
+      "name": "functional",
+      "startedAt": "2026-10-26T03:26:24Z",
+      "status": "COMPLETED",
+      "workflowName": "P0 U00g participant meals"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:29:16Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989610/job/121382218610",
+      "name": "nominal-resource-diagnostic",
+      "startedAt": "2026-10-26T03:28:14Z",
+      "status": "COMPLETED",
+      "workflowName": "P0 U00i nominal resource causal gate"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:32:20Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989455/job/121382218032",
+      "name": "autopilot-workspace",
+      "startedAt": "2026-10-26T03:27:02Z",
+      "status": "COMPLETED",
+      "workflowName": "Planner Engine CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:30:55Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989455/job/121382217708",
+      "name": "a2-assisted-catalog-integration",
+      "startedAt": "2026-10-26T03:25:16Z",
+      "status": "COMPLETED",
+      "workflowName": "Planner Engine CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:47:25Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989455/job/121382217991",
+      "name": "a2-assisted-canonical-integration",
+      "startedAt": "2026-10-26T03:25:16Z",
+      "status": "COMPLETED",
+      "workflowName": "Planner Engine CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:36:51Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989455/job/121382217922",
+      "name": "main-flow-preference-integration",
+      "startedAt": "2026-10-26T03:25:16Z",
+      "status": "COMPLETED",
+      "workflowName": "Planner Engine CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:35:16Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989455/job/121382218155",
+      "name": "planner-engine-ci",
+      "startedAt": "2026-10-26T03:28:16Z",
+      "status": "COMPLETED",
+      "workflowName": "Planner Engine CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-26T03:47:31Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/angelvicen92/production-planner/actions/runs/40263989455/job/121387809014",
+      "name": "a2-assisted-integration",
+      "startedAt": "2026-10-26T03:47:28Z",
+      "status": "COMPLETED",
+      "workflowName": "Planner Engine CI"
+    }
+  ],
+  "url": "https://github.com/angelvicen92/production-planner/pull/1198"
+}

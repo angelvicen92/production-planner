@@ -1,0 +1,11 @@
+{
+  "head": "83b915e2f2b7b0f595ab2da35ba385a62a07e2f0",
+  "jobId": 121382218155,
+  "url": "https://github.com/angelvicen92/production-planner/actions/runs/40263989455/job/121382218155",
+  "summaryLines": [
+    "planner-engine-ci\tProduct test suite\t2026-10-26T03:34:35.6673941Z # tests 3249",
+    "planner-engine-ci\tProduct test suite\t2026-10-26T03:34:35.6674088Z # pass 3248",
+    "planner-engine-ci\tProduct test suite\t2026-10-26T03:34:35.6674155Z # fail 0",
+    "planner-engine-ci\tProduct test suite\t2026-10-26T03:34:35.6674307Z # skipped 1"
+  ]
+}

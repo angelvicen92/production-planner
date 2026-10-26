@@ -1,13 +1,13 @@
 # P0-U00t — ensayo previo a publicación 103 → 115
 
 Base autorizada: `3ade5d2774584f92f86b2b8670bbb3f19fc5f83c` (#1197).
-**Gate local completado:** SQL e integridad, recorridos nativos, A2 y reparación focal verificados. La CI alojada se registra en el PR y en `checks/`.
+**GO técnico del candidato reparado dentro de los baselines declarados.** SQL, integridad, recorridos nativos, A2 y CI verificados. No equivale a autorización ni preparación de publicación.
 
 ## Alcance y representatividad
 
 El ensayo aplica los SQL literales de `main` a PostgreSQL **17.11**, imagen fijada por digest en los harnesses existentes. La referencia productiva comunicada es PostgreSQL 17.6: se comparte major, no se afirma identidad de minor ni de catálogo real. Auth y PostgREST también usan las imágenes fijadas existentes. Los recorridos finales usan Node 20.19.5.
 
-Se reconstruyen 001–103 una sola vez, se persisten datos históricos y **después** se aplican 104–115 secuencialmente. No se reaplica una migración anterior al punto de partida. Los archivos 001–115 permanecen literales. El ensayo no ejecuta el preparador oficial de Replit ni acredita un respaldo productivo.
+Se reconstruyen 001–103 una sola vez, se persisten datos históricos y **después** se aplican 104–115 secuencialmente. No se reaplica una migración anterior al punto de partida. Los archivos 001–115 permanecen literales. El ensayo no ejecuta el preparador oficial de Replit ni acredita un respaldo productivo. El DDL se aplica sin escritores concurrentes; los ataques de concurrencia se ejecutan después. PostgREST arranca con el catálogo actualizado: la recarga de caché de la instancia real y el registro por `apply_migration` deben verificarse en la operación posterior; el manifest local no sustituye el ledger Supabase.
 
 El fixture público `seedA2HistoricalRehearsal` conserva su import original: una jornada 088 con 266 tareas/11 checkpoints y otra sin configuración Next con 333 tareas. Se añaden registros **sintéticos explícitos**, válidos bajo 103: una validación, una excepción STALE, evento de ejecución, lock, run y una segunda sesión con S0 y Draft distinto. Total inicial: **2 planes, 599 tareas, 12 checkpoints, 2 revisiones, 2 sesiones, 19 participantes, 9 recursos diarios, 31 snapshots de plantilla**. La ejecución legacy incluye una tarea `done` sin modernizar sus timestamps.
 
@@ -98,11 +98,11 @@ python3 docs/evidence/p0-u00t/a2.py /tmp/u00t-a2 --node /ruta/a/node20
 python3 docs/evidence/p0-u00t/verify.py
 ```
 
-La CI añadida repite el SQL poblado y la lectura histórica; el estado alojado se documenta al observar el candidato. La base conserva sus siete contextos de CI distintos verdes (ocho recibos por una repetición de baseline). Los runners A2 sustituyen sólo el ensayo previo 099→100 del harness por el punto de partida 103, evitando su reaplicación idempotente de 100; conservan la matriz de actores, los recorridos de producto y el contrato exacto de permisos. Los lectores JSON, manifests y resúmenes bastan para revisar los recibos sin publicar trazas, logs privados, JWT ni dumps de datos.
+La CI añadida repite el SQL poblado y la lectura histórica. El [candidato de código `83b915e`](checks/ci-83b915e-green.json) termina con **22 ejecuciones de workflow / 36 checks verdes**, incluidos `upgrade-history` y la conjunción de los dos recorridos A2. La suite de producto registra **3.249 tests, 3.248 PASS, cero fallos y un skip histórico**, sin exclusiones nuevas; [resumen original](checks/ci-product-summary.json). Los [pasos del gate nuevo](checks/ci-upgrade-history.json) certifican su ejecución en otro runner. El cierre posterior sólo actualiza documentación/recibos y vuelve a observarse en los [checks del PR #1198](https://github.com/angelvicen92/production-planner/pull/1198/checks). La base conserva sus siete contextos distintos verdes (ocho recibos por una repetición de baseline). Los runners A2 sustituyen sólo el ensayo previo 099→100 del harness por el punto de partida 103, evitando su reaplicación idempotente de 100; conservan la matriz de actores, los recorridos de producto y el contrato exacto de permisos. Los lectores JSON, manifests y resúmenes bastan para revisar los recibos sin publicar trazas, logs privados, JWT ni dumps de datos.
 
 ## Aptitud y límites para la operación real
 
-El lote literal 103→115 y el candidato reparado superan el gate técnico local: doce SQL, invariantes históricos, recorridos nativos y A2 exacto. La aceptación final exige también CI verde. El GO de seguridad aplica al perfil preparado verificado; un estado real con sólo las políticas permisivas del ledger puro es NO-GO para aislamiento por rol y necesita diagnóstico/autorización operativa separado. No se convierte este ensayo en un GO de publicación.
+El lote literal 103→115 y el candidato reparado superan el gate técnico local: doce SQL, invariantes históricos, recorridos nativos y A2 exacto. La CI del código candidato está verde; los recibos identifican su SHA y el PR registra la comprobación de la cabeza documental final. El GO de seguridad aplica al perfil preparado verificado; un estado real con sólo las políticas permisivas del ledger puro es NO-GO para aislamiento por rol y necesita diagnóstico/autorización operativa separado. No se convierte este ensayo en un GO de publicación.
 
 Antes de cualquier operación real siguen pendientes: contrastar esquema/cuerpos/grants/RLS y drift de 103 con estos baselines; verificar las formas de datos/revisiones y capturas históricas reales; confirmar SHA aprobado/CI y SHA desplegado, actualmente no demostrado; obtener respaldo productivo recuperable según la guía vigente; aplicar el lote aprobado y verificarlo antes de publicar. Sesiones históricas sin captura de fuentes no reciben una reconstrucción inferida para admitir altas: conserva el límite explícito existente.
 
