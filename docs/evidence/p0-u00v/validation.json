@@ -1,6 +1,6 @@
 {
   "base": "b1895fa90f52018abbdefab1c224cb7387f54a39",
-  "status": "LOCAL_GATES_PASS_CI_PENDING",
+  "status": "PASS",
   "sourceHashes": {
     "engine/buildInput.ts": "67c5a59b188b5c14821ff2c06dd0e2681d4b62c96264bc5c19b5f3debbc10c49",
     "engine/types.ts": "2d0eb19ea451ce1c305bd45b6cf6e90b055184275b4ba3059f136e413d86db55",
@@ -53,12 +53,17 @@
     "historicalUpgrade": "upgrade/upgrade117.json",
     "regressions": "regressions/summary.json",
     "a2": "a2/comparison.json",
-    "versionedUpgrades": "checks/versioned-upgrades.json"
+    "versionedUpgrades": "checks/versioned-upgrades.json",
+    "atomicTemplateRegression": "checks/atomic-template-regression.json"
   },
   "attempts": "checks/attempts.json",
   "ci": {
     "baseline": "checks/baseline-ci.json",
-    "candidate": "PR #1200, correction pending checks",
+    "candidate": "checks/ci-product-head.json",
+    "productHead": "bfa557e7db46814ad6d49d4c4efb1e0067ce7636",
+    "distinctWorkflowsPass": 24,
+    "workflowRecordsPass": 25,
+    "documentationOnlyClosure": true,
     "initialFailures": "checks/ci-initial-failures.json"
   },
   "remoteDatabaseWrites": 0,
