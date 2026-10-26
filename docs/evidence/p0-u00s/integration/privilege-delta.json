@@ -1,0 +1,97 @@
+{
+  "tablesUnchanged": true,
+  "sequencesUnchanged": true,
+  "existingFunctionPrivilegesUnchanged": true,
+  "addedFunctions": [
+    {
+      "signature": "apply_day_config_operation_before_technical_chains(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "apply_day_config_operation_before_technical_chains(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "apply_day_config_operation_before_technical_chains(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "assert_daily_technical_chain_snapshot(integer,jsonb,bigint,bigint)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "assert_daily_technical_chain_snapshot(integer,jsonb,bigint,bigint)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "assert_daily_technical_chain_snapshot(integer,jsonb,bigint,bigint)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "assert_daily_technical_chains(integer,jsonb)",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "assert_daily_technical_chains(integer,jsonb)",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "assert_daily_technical_chains(integer,jsonb)",
+      "role": "service_role",
+      "execute": true
+    },
+    {
+      "signature": "guard_daily_technical_chain_stage()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "guard_daily_technical_chain_stage()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "guard_daily_technical_chain_stage()",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "guard_daily_technical_chains()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "guard_daily_technical_chains()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "guard_daily_technical_chains()",
+      "role": "service_role",
+      "execute": false
+    },
+    {
+      "signature": "guard_technical_chain_revision()",
+      "role": "anon",
+      "execute": false
+    },
+    {
+      "signature": "guard_technical_chain_revision()",
+      "role": "authenticated",
+      "execute": false
+    },
+    {
+      "signature": "guard_technical_chain_revision()",
+      "role": "service_role",
+      "execute": false
+    }
+  ]
+}

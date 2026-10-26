@@ -38,6 +38,11 @@ export function resolveAssistedScope(input: EngineInput, adapter: EngineInputAda
     }
     productIds = [...ids].sort((a,b)=>a-b);
   }
+  // Explicit REQUIRED chains are visible operational units, including all eligible siblings.
+  const chainMembers = new Set(productIds);
+  for (const policy of input.dailyTechnicalChainsVersion===1?input.technicalChains??[]:[]) if (policy.orderedTaskIds.some(id=>chainMembers.has(id)))
+    for (const id of policy.orderedTaskIds) if(eligible.has(id)) chainMembers.add(id);
+  productIds = [...chainMembers].sort((a,b)=>a-b);
   const canonicalByProduct = new Map(adapter.identityMap.filter(i => i.namespace === "task").map(i => [Number(i.sourceId), i.canonicalId]));
   const canonicalIds = productIds.map(id => canonicalByProduct.get(id));
   if (canonicalIds.some(id => !id)) throw new ScopeResolutionError("INVALID_SCOPE");

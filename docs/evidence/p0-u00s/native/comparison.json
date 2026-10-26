@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "sourceHashesEqual": true,
+  "days": {
+    "A": {
+      "differentDailyIdentities": true,
+      "samePolicyOrderAndNominalNames": true,
+      "samePlacementsAndWorkCounters": true,
+      "sameFutureCertificate": true
+    },
+    "B": {
+      "differentDailyIdentities": true,
+      "samePolicyOrderAndNominalNames": true,
+      "samePlacementsAndWorkCounters": true,
+      "sameFutureCertificate": true
+    },
+    "C": {
+      "differentDailyIdentities": true,
+      "samePolicyOrderAndNominalNames": true,
+      "samePlacementsAndWorkCounters": true,
+      "sameFutureCertificate": true
+    },
+    "D": {
+      "differentDailyIdentities": true,
+      "samePolicyOrderAndNominalNames": true,
+      "samePlacementsAndWorkCounters": true,
+      "sameFutureCertificate": true
+    }
+  }
+}

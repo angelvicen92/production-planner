@@ -1,0 +1,144 @@
+--- 114/apply_day_config_operation_v5
++++ 115/apply_day_config_operation_v5
+@@ -3,8 +3,8 @@
+  LANGUAGE plpgsql
+  SET search_path TO ''
+ AS $function$
+-DECLARE p public.plans%rowtype; target jsonb; overrides jsonb; groups jsonb; selected boolean; guard text; result bigint;
+- structure_selected boolean; old_rounds jsonb; new_rounds jsonb; path text[]:=ARRAY['authorities','plan_workday','0','plannerNextAuthorities','roundSynchronizations'];
++DECLARE p public.plans%rowtype; guard text; result bigint;
++ structure_selected boolean; old_chains jsonb; new_chains jsonb; path text[]:=ARRAY['authorities','plan_workday','0','plannerNextAuthorities','technicalChains'];
+  s public.assisted_planning_sessions%rowtype; before_sources jsonb; changed jsonb; expected_candidate jsonb; component jsonb; work_fp text; all_fp text;
+ BEGIN
+  PERFORM 1 FROM public.user_roles u JOIN public.roles r ON r.id=u.role_id
+@@ -14,16 +14,16 @@
+  IF NOT FOUND THEN RAISE EXCEPTION 'PLAN_NOT_FOUND'; END IF;
+  IF p.current_config_revision_id IS DISTINCT FROM p_expected_revision THEN RAISE EXCEPTION 'STALE_CONFIG_REVISION'; END IF;
+ 
+- structure_selected:=p_operation='EDIT' AND p_payload ? 'roundSynchronization';
+- IF p_diff ? 'roundSynchronizationTransition' THEN RAISE EXCEPTION 'INVALID_ROUND_STRUCTURE_DIFF'; END IF;
++ structure_selected:=p_operation='EDIT' AND p_payload ? 'technicalChains';
++ IF p_diff ? 'technicalChainTransition' THEN RAISE EXCEPTION 'INVALID_TECHNICAL_CHAIN_DIFF'; END IF;
+  IF structure_selected THEN
+-  IF p_payload-ARRAY['roundSynchronization','expectedRevisionId']<>'{}' OR p_payload->'expectedRevisionId' IS DISTINCT FROM coalesce(to_jsonb(p_expected_revision),'null')
++  IF p_payload-ARRAY['technicalChains','expectedRevisionId']<>'{}' OR p_payload->'expectedRevisionId' IS DISTINCT FROM coalesce(to_jsonb(p_expected_revision),'null')
+   THEN RAISE EXCEPTION 'STALE_CONFIG_REVISION'; END IF;
+   PERFORM public.assisted_read_bootstrap_sources(p_plan_id,true);
+   SELECT * INTO s FROM public.assisted_planning_sessions WHERE plan_id=p_plan_id AND status='ACTIVE' FOR NO KEY UPDATE NOWAIT;
+   IF FOUND THEN
+    IF s.draft_snapshot_json IS DISTINCT FROM s.working_snapshot_json OR s.draft_fingerprint IS DISTINCT FROM s.working_fingerprint
+-    OR s.draft_scope_json<>'{}' THEN RAISE EXCEPTION 'ROUND_STRUCTURE_DIRTY_DRAFT'; END IF;
++    OR s.draft_scope_json<>'{}' THEN RAISE EXCEPTION 'TECHNICAL_CHAIN_DIRTY_DRAFT'; END IF;
+    IF (SELECT replay_snapshot_json FROM public.plan_config_revisions WHERE id=s.current_config_revision_id AND plan_id=p_plan_id) IS DISTINCT FROM p_expected_replay
+     OR (SELECT identity_json FROM public.plan_config_revisions WHERE id=s.current_config_revision_id AND plan_id=p_plan_id) IS DISTINCT FROM p_expected_identity
+    THEN RAISE EXCEPTION 'STALE_CONFIG_REVISION'; END IF;
+@@ -37,76 +37,54 @@
+    THEN RAISE EXCEPTION 'STALE_OBLIGATION_SOURCES'; END IF;
+   END IF;
+   IF EXISTS(SELECT 1 FROM public.planning_runs r WHERE r.plan_id=p_plan_id AND (r.status IN ('queued','running','cancelling') OR (r.status='success' AND r.assisted_result_json->>'outcome'='PROPOSAL' AND NOT EXISTS(SELECT 1 FROM public.assisted_planning_stages WHERE proposal_run_id=r.id))))
+-  THEN RAISE EXCEPTION 'ROUND_STRUCTURE_PENDING_PROPOSAL'; END IF;
+-  PERFORM public.assert_daily_round_structure(p_plan_id,p_payload->'roundSynchronization');
+-  old_rounds:=nullif(p.daily_round_synchronization->'policies','[]');
+-  new_rounds:=nullif(p_payload#>'{roundSynchronization,policies}','[]');
+-  IF old_rounds IS NOT DISTINCT FROM new_rounds THEN RAISE EXCEPTION 'ROUND_STRUCTURE_NO_CHANGES'; END IF;
+-  IF p_expected_replay#>path IS DISTINCT FROM old_rounds THEN RAISE EXCEPTION 'STALE_ROUND_STRUCTURE'; END IF;
++  THEN RAISE EXCEPTION 'TECHNICAL_CHAIN_PENDING_PROPOSAL'; END IF;
++  PERFORM public.assert_daily_technical_chains(p_plan_id,p_payload->'technicalChains');
++  old_chains:=nullif(p.daily_technical_chains->'policies','[]');
++  new_chains:=nullif(p_payload#>'{technicalChains,policies}','[]');
++  IF old_chains IS NOT DISTINCT FROM new_chains THEN RAISE EXCEPTION 'TECHNICAL_CHAIN_NO_CHANGES'; END IF;
++  IF p_expected_replay#>path IS DISTINCT FROM old_chains THEN RAISE EXCEPTION 'STALE_TECHNICAL_CHAIN'; END IF;
+   -- A policy touching protected decisions can only remain literally identical.
+-  FOR changed IN SELECT value FROM jsonb_array_elements(coalesce(old_rounds,'[]')) UNION SELECT value FROM jsonb_array_elements(coalesce(new_rounds,'[]')) LOOP
+-   IF EXISTS(SELECT 1 FROM jsonb_array_elements(changed->'lanes') l,LATERAL jsonb_array_elements(l->'taskIds') m
+-    JOIN public.daily_tasks t ON t.id=m::text::integer AND t.plan_id=p_plan_id
++  FOR changed IN SELECT value FROM jsonb_array_elements(coalesce(old_chains,'[]')) UNION SELECT value FROM jsonb_array_elements(coalesce(new_chains,'[]')) LOOP
++   IF EXISTS(SELECT 1 FROM jsonb_array_elements(changed->'orderedTaskIds') m JOIN public.daily_tasks t ON t.id=m::text::integer AND t.plan_id=p_plan_id
+     WHERE t.start_planned IS NOT NULL OR t.status IN ('done','in_progress') OR EXISTS(SELECT 1 FROM public.locks WHERE plan_id=p_plan_id AND task_id=t.id))
+-    AND (NOT coalesce(old_rounds,'[]') @> jsonb_build_array(changed) OR NOT coalesce(new_rounds,'[]') @> jsonb_build_array(changed))
+-   THEN RAISE EXCEPTION 'ROUND_STRUCTURE_PROTECTED_DECISIONS'; END IF;
++    OR EXISTS(SELECT 1 FROM public.assisted_planning_stages st,LATERAL jsonb_array_elements(st.snapshot_json->'tasks') t
++     WHERE st.plan_id=p_plan_id AND t->>'startPlanned' IS NOT NULL AND changed->'orderedTaskIds' @> jsonb_build_array(t->'taskId'))
++   THEN RAISE EXCEPTION 'TECHNICAL_CHAIN_PROTECTED_DECISIONS'; END IF;
+   END LOOP;
+-  expected_candidate:=CASE WHEN new_rounds IS NULL THEN p_expected_replay #- path ELSE jsonb_set(p_expected_replay,path,new_rounds,true) END;
+-  IF expected_candidate IS DISTINCT FROM p_candidate_replay THEN RAISE EXCEPTION 'STALE_ROUND_STRUCTURE_REPLAY'; END IF;
++  expected_candidate:=CASE WHEN new_chains IS NULL THEN p_expected_replay #- path ELSE jsonb_set(p_expected_replay,path,new_chains,true) END;
++  IF expected_candidate IS DISTINCT FROM p_candidate_replay THEN RAISE EXCEPTION 'STALE_TECHNICAL_CHAIN_REPLAY'; END IF;
+   work_fp:=encode(sha256(convert_to('{"contractVersion":1,"authority":"plan_workday","availability":"AVAILABLE","semanticValue":'||public.round_structure_canonical_json(p_candidate_replay#>'{authorities,plan_workday}')||'}','UTF8')),'hex');
+   SELECT value INTO component FROM jsonb_array_elements(p_candidate_identity->'components') WHERE value->>'authority'='plan_workday';
+   IF component->>'fingerprint' IS DISTINCT FROM work_fp
+    OR jsonb_set(p_expected_identity,'{components}',(SELECT jsonb_agg(CASE WHEN value->>'authority'='plan_workday' THEN jsonb_set(value,'{fingerprint}',to_jsonb(work_fp)) ELSE value END ORDER BY ordinality) FROM jsonb_array_elements(p_expected_identity->'components') WITH ORDINALITY)) - 'configurationFingerprint'
+     IS DISTINCT FROM p_candidate_identity-'configurationFingerprint'
+-  THEN RAISE EXCEPTION 'STALE_ROUND_STRUCTURE_IDENTITY'; END IF;
++  THEN RAISE EXCEPTION 'STALE_TECHNICAL_CHAIN_IDENTITY'; END IF;
+   SELECT encode(sha256(convert_to('{"contractVersion":1,"components":'||public.round_structure_canonical_json(jsonb_agg(jsonb_build_object('authority',value->'authority','availability',value->'availability','fingerprint',value->'fingerprint') ORDER BY ordinality))||'}','UTF8')),'hex') INTO all_fp
+    FROM jsonb_array_elements(p_candidate_identity->'components') WITH ORDINALITY;
+-  IF p_candidate_identity->>'configurationFingerprint' IS DISTINCT FROM all_fp THEN RAISE EXCEPTION 'STALE_ROUND_STRUCTURE_IDENTITY'; END IF;
+-  guard:=current_setting('optiplan.daily_round_operation',true);
+-  PERFORM set_config('optiplan.daily_round_operation','versioned',true);
+-  UPDATE public.plans SET daily_round_synchronization=p_payload->'roundSynchronization'||jsonb_build_object('by',p_actor,'at',now()) WHERE id=p_plan_id;
+-  PERFORM set_config('optiplan.daily_round_operation',coalesce(guard,''),true);
++  IF p_candidate_identity->>'configurationFingerprint' IS DISTINCT FROM all_fp THEN RAISE EXCEPTION 'STALE_TECHNICAL_CHAIN_IDENTITY'; END IF;
++  -- Same CANONICAL_MATERIALIZATION contract as 104, before authority mutation.
++  -- This prevents the delegate from capturing an old replay against a new rule.
++  IF (SELECT fingerprint FROM public.plan_config_revisions WHERE id=p.current_config_revision_id AND plan_id=p_plan_id)
++    IS DISTINCT FROM p_expected_identity->>'configurationFingerprint' THEN
++   INSERT INTO public.plan_config_revisions(plan_id,parent_revision_id,source,fingerprint,identity_json,replay_snapshot_json,diff_json,created_by)
++   VALUES(p_plan_id,p.current_config_revision_id,'CANONICAL_MATERIALIZATION',p_expected_identity->>'configurationFingerprint',p_expected_identity,p_expected_replay,
++    jsonb_build_object('reason','legacy-or-stale-current-revision'),p_actor) RETURNING id INTO result;
++   UPDATE public.plans SET current_config_revision_id=result WHERE id=p_plan_id;
++   p_expected_revision:=result;
++  END IF;
++  guard:=current_setting('optiplan.daily_technical_chain_operation',true);
++  PERFORM set_config('optiplan.daily_technical_chain_operation','versioned',true);
++  UPDATE public.plans SET daily_technical_chains=p_payload->'technicalChains'||jsonb_build_object('by',p_actor,'at',now()) WHERE id=p_plan_id;
++  PERFORM set_config('optiplan.daily_technical_chain_operation',coalesce(guard,''),true);
+   -- Reuse the immutable revision diff for the explicit configuration transition.
+   -- No admission row, replacement session, mutable bootstrap capture or new table.
+-  p_diff:=p_diff||jsonb_build_object('roundSynchronizationTransition',jsonb_build_object('contractVersion',1,
++  p_diff:=p_diff||jsonb_build_object('technicalChainTransition',jsonb_build_object('contractVersion',1,
+    'sessionId',s.id,'baseStageId',s.active_stage_id,'previousSessionRevisionId',s.current_config_revision_id,
+-   'previousPlanRevisionId',p_expected_revision,'before',p.daily_round_synchronization,
+-   'after',(SELECT daily_round_synchronization FROM public.plans WHERE id=p_plan_id),
++   'previousPlanRevisionId',p.current_config_revision_id,'before',p.daily_technical_chains,
++   'after',(SELECT daily_technical_chains FROM public.plans WHERE id=p_plan_id),
+    'sources',public.assisted_read_bootstrap_sources(p_plan_id)));
+  END IF;
+- groups:=public.effective_operation_continuity(p_plan_id,p.operation_continuity_overrides);
+- selected:=(p_operation='EDIT' AND p_payload ? 'operationContinuity') OR (p_operation='RESTORE' AND p_payload->>'capability'='OPERATION_CONTINUITY');
+- IF coalesce(p_expected_replay#>'{authorities,plan_workday,0,plannerNextAuthorities,operationContinuityGroups}','[]'::jsonb) IS DISTINCT FROM groups
+- THEN RAISE EXCEPTION 'STALE_OPERATION_CONTINUITY_CANDIDATE'; END IF;
+- IF selected THEN
+-  IF NOT p_payload ? 'expectedRevisionId' OR p_payload->'expectedRevisionId' IS DISTINCT FROM coalesce(to_jsonb(p_expected_revision),'null'::jsonb)
+-  THEN RAISE EXCEPTION 'STALE_CONFIG_REVISION'; END IF;
+-  IF EXISTS(SELECT 1 FROM jsonb_object_keys(p_payload) k WHERE k NOT IN ('operationContinuity','expectedRevisionId','capability'))
+-  THEN RAISE EXCEPTION 'INVALID_OPERATION_CONTINUITY_OVERRIDE'; END IF;
+-  target:=p_payload->'operationContinuity';
+-  IF jsonb_typeof(target) IS DISTINCT FROM 'object' OR NOT target ? 'groupId'
+-   OR EXISTS(SELECT 1 FROM jsonb_object_keys(target) k WHERE k NOT IN ('groupId','policy','gapWeight'))
+-  THEN RAISE EXCEPTION 'INVALID_OPERATION_CONTINUITY_OVERRIDE'; END IF;
+-  IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(groups) g WHERE g->>'id'=target->>'groupId')
+-  THEN RAISE EXCEPTION 'OPERATION_CONTINUITY_CONFIGURATION_CONFLICT'; END IF;
+-  IF p_operation='RESTORE' AND (target ? 'policy' OR target ? 'gapWeight' OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(p.operation_continuity_overrides) v WHERE v->>'groupId'=target->>'groupId'))
+-  THEN RAISE EXCEPTION 'OPERATION_CONTINUITY_RESTORE_NOT_AVAILABLE'; END IF;
+-  SELECT coalesce(jsonb_agg(value),'[]'::jsonb) INTO overrides FROM jsonb_array_elements(p.operation_continuity_overrides) WHERE value->>'groupId'<>target->>'groupId';
+-  IF p_operation='EDIT' THEN overrides:=overrides||jsonb_build_array(target||jsonb_build_object('by',p_actor,'at',now())); END IF;
+-  groups:=public.effective_operation_continuity(p_plan_id,overrides);
+-  guard:=current_setting('optiplan.operation_continuity_operation',true);
+-  PERFORM set_config('optiplan.operation_continuity_operation','versioned',true);
+-  UPDATE public.plans SET operation_continuity_overrides=overrides WHERE id=p_plan_id;
+-  PERFORM set_config('optiplan.operation_continuity_operation',coalesce(guard,''),true);
+- END IF;
+- IF coalesce(p_candidate_replay#>'{authorities,plan_workday,0,plannerNextAuthorities,operationContinuityGroups}','[]'::jsonb) IS DISTINCT FROM groups
+- THEN RAISE EXCEPTION 'STALE_OPERATION_CONTINUITY_CANDIDATE'; END IF;
+- result:=public.apply_day_config_operation_v4(p_plan_id,p_actor,p_operation,p_payload-'operationContinuity'-'roundSynchronization',p_expected_revision,
++ result:=public.apply_day_config_operation_before_technical_chains(p_plan_id,p_actor,p_operation,p_payload-'technicalChains'-CASE WHEN structure_selected THEN 'expectedRevisionId' ELSE '__unused' END,p_expected_revision,
+   p_expected_identity,p_expected_replay,p_candidate_identity,p_candidate_replay,p_diff);
+- IF structure_selected THEN
+-  UPDATE public.planning_runs r SET status='error',message='STALE_CONFIG_REVISION',cancel_reason='ROUND_STRUCTURE_CHANGED',cancelled_at=now()
+-  WHERE r.assisted_session_id=s.id AND r.status='success'
+-   AND NOT EXISTS(SELECT 1 FROM public.assisted_planning_stages WHERE proposal_run_id=r.id);
+- END IF;
+  RETURN result;
+ END $function$

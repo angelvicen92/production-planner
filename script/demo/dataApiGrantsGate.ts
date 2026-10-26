@@ -67,6 +67,23 @@ export function assertPrivilegeContract(catalog:DataApiCatalog) {
       assert.equal(fn.execute,role==='service_role'&&signature!=='guard_daily_round_synchronization()');
     }
   }
+  // 115 inherits the same column boundary as 114. Table-level grants alone
+  // cannot authorize authority writes: the versioned-operation trigger must run.
+  for(const role of ['anon','authenticated','service_role']) {
+    const plan=catalog.tables.find(t=>t.name==='plans'&&t.role===role);assert.ok(plan);
+    assert.deepEqual(plan.columns.daily_technical_chains,role==='service_role'?['SELECT','INSERT','UPDATE']:role==='authenticated'?['SELECT']:[]);
+    for(const [signature,serverExecute] of [
+      ['apply_day_config_operation_v5(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)',true],
+      ['apply_day_config_operation_before_technical_chains(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)',true],
+      ['assert_daily_technical_chains(integer,jsonb)',true],
+      ['assert_daily_technical_chain_snapshot(integer,jsonb,bigint,bigint)',true],
+      ['guard_daily_technical_chains()',false],['guard_technical_chain_revision()',false],['guard_daily_technical_chain_stage()',false],
+    ] as const) {
+      const fn=catalog.functions.find(f=>f.signature===signature&&f.role===role);assert.ok(fn,signature);
+      assert.equal(fn.definer,false,signature);assert.deepEqual(fn.settings,['search_path=""'],signature);
+      assert.equal(fn.execute,role==='service_role'&&serverExecute,signature+' '+role);
+    }
+  }
 }
 
 export function assertSourcePrivileges(catalog:DataApiCatalog) {
@@ -176,6 +193,18 @@ export async function verifyDataApiGrants(options:{db:pg.Client;url:string;servi
       assert.throws(()=>assertPrivilegeContract(changed),/Data API contract changed/,mutation);
     }finally {await db.query('ROLLBACK');}
   }
+  const negative115=[
+    'GRANT EXECUTE ON FUNCTION public.apply_day_config_operation_before_technical_chains(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb) TO PUBLIC',
+    'GRANT EXECUTE ON FUNCTION public.assert_daily_technical_chain_snapshot(integer,jsonb,bigint,bigint) TO authenticated',
+    'GRANT EXECUTE ON FUNCTION public.guard_technical_chain_revision() TO service_role',
+    'GRANT UPDATE(daily_technical_chains) ON public.plans TO authenticated',
+    'GRANT SELECT(daily_technical_chains) ON public.plans TO anon',
+  ];
+  for(const mutation of negative115) {
+    await db.query('BEGIN');
+    try {await db.query(mutation);const changed=await dataApiCatalog(db);assert.throws(()=>assertPrivilegeContract(changed),/Data API contract changed/);}
+    finally {await db.query('ROLLBACK');}
+  }
   // A real future table with correct RLS but no grant must fail natively. This
   // is also a control for SQLSTATE classification, independently of the contract.
   const probe='p11_gate_probe';
@@ -208,6 +237,7 @@ export async function verifyDataApiGrants(options:{db:pg.Client;url:string;servi
     sourceCalls:calls.length,nativeReads:reads,legacyEffectivePrivilegesUnchanged:true,
     rpcDefinitionsAndPoliciesUnchanged:true,allRebuiltTablesRlsEnabled:true,
     migration103EffectivePrivilegesVerified:true,migration103NegativeMutationsDetected:negative103.length,
+    migration115EffectivePrivilegesVerified:true,migration115NegativeMutationsDetected:negative115.length,
     missingGrantDetected:true,newTableWithoutGrantNative42501:true,grantVsRlsNativeControl:true,anonymousExpansionDetected:true};
 }
 
@@ -227,6 +257,30 @@ export async function verifyDataApiActors(options:{db:pg.Client;url:string;appUr
     return {status:r.status,body:await r.json() as any};
   };
   const catalog=await dataApiCatalog(db),observations=[];
+  const authorityBefore=(await db.query('SELECT to_jsonb(p) row FROM plans p WHERE id=$1',[planId])).rows;
+  const technicalAuthority=[];
+  for(const role of ['anon','norole','viewer','aux','production','admin','service_role']) {
+    const token=role==='anon'?anon:role==='service_role'?service:users[role].token;
+    const read=await rest(token,`plans?id=eq.${planId}&select=id,daily_technical_chains`);
+    assert.equal(read.status,role==='anon'?401:200);
+    if(['norole','anon'].includes(role)&&Array.isArray(read.body))assert.deepEqual(read.body,[]);
+    const write=await rest(token,`plans?id=eq.${planId}`,'PATCH',{daily_technical_chains:{contractVersion:1,policies:[]}});
+    assert.equal(write.status,role==='anon'?401:role==='service_role'?400:403,JSON.stringify(write));
+    assert.equal(write.body.code,role==='service_role'?'P0001':'42501');
+    if(role==='service_role')assert.equal(write.body.message,'TECHNICAL_CHAIN_REQUIRES_VERSIONED_OPERATION');
+    // The renamed invoker is still intentionally callable by the trusted server
+    // (nested invoker calls need EXECUTE), never by a functional application role.
+    const delegated=await rest(token,'rpc/apply_day_config_operation_before_technical_chains','POST',{
+      p_plan_id:0,p_actor:users.admin.id,p_operation:'EDIT',p_payload:{},p_expected_revision:null,
+      p_expected_identity:{},p_expected_replay:{},p_candidate_identity:{},p_candidate_replay:{},p_diff:{},
+    });
+    assert.equal(delegated.status,role==='anon'?401:role==='service_role'?400:403,JSON.stringify(delegated));
+    assert.equal(delegated.body.code,role==='service_role'?'P0001':'42501');
+    if(role==='service_role')assert.equal(delegated.body.message,'PLAN_NOT_FOUND');
+    assert.deepEqual((await db.query('SELECT to_jsonb(p) row FROM plans p WHERE id=$1',[planId])).rows,authorityBefore);
+    technicalAuthority.push({role,columnRead:{status:read.status,rows:Array.isArray(read.body)?read.body.length:null},
+      directAuthorityWrite:write,internalDelegate:delegated,atomicNoChange:true});
+  }
   for(const role of ['anon','norole','viewer','aux','production','admin']) {
     const status=role==='anon'?401:role==='norole'?403:200;
     const reads=[];
@@ -268,6 +322,6 @@ export async function verifyDataApiActors(options:{db:pg.Client;url:string;appUr
   assert.equal((await api('admin',`/api/admin/users/${disposable.id}`,'DELETE')).status,200);
   assert.equal((await db.query('SELECT count(*)::int n FROM auth.users WHERE id=$1',[disposable.id])).rows[0].n,0);
   const callSheet=await dataApiCallSheet(appUrl,users.viewer,directory);
-  const report={observations,invalidAuthDenied:true,rolePromotionDemotionRevocationSameJwt:true,adminUserCleanup:true,callSheet};
+  const report={observations,technicalAuthority,invalidAuthDenied:true,rolePromotionDemotionRevocationSameJwt:true,adminUserCleanup:true,callSheet};
   writeFileSync(`${directory}/data-api-actors.json`,JSON.stringify(report,null,2));return report;
 }

@@ -1,0 +1,124 @@
+{
+  "status": "PASS",
+  "nativeCandidate": {
+    "days": 4,
+    "stages": 6,
+    "receipts": 272
+  },
+  "gates": [
+    {
+      "gate": "check",
+      "exit": 0
+    },
+    {
+      "gate": "build",
+      "exit": 0
+    },
+    {
+      "gate": "migrations",
+      "exit": 0
+    },
+    {
+      "gate": "harness-types",
+      "exit": 0
+    },
+    {
+      "gate": "integration-types",
+      "exit": 0
+    },
+    {
+      "gate": "repeat-final",
+      "exit": 0,
+      "command": [
+        "docs/evidence/p0-u00s/run.ts",
+        "/tmp/u00s-int-repeat-final"
+      ],
+      "cwd": "/workspace/production-planner"
+    },
+    {
+      "gate": "rounds",
+      "exit": 0,
+      "command": [
+        "docs/evidence/p0-u00p/run.ts",
+        "/tmp/u00s-int-rounds"
+      ],
+      "cwd": "/workspace/production-planner"
+    },
+    {
+      "gate": "prefix",
+      "exit": 0,
+      "command": [
+        "docs/evidence/p0-u00r/run.ts",
+        "/tmp/u00s-int-prefix"
+      ],
+      "cwd": "/workspace/production-planner"
+    },
+    {
+      "gate": "additions",
+      "exit": 0,
+      "command": [
+        "script/demo/smokeNewDayIntegration.ts",
+        "/tmp/u00s-int-additions",
+        "--post-stage-additions"
+      ],
+      "cwd": "/workspace/production-planner"
+    },
+    {
+      "gate": "a2-candidate",
+      "exit": 0,
+      "command": [
+        "docs/evidence/p0-u00n/a2.ts",
+        "/tmp/u00s-int-a2-candidate"
+      ],
+      "cwd": "/workspace/production-planner"
+    },
+    {
+      "gate": "a2-repeat",
+      "exit": 0,
+      "command": [
+        "docs/evidence/p0-u00n/a2.ts",
+        "/tmp/u00s-int-a2-repeat"
+      ],
+      "cwd": "/workspace/production-planner"
+    },
+    {
+      "gate": "asst-base",
+      "exit": 0,
+      "command": [
+        "docs/evidence/p0-u00p/asst010.ts",
+        "/tmp/u00s-int-asst-base.json"
+      ],
+      "cwd": "/tmp/u00s-int-asst-base"
+    },
+    {
+      "gate": "asst-candidate",
+      "exit": 0,
+      "command": [
+        "docs/evidence/p0-u00p/asst010.ts",
+        "/tmp/u00s-int-asst-candidate.json"
+      ],
+      "cwd": "/workspace/production-planner"
+    }
+  ],
+  "budgetOrTimeoutChanges": false,
+  "remoteDatabaseWrites": 0,
+  "asst010": "Identical historical failure reproduced on exact base ed4cc0b and candidate; see asst010-comparison.json",
+  "finalNativeRuns": [
+    {
+      "name": "native-midnight",
+      "exit": 0,
+      "output": "/tmp/u00s-int-native-midnight"
+    },
+    {
+      "name": "repeat-midnight",
+      "exit": 0,
+      "output": "/tmp/u00s-int-repeat-midnight"
+    }
+  ],
+  "liveExecutionGate": {
+    "tests": 59,
+    "passed": 59,
+    "failed": 0,
+    "source": "midnight-gates.json.gz"
+  }
+}

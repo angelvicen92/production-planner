@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "candidate": {
+    "status": "PASS",
+    "isolated": true,
+    "node": "v20.19.5",
+    "seconds": 114.470920794,
+    "completed": 266,
+    "stages": 11,
+    "branches": 27049,
+    "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+    "fullReportEqualExceptDurationMs": true,
+    "snapshotsEqual": true,
+    "certificatesRevalidated": 11
+  },
+  "repeat": {
+    "status": "PASS",
+    "isolated": true,
+    "node": "v20.19.5",
+    "seconds": 115.52219360299999,
+    "completed": 266,
+    "stages": 11,
+    "branches": 27049,
+    "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+    "fullReportEqualExceptDurationMs": true,
+    "snapshotsEqual": true,
+    "certificatesRevalidated": 11
+  },
+  "certificatesRevalidatedTotal": 22,
+  "baseline": "docs/evidence/p0-u00r/a2/comparison.json"
+}

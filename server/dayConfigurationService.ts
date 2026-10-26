@@ -1,3 +1,4 @@
+import { dailyTechnicalChainAuthority, validateDailyTechnicalChains } from "./technicalChainStructure";
 import { validateDailyRoundStructure, dailyRoundAuthority } from "./roundSynchronizationStructure";
 import { applyEffectiveOperationContinuity, candidateOperationContinuity } from "./operationContinuity";
 import { transportBoundsSchema } from "../shared/transportPolicy";
@@ -130,6 +131,7 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
   if (planError || !plan) throw Object.assign(new Error("PLAN_NOT_FOUND"), { status: 404, cause: planError });
   if (generalError || !general) throw generalError;
   if (optimizerStateError || !optimizerState) throw optimizerStateError;
+  const chainEdit = operation === "EDIT" ? (payload as DayConfigEdit).technicalChains : undefined;
   const structureEdit = operation === "EDIT" ? (payload as DayConfigEdit).roundSynchronization : undefined;
   const roundEdit = operation === "EDIT" ? (payload as DayConfigEdit).roundPreparation : undefined;
   const roundRestore = operation === "RESTORE" && (payload as DayConfigRestore).capability === "SYNCHRONIZED_ROUNDS"
@@ -137,7 +139,7 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
   const continuityEdit = operation === "EDIT" ? (payload as DayConfigEdit).operationContinuity : undefined;
   const continuityRestore = operation === "RESTORE" && (payload as DayConfigRestore).capability === "OPERATION_CONTINUITY" ? payload as Extract<DayConfigRestore,{capability:"OPERATION_CONTINUITY"}> : undefined;
   const expectedRevision = plan.current_config_revision_id == null ? null : Number(plan.current_config_revision_id);
-  if ((structureEdit || roundEdit || roundRestore || continuityEdit || continuityRestore) && (payload as DayConfigEdit).expectedRevisionId !== expectedRevision)
+  if ((chainEdit || structureEdit || roundEdit || roundRestore || continuityEdit || continuityRestore) && (payload as DayConfigEdit).expectedRevisionId !== expectedRevision)
     throw Object.assign(new Error("STALE_CONFIG_REVISION"), { status: 409 });
   const mainPreferenceBaseline=operation==="REFRESH"&&(payload as DayConfigRefresh).capabilities.includes("BLOCK_COUNT_POLICY")
     ?mainFlowPreferenceFromRow(general):undefined;
@@ -171,7 +173,7 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
   }});
   const optimizerInput = optimizerSelected ? await buildEngineInput(planId,candidateRepository) : current.input;
   transportBoundsSchema.parse(optimizerInput);
-  let nextInput = structureEdit ? optimizerInput : candidateInput(optimizerInput, plan, general, operation, payload);
+  let nextInput = structureEdit || chainEdit ? optimizerInput : candidateInput(optimizerInput, plan, general, operation, payload);
   if (structureEdit) {
     dailyRoundAuthority(plan);
     if (!plan.planner_next_profile || plan.planner_next_configuration != null) throw Object.assign(new Error("ROUND_STRUCTURE_AUTHORITY_CONFLICT"),{status:422});
@@ -181,6 +183,13 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
     nextInput = validateDailyRoundStructure(nextInput,structureEdit);
     const readiness = preflightEngineInputForPlannerNext(nextInput);
     if (readiness.status !== "SUPPORTED") throw Object.assign(new Error(`UNSUPPORTED_ROUND_STRUCTURE: ${readiness.reasonCodes.join(", ")}`),{status:422});
+  }
+  if (chainEdit) {
+    dailyTechnicalChainAuthority(plan);
+    if (!plan.planner_next_profile || plan.planner_next_configuration != null || plan.planner_next_profile.configuration?.transport !== "NONE" || plan.planner_next_profile.configuration?.setup !== "NONE") throw Object.assign(new Error("TECHNICAL_CHAIN_AUTHORITY_CONFLICT"),{status:422});
+    nextInput = validateDailyTechnicalChains(nextInput,chainEdit);
+    const readiness=preflightEngineInputForPlannerNext(nextInput);
+    if(readiness.status!=="SUPPORTED")throw Object.assign(new Error(`UNSUPPORTED_TECHNICAL_CHAIN: ${readiness.reasonCodes.join(", ")}`),{status:422});
   }
   if (roundEdit || roundRestore) {
     nextInput = candidateRoundPreparations(nextInput, plan, (roundEdit ?? roundRestore!.roundPreparation), roundEdit?.preparationMinutesBetweenRounds, actorId);
@@ -204,7 +213,7 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
   });
   if (error?.code === "55P03" || error?.code === "40P01")
     throw Object.assign(new Error("STALE_CONFIG_SOURCES"),{status:409,cause:error});
-  if (error) throw Object.assign(error, { status: error.message.includes("PERMISSION_DENIED") ? 403 : /STALE_|ROUND_|OPERATION_CONTINUITY/.test(error.message) ? 409 : 500 });
+  if (error) throw Object.assign(error, { status: error.message.includes("PERMISSION_DENIED") ? 403 : /STALE_|ROUND_|TECHNICAL_CHAIN|OPERATION_CONTINUITY/.test(error.message) ? 409 : 500 });
   const { data: updated, error: updatedError } = await supabaseAdmin.from("plans").select("*").eq("id", planId).single();
   if (updatedError || !updated) throw updatedError;
   return { ...mapPlan(updated), revisionId: Number(data) };

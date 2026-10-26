@@ -1,0 +1,20 @@
+2026-10-25T17:53:33.3888697Z ##[endgroup]
+2026-10-25T17:53:47.8424005Z PASS entire native application migration ledger
+2026-10-25T17:53:49.6131114Z PASS real password login for five Auth identities
+2026-10-25T17:53:50.0126643Z AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+2026-10-25T17:53:50.0127484Z + actual - expected
+2026-10-25T17:53:50.0127727Z 
+2026-10-25T17:53:50.0127861Z + [
+2026-10-25T17:53:50.0128383Z +   'RPC_BODY_DRIFT:apply_day_config_operation_v5',
+2026-10-25T17:53:50.0129134Z +   'RPC_BODY_DRIFT:assisted_expected_obligation_sources',
+2026-10-25T17:53:50.0129827Z +   'RPC_BODY_DRIFT:assisted_preview_s0_additions',
+2026-10-25T17:53:50.0130316Z +   'RPC_BODY_DRIFT:assisted_read_bootstrap_sources'
+2026-10-25T17:53:50.0130646Z + ]
+2026-10-25T17:53:50.0130829Z - []
+2026-10-25T17:53:50.0131613Z     at <anonymous> (/home/runner/work/production-planner/production-planner/script/demo/smokeA2Integration.ts:258:29)
+2026-10-25T17:53:50.0132854Z     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2026-10-25T17:53:50.7228120Z {"status":"FAIL","evidence":"/home/runner/work/production-planner/production-planner/work/operation-continuity/integration.json","remoteWrites":0}
+2026-10-25T17:53:50.7455547Z ##[error]Process completed with exit code 1.
+2026-10-25T17:53:50.7540944Z ##[group]Run actions/upload-artifact@v4
+2026-10-25T17:53:50.7541262Z with:
+2026-10-25T17:53:50.7541492Z   name: operation-continuity

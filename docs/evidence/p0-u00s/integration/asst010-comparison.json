@@ -1,0 +1,35 @@
+{
+  "status": "BASELINE_FAILURE_REPRODUCED",
+  "base": "ed4cc0b32c6a5850292c7157f07dee570180696b",
+  "candidate": "7843f3380ec5a47e6bbf757505ed967e2f9f7f31",
+  "identicalMaterialFailure": true,
+  "fieldsCompared": [
+    "status",
+    "code",
+    "message",
+    "actual",
+    "expected",
+    "operator"
+  ],
+  "material": {
+    "status": "FAIL",
+    "code": "ERR_ASSERTION",
+    "message": "[\"ASSISTED_SCOPE_INCOMPLETE\",\"SEARCH_TIME_LIMIT_REACHED\"]\n+ actual - expected\n\n+ 'NO_PROPOSAL'\n- 'PROPOSAL'",
+    "actual": "NO_PROPOSAL",
+    "expected": "PROPOSAL",
+    "operator": "strictEqual"
+  },
+  "baseSeconds": 370.75967400400003,
+  "candidateSeconds": 371.21881277200004,
+  "budgetsAndAssertionsChanged": false,
+  "sourceHashes": {
+    "server/benchmarks/runA2Assist7Evidence.ts": {
+      "base": "cc1d5bd5b9bd7a8177707f0164701f7c9a4571f3bfdec86adb44fa512d95d0c9",
+      "candidate": "cc1d5bd5b9bd7a8177707f0164701f7c9a4571f3bfdec86adb44fa512d95d0c9"
+    },
+    "docs/evidence/p0-u00p/asst010.ts": {
+      "base": "af462442651c274f086ad56104ffa2cdb925c424367ea92978627f40ce9824e8",
+      "candidate": "af462442651c274f086ad56104ffa2cdb925c424367ea92978627f40ce9824e8"
+    }
+  }
+}

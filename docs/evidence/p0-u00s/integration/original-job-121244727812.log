@@ -1,0 +1,13 @@
+2026-10-25T18:04:00.8524140Z > node --import tsx script/demo/smokeA2Integration.ts work/atomic-template --restricted-data-api --historical-topology --atomic-template
+2026-10-25T18:04:00.8524558Z 
+2026-10-25T18:04:15.4397176Z PASS entire native application migration ledger
+2026-10-25T18:04:18.4086422Z AssertionError [ERR_ASSERTION]: Data API contract changed: review every new object, required grant, column boundary and exposed role
+2026-10-25T18:04:18.4087672Z + actual - expected ... Lines skipped
+2026-10-25T18:04:18.4088363Z 
+2026-10-25T18:04:18.4088823Z   {
+2026-10-25T18:04:18.4089791Z     functions: [
+2026-10-25T18:04:18.4090251Z ...
+2026-10-25T18:04:18.4090643Z         execute: false,
+2026-10-25T18:04:18.4091118Z         role: 'anon',
+2026-10-25T18:04:18.4092185Z +       signature: 'apply_day_config_operation_before_technical_chains(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)'
+2026-10-25T18:04:18.4093678Z -       signature: 'apply_day_config_operation_v2(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)'

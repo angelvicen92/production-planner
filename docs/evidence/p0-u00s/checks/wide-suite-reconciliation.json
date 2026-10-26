@@ -1,0 +1,47 @@
+{
+  "originalWideSuite": {
+    "node": "20.19.5",
+    "tests": 3249,
+    "passed": 3244,
+    "failed": 5,
+    "seconds": 950.403251496
+  },
+  "reconciled": [
+    {
+      "test": "Full A2 first executable integration",
+      "cause": "Object.groupBy absent in Node 20",
+      "verification": "Node 24 test and isolation: 9/9 PASS; no production change"
+    },
+    {
+      "test": "planner-next isolation",
+      "cause": "new authorized certificate boundary absent from explicit allowlist",
+      "verification": "allowlist updated only for certificate and its focal test; unchanged isolation assertions pass"
+    },
+    {
+      "test": "registry PRODUCTIVE list and effective view PRODUCTIVE count",
+      "cause": "TECHNICAL_CHAINS added as the fourth productive capability",
+      "verification": "expectations now include only this new REQUIRED capability; focal suite PASS"
+    },
+    {
+      "test": "ASST-010 historical assisted chain",
+      "cause": "ASSISTED_SCOPE_INCOMPLETE + SEARCH_TIME_LIMIT_REACHED; NO_PROPOSAL vs PROPOSAL",
+      "classification": "existing baseline failure, not physical infeasibility",
+      "baseline": "docs/evidence/p0-u00p/checks/asst010-comparison.json",
+      "verification": "same material failure; no budgets/timeouts/assertions changed; canonical A2 266/266 unaffected"
+    }
+  ],
+  "targetedCandidate": {
+    "files": 29,
+    "tests": 469,
+    "status": "PASS"
+  },
+  "additionalFinalChecks": [
+    "26 service tests PASS",
+    "4 daily structure tests PASS",
+    "material SQL guard test PASS, including coherent hashes, legacy empty authority, resource omissions, multiple resources and sound prefixes",
+    "U00q full cold replay 7/7 PASS",
+    "U00r literal and cold replays PASS",
+    "U00p and U00r native journeys PASS"
+  ],
+  "allGlobalTestsGreen": false
+}

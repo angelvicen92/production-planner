@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "base": "ed4cc0b32c6a5850292c7157f07dee570180696b",
+  "allCapturedSourcesEqualCheckout": true,
+  "sourceFileCount": 1628,
+  "candidateRepeatSourcesEqual": true,
+  "sourceManifestSha256": "92442516d9c18f4f5777e593a4de8b18c980a5af4f8d11e74c2ddc13a61a1f81"
+}

@@ -1,0 +1,9 @@
+{
+  "base": "ed4cc0b32c6a5850292c7157f07dee570180696b",
+  "sameMaterialFailure": true,
+  "test": "pause boundaries remain facts; impossible chronology rejected before and after Finish",
+  "sqlState": "P0001",
+  "message": "EXECUTION_WORKDAY",
+  "cause": "10/11-minute lookback crosses the Madrid civil-date boundary just after midnight",
+  "correction": "Only this focused pause case uses the existing production manual clock at noon; chronology assertions and SQL remain unchanged."
+}

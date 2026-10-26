@@ -1,0 +1,14 @@
+--- 114/assisted_preview_s0_additions
++++ 115/assisted_preview_s0_additions
+@@ -12,9 +12,9 @@
+  -- S0 has no consolidated planning changes: preserve its literal capture.
+  SELECT sources_json INTO old_sources FROM public.assisted_bootstrap_sources WHERE session_id=s.id;
+  SELECT * INTO transition_record FROM public.plan_config_revisions r WHERE r.plan_id=s.plan_id AND r.id<=s.current_config_revision_id
+-  AND r.diff_json#>>'{roundSynchronizationTransition,sessionId}'=s.id::text ORDER BY r.id DESC LIMIT 1;
++  AND coalesce(r.diff_json#>>'{technicalChainTransition,sessionId}',r.diff_json#>>'{roundSynchronizationTransition,sessionId}')=s.id::text ORDER BY r.id DESC LIMIT 1;
+  IF FOUND THEN
+-  old_sources:=transition_record.diff_json#>'{roundSynchronizationTransition,sources}';
++  old_sources:=coalesce(transition_record.diff_json#>'{technicalChainTransition,sources}',transition_record.diff_json#>'{roundSynchronizationTransition,sources}');
+   old_sources:=jsonb_set(old_sources,'{plans,0,current_config_revision_id}',to_jsonb(transition_record.id));
+  END IF;
+  current_sources:=public.assisted_read_bootstrap_sources(p_plan_id);

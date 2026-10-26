@@ -1,0 +1,13 @@
+2026-10-25T17:52:48.5197110Z 
+2026-10-25T17:52:59.0670601Z PASS entire native application migration ledger
+2026-10-25T17:53:00.8726244Z PASS real password login for five Auth identities
+2026-10-25T17:53:01.0986860Z error: TECHNICAL_CHAIN_AUTHORITY_NOT_MATERIALIZED
+2026-10-25T17:53:01.0996774Z     at /home/runner/work/production-planner/production-planner/node_modules/pg/lib/client.js:545:17
+2026-10-25T17:53:01.0999487Z     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2026-10-25T17:53:01.1001863Z     at async seedA2HistoricalRehearsal (/home/runner/work/production-planner/production-planner/script/demo/seedA2HistoricalRehearsal.ts:22:18)
+2026-10-25T17:53:01.1004376Z     at async <anonymous> (/home/runner/work/production-planner/production-planner/script/demo/smokeA2Integration.ts:225:41)
+2026-10-25T17:53:01.7628209Z {"status":"FAIL","evidence":"/home/runner/work/production-planner/production-planner/work/a2-integration/integration.json","remoteWrites":0}
+2026-10-25T17:53:01.8064939Z ##[error]Process completed with exit code 1.
+2026-10-25T17:53:01.8152369Z ##[group]Run actions/upload-artifact@v4
+2026-10-25T17:53:01.8152691Z with:
+2026-10-25T17:53:01.8152900Z   name: a2-assisted-integration

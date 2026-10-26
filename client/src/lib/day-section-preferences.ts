@@ -13,6 +13,7 @@ export const daySectionDefaults = {
   "configuration-flow": true,
   "configuration-rules": true,
   "configuration-rounds": true,
+  "configuration-technical-chains": true,
   "configuration-continuity": true,
   "configuration-optimization": true,
   "configuration-complementary": false,

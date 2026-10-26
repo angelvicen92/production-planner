@@ -1,0 +1,17 @@
+{
+  "excludedDevelopmentRuns": [
+    {
+      "path": "/tmp/u00s-int-native",
+      "journey": "PASS: four days, six Stages",
+      "outerHarness": "FAIL: source hash changed when the newly detected current-ledger test was corrected during the run",
+      "disposition": "not used as the certified native candidate; rerun from stable sources in /tmp/u00s-int-native-final"
+    },
+    {
+      "path": "/tmp/u00s-int-repeat",
+      "outerHarness": "FAIL: tmpfs full while extracting source archive, before disposable database startup",
+      "disposition": "removed only generated source archives, preserved receipts/manifests; rerun in a fresh directory"
+    }
+  ],
+  "localTooling": "npm ci from the unchanged lockfile, Playwright 1.64.0 and its matching browser installed in workspace; no repository dependency change",
+  "budgetsOrTimeoutsChanged": false
+}

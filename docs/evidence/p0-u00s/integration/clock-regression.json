@@ -1,0 +1,75 @@
+{
+  "base": "ed4cc0b32c6a5850292c7157f07dee570180696b",
+  "identicalBaseAndCandidateBehavior": true,
+  "baseResult": {
+    "pinnedInstant": "2026-10-25T22:14:00Z",
+    "dates": {
+      "current": "2026-10-25",
+      "previous24h": "2026-10-25",
+      "previouscivil": "2026-10-24"
+    },
+    "previous24Hours": "2026-10-24T22:14:00.000Z",
+    "previousCivilDay": "2026-10-24T21:14:00.000Z",
+    "oldTestWitnessAccepted": true,
+    "civilDayWitnessRejection": {
+      "code": "P0001",
+      "message": "EXECUTION_WORKDAY"
+    },
+    "midnightCase": {
+      "pinnedInstant": "2026-10-25T23:03:00Z",
+      "lookbackSeconds": 600,
+      "rejection": {
+        "code": "P0001",
+        "message": "EXECUTION_WORKDAY"
+      },
+      "productionManualNoonWitnessAccepted": true
+    },
+    "productMigrationsUnchanged": true
+  },
+  "candidateResult": {
+    "pinnedInstant": "2026-10-25T22:14:00Z",
+    "dates": {
+      "current": "2026-10-25",
+      "previous24h": "2026-10-25",
+      "previouscivil": "2026-10-24"
+    },
+    "previous24Hours": "2026-10-24T22:14:00.000Z",
+    "previousCivilDay": "2026-10-24T21:14:00.000Z",
+    "oldTestWitnessAccepted": true,
+    "civilDayWitnessRejection": {
+      "code": "P0001",
+      "message": "EXECUTION_WORKDAY"
+    },
+    "midnightCase": {
+      "pinnedInstant": "2026-10-25T23:03:00Z",
+      "lookbackSeconds": 600,
+      "rejection": {
+        "code": "P0001",
+        "message": "EXECUTION_WORKDAY"
+      },
+      "productionManualNoonWitnessAccepted": true
+    },
+    "productMigrationsUnchanged": true
+  },
+  "unchangedProductionSources": {
+    "supabase/migrations/097_audited_execution_time_corrections.sql": {
+      "base": "a2c679c1bb8170248f86737c97480551a05d8f3b297713ba0aa9d70d2759ee31",
+      "candidate": "a2c679c1bb8170248f86737c97480551a05d8f3b297713ba0aa9d70d2759ee31"
+    },
+    "supabase/migrations/098_execution_start_workday.sql": {
+      "base": "56af8f2e4e58ff6451d2adf79035dbd9e5df539f94cc14e401fcc221615ddfbf",
+      "candidate": "56af8f2e4e58ff6451d2adf79035dbd9e5df539f94cc14e401fcc221615ddfbf"
+    },
+    "server/fixtures/executionDatabase.ts": {
+      "base": "6b18861e2b6ef2d594bef11c5a1b3c65aed19a9291144ff097a1b5895ad9216a",
+      "candidate": "6b18861e2b6ef2d594bef11c5a1b3c65aed19a9291144ff097a1b5895ad9216a"
+    }
+  },
+  "testCorrection": "Use previous Madrid civil date instead of subtracting 86400 seconds; retain EXECUTION_WORKDAY assertion.",
+  "unchangedFailingTestBeforeCorrection": {
+    "path": "server/executionTimeCorrections.spec.ts",
+    "baseSha256": "4c44e5c04e360e1a32a22e8e59f8cd6d4614747d2c0e5b2a6d10f962e930a94b",
+    "reviewedCandidateSha256": "4c44e5c04e360e1a32a22e8e59f8cd6d4614747d2c0e5b2a6d10f962e930a94b"
+  },
+  "sameMidnightBehavior": true
+}

@@ -1,0 +1,11 @@
+--- 114/assisted_read_bootstrap_sources
++++ 115/assisted_read_bootstrap_sources
+@@ -18,7 +18,7 @@
+    WHEN tab='resource_types' THEN 't.id IN (SELECT type_id FROM public.plan_resource_items WHERE plan_id=$1)'
+    WHEN tab='resource_item_components' THEN 't.parent_resource_item_id IN (SELECT resource_item_id FROM public.plan_resource_items WHERE plan_id=$1)'
+    ELSE 't.plan_id=$1' END;
+-  projection:=CASE WHEN tab='plans' THEN 'CASE WHEN t.daily_round_synchronization IS NULL THEN to_jsonb(t)-''daily_round_synchronization'' ELSE to_jsonb(t) END' ELSE 'to_jsonb(t)' END;
++  projection:=CASE WHEN tab='plans' THEN '(to_jsonb(t) - CASE WHEN t.daily_round_synchronization IS NULL THEN ''daily_round_synchronization'' ELSE ''__absent'' END) - CASE WHEN t.daily_technical_chains IS NULL THEN ''daily_technical_chains'' ELSE ''__absent'' END' ELSE 'to_jsonb(t)' END;
+   EXECUTE format('SELECT coalesce(jsonb_agg(v ORDER BY v::text),''[]''::jsonb) FROM (SELECT (%s)-''created_at''-''updated_at'' AS v FROM public.%I t WHERE %s) q',projection,tab,predicate) INTO rows USING p_plan_id;
+   result:=result||jsonb_build_object(tab,rows);
+  END LOOP;

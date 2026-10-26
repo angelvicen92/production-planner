@@ -93,7 +93,9 @@ test('required version/reason/offset, unsupported states, future/date/planning d
     }
     await assert.rejects(()=>correct(db,'end',value,1),/EXECUTION_TRANSITION/);
     await assert.rejects(()=>correct(db,'start',iso(start.start_real_at,3600),1),/EXECUTION_CHRONOLOGY/);
-    await assert.rejects(()=>correct(db,'start',iso(start.start_real_at,-86400),1),/EXECUTION_WORKDAY/);
+    // A Madrid civil day can last 25 hours: minus 24h may still be today.
+    const previousWorkday=(await db.query<{at:Date}>("SELECT (($1::timestamptz AT TIME ZONE 'Europe/Madrid')-interval '1 day') AT TIME ZONE 'Europe/Madrid' AS at",[start.start_real_at])).rows[0].at;
+    await assert.rejects(()=>correct(db,'start',iso(previousWorkday,0),1),/EXECUTION_WORKDAY/);
     await db.exec("UPDATE plans SET work_start='23:58',work_end='23:59'");
     // Planning bounds do not prevent correcting a same-day real fact.
     await db.exec('BEGIN');
@@ -115,6 +117,8 @@ test('required version/reason/offset, unsupported states, future/date/planning d
 test('pause boundaries remain facts; impossible chronology rejected before and after Finish',async()=>{
   const db=await database();
   try {
+    // Keep the ten-minute lookback inside the same civil workday at midnight.
+    await db.exec("UPDATE program_settings SET clock_mode='manual',simulated_time='12:00',simulated_set_at=clock_timestamp()");
     const start=await transition(db,'in_progress',0);
     await correct(db,'start',iso(start.start_real_at,-600),1);
     const paused=await transition(db,'interrupted',2);

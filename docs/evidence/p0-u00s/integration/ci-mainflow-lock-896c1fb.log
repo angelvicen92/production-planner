@@ -1,0 +1,30 @@
+2026-10-25T22:33:29.5648877Z PASS S4 UI → run → apply → validate → accept → SQL persistence → reload (65/266)
+2026-10-25T22:33:34.5044774Z PASS selected production run Evidence renders achieved 4 blocks and real 2+2 distribution
+2026-10-25T22:33:42.9984343Z PASS S5 UI → run → apply → validate → accept → SQL persistence → reload (73/266)
+2026-10-25T22:33:46.9586637Z Error: Product UI reported a failed proposal run; inspect failedRuns SQL diagnostic
+2026-10-25T22:33:46.9587897Z     at <anonymous> (/home/runner/work/production-planner/production-planner/script/demo/smokeA2Journey.ts:104:173)
+2026-10-25T22:33:46.9589482Z     at async runA2BrowserJourney (/home/runner/work/production-planner/production-planner/script/demo/smokeA2Journey.ts:102:4)
+2026-10-25T22:33:46.9591567Z     at async <anonymous> (/home/runner/work/production-planner/production-planner/script/demo/smokeA2Integration.ts:356:74)
+2026-10-25T22:33:47.6816543Z {"status":"FAIL","evidence":"/home/runner/work/production-planner/production-planner/work/main-flow-preference-integration/integration.json","remoteWrites":0}
+2026-10-25T22:33:50.0079198Z ##[error]Process completed with exit code 1.
+2026-10-25T22:33:50.0166598Z ##[group]Run actions/upload-artifact@v4
+2026-10-25T22:33:50.0166916Z with:
+2026-10-25T22:33:50.0167142Z   name: main-flow-preference-integration
+2026-10-25T22:33:50.0168414Z   path: work/main-flow-preference-integration/integration.json
+work/main-flow-preference-integration/main-flow-preference-S1-result.json
+work/main-flow-preference-integration/*-real-ui.png
+work/main-flow-preference-integration/day-workspace.json
+work/main-flow-preference-integration/workspace-*.png
+
+2026-10-25T22:33:50.0169672Z   if-no-files-found: warn
+2026-10-25T22:33:50.0169907Z   compression-level: 6
+2026-10-25T22:33:50.0170129Z   overwrite: false
+2026-10-25T22:33:50.0170347Z   include-hidden-files: false
+2026-10-25T22:33:50.0170582Z env:
+2026-10-25T22:33:50.0170853Z   PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH: /usr/bin/google-chrome
+2026-10-25T22:33:50.0171195Z ##[endgroup]
+2026-10-25T22:33:50.1881120Z (node:3713) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-25T22:33:50.1882692Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-25T22:33:50.1961823Z With the provided path, there will be 4 files uploaded
+2026-10-25T22:33:50.1974095Z Artifact name is valid!
+2026-10-25T22:33:50.1974999Z Root directory input is valid!

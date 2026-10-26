@@ -1,3 +1,4 @@
+import { technicalChainStructureSchema } from "./technicalChainStructure";
 import { roundSynchronizationStructureSchema } from "./roundSynchronizationStructure";
 import { continuityEditSchema } from "./operationContinuity";
 import { mainFlowPreferenceSchema } from "./mainFlowPreference";
@@ -45,12 +46,13 @@ export const dayConfigEditSchema = z.object({
   participantTransitionMinutes: z.number().int().min(0).optional(),
   roundPreparation: roundPreparationEditSchema.optional(),
   roundSynchronization: roundSynchronizationStructureSchema.optional(),
+  technicalChains: technicalChainStructureSchema.optional(),
   operationContinuity: continuityEditSchema.optional(),
   expectedRevisionId: configRevisionIdSchema.optional(),
-}).strict().refine(value => value.roundSynchronization !== undefined || value.operationContinuity !== undefined || value.roundPreparation !== undefined || value.mainFlowPreference !== undefined || value.workday !== undefined || value.meal !== undefined || value.optimizer !== undefined || value.participantTransitionMinutes !== undefined, "At least one capability is required")
-  .refine(value => value.roundSynchronization === undefined && value.roundPreparation === undefined && value.operationContinuity === undefined ? value.expectedRevisionId === undefined
-    : value.expectedRevisionId !== undefined && [value.roundSynchronization,value.roundPreparation,value.operationContinuity].filter(v=>v!==undefined).length === 1 && Object.keys(value).every(key => key === "roundSynchronization" || key === "roundPreparation" || key === "operationContinuity" || key === "expectedRevisionId"),
-  "La continuidad o preparación se edita por carril con la revisión consultada, sin mezclar otras categorías.");
+}).strict().refine(value => value.technicalChains !== undefined || value.roundSynchronization !== undefined || value.operationContinuity !== undefined || value.roundPreparation !== undefined || value.mainFlowPreference !== undefined || value.workday !== undefined || value.meal !== undefined || value.optimizer !== undefined || value.participantTransitionMinutes !== undefined, "At least one capability is required")
+  .refine(value => value.technicalChains === undefined && value.roundSynchronization === undefined && value.roundPreparation === undefined && value.operationContinuity === undefined ? value.expectedRevisionId === undefined
+    : value.expectedRevisionId !== undefined && [value.technicalChains,value.roundSynchronization,value.roundPreparation,value.operationContinuity].filter(v=>v!==undefined).length === 1 && Object.keys(value).every(key => key === "technicalChains" || key === "roundSynchronization" || key === "roundPreparation" || key === "operationContinuity" || key === "expectedRevisionId"),
+  "La estructura se edita con la revisión consultada, sin mezclar otras categorías.");
 
 export const dayConfigCapabilitySchema = z.enum(["WORKDAY_WINDOW", "GLOBAL_MEAL_BREAK", "PARTICIPANT_TRANSITION", "OPTIMIZATION", "BLOCK_COUNT_POLICY"]);
 export const dayConfigRestoreSchema = z.union([
