@@ -20,6 +20,8 @@ El scope cierra la unidad por identidad y utiliza el cierre de prerequisites exi
 
 CAS, permisos ADMIN/PRODUCTION, bloqueo de propuestas/Draft, captura de fuentes, invalidación y transición de sesión reutilizan v5. El guard reconstruye el delta permitido —contrato y campos propios de las tres tareas— y verifica identidad/replay completos. La transición queda en el diff inmutable de revisión, como las autoridades diarias existentes. Los miembros nuevos no se declaran a partir de recursos heredados del ancla. Los recursos directos y locks mantienen su autoridad.
 
+La [auditoría causal y de autoridad](authority-audit.md) detalla el call path, el ledger de búsqueda y las protecciones de fuentes y checkpoints.
+
 ## Dos jornadas productivas
 
 Los recibos públicos originales están indexados por nombre en `native/receipts.json.gz`; `native/manifest.json.gz` y `native/harness.json.gz` vinculan código y runner ejecutados. Los únicos datos SQL preparados en este recorrido son plataforma, ledger y roles Auth; catálogos, tareas, participantes, unidades y declaración pasan por producto.

@@ -84,6 +84,18 @@ export function assertPrivilegeContract(catalog:DataApiCatalog) {
       assert.equal(fn.execute,role==='service_role'&&serverExecute,signature+' '+role);
     }
   }
+  // 116 inherits the daily column boundary; every new helper is invoker and
+  // private, and task-source guards have no directly callable server grant.
+  for(const role of ['anon','authenticated','service_role']){
+    const plan=catalog.tables.find(t=>t.name==='plans'&&t.role===role);assert.ok(plan);
+    assert.deepEqual(plan.columns.daily_anchored_accompaniments,role==='service_role'?['SELECT','INSERT','UPDATE']:role==='authenticated'?['SELECT']:[]);
+    for(const signature of ["anchored_contracts(jsonb)", "anchored_member_ids(jsonb)", "anchored_task_operations(integer,jsonb,jsonb,jsonb,boolean)", "apply_day_config_operation_before_anchored_accompaniments(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)", "assert_daily_anchored_accompaniments(integer,jsonb)", "assert_daily_anchored_snapshot(integer,jsonb,bigint)", "guard_daily_anchored_accompaniments()", "guard_anchored_revision()", "guard_daily_anchored_stage()", "guard_anchored_task_source()", "guard_anchored_coach_source()"]){
+      const fn=catalog.functions.find(f=>f.signature===signature&&f.role===role);assert.ok(fn,signature);
+      assert.equal(fn.definer,false,signature);assert.deepEqual(fn.settings,['search_path=""'],signature);
+      assert.equal(fn.execute,role==='service_role'&&!signature.startsWith('guard_'),signature+' '+role);
+    }
+  }
+
 }
 
 export function assertSourcePrivileges(catalog:DataApiCatalog) {
@@ -194,6 +206,9 @@ export async function verifyDataApiGrants(options:{db:pg.Client;url:string;servi
     }finally {await db.query('ROLLBACK');}
   }
   const negative115=[
+    'GRANT EXECUTE ON FUNCTION public.assert_daily_anchored_snapshot(integer,jsonb,bigint) TO authenticated',
+    'GRANT EXECUTE ON FUNCTION public.guard_anchored_task_source() TO service_role',
+    'GRANT UPDATE(daily_anchored_accompaniments) ON public.plans TO authenticated',
     'GRANT EXECUTE ON FUNCTION public.apply_day_config_operation_before_technical_chains(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb) TO PUBLIC',
     'GRANT EXECUTE ON FUNCTION public.assert_daily_technical_chain_snapshot(integer,jsonb,bigint,bigint) TO authenticated',
     'GRANT EXECUTE ON FUNCTION public.guard_technical_chain_revision() TO service_role',

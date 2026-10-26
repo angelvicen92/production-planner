@@ -4,7 +4,7 @@ import {latestAssistedSQLContracts} from './assistedSQLContracts';
 import {requiredFunctionBodies} from './a2Preflight';
 
 test('115 retains the literal 114 delegate and limits existing reader deltas to the daily chain authority',()=>{
- const old=latestAssistedSQLContracts(114),current=latestAssistedSQLContracts();
+ const old=latestAssistedSQLContracts(114),current=latestAssistedSQLContracts(115);
  assert.equal(current.get('apply_day_config_operation_before_technical_chains')!.body,old.get('apply_day_config_operation_v5')!.body);
  for(const name of ['assisted_expected_obligation_sources','assisted_preview_s0_additions']) {
   const prior=old.get(name)!.body;
@@ -19,5 +19,14 @@ test('115 retains the literal 114 delegate and limits existing reader deltas to 
  assert.equal(current.get('assisted_read_bootstrap_sources')!.body,old.get('assisted_read_bootstrap_sources')!.body.replace(projection,extended));
  const changed=['apply_day_config_operation_v5','assisted_expected_obligation_sources','assisted_preview_s0_additions','assisted_read_bootstrap_sources'];
  assert.deepEqual([...old].filter(([name,value])=>current.get(name)?.body!==value.body).map(([name])=>name).sort(),changed.sort());
- for(const name of changed)assert.equal(requiredFunctionBodies().get(name),current.get(name)!.body,'RPC_BODY_DRIFT still binds '+name);
+ for(const name of changed)assert.ok(requiredFunctionBodies().has(name),'RPC_BODY_DRIFT still binds '+name);
+});
+
+test('116 binds exact source transitions and only the existing task writer loops',()=>{
+ const old=latestAssistedSQLContracts(115),current=latestAssistedSQLContracts();
+ assert.equal(current.get('apply_day_config_operation_before_anchored_accompaniments')!.body,old.get('apply_day_config_operation_v5')!.body);
+ const changed=['apply_day_config_operation_v5','assisted_expected_obligation_sources','assisted_preview_s0_additions','assisted_read_bootstrap_sources','assisted_accept_stage','assisted_apply_snapshot'];
+ assert.deepEqual([...old].filter(([name,v])=>current.get(name)?.body!==v.body).map(([name])=>name).sort(),changed.sort());
+ for(const name of changed)assert.equal(requiredFunctionBodies().get(name),current.get(name)!.body,name);
+ assert.match(current.get('assisted_apply_snapshot')!.body,/ANCHORED_RESTORE_REQUIRES_CHECKPOINT/);
 });

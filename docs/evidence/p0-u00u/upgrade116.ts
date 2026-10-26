@@ -10,6 +10,7 @@ const repo=process.cwd(),source=join(output,'source');mkdirSync(source,{recursiv
 execFileSync('tar',['-x','-C',source],{input:execFileSync('git',['archive','HEAD'],{maxBuffer:256*1024*1024})});
 symlinkSync(join(repo,'node_modules'),join(source,'node_modules'),'dir');
 const migration='supabase/migrations/116_daily_anchored_accompaniments.sql';copyFileSync(migration,join(source,migration));
+for(const file of ['script/demo/assistedSQLContracts.ts','script/demo/a2Preflight.ts','script/demo/dataApiGrantsGate.ts','script/demo/fixtures/data-api-privileges.json'])copyFileSync(file,join(source,file));
 const original=readFileSync('docs/evidence/p0-u00s/integration/sql-gate.ts','utf8'),boundary=original.indexOf(' const before=await dataApiCatalog(db);');assert.ok(boundary>0);
 const code=original.slice(0,boundary)+String.raw`
  await db.query(readFileSync('supabase/migrations/115_daily_required_technical_chains.sql','utf8'));
@@ -28,6 +29,13 @@ const code=original.slice(0,boundary)+String.raw`
  const sql=readFileSync('supabase/migrations/116_daily_anchored_accompaniments.sql','utf8');await db.query(sql);
  assert.equal((await db.query('SELECT count(*)::int n FROM plans WHERE daily_anchored_accompaniments IS NOT NULL')).rows[0].n,0);
  const after={rows:await rows(),readers:await readers(),policies:await policies()};assert.deepEqual(after,before);
+ const {assertPrivilegeContract}=await import('../../../../script/demo/dataApiGrantsGate');assertPrivilegeContract(await dataApiCatalog(db));
+ const {requiredFunctionBodies}=await import('../../../../script/demo/a2Preflight');
+ for(const [name,body] of requiredFunctionBodies()){
+  const defs=(await db.query("SELECT pg_get_functiondef(oid) definition FROM pg_proc WHERE pronamespace='public'::regnamespace AND proname=$1",[name])).rows;
+  assert.ok(defs.some(d=>{const m=d.definition.match(/\bAS\s+(\$\w*\$)([\s\S]*)/i);return m&&m[2].slice(0,m[2].indexOf(m[1])).trim()===body;}),'actual PostgreSQL body '+name);
+ }
+
  const grants=(await db.query("SELECT p.proname name,has_function_privilege('anon',p.oid,'EXECUTE') anon,has_function_privilege('authenticated',p.oid,'EXECUTE') authenticated,p.prosecdef security_definer,p.proconfig settings FROM pg_proc p WHERE p.pronamespace='public'::regnamespace AND (p.proname LIKE '%anchored%' OR p.proname='apply_day_config_operation_v5') ORDER BY p.proname")).rows;
  for(const g of grants){assert.equal(g.anon,false);assert.equal(g.authenticated,false);assert.equal(g.security_definer,false);}
  const {gzipSync}=await import('node:zlib');

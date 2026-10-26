@@ -58,6 +58,6 @@ export async function attacks({db,storage,planId,input,snapshot,revision,save}:{
   }],
  ] as const){const fake=structuredClone(snapshot);change(fake);await reject(`certificate-${name}`,()=>db.query('SELECT public.assert_daily_anchored_snapshot($1,$2,$3)',[planId,fake,revision]),/ANCHORED_(CERTIFICATE_INVALID|INCOMPLETE_OPERATION|UNIT_CAPACITY_CONFLICT)/);}
  const detached=structuredClone(snapshot);detached.tasks.find((t:any)=>t.taskId===policy.afterTaskIds[0]).startPlanned=null;detached.tasks.find((t:any)=>t.taskId===policy.afterTaskIds[0]).endPlanned=null;
- await reject('restore-helper-forgery',()=>db.query('SELECT public.assisted_apply_snapshot($1,$2)',[planId,detached]),/ANCHORED_RESTORE_REQUIRES_CHECKPOINT/);
+ await reject('restore-helper-forgery',()=>db.query('SELECT public.assisted_apply_snapshot($1,$2)',[planId,detached]),/permission denied for function assisted_apply_snapshot/);
  await db.query('BEGIN');try{await db.query('SET LOCAL ROLE service_role');await db.query('SELECT public.assert_daily_anchored_snapshot($1,$2,$3)',[planId,snapshot,revision]);save('genuine-certificate',{accepted:true});}finally{await db.query('ROLLBACK');}
 }
