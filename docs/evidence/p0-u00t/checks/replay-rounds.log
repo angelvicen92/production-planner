@@ -1,0 +1,30 @@
+TAP version 13
+# Subtest: A: real authority closes member/space scopes, keeps an independent witness, and replays deterministically
+ok 1 - A: real authority closes member/space scopes, keeps an independent witness, and replays deterministically
+  ---
+  duration_ms: 181.908146
+  ...
+# Subtest: A: accepted S1/S2 fingerprints and persisted placements prove synchronization
+ok 2 - A: accepted S1/S2 fingerprints and persisted placements prove synchronization
+  ---
+  duration_ms: 1.289162
+  ...
+# Subtest: B: real authority closes member/space scopes, keeps an independent witness, and replays deterministically
+ok 3 - B: real authority closes member/space scopes, keeps an independent witness, and replays deterministically
+  ---
+  duration_ms: 129.517936
+  ...
+# Subtest: B: accepted S1/S2 fingerprints and persisted placements prove synchronization
+ok 4 - B: accepted S1/S2 fingerprints and persisted placements prove synchronization
+  ---
+  duration_ms: 0.625518
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 343.978764

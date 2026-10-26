@@ -1,0 +1,23 @@
+{
+  "base": "3ade5d2774584f92f86b2b8670bbb3f19fc5f83c",
+  "sha256": {
+    "AGENTS.md": "911a1fbee8f6f2d74330413e8b17e070de4ec3d2fbb365e0394a097d662da7d3",
+    "docs/evidence/p0-u00n/design.md": "f61ff5068c0178c6548ef5d0156b7034275f8e08f434fb96f39d87d9a8c4b7ca",
+    "docs/evidence/p0-u00p/causal-path.md": "b2d8bd47c7cb6a5e2d1473cbed79cba4dd75cff1a51f17fd95f3f8873228b294",
+    "docs/evidence/p0-u00r/causal-path.md": "3eb3bb9d15ef2bbfed0c6eedeaa1351d472aa32063553b19f4363c627f1cbaae",
+    "docs/evidence/p0-u00s/integration/README.md": "45a407e052d43053637cd48e064d3ec7c980f4a9549619a8c001c8853d6b7c61",
+    "docs/operations/OptiPlan_Guia_Replit_Supabase.md": "1f64706c20d0ce2ada3840dd1c046d87b4d77e1349ab216bd01dae3db2914562",
+    "docs/source/official/00_INDICE_Y_AUTORIDAD_FUENTES_OPTIPLAN_v2.15.md": "7082cee03feb295c71104f559d118608e85c5946f81de1139d6ad902f0e3810f",
+    "docs/source/official/01_PRODUCTO_DOMINIO_OPERACION_v5.4.md": "e55dc386d647888b913ed55457bb71564b16ccc4c088310c820bf57d984957bc",
+    "docs/source/official/02_ORC_CORE_CONSOLIDADO_v2.2.md": "1c5d58017ed3b0931cd4d0bc9c121e19c5edc9acb10005c5b759ccd94b937bdf",
+    "docs/source/official/03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.8.md": "7073930bb7bcbff09cb05553eecd28d357daf1860e55c6a6b9ab1ffe73172ffd",
+    "docs/source/official/04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.9.md": "d85981443e4e8e1bd073c59684e0b1e7d4a2fae6113a647007dee0f65eb1e8a4",
+    "docs/source/official/05_VALIDACION_CALIDAD_BENCHMARK_v2.8.md": "2d0aa69ebb5d1949b315a8ebb85c0ad96f0f9939e9441d1ef09a1f1ae9924a13",
+    "docs/source/official/06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.10.md": "42d0b3b78e732a2e4f1a1a01be9fa39bd82fbda366dd869d3785aedf6155faab",
+    "docs/source/official/07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.3.md": "7243ed2d186ef19af7ee9717c9b72d94ebca34791257a434be1aab76bed27351",
+    "script/deploy/optiplan_preparar_release.sh": "f8e806ae11ceca06fa7b03fbd45d519872b4e1b3142f6491dd638e17820910ca"
+  },
+  "productionCredentialsUsed": false,
+  "productionWrites": 0,
+  "replitPreparationExecuted": false
+}

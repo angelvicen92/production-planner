@@ -3025,12 +3025,8 @@ function mapDeleteError(err: any, fallback: string) {
     app.get(api.plans.get.path, async (req, res) => {
       try {
         const planId = Number(req.params.id);
-        try {
-          await storage.syncPlanMealBreaks(planId);
-        } catch (syncErr) {
-          console.warn("[GET PLAN] syncPlanMealBreaks failed", syncErr);
-        }
-
+        // Read the persisted day. Legacy meal synchronization belongs to explicit
+        // creation/update operations, never to viewing historical planning.
         const full = await storage.getPlanFullDetails(planId);
         if (!full) return res.status(404).json({ message: "Plan not found" });
 
