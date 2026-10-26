@@ -1,0 +1,7 @@
+{
+  "file": "engine/planner-next/exactMainAndFeederCore.ts",
+  "before": "fece8b0d483eb306fcdd7f6aa28896614159073db186e47e9fc4c3c77f184a74",
+  "after": "b0d457051fe2c836e5cf4bcaf78ce53d44bf8cc68e14dea53b1fb4470079133a",
+  "from": "const earliestMainStart = problem.day.start\n              + [...ancestors.values()].reduce((sum, task) => sum + task.duration, 0) + transition;",
+  "to": "const beforeIds = (problem.anchoredAccompaniments ?? []).find(c => c.anchorTaskId === main.id)?.beforeTaskIds ?? [];\n            const beforeDuration = beforeIds.reduce((sum, id) => sum + (problem.tasks.find(t => t.id === id)?.duration ?? 0), 0);\n            const earliestMainStart = problem.day.start\n              + [...ancestors.values()].reduce((sum, task) => sum + task.duration, 0) + transition + beforeDuration;"
+}

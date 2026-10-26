@@ -139,7 +139,7 @@ export interface PlanningTimelineProps {
     mealEnd: string | null;
     mealMode?: "global_hard_break" | "flexible_meal_window" | null;
     dailyTasks: Task[];
-    plannerNextConfiguration?: OperationalMealConfiguration & { taskOperations?: (SpaceTaskOperation & TaskOperationPresentation)[]; anchoredAccompaniments?: AnchoredProjectionContract[] } | null;
+    plannerNextConfiguration?: OperationalMealConfiguration & { taskOperations?: (SpaceTaskOperation & TaskOperationPresentation)[]; anchoredAccompaniments?: AnchoredProjectionContract[]; dailyItinerantTeams?: {id:number;code?:string;name:string;isActive?:boolean;orderIndex?:number|null}[] } | null;
     breaks?: Array<{
       id: number;
       kind: "space_meal" | "itinerant_meal" | string;
@@ -625,7 +625,7 @@ function TaskStatusMenuTrigger({
     spaceResourceAssignments = {},
     planResourceItemNameById = {},
     zoneStaffModes = [],
-    itinerantTeams = [],
+    itinerantTeams: catalogueItinerantTeams = [],
     staffAssignments = [],
     onTaskStatusChange,
     canExecuteTask,
@@ -654,6 +654,7 @@ function TaskStatusMenuTrigger({
     onScheduleRendered,
     }: PlanningTimelineProps) {
   const { workStart, workEnd, mealStart, mealEnd, mealMode, dailyTasks: sourceDailyTasks, breaks = [] } = plan;
+  const itinerantTeams = plan.plannerNextConfiguration?.dailyItinerantTeams ?? catalogueItinerantTeams;
   const dailyTasks = useMemo(() => projectTaskOperationScopes(sourceDailyTasks, plan.plannerNextConfiguration?.taskOperations), [sourceDailyTasks, plan.plannerNextConfiguration]);
   const operationalMeals = useMemo(() => suppliedOperationalMeals ?? resolvePlanningOperationalMeals(plan.plannerNextConfiguration, null, "accepted"), [suppliedOperationalMeals, plan.plannerNextConfiguration]);
   const mealTasks = useMemo(() => operationalMealVisualTasks(operationalMeals), [operationalMeals]);

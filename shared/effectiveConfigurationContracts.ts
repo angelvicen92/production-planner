@@ -33,6 +33,12 @@ export interface EffectiveConfigurationView {
     tasks:{id:number;label:string;duration:number;space:string;availability?:{availabilityStart?:string|null;availabilityEnd?:string|null};eligible:boolean;resourceIds:number[]}[];
     resources:{id:number;name:string;start:string;end:string}[];
   };
+  anchoredAccompaniments?: {
+    revisionId:number|null;authority:import('./anchoredAccompanimentStructure').AnchoredAccompanimentStructure|null;
+    supported:boolean;by:string|null;at:string|null;
+    tasks:{id:number;label:string;kind:string;participantId:number|null;space:string;duration:number;eligible:boolean}[];
+    units:{id:number;name:string}[];
+  };
   roundSynchronization?: {
     revisionId:number|null; authority:import("./roundSynchronizationStructure").RoundSynchronizationStructure|null;
     supported:boolean; blockedReason:string|null; by:string|null; at:string|null;

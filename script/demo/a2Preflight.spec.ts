@@ -7,6 +7,7 @@ import {buildA2SecurityRollback} from './prepareA2SecurityRollback';
 function compatible(){
  const dataset=buildA2ImportRows('2026-10-30');
  const catalog={format:1,columns:Object.entries(dataset.tables).flatMap(([table,rows])=>[...new Set(rows.flatMap(Object.keys))].map(column=>({table_name:table,column_name:column,sequence:column==='id'?`public.${table}_id_seq`:null}))),tables:securityTables.map(name=>({name,rls:true})),roles:[{name:'service_role',bypassRLS:true}],policies:securityTables.flatMap(tablename=>['SELECT','INSERT','UPDATE','DELETE'].map(cmd=>({tablename,policyname:`a2_api_${cmd==='SELECT'?'read':cmd.toLowerCase()}_boundary`,permissive:'RESTRICTIVE',roles:['public'],cmd,qual:cmd==='SELECT'?"(public.has_role('admin'::text) OR public.has_role('production'::text) OR public.has_role('aux'::text) OR public.has_role('viewer'::text))":'false',with_check:'false'})).concat({tablename,policyname:'a2_authorized_read',permissive:'PERMISSIVE',roles:['authenticated'],cmd:'SELECT',qual:"(public.has_role('admin'::text) OR public.has_role('production'::text) OR public.has_role('aux'::text) OR public.has_role('viewer'::text))",with_check:null} as any)),functions:[...requiredFunctionBodies()].map(([name,body])=>({name,definition:`CREATE FUNCTION ${name}() AS $function$\n${body}\n$function$;`,serviceExecute:name!=='assisted_apply_snapshot',anonExecute:false,authenticatedExecute:false})),grants:[],triggers:[{name:'preserve_plan_planner_next_configuration'}],sequences:[],constraints:[{name:'plan_task_template_snapshots_contract_version_check',definition:'CHECK (contract_version IN (1, 2))'}]};
+ catalog.columns.push({table_name:'plans',column_name:'daily_anchored_accompaniments',sequence:null});
  for(const [table,columns] of Object.entries({program_settings:['default_participant_transition_minutes'],task_templates:['participant_margin_before_minutes','participant_margin_after_minutes']}))for(const column of columns)catalog.columns.push({table_name:table,column_name:column,sequence:null});
  return catalog;
 }
@@ -35,4 +36,12 @@ test('each extended 115 RPC remains independently protected against body drift',
   fn.definition=fn.definition.replace('BEGIN','BEGIN\n PERFORM 1;');
   assert.ok(inspectA2Catalog(catalog,'2026-10-30').issues.includes('RPC_BODY_DRIFT:'+name),name);
  }
+});
+
+test('115 and 116 bind distinct literal bodies; schema downgrade cannot mask a changed RPC',()=>{
+ const c=compatible();c.columns=c.columns.filter(x=>x.column_name!=='daily_anchored_accompaniments');
+ c.functions=[...requiredFunctionBodies(false,115)].map(([name,body])=>({name,definition:`CREATE FUNCTION ${name}() AS $function$\n${body}\n$function$;`,serviceExecute:name!=='assisted_apply_snapshot',anonExecute:false,authenticatedExecute:false}));
+ assert.deepEqual(inspectA2Catalog(c,'2026-10-30').issues,[]);
+ c.columns.push({table_name:'plans',column_name:'daily_anchored_accompaniments',sequence:null});
+ assert.ok(inspectA2Catalog(c,'2026-10-30').issues.includes('RPC_BODY_DRIFT:assisted_accept_stage'));
 });

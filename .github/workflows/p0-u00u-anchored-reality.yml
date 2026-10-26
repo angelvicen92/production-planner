@@ -1,0 +1,54 @@
+name: P0 U00u native anchored operation
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'engine/**'
+      - 'server/**'
+      - 'shared/**'
+      - 'supabase/migrations/**'
+      - 'client/src/**'
+      - 'docs/evidence/p0-u00u/**'
+      - '.github/workflows/p0-u00u-anchored-reality.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-anchored:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$task_browser_path" ]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+          fi
+      - run: npm run check && npm run check:migrations && npm run build
+      - run: npx --no-install tsc -p docs/evidence/p0-u00u/tsconfig.json
+      - run: npx --no-install tsx --test --test-concurrency=1 engine/planner-next/integration/nativeAnchoredAccompaniment.spec.ts engine/planner-next/anchoredAccompaniment.spec.ts engine/planner-next/integration/effectiveTaskResourceAssignments.spec.ts server/dayConfiguration.spec.ts server/assistedNextScope.spec.ts
+      - run: node --import tsx docs/evidence/p0-u00u/upgrade116.ts work/u00u-upgrade
+      - name: Native UI declaration, nominal composition, proposals, Drafts and PostgreSQL Stages
+        run: node --import tsx docs/evidence/p0-u00u/run.ts work/u00u-native --native
+      - run: node --import tsx docs/evidence/p0-u00u/consumer-negatives.ts work/u00u-native/native/A-input.json work/u00u-native/native/consumer-negatives.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: u00u-native-anchored
+          path: |
+            work/u00u-native/manifest.json
+            work/u00u-native/checkout-delta.json
+            work/u00u-native/native/*.json
+            work/u00u-native/native/*.png
+            work/u00u-upgrade/manifest.json
+            work/u00u-upgrade/native/*.json
+            work/u00u-upgrade/native/*.json.gz
+          retention-days: 14

@@ -1,0 +1,798 @@
+{
+  "status": "PASS",
+  "productHead": "5363323f3b5ee21527dea000a1682fd533dd2864",
+  "pr": "https://github.com/angelvicen92/production-planner/pull/1199",
+  "workflowCount": 24,
+  "workflows": [
+    {
+      "name": "Data API grants",
+      "id": 40287651194,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651194"
+    },
+    {
+      "name": "P0 U00u native anchored operation",
+      "id": 40287651105,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651105"
+    },
+    {
+      "name": "Template Authorization CI",
+      "id": 40287651176,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651176"
+    },
+    {
+      "name": "P0 U00g participant meals",
+      "id": 40287651209,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651209"
+    },
+    {
+      "name": "P0 U00f transport gate",
+      "id": 40287651216,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651216"
+    },
+    {
+      "name": "P0 U00i nominal resource causal gate",
+      "id": 40287651093,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651093"
+    },
+    {
+      "name": "Baseline CI",
+      "id": 40287651210,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651210"
+    },
+    {
+      "name": "P0 U00p daily synchronized rounds",
+      "id": 40287651246,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651246"
+    },
+    {
+      "name": "Itinerant physical composition",
+      "id": 40287651223,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651223"
+    },
+    {
+      "name": "P0 U00h concrete resources",
+      "id": 40287651157,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651157"
+    },
+    {
+      "name": "P0 U00s daily REQUIRED technical chains",
+      "id": 40287651185,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651185"
+    },
+    {
+      "name": "P0 U00n post-Stage additions",
+      "id": 40287651211,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651211"
+    },
+    {
+      "name": "Catalog Authorization CI",
+      "id": 40287651072,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651072"
+    },
+    {
+      "name": "P0 U00l Main nominal resources",
+      "id": 40287651230,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651230"
+    },
+    {
+      "name": "Persistent War Room",
+      "id": 40287651245,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651245"
+    },
+    {
+      "name": "Atomic task template save",
+      "id": 40287651308,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651308"
+    },
+    {
+      "name": "New day Planner Next",
+      "id": 40287651104,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651104"
+    },
+    {
+      "name": "Planner Engine CI",
+      "id": 40287651184,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651184"
+    },
+    {
+      "name": "Live day execution",
+      "id": 40287651141,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651141"
+    },
+    {
+      "name": "Operation continuity",
+      "id": 40287651130,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651130"
+    },
+    {
+      "name": "P0-U00t release rehearsal",
+      "id": 40287651111,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651111"
+    },
+    {
+      "name": "P0 U00j typed nominal resources",
+      "id": 40287651284,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651284"
+    },
+    {
+      "name": "Planning operational headers",
+      "id": 40287651264,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651264"
+    },
+    {
+      "name": "Admin Invites CI",
+      "id": 40287651140,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651140"
+    }
+  ],
+  "plannerJobs": [
+    {
+      "id": 121455914339,
+      "name": "a2-assisted-catalog-integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 40287651184,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run npx --no-install playwright install --with-deps chromium",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run npx --no-install tsc -p script/demo/tsconfig.integration.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Run npm run test:demo:a2-import",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Run node --import tsx --test script/demo/a2ConfigurationReadRecovery.spec.ts server/effectiveConfigurationHttp.spec.ts",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Run node --import tsx --test script/demo/a2RealTopology.spec.ts script/demo/a2RealImportSQL.spec.ts script/demo/a2OperationScope.spec.ts shared/anchoredOperationProjection.test.ts shared/taskOperationScope.test.ts",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Run node --import tsx --test script/demo/a2DraftPreparationRecovery.spec.ts",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Run npx --no-install tsx --test shared/assistedAutopilot.test.ts shared/assistedStageTiming.test.ts client/src/components/planning/assisted-planning-workspace.test.ts client/src/components/planning/stage-history-timing.test.ts client/src/lib/assisted-draft-warnings.test.ts client/src/lib/assisted-planning-view.test.ts client/src/lib/contestant-lane-sort.test.ts client/src/lib/planning-view-policy.test.ts server/assistedHistoryTimings.spec.ts client/src/lib/assisted-scope-selection.test.ts client/src/components/planning/assisted-location-scope.test.tsx",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Run node --import tsx --test client/src/lib/day-execution-view.test.ts client/src/lib/planning-workspace-preferences.test.ts client/src/components/effective-configuration.test.tsx",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Day workspace setup through real UI and existing writers",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Assisted location selection in a disposable A2 catalog",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Configuration read with the observed 52 legacy breaks and S0 Autopilot",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        },
+        {
+          "name": "Integration evidence (no private app logs or credentials)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 31
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 32
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 33
+        }
+      ]
+    },
+    {
+      "id": 121455914563,
+      "name": "autopilot-workspace",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 40287651184,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run npx --no-install playwright install --with-deps chromium",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run npx --no-install tsc -p script/demo/tsconfig.integration.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Role policy regression (browser, controller and intercepted HTTP)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Run node --import tsx --test client/src/lib/assisted-autopilot-checkpoints.test.ts client/src/lib/assisted-autopilot-progress.test.ts client/src/components/planning/assisted-autopilot-progress.test.tsx",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Run npm run demo:a2:smoke -- work/autopilot-workspace --historical-topology --autopilot-workspace",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 20
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21
+        }
+      ]
+    },
+    {
+      "id": 121455914618,
+      "name": "manual-draft-validation",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 40287651184,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run npx --no-install playwright install --with-deps chromium",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run npx --no-install tsc -p script/demo/tsconfig.integration.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Run node --import tsx --test --test-concurrency=1 engine/planner-next/transportGrouping.spec.ts engine/planner-next/transportConfigIntegrity.spec.ts server/transportConfigIntegrity.spec.ts server/roundPreparation.spec.ts server/roundPreparationSql.spec.ts server/assistedManualSnapshotFidelity.spec.ts server/assistedStageAcceptanceAuthorization.spec.ts shared/assistedStageValidation.test.ts client/src/lib/assisted-draft-warnings.test.ts client/src/components/planning/assisted-planning-workspace.test.ts",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Run npm run demo:a2:smoke -- work/manual-draft-validation --full --manual-validation --transport-policy --round-preparation",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Production REQUIRED acceptance in a separate immutable day fixture",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 20
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21
+        }
+      ]
+    },
+    {
+      "id": 121455914619,
+      "name": "main-flow-preference-integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 40287651184,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Select installed Chromium or provision Playwright",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run npx --no-install tsc -p script/demo/tsconfig.integration.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Real settings, day configuration, Evidence, Draft and Stages",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Preference evidence from disposable services",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17
+        }
+      ]
+    },
+    {
+      "id": 121455914647,
+      "name": "a2-assisted-canonical-integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 40287651184,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run npx --no-install playwright install --with-deps chromium",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run npx --no-install tsc -p script/demo/tsconfig.integration.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Native SQL, Auth, HTTP and UI; canonical baseline and two deterministic orders",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Integration evidence (no private app logs or credentials)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17
+        }
+      ]
+    },
+    {
+      "id": 121455914805,
+      "name": "planner-engine-ci",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 40287651184,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Checkout repository",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Set up Node.js",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Install dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Product test suite",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Main-flow SOFT count cold-fallback diagnostic (isolated checkout)",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Main future-dependency bound on the current candidate",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Historical ASST-010 single-task continuation diagnostic",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 8
+        },
+        {
+          "name": "Full A2 Autopilot structural frontier diagnostic",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 9
+        },
+        {
+          "name": "SPEC10-016 canonical template benchmark first run",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "SPEC10-016 canonical template benchmark second run",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Verify deterministic benchmark and generated artifacts",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Verify generated Evidence is current",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Diff hygiene",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "TypeScript check",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        },
+        {
+          "name": "Production build",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16
+        },
+        {
+          "name": "Post Set up Node.js",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 31
+        },
+        {
+          "name": "Post Checkout repository",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 32
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 33
+        }
+      ]
+    },
+    {
+      "id": 121463461889,
+      "name": "a2-assisted-integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 40287651184,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Require both complete native rehearsals",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        }
+      ]
+    }
+  ],
+  "productSuite": {
+    "head": "5363323f3b5ee21527dea000a1682fd533dd2864",
+    "jobId": 121455914805,
+    "lines": [
+      "2026-10-26T07:55:28.6866975Z # tests 3255",
+      "2026-10-26T07:55:28.6867149Z # pass 3254",
+      "2026-10-26T07:55:28.6867229Z # fail 0",
+      "2026-10-26T07:55:28.6867413Z # skipped 1",
+      "2026-10-26T07:55:28.6867605Z # duration_ms 450758.812249"
+    ],
+    "skips": [
+      "2026-10-26T07:52:15.3471174Z ok 1386 - functional correction remains isolated from DB, UI and API # SKIP historical SPEC10-012R2 commits are unavailable in this checkout"
+    ],
+    "status": "PASS"
+  },
+  "finalEvidenceCommit": "Contains saved receipts and the tested rollback-negative harness; product code hashes remain identical. Its live CI is on the pull request."
+}

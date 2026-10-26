@@ -96,7 +96,7 @@ export function resolveEffectiveTaskResourceAssignments(input: EngineInput): Eff
     const ownResources = task.resourceInheritance === "OPERATION_ONLY";
     const spaceResourceIds = ownResources ? Object.freeze([] as number[]) : normalizedIds(mapValue(input.spaceResourceAssignments, spaceId));
     const zoneResourceIds = ownResources || zoneResolution === "CONFLICT" ? Object.freeze([] as number[]) : normalizedIds(mapValue(input.zoneResourceAssignments, effectiveZoneId));
-    const teamResourceIds = ownResources && isPositiveInteger(task.itinerantTeamId)
+    const teamResourceIds = isPositiveInteger(task.itinerantTeamId)
       ? normalizedIds(input.itinerantTeamAvailability?.find(team => team.itinerantTeamId === task.itinerantTeamId)?.planResourceItemIds) : [];
     const effectiveResourceIds = normalizedIds([...directResourceIds, ...spaceResourceIds, ...zoneResourceIds, ...teamResourceIds]);
     assignments.push(Object.freeze({ taskId: task.id, status: task.status, spaceId, explicitZoneId, mappedZoneId, effectiveZoneId, zoneResolution, directResourceIds, ...(byItemResourceIds.length ? {byItemResourceIds} : {}), spaceResourceIds, zoneResourceIds, effectiveResourceIds,

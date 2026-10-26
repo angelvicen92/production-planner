@@ -1,0 +1,10 @@
+{
+  "head": "5363323f3b5ee21527dea000a1682fd533dd2864",
+  "runId": 40287651105,
+  "artifactId": 12635081895,
+  "artifactSha256": "d8c7e9fe29e3e68cff883f98637ed36f4144c36906bacf8c881ac14ee32c8d69",
+  "url": "https://github.com/angelvicen92/production-planner/actions/runs/40287651105",
+  "status": "PASS",
+  "remoteWrites": 0,
+  "checkoutDelta": []
+}
