@@ -24,3 +24,9 @@ La migración 116 mantiene históricos con autoridad NULL. El guard de revisión
 El RPC rechaza `done`, `in_progress`, locks, horarios ya consolidados y cualquier Stage histórico con esos miembros. Rollback no convierte el Stage anterior en editable. Draft sucio y propuestas activas o pendientes bloquean la edición. Los permisos de producto siguen siendo ADMIN/PRODUCTION; Data API no recibe grants nuevos. `upgrade/` compara todas las filas, lectores y políticas de un 115 poblado frente a 116, y registra las ACL de los helpers.
 
 La evidencia nativa guarda negativos de API/SQL, CAS con dos escritores, fallo transaccional inyectado después de escribir autoridad, certificados falsos y reconstrucción SQL/navegador. `validation.json` distingue esas pruebas de las regresiones y de los intentos fallidos de preparación. Ninguna prueba utiliza Supabase remoto.
+
+## Contrafactual de regresión: un segmento no se cuenta dos veces
+
+La suite amplia detectó que el benchmark A2 de 100.000 ramas alcanzaba 300 segundos. Al repetirlo serialmente, la base exacta pasa (dos tests, segunda ejecución 241.260 ms). El delta inicial sumaba un before que A2 ya declara entre los antecesores de Main; `checks/boundary-ancestors.json.gz` conserva esas identidades y dependencias. La corrección suma sólo segmentos que aún no están en ese cierre. No cambia budgets, timeouts ni el consumidor de operaciones.
+
+El contrafactual focal usa el EngineInput nativo real, declara before como prerequisite y limita la disponibilidad de la unidad a 10:00. Sin la corrección, el doble cómputo elimina la única frontera constructiva; con ella se obtiene la secuencia HARD válida de 45 minutos. `checks/double-count-before.tap.gz` conserva el rechazo anterior y `checks/double-count-after.tap.gz` el positivo. El benchmark original se conserva sin filtrar ni modificar.

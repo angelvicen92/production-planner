@@ -2488,7 +2488,10 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             const feeder = feederByMain.get(main.id)!;
             const transition = effectiveCoachTransitionMinutes(problem, main.coachId!, feeder.spaceId, main.spaceId);
             const beforeIds = (problem.anchoredAccompaniments ?? []).find(c => c.anchorTaskId === main.id)?.beforeTaskIds ?? [];
-            const beforeDuration = beforeIds.reduce((sum, id) => sum + (problem.tasks.find(t => t.id === id)?.duration ?? 0), 0);
+            // Historical anchors may already declare their before segments as
+            // prerequisites. Count each participant obligation exactly once.
+            const beforeDuration = beforeIds.filter(id => !ancestors.has(id))
+              .reduce((sum, id) => sum + (problem.tasks.find(t => t.id === id)?.duration ?? 0), 0);
             const earliestMainStart = problem.day.start
               + [...ancestors.values()].reduce((sum, task) => sum + task.duration, 0) + transition + beforeDuration;
             return earliestMainStart + main.duration + (pattern.length - position - 1) * duration;

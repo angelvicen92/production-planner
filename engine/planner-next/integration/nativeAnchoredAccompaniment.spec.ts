@@ -56,3 +56,14 @@ test('unknown, foreign, duplicate, absent and contradictory references are rejec
  const input=source();input.tasks.find(t=>t.id===3)!.dependsOnTaskIds=[4];assert.throws(()=>withDailyAnchoredAccompaniments(input,structure),/CONTRADICTORY_ORDER/);
  const foreign=source();foreign.tasks.find(t=>t.id===3)!.planId=2;assert.throws(()=>withDailyAnchoredAccompaniments(foreign,structure),/INVALID_MEMBER/);
 });
+test('a before segment already declared as a prerequisite is counted once at the Main boundary',()=>{
+ const input=source();input.tasks=input.tasks.filter(t=>t.id!==5);
+ input.tasks.find(t=>t.id===2)!.dependsOnTaskIds=[1,3];
+ input.itinerantTeamAvailability![0].windows=[{start:'09:00',end:'10:00'}];
+ const a=adapt(withDailyAnchoredAccompaniments(input,structure));assert.equal(a.status,'SUPPORTED');if(a.status!=='SUPPORTED')throw Error('unsupported');
+ const scope=createPlanningScope({kind:'DAY',value:'ancestral-before'},{},a.problem.tasks.map(t=>t.id));
+ const result=executeAssistedPlanning(buildAssistedProblem(a.problem,scope,[]));assert.ok(result.proposal);
+ assert.equal(validatePlan(a.problem,[...result.proposal!]).hardValid,true);
+ const phases=[3,2,4].map(id=>result.proposal!.find(t=>t.id===`task:${id}`)!);
+ assert.equal(phases[2].end-phases[0].start,45);assert.ok(phases[2].end<=600);
+});
