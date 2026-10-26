@@ -35,6 +35,7 @@ export async function attacks({db,storage,planId,input,snapshot,revision,save}:{
  const policy=input.anchoredAccompaniments![0];
  const unit=input.itinerantCompositionSnapshot!.units.find(u=>u.id===input.tasks.find(t=>t.id===policy.anchorTaskId)!.itinerantTeamId)!;
  await reject('referenced-member-delete',()=>db.query('DELETE FROM daily_tasks WHERE id=$1',[policy.beforeTaskIds[0]]),/ANCHORED_MEMBER_REFERENCED/);
+ await reject('referenced-member-cancel',()=>db.query("UPDATE daily_tasks SET status='cancelled' WHERE id=$1",[policy.beforeTaskIds[0]]),/ANCHORED_MEMBER_REQUIRES_VERSIONED_CHANGE/);
  await reject('referenced-member-duration',()=>db.query('UPDATE daily_tasks SET duration_override=5 WHERE id=$1',[policy.beforeTaskIds[0]]),/ANCHORED_MEMBER_REQUIRES_VERSIONED_CHANGE/);
  await reject('direct-member-assignment',()=>db.query("UPDATE daily_tasks SET assigned_resource_ids='[2147483647]' WHERE id=$1",[policy.beforeTaskIds[0]]),/ANCHORED_MEMBER_REQUIRES_ASSISTED_MATERIALIZATION/);
  for(const [name,change] of [

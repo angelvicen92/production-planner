@@ -390,6 +390,7 @@ BEGIN
   IF NEW.plan_id IS DISTINCT FROM OLD.plan_id OR NEW.template_id IS DISTINCT FROM OLD.template_id
    OR NEW.contestant_id IS DISTINCT FROM OLD.contestant_id OR NEW.space_id IS DISTINCT FROM OLD.space_id
    OR NEW.zone_id IS DISTINCT FROM OLD.zone_id OR NEW.duration_override IS DISTINCT FROM OLD.duration_override
+   OR (NEW.status='cancelled' AND NEW.status IS DISTINCT FROM OLD.status)
   THEN RAISE EXCEPTION 'ANCHORED_MEMBER_REQUIRES_VERSIONED_CHANGE'; END IF;
   IF (NEW.start_planned IS DISTINCT FROM OLD.start_planned OR NEW.end_planned IS DISTINCT FROM OLD.end_planned
    OR NEW.assigned_resource_ids IS DISTINCT FROM OLD.assigned_resource_ids)
