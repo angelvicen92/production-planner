@@ -1,0 +1,60 @@
+TAP version 13
+# Subtest: A: authentic Stages, immutable prefix, nominal inventory and rollback/redo
+ok 1 - A: authentic Stages, immutable prefix, nominal inventory and rollback/redo
+  ---
+  duration_ms: 4.296417
+  ...
+# Subtest: A: residual recognition and collection inversion replay
+ok 2 - A: residual recognition and collection inversion replay
+  ---
+  duration_ms: 65.209975
+  ...
+# Subtest: A: missing reference, cycle and branching stay representational failures
+ok 3 - A: missing reference, cycle and branching stay representational failures
+  ---
+  duration_ms: 16.016311
+  ...
+# Subtest: A: true physical zero domains never become unsupported or exhaustion
+ok 4 - A: true physical zero domains never become unsupported or exhaustion
+  ---
+  duration_ms: 15.420315
+  ...
+# Subtest: A: altered member, protected identity and snapshot integrity boundaries
+ok 5 - A: altered member, protected identity and snapshot integrity boundaries
+  ---
+  duration_ms: 36.486297
+  ...
+# Subtest: B: authentic Stages, immutable prefix, nominal inventory and rollback/redo
+ok 6 - B: authentic Stages, immutable prefix, nominal inventory and rollback/redo
+  ---
+  duration_ms: 0.416225
+  ...
+# Subtest: B: residual recognition and collection inversion replay
+ok 7 - B: residual recognition and collection inversion replay
+  ---
+  duration_ms: 16.919253
+  ...
+# Subtest: B: missing reference, cycle and branching stay representational failures
+ok 8 - B: missing reference, cycle and branching stay representational failures
+  ---
+  duration_ms: 19.80016
+  ...
+# Subtest: B: true physical zero domains never become unsupported or exhaustion
+ok 9 - B: true physical zero domains never become unsupported or exhaustion
+  ---
+  duration_ms: 17.064275
+  ...
+# Subtest: B: altered member, protected identity and snapshot integrity boundaries
+ok 10 - B: altered member, protected identity and snapshot integrity boundaries
+  ---
+  duration_ms: 14.001765
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 220.25138

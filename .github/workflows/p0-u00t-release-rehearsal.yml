@@ -1,0 +1,50 @@
+name: P0-U00t release rehearsal
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'server/routes.ts'
+      - 'docs/evidence/p0-u00t/**'
+      - '.github/workflows/p0-u00t-release-rehearsal.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: p0-u00t-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  upgrade-history:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx --no-install tsc -p docs/evidence/p0-u00t/tsconfig.json
+      - name: Literal populated 103 to 115, catalog and raw RLS comparison
+        run: node --import tsx docs/evidence/p0-u00t/sql.ts work/u00t-sql
+      - name: Viewer GET preserves historical planning after upgrade
+        run: node --import tsx docs/evidence/p0-u00t/run.ts work/u00t-legacy legacy-read
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: u00t-upgrade-history
+          path: |
+            work/u00t-sql/manifest.json
+            work/u00t-sql/native/upgrade/*.json
+            work/u00t-sql/native/upgrade/*.json.gz
+            work/u00t-legacy/manifest.json.gz
+            work/u00t-legacy/native/integration.json
+            work/u00t-legacy/native/legacy-read-causal.json
+            work/u00t-legacy/native/historical-after-native.json
+            work/u00t-legacy/native/historical-delta.json.gz
+          retention-days: 14

@@ -1,0 +1,35 @@
+TAP version 13
+# Subtest: A: effective input, semantic order and scope survive a cold deterministic replay
+ok 1 - A: effective input, semantic order and scope survive a cold deterministic replay
+  ---
+  duration_ms: 119.968004
+  ...
+# Subtest: B: effective input, semantic order and scope survive a cold deterministic replay
+ok 2 - B: effective input, semantic order and scope survive a cold deterministic replay
+  ---
+  duration_ms: 26.162183
+  ...
+# Subtest: C: effective input, semantic order and scope survive a cold deterministic replay
+ok 3 - C: effective input, semantic order and scope survive a cold deterministic replay
+  ---
+  duration_ms: 42.331767
+  ...
+# Subtest: D: effective input, semantic order and scope survive a cold deterministic replay
+ok 4 - D: effective input, semantic order and scope survive a cold deterministic replay
+  ---
+  duration_ms: 45.026424
+  ...
+# Subtest: future witness is never a placement in the accepted independent Stage
+ok 5 - future witness is never a placement in the accepted independent Stage
+  ---
+  duration_ms: 0.224275
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 271.082026
