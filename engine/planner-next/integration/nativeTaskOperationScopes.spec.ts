@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {gunzipSync} from 'node:zlib';
 import type {EngineInput} from '../../types';
-import {withDailyTaskOperationScopes,taskScopeDirectResources,applyDailyTaskOperationScopes} from '../../../server/dailyTaskOperationScopes';
+import {withDailyTaskOperationScopes,taskScopeDirectResources,applyDailyTaskOperationScopes,taskOperationScopesSupported} from '../../../server/dailyTaskOperationScopes';
 import {dailyTaskOperationScopesSchema} from '../../../shared/dailyTaskOperationScopes';
 import {dayConfigEditSchema} from '../../../shared/dayConfig';
 import {resolveEffectiveTaskResourceAssignments as assignments} from './effectiveTaskResourceAssignments';
@@ -35,6 +35,16 @@ test('agenda, inheritance and occupancy remain independent across all eight decl
 test('unselected eligible units remain unselected; fixed daily selection uses authentic identity',()=>{
  const i=source();i.tasks[0]={...i.tasks[0],itinerantTeamId:null,itinerantTeamRequirement:'any',allowedItinerantTeamIds:[1]};
  const next=withDailyTaskOperationScopes(i,{contractVersion:1,policies:[{...policy(i),itinerantUnitId:null}]});assert.equal(next.tasks[0].itinerantTeamId,null);assert.equal(next.tasks[0].itinerantTeamRequirement,'any');
+});
+test('retired empty declarations leave other structures untouched without advertising combination support',()=>{
+ const input={...source(),anchoredAccompaniments:[{} as any]},before=structuredClone(input);
+ const structure={contractVersion:1 as const,policies:[]},next=withDailyTaskOperationScopes(input,structure);
+ assert.deepEqual(input,before);assert.deepEqual(next.tasks,input.tasks);assert.deepEqual(next.anchoredAccompaniments,input.anchoredAccompaniments);
+ assert.equal(next.dailyTaskOperationScopes,undefined);assert.equal(taskOperationScopesSupported(next),false);
+ assert.throws(()=>withDailyTaskOperationScopes(input,{contractVersion:1,policies:[policy(input)]}),/UNSUPPORTED/);
+ const row={daily_task_operation_scopes:{...structure,by:'00000000-0000-0000-0000-000000000001',at:'2026-10-26'},planner_next_profile:{},current_config_revision_id:2};
+ const replay={authorities:{plan_workday:projectEffectiveAuthoritiesFromEngineInputV1(next).plan_workday!.semanticValue}};
+ assert.deepEqual(applyDailyTaskOperationScopes(input,row,replay),next);
 });
 test('invalid task, unit, provenance, duplicate and unsupported authorities fail closed',()=>{
  const i=source(),p=policy(i);for(const changed of [{...p,taskId:999},{...p,itinerantUnitId:999},{...p,declaredResourceIds:[]},{...p,declaredResourceIds:[999]}])assert.throws(()=>withDailyTaskOperationScopes(i,{contractVersion:1,policies:[changed]}));

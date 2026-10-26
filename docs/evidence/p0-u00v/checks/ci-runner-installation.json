@@ -47,5 +47,17 @@
     "remainingChecksNotClaimedAsPass": true
   },
   "currentHeadResultAuthority": "https://github.com/angelvicen92/production-planner/pull/1200/checks",
-  "rawLogPublication": false
+  "rawLogPublication": false,
+  "liveInstallerValidation": {
+    "head": "99d7fc7a802cebf817cf8d29d1cd70036d8929a2",
+    "runId": 40367626654,
+    "jobId": 121729515797,
+    "conclusion": "success",
+    "completeWorkflow": true,
+    "p4AllEightChecksPass": true,
+    "remainingSqlAndTwoBrowserSuitesPass": true,
+    "aptDependencyUpdates": false,
+    "samePinnedChromium": true,
+    "libraryFallbackOrSkippedTests": false
+  }
 }

@@ -8,7 +8,7 @@
       "status": "PASS",
       "isolated": true,
       "node": "v20.20.2",
-      "seconds": 80.904700953,
+      "seconds": 84.68062044,
       "completed": 266,
       "stages": 11,
       "branches": 27049,
@@ -16,13 +16,13 @@
       "fullReportEqualExceptDurationMs": true,
       "snapshotsEqual": true,
       "certificatesRevalidated": 11,
-      "wallSeconds": 82.74486788599984
+      "wallSeconds": 85.96220161499878
     },
     "repeat": {
       "status": "PASS",
       "isolated": true,
       "node": "v20.20.2",
-      "seconds": 108.13685779899998,
+      "seconds": 85.25987882899999,
       "completed": 266,
       "stages": 11,
       "branches": 27049,
@@ -30,11 +30,12 @@
       "fullReportEqualExceptDurationMs": true,
       "snapshotsEqual": true,
       "certificatesRevalidated": 11,
-      "wallSeconds": 109.23143770300021
+      "wallSeconds": 86.70695535300183
     }
   },
   "certificatesRevalidated": 22,
   "onlyReportExclusion": "iterations[].durationMs",
   "verifierOriginalBaseLabel": "3ade5d2774584f92f86b2b8670bbb3f19fc5f83c",
-  "base": "b1895fa90f52018abbdefab1c224cb7387f54a39"
+  "base": "b1895fa90f52018abbdefab1c224cb7387f54a39",
+  "finalRetirementSourceSha256": "6204c06b52e1f044e5d5534d6817ad4920be1b807976029d67821961216dd916"
 }

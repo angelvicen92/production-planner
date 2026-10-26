@@ -22,7 +22,8 @@ export function taskScopeDirectResources(input:EngineInput,t:EngineInput['tasks'
 }
 export function withDailyTaskOperationScopes(input:EngineInput,raw:DailyTaskOperationScopes):EngineInput{
  const structure=dailyTaskOperationScopesSchema.parse(raw);
- if(!taskOperationScopesSupported(input))throw defect('UNSUPPORTED_TASK_SCOPE_COMBINATION');
+ // A retired declaration owns no task fields and cannot constrain another structure.
+ if(structure.policies.length&&!taskOperationScopesSupported(input))throw defect('UNSUPPORTED_TASK_SCOPE_COMBINATION');
  for(const p of structure.policies){
   const t=input.tasks.find(t=>t.id===p.taskId&&t.planId===input.planId);
   const unit=p.itinerantUnitId==null?null:input.itinerantCompositionSnapshot?.units.find(u=>u.id===p.itinerantUnitId&&u.plan_id===input.planId);
