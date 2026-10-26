@@ -1,0 +1,51 @@
+{
+  "status": "INVESTIGATED",
+  "productRuntimeUnchanged": true,
+  "headInvestigated": "e15f4687d6fed473c8c129241c25e1cc48a341e4",
+  "cause": "Ubuntu apt dependency downloads consumed about eleven minutes of existing job limits.",
+  "decisions": [
+    {
+      "workflow": ".github/workflows/live-day-execution-ci.yml",
+      "jobLimitMinutes": 15,
+      "sameLockfileBrowser": true
+    },
+    {
+      "workflow": ".github/workflows/planner-engine-ci.yml",
+      "job": "a2-assisted-canonical-integration",
+      "jobLimitMinutes": 30,
+      "sameLockfileBrowser": true
+    }
+  ],
+  "change": "Install Chromium without apt dependency updates; keep runner shared libraries. All tests must still launch and pass.",
+  "testCommandsFixturesAndAssertionsLiteral": true,
+  "timeoutsAndBudgetsLiteral": true,
+  "liveExecution": {
+    "runId": 40361668391,
+    "attempt1": {
+      "jobId": 121708465372,
+      "conclusion": "failure",
+      "assertion": "P4 scroll after refresh: expected viewport/workspace 0/0, actual 69/264"
+    },
+    "attempt2": {
+      "jobId": 121718448169,
+      "conclusion": "cancelled",
+      "p4AllEightChecksPass": true,
+      "stoppedAfterP4BeforeRemainingSuites": true
+    },
+    "localBaselineP4Pass": true,
+    "localCandidateP4Pass": true,
+    "p4SourceSha256": "5785821efe236d57aaacbfb7655fae825411e154f733bbf484057adc672aa166"
+  },
+  "canonicalIntegration": {
+    "runId": 40361668373,
+    "attempt1JobId": 121708465393,
+    "conclusion": "cancelled",
+    "ubuntuDownloadSeconds": 680,
+    "a2Completed": 266,
+    "twoFocalOrdersRepeatedPass": true,
+    "autopilotPass": true,
+    "remainingChecksNotClaimedAsPass": true
+  },
+  "currentHeadResultAuthority": "https://github.com/angelvicen92/production-planner/pull/1200/checks",
+  "rawLogPublication": false
+}

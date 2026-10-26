@@ -64,6 +64,9 @@
     "distinctWorkflowsPass": 24,
     "workflowRecordsPass": 25,
     "documentationOnlyClosure": true,
+    "documentationOnlyClosureHead": "e15f4687d6fed473c8c129241c25e1cc48a341e4",
+    "laterRunnerInstallationDecision": "checks/ci-runner-installation.json",
+    "currentHeadResultAuthority": "https://github.com/angelvicen92/production-planner/pull/1200/checks",
     "initialFailures": "checks/ci-initial-failures.json"
   },
   "remoteDatabaseWrites": 0,
