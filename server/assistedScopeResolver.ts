@@ -43,6 +43,13 @@ export function resolveAssistedScope(input: EngineInput, adapter: EngineInputAda
   for (const policy of input.dailyTechnicalChainsVersion===1?input.technicalChains??[]:[]) if (policy.orderedTaskIds.some(id=>chainMembers.has(id)))
     for (const id of policy.orderedTaskIds) if(eligible.has(id)) chainMembers.add(id);
   productIds = [...chainMembers].sort((a,b)=>a-b);
+  if(input.dailyAnchoredAccompanimentsVersion===1){
+    const ids=new Set(productIds);
+    for(const policy of input.anchoredAccompaniments??[]){const members=[...policy.beforeTaskIds,policy.anchorTaskId,...policy.afterTaskIds];
+      if(members.some(id=>ids.has(id)))for(const id of members)if(eligible.has(id))ids.add(id);
+    }
+    productIds=[...ids].sort((a,b)=>a-b);
+  }
   const canonicalByProduct = new Map(adapter.identityMap.filter(i => i.namespace === "task").map(i => [Number(i.sourceId), i.canonicalId]));
   const canonicalIds = productIds.map(id => canonicalByProduct.get(id));
   if (canonicalIds.some(id => !id)) throw new ScopeResolutionError("INVALID_SCOPE");

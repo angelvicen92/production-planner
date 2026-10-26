@@ -1,0 +1,84 @@
+{
+  "status": "CANDIDATE_VALIDATION_IN_PROGRESS",
+  "base": "51ba8a6631f0179c0f56933ebcc6a674aaf1a2c0",
+  "remoteWrites": 0,
+  "native": {
+    "status": "PASS",
+    "source": "native/receipts.json.gz",
+    "days": 2,
+    "stages": 3,
+    "attempt": "/tmp/u00u-native-v7",
+    "productSourceHashes": "native/manifest.json.gz"
+  },
+  "a2": {
+    "status": "PASS",
+    "baseline": "docs/evidence/p0-u00s/integration/a2/candidate",
+    "base": "3ade5d2774584f92f86b2b8670bbb3f19fc5f83c",
+    "remoteWrites": 0,
+    "sql": false,
+    "results": {
+      "candidate": {
+        "status": "PASS",
+        "isolated": true,
+        "node": "v20.19.5",
+        "seconds": 172.911829672,
+        "completed": 266,
+        "stages": 11,
+        "branches": 27049,
+        "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+        "fullReportEqualExceptDurationMs": true,
+        "snapshotsEqual": true,
+        "certificatesRevalidated": 11,
+        "wallSeconds": 177.1768802900001
+      },
+      "repeat": {
+        "status": "PASS",
+        "isolated": true,
+        "node": "v20.19.5",
+        "seconds": 184.844182301,
+        "completed": 266,
+        "stages": 11,
+        "branches": 27049,
+        "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+        "fullReportEqualExceptDurationMs": true,
+        "snapshotsEqual": true,
+        "certificatesRevalidated": 11,
+        "wallSeconds": 186.64462647000028
+      }
+    },
+    "certificatesRevalidated": 22,
+    "onlyReportExclusion": "iterations[].durationMs"
+  },
+  "consumerNegatives": {
+    "status": "PASS",
+    "source": "checks/consumer-negatives.json.gz"
+  },
+  "pending": [
+    "populated 115 to 116 upgrade",
+    "product suite completion",
+    "native regressions/CI head",
+    "final native expanded harness checks"
+  ],
+  "attempts": [
+    {
+      "name": "native-v1",
+      "failure": "UI cold-load timeout; checkout source changed during archive run; no Stage"
+    },
+    {
+      "name": "native-v2-v3",
+      "failure": "persisted audit fields passed into strict operational parser; fixed by projecting contract only"
+    },
+    {
+      "name": "native-v4",
+      "failure": "ambiguous SQL rid alias in material certificate; fixed with explicit column aliases"
+    },
+    {
+      "name": "native-v5",
+      "failure": "A passed; B pending-edit request failed with local fetch transport error; preserved as FAIL"
+    },
+    {
+      "name": "upgrade-v1",
+      "failure": "reader harness lacked explicit integer casts; no product or migration failure"
+    }
+  ]
+}

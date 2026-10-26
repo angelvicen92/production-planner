@@ -3031,6 +3031,12 @@ function mapDeleteError(err: any, fallback: string) {
         if (!full) return res.status(404).json({ message: "Plan not found" });
 
         const p: any = full.plan;
+        const anchoredInput=p.daily_anchored_accompaniments?.policies?.length?await buildEngineInput(planId,storage):null;
+        const nativeOperationPresentation=anchoredInput?{anchoredAccompaniments:anchoredInput.anchoredAccompaniments,itinerantTeamAvailability:anchoredInput.itinerantTeamAvailability,
+          dailyItinerantTeams:anchoredInput.itinerantCompositionSnapshot?.units.map(u=>({id:u.id,code:u.code,name:u.name,isActive:true})),
+          taskOperations:anchoredInput.tasks.map(t=>({taskId:t.id,blocksSpace:t.blocksSpace,agendaScope:t.agendaScope,
+            resourceInheritance:t.resourceInheritance,declaredResourceIds:t.declaredResourceIds,itinerantTeamId:t.itinerantTeamId,
+            itinerantTeamRequirement:t.itinerantTeamRequirement,allowedItinerantTeamIds:t.allowedItinerantTeamIds}))}:null;
 
         res.json({
           id: p.id,
@@ -3056,7 +3062,7 @@ function mapDeleteError(err: any, fallback: string) {
           camerasAvailable: p.cameras_available ?? p.camerasAvailable ?? 0,
           planningWarnings: Array.isArray(p.planning_warnings ?? p.planningWarnings) ? (p.planning_warnings ?? p.planningWarnings) : [],
           planningStats: (p.planning_stats ?? p.planningStats ?? {}),
-          plannerNextConfiguration: p.planner_next_configuration ?? p.plannerNextConfiguration ?? null,
+          plannerNextConfiguration: p.planner_next_configuration ?? p.plannerNextConfiguration ?? nativeOperationPresentation,
 
           dailyTasks: (full.tasks || []).map((t: any) => ({
             id: t.id,
