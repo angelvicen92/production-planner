@@ -40,3 +40,13 @@ test('117 retains literal 116 writers and binds only the scope transition and au
  for(const name of changed)assert.equal(requiredFunctionBodies(false,117).get(name),current.get(name)!.body,name);
  for(const name of ['assisted_accept_stage','assisted_apply_snapshot'])assert.equal(current.get(name)!.body,old.get(name)!.body,name);
 });
+
+
+test('120 retains 119 delegation and limits existing body deltas to joint transitions and the physical witness',()=>{
+ const old=latestAssistedSQLContracts(119),current=latestAssistedSQLContracts(120);
+ assert.equal(current.get('apply_day_config_operation_before_joint_groups')!.body,old.get('apply_day_config_operation_v5')!.body);
+ const changed=['apply_day_config_operation_v5','assisted_expected_obligation_sources','assisted_preview_s0_additions','assisted_read_bootstrap_sources','assert_anchored_choice_witness'];
+ assert.deepEqual([...old].filter(([name,v])=>current.get(name)?.body!==v.body).map(([name])=>name).sort(),changed.sort());
+ for(const name of changed)assert.equal(requiredFunctionBodies(false,120).get(name),current.get(name)!.body,name);
+ for(const name of ['assisted_accept_stage','assisted_apply_snapshot','assert_task_scope_snapshot'])assert.equal(current.get(name)!.body,old.get(name)!.body,name);
+});

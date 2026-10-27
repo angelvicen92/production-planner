@@ -1,0 +1,44 @@
+{
+  "delivery": [
+    {
+      "name": "before-ui",
+      "status": 0,
+      "log": "work/u00y/delivery-before-ui.log"
+    },
+    {
+      "name": "native",
+      "status": 0,
+      "log": "work/u00y/delivery-native.log"
+    },
+    {
+      "name": "repeat",
+      "status": 0,
+      "log": "work/u00y/delivery-repeat.log"
+    },
+    {
+      "name": "upgrade",
+      "status": 0,
+      "log": "work/u00y/delivery-upgrade.log"
+    },
+    {
+      "name": "scope-retry",
+      "status": 0,
+      "log": "work/u00y/delivery-scope-retry.log"
+    },
+    {
+      "name": "composition-retry",
+      "status": 0,
+      "log": "work/u00y/delivery-composition-retry.log"
+    }
+  ],
+  "certified": [
+    {
+      "name": "native",
+      "status": 0
+    },
+    {
+      "name": "repeat",
+      "status": 0
+    }
+  ]
+}

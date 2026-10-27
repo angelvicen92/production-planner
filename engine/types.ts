@@ -328,6 +328,8 @@ export interface EngineInput {
   defaultParticipantTransitionMinutes?: number;
   /** Explicit ordered Planner Next anchored-operation contract. */
   anchoredAccompaniments?: EngineInputAnchoredAccompanimentInput[];
+  dailyJointGroupsVersion?: 1;
+  dailyJointGroups?: import("../shared/jointGroupStructure").JointGroupStructure["groups"];
   dailyAnchoredAccompanimentsVersion?: 1|2;
   dailyTaskOperationScopes?: import('../shared/dailyTaskOperationScopes').DailyTaskOperationScopes['policies'];
   operationContinuityGroups?: import("../shared/operationContinuity").OperationContinuityGroup[];

@@ -313,6 +313,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
   })).sort((a, b) => compare(a.id, b.id));
 
   const problem: PlannerNextProblem = {
+    ...(input.dailyJointGroupsVersion===1?{nativeJointGroupsVersion:1}:{}),
     ...(input.dailyAnchoredAccompanimentsVersion===2?{nativeAnchoredAccompanimentsVersion:2 as const}:{}),
     day: window(input.workDay),
     ...(input.mealMode === "flexible_meal_window" ? {} : { protectedMeal: window(input.meal) }),

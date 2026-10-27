@@ -1,0 +1,30 @@
+TAP version 13
+# Subtest: /workspace/production-planner/engine/planner-next/integration/nativeJointGroups.spec.ts
+ok 1 - /workspace/production-planner/engine/planner-next/integration/nativeJointGroups.spec.ts
+  ---
+  duration_ms: 2032.881428
+  ...
+# Subtest: /workspace/production-planner/engine/planner-next/jointTasks.spec.ts
+ok 2 - /workspace/production-planner/engine/planner-next/jointTasks.spec.ts
+  ---
+  duration_ms: 2445.621584
+  ...
+# Subtest: /workspace/production-planner/script/demo/a2Preflight.spec.ts
+ok 3 - /workspace/production-planner/script/demo/a2Preflight.spec.ts
+  ---
+  duration_ms: 3401.781086
+  ...
+# Subtest: /workspace/production-planner/script/demo/assistedSQLContracts.spec.ts
+ok 4 - /workspace/production-planner/script/demo/assistedSQLContracts.spec.ts
+  ---
+  duration_ms: 2854.429866
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10741.173695

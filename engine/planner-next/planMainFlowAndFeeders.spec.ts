@@ -169,6 +169,9 @@ test("planner-next remains isolated from legacy and production", () => {
     // P0-U00p consumes the existing reference preflight read-only. Configuration
     // never dispatches search; the core isolation assertions remain unchanged.
     "server/roundSynchronizationStructure.ts",
+    // U00y compares declared physical requirements through the existing read-only
+    // assignment authority. This module never dispatches Planner Next search.
+    "server/jointGroupStructure.ts",
     "server/roundSynchronizationStructure.spec.ts",
     "server/operationContinuity.spec.ts",
   ]);

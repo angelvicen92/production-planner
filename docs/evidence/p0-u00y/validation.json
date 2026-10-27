@@ -1,0 +1,140 @@
+{
+  "status": "LOCAL_CERTIFIED_VERIFY_CURRENT_PR_CI",
+  "base": "e0403c90866b5cd54986d68a59b76062e9ac47bc",
+  "branch": "codex/p0-u00y-native-joint-operations",
+  "remoteApplicationWrites": 0,
+  "familyStatus": "PARTIAL",
+  "productiveCombinations": [
+    "physical auxiliary groups / standalone / concrete resources / global break",
+    "physical auxiliary groups with Main/Vocal / concrete resources / global break"
+  ],
+  "native": {
+    "status": "PASS",
+    "twoFreshDatabases": true,
+    "days": [
+      {
+        "label": "A",
+        "obligations": 7,
+        "stages": 1
+      },
+      {
+        "label": "B",
+        "obligations": 11,
+        "stages": 2
+      }
+    ],
+    "coldReplays": 6,
+    "coldAuthorityAndRevisionExact": true,
+    "stageSnapshotsExact": true
+  },
+  "migration": {
+    "status": "PASS",
+    "postgres": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+    "sha256": "242d9875450404eb11ccb5a0fbfb4cca613889c7df075eaa53ac1fc40348adde",
+    "historicalTasks": 599,
+    "historicalStages": 11,
+    "originalRowsAndReadersExact": true,
+    "realSupabaseApplied": false
+  },
+  "a2": {
+    "status": "PASS",
+    "baseline": "docs/evidence/p0-u00s/integration/a2/candidate",
+    "base": "3ade5d2774584f92f86b2b8670bbb3f19fc5f83c",
+    "remoteWrites": 0,
+    "sql": false,
+    "results": {
+      "candidate": {
+        "status": "PASS",
+        "isolated": true,
+        "node": "v20.20.2",
+        "seconds": 185.322382709,
+        "completed": 266,
+        "stages": 11,
+        "branches": 27049,
+        "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+        "fullReportEqualExceptDurationMs": true,
+        "snapshotsEqual": true,
+        "certificatesRevalidated": 11,
+        "wallSeconds": 188.13006739499997
+      },
+      "repeat": {
+        "status": "PASS",
+        "isolated": true,
+        "node": "v20.20.2",
+        "seconds": 209.600430884,
+        "completed": 266,
+        "stages": 11,
+        "branches": 27049,
+        "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+        "fullReportEqualExceptDurationMs": true,
+        "snapshotsEqual": true,
+        "certificatesRevalidated": 11,
+        "wallSeconds": 212.49642620999998
+      }
+    },
+    "certificatesRevalidated": 22,
+    "onlyReportExclusion": "iterations[].durationMs"
+  },
+  "regressions": {
+    "status": "PASS",
+    "families": [
+      "anchored",
+      "choices",
+      "nominal",
+      "transport",
+      "meals",
+      "rounds",
+      "required",
+      "additions",
+      "scopes",
+      "composition",
+      "operation-continuity / unconfigured day"
+    ]
+  },
+  "checks": {
+    "typescript": "PASS",
+    "harnessTypescript": "PASS",
+    "build": "PASS",
+    "focal": "PASS",
+    "isolation": "PASS",
+    "productSuite": {
+      "status": "PASS",
+      "initial": {
+        "pass": 3282,
+        "fail": 1,
+        "cause": "New read-only integration boundary and a metadata-only path reference; the focused isolation gate now passes."
+      },
+      "sameExclusionsAsCI": true,
+      "newExclusions": 0,
+      "passCount": 3283,
+      "failCount": 0,
+      "skipped": 0,
+      "files": 425
+    },
+    "unconfiguredDayCorrection": "PASS: authentic continuity UI/API, SQL catalog contracts and populated 119\u2192120 rehearsal",
+    "tightPhysical": {
+      "status": "PASS",
+      "resourceWindowMinutes": 25,
+      "individualDemandMinutes": 35,
+      "physicalDemandMinutes": 25,
+      "groupedBranches": 8,
+      "separateBranches": 2,
+      "separateOutcome": "NO_PROPOSAL, not exhausted",
+      "experimentIsStage": false
+    }
+  },
+  "limits": [
+    "Other structural combinations and flexible/coordinated meals remain outside this contract",
+    "A2 full manual UI authoring remains incomplete",
+    "No production deployment or migration",
+    "No merge"
+  ],
+  "ci": {
+    "pullRequest": 1203,
+    "url": "https://github.com/angelvicen92/production-planner/pull/1203/checks",
+    "currentHeadIsAuthority": true,
+    "initialProductHead": "cd56cbe491738ec604efc46f42f15ca7b6d1a6c5",
+    "initialNativeWorkflow": "PASS",
+    "initialThreeFailures": "Same unconfigured-day guard defect: continuity/new-day/physical-composition. Reproduced and corrected in 120; checks of the corrected head govern."
+  }
+}

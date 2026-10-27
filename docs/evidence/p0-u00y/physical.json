@@ -1,0 +1,546 @@
+{
+  "status": "PASS",
+  "remoteWrites": 0,
+  "results": [
+    {
+      "label": "A",
+      "stage": 1,
+      "sqlStageId": "2",
+      "individualObligations": 7,
+      "acceptedObligations": 7,
+      "physicalOccupations": 6,
+      "groups": [
+        {
+          "key": "joint:a7f3d60f-6e5a-43da-a15c-c4cd88fbae53-cas",
+          "start": 560,
+          "end": 570,
+          "space": "space:2",
+          "blocks": true,
+          "resources": [
+            "plan-resource:1"
+          ],
+          "members": [
+            "task:2",
+            "task:5"
+          ],
+          "participants": [
+            "participant:1",
+            "participant:2"
+          ],
+          "accepted": true
+        }
+      ],
+      "physical": [
+        {
+          "key": "task:1",
+          "start": 540,
+          "end": 545,
+          "space": "space:1",
+          "blocks": true,
+          "resources": [],
+          "members": [
+            "task:1"
+          ],
+          "participants": [
+            "participant:1"
+          ],
+          "accepted": true
+        },
+        {
+          "key": "task:7",
+          "start": 545,
+          "end": 560,
+          "space": "space:2",
+          "blocks": true,
+          "resources": [
+            "plan-resource:1"
+          ],
+          "members": [
+            "task:7"
+          ],
+          "participants": [
+            "participant:1"
+          ],
+          "accepted": true
+        },
+        {
+          "key": "task:4",
+          "start": 555,
+          "end": 560,
+          "space": "space:1",
+          "blocks": true,
+          "resources": [],
+          "members": [
+            "task:4"
+          ],
+          "participants": [
+            "participant:2"
+          ],
+          "accepted": true
+        },
+        {
+          "key": "joint:a7f3d60f-6e5a-43da-a15c-c4cd88fbae53-cas",
+          "start": 560,
+          "end": 570,
+          "space": "space:2",
+          "blocks": true,
+          "resources": [
+            "plan-resource:1"
+          ],
+          "members": [
+            "task:2",
+            "task:5"
+          ],
+          "participants": [
+            "participant:1",
+            "participant:2"
+          ],
+          "accepted": true
+        },
+        {
+          "key": "task:3",
+          "start": 570,
+          "end": 575,
+          "space": "space:3",
+          "blocks": true,
+          "resources": [
+            "plan-resource:1"
+          ],
+          "members": [
+            "task:3"
+          ],
+          "participants": [
+            "participant:1"
+          ],
+          "accepted": true
+        },
+        {
+          "key": "task:6",
+          "start": 575,
+          "end": 580,
+          "space": "space:3",
+          "blocks": true,
+          "resources": [
+            "plan-resource:1"
+          ],
+          "members": [
+            "task:6"
+          ],
+          "participants": [
+            "participant:2"
+          ],
+          "accepted": true
+        }
+      ],
+      "source": "accepted SQL snapshot + versioned daily authority + exact physical witness"
+    },
+    {
+      "label": "B",
+      "stage": 1,
+      "sqlStageId": "4",
+      "individualObligations": 11,
+      "acceptedObligations": 6,
+      "physicalOccupations": 9,
+      "groups": [
+        {
+          "key": "joint:7f9a61be-1e40-4ebd-9002-3e21050eb8fe-cas",
+          "start": 730,
+          "end": 735,
+          "space": "space:7",
+          "blocks": true,
+          "resources": [
+            "plan-resource:5"
+          ],
+          "members": [
+            "task:11",
+            "task:16"
+          ],
+          "participants": [
+            "participant:3",
+            "participant:4"
+          ],
+          "accepted": false
+        },
+        {
+          "key": "joint:99d8c62c-9e98-4fe1-ac95-8ca7388a83b7",
+          "start": 720,
+          "end": 730,
+          "space": "space:6",
+          "blocks": true,
+          "resources": [
+            "plan-resource:5"
+          ],
+          "members": [
+            "task:10",
+            "task:15"
+          ],
+          "participants": [
+            "participant:3",
+            "participant:4"
+          ],
+          "accepted": true
+        }
+      ],
+      "physical": [
+        {
+          "key": "task:18",
+          "start": 600,
+          "end": 615,
+          "space": "space:6",
+          "blocks": true,
+          "resources": [
+            "plan-resource:5"
+          ],
+          "members": [
+            "task:18"
+          ],
+          "participants": [
+            "participant:3"
+          ],
+          "accepted": false
+        },
+        {
+          "key": "task:8",
+          "start": 670,
+          "end": 680,
+          "space": "space:5",
+          "blocks": true,
+          "resources": [
+            "plan-resource:6"
+          ],
+          "members": [
+            "task:8"
+          ],
+          "participants": [
+            "participant:3"
+          ],
+          "accepted": true
+        },
+        {
+          "key": "task:13",
+          "start": 680,
+          "end": 690,
+          "space": "space:5",
+          "blocks": true,
+          "resources": [
+            "plan-resource:6"
+          ],
+          "members": [
+            "task:13"
+          ],
+          "participants": [
+            "participant:4"
+          ],
+          "accepted": true
+        },
+        {
+          "key": "task:9",
+          "start": 690,
+          "end": 705,
+          "space": "space:8",
+          "blocks": true,
+          "resources": [
+            "plan-resource:6"
+          ],
+          "members": [
+            "task:9"
+          ],
+          "participants": [
+            "participant:3"
+          ],
+          "accepted": true
+        },
+        {
+          "key": "task:14",
+          "start": 705,
+          "end": 720,
+          "space": "space:8",
+          "blocks": true,
+          "resources": [
+            "plan-resource:6"
+          ],
+          "members": [
+            "task:14"
+          ],
+          "participants": [
+            "participant:4"
+          ],
+          "accepted": true
+        },
+        {
+          "key": "joint:99d8c62c-9e98-4fe1-ac95-8ca7388a83b7",
+          "start": 720,
+          "end": 730,
+          "space": "space:6",
+          "blocks": true,
+          "resources": [
+            "plan-resource:5"
+          ],
+          "members": [
+            "task:10",
+            "task:15"
+          ],
+          "participants": [
+            "participant:3",
+            "participant:4"
+          ],
+          "accepted": true
+        },
+        {
+          "key": "joint:7f9a61be-1e40-4ebd-9002-3e21050eb8fe-cas",
+          "start": 730,
+          "end": 735,
+          "space": "space:7",
+          "blocks": true,
+          "resources": [
+            "plan-resource:5"
+          ],
+          "members": [
+            "task:11",
+            "task:16"
+          ],
+          "participants": [
+            "participant:3",
+            "participant:4"
+          ],
+          "accepted": false
+        },
+        {
+          "key": "task:12",
+          "start": 735,
+          "end": 740,
+          "space": "space:5",
+          "blocks": true,
+          "resources": [],
+          "members": [
+            "task:12"
+          ],
+          "participants": [
+            "participant:3"
+          ],
+          "accepted": false
+        },
+        {
+          "key": "task:17",
+          "start": 740,
+          "end": 745,
+          "space": "space:5",
+          "blocks": true,
+          "resources": [],
+          "members": [
+            "task:17"
+          ],
+          "participants": [
+            "participant:4"
+          ],
+          "accepted": false
+        }
+      ],
+      "source": "accepted SQL snapshot + versioned daily authority + exact physical witness"
+    },
+    {
+      "label": "B",
+      "stage": 2,
+      "sqlStageId": "5",
+      "individualObligations": 11,
+      "acceptedObligations": 11,
+      "physicalOccupations": 9,
+      "groups": [
+        {
+          "key": "joint:7f9a61be-1e40-4ebd-9002-3e21050eb8fe-cas",
+          "start": 730,
+          "end": 735,
+          "space": "space:7",
+          "blocks": true,
+          "resources": [
+            "plan-resource:5"
+          ],
+          "members": [
+            "task:11",
+            "task:16"
+          ],
+          "participants": [
+            "participant:3",
+            "participant:4"
+          ],
+          "accepted": true
+        },
+        {
+          "key": "joint:99d8c62c-9e98-4fe1-ac95-8ca7388a83b7",
+          "start": 720,
+          "end": 730,
+          "space": "space:6",
+          "blocks": true,
+          "resources": [
+            "plan-resource:5"
+          ],
+          "members": [
+            "task:10",
+            "task:15"
+          ],
+          "participants": [
+            "participant:3",
+            "participant:4"
+          ],
+          "accepted": true
+        }
+      ],
+      "physical": [
+        {
+          "key": "task:18",
+          "start": 600,
+          "end": 615,
+          "space": "space:6",
+          "blocks": true,
+          "resources": [
+            "plan-resource:5"
+          ],
+          "members": [
+            "task:18"
+          ],
+          "participants": [
+            "participant:3"
+          ],
+          "accepted": true
+        },
+        {
+          "key": "task:8",
+          "start": 670,
+          "end": 680,
+          "space": "space:5",
+          "blocks": true,
+          "resources": [
+            "plan-resource:6"
+          ],
+          "members": [
+            "task:8"
+          ],
+          "participants": [
+            "participant:3"
+          ],
+          "accepted": true
+        },
+        {
+          "key": "task:13",
+          "start": 680,
+          "end": 690,
+          "space": "space:5",
+          "blocks": true,
+          "resources": [
+            "plan-resource:6"
+          ],
+          "members": [
+            "task:13"
+          ],
+          "participants": [
+            "participant:4"
+          ],
+          "accepted": true
+        },
+        {
+          "key": "task:9",
+          "start": 690,
+          "end": 705,
+          "space": "space:8",
+          "blocks": true,
+          "resources": [
+            "plan-resource:6"
+          ],
+          "members": [
+            "task:9"
+          ],
+          "participants": [
+            "participant:3"
+          ],
+          "accepted": true
+        },
+        {
+          "key": "task:14",
+          "start": 705,
+          "end": 720,
+          "space": "space:8",
+          "blocks": true,
+          "resources": [
+            "plan-resource:6"
+          ],
+          "members": [
+            "task:14"
+          ],
+          "participants": [
+            "participant:4"
+          ],
+          "accepted": true
+        },
+        {
+          "key": "joint:99d8c62c-9e98-4fe1-ac95-8ca7388a83b7",
+          "start": 720,
+          "end": 730,
+          "space": "space:6",
+          "blocks": true,
+          "resources": [
+            "plan-resource:5"
+          ],
+          "members": [
+            "task:10",
+            "task:15"
+          ],
+          "participants": [
+            "participant:3",
+            "participant:4"
+          ],
+          "accepted": true
+        },
+        {
+          "key": "joint:7f9a61be-1e40-4ebd-9002-3e21050eb8fe-cas",
+          "start": 730,
+          "end": 735,
+          "space": "space:7",
+          "blocks": true,
+          "resources": [
+            "plan-resource:5"
+          ],
+          "members": [
+            "task:11",
+            "task:16"
+          ],
+          "participants": [
+            "participant:3",
+            "participant:4"
+          ],
+          "accepted": true
+        },
+        {
+          "key": "task:12",
+          "start": 735,
+          "end": 740,
+          "space": "space:5",
+          "blocks": true,
+          "resources": [],
+          "members": [
+            "task:12"
+          ],
+          "participants": [
+            "participant:3"
+          ],
+          "accepted": true
+        },
+        {
+          "key": "task:17",
+          "start": 740,
+          "end": 745,
+          "space": "space:5",
+          "blocks": true,
+          "resources": [],
+          "members": [
+            "task:17"
+          ],
+          "participants": [
+            "participant:4"
+          ],
+          "accepted": true
+        }
+      ],
+      "source": "accepted SQL snapshot + versioned daily authority + exact physical witness"
+    }
+  ]
+}

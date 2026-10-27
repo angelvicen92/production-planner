@@ -1,0 +1,1463 @@
+[
+  {
+    "name": "anchored",
+    "status": "PASS",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities",
+      "A: native UI declaration, proposal, Draft, validation, Stage, SQL and browser reload",
+      "B: native UI declaration, proposal, Draft, validation, Stage, SQL and browser reload"
+    ],
+    "journey": {
+      "days": [
+        {
+          "label": "A",
+          "planId": 1,
+          "taskIds": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "structure": {
+            "contractVersion": 1,
+            "policies": [
+              {
+                "id": "82a9b4f7-4409-4bf1-b517-31f71d3de3d2-edited",
+                "anchorTaskId": 2,
+                "beforeTaskIds": [
+                  3
+                ],
+                "afterTaskIds": [
+                  4
+                ],
+                "adjacency": "REQUIRED",
+                "internalTransition": "INCLUDED",
+                "resourceContinuity": "REQUIRED",
+                "itinerantUnitId": 1
+              }
+            ]
+          },
+          "stages": [
+            {
+              "id": 2,
+              "fingerprint": "0fa9f9b78f7ab122b38665cd24254f3f532f2db4bd93aeb84dc312373c4deef0"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "planId": 2,
+          "taskIds": [
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "structure": {
+            "contractVersion": 1,
+            "policies": [
+              {
+                "id": "b3a9a93d-4aef-4563-908b-2250901c007f-edited",
+                "anchorTaskId": 7,
+                "beforeTaskIds": [
+                  8
+                ],
+                "afterTaskIds": [
+                  9
+                ],
+                "adjacency": "REQUIRED",
+                "internalTransition": "INCLUDED",
+                "resourceContinuity": "REQUIRED",
+                "itinerantUnitId": 3
+              }
+            ]
+          },
+          "stages": [
+            {
+              "id": 4,
+              "fingerprint": "f4b14005d1b160e6bd93f01fc7987fbce5f0f0f09c4848f66853fe8e1c76a703"
+            },
+            {
+              "id": 5,
+              "fingerprint": "867bd4b3242b5584d4417f51422150549d8e5d20e897ab03dcb7dfdb0f5c305f"
+            }
+          ]
+        }
+      ],
+      "mode": "NATIVE_PRODUCT_STAGES",
+      "remoteWrites": 0
+    },
+    "remoteWrites": 0
+  },
+  {
+    "name": "choices",
+    "status": "PASS",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities",
+      "choice: native anchored choice through Stage",
+      "multi: native anchored choice through Stage"
+    ],
+    "journey": {
+      "days": [
+        {
+          "planId": 1,
+          "policies": [
+            {
+              "id": "choice-0",
+              "anchorTaskId": 2,
+              "beforeTaskIds": [
+                3
+              ],
+              "afterTaskIds": [
+                4
+              ],
+              "itinerantUnitId": 1,
+              "adjacency": "REQUIRED",
+              "internalTransition": "INCLUDED",
+              "resourceContinuity": "REQUIRED"
+            }
+          ],
+          "dailyUnits": [
+            1,
+            2
+          ],
+          "stages": [
+            {
+              "id": 2,
+              "fingerprint": "03d4528aed31aa28745189183727ba42b2a64523f6da534048764604c1b263e9"
+            }
+          ],
+          "remoteWrites": 0
+        },
+        {
+          "planId": 2,
+          "policies": [
+            {
+              "id": "multi-0",
+              "anchorTaskId": 7,
+              "beforeTaskIds": [
+                8
+              ],
+              "afterTaskIds": [
+                9
+              ],
+              "itinerantUnitId": 5,
+              "adjacency": "REQUIRED",
+              "internalTransition": "INCLUDED",
+              "resourceContinuity": "REQUIRED"
+            },
+            {
+              "id": "multi-1",
+              "anchorTaskId": 13,
+              "beforeTaskIds": [
+                14
+              ],
+              "afterTaskIds": [
+                15
+              ],
+              "itinerantUnitId": 5,
+              "adjacency": "REQUIRED",
+              "internalTransition": "INCLUDED",
+              "resourceContinuity": "REQUIRED"
+            },
+            {
+              "id": "multi-2",
+              "anchorTaskId": 19,
+              "beforeTaskIds": [
+                20
+              ],
+              "afterTaskIds": [
+                21
+              ],
+              "itinerantUnitId": 5,
+              "adjacency": "REQUIRED",
+              "internalTransition": "INCLUDED",
+              "resourceContinuity": "REQUIRED"
+            }
+          ],
+          "dailyUnits": [
+            5,
+            6
+          ],
+          "stages": [
+            {
+              "id": 4,
+              "fingerprint": "f9af6b0019c17ac86a2e4a95c23c1b05d099a146dada614fde96b08d317d4922"
+            },
+            {
+              "id": 5,
+              "fingerprint": "cc34f273a3fa1f0d01bc55d08d81d1177061a5969b8ef381b9841e3e38a9be9f"
+            }
+          ],
+          "remoteWrites": 0
+        }
+      ],
+      "remoteWrites": 0
+    },
+    "remoteWrites": 0
+  },
+  {
+    "name": "nominal",
+    "status": "PASS",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities",
+      "nominal API day A: 11/11 through Stage",
+      "nominal API day B: 6/6 through Stage"
+    ],
+    "journey": {
+      "status": "PASS",
+      "days": [
+        {
+          "label": "A",
+          "planId": 1,
+          "obligations": 11,
+          "resources": [
+            1,
+            2,
+            3
+          ],
+          "stages": [
+            {
+              "stage": 1,
+              "fingerprint": "2ccd7b3b77a04435649113ef7d008635a267fa7cd22a18a9043ac54017106eb8",
+              "work": {
+                "coreBranches": 117,
+                "branchesExplored": 136,
+                "coreMaximumDepth": 2,
+                "branchBudgetLimit": 10000,
+                "conflictBackjumps": 0,
+                "standaloneBranches": 19,
+                "feederOrderBranches": 0,
+                "suffixDepthsSkipped": 0,
+                "architecturesChecked": 1,
+                "bundleNogoodBranches": 0,
+                "bundleNogoodsCreated": 0,
+                "bundleMatchingRepairs": 0,
+                "mainRunWitnessRepairs": 0,
+                "bundleCertifiedRepairs": 0,
+                "bundleMatchingAttempts": 1,
+                "mainRunWitnessAttempts": 4,
+                "coreLeafTransportPrunes": 0,
+                "deepestCoreDepthReached": 2,
+                "mainCandidatesEvaluated": 0,
+                "standaloneForwardChecks": 7,
+                "feederSlotMatchingChecks": 6,
+                "feederCandidatesEvaluated": 6,
+                "membershipFallbackEntered": 0,
+                "patternCandidatesExplored": 1,
+                "transportContiguousStates": 6,
+                "bundleNogoodDeduplications": 0,
+                "residualMatchingFullBuilds": 3,
+                "timelineCandidatesExplored": 1,
+                "bundleHardValidationRejects": 0,
+                "residualMatchingInvocations": 14,
+                "bundleNogoodRepairsSucceeded": 0,
+                "feederSlotMatchingEdgeChecks": 24,
+                "standaloneForwardStartChecks": 7,
+                "residualMatchingEdgeCacheHits": 0,
+                "bundleMatchingMaterializations": 1,
+                "residualMatchingPositionChecks": 6,
+                "participantMealZeroDomainPrunes": 0,
+                "residualMatchingEdgeCacheMisses": 0,
+                "mainRunEquivalentOrdersCollapsed": 0,
+                "residualMatchingBranchesExplored": 12,
+                "residualMatchingAugmentTraversals": 6,
+                "standaloneForwardWitnessCacheHits": 2,
+                "feederSlotMatchingBranchesExplored": 87,
+                "futureRoundWitnessBranchesConsumed": 0,
+                "residualMatchingIncrementalUpdates": 11,
+                "feederSlotMatchingAugmentTraversals": 43,
+                "futureRoundWitnessCompleteMatchings": 0,
+                "futureRoundWitnessSearchInvocations": 0,
+                "standaloneForwardWitnessCacheMisses": 7,
+                "futureRoundWitnessPrerequisiteChecks": 0,
+                "participantMealExactMaterializations": 1,
+                "futureRoundWitnessStructuralCandidates": 0,
+                "participantMealFutureFeasibilityChecks": 1,
+                "participantMealAnalyticCollectivePrunes": 0,
+                "participantMealFutureInfeasibleBranches": 0,
+                "futureRoundWitnessParticipantFutureChecks": 0,
+                "participantMealAffectedObligationsChecked": 0
+              }
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "planId": 2,
+          "obligations": 6,
+          "resources": [
+            6,
+            7,
+            8,
+            11
+          ],
+          "stages": [
+            {
+              "stage": 1,
+              "fingerprint": "eacd7d56ebe254767bf11475d09a9b283512a10779a97d6c95c1c4db653bd9e1",
+              "work": {
+                "coreBranches": 176,
+                "branchesExplored": 181,
+                "coreMaximumDepth": 2,
+                "branchBudgetLimit": 10000,
+                "conflictBackjumps": 0,
+                "standaloneBranches": 5,
+                "feederOrderBranches": 0,
+                "suffixDepthsSkipped": 0,
+                "architecturesChecked": 1,
+                "bundleNogoodBranches": 0,
+                "bundleNogoodsCreated": 0,
+                "bundleMatchingRepairs": 0,
+                "mainRunWitnessRepairs": 0,
+                "bundleCertifiedRepairs": 0,
+                "bundleMatchingAttempts": 0,
+                "mainRunWitnessAttempts": 8,
+                "coreLeafTransportPrunes": 0,
+                "deepestCoreDepthReached": 2,
+                "mainCandidatesEvaluated": 0,
+                "standaloneForwardChecks": 17,
+                "feederSlotMatchingChecks": 9,
+                "feederCandidatesEvaluated": 12,
+                "membershipFallbackEntered": 0,
+                "patternCandidatesExplored": 1,
+                "transportContiguousStates": 0,
+                "bundleNogoodDeduplications": 0,
+                "residualMatchingFullBuilds": 4,
+                "timelineCandidatesExplored": 1,
+                "bundleHardValidationRejects": 0,
+                "residualMatchingInvocations": 21,
+                "bundleNogoodRepairsSucceeded": 0,
+                "feederSlotMatchingEdgeChecks": 36,
+                "standaloneForwardStartChecks": 2,
+                "residualMatchingEdgeCacheHits": 0,
+                "bundleMatchingMaterializations": 0,
+                "residualMatchingPositionChecks": 12,
+                "participantMealZeroDomainPrunes": 0,
+                "residualMatchingEdgeCacheMisses": 0,
+                "mainRunEquivalentOrdersCollapsed": 0,
+                "residualMatchingBranchesExplored": 24,
+                "residualMatchingAugmentTraversals": 12,
+                "standaloneForwardWitnessCacheHits": 0,
+                "feederSlotMatchingBranchesExplored": 135,
+                "futureRoundWitnessBranchesConsumed": 0,
+                "residualMatchingIncrementalUpdates": 17,
+                "feederSlotMatchingAugmentTraversals": 67,
+                "futureRoundWitnessCompleteMatchings": 0,
+                "futureRoundWitnessSearchInvocations": 0,
+                "standaloneForwardWitnessCacheMisses": 2,
+                "futureRoundWitnessPrerequisiteChecks": 0,
+                "participantMealExactMaterializations": 1,
+                "futureRoundWitnessStructuralCandidates": 0,
+                "participantMealFutureFeasibilityChecks": 1,
+                "participantMealAnalyticCollectivePrunes": 0,
+                "participantMealFutureInfeasibleBranches": 0,
+                "futureRoundWitnessParticipantFutureChecks": 0,
+                "participantMealAffectedObligationsChecked": 0
+              }
+            },
+            {
+              "stage": 2,
+              "fingerprint": "57190a5f84c2eaf21f77fcc63a5de73521d026390eaa38ea170371a79e098aa5",
+              "work": {
+                "coreBranches": 30,
+                "branchesExplored": 35,
+                "coreMaximumDepth": 1,
+                "branchBudgetLimit": 10000,
+                "conflictBackjumps": 0,
+                "standaloneBranches": 5,
+                "feederOrderBranches": 0,
+                "suffixDepthsSkipped": 0,
+                "architecturesChecked": 1,
+                "bundleNogoodBranches": 0,
+                "bundleNogoodsCreated": 0,
+                "bundleMatchingRepairs": 0,
+                "mainRunWitnessRepairs": 0,
+                "bundleCertifiedRepairs": 0,
+                "bundleMatchingAttempts": 0,
+                "mainRunWitnessAttempts": 3,
+                "coreLeafTransportPrunes": 0,
+                "deepestCoreDepthReached": 1,
+                "mainCandidatesEvaluated": 0,
+                "standaloneForwardChecks": 5,
+                "feederSlotMatchingChecks": 5,
+                "feederCandidatesEvaluated": 5,
+                "membershipFallbackEntered": 0,
+                "patternCandidatesExplored": 1,
+                "transportContiguousStates": 0,
+                "bundleNogoodDeduplications": 0,
+                "residualMatchingFullBuilds": 3,
+                "timelineCandidatesExplored": 1,
+                "bundleHardValidationRejects": 0,
+                "residualMatchingInvocations": 8,
+                "bundleNogoodRepairsSucceeded": 0,
+                "feederSlotMatchingEdgeChecks": 5,
+                "standaloneForwardStartChecks": 2,
+                "residualMatchingEdgeCacheHits": 0,
+                "bundleMatchingMaterializations": 0,
+                "residualMatchingPositionChecks": 3,
+                "participantMealZeroDomainPrunes": 0,
+                "residualMatchingEdgeCacheMisses": 0,
+                "mainRunEquivalentOrdersCollapsed": 0,
+                "residualMatchingBranchesExplored": 6,
+                "residualMatchingAugmentTraversals": 3,
+                "standaloneForwardWitnessCacheHits": 0,
+                "feederSlotMatchingBranchesExplored": 14,
+                "futureRoundWitnessBranchesConsumed": 0,
+                "residualMatchingIncrementalUpdates": 5,
+                "feederSlotMatchingAugmentTraversals": 5,
+                "futureRoundWitnessCompleteMatchings": 0,
+                "futureRoundWitnessSearchInvocations": 0,
+                "standaloneForwardWitnessCacheMisses": 2,
+                "futureRoundWitnessPrerequisiteChecks": 0,
+                "participantMealExactMaterializations": 1,
+                "futureRoundWitnessStructuralCandidates": 0,
+                "participantMealFutureFeasibilityChecks": 1,
+                "participantMealAnalyticCollectivePrunes": 0,
+                "participantMealFutureInfeasibleBranches": 0,
+                "futureRoundWitnessParticipantFutureChecks": 0,
+                "participantMealAffectedObligationsChecked": 0
+              }
+            }
+          ]
+        }
+      ],
+      "remoteWrites": 0
+    },
+    "remoteWrites": 0
+  },
+  {
+    "name": "transport",
+    "status": "PASS",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities",
+      "transport configuration rejects forbidden roles, stale CAS, unknown identities and incomplete contracts without mutation",
+      "UI-configured Main transportation reaches proposal, Draft, validation and Stage without intervention",
+      "real protected Stage continuation captured without changing accepted work or Draft",
+      "UI-configured standalone transportation reaches 9/9 and accepted Stage",
+      "first daily transport snapshot survives changes to general transport and profile"
+    ],
+    "journey": {
+      "diagnosticOnly": false,
+      "intervention": null,
+      "remoteWrites": 0,
+      "days": [
+        {
+          "planId": 1,
+          "obligations": 8,
+          "completed": 8,
+          "stages": 1,
+          "durationMs": 2697,
+          "problemFingerprint": "940a27be73e0d60fc1d9ba0eb848a8526eb8536734aa9b541e5a51d2683538ab",
+          "combinedAuthorities": {
+            "plannerProfileRevision": 1,
+            "itinerantCompositionVersion": 1,
+            "itinerantUnitCount": 0
+          },
+          "branches": {
+            "coreBranches": 20,
+            "branchesExplored": 29,
+            "coreMaximumDepth": 2,
+            "branchBudgetLimit": 10000,
+            "conflictBackjumps": 0,
+            "standaloneBranches": 9,
+            "feederOrderBranches": 0,
+            "suffixDepthsSkipped": 0,
+            "architecturesChecked": 1,
+            "bundleNogoodBranches": 0,
+            "bundleNogoodsCreated": 0,
+            "bundleMatchingRepairs": 0,
+            "mainRunWitnessRepairs": 0,
+            "bundleCertifiedRepairs": 0,
+            "bundleMatchingAttempts": 0,
+            "mainRunWitnessAttempts": 1,
+            "coreLeafTransportPrunes": 0,
+            "deepestCoreDepthReached": 2,
+            "mainCandidatesEvaluated": 0,
+            "standaloneForwardChecks": 1,
+            "feederSlotMatchingChecks": 1,
+            "feederCandidatesEvaluated": 1,
+            "membershipFallbackEntered": 0,
+            "patternCandidatesExplored": 1,
+            "transportContiguousStates": 7,
+            "bundleNogoodDeduplications": 0,
+            "residualMatchingFullBuilds": 2,
+            "timelineCandidatesExplored": 1,
+            "bundleHardValidationRejects": 0,
+            "residualMatchingInvocations": 3,
+            "bundleNogoodRepairsSucceeded": 0,
+            "feederSlotMatchingEdgeChecks": 4,
+            "standaloneForwardStartChecks": 0,
+            "residualMatchingEdgeCacheHits": 0,
+            "bundleMatchingMaterializations": 0,
+            "residualMatchingPositionChecks": 4,
+            "participantMealZeroDomainPrunes": 0,
+            "residualMatchingEdgeCacheMisses": 0,
+            "mainRunEquivalentOrdersCollapsed": 1,
+            "residualMatchingBranchesExplored": 7,
+            "residualMatchingAugmentTraversals": 3,
+            "standaloneForwardWitnessCacheHits": 0,
+            "feederSlotMatchingBranchesExplored": 7,
+            "futureRoundWitnessBranchesConsumed": 0,
+            "residualMatchingIncrementalUpdates": 1,
+            "feederSlotMatchingAugmentTraversals": 3,
+            "futureRoundWitnessCompleteMatchings": 0,
+            "futureRoundWitnessSearchInvocations": 0,
+            "standaloneForwardWitnessCacheMisses": 0,
+            "futureRoundWitnessPrerequisiteChecks": 0,
+            "participantMealExactMaterializations": 1,
+            "futureRoundWitnessStructuralCandidates": 0,
+            "participantMealFutureFeasibilityChecks": 1,
+            "participantMealAnalyticCollectivePrunes": 0,
+            "participantMealFutureInfeasibleBranches": 0,
+            "futureRoundWitnessParticipantFutureChecks": 0,
+            "participantMealAffectedObligationsChecked": 0
+          },
+          "hardCount": 0,
+          "requiredCount": 0
+        },
+        {
+          "planId": 2,
+          "obligations": 9,
+          "completed": 9,
+          "stages": 1,
+          "durationMs": 2776,
+          "problemFingerprint": "03a2684400f3c0c3ad112a32539586cec5e26ed12134a1087d300edbc1feb8be",
+          "combinedAuthorities": {
+            "plannerProfileRevision": 2,
+            "itinerantCompositionVersion": 1,
+            "itinerantUnitCount": 0
+          },
+          "branches": {
+            "coreBranches": 0,
+            "branchesExplored": 31,
+            "coreMaximumDepth": 0,
+            "branchBudgetLimit": 10000,
+            "conflictBackjumps": 0,
+            "standaloneBranches": 31,
+            "feederOrderBranches": 0,
+            "suffixDepthsSkipped": 0,
+            "architecturesChecked": 0,
+            "bundleNogoodBranches": 0,
+            "bundleNogoodsCreated": 0,
+            "bundleMatchingRepairs": 0,
+            "mainRunWitnessRepairs": 0,
+            "bundleCertifiedRepairs": 0,
+            "bundleMatchingAttempts": 0,
+            "mainRunWitnessAttempts": 0,
+            "coreLeafTransportPrunes": 0,
+            "deepestCoreDepthReached": 0,
+            "mainCandidatesEvaluated": 0,
+            "standaloneForwardChecks": 0,
+            "feederSlotMatchingChecks": 0,
+            "feederCandidatesEvaluated": 0,
+            "membershipFallbackEntered": 0,
+            "patternCandidatesExplored": 0,
+            "transportContiguousStates": 9,
+            "bundleNogoodDeduplications": 0,
+            "residualMatchingFullBuilds": 0,
+            "timelineCandidatesExplored": 0,
+            "bundleHardValidationRejects": 0,
+            "residualMatchingInvocations": 0,
+            "bundleNogoodRepairsSucceeded": 0,
+            "feederSlotMatchingEdgeChecks": 0,
+            "standaloneForwardStartChecks": 0,
+            "residualMatchingEdgeCacheHits": 0,
+            "bundleMatchingMaterializations": 0,
+            "residualMatchingPositionChecks": 0,
+            "participantMealZeroDomainPrunes": 0,
+            "residualMatchingEdgeCacheMisses": 0,
+            "mainRunEquivalentOrdersCollapsed": 0,
+            "residualMatchingBranchesExplored": 0,
+            "residualMatchingAugmentTraversals": 0,
+            "standaloneForwardWitnessCacheHits": 0,
+            "feederSlotMatchingBranchesExplored": 0,
+            "futureRoundWitnessBranchesConsumed": 0,
+            "residualMatchingIncrementalUpdates": 0,
+            "feederSlotMatchingAugmentTraversals": 0,
+            "futureRoundWitnessCompleteMatchings": 0,
+            "futureRoundWitnessSearchInvocations": 0,
+            "standaloneForwardWitnessCacheMisses": 0,
+            "futureRoundWitnessPrerequisiteChecks": 0,
+            "participantMealExactMaterializations": 1,
+            "futureRoundWitnessStructuralCandidates": 0,
+            "participantMealFutureFeasibilityChecks": 1,
+            "participantMealAnalyticCollectivePrunes": 0,
+            "participantMealFutureInfeasibleBranches": 0,
+            "futureRoundWitnessParticipantFutureChecks": 0,
+            "participantMealAffectedObligationsChecked": 0
+          },
+          "hardCount": 0,
+          "requiredCount": 0
+        }
+      ],
+      "checks": [
+        "transport configuration rejects forbidden roles, stale CAS, unknown identities and incomplete contracts without mutation",
+        "UI-configured Main transportation reaches proposal, Draft, validation and Stage without intervention",
+        "real protected Stage continuation captured without changing accepted work or Draft",
+        "UI-configured standalone transportation reaches 9/9 and accepted Stage",
+        "first daily transport snapshot survives changes to general transport and profile"
+      ],
+      "startedAt": "2026-10-27T12:32:03.257Z",
+      "protectedContinuation": {
+        "outcome": "PROPOSAL",
+        "reasonCodes": [
+          "ASSISTED_SCOPE_COMPLETE"
+        ],
+        "basePreserved": true,
+        "acceptedOrdinal": 3,
+        "completed": 8
+      },
+      "status": "PASS"
+    },
+    "remoteWrites": 0
+  },
+  {
+    "name": "meals",
+    "status": "PASS",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities",
+      "19 SQL adversaries reject forged meal-only results with matching hashes and Drafts",
+      "UI day A: 6/6, 2 native accepted Stages, pending execution and deterministic replay",
+      "UI day B: 12/12, 3 native accepted Stages, pending execution and deterministic replay"
+    ],
+    "journey": {
+      "status": "PASS",
+      "days": [
+        {
+          "label": "A",
+          "planId": 1,
+          "completed": 6,
+          "mealTemplateId": 3,
+          "scenario": {
+            "label": "A",
+            "participants": 2,
+            "duration": 20,
+            "capacity": 1,
+            "end": "13:00",
+            "ordinary": 2,
+            "date": "2026-12-01"
+          },
+          "stages": [
+            {
+              "ordinal": 1,
+              "runId": 1,
+              "scope": [
+                3,
+                6
+              ],
+              "fingerprint": "26c3119d4d34a2113c46714114f9353fa7e612a51963d31898c6270f8a7f85d4",
+              "engineFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+              "branches": {
+                "coreBranches": 0,
+                "branchesExplored": 3,
+                "coreMaximumDepth": 0,
+                "branchBudgetLimit": 10000,
+                "conflictBackjumps": 0,
+                "standaloneBranches": 3,
+                "feederOrderBranches": 0,
+                "suffixDepthsSkipped": 0,
+                "architecturesChecked": 0,
+                "bundleNogoodBranches": 0,
+                "bundleNogoodsCreated": 0,
+                "bundleMatchingRepairs": 0,
+                "mainRunWitnessRepairs": 0,
+                "bundleCertifiedRepairs": 0,
+                "bundleMatchingAttempts": 0,
+                "mainRunWitnessAttempts": 0,
+                "coreLeafTransportPrunes": 0,
+                "deepestCoreDepthReached": 0,
+                "mainCandidatesEvaluated": 0,
+                "standaloneForwardChecks": 0,
+                "feederSlotMatchingChecks": 0,
+                "feederCandidatesEvaluated": 0,
+                "membershipFallbackEntered": 0,
+                "patternCandidatesExplored": 0,
+                "transportContiguousStates": 0,
+                "bundleNogoodDeduplications": 0,
+                "residualMatchingFullBuilds": 0,
+                "timelineCandidatesExplored": 0,
+                "bundleHardValidationRejects": 0,
+                "residualMatchingInvocations": 0,
+                "bundleNogoodRepairsSucceeded": 0,
+                "feederSlotMatchingEdgeChecks": 0,
+                "standaloneForwardStartChecks": 0,
+                "residualMatchingEdgeCacheHits": 0,
+                "bundleMatchingMaterializations": 0,
+                "residualMatchingPositionChecks": 0,
+                "participantMealZeroDomainPrunes": 0,
+                "residualMatchingEdgeCacheMisses": 0,
+                "mainRunEquivalentOrdersCollapsed": 0,
+                "residualMatchingBranchesExplored": 0,
+                "residualMatchingAugmentTraversals": 0,
+                "standaloneForwardWitnessCacheHits": 0,
+                "feederSlotMatchingBranchesExplored": 0,
+                "futureRoundWitnessBranchesConsumed": 0,
+                "residualMatchingIncrementalUpdates": 0,
+                "feederSlotMatchingAugmentTraversals": 0,
+                "futureRoundWitnessCompleteMatchings": 0,
+                "futureRoundWitnessSearchInvocations": 0,
+                "standaloneForwardWitnessCacheMisses": 0,
+                "futureRoundWitnessPrerequisiteChecks": 0,
+                "participantMealExactMaterializations": 1,
+                "futureRoundWitnessStructuralCandidates": 0,
+                "participantMealFutureFeasibilityChecks": 1,
+                "participantMealAnalyticCollectivePrunes": 0,
+                "participantMealFutureInfeasibleBranches": 0,
+                "futureRoundWitnessParticipantFutureChecks": 0,
+                "participantMealAffectedObligationsChecked": 0
+              },
+              "elapsedMs": 3105.2477969999964,
+              "globalMealGate": "PASS",
+              "hardCount": 0,
+              "requiredCount": 0,
+              "deterministic": true
+            },
+            {
+              "ordinal": 2,
+              "runId": 3,
+              "scope": [
+                1,
+                2,
+                4,
+                5
+              ],
+              "fingerprint": "acee08344f551163bcefcb080bfa4453ced456bddb4be015fb1c66ec2b9e88aa",
+              "engineFingerprint": "a026085a1a7f6da12288dd9eb2518ff42843e3d091d93fcb2ab91af6c87e0a65",
+              "branches": {
+                "coreBranches": 0,
+                "branchesExplored": 11,
+                "coreMaximumDepth": 0,
+                "branchBudgetLimit": 10000,
+                "conflictBackjumps": 0,
+                "standaloneBranches": 11,
+                "feederOrderBranches": 0,
+                "suffixDepthsSkipped": 0,
+                "architecturesChecked": 0,
+                "bundleNogoodBranches": 0,
+                "bundleNogoodsCreated": 0,
+                "bundleMatchingRepairs": 0,
+                "mainRunWitnessRepairs": 0,
+                "bundleCertifiedRepairs": 0,
+                "bundleMatchingAttempts": 0,
+                "mainRunWitnessAttempts": 0,
+                "coreLeafTransportPrunes": 0,
+                "deepestCoreDepthReached": 0,
+                "mainCandidatesEvaluated": 0,
+                "standaloneForwardChecks": 0,
+                "feederSlotMatchingChecks": 0,
+                "feederCandidatesEvaluated": 0,
+                "membershipFallbackEntered": 0,
+                "patternCandidatesExplored": 0,
+                "transportContiguousStates": 0,
+                "bundleNogoodDeduplications": 0,
+                "residualMatchingFullBuilds": 0,
+                "timelineCandidatesExplored": 0,
+                "bundleHardValidationRejects": 0,
+                "residualMatchingInvocations": 0,
+                "bundleNogoodRepairsSucceeded": 0,
+                "feederSlotMatchingEdgeChecks": 0,
+                "standaloneForwardStartChecks": 0,
+                "residualMatchingEdgeCacheHits": 0,
+                "bundleMatchingMaterializations": 0,
+                "residualMatchingPositionChecks": 0,
+                "participantMealZeroDomainPrunes": 0,
+                "residualMatchingEdgeCacheMisses": 0,
+                "mainRunEquivalentOrdersCollapsed": 0,
+                "residualMatchingBranchesExplored": 0,
+                "residualMatchingAugmentTraversals": 0,
+                "standaloneForwardWitnessCacheHits": 0,
+                "feederSlotMatchingBranchesExplored": 0,
+                "futureRoundWitnessBranchesConsumed": 0,
+                "residualMatchingIncrementalUpdates": 0,
+                "feederSlotMatchingAugmentTraversals": 0,
+                "futureRoundWitnessCompleteMatchings": 0,
+                "futureRoundWitnessSearchInvocations": 0,
+                "standaloneForwardWitnessCacheMisses": 0,
+                "futureRoundWitnessPrerequisiteChecks": 0,
+                "participantMealExactMaterializations": 1,
+                "futureRoundWitnessStructuralCandidates": 0,
+                "participantMealFutureFeasibilityChecks": 5,
+                "participantMealAnalyticCollectivePrunes": 0,
+                "participantMealFutureInfeasibleBranches": 0,
+                "futureRoundWitnessParticipantFutureChecks": 0,
+                "participantMealAffectedObligationsChecked": 4
+              },
+              "elapsedMs": 2522.605044000011,
+              "globalMealGate": "PASS",
+              "hardCount": 0,
+              "requiredCount": 0,
+              "deterministic": true
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "planId": 2,
+          "completed": 12,
+          "mealTemplateId": 7,
+          "scenario": {
+            "label": "B",
+            "participants": 3,
+            "duration": 15,
+            "capacity": 2,
+            "end": "12:30",
+            "ordinary": 3,
+            "date": "2026-12-02"
+          },
+          "stages": [
+            {
+              "ordinal": 1,
+              "runId": 5,
+              "scope": [
+                7,
+                10,
+                11,
+                14,
+                15,
+                18
+              ],
+              "fingerprint": "af26cd7f961bc51c197cb98932cd75c887550ae8c8a4ea31263d80b2b2880c77",
+              "engineFingerprint": "889604585b6f759a6afbf4ca7ecb96396fe942a1e03103c9f87880a32b993093",
+              "branches": {
+                "coreBranches": 0,
+                "branchesExplored": 25,
+                "coreMaximumDepth": 0,
+                "branchBudgetLimit": 10000,
+                "conflictBackjumps": 0,
+                "standaloneBranches": 25,
+                "feederOrderBranches": 0,
+                "suffixDepthsSkipped": 0,
+                "architecturesChecked": 0,
+                "bundleNogoodBranches": 0,
+                "bundleNogoodsCreated": 0,
+                "bundleMatchingRepairs": 0,
+                "mainRunWitnessRepairs": 0,
+                "bundleCertifiedRepairs": 0,
+                "bundleMatchingAttempts": 0,
+                "mainRunWitnessAttempts": 0,
+                "coreLeafTransportPrunes": 0,
+                "deepestCoreDepthReached": 0,
+                "mainCandidatesEvaluated": 0,
+                "standaloneForwardChecks": 0,
+                "feederSlotMatchingChecks": 0,
+                "feederCandidatesEvaluated": 0,
+                "membershipFallbackEntered": 0,
+                "patternCandidatesExplored": 0,
+                "transportContiguousStates": 0,
+                "bundleNogoodDeduplications": 0,
+                "residualMatchingFullBuilds": 0,
+                "timelineCandidatesExplored": 0,
+                "bundleHardValidationRejects": 0,
+                "residualMatchingInvocations": 0,
+                "bundleNogoodRepairsSucceeded": 0,
+                "feederSlotMatchingEdgeChecks": 0,
+                "standaloneForwardStartChecks": 0,
+                "residualMatchingEdgeCacheHits": 0,
+                "bundleMatchingMaterializations": 0,
+                "residualMatchingPositionChecks": 0,
+                "participantMealZeroDomainPrunes": 0,
+                "residualMatchingEdgeCacheMisses": 0,
+                "mainRunEquivalentOrdersCollapsed": 0,
+                "residualMatchingBranchesExplored": 0,
+                "residualMatchingAugmentTraversals": 0,
+                "standaloneForwardWitnessCacheHits": 0,
+                "feederSlotMatchingBranchesExplored": 0,
+                "futureRoundWitnessBranchesConsumed": 0,
+                "residualMatchingIncrementalUpdates": 0,
+                "feederSlotMatchingAugmentTraversals": 0,
+                "futureRoundWitnessCompleteMatchings": 0,
+                "futureRoundWitnessSearchInvocations": 0,
+                "standaloneForwardWitnessCacheMisses": 0,
+                "futureRoundWitnessPrerequisiteChecks": 0,
+                "participantMealExactMaterializations": 1,
+                "futureRoundWitnessStructuralCandidates": 0,
+                "participantMealFutureFeasibilityChecks": 4,
+                "participantMealAnalyticCollectivePrunes": 0,
+                "participantMealFutureInfeasibleBranches": 0,
+                "futureRoundWitnessParticipantFutureChecks": 0,
+                "participantMealAffectedObligationsChecked": 3
+              },
+              "elapsedMs": 2806.9856490000093,
+              "globalMealGate": "PASS",
+              "hardCount": 0,
+              "requiredCount": 0,
+              "deterministic": true
+            },
+            {
+              "ordinal": 2,
+              "runId": 7,
+              "scope": [
+                8,
+                12,
+                16
+              ],
+              "fingerprint": "1dbdcc537b69b583326806822543ff45df682efe74725c8ab4dffb0fd232b904",
+              "engineFingerprint": "e4c9635e2110f8150b1d6ddef2897dfada49c37a5683dd305311015d29943f2e",
+              "branches": {
+                "coreBranches": 0,
+                "branchesExplored": 22,
+                "coreMaximumDepth": 0,
+                "branchBudgetLimit": 10000,
+                "conflictBackjumps": 0,
+                "standaloneBranches": 22,
+                "feederOrderBranches": 0,
+                "suffixDepthsSkipped": 0,
+                "architecturesChecked": 0,
+                "bundleNogoodBranches": 0,
+                "bundleNogoodsCreated": 0,
+                "bundleMatchingRepairs": 0,
+                "mainRunWitnessRepairs": 0,
+                "bundleCertifiedRepairs": 0,
+                "bundleMatchingAttempts": 0,
+                "mainRunWitnessAttempts": 0,
+                "coreLeafTransportPrunes": 0,
+                "deepestCoreDepthReached": 0,
+                "mainCandidatesEvaluated": 0,
+                "standaloneForwardChecks": 0,
+                "feederSlotMatchingChecks": 0,
+                "feederCandidatesEvaluated": 0,
+                "membershipFallbackEntered": 0,
+                "patternCandidatesExplored": 0,
+                "transportContiguousStates": 0,
+                "bundleNogoodDeduplications": 0,
+                "residualMatchingFullBuilds": 0,
+                "timelineCandidatesExplored": 0,
+                "bundleHardValidationRejects": 0,
+                "residualMatchingInvocations": 0,
+                "bundleNogoodRepairsSucceeded": 0,
+                "feederSlotMatchingEdgeChecks": 0,
+                "standaloneForwardStartChecks": 0,
+                "residualMatchingEdgeCacheHits": 0,
+                "bundleMatchingMaterializations": 0,
+                "residualMatchingPositionChecks": 0,
+                "participantMealZeroDomainPrunes": 0,
+                "residualMatchingEdgeCacheMisses": 0,
+                "mainRunEquivalentOrdersCollapsed": 0,
+                "residualMatchingBranchesExplored": 0,
+                "residualMatchingAugmentTraversals": 0,
+                "standaloneForwardWitnessCacheHits": 0,
+                "feederSlotMatchingBranchesExplored": 0,
+                "futureRoundWitnessBranchesConsumed": 0,
+                "residualMatchingIncrementalUpdates": 0,
+                "feederSlotMatchingAugmentTraversals": 0,
+                "futureRoundWitnessCompleteMatchings": 0,
+                "futureRoundWitnessSearchInvocations": 0,
+                "standaloneForwardWitnessCacheMisses": 0,
+                "futureRoundWitnessPrerequisiteChecks": 0,
+                "participantMealExactMaterializations": 1,
+                "futureRoundWitnessStructuralCandidates": 0,
+                "participantMealFutureFeasibilityChecks": 4,
+                "participantMealAnalyticCollectivePrunes": 0,
+                "participantMealFutureInfeasibleBranches": 0,
+                "futureRoundWitnessParticipantFutureChecks": 0,
+                "participantMealAffectedObligationsChecked": 3
+              },
+              "elapsedMs": 3381.245968000003,
+              "globalMealGate": "PASS",
+              "hardCount": 0,
+              "requiredCount": 0,
+              "deterministic": true
+            },
+            {
+              "ordinal": 3,
+              "runId": 9,
+              "scope": [
+                9,
+                13,
+                17
+              ],
+              "fingerprint": "053a2b04d10ebe801aee706bdde354c2855108b7cc1baedaac22d56926f75529",
+              "engineFingerprint": "1a4b79fc0c68c537c0353bc4b0c1985262662765a19d16493f0e90e8372d8ce5",
+              "branches": {
+                "coreBranches": 0,
+                "branchesExplored": 9,
+                "coreMaximumDepth": 0,
+                "branchBudgetLimit": 10000,
+                "conflictBackjumps": 0,
+                "standaloneBranches": 9,
+                "feederOrderBranches": 0,
+                "suffixDepthsSkipped": 0,
+                "architecturesChecked": 0,
+                "bundleNogoodBranches": 0,
+                "bundleNogoodsCreated": 0,
+                "bundleMatchingRepairs": 0,
+                "mainRunWitnessRepairs": 0,
+                "bundleCertifiedRepairs": 0,
+                "bundleMatchingAttempts": 0,
+                "mainRunWitnessAttempts": 0,
+                "coreLeafTransportPrunes": 0,
+                "deepestCoreDepthReached": 0,
+                "mainCandidatesEvaluated": 0,
+                "standaloneForwardChecks": 0,
+                "feederSlotMatchingChecks": 0,
+                "feederCandidatesEvaluated": 0,
+                "membershipFallbackEntered": 0,
+                "patternCandidatesExplored": 0,
+                "transportContiguousStates": 0,
+                "bundleNogoodDeduplications": 0,
+                "residualMatchingFullBuilds": 0,
+                "timelineCandidatesExplored": 0,
+                "bundleHardValidationRejects": 0,
+                "residualMatchingInvocations": 0,
+                "bundleNogoodRepairsSucceeded": 0,
+                "feederSlotMatchingEdgeChecks": 0,
+                "standaloneForwardStartChecks": 0,
+                "residualMatchingEdgeCacheHits": 0,
+                "bundleMatchingMaterializations": 0,
+                "residualMatchingPositionChecks": 0,
+                "participantMealZeroDomainPrunes": 2,
+                "residualMatchingEdgeCacheMisses": 0,
+                "mainRunEquivalentOrdersCollapsed": 0,
+                "residualMatchingBranchesExplored": 0,
+                "residualMatchingAugmentTraversals": 0,
+                "standaloneForwardWitnessCacheHits": 0,
+                "feederSlotMatchingBranchesExplored": 0,
+                "futureRoundWitnessBranchesConsumed": 0,
+                "residualMatchingIncrementalUpdates": 0,
+                "feederSlotMatchingAugmentTraversals": 0,
+                "futureRoundWitnessCompleteMatchings": 0,
+                "futureRoundWitnessSearchInvocations": 0,
+                "standaloneForwardWitnessCacheMisses": 0,
+                "futureRoundWitnessPrerequisiteChecks": 0,
+                "participantMealExactMaterializations": 1,
+                "futureRoundWitnessStructuralCandidates": 0,
+                "participantMealFutureFeasibilityChecks": 6,
+                "participantMealAnalyticCollectivePrunes": 0,
+                "participantMealFutureInfeasibleBranches": 2,
+                "futureRoundWitnessParticipantFutureChecks": 0,
+                "participantMealAffectedObligationsChecked": 5
+              },
+              "elapsedMs": 2908.8499290000036,
+              "globalMealGate": "PASS",
+              "hardCount": 0,
+              "requiredCount": 0,
+              "deterministic": true
+            }
+          ]
+        }
+      ],
+      "remoteWrites": 0
+    },
+    "remoteWrites": 0
+  },
+  {
+    "name": "rounds",
+    "status": "PASS",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities",
+      "A: UI round authority \u2192 genuine synchronized S1 \u2192 protected complete S2 \u2192 rollback/redo",
+      "B: UI round authority \u2192 genuine synchronized S1 \u2192 protected complete S2 \u2192 rollback/redo"
+    ],
+    "journey": {
+      "days": [
+        {
+          "label": "A",
+          "planId": 1,
+          "spaceIds": [
+            1,
+            2
+          ],
+          "taskIds": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "duration": 20,
+          "stage1": 2,
+          "stage2": 3,
+          "fingerprint": "9dd1c104028fbd97b73d1befc97342f19eab5a2bf4fae0ea5d90b88ff27cfb01",
+          "configFingerprint": "8ec94b742bef7dcc23d4bd82657a761697355468d2dd7b2616ef9753f41de591"
+        },
+        {
+          "label": "B",
+          "planId": 2,
+          "spaceIds": [
+            3,
+            4
+          ],
+          "taskIds": [
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "duration": 30,
+          "stage1": 8,
+          "stage2": 9,
+          "fingerprint": "68dc8dd71ceb7f8727baafdc0f93b7b48dcefd05aa7cb31346d3720e0a85c23e",
+          "configFingerprint": "abc9ebf76f4d83c0fbd4bedcd1e44ff4055ed773d568a3fa5d35bb7a15e42fee"
+        }
+      ],
+      "remoteWrites": 0,
+      "synchronizedStagesAccepted": 6
+    },
+    "remoteWrites": 0
+  },
+  {
+    "name": "required",
+    "status": "PASS",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities",
+      "A: UI REQUIRED rule \u2192 contiguous chain S1 \u2192 independent S2 \u2192 4/4",
+      "B: valid rule, physically empty REQUIRED domain, no Stage",
+      "C: UI REQUIRED rule \u2192 contiguous chain S1 \u2192 independent S2 \u2192 4/4",
+      "D: independent S1 with context-only REQUIRED witness \u2192 chain S2 \u2192 4/4"
+    ],
+    "journey": {
+      "days": [
+        {
+          "label": "A",
+          "planId": 1,
+          "chainIds": [
+            2,
+            3,
+            1
+          ],
+          "kitId": 2,
+          "stageIds": [
+            2,
+            3
+          ],
+          "completed": 4
+        },
+        {
+          "label": "B",
+          "planId": 2,
+          "chainIds": [
+            6,
+            7,
+            5
+          ],
+          "kitId": 7,
+          "stageIds": [],
+          "outcome": "NO_PROPOSAL"
+        },
+        {
+          "label": "C",
+          "planId": 3,
+          "chainIds": [
+            10,
+            11,
+            9
+          ],
+          "kitId": 14,
+          "stageIds": [
+            6,
+            7
+          ],
+          "completed": 4
+        },
+        {
+          "label": "D",
+          "planId": 4,
+          "chainIds": [
+            14,
+            15,
+            13
+          ],
+          "kitId": 23,
+          "stageIds": [
+            9,
+            10
+          ],
+          "completed": 4
+        }
+      ],
+      "remoteWrites": 0
+    },
+    "remoteWrites": 0
+  },
+  {
+    "name": "additions",
+    "status": "PASS",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities",
+      "A: S1 \u2192 UI admission \u2192 S2, exact checkpoints, pending overlay, redo and archived branch",
+      "B: S1 \u2192 UI admission \u2192 S2, exact checkpoints, pending overlay, redo and archived branch"
+    ],
+    "journey": {
+      "days": [
+        {
+          "label": "A",
+          "planId": 1,
+          "sessionId": 1,
+          "addedTaskId": 4,
+          "s1Id": 2,
+          "s2Id": 3,
+          "branchId": 4
+        },
+        {
+          "label": "B",
+          "planId": 2,
+          "sessionId": 2,
+          "addedTaskId": 8,
+          "s1Id": 6,
+          "s2Id": 7,
+          "branchId": 8
+        }
+      ],
+      "acceptedStages": 6
+    },
+    "remoteWrites": 0
+  },
+  {
+    "name": "scopes",
+    "status": "PASS",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities",
+      "A: UI declaration and proposal/Draft/validate/Stage; SQL, physical controls, rollback and redo",
+      "B: UI declaration and proposal/Draft/validate/Stage; SQL, physical controls, rollback and redo"
+    ],
+    "journey": {
+      "days": [
+        {
+          "label": "A",
+          "planId": 1,
+          "taskIds": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "structure": {
+            "contractVersion": 1,
+            "policies": [
+              {
+                "taskId": 1,
+                "agendaScope": "ITINERANT_UNIT",
+                "resourceInheritance": "OPERATION_ONLY",
+                "blocksSpace": true,
+                "itinerantUnitId": 1,
+                "declaredResourceIds": [
+                  4
+                ]
+              }
+            ]
+          },
+          "stages": [
+            {
+              "id": 2,
+              "fingerprint": "405c4a8010ac1ae89a554185bbee7c258ad9d00ec9e2588a2240372cd7e5025e"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "planId": 2,
+          "taskIds": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "structure": {
+            "contractVersion": 1,
+            "policies": [
+              {
+                "taskId": 5,
+                "agendaScope": "ITINERANT_UNIT",
+                "resourceInheritance": "OPERATION_ONLY",
+                "blocksSpace": true,
+                "itinerantUnitId": 3,
+                "declaredResourceIds": [
+                  12
+                ]
+              },
+              {
+                "taskId": 8,
+                "agendaScope": "ITINERANT_UNIT",
+                "resourceInheritance": "OPERATION_ONLY",
+                "blocksSpace": true,
+                "itinerantUnitId": null,
+                "declaredResourceIds": []
+              }
+            ]
+          },
+          "stages": [
+            {
+              "id": 4,
+              "fingerprint": "40c36ba2d83e8792c59c11082da272a153c1e3477629ffda59d1ba71a3721d01"
+            },
+            {
+              "id": 5,
+              "fingerprint": "a970075a7cbaa81409a51fbc7b1870086083e8f62a70bf17ad55b3f090184d8c"
+            }
+          ]
+        }
+      ],
+      "remoteWrites": 0
+    },
+    "remoteWrites": 0
+  },
+  {
+    "name": "composition",
+    "status": "PASS",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities",
+      "A: composed native authorities through Stage",
+      "B: composed native authorities through Stage"
+    ],
+    "journey": {
+      "days": [
+        {
+          "planId": 1,
+          "policies": [
+            {
+              "id": "A-anchored-0",
+              "anchorTaskId": 2,
+              "beforeTaskIds": [
+                3
+              ],
+              "afterTaskIds": [
+                4
+              ],
+              "eligibleItinerantUnitIds": [
+                1,
+                2
+              ],
+              "adjacency": "REQUIRED",
+              "internalTransition": "INCLUDED",
+              "resourceContinuity": "REQUIRED"
+            },
+            {
+              "id": "A-anchored-1",
+              "anchorTaskId": 8,
+              "beforeTaskIds": [
+                9
+              ],
+              "afterTaskIds": [
+                10
+              ],
+              "eligibleItinerantUnitIds": [
+                1,
+                2
+              ],
+              "adjacency": "REQUIRED",
+              "internalTransition": "INCLUDED",
+              "resourceContinuity": "REQUIRED"
+            },
+            {
+              "id": "A-anchored-2",
+              "anchorTaskId": 14,
+              "beforeTaskIds": [
+                15
+              ],
+              "afterTaskIds": [
+                16
+              ],
+              "eligibleItinerantUnitIds": [
+                1,
+                2
+              ],
+              "adjacency": "REQUIRED",
+              "internalTransition": "INCLUDED",
+              "resourceContinuity": "REQUIRED"
+            }
+          ],
+          "dailyUnits": [
+            1,
+            2
+          ],
+          "stages": [
+            {
+              "id": 2,
+              "fingerprint": "43bc2cde24f337f0d2439ae4cd634e038189f3cef758adddbf396148c00345f9"
+            }
+          ],
+          "remoteWrites": 0
+        },
+        {
+          "planId": 2,
+          "policies": [
+            {
+              "id": "B-anchored-0",
+              "anchorTaskId": 21,
+              "beforeTaskIds": [
+                22
+              ],
+              "afterTaskIds": [
+                23
+              ],
+              "eligibleItinerantUnitIds": [
+                5,
+                6
+              ],
+              "adjacency": "REQUIRED",
+              "internalTransition": "INCLUDED",
+              "resourceContinuity": "REQUIRED"
+            },
+            {
+              "id": "B-anchored-1",
+              "anchorTaskId": 27,
+              "beforeTaskIds": [
+                28
+              ],
+              "afterTaskIds": [
+                29
+              ],
+              "eligibleItinerantUnitIds": [
+                5,
+                6
+              ],
+              "adjacency": "REQUIRED",
+              "internalTransition": "INCLUDED",
+              "resourceContinuity": "REQUIRED"
+            },
+            {
+              "id": "B-anchored-2",
+              "anchorTaskId": 33,
+              "beforeTaskIds": [
+                34
+              ],
+              "afterTaskIds": [
+                35
+              ],
+              "eligibleItinerantUnitIds": [
+                5,
+                6
+              ],
+              "adjacency": "REQUIRED",
+              "internalTransition": "INCLUDED",
+              "resourceContinuity": "REQUIRED"
+            }
+          ],
+          "dailyUnits": [
+            5,
+            6
+          ],
+          "stages": [
+            {
+              "id": 4,
+              "fingerprint": "863093f93dc78f0b558f0fcc737c0cd5b54d09a81ef4813765009564a25ca3ef"
+            },
+            {
+              "id": 5,
+              "fingerprint": "6f7a72b525be3d1876e3a6fa4045bb69440cc2a314a793eaf1e835525eb83a1b"
+            }
+          ],
+          "remoteWrites": 0
+        }
+      ],
+      "remoteWrites": 0
+    },
+    "remoteWrites": 0
+  }
+]

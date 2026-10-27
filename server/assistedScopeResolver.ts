@@ -50,6 +50,11 @@ export function resolveAssistedScope(input: EngineInput, adapter: EngineInputAda
     }
     productIds=[...ids].sort((a,b)=>a-b);
   }
+  if(input.dailyJointGroupsVersion===1){
+   const ids=new Set(productIds),groups=new Set(input.tasks.filter(t=>ids.has(t.id)).map(t=>t.jointGroupId).filter(Boolean));
+   for(const task of input.tasks)if(task.jointGroupId&&groups.has(task.jointGroupId)&&eligible.has(task.id))ids.add(task.id);
+   productIds=[...ids].sort((a,b)=>a-b);
+  }
   const canonicalByProduct = new Map(adapter.identityMap.filter(i => i.namespace === "task").map(i => [Number(i.sourceId), i.canonicalId]));
   const canonicalIds = productIds.map(id => canonicalByProduct.get(id));
   if (canonicalIds.some(id => !id)) throw new ScopeResolutionError("INVALID_SCOPE");

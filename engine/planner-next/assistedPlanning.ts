@@ -336,6 +336,15 @@ export function buildAssistedProblem(
   }
   const tasksById = new Map(problem.tasks.map((task) => [task.id, task]));
   const mealsBySourceId = new Map((problem.participantMeals??[]).map(meal=>[meal.sourceTaskId,meal]));
+  if(source.nativeJointGroupsVersion===1){
+   const ids=new Set(scope.resolvedTaskIds),groups=new Set(source.tasks.filter(t=>ids.has(t.id)).map(t=>t.jointGroupId).filter(Boolean));
+   for(const task of source.tasks)if(task.jointGroupId&&groups.has(task.jointGroupId))ids.add(task.id);
+   scope=createPlanningScope(scope.selector,scope.metadata,[...ids]);
+   for(const group of new Set(source.tasks.map(t=>t.jointGroupId).filter(Boolean))){
+    const members=source.tasks.filter(t=>t.jointGroupId===group),fixed=protectedPlacements.filter(t=>members.some(m=>m.id===t.id));
+    if(fixed.length&&(fixed.length!==members.length||fixed.some(t=>t.start!==fixed[0].start||t.end!==fixed[0].end||t.spaceId!==fixed[0].spaceId)))throw new Error('JOINT_GROUP_PARTIALLY_PROTECTED');
+   }
+  }
   const scopeIds = canonicalIds(scope.resolvedTaskIds);
   if (scopeIds.some((id) => !tasksById.has(id)&&!mealsBySourceId.has(id))) throw new Error("UNKNOWN_PLANNING_SCOPE_TASK_ID");
   if (new Set(scopeIds).size !== scopeIds.length) throw new Error("DUPLICATE_PLANNING_SCOPE_TASK_ID");
@@ -619,7 +628,7 @@ export function buildAssistedProblem(
   // A Stage with nominal physical choices needs one joint witness of pending
   // hard obligations. Produce it through this same search/ledger, then retain
   // only authorized scope placements. Future selections remain ephemeral.
-  const physicalFutureIds=(source.nativeAnchoredAccompanimentsVersion===2||source.tasks.some(task=>task.nominalResourceChoice))
+  const physicalFutureIds=(source.nativeJointGroupsVersion===1||source.nativeAnchoredAccompanimentsVersion===2||source.tasks.some(task=>task.nominalResourceChoice))
     ?source.tasks.filter(task=>!included.has(task.id)&&analyticalFutureEligibleTaskIds.has(task.id)).map(task=>task.id):[];
   const producerRoots=[...new Set([...futureCoreRoots,...physicalFutureIds])];
   const collectiveCore=futureCore.length||physicalFutureIds.length?buildAssistedProblem(source,
@@ -834,7 +843,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     // the combined state retains an inherited, human-accepted HARD exception.
     requiredValid: searchHardValid,
     fingerprint: proposal ? fingerprint([...input.protectedPlacements, ...proposal]) : null,
-    ...((searchProblem.nativeAnchoredAccompanimentsVersion===2||searchProblem.tasks.some(task=>task.nominalResourceChoice))&&execution.result?.complete?{
+    ...((searchProblem.nativeJointGroupsVersion===1||searchProblem.nativeAnchoredAccompanimentsVersion===2||searchProblem.tasks.some(task=>task.nominalResourceChoice))&&execution.result?.complete?{
       nominalPhysicalFutureWitness:{tasks:structuredClone(execution.result.scheduledTasks),fingerprint:fingerprint(execution.result.scheduledTasks),
         participantMeals:structuredClone(execution.result.scheduledParticipantMeals),spaceMeals:structuredClone(execution.result.scheduledSpaceMeals),
         resourceMeals:structuredClone(execution.result.scheduledResourceMeals),itinerantUnitMeals:structuredClone(execution.result.scheduledItinerantUnitMeals),
