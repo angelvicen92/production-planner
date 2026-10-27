@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+import {createRequire} from 'node:module';
+import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
+import {resolve} from 'node:path';
+import {createHash} from 'node:crypto';
+import {inspect} from '../p0-u00w/consumer';
+import {validatePlan} from '../../../engine/planner-next/validate';
+import {geometryDelta} from './geometry-delta';
+const input=JSON.parse(readFileSync(process.argv[2],'utf8')),output=resolve(process.argv[3]);mkdirSync(output,{recursive:true});
+const before=inspect(input);assert.ok('result' in before&&!before.result.proposal);let intervention='',sourceHash='';
+const bundle=await build({stdin:{contents:`export {inspect} from './docs/evidence/p0-u00w/consumer';`,resolveDir:process.cwd(),loader:'ts'},bundle:true,write:false,platform:'node',format:'cjs',packages:'external',plugins:[{name:'native-cohort-release-memory',setup(b){b.onLoad({filter:/exactMainAndFeederCore\.ts$/},args=>{const source=readFileSync(args.path,'utf8');sourceHash=createHash('sha256').update(source).digest('hex');intervention=geometryDelta(source);return {contents:intervention,loader:'ts',resolveDir:resolve(args.path,'..')};});}}]});
+const module={exports:{} as {inspect:typeof inspect}};new Function('require','module','exports',bundle.outputFiles[0].text)(createRequire(import.meta.url),module,module.exports);
+const after=module.exports.inspect(input),partial=module.exports.inspect(input,[input.anchoredAccompaniments[0].anchorTaskId]);
+writeFileSync(output+'/before-after.json',JSON.stringify({input,before,after,partial,sourceHash,intervention,experimentIsStage:false},null,2));
+assert.ok('result' in after&&after.result.proposal);assert.equal(after.validation!.hardValid,true);assert.ok(after.operationSelections!.every(s=>s.oneCommonUnit));
+assert.ok('result' in partial&&partial.result.proposal);assert.equal(validatePlan(after.adapter.problem,[...partial.result.evidence.nominalPhysicalFutureWitness!.tasks]).hardValid,true);
+console.log('PASS same B input: release events rescue full and partial search in memory');

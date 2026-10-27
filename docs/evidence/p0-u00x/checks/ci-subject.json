@@ -1,0 +1,19 @@
+{
+  "head": "5c149544572ef898341f874b8bf0b8a3193ec418",
+  "base": "cc0b674ebaadb8c41c5438302a62eb29de684833",
+  "laterCommitScope": "Evidence only; the final PR head is verified separately by GitHub checks",
+  "files": {
+    ".github/workflows/p0-u00w-anchored-unit-choices.yml": "eb15b086d207ec5eb39f480af7d5c76bd8314971e2e56f6cc378d7582ff73d5e",
+    ".github/workflows/p0-u00x-composed-reality.yml": "cdca91985bc89938f9cd3cb0ceff030998aeb8ab4c46899272cbaccbe76beffc",
+    "client/src/components/task-operation-scopes-editor.tsx": "80ff596bc20eb32564d8712b60aa90c2278a86ded2731feb7b8d2ed205b69931",
+    "engine/planner-next/exactMainAndFeederCore.ts": "6e7532a333d86fd04c35735dc902f9c8a6e3bb7af65a341bd6c4a80934923ede",
+    "engine/planner-next/integration/nativeRealityComposition.spec.ts": "2b5c973a8b2e85bb16555e01977f7c0f89d5dcc2c548c2a7b3cb6e957a0ae1c3",
+    "script/demo/a2Preflight.ts": "3a2a28fb61e0b5b315f7079cfb495319f850523113a30a0569a9660865bd9b03",
+    "script/demo/assistedSQLContracts.ts": "f0a45943630a94b338f21a156f1f64142311d4ec5819e5949067fd80b1eec7ca",
+    "script/demo/dataApiGrantsGate.ts": "fe75dcd2b2b55d88464b3b604639661995ae3762b096597dd78415631d1bad46",
+    "server/anchoredAccompanimentStructure.ts": "6d27c7ee95520667b1044ee4dd0ca08236f999dfdbcbaa6767f5568eaaa842d6",
+    "server/dailyTaskOperationScopes.ts": "28cfe8750bd8c9acfa19a9871f0815648b19a35a5d3065cb5c3f883b05fcd15c",
+    "server/effectiveConfigurationView.ts": "0d2787908fd7c4c491508dbcd775f08c82a03fd65ec6664cd7f84ffd9440ee9a",
+    "supabase/migrations/119_composed_reality_authorities.sql": "ab7b22731a71c5f6735ab0eb43b1ef79ca13d9d766dbf1ed3be3be395ad1556c"
+  }
+}

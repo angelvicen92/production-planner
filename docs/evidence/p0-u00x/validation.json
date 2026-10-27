@@ -1,0 +1,172 @@
+{
+  "status": "PASS",
+  "base": "cc0b674ebaadb8c41c5438302a62eb29de684833",
+  "pullRequest": "https://github.com/angelvicen92/production-planner/pull/1202",
+  "remoteApplicationWrites": 0,
+  "deployment": false,
+  "merge": false,
+  "checks": {
+    "typescript": {
+      "status": "PASS",
+      "log": "checks/typescript.log"
+    },
+    "harnessTypescript": {
+      "status": "PASS",
+      "log": "checks/harness-typescript.log"
+    },
+    "migrationSequence": {
+      "status": "PASS",
+      "last": 119,
+      "log": "checks/migrations.log"
+    },
+    "productionBuild": {
+      "status": "PASS",
+      "log": "checks/build.log"
+    },
+    "productSuite": {
+      "status": "PASS",
+      "node": "v24.19.0",
+      "files": 424,
+      "tests": 3275,
+      "passed": 3275,
+      "failures": 0,
+      "skipped": 0,
+      "durationMs": 905577.941908,
+      "testConcurrency": 1,
+      "newExclusions": 0,
+      "sameExclusionsAsCI": true,
+      "exclusions": [
+        "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts",
+        "server/benchmarks/runA2Assist7Evidence.spec.ts"
+      ],
+      "log": "checks/product-suite.log.gz"
+    },
+    "focal": {
+      "status": "PASS",
+      "originalAssertionsUnchanged": true,
+      "log": "checks/focal.log"
+    },
+    "sqlCatalogContracts": {
+      "status": "PASS",
+      "log": "checks/sql-contracts.log"
+    },
+    "native": {
+      "status": "PASS",
+      "receipts": "native/receipts.json.gz",
+      "A": {
+        "tasks": 19,
+        "stages": 1
+      },
+      "B": {
+        "tasks": 20,
+        "stages": 2,
+        "S1AcceptedTasks": 4,
+        "futureWitnessTasks": 20,
+        "S1ExactInS2": true
+      },
+      "solverSelectedTimes": true,
+      "physical": "physical.json"
+    },
+    "determinism": {
+      "status": "PASS",
+      "twoDisposableDatabases": true,
+      "coldReplays": 6,
+      "receipt": "determinism.json"
+    },
+    "negativeAndAttacks": {
+      "status": "PASS",
+      "firstBarriers": "negative-barriers.json",
+      "transactionalAttacksRolledBack": true,
+      "noPostHocBarrierAttribution": true
+    },
+    "sharedUnitMembers": {
+      "status": "PASS",
+      "receipt": "shared/receipts.json.gz",
+      "infeasibleWithoutExhaustion": true,
+      "S0Unchanged": true
+    },
+    "historicalUpgrade118to119": {
+      "status": "PASS",
+      "receipt": "upgrade/upgrade119.json",
+      "allOriginalRowsExact": true,
+      "sourceReadersExact": true,
+      "policiesExact": true,
+      "historicalStages": 11,
+      "historicalTasks": 599
+    },
+    "nativeRegressions": {
+      "status": "PASS",
+      "receipts": "regressions/summary.json",
+      "modes": [
+        "anchored",
+        "choices",
+        "scopes",
+        "meals",
+        "transport",
+        "rounds",
+        "required",
+        "nominal",
+        "additions"
+      ],
+      "sourceIdentity": "Each manifest records actual executed source hashes; final-head CI repeats affected gates."
+    },
+    "a2": {
+      "status": "PASS",
+      "receipt": "a2/comparison.json",
+      "runs": 2,
+      "tasks": 266,
+      "stages": 11,
+      "branches": 27049,
+      "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+      "snapshotAndCertificatesExact": true,
+      "budgetsAndTimeoutsChanged": false
+    },
+    "ci": {
+      "status": "PASS",
+      "checkedHead": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "workflows": 23,
+      "sourceIdentity": "checks/ci-subject.json",
+      "receipt": "checks/final-ci.json",
+      "finalDocumentationHead": "Checked separately on the same PR; no product source changes."
+    }
+  },
+  "attempts": [
+    {
+      "kind": "initial PR CI",
+      "head": "bd182b16a6fb9949a290d65d64f3cac4c4ab9554",
+      "result": "3 workflows failed: U00v and Planner Engine share two malformed-anchor assertions; U00x S2 found omitted geometry and protected contract. Repaired product, unchanged assertions; isolated controls preserved."
+    },
+    {
+      "kind": "additional historical superset under Node20",
+      "result": "Stopped: historical benchmark needs Object.groupBy (Node22+)."
+    },
+    {
+      "kind": "additional historical superset under Node24",
+      "result": "First-execution passed; existing ASST-010 diagnostic failed. Later local /tmp exhaustion; this incomplete superset is not claimed PASS. Same two exclusions as CI/U00w, no new exclusions."
+    },
+    {
+      "kind": "SQL camera snapshot attack",
+      "result": "Initial PostgreSQL bigint string reached 22P02. Retained as diagnostic; final attack converts authentic ID to Number and requires TASK_SCOPE_PHYSICAL_RESOURCES."
+    },
+    {
+      "kind": "U00w CI port collision",
+      "head": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "result": "Second database failed before Auth/UI/solver with EADDRINUSE; identical isolated rerun passed. See checks/port-collision.json."
+    },
+    {
+      "kind": "Historical canonical CI S7 acceptance",
+      "head": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "result": "Seven successful proposal runs, six accepted Stages, then HTTP409 REBOOTSTRAP_STALE_SOURCES. Original report retained; exact underlying SQL error not captured. Isolated same-code rerun122105488309 passed completely, including eleven Stages, two alternate orders, Autopilot and Reality scopes; aggregate122113697395 passed. No protection or assertion changed."
+    }
+  ],
+  "limits": [
+    "Native anchored contract remains one before and one after segment per operation.",
+    "Combined structural authorities and coordinated meals remain unsupported; individual regressions do not certify their Cartesian composition.",
+    "A2 historical regression does not demonstrate complete A2 authoring from UI.",
+    "Joint operations, coordinated unit/space meals, coach route transitions, structural coordination and requiresBand remain outside U00x.",
+    "Editing protected decisions retains the existing whole-authority restrictions.",
+    "Historical ASST-010 diagnostic remains separate from canonical A2; no assertion or budget was relaxed.",
+    "One historical UI acceptance attempt returned REBOOTSTRAP_STALE_SOURCES at S7. Its exact underlying SQL error was not captured; the identical complete rerun passed, and both reports are retained. The concurrency/revision protection is unchanged."
+  ],
+  "nextGap": "Native versioned daily authoring of joint operations; see next-gap.json"
+}

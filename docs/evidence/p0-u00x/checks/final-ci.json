@@ -1,0 +1,689 @@
+{
+  "status": "PASS",
+  "checkedHead": "5c149544572ef898341f874b8bf0b8a3193ec418",
+  "base": "cc0b674ebaadb8c41c5438302a62eb29de684833",
+  "subject": "ci-subject.json",
+  "all23WorkflowsSuccessful": true,
+  "workflow_runs": [
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:35Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476944338",
+      "id": 40476944338,
+      "name": "P0 U00f transport gate",
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-27T09:01:37Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:35Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476944283",
+      "id": 40476944283,
+      "name": "P0 U00l Main nominal resources",
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-27T08:58:09Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:35Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476944294",
+      "id": 40476944294,
+      "name": "P0 U00h concrete resources",
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-27T08:59:28Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:34Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476944201",
+      "id": 40476944201,
+      "name": "P0 U00g participant meals",
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-27T09:00:13Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:34Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476944052",
+      "id": 40476944052,
+      "name": "Persistent War Room",
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-27T08:59:44Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:34Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476943813",
+      "id": 40476943813,
+      "name": "New day Planner Next",
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-27T09:02:13Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:34Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476944039",
+      "id": 40476944039,
+      "name": "Live day execution",
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-27T09:02:57Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:34Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476944152",
+      "id": 40476944152,
+      "name": "Atomic task template save",
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-27T09:02:57Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:34Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476944028",
+      "id": 40476944028,
+      "name": "P0 U00w anchored whole-unit choices",
+      "run_attempt": 2,
+      "status": "completed",
+      "updated_at": "2026-10-27T09:04:08Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:34Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476943806",
+      "id": 40476943806,
+      "name": "Baseline CI",
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-27T08:56:41Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:34Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476943765",
+      "id": 40476943765,
+      "name": "P0 U00i nominal resource causal gate",
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-27T08:57:03Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:34Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476943773",
+      "id": 40476943773,
+      "name": "P0 U00n post-Stage additions",
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-27T08:57:02Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:34Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476944146",
+      "id": 40476944146,
+      "name": "Data API grants",
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-27T09:05:45Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:34Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476943695",
+      "id": 40476943695,
+      "name": "P0 U00p daily synchronized rounds",
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-27T08:58:04Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:34Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476943642",
+      "id": 40476943642,
+      "name": "P0 U00v native standalone operational scopes",
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-27T08:58:03Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:34Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476943741",
+      "id": 40476943741,
+      "name": "P0 U00u native anchored operation",
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-27T08:57:46Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:34Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476943932",
+      "id": 40476943932,
+      "name": "P0 U00j typed nominal resources",
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-27T08:57:39Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:34Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476943943",
+      "id": 40476943943,
+      "name": "Admin Invites CI",
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-27T08:57:38Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:34Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476943641",
+      "id": 40476943641,
+      "name": "Operation continuity",
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-27T08:58:14Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:34Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476944032",
+      "id": 40476944032,
+      "name": "P0 U00s daily REQUIRED technical chains",
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-27T08:58:30Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:34Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476943966",
+      "id": 40476943966,
+      "name": "Itinerant physical composition",
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-27T08:59:28Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:34Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476943645",
+      "id": 40476943645,
+      "name": "P0 U00x composed native Reality",
+      "run_attempt": 1,
+      "status": "completed",
+      "updated_at": "2026-10-27T09:00:25Z"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-10-27T08:55:34Z",
+      "head_sha": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476943744",
+      "id": 40476943744,
+      "name": "Planner Engine CI",
+      "run_attempt": 2,
+      "status": "completed",
+      "updated_at": "2026-10-27T09:34:33Z"
+    }
+  ],
+  "engineJobs": [
+    {
+      "id": 122105488309,
+      "name": "a2-assisted-canonical-integration",
+      "conclusion": "success",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476943744/job/122105488309",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm ci",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npx --no-install playwright install chromium",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npx --no-install tsc -p script/demo/tsconfig.integration.json",
+          "conclusion": "success"
+        },
+        {
+          "name": "Native SQL, Auth, HTTP and UI; canonical baseline and two deterministic orders",
+          "conclusion": "success"
+        },
+        {
+          "name": "Integration evidence (no private app logs or credentials)",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 122105489730,
+      "name": "manual-draft-validation",
+      "conclusion": "success",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476943744/job/122105489730",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm ci",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npx --no-install playwright install --with-deps chromium",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npx --no-install tsc -p script/demo/tsconfig.integration.json",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run node --import tsx --test --test-concurrency=1 engine/planner-next/transportGrouping.spec.ts engine/planner-next/transportConfigIntegrity.spec.ts server/transportConfigIntegrity.spec.ts server/roundPreparation.spec.ts server/roundPreparationSql.spec.ts server/assistedManualSnapshotFidelity.spec.ts server/assistedStageAcceptanceAuthorization.spec.ts shared/assistedStageValidation.test.ts client/src/lib/assisted-draft-warnings.test.ts client/src/components/planning/assisted-planning-workspace.test.ts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run demo:a2:smoke -- work/manual-draft-validation --full --manual-validation --transport-policy --round-preparation",
+          "conclusion": "success"
+        },
+        {
+          "name": "Production REQUIRED acceptance in a separate immutable day fixture",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 122105490506,
+      "name": "autopilot-workspace",
+      "conclusion": "success",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476943744/job/122105490506",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm ci",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npx --no-install playwright install --with-deps chromium",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npx --no-install tsc -p script/demo/tsconfig.integration.json",
+          "conclusion": "success"
+        },
+        {
+          "name": "Role policy regression (browser, controller and intercepted HTTP)",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run node --import tsx --test client/src/lib/assisted-autopilot-checkpoints.test.ts client/src/lib/assisted-autopilot-progress.test.ts client/src/components/planning/assisted-autopilot-progress.test.tsx",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run demo:a2:smoke -- work/autopilot-workspace --historical-topology --autopilot-workspace",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 122105490950,
+      "name": "main-flow-preference-integration",
+      "conclusion": "success",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476943744/job/122105490950",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm ci",
+          "conclusion": "success"
+        },
+        {
+          "name": "Select installed Chromium or provision Playwright",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npx --no-install tsc -p script/demo/tsconfig.integration.json",
+          "conclusion": "success"
+        },
+        {
+          "name": "Real settings, day configuration, Evidence, Draft and Stages",
+          "conclusion": "success"
+        },
+        {
+          "name": "Preference evidence from disposable services",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 122105538830,
+      "name": "a2-assisted-catalog-integration",
+      "conclusion": "success",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476943744/job/122105538830",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm ci",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npx --no-install playwright install --with-deps chromium",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npx --no-install tsc -p script/demo/tsconfig.integration.json",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run test:demo:a2-import",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run node --import tsx --test script/demo/a2ConfigurationReadRecovery.spec.ts server/effectiveConfigurationHttp.spec.ts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run node --import tsx --test script/demo/a2RealTopology.spec.ts script/demo/a2RealImportSQL.spec.ts script/demo/a2OperationScope.spec.ts shared/anchoredOperationProjection.test.ts shared/taskOperationScope.test.ts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run node --import tsx --test script/demo/a2DraftPreparationRecovery.spec.ts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npx --no-install tsx --test shared/assistedAutopilot.test.ts shared/assistedStageTiming.test.ts client/src/components/planning/assisted-planning-workspace.test.ts client/src/components/planning/stage-history-timing.test.ts client/src/lib/assisted-draft-warnings.test.ts client/src/lib/assisted-planning-view.test.ts client/src/lib/contestant-lane-sort.test.ts client/src/lib/planning-view-policy.test.ts server/assistedHistoryTimings.spec.ts client/src/lib/assisted-scope-selection.test.ts client/src/components/planning/assisted-location-scope.test.tsx",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run node --import tsx --test client/src/lib/day-execution-view.test.ts client/src/lib/planning-workspace-preferences.test.ts client/src/components/effective-configuration.test.tsx",
+          "conclusion": "success"
+        },
+        {
+          "name": "Day workspace setup through real UI and existing writers",
+          "conclusion": "success"
+        },
+        {
+          "name": "Assisted location selection in a disposable A2 catalog",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configuration read with the observed 52 legacy breaks and S0 Autopilot",
+          "conclusion": "success"
+        },
+        {
+          "name": "Integration evidence (no private app logs or credentials)",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 122105547072,
+      "name": "planner-engine-ci",
+      "conclusion": "success",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476943744/job/122105547072",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Checkout repository",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up Node.js",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Product test suite",
+          "conclusion": "success"
+        },
+        {
+          "name": "Main-flow SOFT count cold-fallback diagnostic (isolated checkout)",
+          "conclusion": "success"
+        },
+        {
+          "name": "Main future-dependency bound on the current candidate",
+          "conclusion": "success"
+        },
+        {
+          "name": "Historical ASST-010 single-task continuation diagnostic",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Full A2 Autopilot structural frontier diagnostic",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "SPEC10-016 canonical template benchmark first run",
+          "conclusion": "success"
+        },
+        {
+          "name": "SPEC10-016 canonical template benchmark second run",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify deterministic benchmark and generated artifacts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify generated Evidence is current",
+          "conclusion": "success"
+        },
+        {
+          "name": "Diff hygiene",
+          "conclusion": "success"
+        },
+        {
+          "name": "TypeScript check",
+          "conclusion": "success"
+        },
+        {
+          "name": "Production build",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Set up Node.js",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Checkout repository",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 122113697395,
+      "name": "a2-assisted-integration",
+      "conclusion": "success",
+      "html_url": "https://github.com/angelvicen92/production-planner/actions/runs/40476943744/job/122113697395",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Require both complete native rehearsals",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "canonicalSuccessfulArtifact": {
+    "id": 12722419674,
+    "sha256": "62bf28d3685ab9ba9912c052274621c8898995eb381516cb19ef45b579531d0a",
+    "receiptDirectory": "canonical-ci"
+  },
+  "priorFailedAttemptsRetained": [
+    "initial-ci.json",
+    "port-collision.json",
+    "canonical-stale-attempt.json",
+    "canonical-stale-attempt.json.gz"
+  ],
+  "finalDocumentationHead": "Contains these receipts and keeps all product/test/CI/SQL source hashes identical; its live checks are linked on PR1202",
+  "remoteApplicationWrites": 0
+}

@@ -41,7 +41,13 @@ jobs:
       - run: node --import tsx docs/evidence/p0-u00w/run.ts work/u00w-repeat --native
       - run: node --import tsx docs/evidence/p0-u00w/verify.ts work/u00w-native work/u00w-repeat work/u00w-determinism.json
       - run: node --import tsx docs/evidence/p0-u00w/run.ts work/u00w-shared --native --shared-negative
-      - run: node --import tsx docs/evidence/p0-u00w/next-gap.ts work/u00w-native/native/multi-input.json work/u00w-next-gap.json
+      - name: Preserve the original pre-U00x boundary experiment on its exact baseline
+        run: |
+          git fetch --depth=1 origin cc0b674ebaadb8c41c5438302a62eb29de684833
+          mkdir -p work/u00w-original
+          git archive cc0b674ebaadb8c41c5438302a62eb29de684833 | tar -x -C work/u00w-original
+          ln -s "$PWD/node_modules" work/u00w-original/node_modules
+          node --import tsx work/u00w-original/docs/evidence/p0-u00w/next-gap.ts "$PWD/work/u00w-native/native/multi-input.json" "$PWD/work/u00w-next-gap.json"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

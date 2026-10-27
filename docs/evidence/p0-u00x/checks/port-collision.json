@@ -1,0 +1,23 @@
+{
+  "head": "5c149544572ef898341f874b8bf0b8a3193ec418",
+  "workflowRun": 40476944028,
+  "job": 122097393388,
+  "phase": "Second disposable database: after migrations, before Auth/UI/solver",
+  "firstBarrier": "EADDRINUSE 127.0.0.1:32773",
+  "classification": "Local harness port collision; no consumer result",
+  "action": "Rerun this job with identical assertions, budgets and timeouts",
+  "publicLogExcerpt": [
+    "2026-10-27T08:58:21.7457284Z Error: listen EADDRINUSE: address already in use 127.0.0.1:32773",
+    "2026-10-27T08:58:21.7458540Z     at Server.setupListenHandle [as _listen2] (node:net:1908:16)",
+    "2026-10-27T08:58:21.7459805Z     at listenInCluster (node:net:1965:12)",
+    "2026-10-27T08:58:21.7460751Z     at doListen (node:net:2139:7)",
+    "2026-10-27T08:58:21.7461893Z     at process.processTicksAndRejections (node:internal/process/task_queues:83:21)",
+    "2026-10-27T08:58:21.7463166Z Emitted 'error' event on Server instance at:",
+    "2026-10-27T08:58:21.7464172Z     at emitErrorNT (node:net:1944:8)",
+    "2026-10-27T08:58:21.7465329Z     at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {",
+    "2026-10-27T08:58:21.7466447Z   code: 'EADDRINUSE',",
+    "2026-10-27T08:58:21.7467279Z   errno: -98,",
+    "2026-10-27T08:58:21.7467936Z   syscall: 'listen',",
+    "2026-10-27T08:58:21.7468555Z   address: '127.0.0.1',"
+  ]
+}

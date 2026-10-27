@@ -1,0 +1,56 @@
+[
+  {
+    "mode": "anchored",
+    "exitCode": 0,
+    "seconds": 107.48348037400001,
+    "output": "/tmp/u00x-reg-final-anchored"
+  },
+  {
+    "mode": "choices",
+    "exitCode": 0,
+    "seconds": 123.06969054000001,
+    "output": "/tmp/u00x-reg-final-choices"
+  },
+  {
+    "mode": "scopes",
+    "exitCode": 0,
+    "seconds": 85.14273054600017,
+    "output": "/tmp/u00x-reg-final-scopes"
+  },
+  {
+    "mode": "meals",
+    "exitCode": 0,
+    "seconds": 101.17855229800011,
+    "output": "/tmp/u00x-reg-final-meals"
+  },
+  {
+    "mode": "transport",
+    "exitCode": 0,
+    "seconds": 113.53209411600028,
+    "output": "/tmp/u00x-reg-final-transport"
+  },
+  {
+    "mode": "rounds",
+    "exitCode": 0,
+    "seconds": 76.7162761059999,
+    "output": "/tmp/u00x-reg-final-rounds"
+  },
+  {
+    "mode": "required",
+    "exitCode": 0,
+    "seconds": 125.25711169199985,
+    "output": "/tmp/u00x-reg-final-required"
+  },
+  {
+    "mode": "nominal",
+    "exitCode": 0,
+    "seconds": 54.41762131199994,
+    "output": "/tmp/u00x-reg-final-nominal"
+  },
+  {
+    "mode": "additions",
+    "exitCode": 0,
+    "seconds": 54.20469284699993,
+    "output": "/tmp/u00x-reg-final-additions"
+  }
+]

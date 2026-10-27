@@ -1,0 +1,14 @@
+{
+  "A-S1-scope-snapshot-invented-camera.json": {
+    "accepted": false,
+    "message": "invalid input syntax for type integer: \"\"1\"\"",
+    "code": "22P02",
+    "rolledBack": true
+  },
+  "B-S2-scope-snapshot-invented-camera.json": {
+    "accepted": false,
+    "message": "invalid input syntax for type integer: \"\"11\"\"",
+    "code": "22P02",
+    "rolledBack": true
+  }
+}

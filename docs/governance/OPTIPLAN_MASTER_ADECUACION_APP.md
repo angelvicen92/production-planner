@@ -4,6 +4,10 @@
 **Corte inicial:** 21/10/2026. **Repositorio:** https://github.com/angelvicen92/production-planner  
 **Principio rector:** **la producción tiene que salir**.
 
+### P0-U00x — candidato: composición de Reality nativo (27/10/2026)
+
+El [PR #1202](https://github.com/angelvicen92/production-planner/pull/1202), sobre U00w integrado `cc0b674`, compone las autoridades diarias existentes de anclajes v2 A/B y scopes independientes en tareas disjuntas. La [Evidence U00x](../evidence/p0-u00x/README.md) conserva el 422 previo, contrafactuales de consumidor y dos jornadas hasta Stage: 19/19 y 20/20 con S1 parcial, continuación exacta, witness y consumo físico SQL. 119 es incremental y sólo se ensaya en bases descartables; no se aplica a Supabase real. No hay merge ni despliegue. La CI y los recibos de cierre determinan el estado del candidato. P0/A2 desde UI sigue abierto por operaciones conjuntas, comidas coordinadas, transiciones de coaches, coordinación estructural y `requiresBand`; no se implementan aquí.
+
 > **Orden para un chat nuevo:** antes de proponer trabajo, leer este documento, Fuente 00 y Fuente 07 vigentes, AGENTS.md y las Fuentes especializadas; reconstruir GitHub main/PR/CI/Evidence/benchmark y, si procede, estado Replit/Supabase. Este registro es histórico: autoridad oficial por ámbito y evidencia real del HEAD prevalecen. No pedir información ya accesible.
 
 ### Decisión de producción P0-U00e: continuidad y setup (22/10/2026)

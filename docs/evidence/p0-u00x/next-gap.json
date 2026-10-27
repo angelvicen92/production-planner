@@ -1,0 +1,50 @@
+{
+  "status": "BLOCKED",
+  "classification": "CONTRACT_NOT_REPRESENTABLE",
+  "nextSingleGap": "Native daily authoring of joint operations, preserving participant/resource identity",
+  "firstBoundary": "shared/newDayPlannerConfiguration.ts and shared/dayConfig.ts: no jointGroups authoring contract",
+  "generalIssues": [
+    {
+      "code": "unrecognized_keys",
+      "keys": [
+        "jointGroups"
+      ],
+      "path": [],
+      "message": "Unrecognized key(s) in object: 'jointGroups'"
+    }
+  ],
+  "dailyIssues": [
+    {
+      "code": "unrecognized_keys",
+      "keys": [
+        "jointGroups"
+      ],
+      "path": [],
+      "message": "Unrecognized key(s) in object: 'jointGroups'"
+    },
+    {
+      "code": "custom",
+      "message": "At least one capability is required",
+      "path": []
+    },
+    {
+      "code": "custom",
+      "message": "La estructura se edita con la revisión consultada, sin mezclar otras categorías.",
+      "path": []
+    }
+  ],
+  "sourcePlanId": 2,
+  "probeTaskIds": [
+    36,
+    39
+  ],
+  "experimentIsStage": false,
+  "remoteWrites": 0,
+  "consumerInfeasibilityClaimed": false,
+  "otherGaps": [
+    "Operational meals coordinated by unit and space",
+    "Coach route transitions",
+    "Coordination across structural authorities",
+    "requiresBand operational attribute"
+  ]
+}

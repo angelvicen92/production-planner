@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync} from 'node:fs';
+for(const key of ['SUPABASE_URL','SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY','VITE_SUPABASE_URL','VITE_SUPABASE_ANON_KEY','DATABASE_URL'])delete process.env[key];
+Object.assign(process.env,{SUPABASE_URL:'http://127.0.0.1:1',SUPABASE_ANON_KEY:'isolated-evidence',SUPABASE_SERVICE_ROLE_KEY:'isolated-evidence'});
+const {adaptEngineInputToPlannerNextProblem:adapt}=await import('../../../engine/planner-next/integration/engineInputAdapter');
+const {materializeAssistedSnapshotOccupations}=await import('../../../server/assistedProposalService');
+const {resolveAssistedScope,expandVisiblePrerequisites,analyticalFutureEligibleTaskIds}=await import('../../../server/assistedScopeResolver');
+const {buildAssistedProblem,executeAssistedPlanning:execute}=await import('../../../engine/planner-next/assistedPlanning');
+const {runExactMainAndFeederSearch}=await import('../../../engine/planner-next/exactMainAndFeederCore');
+const {validatePlan}=await import('../../../engine/planner-next/validate');
+const dir=process.argv[2],read=(n:string)=>JSON.parse(readFileSync(`${dir}/${n}.json`,'utf8'));
+const input=read('B-input'),adapter=adapt(input);assert.equal(adapter.status,'SUPPORTED');if(adapter.status!=='SUPPORTED')throw Error('unsupported');
+const first=read('B-S1-run').assisted_result_json,witness=first.evidence.nominalPhysicalFutureWitness;
+const accepted=read('B-S1-accepted'),base=accepted.activeStage.snapshotJson;
+const occupations=materializeAssistedSnapshotOccupations(adapter.problem,adapter.identityMap,base),selector=read('B-S2-run').scope_json.selector;
+const scope=expandVisiblePrerequisites(input,resolveAssistedScope(input,adapter,selector),adapter);
+const problem=buildAssistedProblem(adapter.problem,scope.scope,occupations.protectedPlacements,analyticalFutureEligibleTaskIds(input,adapter.identityMap));
+const result=execute(problem),core=runExactMainAndFeederSearch(problem.problem,{causalDiagnostic:true,fixedPlacements:occupations.protectedPlacements,fixedPlacementsAsContext:true});
+const selected=witness.tasks.filter((t:any)=>occupations.protectedPlacements.some(p=>p.id===t.id));
+let alternate:any;try{const fromWitness=buildAssistedProblem(adapter.problem,scope.scope,selected,analyticalFutureEligibleTaskIds(input,adapter.identityMap));alternate=execute(fromWitness);}catch(e:any){alternate={error:e.message};}
+writeFileSync(process.argv[3],JSON.stringify({input,adapter,scope,problem,result,core,occupations,witness,selected,alternate,witnessValidation:validatePlan(adapter.problem,witness.tasks),experimentIsStage:false},null,2));
+console.log(JSON.stringify({placed:result.proposal?.length,alternate:alternate.proposal?.length,alternateError:alternate.error,witnessValid:validatePlan(adapter.problem,witness.tasks).hardValid,reasons:result.evidence.reasonCodes,core:core.status}));
