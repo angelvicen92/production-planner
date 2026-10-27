@@ -39,7 +39,7 @@ BEGIN
  IF jsonb_typeof(p_structure) IS DISTINCT FROM 'object' OR p_structure->'contractVersion' IS DISTINCT FROM '1'::jsonb
   OR p_structure-ARRAY['contractVersion','groups']<>'{}' OR jsonb_typeof(p_structure->'groups') IS DISTINCT FROM 'array'
  THEN RAISE EXCEPTION 'JOINT_INVALID_STRUCTURE'; END IF;
- IF p.planner_next_profile IS NULL OR p.planner_next_configuration IS NOT NULL THEN RAISE EXCEPTION 'JOINT_AUTHORITY_CONFLICT'; END IF;
+ IF p.planner_next_profile IS NULL OR nullif(p.planner_next_profile->'configuration','null') IS NULL OR p.planner_next_configuration IS NOT NULL THEN RAISE EXCEPTION 'JOINT_AUTHORITY_CONFLICT'; END IF;
  IF p_structure->'groups'='[]' THEN RETURN; END IF;
  IF p.planner_next_profile#>>'{configuration,setup}'<>'NONE' OR p.planner_next_profile#>>'{configuration,transport}'<>'NONE'
   OR p.meal_mode<>'global_hard_break' OR coalesce(p.daily_round_synchronization->'policies','[]')<>'[]'
@@ -95,6 +95,12 @@ DECLARE p public.plans%rowtype; authority jsonb; groups jsonb;
 BEGIN
  SELECT * INTO STRICT p FROM public.plans WHERE id=p_plan;
  IF p.planner_next_profile IS NULL THEN RETURN; END IF;
+ -- A snapshot envelope with configuration:null is an unconfigured day, not a
+ -- native joint authority. Preserve its literal absence, including empty days.
+ IF nullif(p.planner_next_profile->'configuration','null') IS NULL THEN
+  IF p.daily_joint_groups IS NOT NULL THEN RAISE EXCEPTION 'JOINT_UNCONFIGURED_AUTHORITY'; END IF;
+  RETURN;
+ END IF;
  authority:=replay#>'{authorities,plan_workday,0,plannerNextAuthorities}';groups:=nullif(p.daily_joint_groups->'groups','[]');
  IF authority->'dailyJointGroups' IS DISTINCT FROM groups OR authority->'dailyJointGroupsVersion' IS DISTINCT FROM (CASE WHEN groups IS NULL THEN NULL ELSE '1'::jsonb END)
   OR authority->'taskOperations' IS DISTINCT FROM public.joint_task_operations(p_plan,authority->'taskOperations',groups,groups)

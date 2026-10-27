@@ -55,3 +55,7 @@ La pareja completa continúa en nueve ramas. El scope de un miembro devuelve amb
 ## Fronteras que siguen abiertas
 
 Se certifican auxiliares físicas con recursos concretos, pausa global, standalone o junto a Main/Vocal. El contrato no eleva a productivas combinaciones con comidas individuales flexibles/coordinadas, transporte estructural, rondas, cadenas, setups, anclajes, scopes Reality o elección genérica de recursos. La retirada de una declaración no adopta otra estructura. La familia global sigue **PARTIAL**, con esas dos combinaciones concretas **PRODUCTIVE** tras los gates finales. Los dos grupos A2 ya tienen autoría nativa; la composición de su Alfombra con la continuidad/cadena de fases completa sigue siendo otra frontera.
+
+## Revisión causal tras el primer head de CI
+
+El gate nativo nuevo pasó en GitHub, pero continuidad, alta de días e itinerancia física detectaron el mismo falso rechazo al crear una jornada sin perfil configurado. En la reproducción del head `cd56cbe4`, el HTTP devuelve 500 y la instrumentación read-only del inicializador revela `JOINT_AUTHORITY_NOT_MATERIALIZED`. Un envelope no nulo con `configuration:null` no produce `plannerNextAuthorities`; el guard comparaba `null taskOperations` con `[]`. Se preserva explícitamente la ausencia, manteniendo el rechazo de una autoridad conjunta declarada en un día sin perfil. El recorrido original, sin assertions/timeouts/budgets modificados, vuelve a pasar. No es un cambio de búsqueda ni una relajación de grupos.

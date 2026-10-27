@@ -1,0 +1,15 @@
+{
+  "beforeProductHead": "cd56cbe491738ec604efc46f42f15ca7b6d1a6c5",
+  "originalHttp": 500,
+  "expectedHttp": 201,
+  "firstSqlRejection": {
+    "code": "P0001",
+    "message": "JOINT_AUTHORITY_NOT_MATERIALIZED",
+    "details": null
+  },
+  "cause": "configuration:null envelope has no Planner Next authority; null taskOperations was compared to an empty array",
+  "delta": "Preserve literal absence for unconfigured days and reject any explicit daily joint authority there",
+  "after": "Original continuity UI/API journey passes, including fresh-day creation and protected historical restore",
+  "budgetsTimeoutsAssertionsChanged": false,
+  "remoteWrites": 0
+}

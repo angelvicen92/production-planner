@@ -1,5 +1,5 @@
 {
-  "status": "LOCAL_NATIVE_CERTIFIED_CI_PENDING",
+  "status": "LOCAL_CERTIFIED_VERIFY_CURRENT_PR_CI",
   "base": "e0403c90866b5cd54986d68a59b76062e9ac47bc",
   "branch": "codex/p0-u00y-native-joint-operations",
   "remoteApplicationWrites": 0,
@@ -30,7 +30,7 @@
   "migration": {
     "status": "PASS",
     "postgres": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
-    "sha256": "bb12d89a79d5762b7416996b960ed4515a9a2d6086b0a08f208b1d4310f696a5",
+    "sha256": "242d9875450404eb11ccb5a0fbfb4cca613889c7df075eaa53ac1fc40348adde",
     "historicalTasks": 599,
     "historicalStages": 11,
     "originalRowsAndReadersExact": true,
@@ -87,7 +87,8 @@
       "required",
       "additions",
       "scopes",
-      "composition"
+      "composition",
+      "operation-continuity / unconfigured day"
     ]
   },
   "checks": {
@@ -97,20 +98,33 @@
     "focal": "PASS",
     "isolation": "PASS",
     "productSuite": {
-      "status": "REPEATING",
+      "status": "PASS",
       "initial": {
         "pass": 3282,
         "fail": 1,
         "cause": "New read-only integration boundary and a metadata-only path reference; the focused isolation gate now passes."
       },
       "sameExclusionsAsCI": true,
-      "newExclusions": 0
-    }
+      "newExclusions": 0,
+      "passCount": 3283,
+      "failCount": 0,
+      "skipped": 0,
+      "files": 425
+    },
+    "unconfiguredDayCorrection": "PASS: authentic continuity UI/API, SQL catalog contracts and populated 119\u2192120 rehearsal"
   },
   "limits": [
     "Other structural combinations and flexible/coordinated meals remain outside this contract",
     "A2 full manual UI authoring remains incomplete",
     "No production deployment or migration",
     "No merge"
-  ]
+  ],
+  "ci": {
+    "pullRequest": 1203,
+    "url": "https://github.com/angelvicen92/production-planner/pull/1203/checks",
+    "currentHeadIsAuthority": true,
+    "initialProductHead": "cd56cbe491738ec604efc46f42f15ca7b6d1a6c5",
+    "initialNativeWorkflow": "PASS",
+    "initialThreeFailures": "Same unconfigured-day guard defect: continuity/new-day/physical-composition. Reproduced and corrected in 120; checks of the corrected head govern."
+  }
 }

@@ -33,6 +33,10 @@ El witness de S1 incluye todas las obligaciones pendientes y ambos miembros de c
 
 Los ataques recalculan hashes de resultado/Draft/witness y comprueban autoridad incompleta, miembros inexistentes/ajenos, duración/espacio/recursos/persona, dependencias, ausencia de intersección, doble pertenencia, medio grupo, competencia, selección protegida, ejecución y locks, Data API, permisos, CAS concurrente y rollback atómico. Se registra el **primer** rechazo realmente ejecutado: un `RUN_RESULT_INVALID` o `STALE_OBLIGATION_SOURCES` no se atribuye a un guard físico posterior. El control material separado de medio grupo alcanza el guard conjunto. Los Stages aceptados también rechazan modificación directa con fingerprint coherente.
 
+**Suite amplia:** 3.283 pass, cero fallos y cero exclusiones nuevas. El primer pase conservó un fallo de registro del nuevo consumidor read-only en el gate de aislamiento; la entrada concreta y la metadata de pruebas se corrigieron sin relajar sus assertions.
+
+**Corrección de CI:** el primer head rechazaba días con envelope `configuration:null`, porque confundía ausencia de autoridad con operaciones vacías. `checks/unconfigured-day-causal.json` conserva el 500/201 y el error SQL real. 120 conserva ahora esa ausencia neutral; el ensayo de continuidad original vuelve a pasar, incluidos alta de día y RESTORE protegido. Se conservan los tres rechazos remotos iniciales del mismo camino. La CI del head vigente del [PR #1203](https://github.com/angelvicen92/production-planner/pull/1203) es la autoridad de cierre, sin merge automático.
+
 `checks/attempts.json` conserva los fallos corregidos de harness y las interrupciones de Chromium por `ERR_NETWORK_CHANGED` al ejecutar redes Docker concurrentes. Los ensayos finales con navegador se serializan; no se amplían timeouts ni se cambian assertions para resolver el entorno.
 
 ## Reproducción
