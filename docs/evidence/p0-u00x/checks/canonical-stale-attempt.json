@@ -1,0 +1,11 @@
+{
+  "head": "5c149544572ef898341f874b8bf0b8a3193ec418",
+  "runId": 40476943744,
+  "jobId": 122097393444,
+  "firstBarrier": "HTTP 409 REBOOTSTRAP_STALE_SOURCES accepting S7 after six accepted Stages and seven successful proposal runs",
+  "classification": "Observed revision/concurrency protection, exact underlying SQL error not captured; not evidence of physical or search infeasibility",
+  "unchangedConsumerEvidence": "Canonical local reports, snapshots and 22 certificates remain literally equal; accept service and underlying acceptance writer unchanged by U00x; historical daily scopes absent",
+  "nextControl": "Rerun only this job with identical code, assertions, budgets and timeouts",
+  "protectionRelaxed": false,
+  "receipt": "canonical-stale-attempt.json.gz"
+}

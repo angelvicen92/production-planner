@@ -10,6 +10,8 @@ Los cambios de consumidor reparan fronteras demostradas en B: apertura posterior
 
 Las fuentes, hashes, primera frontera, clasificación de rechazos y compatibilidad están en [authority-audit.md](authority-audit.md). El [inventario A2 desde UI](a2-ui-inventory.md) conserva las demás brechas. No se declara A2 íntegramente creado desde UI ni P0 general cerrado. El benchmark histórico se mantiene como regresión independiente.
 
+CI del código productivo `5c14954`: **23 workflows correctos**, con fuente exacta registrada en `checks/ci-subject.json` y recibo en `checks/final-ci.json`. Se conservan el intento inicial reparado, una colisión de puerto U00w y el 409 histórico de S7, junto con las reejecuciones completas sin cambiar assertions ni protecciones. `checks/canonical-ci/` conserva los JSON públicos del A2 SQL/Auth/UI finalmente correcto. El último commit documental sólo incorpora estos recibos; su estado de CI vivo se consulta en el mismo PR #1202.
+
 Reproducción del gate productivo, con directorios nuevos y Node 20:
 
 ```sh
@@ -22,4 +24,4 @@ node --import tsx docs/evidence/p0-u00x/run.ts /tmp/u00x-shared --native --share
 
 La suite de producto reproduce el alcance de CI/U00w: `node docs/evidence/p0-u00x/product-suite.mjs`, con sus dos exclusiones históricas y **cero exclusiones nuevas**. `--include-historical` prueba también esos casos y necesita Node 22+ por `Object.groupBy`; el intento adicional conserva el fallo ASST-010 previamente documentado, separado del A2 canónico. Todos los runners aíslan las variables de servicios reales. Los logs privados/JWT no se empaquetan.
 
-Para repetir el diagnóstico anterior al delta, usar un archive de la base exacta y copiar el harness de `diagnostic/manifest.json.gz`. `geometry-probe.ts` exige los fragmentos previos literales y falla deliberadamente sobre el core ya reparado. No es un comando del gate final. La CI U00w repite su probe 422 histórico sobre cc0b674, conservando sus assertions originales; la CI U00x exige coexistencia productiva sobre el candidato actual.
+El diagnóstico previo conserva las entradas y salidas en `diagnostic/before.json.gz`; `diagnostic/manifest.json.gz` identifica por hash las fuentes ejecutadas, no contiene su código. Para reconstruir el consumidor previo, extraer los tres `control-*.input` y ejecutarlos con `inspect` de U00w en un archive de cc0b674. `geometry-probe.ts` requiere ese core previo literal; los probes de continuación requieren el core del primer head `bd182b1`. Fallan deliberadamente sobre el core ya reparado y no son comandos del gate final. La CI U00w repite su probe 422 histórico sobre cc0b674, conservando sus assertions originales; la CI U00x exige coexistencia productiva sobre el candidato actual.

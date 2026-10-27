@@ -18,6 +18,8 @@ El combinado selecciona una sola unidad para cada tripleta. Reality y Hall compa
 
 La primera frontera era el productor, antes de preflight. No había agotamiento ni una alternativa A/B válida perdida en este caso. Los controles negativos de intervalo detectan unidad/recurso compartido, ocupación de Corner, split de tripleta/unidad, recurso inexistente y ventana. La omisión de un directo de una tarea con unidad fija no se rechaza en `validatePlan`: se reproduce igual en el control standalone. Su barrera material pertenece a SQL, como en U00v; los gates de certificado recalculan hashes y comprueban esa barrera. Se conserva el intento diagnóstico fallido que permitió identificarlo, sin atribuirlo a una comprobación posterior.
 
+El perfil de producto contiene `preferredEnd` SOFT (A 11:30, B 12:00), además de continuidad REQUIRED; no contiene placements ni horas impuestas por tarea. Se conserva ese dato en los recibos, sin presentarlo como ausencia de toda preferencia temporal humana. El solver termina los Main a las 11:05 en A y 12:05 en B, apartándose de ambas preferencias; también el contrafactual de apertura tardía termina a las 12:05. Las horas aceptadas y las selecciones A/B proceden de la búsqueda, no de esa preferencia.
+
 ## Recorrido real
 
 1. Snapshot de perfil y plantillas → `buildEngineInput`, composición diaria y IDs físicos nominales.
@@ -83,3 +85,9 @@ La misma CI conservó dos negativos U00v que construyen un anclaje mal formado. 
 | Configuración histórica/088 | Sin adopción ni reescritura |
 
 El siguiente PR recomendado es la autoría diaria de operaciones conjuntas: `next-gap.json` prueba el rechazo de `jointGroups` por ambas superficies nativas tipadas. El consumidor histórico no sustituye un productor nativo. No se implementan aquí esas operaciones, comidas coordinadas, transiciones de coach, coordinación estructural ni `requiresBand`.
+
+## Cierre de CI y límites observados
+
+`checks/final-ci.json` registra los 23 workflows correctos del código productivo `5c14954`, con identidad exacta en `checks/ci-subject.json`. Se conserva la primera CI fallida que motivó las correcciones de continuación y los dos negativos mal formados. U00w encontró después una colisión de puerto local antes de Auth/UI/solver; su reejecución idéntica completó ambas bases y el resto del gate.
+
+El primer recorrido canónico SQL/Auth/UI de ese código aceptó seis Stages y generó siete propuestas válidas, pero recibió HTTP 409 `REBOOTSTRAP_STALE_SOURCES` al aceptar S7. El error SQL subyacente no quedó capturado: no se atribuye a recursos, búsqueda ni a un guard material posterior. El servicio existente también utiliza ese código para contención de locks/deadlock. El recibo fallido íntegro y el resultado de la reejecución idéntica están separados en `checks/`; esta última completó los once Stages, dos órdenes alternativos, Autopilot y ámbitos Reality (77 comprobaciones). No se modificó la protección ni se añadió un retry al producto o al test. La causa SQL exacta de aquel rechazo sigue como limitación explícita; no se usa el positivo posterior para borrar ese intento.

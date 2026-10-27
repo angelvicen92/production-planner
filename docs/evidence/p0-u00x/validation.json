@@ -1,5 +1,5 @@
 {
-  "status": "LOCAL_PASS_CI_PENDING",
+  "status": "PASS",
   "base": "cc0b674ebaadb8c41c5438302a62eb29de684833",
   "pullRequest": "https://github.com/angelvicen92/production-planner/pull/1202",
   "remoteApplicationWrites": 0,
@@ -122,9 +122,12 @@
       "budgetsAndTimeoutsChanged": false
     },
     "ci": {
-      "status": "PENDING",
-      "baseCI": "checks/base-ci.json",
-      "finalReceipt": "checks/final-ci.json"
+      "status": "PASS",
+      "checkedHead": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "workflows": 23,
+      "sourceIdentity": "checks/ci-subject.json",
+      "receipt": "checks/final-ci.json",
+      "finalDocumentationHead": "Checked separately on the same PR; no product source changes."
     }
   },
   "attempts": [
@@ -144,6 +147,16 @@
     {
       "kind": "SQL camera snapshot attack",
       "result": "Initial PostgreSQL bigint string reached 22P02. Retained as diagnostic; final attack converts authentic ID to Number and requires TASK_SCOPE_PHYSICAL_RESOURCES."
+    },
+    {
+      "kind": "U00w CI port collision",
+      "head": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "result": "Second database failed before Auth/UI/solver with EADDRINUSE; identical isolated rerun passed. See checks/port-collision.json."
+    },
+    {
+      "kind": "Historical canonical CI S7 acceptance",
+      "head": "5c149544572ef898341f874b8bf0b8a3193ec418",
+      "result": "Seven successful proposal runs, six accepted Stages, then HTTP409 REBOOTSTRAP_STALE_SOURCES. Original report retained; exact underlying SQL error not captured. Isolated same-code rerun122105488309 passed completely, including eleven Stages, two alternate orders, Autopilot and Reality scopes; aggregate122113697395 passed. No protection or assertion changed."
     }
   ],
   "limits": [
@@ -152,7 +165,8 @@
     "A2 historical regression does not demonstrate complete A2 authoring from UI.",
     "Joint operations, coordinated unit/space meals, coach route transitions, structural coordination and requiresBand remain outside U00x.",
     "Editing protected decisions retains the existing whole-authority restrictions.",
-    "Historical ASST-010 diagnostic remains separate from canonical A2; no assertion or budget was relaxed."
+    "Historical ASST-010 diagnostic remains separate from canonical A2; no assertion or budget was relaxed.",
+    "One historical UI acceptance attempt returned REBOOTSTRAP_STALE_SOURCES at S7. Its exact underlying SQL error was not captured; the identical complete rerun passed, and both reports are retained. The concurrency/revision protection is unchanged."
   ],
   "nextGap": "Native versioned daily authoring of joint operations; see next-gap.json"
 }
