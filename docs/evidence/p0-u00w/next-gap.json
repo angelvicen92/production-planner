@@ -1,0 +1,26 @@
+{
+  "status": "BLOCKED",
+  "classification": "CONTRACT_NOT_REPRESENTABLE",
+  "nextSingleGap": "Native composition of Main/Vocal anchored choices with independent Reality operational scopes",
+  "inputPlanId": 2,
+  "anchoredOperations": 3,
+  "standalonePolicy": {
+    "taskId": 22,
+    "agendaScope": "ITINERANT_UNIT",
+    "resourceInheritance": "OPERATION_ONLY",
+    "blocksSpace": true,
+    "itinerantUnitId": 5,
+    "declaredResourceIds": [
+      13,
+      14
+    ]
+  },
+  "firstRejection": {
+    "message": "UNSUPPORTED_TASK_SCOPE_COMBINATION",
+    "status": 422
+  },
+  "authority": "server/dailyTaskOperationScopes.ts::taskOperationScopesSupported",
+  "reciprocalBoundary": "server/anchoredAccompanimentStructure.ts::anchoredCombinationSupported",
+  "experimentIsStage": false,
+  "remoteWrites": 0
+}

@@ -1,0 +1,27 @@
+Node v20.20.2
+Product engine/server suite, same two CI exclusions:
+1..3205
+# tests 3270
+# suites 9
+# pass 3270
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 755201.58936
+
+Focal:
+reader
+ok 23 - 117 retains literal 116 writers and binds only the scope transition and authority reader
+  ---
+  duration_ms: 12.211581
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 23
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 13539.442498

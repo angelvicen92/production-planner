@@ -1,5 +1,6 @@
 import { dailyTechnicalChainAuthority, technicalChainCombinationSupported } from "./technicalChainStructure";
 import {dailyAnchoredAuthority,anchoredCombinationSupported} from './anchoredAccompanimentStructure';
+import {anchoredAccompanimentStructureSchema} from '../shared/anchoredAccompanimentStructure';
 import {dailyTaskOperationScopesAuthority,taskOperationScopesSupported,taskScopeDirectResources} from './dailyTaskOperationScopes';
 import { resolveEngineInputRoundSynchronizations } from "../engine/planner-next/integration/engineInputRoundSynchronizations";
 import { dailyRoundAuthority } from "./roundSynchronizationStructure";
@@ -109,12 +110,16 @@ export async function buildEffectiveConfigurationView(storage:IStorage,planId:nu
   const anchoredAuthority=dailyAnchoredAuthority(rawPlan);
   const anchoredAccompaniments=rawPlan.planner_next_profile?{
     revisionId:rawPlan.current_config_revision_id==null?null:Number(rawPlan.current_config_revision_id),
-    authority:anchoredAuthority?{contractVersion:1 as const,policies:anchoredAuthority.policies}:null,
+    authority:anchoredAuthority?anchoredAccompanimentStructureSchema.parse({contractVersion:anchoredAuthority.contractVersion,policies:anchoredAuthority.policies}):null,
     supported:anchoredCombinationSupported(input),by:anchoredAuthority?.by??null,at:anchoredAuthority?.at??null,
+    blockedReason:session&&(session.draftFingerprint!==session.workingFingerprint||Object.keys(session.draftScopeJson??{}).length)?'Hay un borrador con cambios. Resuélvelo antes de editar.':chainProposalActive?'Hay una propuesta pendiente. Resuélvela antes de editar.':anchoredAuthority?.policies.some(p=>[...p.beforeTaskIds,p.anchorTaskId,...p.afterTaskIds].some(id=>protectedScopeTasks.has(id)||input.tasks.some(t=>t.id===id&&(t.status==='done'||t.status==='in_progress'||t.startPlanned!=null))||input.locks.some(l=>l.taskId===id)))?'Las operaciones contienen decisiones protegidas, ejecución o locks.':null,
     tasks:input.tasks.map(t=>({id:t.id,label:`${t.templateName??'Tarea'} · ${t.contestantName??'Sin participante'}`,
       kind:t.plannerNextKind??'',participantId:t.contestantId??null,space:input.planSpaceSettings?.find(s=>s.spaceId===t.spaceId)?.name??'Sin espacio',duration:t.durationOverrideMin??0,
-      eligible:(t.status==='pending'||t.status==='interrupted')&&t.startPlanned==null&&!input.locks.some(l=>l.taskId===t.id)})),
-    units:input.itinerantCompositionSnapshot?.units.map(u=>({id:u.id,name:u.name}))??[],
+      eligible:(t.status==='pending'||t.status==='interrupted')&&t.startPlanned==null&&!input.locks.some(l=>l.taskId===t.id)&&!protectedScopeTasks.has(t.id),
+      selectedUnitId:((session?.draftSnapshotJson as any)?.tasks??[]).find((row:any)=>row.taskId===t.id&&row.startPlanned!=null)?.itinerantTeamId??null})),
+    units:input.itinerantCompositionSnapshot?.units.map(u=>({id:u.id,name:u.name,
+      resources:u.members.map(m=>({id:m.planResourceItemId,name:input.planResourceItems.find(r=>r.id===m.planResourceItemId)?.name??'Recurso del día'})),
+      windows:input.itinerantTeamAvailability?.find(a=>a.itinerantTeamId===u.id)?.windows??[]}))??[],
   }:undefined;
   const scopeAuthority=dailyTaskOperationScopesAuthority(rawPlan);
   const taskOperationScopes=rawPlan.planner_next_profile?{

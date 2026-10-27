@@ -35,9 +35,9 @@ export interface EffectiveConfigurationView {
   };
   anchoredAccompaniments?: {
     revisionId:number|null;authority:import('./anchoredAccompanimentStructure').AnchoredAccompanimentStructure|null;
-    supported:boolean;by:string|null;at:string|null;
-    tasks:{id:number;label:string;kind:string;participantId:number|null;space:string;duration:number;eligible:boolean}[];
-    units:{id:number;name:string}[];
+    supported:boolean;by:string|null;at:string|null;blockedReason?:string|null;
+    tasks:{id:number;label:string;kind:string;participantId:number|null;space:string;duration:number;eligible:boolean;selectedUnitId?:number|null}[];
+    units:{id:number;name:string;resources?:{id:number;name:string}[];windows?:{start:string;end:string}[]}[];
   };
   taskOperationScopes?: {
     revisionId:number|null;authority:import('./dailyTaskOperationScopes').DailyTaskOperationScopes|null;

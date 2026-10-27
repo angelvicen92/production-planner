@@ -619,7 +619,7 @@ export function buildAssistedProblem(
   // A Stage with nominal physical choices needs one joint witness of pending
   // hard obligations. Produce it through this same search/ledger, then retain
   // only authorized scope placements. Future selections remain ephemeral.
-  const physicalFutureIds=source.tasks.some(task=>task.nominalResourceChoice)
+  const physicalFutureIds=(source.nativeAnchoredAccompanimentsVersion===2||source.tasks.some(task=>task.nominalResourceChoice))
     ?source.tasks.filter(task=>!included.has(task.id)&&analyticalFutureEligibleTaskIds.has(task.id)).map(task=>task.id):[];
   const producerRoots=[...new Set([...futureCoreRoots,...physicalFutureIds])];
   const collectiveCore=futureCore.length||physicalFutureIds.length?buildAssistedProblem(source,
@@ -834,7 +834,7 @@ export function executeAssistedPlanning(input: AssistedProblem,acceptedBaseline?
     // the combined state retains an inherited, human-accepted HARD exception.
     requiredValid: searchHardValid,
     fingerprint: proposal ? fingerprint([...input.protectedPlacements, ...proposal]) : null,
-    ...(searchProblem.tasks.some(task=>task.nominalResourceChoice)&&execution.result?.complete?{
+    ...((searchProblem.nativeAnchoredAccompanimentsVersion===2||searchProblem.tasks.some(task=>task.nominalResourceChoice))&&execution.result?.complete?{
       nominalPhysicalFutureWitness:{tasks:structuredClone(execution.result.scheduledTasks),fingerprint:fingerprint(execution.result.scheduledTasks),
         participantMeals:structuredClone(execution.result.scheduledParticipantMeals),spaceMeals:structuredClone(execution.result.scheduledSpaceMeals),
         resourceMeals:structuredClone(execution.result.scheduledResourceMeals),itinerantUnitMeals:structuredClone(execution.result.scheduledItinerantUnitMeals),

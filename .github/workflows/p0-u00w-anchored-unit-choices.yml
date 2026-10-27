@@ -1,0 +1,63 @@
+name: P0 U00w anchored whole-unit choices
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'engine/**'
+      - 'server/**'
+      - 'shared/**'
+      - 'client/src/**'
+      - 'supabase/migrations/**'
+      - 'script/demo/**'
+      - 'docs/evidence/p0-u00w/**'
+      - '.github/workflows/p0-u00w-anchored-unit-choices.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  anchored-unit-choices:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$task_browser_path" ]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+          fi
+      - run: npm run check && npm run check:migrations && npm run build
+      - run: npx --no-install tsc -p docs/evidence/p0-u00w/tsconfig.json
+      - run: npx --no-install tsx --test --test-concurrency=1 engine/planner-next/integration/nativeAnchoredChoice.spec.ts engine/planner-next/integration/nativeAnchoredAccompaniment.spec.ts script/demo/assistedSQLContracts.spec.ts script/demo/a2Preflight.spec.ts
+      - run: node --import tsx docs/evidence/p0-u00w/upgrade118.ts work/u00w-upgrade
+      - run: node --import tsx docs/evidence/p0-u00w/run.ts work/u00w-native --native
+      - run: node --import tsx docs/evidence/p0-u00w/run.ts work/u00w-repeat --native
+      - run: node --import tsx docs/evidence/p0-u00w/verify.ts work/u00w-native work/u00w-repeat work/u00w-determinism.json
+      - run: node --import tsx docs/evidence/p0-u00w/run.ts work/u00w-shared --native --shared-negative
+      - run: node --import tsx docs/evidence/p0-u00w/next-gap.ts work/u00w-native/native/multi-input.json work/u00w-next-gap.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: u00w-anchored-unit-choices
+          path: |
+            work/u00w-upgrade/manifest.json
+            work/u00w-upgrade/native/*.json
+            work/u00w-upgrade/native/*.json.gz
+            work/u00w-native/manifest.json
+            work/u00w-native/checkout-delta.json
+            work/u00w-native/native/*.json
+            work/u00w-native/native/*.png
+            work/u00w-repeat/manifest.json
+            work/u00w-repeat/native/*.json
+            work/u00w-shared/manifest.json
+            work/u00w-shared/native/*.json
+            work/u00w-determinism.json
+            work/u00w-next-gap.json
+          retention-days: 14

@@ -166,7 +166,7 @@ export function materializeAssistedSnapshotOccupations(problem:PlannerNextProble
 
 /** Revalidate the persisted physical witness, never rediscover it with another search. */
 export function assertNominalProposalWitness(input:EngineInput,draft:AssistedPlanningSnapshotV1,result:AssistedProposalRunResultV1){
-  if(!input.tasks.some(task=>task.resourceRequirements?.anyOf?.length||Object.keys(task.resourceRequirements?.byType??{}).length))return;
+  if(input.dailyAnchoredAccompanimentsVersion!==2&&!input.tasks.some(task=>task.resourceRequirements?.anyOf?.length||Object.keys(task.resourceRequirements?.byType??{}).length))return;
   const adapter=adaptEngineInputToPlannerNextProblem(input);
   if(adapter.status!=='SUPPORTED')throw new Error('INVALID_NOMINAL_PHYSICAL_WITNESS');
   const problem=adapter.problem,proof=result.evidence.nominalPhysicalFutureWitness as any;
@@ -187,7 +187,7 @@ export function assertNominalProposalWitness(input:EngineInput,draft:AssistedPla
   const context=materializeAssistedSnapshotOccupations(problem,adapter.identityMap,draft);
   for(const placed of context.protectedPlacements){
     const certified=proof.tasks.find((task:ScheduledTask)=>task.id===placed.id);
-    if(!certified||placed.start!==certified.start||placed.end!==certified.end||placed.spaceId!==certified.spaceId
+    if(!certified||placed.start!==certified.start||placed.end!==certified.end||placed.spaceId!==certified.spaceId||placed.itinerantUnitId!==certified.itinerantUnitId
       ||JSON.stringify([...(placed.requiredResourceIds??[])].sort())!==JSON.stringify([...(certified.requiredResourceIds??[])].sort()))
       throw new Error('INVALID_NOMINAL_PHYSICAL_WITNESS');
   }
@@ -376,6 +376,8 @@ export class AssistedProposalService {
         ]);
       }
       const canonicalTask=adapter.problem.tasks.find(task=>task.id===item.id)!;
+      if(input.dailyAnchoredAccompanimentsVersion===2&&input.anchoredAccompaniments?.some(p=>[...p.beforeTaskIds,p.anchorTaskId,...p.afterTaskIds].includes(taskId)))
+        assignedResourceIds=projectDirectResourcesToProduct(adapter.identityMap,[...(item.requiredResourceIds??[]),...(item.coachId?[item.coachId]:[])]);
       if(canonicalTask.nominalResourceChoice){
         if(!nominalResourceAssignmentMatches(canonicalTask,item))throw new Error(`INVALID_PROPOSAL_NOMINAL_RESOURCE:${taskId}`);
         assignedResourceIds=projectDirectResourcesToProduct(adapter.identityMap,[...(item.requiredResourceIds??[]),

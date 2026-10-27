@@ -1,0 +1,107 @@
+{
+  "authorizedBase": "25aaa056970e86f0fd13e90570fa1fcf5582a97c",
+  "node": "v20.20.2",
+  "remoteApplicationWrites": 0,
+  "productionMigrations": 0,
+  "deployments": 0,
+  "mergePerformed": false,
+  "historicalMigrationsUnchanged": true,
+  "checks": {
+    "types": {
+      "status": "PASS",
+      "logSha256": "a3524d5e43d767e9b4be9b919cafac7158a8650a095963e00ef859ff7f4eaf27"
+    },
+    "harnessTypes": {
+      "status": "PASS",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "build": {
+      "status": "PASS",
+      "logSha256": "f04fe80c3fa02092dfda4fb0b69fb6fbadbab591d1112d2a5b33604ffcc3e61c"
+    },
+    "migrationSequence": {
+      "status": "PASS",
+      "logSha256": "1dce52152d475c5f4e85eb5d8207c52801975b56462650c3198fc92df371028c"
+    },
+    "focal": {
+      "status": "PASS",
+      "logSha256": "8aa1ab79598bcfa91e01aadf7b43d165b5230621975345e070a4ba9c3a09cda2",
+      "tests": 23
+    },
+    "productSuite": {
+      "status": "PASS",
+      "exclusions": [
+        "engine/planner-next/benchmarks/runFullA2FirstExecutionBenchmark.spec.ts",
+        "server/benchmarks/runA2Assist7Evidence.spec.ts"
+      ],
+      "sameExclusionsAsCI": true,
+      "concurrency": 2,
+      "budgetsUnchanged": true,
+      "tests": 3270,
+      "failures": 0,
+      "skipped": 0,
+      "logSha256": "61332bf2d6543388948f0eaf25388ccfcb15203d180686c8e23a59d7cf4978e7"
+    },
+    "nativeTwoDatabases": {
+      "status": "PASS",
+      "newDaysPerDatabase": 2,
+      "stagesPerDatabase": 3,
+      "sqlForgeriesRejectedPerDatabase": 39,
+      "coldReplays": 6,
+      "receipts": [
+        "native/receipts.json.gz",
+        "repeat/receipts.json.gz",
+        "determinism.json"
+      ]
+    },
+    "sharedPhysicalCapacity": {
+      "status": "PASS",
+      "stageCreated": false,
+      "receipt": "shared/receipts.json.gz"
+    },
+    "upgrade117to118": {
+      "status": "PASS",
+      "originalRowsExact": true,
+      "readersExact": true,
+      "rlsExact": true,
+      "receipt": "upgrade/upgrade118.json",
+      "everyOriginalColumnCompared": true
+    },
+    "a2": {
+      "status": "PASS",
+      "runs": 2,
+      "completed": 266,
+      "stages": 11,
+      "branches": 27049,
+      "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+      "hardRequiredCertificates": 22,
+      "receipt": "a2/comparison.json"
+    },
+    "focusedRegressions": {
+      "status": "PASS",
+      "receipts": "regressions/",
+      "gates": [
+        "U00u",
+        "U00v",
+        "U00l nominal",
+        "individual meals",
+        "transport",
+        "rounds",
+        "required chains",
+        "post-Stage additions"
+      ]
+    },
+    "diffCheck": {
+      "status": "PASS"
+    },
+    "publicSecretScan": {
+      "status": "PASS",
+      "jwtValuesFound": 0
+    },
+    "executedProductHashComparison": {
+      "status": "PASS",
+      "manifest": "native/manifest.json.gz"
+    }
+  },
+  "hostedCI": "See the unique PR checks; this file records local execution, not a claim about an unseen CI head."
+}

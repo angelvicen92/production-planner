@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+import {createRequire} from 'node:module';
+import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
+import {resolve} from 'node:path';
+import {inspect} from './consumer';
+import {windowDelta} from './window-delta';
+const output=resolve(process.argv[2]);mkdirSync(output,{recursive:true});
+const input=JSON.parse(readFileSync('work/u00w/causal/native/choice-domain.json','utf8')).input;
+input.itinerantTeamAvailability.find((u:any)=>u.itinerantTeamId===2).windows=[{start:'09:20',end:'10:05'}];
+const before=inspect(input);assert.ok('result' in before&&!before.result.proposal);
+let intervention='';
+const bundle=await build({stdin:{contents:`export {inspect} from './docs/evidence/p0-u00w/consumer';`,resolveDir:process.cwd(),loader:'ts'},bundle:true,write:false,platform:'node',format:'cjs',packages:'external',plugins:[{name:'unit-boundary-memory',setup(b){b.onLoad({filter:/exactMainAndFeederCore\.ts$/},args=>{const source=readFileSync(args.path,'utf8');intervention=windowDelta(source);return {contents:intervention,loader:'ts',resolveDir:resolve(args.path,'..')};});}}]});
+const module={exports:{} as {inspect:typeof inspect}};new Function('require','module','exports',bundle.outputFiles[0].text)(createRequire(import.meta.url),module,module.exports);
+const after=module.exports.inspect(input);assert.ok('result' in after&&after.result.proposal);assert.ok(after.operationSelections![0].oneCommonUnit);
+writeFileSync(output+'/before-after.json',JSON.stringify({input,before,after,intervention,experimentIsStage:false},null,2));
+console.log('PASS: unit-window event rescues the physical variant in memory');

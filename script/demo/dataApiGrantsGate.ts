@@ -56,6 +56,14 @@ export function assertPrivilegeContract(catalog:DataApiCatalog) {
       for(const signature of scopeFunctions){const fn=catalog.functions.find(f=>f.signature===signature&&f.role===role);assert.ok(fn,signature);assert.equal(fn.definer,false);assert.deepEqual(fn.settings,['search_path=""']);}
     }
   }
+  const choiceFunctions=['assert_daily_anchored_accompaniments_v1(integer,jsonb)','assert_anchored_selected_snapshot(integer,jsonb,bigint,jsonb)','assert_anchored_choice_witness(integer,jsonb,bigint)','assert_daily_anchored_snapshot_v1(integer,jsonb,bigint)'];
+  if(catalog.functions.some(f=>f.signature===choiceFunctions[2])){
+    for(const signature of choiceFunctions)for(const role of ['anon','authenticated','service_role']){
+      expected.functions.push({signature,role,execute:role==='service_role'});
+      const fn=catalog.functions.find(f=>f.signature===signature&&f.role===role);assert.ok(fn,signature);assert.equal(fn.definer,false);assert.deepEqual(fn.settings,['search_path=""']);
+    }
+    expected.functions.sort((a:any,b:any)=>a.signature<b.signature?-1:a.signature>b.signature?1:a.role<b.role?-1:a.role>b.role?1:0);
+  }
   assert.deepEqual(privilegeContract(catalog),expected,
     'Data API contract changed: review every new object, required grant, column boundary and exposed role');
   // 103 adds one column covered by the existing table grants. The compact JSON

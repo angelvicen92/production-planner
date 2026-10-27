@@ -1938,7 +1938,11 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
           return new Set(projection?.status === "REPRESENTABLE" ? projection.genericResourceIds : []);
         });
         const continuousResourceIds = projectedResourceSets.length ? [...projectedResourceSets[0]!].filter((resourceId) => projectedResourceSets.slice(1).every((set) => set.has(resourceId))).sort((a, b) => a - b) : [];
-        const resourceCompatible = continuousResourceIds.length > 0;
+        const unitDomains=memberTasks.map(t=>[...new Set(t.allowedItinerantTeamIds??[])].sort((a,b)=>a-b));
+        const continuousUnitDomain=memberTasks.length===referencedTaskIds.length&&unitDomains[0]?.length>0
+          &&unitDomains.every(d=>JSON.stringify(d)===JSON.stringify(unitDomains[0]))
+          &&unitDomains[0].every(id=>input.itinerantTeamAvailability?.some(u=>u.itinerantTeamId===id&&u.planResourceItemIds?.length));
+        const resourceCompatible = continuousResourceIds.length > 0 || input.dailyAnchoredAccompanimentsVersion===2&&continuousUnitDomain;
         const shapeValid = structured && validId && validAnchor && validBefore && validAfter
           && operation.adjacency === "REQUIRED" && operation.internalTransition === "INCLUDED" && operation.resourceContinuity === "REQUIRED";
         const complete = shapeValid && hasEffectiveSegments && !missingTaskIds.length
