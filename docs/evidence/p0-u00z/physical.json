@@ -1,0 +1,215 @@
+{
+  "status": "PASS",
+  "remoteWrites": 0,
+  "report": [
+    {
+      "label": "A",
+      "ordinal": 1,
+      "physicalMeals": [
+        {
+          "id": "break:ffd893c1-604d-437a-bfcd-a6c00adafef5-race",
+          "end": 730,
+          "start": 705,
+          "duration": 25,
+          "spaceIds": [
+            "space:1",
+            "space:2"
+          ],
+          "resourceIds": [
+            "plan-resource:1"
+          ]
+        }
+      ],
+      "acceptedMeals": [
+        {
+          "policyId": "break:ffd893c1-604d-437a-bfcd-a6c00adafef5-race",
+          "endPlanned": "12:10",
+          "startPlanned": "11:45"
+        }
+      ],
+      "pendingMealWitnesses": 0,
+      "physicalTaskCount": 3,
+      "persistedAssignmentsExact": true
+    },
+    {
+      "label": "B",
+      "ordinal": 1,
+      "physicalMeals": [
+        {
+          "id": "break:7b5a67f5-48c2-45d3-b0d4-ef3c0b19eff1-race",
+          "end": 635,
+          "start": 615,
+          "duration": 20,
+          "spaceIds": [],
+          "resourceIds": [
+            "plan-resource:5",
+            "plan-resource:6"
+          ]
+        },
+        {
+          "id": "break:e52cfa02-54cb-4ada-ae6f-5b28e251284f",
+          "end": 765,
+          "start": 740,
+          "duration": 25,
+          "spaceIds": [],
+          "resourceIds": [
+            "plan-resource:7",
+            "plan-resource:8"
+          ]
+        }
+      ],
+      "acceptedMeals": [
+        {
+          "policyId": "break:7b5a67f5-48c2-45d3-b0d4-ef3c0b19eff1-race",
+          "endPlanned": "10:35",
+          "startPlanned": "10:15"
+        }
+      ],
+      "pendingMealWitnesses": 1,
+      "physicalTaskCount": 4,
+      "persistedAssignmentsExact": true
+    },
+    {
+      "label": "B",
+      "ordinal": 2,
+      "physicalMeals": [
+        {
+          "id": "break:7b5a67f5-48c2-45d3-b0d4-ef3c0b19eff1-race",
+          "end": 635,
+          "start": 615,
+          "duration": 20,
+          "spaceIds": [],
+          "resourceIds": [
+            "plan-resource:5",
+            "plan-resource:6"
+          ]
+        },
+        {
+          "id": "break:e52cfa02-54cb-4ada-ae6f-5b28e251284f",
+          "end": 765,
+          "start": 740,
+          "duration": 25,
+          "spaceIds": [],
+          "resourceIds": [
+            "plan-resource:7",
+            "plan-resource:8"
+          ]
+        }
+      ],
+      "acceptedMeals": [
+        {
+          "policyId": "break:7b5a67f5-48c2-45d3-b0d4-ef3c0b19eff1-race",
+          "endPlanned": "10:35",
+          "startPlanned": "10:15"
+        },
+        {
+          "policyId": "break:e52cfa02-54cb-4ada-ae6f-5b28e251284f",
+          "endPlanned": "12:45",
+          "startPlanned": "12:20"
+        }
+      ],
+      "pendingMealWitnesses": 0,
+      "physicalTaskCount": 4,
+      "persistedAssignmentsExact": true
+    },
+    {
+      "label": "D",
+      "ordinal": 1,
+      "physicalMeals": [
+        {
+          "id": "break:ca6d0c14-d2df-4da5-935f-6ace73d8cc11",
+          "end": 620,
+          "start": 600,
+          "duration": 20,
+          "spaceIds": [
+            "space:1"
+          ],
+          "resourceIds": []
+        },
+        {
+          "id": "break:de4124ed-6a4c-4595-a451-31698ed86330",
+          "end": 635,
+          "start": 615,
+          "duration": 20,
+          "spaceIds": [],
+          "resourceIds": [
+            "plan-resource:9",
+            "plan-resource:10"
+          ]
+        },
+        {
+          "id": "break:350e7746-bf4c-4657-8640-64545a172fc2-race",
+          "end": 765,
+          "start": 740,
+          "duration": 25,
+          "spaceIds": [],
+          "resourceIds": [
+            "plan-resource:11",
+            "plan-resource:12"
+          ]
+        }
+      ],
+      "acceptedMeals": [
+        {
+          "policyId": "break:350e7746-bf4c-4657-8640-64545a172fc2-race",
+          "endPlanned": "12:45",
+          "startPlanned": "12:20"
+        },
+        {
+          "policyId": "break:ca6d0c14-d2df-4da5-935f-6ace73d8cc11",
+          "endPlanned": "10:20",
+          "startPlanned": "10:00"
+        },
+        {
+          "policyId": "break:de4124ed-6a4c-4595-a451-31698ed86330",
+          "endPlanned": "10:35",
+          "startPlanned": "10:15"
+        }
+      ],
+      "pendingMealWitnesses": 0,
+      "physicalTaskCount": 4,
+      "persistedAssignmentsExact": true
+    },
+    {
+      "label": "C",
+      "ordinal": 1,
+      "physicalMeals": [
+        {
+          "id": "break:46461579-76b7-477e-ba69-cbcf00f91c33-race",
+          "end": 635,
+          "start": 590,
+          "duration": 45,
+          "spaceIds": [
+            "space:5"
+          ],
+          "resourceIds": []
+        },
+        {
+          "id": "break:a2de7861-687a-497f-990a-02a6dadfaf06",
+          "end": 745,
+          "start": 725,
+          "duration": 20,
+          "spaceIds": [],
+          "resourceIds": [
+            "plan-resource:14"
+          ]
+        }
+      ],
+      "acceptedMeals": [
+        {
+          "policyId": "break:46461579-76b7-477e-ba69-cbcf00f91c33-race",
+          "endPlanned": "10:35",
+          "startPlanned": "09:50"
+        },
+        {
+          "policyId": "break:a2de7861-687a-497f-990a-02a6dadfaf06",
+          "endPlanned": "12:25",
+          "startPlanned": "12:05"
+        }
+      ],
+      "pendingMealWitnesses": 0,
+      "physicalTaskCount": 4,
+      "persistedAssignmentsExact": true
+    }
+  ]
+}

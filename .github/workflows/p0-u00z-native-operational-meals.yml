@@ -38,10 +38,13 @@ jobs:
       - run: node --import tsx --test --test-concurrency=1 engine/planner-next/integration/nativeOperationalMeals.spec.ts engine/planner-next/integration/nativeJointGroups.spec.ts engine/planner-next/jointTasks.spec.ts engine/planner-next/integration/nativeRealityComposition.spec.ts script/demo/assistedSQLContracts.spec.ts script/demo/a2Preflight.spec.ts
       - run: node --import tsx docs/evidence/p0-u00z/upgrade121.ts work/u00z-upgrade
       - run: node --import tsx docs/evidence/p0-u00z/run.ts work/u00z-native --native
-      - run: node --import tsx docs/evidence/p0-u00z/run.ts work/u00z-repeat --native
+      - run: node --import tsx docs/evidence/p0-u00z/run.ts work/u00z-repeat --native --public-negatives
       - run: node --import tsx docs/evidence/p0-u00z/verify.ts work/u00z-native work/u00z-repeat work/u00z-determinism.json
       - run: node --import tsx docs/evidence/p0-u00z/physical.ts work/u00z-native work/u00z-physical.json
       - run: node --import tsx docs/evidence/p0-u00z/run.ts work/u00z-joint --joint-integration
+      - run: node --import tsx docs/evidence/p0-u00z/run.ts work/u00z-individual --individual-diagnostic --individual-success
+      - run: node --import tsx docs/evidence/p0-u00z/run.ts work/u00z-individual-repeat --individual-diagnostic --individual-success --public-negatives
+      - run: node --import tsx docs/evidence/p0-u00z/verify.ts work/u00z-individual work/u00z-individual-repeat work/u00z-individual-determinism.json --individual
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -62,4 +65,9 @@ jobs:
             work/u00z-joint/native/*.json
             work/u00z-joint/native/*.png
             work/u00z-determinism.json
+            work/u00z-individual/manifest.json
+            work/u00z-individual/native/*.json
+            work/u00z-individual-repeat/manifest.json
+            work/u00z-individual-repeat/native/*.json
+            work/u00z-individual-determinism.json
           retention-days: 14

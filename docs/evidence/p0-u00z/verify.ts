@@ -16,7 +16,7 @@ const {fingerprintAssistedPlanningSnapshotV1}=await import('../../../server/assi
 const directories=process.argv.slice(2,4).map(d=>resolve(d)),output=resolve(process.argv[4]);
 const read=(d:string,n:string)=>JSON.parse(readFileSync(join(d,'native',n+'.json'),'utf8'));
 const results:any[]=[];
-for(const label of ['A','B','D','C'])for(let ordinal=1;ordinal<=(label==='B'?2:1);ordinal++){
+for(const label of process.argv.includes('--individual')?['E']:['A','B','D','C'])for(let ordinal=1;ordinal<=(['B','E'].includes(label)?2:1);ordinal++){
  const snapshots:any[]=[];
  for(const directory of directories){
   assert.equal(read(directory,'integration').status,'PASS');

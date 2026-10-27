@@ -135,6 +135,66 @@ BEGIN
     WHERE declared_policy->''spaceIds'' @> jsonb_build_array((main_flow->>''spaceId'')::integer)
      AND (m->>''start'')::integer=previous_end AND (m->>''end'')::integer=(x->>''start'')::integer
      AND (m->>''end'')::integer-(m->>''start'')::integer=(declared_policy->>''durationMinutes'')::integer)))');
+ -- Individual meals already have their own product channel (108). A native
+ -- physical certificate authenticates that channel too, then feeds its virtual
+ -- participant occupations into the SAME dependency/competition validator.
+ definition:=replace(definition,'gap integer; same_operation boolean; main_flow jsonb;',
+  'gap integer; same_operation boolean; main_flow jsonb; participant_proof jsonb; participant_occupations jsonb;');
+ needle:='jsonb_array_length(proof)<>(SELECT count(*) FROM public.daily_tasks WHERE plan_id=p_plan AND status<>''cancelled'')';
+ IF strpos(definition,needle)=0 THEN RAISE EXCEPTION 'OPERATIONAL_MEAL_UNEXPECTED_TASK_CHANNEL'; END IF;
+ definition:=replace(definition,needle,'jsonb_array_length(proof)<>(SELECT count(*) FROM public.daily_tasks WHERE plan_id=p_plan AND status<>''cancelled''
+  AND NOT(coalesce(p.daily_operational_meal_policies->''policies'',''[]'')<>''[]'' AND p.meal_mode=''flexible_meal_window'' AND template_id IS NOT DISTINCT FROM (p.planner_next_profile->>''mealTaskTemplateId'')::bigint))');
+ needle:='IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(proof) predecessor WHERE predecessor->>''id''=''task:''||dep::text AND (predecessor->>''end'')::integer<=start_min) THEN RAISE EXCEPTION ''ANCHORED_WITNESS_DEPENDENCY''; END IF;';
+ IF strpos(definition,needle)=0 THEN RAISE EXCEPTION 'OPERATIONAL_MEAL_UNEXPECTED_DEPENDENCY_CHANNEL'; END IF;
+ definition:=replace(definition,needle,'IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(proof) predecessor WHERE predecessor->>''id''=''task:''||dep::text AND (predecessor->>''end'')::integer<=start_min)
+    AND NOT(coalesce(p.daily_operational_meal_policies->''policies'',''[]'')<>''[]'' AND p.meal_mode=''flexible_meal_window''
+     AND EXISTS(SELECT 1 FROM public.daily_tasks source_meal,jsonb_array_elements(coalesce(r.assisted_result_json#>''{evidence,nominalPhysicalFutureWitness,participantMeals}'',''[]'')) m
+      WHERE source_meal.plan_id=p_plan AND source_meal.id=dep::text::integer AND source_meal.template_id=(p.planner_next_profile->>''mealTaskTemplateId'')::bigint AND m->>''sourceTaskId''=''task:''||source_meal.id AND (m->>''end'')::integer<=start_min))
+   THEN RAISE EXCEPTION ''ANCHORED_WITNESS_DEPENDENCY''; END IF;');
+ needle:=' -- Whole-operation continuity and choice, including pending operations in the witness.';
+ IF strpos(definition,needle)=0 THEN RAISE EXCEPTION 'OPERATIONAL_MEAL_UNEXPECTED_COMPETITION_CHANNEL'; END IF;
+ definition:=replace(definition,needle,'
+ IF coalesce(p.daily_operational_meal_policies->''policies'',''[]'')<>''[]'' AND p.meal_mode=''flexible_meal_window'' THEN
+  participant_proof:=r.assisted_result_json#>''{evidence,nominalPhysicalFutureWitness,participantMeals}'';participant_occupations:=''[]'';
+  IF jsonb_typeof(participant_proof) IS DISTINCT FROM ''array''
+   OR jsonb_array_length(participant_proof)<>(SELECT count(*) FROM public.daily_tasks WHERE plan_id=p_plan AND status<>''cancelled'' AND template_id=(p.planner_next_profile->>''mealTaskTemplateId'')::bigint)
+   OR (SELECT count(DISTINCT m->>''sourceTaskId'') FROM jsonb_array_elements(participant_proof) m)<>jsonb_array_length(participant_proof)
+  THEN RAISE EXCEPTION ''OPERATIONAL_PARTICIPANT_GLOBAL_WITNESS_REQUIRED''; END IF;
+  IF jsonb_array_length(participant_proof)>0 AND (SELECT jsonb_agg(m ORDER BY m->>''sourceTaskId'') FROM jsonb_array_elements(participant_proof) m)
+   IS DISTINCT FROM (SELECT jsonb_agg(m ORDER BY m->>''sourceTaskId'') FROM jsonb_array_elements(coalesce(r.assisted_result_json#>''{evidence,selectedMealWitnesses,participant,scheduled}'',''[]'')) m)
+  THEN RAISE EXCEPTION ''OPERATIONAL_PARTICIPANT_WITNESS_CHANNEL_MISMATCH''; END IF;
+  FOR item IN SELECT value FROM jsonb_array_elements(participant_proof) LOOP
+   SELECT * INTO task FROM public.daily_tasks WHERE plan_id=p_plan AND ''task:''||id=item->>''sourceTaskId'' AND status<>''cancelled'' AND template_id=(p.planner_next_profile->>''mealTaskTemplateId'')::bigint;
+   IF NOT FOUND THEN RAISE EXCEPTION ''OPERATIONAL_PARTICIPANT_WITNESS_IDENTITY''; END IF;
+   SELECT * INTO STRICT tpl FROM public.plan_task_template_snapshots WHERE plan_id=p_plan AND source_template_id=task.template_id;
+   SELECT * INTO STRICT person FROM public.contestants WHERE plan_id=p_plan AND id=task.contestant_id;
+   start_min:=(item->>''start'')::integer;end_min:=(item->>''end'')::integer;
+   IF item->>''id'' IS DISTINCT FROM ''participant-meal:''||task.id OR item->>''participantId'' IS DISTINCT FROM ''participant:''||task.contestant_id
+    OR start_min IS NULL OR end_min IS NULL OR start_min%5<>0 OR end_min%5<>0
+    OR (item->>''duration'')::integer IS DISTINCT FROM coalesce(task.duration_override,tpl.default_duration)
+    OR end_min-start_min IS DISTINCT FROM coalesce(task.duration_override,tpl.default_duration)
+    OR start_min<greatest(public.hhmm_to_minutes(p.work_start),public.hhmm_to_minutes(p.meal_start),public.hhmm_to_minutes(person.availability_start))
+    OR end_min>least(public.hhmm_to_minutes(p.work_end),public.hhmm_to_minutes(p.meal_end),public.hhmm_to_minutes(person.availability_end))
+    OR item->>''spaceId'' IS NOT NULL OR coalesce(item->''requiredResourceIds'',''[]'')<>''[]''
+    OR EXISTS(SELECT 1 FROM public.locks l WHERE l.plan_id=p_plan AND l.task_id=task.id AND l.lock_type IN (''time'',''full'') AND (public.hhmm_to_minutes(l.locked_start) IS DISTINCT FROM start_min OR public.hhmm_to_minutes(l.locked_end) IS DISTINCT FROM end_min))
+   THEN RAISE EXCEPTION ''OPERATIONAL_PARTICIPANT_WITNESS_MATERIAL''; END IF;
+   SELECT value INTO actual FROM jsonb_array_elements(p_snapshot->''tasks'') x WHERE x->''taskId''=to_jsonb(task.id);
+   IF actual IS NULL OR actual->>''startPlanned'' IS NOT NULL AND (public.hhmm_to_minutes(actual->>''startPlanned'') IS DISTINCT FROM start_min OR public.hhmm_to_minutes(actual->>''endPlanned'') IS DISTINCT FROM end_min OR actual->>''spaceId'' IS NOT NULL)
+    OR task.start_planned IS NOT NULL AND (actual->>''startPlanned'' IS NULL OR public.hhmm_to_minutes(task.start_planned) IS DISTINCT FROM start_min OR public.hhmm_to_minutes(task.end_planned) IS DISTINCT FROM end_min)
+   THEN RAISE EXCEPTION ''OPERATIONAL_PARTICIPANT_PROTECTED_DECISION''; END IF;
+   participant_occupations:=participant_occupations||jsonb_build_array(jsonb_build_object(''id'',item->''sourceTaskId'',''kind'',''participant-meal'',''participantId'',item->''participantId'',''spaceId'',NULL,''blocksSpace'',false,''requiredResourceIds'',''[]''::jsonb,''start'',start_min,''end'',end_min));
+  END LOOP;
+  IF EXISTS(SELECT 1 FROM jsonb_array_elements(participant_proof) anchor WHERE (SELECT count(*) FROM jsonb_array_elements(participant_proof) m WHERE (m->>''start'')::integer<=(anchor->>''start'')::integer AND (m->>''end'')::integer>(anchor->>''start'')::integer)>p.contestant_meal_max_simultaneous)
+  THEN RAISE EXCEPTION ''OPERATIONAL_PARTICIPANT_CAPACITY''; END IF;
+  proof:=proof||participant_occupations;
+  FOR item IN SELECT value FROM jsonb_array_elements(participant_occupations) LOOP
+   SELECT value INTO op FROM jsonb_array_elements(operations) x WHERE ''task:''||(x->>''taskId'')=item->>''id'';
+   FOR dep IN SELECT value FROM jsonb_array_elements(op->''dependsOnTaskIds'') LOOP
+    IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(proof) predecessor WHERE predecessor->>''id''=''task:''||dep::text AND (predecessor->>''end'')::integer<=(item->>''start'')::integer) THEN RAISE EXCEPTION ''OPERATIONAL_PARTICIPANT_DEPENDENCY''; END IF;
+   END LOOP;
+  END LOOP;
+ END IF;
+'||needle);
  EXECUTE definition;
 END $migration$;
 

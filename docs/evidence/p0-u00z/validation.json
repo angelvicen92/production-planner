@@ -1,0 +1,93 @@
+{
+  "status": "PASS_WITH_EXPLICIT_COMPOSITION_LIMITS",
+  "base": "ade9fd65ccc91059a5a35f2b93b9ed5c0762b0a8",
+  "pr": "https://github.com/angelvicen92/production-planner/pull/1204",
+  "remoteWrites": 0,
+  "merge": false,
+  "migration121Sha256": "66bd532033df20fa576cccd3b9a467d1f2f459f0a0cea08eb4125b1815ba3dd4",
+  "priorMigrationsModified": false,
+  "gate": {
+    "nativeCoreDays": [
+      "A",
+      "B",
+      "D",
+      "C"
+    ],
+    "coreTasks": [
+      3,
+      4,
+      4,
+      4
+    ],
+    "coreStagesPerDatabase": 5,
+    "individualComposition": {
+      "obligations": 6,
+      "ordinaryTasks": 4,
+      "participantMeals": 2,
+      "operationalPauses": 1,
+      "stagesPerDatabase": 2,
+      "independentDatabases": 2
+    },
+    "jointComposition": {
+      "tasks": [
+        7,
+        11
+      ],
+      "stages": 3
+    },
+    "coldReplaysCore": 10,
+    "coldReplaysIndividual": 4,
+    "certificateForgeriesRejected": {
+      "native": 46,
+      "repeat": 46,
+      "public-rpc": 46,
+      "individual": 36,
+      "individual-repeat": 36
+    },
+    "hardAndRequiredConflicts": 0,
+    "actualPg17AuthPostgrestChromium": true,
+    "transactionRollback": true,
+    "protectedContinuationRollbackRedo": true
+  },
+  "regression": {
+    "a2": "a2/comparison.json",
+    "completed": 266,
+    "stages": 11,
+    "branches": 27049,
+    "runs": 2,
+    "certificatesRevalidated": 22,
+    "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+    "rootTypes": "PASS",
+    "harnessTypes": "PASS",
+    "migrationCheck": "PASS",
+    "build": "PASS",
+    "finalFocal": {
+      "pass": 45,
+      "fail": 0
+    },
+    "initialFullLocalSuite": {
+      "pass": 3289,
+      "fail": 2,
+      "cause": "Global capability status snapshot after initial PRODUCTIVE metadata; restored PARTIAL for uncertified structural combinations, 26 affected tests pass. Initial subsequent remote engine CI passes. No old assertions removed or weakened."
+    },
+    "initialRemoteHead": "5861790a05a969f1a3dd4076f18f8a5ec6be8dc1",
+    "initialRemoteWorkflows": {
+      "pass": 28,
+      "fail": 0,
+      "receipt": "checks/initial-head-ci.json"
+    },
+    "finalHeadCI": "Consult the same PR checks for the final head; checked independently from these local receipts",
+    "budgetsTimeoutsExistingAssertionsChanged": false
+  },
+  "historicalUpgrade": "upgrade/upgrade121.json",
+  "sourceVersions": "Each manifest records executed product hashes and any checkout delta; primary core run predates the localized participant-channel extension, repeat uses the final 121. Both exact witnesses replay unchanged. CI executes both core runs against one final checkout.",
+  "remainingLimits": [
+    "Anchored authorities + operational pauses",
+    "Rounds + operational pauses",
+    "Technical chains + operational pauses",
+    "Setup/transport/structural continuity + operational pauses"
+  ],
+  "globalA2UIComplete": false,
+  "nextGap": "next-gap.json",
+  "publicEvidenceCredentialScan": "PASS"
+}

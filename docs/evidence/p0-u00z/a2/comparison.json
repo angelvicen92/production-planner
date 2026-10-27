@@ -1,0 +1,39 @@
+{
+  "status": "PASS",
+  "baseline": "docs/evidence/p0-u00s/integration/a2/candidate",
+  "base": "3ade5d2774584f92f86b2b8670bbb3f19fc5f83c",
+  "remoteWrites": 0,
+  "sql": false,
+  "results": {
+    "candidate": {
+      "status": "PASS",
+      "isolated": true,
+      "node": "v20.20.0",
+      "seconds": 203.352394493,
+      "completed": 266,
+      "stages": 11,
+      "branches": 27049,
+      "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+      "fullReportEqualExceptDurationMs": true,
+      "snapshotsEqual": true,
+      "certificatesRevalidated": 11,
+      "wallSeconds": 209.10188266600017
+    },
+    "repeat": {
+      "status": "PASS",
+      "isolated": true,
+      "node": "v20.20.0",
+      "seconds": 240.436316286,
+      "completed": 266,
+      "stages": 11,
+      "branches": 27049,
+      "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+      "fullReportEqualExceptDurationMs": true,
+      "snapshotsEqual": true,
+      "certificatesRevalidated": 11,
+      "wallSeconds": 245.14485229899992
+    }
+  },
+  "certificatesRevalidated": 22,
+  "onlyReportExclusion": "iterations[].durationMs"
+}

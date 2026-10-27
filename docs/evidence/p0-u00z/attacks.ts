@@ -3,6 +3,7 @@ import {fingerprint} from '../../../engine/planner-next/fingerprint';
 import {fingerprintAssistedPlanningSnapshotV1} from '../../../server/assistedPlanningSnapshot';
 import {buildCanonicalPlanConfig} from '../../../server/dayConfigurationService';
 import {withDailyOperationalMeals} from '../../../server/operationalMealPolicy';
+import {participantMealWitnessFingerprint} from '../../../shared/participantMealWitnessFingerprint';
 export async function configurationAttacks(ctx:any){
  const {planId,api,request,db,save,users,storage,url,anon,label}=ctx;
  const path=`/api/plans/${planId}/day-configuration`,view=async()=>(await api(`/api/plans/${planId}/effective-configuration`)).operationalMeals;
@@ -54,7 +55,8 @@ export async function protectedAttacks(ctx:any){
 }
 export async function certificateAttacks(ctx:any){
  const {planId,db,run,draft,save,label,ordinal}=ctx;const failures:any[]=[];
- for(const mode of ['missing-meal','wrong-duration','wrong-window','missing-resource','invented-space','occupied-resource','omitted-draft-meal','invented-draft-meal','missing-future-task','protected-meal']){
+ const participantModes=(run.assisted_result_json??run.assistedResultJson).evidence.nominalPhysicalFutureWitness.participantMeals?.length?['participant-missing','participant-identity','participant-window','participant-duration','participant-resources','participant-capacity','participant-channel','participant-collision','participant-draft','participant-task-channel']:[];
+ for(const mode of ['missing-meal','wrong-duration','wrong-window','missing-resource','invented-space','occupied-resource','omitted-draft-meal','invented-draft-meal','missing-future-task','protected-meal',...participantModes]){
   const original=run.assisted_result_json??run.assistedResultJson;if(mode==='protected-meal'&&!draft.activeStage.snapshotJson.operationalMeals?.length)continue;
   let error:any;await db.query('BEGIN');try{
    const forged=structuredClone(original),proof=forged.evidence.nominalPhysicalFutureWitness,m=mode==='missing-resource'?proof.operationalMeals.find((m:any)=>m.resourceIds.length):mode==='protected-meal'?proof.operationalMeals.find((m:any)=>draft.activeStage.snapshotJson.operationalMeals.some((p:any)=>p.policyId===m.id)):proof.operationalMeals[0];
@@ -68,11 +70,39 @@ export async function certificateAttacks(ctx:any){
    if(mode==='invented-draft-meal')forged.proposedDraftSnapshot.operationalMeals=[...(forged.proposedDraftSnapshot.operationalMeals??[]),{policyId:'break:invented',startPlanned:'10:00',endPlanned:'10:25'}];
    if(mode==='missing-future-task')proof.tasks.pop();
    if(mode==='protected-meal'){m.start+=5;m.end+=5;}
+   const participants=proof.participantMeals;
+   if(mode==='participant-task-channel'){
+    const meal=participants[0];proof.tasks.pop();proof.tasks.push({id:meal.sourceTaskId,kind:'auxiliary',participantId:meal.participantId,spaceId:null,duration:meal.duration,start:meal.start,end:meal.end,dependencies:[],requiredResourceIds:[]});
+   }
+   if(mode==='participant-missing')participants.pop();
+   if(mode==='participant-identity')participants[0].participantId='participant:2147483647';
+   if(mode==='participant-window'){participants[0].start-=480;participants[0].end-=480;}
+   if(mode==='participant-duration'){participants[0].end+=5;participants[0].duration+=5;}
+   if(mode==='participant-resources')participants[0].requiredResourceIds=[m.resourceIds[0]];
+   if(mode==='participant-capacity'){participants[1].start=participants[0].start;participants[1].end=participants[0].end;}
+   if(mode==='participant-channel')forged.evidence.selectedMealWitnesses.participant.scheduled.pop();
+   if(mode==='participant-collision'){
+    // Keep the ordinary task certificate unchanged. Move this person's meal
+    // across their real recording, within the independently configured window.
+    const meal=participants.find((p:any)=>proof.tasks.some((t:any)=>t.participantId===p.participantId&&t.start>=720&&t.end<=780));
+    if(!meal)continue;const task=proof.tasks.find((t:any)=>t.participantId===meal.participantId&&t.start>=720&&t.end<=780);
+    meal.start=Math.max(task.start,...participants.filter((p:any)=>p!==meal).map((p:any)=>p.end));assert.ok(meal.start<task.end);meal.end=meal.start+meal.duration;
+   }
+   if(mode==='participant-draft'){
+    const task=forged.proposedDraftSnapshot.tasks.find((t:any)=>'task:'+t.taskId===participants[0].sourceTaskId&&t.startPlanned);
+    if(!task)continue;task.startPlanned='12:55';task.endPlanned='13:15';
+   }
+   if(mode.startsWith('participant-')&&mode!=='participant-channel'){
+    const channel=forged.evidence.selectedMealWitnesses.participant;channel.scheduled=structuredClone(participants);channel.fingerprint=participantMealWitnessFingerprint(participants);
+    forged.evidence.participantMealAcceptedWitnessFingerprint=channel.fingerprint;
+   }
    proof.fingerprint=fingerprint(proof.tasks);forged.proposedDraftFingerprint=fingerprintAssistedPlanningSnapshotV1(forged.proposedDraftSnapshot);
    await db.query("UPDATE planning_runs SET assisted_result_json=$2::jsonb,result_fingerprint=encode(extensions.digest(convert_to($2::jsonb::text,'UTF8'),'sha256'),'hex') WHERE id=$1",[run.id,JSON.stringify(forged)]);
    await db.query('UPDATE assisted_planning_sessions SET draft_snapshot_json=$2,draft_fingerprint=$3 WHERE id=$1',[draft.session.id,forged.proposedDraftSnapshot,forged.proposedDraftFingerprint]);
-   await db.query('SET LOCAL ROLE service_role');await db.query('SELECT assert_operational_meal_snapshot($1,$2,$3)',[planId,forged.proposedDraftSnapshot,draft.currentConfigRevisionId]);
+   await db.query('SET LOCAL ROLE service_role');
+   if(process.argv.includes('--public-negatives'))await db.query('SELECT assisted_record_proposal_clean_validation($1,$2,$3,$4)',[planId,forged.proposedDraftFingerprint,draft.draftBaseStageId,draft.currentConfigRevisionId]);
+   else await db.query('SELECT assert_operational_meal_snapshot($1,$2,$3)',[planId,forged.proposedDraftSnapshot,draft.currentConfigRevisionId]);
   }catch(e:any){error={message:e.message,code:e.code};}finally{await db.query('ROLLBACK');}
-  failures.push({mode,error,hashesRecomputed:true,rolledBack:true});save(`${label}-S${ordinal}-certificate-negatives`,failures);assert.ok(error,mode);
+  failures.push({mode,error,consumer:process.argv.includes('--public-negatives')?'assisted_record_proposal_clean_validation':'assert_operational_meal_snapshot',hashesRecomputed:true,rolledBack:true});save(`${label}-S${ordinal}-certificate-negatives`,failures);assert.ok(error,mode);
  }
 }

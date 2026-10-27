@@ -6,6 +6,7 @@ import {inspect} from '../p0-u00y/consumer';
 import {assessOperationalMealFutureFeasibility} from '../../../engine/planner-next/operationalMeals';
 import {validatePlan} from '../../../engine/planner-next/validate';
 export async function journey(ctx:any){
+ if(process.argv.includes('--individual-diagnostic'))return (await import('./individual-diagnostic')).individualDiagnostic(ctx);
  if(process.argv.includes('--joint-integration'))return (await import('../p0-u00y/nativeJourney')).nativeJourney(ctx);
  const {appUrl,users,db,directory,pass}=ctx;
  assert.equal(db.host,'127.0.0.1');

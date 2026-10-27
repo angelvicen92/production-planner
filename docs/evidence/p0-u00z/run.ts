@@ -33,7 +33,7 @@ if(process.argv.includes('--joint-integration')){
  const after=before.replace(needle,insert+needle);writeFileSync(file,after);
  writeFileSync(join(output,'joint-native-dispatch.json'),JSON.stringify({file:'docs/evidence/p0-u00y/nativeJourney.ts',before:sha(before),after:sha(after),insert,productSourceChanges:0},null,2));
 }
-const run=spawnSync(process.execPath,['--import','tsx','script/demo/smokeNewDayIntegration.ts',join(output,'native'),'--u00z',...['--native','--shared-negative','--joint-integration'].filter(flag=>process.argv.includes(flag))],{cwd:source,env:{...process.env,GIT_CEILING_DIRECTORIES:output},stdio:'inherit'});
+const run=spawnSync(process.execPath,['--import','tsx','script/demo/smokeNewDayIntegration.ts',join(output,'native'),'--u00z',...['--native','--shared-negative','--joint-integration','--public-negatives','--individual-diagnostic','--expect-contract-rejection','--individual-success'].filter(flag=>process.argv.includes(flag))],{cwd:source,env:{...process.env,GIT_CEILING_DIRECTORIES:output},stdio:'inherit'});
 for(const [f,hash] of Object.entries(hashes))if(f!=='script/demo/smokeNewDayIntegration.ts')assert.equal(sha(readFileSync(join(source,f))),hash,'executed archive '+f);
 writeFileSync(join(output,'checkout-delta.json'),JSON.stringify(Object.keys(hashes).filter(f=>sha(readFileSync(join(repo,f)))!==hashes[f]),null,2));
 assert.equal(run.status,0);
