@@ -163,6 +163,9 @@ BEGIN
    UNION SELECT (m->>'planResourceItemId')::integer FROM jsonb_array_elements(coalesce(unit.members,'[]')) m
    UNION SELECT l.locked_resource_id FROM public.locks l WHERE l.plan_id=p_plan AND l.task_id=t.id AND l.lock_type IN ('resource','full') AND l.locked_resource_id IS NOT NULL
   ) direct_and_materialized;
+  -- Native v2 deliberately persists the complete physical assignment of each
+  -- anchored member, including LOCATION resources of the physical Main.
+  IF anchored_member AND p.daily_anchored_accompaniments->'contractVersion'='2' THEN stored_resources:=resources; END IF;
   IF jsonb_typeof(actual->'assignedResourceIds') IS DISTINCT FROM 'array'
    OR (SELECT coalesce(jsonb_agg(value ORDER BY value::text::integer),'[]') FROM jsonb_array_elements(actual->'assignedResourceIds')) IS DISTINCT FROM stored_resources
    OR EXISTS(SELECT 1 FROM jsonb_array_elements(resources) rid WHERE NOT EXISTS(SELECT 1 FROM public.plan_resource_items r WHERE r.plan_id=p_plan AND r.id=rid::text::integer AND r.is_available AND start_min>=public.hhmm_to_minutes(coalesce(r.availability_start,p.work_start)) AND end_min<=public.hhmm_to_minutes(coalesce(r.availability_end,p.work_end))))

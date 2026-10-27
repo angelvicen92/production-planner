@@ -1,0 +1,1899 @@
+{
+  "status": "PASS",
+  "sqlRowsMatchStages": true,
+  "physicalConflicts": 0,
+  "reports": [
+    {
+      "label": "A",
+      "stage": 1,
+      "sqlStageId": "2",
+      "snapshotFingerprint": "43bc2cde24f337f0d2439ae4cd634e038189f3cef758adddbf396148c00345f9",
+      "selections": [
+        {
+          "anchorTaskId": 2,
+          "selectedUnit": {
+            "id": "1",
+            "name": "A mobile A",
+            "members": [
+              {
+                "resourceItemId": 2,
+                "planResourceItemId": 2
+              },
+              {
+                "resourceItemId": 3,
+                "planResourceItemId": 3
+              }
+            ],
+            "availability_windows": [
+              {
+                "end": "12:00",
+                "start": "09:00"
+              }
+            ]
+          },
+          "members": [
+            {
+              "taskId": 3,
+              "zoneId": 1,
+              "spaceId": 1,
+              "endPlanned": "10:35",
+              "startPlanned": "10:20",
+              "locationLabel": null,
+              "camerasOverride": null,
+              "itinerantTeamId": 1,
+              "durationOverride": null,
+              "assignedResourceIds": [
+                2,
+                3,
+                6
+              ]
+            },
+            {
+              "taskId": 2,
+              "zoneId": 1,
+              "spaceId": 1,
+              "endPlanned": "10:50",
+              "startPlanned": "10:35",
+              "locationLabel": null,
+              "camerasOverride": null,
+              "itinerantTeamId": 1,
+              "durationOverride": null,
+              "assignedResourceIds": [
+                2,
+                3,
+                6,
+                9,
+                10
+              ]
+            },
+            {
+              "taskId": 4,
+              "zoneId": 1,
+              "spaceId": 1,
+              "endPlanned": "11:05",
+              "startPlanned": "10:50",
+              "locationLabel": null,
+              "camerasOverride": null,
+              "itinerantTeamId": 1,
+              "durationOverride": null,
+              "assignedResourceIds": [
+                2,
+                3,
+                6
+              ]
+            }
+          ]
+        },
+        {
+          "anchorTaskId": 8,
+          "selectedUnit": {
+            "id": "2",
+            "name": "A mobile B",
+            "members": [
+              {
+                "resourceItemId": 4,
+                "planResourceItemId": 4
+              },
+              {
+                "resourceItemId": 5,
+                "planResourceItemId": 5
+              }
+            ],
+            "availability_windows": [
+              {
+                "end": "10:40",
+                "start": "09:00"
+              }
+            ]
+          },
+          "members": [
+            {
+              "taskId": 9,
+              "zoneId": 1,
+              "spaceId": 1,
+              "endPlanned": "10:05",
+              "startPlanned": "09:50",
+              "locationLabel": null,
+              "camerasOverride": null,
+              "itinerantTeamId": 2,
+              "durationOverride": null,
+              "assignedResourceIds": [
+                4,
+                5,
+                7
+              ]
+            },
+            {
+              "taskId": 8,
+              "zoneId": 1,
+              "spaceId": 1,
+              "endPlanned": "10:20",
+              "startPlanned": "10:05",
+              "locationLabel": null,
+              "camerasOverride": null,
+              "itinerantTeamId": 2,
+              "durationOverride": null,
+              "assignedResourceIds": [
+                4,
+                5,
+                7,
+                9,
+                10
+              ]
+            },
+            {
+              "taskId": 10,
+              "zoneId": 1,
+              "spaceId": 1,
+              "endPlanned": "10:35",
+              "startPlanned": "10:20",
+              "locationLabel": null,
+              "camerasOverride": null,
+              "itinerantTeamId": 2,
+              "durationOverride": null,
+              "assignedResourceIds": [
+                4,
+                5,
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "anchorTaskId": 14,
+          "selectedUnit": {
+            "id": "1",
+            "name": "A mobile A",
+            "members": [
+              {
+                "resourceItemId": 2,
+                "planResourceItemId": 2
+              },
+              {
+                "resourceItemId": 3,
+                "planResourceItemId": 3
+              }
+            ],
+            "availability_windows": [
+              {
+                "end": "12:00",
+                "start": "09:00"
+              }
+            ]
+          },
+          "members": [
+            {
+              "taskId": 15,
+              "zoneId": 1,
+              "spaceId": 1,
+              "endPlanned": "09:50",
+              "startPlanned": "09:35",
+              "locationLabel": null,
+              "camerasOverride": null,
+              "itinerantTeamId": 1,
+              "durationOverride": null,
+              "assignedResourceIds": [
+                2,
+                3,
+                8
+              ]
+            },
+            {
+              "taskId": 14,
+              "zoneId": 1,
+              "spaceId": 1,
+              "endPlanned": "10:05",
+              "startPlanned": "09:50",
+              "locationLabel": null,
+              "camerasOverride": null,
+              "itinerantTeamId": 1,
+              "durationOverride": null,
+              "assignedResourceIds": [
+                2,
+                3,
+                8,
+                9,
+                10
+              ]
+            },
+            {
+              "taskId": 16,
+              "zoneId": 1,
+              "spaceId": 1,
+              "endPlanned": "10:20",
+              "startPlanned": "10:05",
+              "locationLabel": null,
+              "camerasOverride": null,
+              "itinerantTeamId": 1,
+              "durationOverride": null,
+              "assignedResourceIds": [
+                2,
+                3,
+                8
+              ]
+            }
+          ]
+        }
+      ],
+      "occupations": [
+        {
+          "taskId": "task:1",
+          "start": 570,
+          "end": 580,
+          "participant": "participant:1",
+          "space": "space:2",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            10
+          ],
+          "resources": [
+            "plan-resource:10"
+          ]
+        },
+        {
+          "taskId": "task:2",
+          "start": 635,
+          "end": 650,
+          "participant": "participant:1",
+          "unit": "itinerant-team:1",
+          "space": "space:1",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            10
+          ],
+          "resources": [
+            "plan-resource:10",
+            "plan-resource:2",
+            "plan-resource:3",
+            "plan-resource:6",
+            "plan-resource:9"
+          ]
+        },
+        {
+          "taskId": "task:3",
+          "start": 620,
+          "end": 635,
+          "participant": "participant:1",
+          "unit": "itinerant-team:1",
+          "space": "space:1",
+          "blocksSpace": false,
+          "agenda": "ITINERANT_UNIT",
+          "inheritance": "OPERATION_ONLY",
+          "direct": [],
+          "resources": [
+            "plan-resource:2",
+            "plan-resource:3",
+            "plan-resource:6"
+          ]
+        },
+        {
+          "taskId": "task:4",
+          "start": 650,
+          "end": 665,
+          "participant": "participant:1",
+          "unit": "itinerant-team:1",
+          "space": "space:1",
+          "blocksSpace": false,
+          "agenda": "ITINERANT_UNIT",
+          "inheritance": "OPERATION_ONLY",
+          "direct": [],
+          "resources": [
+            "plan-resource:2",
+            "plan-resource:3",
+            "plan-resource:6"
+          ]
+        },
+        {
+          "taskId": "task:5",
+          "start": 550,
+          "end": 560,
+          "participant": "participant:2",
+          "space": "space:2",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            10
+          ],
+          "resources": [
+            "plan-resource:10"
+          ]
+        },
+        {
+          "taskId": "task:6",
+          "start": 620,
+          "end": 635,
+          "participant": "participant:2",
+          "space": "space:1",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            10
+          ],
+          "resources": [
+            "plan-resource:10",
+            "plan-resource:9"
+          ]
+        },
+        {
+          "taskId": "task:7",
+          "start": 540,
+          "end": 550,
+          "participant": "participant:3",
+          "space": "space:2",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            10
+          ],
+          "resources": [
+            "plan-resource:10"
+          ]
+        },
+        {
+          "taskId": "task:8",
+          "start": 605,
+          "end": 620,
+          "participant": "participant:3",
+          "unit": "itinerant-team:2",
+          "space": "space:1",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            10
+          ],
+          "resources": [
+            "plan-resource:10",
+            "plan-resource:4",
+            "plan-resource:5",
+            "plan-resource:7",
+            "plan-resource:9"
+          ]
+        },
+        {
+          "taskId": "task:9",
+          "start": 590,
+          "end": 605,
+          "participant": "participant:3",
+          "unit": "itinerant-team:2",
+          "space": "space:1",
+          "blocksSpace": false,
+          "agenda": "ITINERANT_UNIT",
+          "inheritance": "OPERATION_ONLY",
+          "direct": [],
+          "resources": [
+            "plan-resource:4",
+            "plan-resource:5",
+            "plan-resource:7"
+          ]
+        },
+        {
+          "taskId": "task:10",
+          "start": 620,
+          "end": 635,
+          "participant": "participant:3",
+          "unit": "itinerant-team:2",
+          "space": "space:1",
+          "blocksSpace": false,
+          "agenda": "ITINERANT_UNIT",
+          "inheritance": "OPERATION_ONLY",
+          "direct": [],
+          "resources": [
+            "plan-resource:4",
+            "plan-resource:5",
+            "plan-resource:7"
+          ]
+        },
+        {
+          "taskId": "task:11",
+          "start": 580,
+          "end": 590,
+          "participant": "participant:4",
+          "space": "space:2",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            10
+          ],
+          "resources": [
+            "plan-resource:10"
+          ]
+        },
+        {
+          "taskId": "task:12",
+          "start": 650,
+          "end": 665,
+          "participant": "participant:4",
+          "space": "space:1",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            10
+          ],
+          "resources": [
+            "plan-resource:10",
+            "plan-resource:9"
+          ]
+        },
+        {
+          "taskId": "task:13",
+          "start": 560,
+          "end": 570,
+          "participant": "participant:5",
+          "space": "space:2",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            10
+          ],
+          "resources": [
+            "plan-resource:10"
+          ]
+        },
+        {
+          "taskId": "task:14",
+          "start": 590,
+          "end": 605,
+          "participant": "participant:5",
+          "unit": "itinerant-team:1",
+          "space": "space:1",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            10
+          ],
+          "resources": [
+            "plan-resource:10",
+            "plan-resource:2",
+            "plan-resource:3",
+            "plan-resource:8",
+            "plan-resource:9"
+          ]
+        },
+        {
+          "taskId": "task:15",
+          "start": 575,
+          "end": 590,
+          "participant": "participant:5",
+          "unit": "itinerant-team:1",
+          "space": "space:1",
+          "blocksSpace": false,
+          "agenda": "ITINERANT_UNIT",
+          "inheritance": "OPERATION_ONLY",
+          "direct": [],
+          "resources": [
+            "plan-resource:2",
+            "plan-resource:3",
+            "plan-resource:8"
+          ]
+        },
+        {
+          "taskId": "task:16",
+          "start": 605,
+          "end": 620,
+          "participant": "participant:5",
+          "unit": "itinerant-team:1",
+          "space": "space:1",
+          "blocksSpace": false,
+          "agenda": "ITINERANT_UNIT",
+          "inheritance": "OPERATION_ONLY",
+          "direct": [],
+          "resources": [
+            "plan-resource:2",
+            "plan-resource:3",
+            "plan-resource:8"
+          ]
+        },
+        {
+          "taskId": "task:17",
+          "start": 540,
+          "end": 570,
+          "participant": "participant:6",
+          "unit": "itinerant-team:1",
+          "space": "space:3",
+          "blocksSpace": true,
+          "agenda": "ITINERANT_UNIT",
+          "inheritance": "OPERATION_ONLY",
+          "direct": [
+            9
+          ],
+          "resources": [
+            "plan-resource:2",
+            "plan-resource:3",
+            "plan-resource:9"
+          ]
+        },
+        {
+          "taskId": "task:18",
+          "start": 540,
+          "end": 570,
+          "participant": "participant:7",
+          "space": "space:4",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [],
+          "resources": [
+            "plan-resource:1"
+          ]
+        },
+        {
+          "taskId": "task:19",
+          "start": 570,
+          "end": 590,
+          "participant": "participant:8",
+          "space": "space:3",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [],
+          "resources": [
+            "plan-resource:1"
+          ]
+        }
+      ],
+      "parallel": [
+        {
+          "a": "task:1",
+          "b": "task:15",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:1",
+          "b": "task:19",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:3",
+          "b": "task:6",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:3",
+          "b": "task:10",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:4",
+          "b": "task:12",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:5",
+          "b": "task:17",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:5",
+          "b": "task:18",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:6",
+          "b": "task:10",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:7",
+          "b": "task:17",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:7",
+          "b": "task:18",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:8",
+          "b": "task:16",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:9",
+          "b": "task:14",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:11",
+          "b": "task:15",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:11",
+          "b": "task:19",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:13",
+          "b": "task:17",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:13",
+          "b": "task:18",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:15",
+          "b": "task:19",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:17",
+          "b": "task:18",
+          "anchoredAndStandalone": false
+        }
+      ],
+      "resourceLabels": [
+        {
+          "id": "plan-resource:1",
+          "name": "A CAM1"
+        },
+        {
+          "id": "plan-resource:2",
+          "name": "A Mobile camera A"
+        },
+        {
+          "id": "plan-resource:3",
+          "name": "A Mobile sound A"
+        },
+        {
+          "id": "plan-resource:4",
+          "name": "A Mobile camera B"
+        },
+        {
+          "id": "plan-resource:5",
+          "name": "A Mobile sound B"
+        },
+        {
+          "id": "plan-resource:6",
+          "name": "A Kit 0"
+        },
+        {
+          "id": "plan-resource:7",
+          "name": "A Kit 1"
+        },
+        {
+          "id": "plan-resource:8",
+          "name": "A Kit 2"
+        },
+        {
+          "id": "plan-resource:9",
+          "name": "A Independent kit"
+        },
+        {
+          "id": "plan-resource:10",
+          "name": "A coach"
+        }
+      ],
+      "spaceLabels": [
+        {
+          "id": "space:1",
+          "name": "A Main"
+        },
+        {
+          "id": "space:2",
+          "name": "A Vocal"
+        },
+        {
+          "id": "space:3",
+          "name": "A Corner"
+        },
+        {
+          "id": "space:4",
+          "name": "A Hall"
+        },
+        {
+          "id": "space:5",
+          "name": "A External"
+        }
+      ]
+    },
+    {
+      "label": "B",
+      "stage": 1,
+      "sqlStageId": "4",
+      "snapshotFingerprint": "863093f93dc78f0b558f0fcc737c0cd5b54d09a81ef4813765009564a25ca3ef",
+      "selections": [
+        {
+          "anchorTaskId": 21,
+          "selectedUnit": {
+            "id": "6",
+            "name": "B mobile B",
+            "members": [
+              {
+                "resourceItemId": 14,
+                "planResourceItemId": 24
+              },
+              {
+                "resourceItemId": 15,
+                "planResourceItemId": 25
+              }
+            ],
+            "availability_windows": [
+              {
+                "end": "12:05",
+                "start": "10:00"
+              }
+            ]
+          },
+          "members": [
+            {
+              "taskId": 22,
+              "zoneId": 2,
+              "spaceId": 9,
+              "endPlanned": "11:35",
+              "startPlanned": "11:20",
+              "locationLabel": null,
+              "camerasOverride": null,
+              "itinerantTeamId": 6,
+              "durationOverride": null,
+              "assignedResourceIds": [
+                24,
+                25,
+                26
+              ]
+            },
+            {
+              "taskId": 21,
+              "zoneId": 2,
+              "spaceId": 6,
+              "endPlanned": "11:50",
+              "startPlanned": "11:35",
+              "locationLabel": null,
+              "camerasOverride": null,
+              "itinerantTeamId": 6,
+              "durationOverride": null,
+              "assignedResourceIds": [
+                24,
+                25,
+                26,
+                29,
+                30
+              ]
+            },
+            {
+              "taskId": 23,
+              "zoneId": 2,
+              "spaceId": 10,
+              "endPlanned": "12:05",
+              "startPlanned": "11:50",
+              "locationLabel": null,
+              "camerasOverride": null,
+              "itinerantTeamId": 6,
+              "durationOverride": null,
+              "assignedResourceIds": [
+                24,
+                25,
+                26
+              ]
+            }
+          ]
+        },
+        {
+          "anchorTaskId": 27,
+          "selectedUnit": null,
+          "members": [
+            {
+              "taskId": 28,
+              "zoneId": 2,
+              "spaceId": 9,
+              "endPlanned": null,
+              "startPlanned": null,
+              "locationLabel": null,
+              "camerasOverride": null,
+              "durationOverride": null,
+              "assignedResourceIds": []
+            },
+            {
+              "taskId": 27,
+              "zoneId": 2,
+              "spaceId": 6,
+              "endPlanned": null,
+              "startPlanned": null,
+              "locationLabel": null,
+              "camerasOverride": null,
+              "durationOverride": null,
+              "assignedResourceIds": []
+            },
+            {
+              "taskId": 29,
+              "zoneId": 2,
+              "spaceId": 10,
+              "endPlanned": null,
+              "startPlanned": null,
+              "locationLabel": null,
+              "camerasOverride": null,
+              "durationOverride": null,
+              "assignedResourceIds": []
+            }
+          ]
+        },
+        {
+          "anchorTaskId": 33,
+          "selectedUnit": null,
+          "members": [
+            {
+              "taskId": 34,
+              "zoneId": 2,
+              "spaceId": 9,
+              "endPlanned": null,
+              "startPlanned": null,
+              "locationLabel": null,
+              "camerasOverride": null,
+              "durationOverride": null,
+              "assignedResourceIds": []
+            },
+            {
+              "taskId": 33,
+              "zoneId": 2,
+              "spaceId": 6,
+              "endPlanned": null,
+              "startPlanned": null,
+              "locationLabel": null,
+              "camerasOverride": null,
+              "durationOverride": null,
+              "assignedResourceIds": []
+            },
+            {
+              "taskId": 35,
+              "zoneId": 2,
+              "spaceId": 10,
+              "endPlanned": null,
+              "startPlanned": null,
+              "locationLabel": null,
+              "camerasOverride": null,
+              "durationOverride": null,
+              "assignedResourceIds": []
+            }
+          ]
+        }
+      ],
+      "occupations": [
+        {
+          "taskId": "task:20",
+          "start": 640,
+          "end": 650,
+          "participant": "participant:9",
+          "space": "space:7",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            30
+          ],
+          "resources": [
+            "plan-resource:30"
+          ]
+        },
+        {
+          "taskId": "task:21",
+          "start": 695,
+          "end": 710,
+          "participant": "participant:9",
+          "unit": "itinerant-team:6",
+          "space": "space:6",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            30
+          ],
+          "resources": [
+            "plan-resource:24",
+            "plan-resource:25",
+            "plan-resource:26",
+            "plan-resource:29",
+            "plan-resource:30"
+          ]
+        },
+        {
+          "taskId": "task:22",
+          "start": 680,
+          "end": 695,
+          "participant": "participant:9",
+          "unit": "itinerant-team:6",
+          "space": "space:9",
+          "blocksSpace": false,
+          "agenda": "ITINERANT_UNIT",
+          "inheritance": "OPERATION_ONLY",
+          "direct": [],
+          "resources": [
+            "plan-resource:24",
+            "plan-resource:25",
+            "plan-resource:26"
+          ]
+        },
+        {
+          "taskId": "task:23",
+          "start": 710,
+          "end": 725,
+          "participant": "participant:9",
+          "unit": "itinerant-team:6",
+          "space": "space:10",
+          "blocksSpace": false,
+          "agenda": "ITINERANT_UNIT",
+          "inheritance": "OPERATION_ONLY",
+          "direct": [],
+          "resources": [
+            "plan-resource:24",
+            "plan-resource:25",
+            "plan-resource:26"
+          ]
+        }
+      ],
+      "parallel": [],
+      "resourceLabels": [
+        {
+          "id": "plan-resource:11",
+          "name": "A CAM1"
+        },
+        {
+          "id": "plan-resource:12",
+          "name": "A Mobile camera A"
+        },
+        {
+          "id": "plan-resource:13",
+          "name": "A Mobile sound A"
+        },
+        {
+          "id": "plan-resource:14",
+          "name": "A Mobile camera B"
+        },
+        {
+          "id": "plan-resource:15",
+          "name": "A Mobile sound B"
+        },
+        {
+          "id": "plan-resource:16",
+          "name": "A Kit 0"
+        },
+        {
+          "id": "plan-resource:17",
+          "name": "A Kit 1"
+        },
+        {
+          "id": "plan-resource:18",
+          "name": "A Kit 2"
+        },
+        {
+          "id": "plan-resource:19",
+          "name": "A Independent kit"
+        },
+        {
+          "id": "plan-resource:20",
+          "name": "A coach"
+        },
+        {
+          "id": "plan-resource:21",
+          "name": "B CAM1"
+        },
+        {
+          "id": "plan-resource:22",
+          "name": "B Mobile camera A"
+        },
+        {
+          "id": "plan-resource:23",
+          "name": "B Mobile sound A"
+        },
+        {
+          "id": "plan-resource:24",
+          "name": "B Mobile camera B"
+        },
+        {
+          "id": "plan-resource:25",
+          "name": "B Mobile sound B"
+        },
+        {
+          "id": "plan-resource:26",
+          "name": "B Kit 0"
+        },
+        {
+          "id": "plan-resource:27",
+          "name": "B Kit 1"
+        },
+        {
+          "id": "plan-resource:28",
+          "name": "B Kit 2"
+        },
+        {
+          "id": "plan-resource:29",
+          "name": "B Independent kit"
+        },
+        {
+          "id": "plan-resource:30",
+          "name": "B coach"
+        }
+      ],
+      "spaceLabels": [
+        {
+          "id": "space:1",
+          "name": "A Main"
+        },
+        {
+          "id": "space:2",
+          "name": "A Vocal"
+        },
+        {
+          "id": "space:3",
+          "name": "A Corner"
+        },
+        {
+          "id": "space:4",
+          "name": "A Hall"
+        },
+        {
+          "id": "space:5",
+          "name": "A External"
+        },
+        {
+          "id": "space:6",
+          "name": "B Stage"
+        },
+        {
+          "id": "space:7",
+          "name": "B Studio"
+        },
+        {
+          "id": "space:8",
+          "name": "B Atrium"
+        },
+        {
+          "id": "space:9",
+          "name": "B Gallery"
+        },
+        {
+          "id": "space:10",
+          "name": "B Garden"
+        }
+      ]
+    },
+    {
+      "label": "B",
+      "stage": 2,
+      "sqlStageId": "5",
+      "snapshotFingerprint": "6f7a72b525be3d1876e3a6fa4045bb69440cc2a314a793eaf1e835525eb83a1b",
+      "selections": [
+        {
+          "anchorTaskId": 21,
+          "selectedUnit": {
+            "id": "6",
+            "name": "B mobile B",
+            "members": [
+              {
+                "resourceItemId": 14,
+                "planResourceItemId": 24
+              },
+              {
+                "resourceItemId": 15,
+                "planResourceItemId": 25
+              }
+            ],
+            "availability_windows": [
+              {
+                "end": "12:05",
+                "start": "10:00"
+              }
+            ]
+          },
+          "members": [
+            {
+              "taskId": 22,
+              "zoneId": 2,
+              "spaceId": 9,
+              "endPlanned": "11:35",
+              "startPlanned": "11:20",
+              "locationLabel": null,
+              "camerasOverride": null,
+              "itinerantTeamId": 6,
+              "durationOverride": null,
+              "assignedResourceIds": [
+                24,
+                25,
+                26
+              ]
+            },
+            {
+              "taskId": 21,
+              "zoneId": 2,
+              "spaceId": 6,
+              "endPlanned": "11:50",
+              "startPlanned": "11:35",
+              "locationLabel": null,
+              "camerasOverride": null,
+              "itinerantTeamId": 6,
+              "durationOverride": null,
+              "assignedResourceIds": [
+                24,
+                25,
+                26,
+                29,
+                30
+              ]
+            },
+            {
+              "taskId": 23,
+              "zoneId": 2,
+              "spaceId": 10,
+              "endPlanned": "12:05",
+              "startPlanned": "11:50",
+              "locationLabel": null,
+              "camerasOverride": null,
+              "itinerantTeamId": 6,
+              "durationOverride": null,
+              "assignedResourceIds": [
+                24,
+                25,
+                26
+              ]
+            }
+          ]
+        },
+        {
+          "anchorTaskId": 27,
+          "selectedUnit": {
+            "id": "5",
+            "name": "B mobile A",
+            "members": [
+              {
+                "resourceItemId": 12,
+                "planResourceItemId": 22
+              },
+              {
+                "resourceItemId": 13,
+                "planResourceItemId": 23
+              }
+            ],
+            "availability_windows": [
+              {
+                "end": "13:30",
+                "start": "10:00"
+              }
+            ]
+          },
+          "members": [
+            {
+              "taskId": 28,
+              "zoneId": 2,
+              "spaceId": 9,
+              "endPlanned": "10:50",
+              "startPlanned": "10:35",
+              "locationLabel": null,
+              "camerasOverride": null,
+              "itinerantTeamId": 5,
+              "durationOverride": null,
+              "assignedResourceIds": [
+                22,
+                23,
+                27
+              ]
+            },
+            {
+              "taskId": 27,
+              "zoneId": 2,
+              "spaceId": 6,
+              "endPlanned": "11:05",
+              "startPlanned": "10:50",
+              "locationLabel": null,
+              "camerasOverride": null,
+              "itinerantTeamId": 5,
+              "durationOverride": null,
+              "assignedResourceIds": [
+                22,
+                23,
+                27,
+                29,
+                30
+              ]
+            },
+            {
+              "taskId": 29,
+              "zoneId": 2,
+              "spaceId": 10,
+              "endPlanned": "11:20",
+              "startPlanned": "11:05",
+              "locationLabel": null,
+              "camerasOverride": null,
+              "itinerantTeamId": 5,
+              "durationOverride": null,
+              "assignedResourceIds": [
+                22,
+                23,
+                27
+              ]
+            }
+          ]
+        },
+        {
+          "anchorTaskId": 33,
+          "selectedUnit": {
+            "id": "5",
+            "name": "B mobile A",
+            "members": [
+              {
+                "resourceItemId": 12,
+                "planResourceItemId": 22
+              },
+              {
+                "resourceItemId": 13,
+                "planResourceItemId": 23
+              }
+            ],
+            "availability_windows": [
+              {
+                "end": "13:30",
+                "start": "10:00"
+              }
+            ]
+          },
+          "members": [
+            {
+              "taskId": 34,
+              "zoneId": 2,
+              "spaceId": 9,
+              "endPlanned": "11:50",
+              "startPlanned": "11:35",
+              "locationLabel": null,
+              "camerasOverride": null,
+              "itinerantTeamId": 5,
+              "durationOverride": null,
+              "assignedResourceIds": [
+                22,
+                23,
+                28
+              ]
+            },
+            {
+              "taskId": 33,
+              "zoneId": 2,
+              "spaceId": 6,
+              "endPlanned": "12:05",
+              "startPlanned": "11:50",
+              "locationLabel": null,
+              "camerasOverride": null,
+              "itinerantTeamId": 5,
+              "durationOverride": null,
+              "assignedResourceIds": [
+                22,
+                23,
+                28,
+                29,
+                30
+              ]
+            },
+            {
+              "taskId": 35,
+              "zoneId": 2,
+              "spaceId": 10,
+              "endPlanned": "12:20",
+              "startPlanned": "12:05",
+              "locationLabel": null,
+              "camerasOverride": null,
+              "itinerantTeamId": 5,
+              "durationOverride": null,
+              "assignedResourceIds": [
+                22,
+                23,
+                28
+              ]
+            }
+          ]
+        }
+      ],
+      "occupations": [
+        {
+          "taskId": "task:20",
+          "start": 640,
+          "end": 650,
+          "participant": "participant:9",
+          "space": "space:7",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            30
+          ],
+          "resources": [
+            "plan-resource:30"
+          ]
+        },
+        {
+          "taskId": "task:21",
+          "start": 695,
+          "end": 710,
+          "participant": "participant:9",
+          "unit": "itinerant-team:6",
+          "space": "space:6",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            30
+          ],
+          "resources": [
+            "plan-resource:24",
+            "plan-resource:25",
+            "plan-resource:26",
+            "plan-resource:29",
+            "plan-resource:30"
+          ]
+        },
+        {
+          "taskId": "task:22",
+          "start": 680,
+          "end": 695,
+          "participant": "participant:9",
+          "unit": "itinerant-team:6",
+          "space": "space:9",
+          "blocksSpace": false,
+          "agenda": "ITINERANT_UNIT",
+          "inheritance": "OPERATION_ONLY",
+          "direct": [],
+          "resources": [
+            "plan-resource:24",
+            "plan-resource:25",
+            "plan-resource:26"
+          ]
+        },
+        {
+          "taskId": "task:23",
+          "start": 710,
+          "end": 725,
+          "participant": "participant:9",
+          "unit": "itinerant-team:6",
+          "space": "space:10",
+          "blocksSpace": false,
+          "agenda": "ITINERANT_UNIT",
+          "inheritance": "OPERATION_ONLY",
+          "direct": [],
+          "resources": [
+            "plan-resource:24",
+            "plan-resource:25",
+            "plan-resource:26"
+          ]
+        },
+        {
+          "taskId": "task:24",
+          "start": 630,
+          "end": 640,
+          "participant": "participant:10",
+          "space": "space:7",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            30
+          ],
+          "resources": [
+            "plan-resource:30"
+          ]
+        },
+        {
+          "taskId": "task:25",
+          "start": 665,
+          "end": 680,
+          "participant": "participant:10",
+          "space": "space:6",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            30
+          ],
+          "resources": [
+            "plan-resource:29",
+            "plan-resource:30"
+          ]
+        },
+        {
+          "taskId": "task:26",
+          "start": 620,
+          "end": 630,
+          "participant": "participant:11",
+          "space": "space:7",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            30
+          ],
+          "resources": [
+            "plan-resource:30"
+          ]
+        },
+        {
+          "taskId": "task:27",
+          "start": 650,
+          "end": 665,
+          "participant": "participant:11",
+          "unit": "itinerant-team:5",
+          "space": "space:6",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            30
+          ],
+          "resources": [
+            "plan-resource:22",
+            "plan-resource:23",
+            "plan-resource:27",
+            "plan-resource:29",
+            "plan-resource:30"
+          ]
+        },
+        {
+          "taskId": "task:28",
+          "start": 635,
+          "end": 650,
+          "participant": "participant:11",
+          "unit": "itinerant-team:5",
+          "space": "space:9",
+          "blocksSpace": false,
+          "agenda": "ITINERANT_UNIT",
+          "inheritance": "OPERATION_ONLY",
+          "direct": [],
+          "resources": [
+            "plan-resource:22",
+            "plan-resource:23",
+            "plan-resource:27"
+          ]
+        },
+        {
+          "taskId": "task:29",
+          "start": 665,
+          "end": 680,
+          "participant": "participant:11",
+          "unit": "itinerant-team:5",
+          "space": "space:10",
+          "blocksSpace": false,
+          "agenda": "ITINERANT_UNIT",
+          "inheritance": "OPERATION_ONLY",
+          "direct": [],
+          "resources": [
+            "plan-resource:22",
+            "plan-resource:23",
+            "plan-resource:27"
+          ]
+        },
+        {
+          "taskId": "task:30",
+          "start": 610,
+          "end": 620,
+          "participant": "participant:12",
+          "space": "space:7",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            30
+          ],
+          "resources": [
+            "plan-resource:30"
+          ]
+        },
+        {
+          "taskId": "task:31",
+          "start": 680,
+          "end": 695,
+          "participant": "participant:12",
+          "space": "space:6",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            30
+          ],
+          "resources": [
+            "plan-resource:29",
+            "plan-resource:30"
+          ]
+        },
+        {
+          "taskId": "task:32",
+          "start": 600,
+          "end": 610,
+          "participant": "participant:13",
+          "space": "space:7",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            30
+          ],
+          "resources": [
+            "plan-resource:30"
+          ]
+        },
+        {
+          "taskId": "task:33",
+          "start": 710,
+          "end": 725,
+          "participant": "participant:13",
+          "unit": "itinerant-team:5",
+          "space": "space:6",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [
+            30
+          ],
+          "resources": [
+            "plan-resource:22",
+            "plan-resource:23",
+            "plan-resource:28",
+            "plan-resource:29",
+            "plan-resource:30"
+          ]
+        },
+        {
+          "taskId": "task:34",
+          "start": 695,
+          "end": 710,
+          "participant": "participant:13",
+          "unit": "itinerant-team:5",
+          "space": "space:9",
+          "blocksSpace": false,
+          "agenda": "ITINERANT_UNIT",
+          "inheritance": "OPERATION_ONLY",
+          "direct": [],
+          "resources": [
+            "plan-resource:22",
+            "plan-resource:23",
+            "plan-resource:28"
+          ]
+        },
+        {
+          "taskId": "task:35",
+          "start": 725,
+          "end": 740,
+          "participant": "participant:13",
+          "unit": "itinerant-team:5",
+          "space": "space:10",
+          "blocksSpace": false,
+          "agenda": "ITINERANT_UNIT",
+          "inheritance": "OPERATION_ONLY",
+          "direct": [],
+          "resources": [
+            "plan-resource:22",
+            "plan-resource:23",
+            "plan-resource:28"
+          ]
+        },
+        {
+          "taskId": "task:36",
+          "start": 600,
+          "end": 625,
+          "participant": "participant:14",
+          "unit": "itinerant-team:5",
+          "space": "space:8",
+          "blocksSpace": true,
+          "agenda": "ITINERANT_UNIT",
+          "inheritance": "OPERATION_ONLY",
+          "direct": [
+            29
+          ],
+          "resources": [
+            "plan-resource:22",
+            "plan-resource:23",
+            "plan-resource:29"
+          ]
+        },
+        {
+          "taskId": "task:37",
+          "start": 600,
+          "end": 625,
+          "participant": "participant:15",
+          "space": "space:9",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [],
+          "resources": [
+            "plan-resource:21"
+          ]
+        },
+        {
+          "taskId": "task:38",
+          "start": 625,
+          "end": 645,
+          "participant": "participant:16",
+          "space": "space:8",
+          "blocksSpace": true,
+          "agenda": "PHYSICAL_SPACE",
+          "inheritance": "LOCATION",
+          "direct": [],
+          "resources": [
+            "plan-resource:21"
+          ]
+        },
+        {
+          "taskId": "task:39",
+          "start": 625,
+          "end": 645,
+          "participant": "participant:17",
+          "unit": "itinerant-team:6",
+          "space": "space:10",
+          "blocksSpace": true,
+          "agenda": "ITINERANT_UNIT",
+          "inheritance": "OPERATION_ONLY",
+          "direct": [
+            29
+          ],
+          "resources": [
+            "plan-resource:24",
+            "plan-resource:25",
+            "plan-resource:29"
+          ]
+        }
+      ],
+      "parallel": [
+        {
+          "a": "task:20",
+          "b": "task:28",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:20",
+          "b": "task:38",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:20",
+          "b": "task:39",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:21",
+          "b": "task:34",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:22",
+          "b": "task:31",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:23",
+          "b": "task:33",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:24",
+          "b": "task:28",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:24",
+          "b": "task:38",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:24",
+          "b": "task:39",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:25",
+          "b": "task:29",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:26",
+          "b": "task:36",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:26",
+          "b": "task:37",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:26",
+          "b": "task:38",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:26",
+          "b": "task:39",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:28",
+          "b": "task:38",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:28",
+          "b": "task:39",
+          "anchoredAndStandalone": true
+        },
+        {
+          "a": "task:30",
+          "b": "task:36",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:30",
+          "b": "task:37",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:32",
+          "b": "task:36",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:32",
+          "b": "task:37",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:36",
+          "b": "task:37",
+          "anchoredAndStandalone": false
+        },
+        {
+          "a": "task:38",
+          "b": "task:39",
+          "anchoredAndStandalone": false
+        }
+      ],
+      "resourceLabels": [
+        {
+          "id": "plan-resource:11",
+          "name": "A CAM1"
+        },
+        {
+          "id": "plan-resource:12",
+          "name": "A Mobile camera A"
+        },
+        {
+          "id": "plan-resource:13",
+          "name": "A Mobile sound A"
+        },
+        {
+          "id": "plan-resource:14",
+          "name": "A Mobile camera B"
+        },
+        {
+          "id": "plan-resource:15",
+          "name": "A Mobile sound B"
+        },
+        {
+          "id": "plan-resource:16",
+          "name": "A Kit 0"
+        },
+        {
+          "id": "plan-resource:17",
+          "name": "A Kit 1"
+        },
+        {
+          "id": "plan-resource:18",
+          "name": "A Kit 2"
+        },
+        {
+          "id": "plan-resource:19",
+          "name": "A Independent kit"
+        },
+        {
+          "id": "plan-resource:20",
+          "name": "A coach"
+        },
+        {
+          "id": "plan-resource:21",
+          "name": "B CAM1"
+        },
+        {
+          "id": "plan-resource:22",
+          "name": "B Mobile camera A"
+        },
+        {
+          "id": "plan-resource:23",
+          "name": "B Mobile sound A"
+        },
+        {
+          "id": "plan-resource:24",
+          "name": "B Mobile camera B"
+        },
+        {
+          "id": "plan-resource:25",
+          "name": "B Mobile sound B"
+        },
+        {
+          "id": "plan-resource:26",
+          "name": "B Kit 0"
+        },
+        {
+          "id": "plan-resource:27",
+          "name": "B Kit 1"
+        },
+        {
+          "id": "plan-resource:28",
+          "name": "B Kit 2"
+        },
+        {
+          "id": "plan-resource:29",
+          "name": "B Independent kit"
+        },
+        {
+          "id": "plan-resource:30",
+          "name": "B coach"
+        }
+      ],
+      "spaceLabels": [
+        {
+          "id": "space:1",
+          "name": "A Main"
+        },
+        {
+          "id": "space:2",
+          "name": "A Vocal"
+        },
+        {
+          "id": "space:3",
+          "name": "A Corner"
+        },
+        {
+          "id": "space:4",
+          "name": "A Hall"
+        },
+        {
+          "id": "space:5",
+          "name": "A External"
+        },
+        {
+          "id": "space:6",
+          "name": "B Stage"
+        },
+        {
+          "id": "space:7",
+          "name": "B Studio"
+        },
+        {
+          "id": "space:8",
+          "name": "B Atrium"
+        },
+        {
+          "id": "space:9",
+          "name": "B Gallery"
+        },
+        {
+          "id": "space:10",
+          "name": "B Garden"
+        }
+      ]
+    }
+  ]
+}

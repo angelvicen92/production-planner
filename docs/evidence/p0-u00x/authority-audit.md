@@ -45,9 +45,28 @@ El primer borrador de 119 confundió coach implícito de Main/Vocal ordinario co
 
 Los peers dentro de la misma operación conservan su frontera `INCLUDED`. Los traslados entre operaciones siguen siendo HARD. El contraste transaccional con `diagnostic/snapshot-before-internal-transition.sql` usa B con ubicaciones virtuales distintas y transición nominal de cinco minutos; se exige el rechazo anterior y el positivo final sobre el mismo snapshot. Los segmentos virtuales no ocupan esos espacios.
 
+El cierre también asigna por API el kit real independiente como recurso fijo del Main. Su consumo físico se comparte legítimamente con Reality. Native v2 persiste el conjunto físico completo de los miembros anclados, incluyendo LOCATION en Main; ordinary y scopes conservan sus canales previos. `location-materialization-before-correction` registra el rechazo anterior con la lista exacta esperada/real; el helper final acepta el mismo snapshot. Al combinar este caso con el probe antiguo de transición, la primera barrera pasa a ser recursos físicos: se registra como tal. `snapshot-internal-only-counterfactual.sql` conserva todas las demás correcciones y retira únicamente INCLUDED para alcanzar, por separado, `TASK_SCOPE_RESOURCE_TRANSITION`. No se atribuye al guard de transición un rechazo anterior por recursos.
+
 El writer sigue siendo `apply_day_config_operation_v5`: bloqueo de plan, CAS, identidad/replay esperados, captura de fuentes, mutación autorizada, revisión y transición de sesión atómicas. Sus cuerpos y triggers no cambian. La edición selecciona una autoridad por operación, preservando la otra. Los dos guards de revisión exigen que cada proyección corresponda a su declaración; una tarea común se rechaza en API y SQL.
 
 119 no altera 001–118, 088, filas de aplicación ni RLS. El único helper nuevo es invoker, `search_path=''`, sin EXECUTE de PUBLIC/anon/authenticated y con EXECUTE sólo para service_role. Los contratos de catálogo verifican cuerpos y ACL reales, incluyendo 117, 118 y 119. El ensayo poblado compara todas las filas, lectores y políticas antes/después.
+
+## Continuación con un anclaje protegido en medio del bloque
+
+La CI del primer head detectó que B aceptaba S1 y un witness válido de las 20, pero S2 devolvía `CORE_INFEASIBLE` en 1.547 ramas. Se conservan los recibos exactos y la reconstrucción fría en `diagnostic/continuation-before.json.gz`. No era inviabilidad física ni agotamiento: el witness previo seguía siendo HARD válido y conservaba las cuatro decisiones aceptadas.
+
+El recorrido tiene dos fronteras dentro del core existente. Los eventos anteriores sólo empaquetan todo el trabajo pendiente antes o después del Main protegido; no generan el bloque continuo que lo rodea. Además, el cierre DFS llama a `hardGateCoreLeaf` con las políticas pendientes y omite `fixedMainContracts`, aunque los otros dos callers ya incluyen ambas colecciones. La validación reducida deja entonces de reconocer las fronteras internas `INCLUDED` del anclaje aceptado. Con espacios virtuales distintos y traslado nominal de cinco minutos, las interpreta erróneamente como transiciones externas.
+
+| Misma entrada y S1 exacto | Resultado |
+| --- | --- |
+| Sin intervención | Sin propuesta; 1.547 ramas |
+| Sólo alineaciones alrededor del Main protegido | Sin propuesta; 7.408 ramas; 354 candidatos core, ninguno atraviesa el gate HARD |
+| Sólo conservar el contrato protegido en validación | Sin propuesta; 1.547 ramas |
+| Ambas correcciones en memoria | 16 pendientes completas; witness válido de 20; S1 exacto; 3.642 ramas |
+
+`protected-geometry-only.json.gz`, `protected-authority-only.json.gz` y `continuation-combined.json.gz` conservan los cuerpos literales esbuild `write:false` y resultados. No se incorporó un arreglo aislado insuficiente. El delta productivo amplía las alineaciones de la geometría existente a ambos lados de los slots aceptados, conserva las alternativas previas, identifica cada geometría por sus slots y cobra los mismos eventos de timeline/composite. El gate DFS utiliza la misma unión de contratos fijos/pendientes que los otros callers. No se usa el witness como seed, placement aceptado ni lock; las alineaciones derivan exclusivamente del Main ya aceptado. No se añade solver, heurística, poda o nivel de búsqueda.
+
+La misma CI conservó dos negativos U00v que construyen un anclaje mal formado. `taskOperationScopesSupported` exige ahora adopción nativa explícita y referencias estructurales válidas para anunciar coexistencia; la declaración mal formada sigue siendo UNSUPPORTED y nunca se itera como una tripleta válida. Las assertions originales permanecen intactas.
 
 ## Matriz de compatibilidad
 

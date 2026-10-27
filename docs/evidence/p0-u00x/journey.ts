@@ -42,6 +42,7 @@ export async function journey({appUrl,url,anon,users,db,directory,pass}:any){
    const creating=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/plans'&&r.request().method()==='POST');await modal.getByRole('button',{name:'Crear día',exact:true}).click();const created=await creating;assert.equal(created.status(),201);const planId=Number((await created.json()).id),path=`/api/plans/${planId}/assisted`,configPath=`/api/plans/${planId}/day-configuration`;
    const inventory=await api(`/api/plans/${planId}/resource-items`),dailyCoach=inventory.find((r:any)=>r.resourceItemId===coach.id);
    await api(`/api/plans/${planId}/spaces/${spaces[2].id}/space-resource-assignments`,'PATCH',{planResourceItemIds:[inventory.find((r:any)=>r.resourceItemId===resources[0].id).id]});
+   await api(`/api/plans/${planId}/spaces/${spaces[0].id}/space-resource-assignments`,'PATCH',{planResourceItemIds:[inventory.find((r:any)=>r.resourceItemId===resources[8].id).id]});
    const groups:any[][]=[],tasks:any[]=[];
    for(const [i,group] of [...templates,...independent.map(t=>[t])].entries()){
     const person=await api(`/api/plans/${planId}/contestants`,'POST',{planId,name:`${label} participant ${i}`,...(i<5?{vocalCoachPlanResourceItemId:dailyCoach.id}:{}),availabilityStart:start,availabilityEnd:i===5||i===6?earlyEnd:end});

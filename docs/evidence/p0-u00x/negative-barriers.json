@@ -1,0 +1,969 @@
+{
+  "status": "PASS",
+  "rule": "The observed first rejection is reported; later guards are not credited. Full request/response and transaction receipts remain authoritative.",
+  "cases": [
+    {
+      "receipt": "A-S1-SQL-adversaries.json",
+      "case": "unit-missing",
+      "firstBarrier": "ANCHORED_UNIT_NOT_ELIGIBLE",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "A-S1-SQL-adversaries.json",
+      "case": "unit-outside",
+      "firstBarrier": "ANCHORED_UNIT_NOT_ELIGIBLE",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "A-S1-SQL-adversaries.json",
+      "case": "unit-split",
+      "firstBarrier": "ANCHORED_CERTIFICATE_INVALID",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "A-S1-SQL-adversaries.json",
+      "case": "shared-physical-resource",
+      "firstBarrier": "ANCHORED_UNIT_CAPACITY_CONFLICT",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "A-S1-SQL-adversaries.json",
+      "case": "composition-missing",
+      "firstBarrier": "ANCHORED_WITNESS_PHYSICAL_RESOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "A-S1-SQL-adversaries.json",
+      "case": "direct-resource-omitted",
+      "firstBarrier": "ANCHORED_WITNESS_PHYSICAL_RESOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "A-S1-SQL-adversaries.json",
+      "case": "window",
+      "firstBarrier": "ANCHORED_PHYSICAL_SPACE_CONFLICT",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "A-S1-SQL-adversaries.json",
+      "case": "gap",
+      "firstBarrier": "ANCHORED_CERTIFICATE_INVALID",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "A-S1-SQL-adversaries.json",
+      "case": "dependency",
+      "firstBarrier": "ANCHORED_WITNESS_IDENTITY",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "A-S1-SQL-adversaries.json",
+      "case": "identity",
+      "firstBarrier": "ANCHORED_WITNESS_IDENTITY",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "A-S1-SQL-adversaries.json",
+      "case": "virtual-main",
+      "firstBarrier": "ANCHORED_WITNESS_IDENTITY",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "A-S1-SQL-adversaries.json",
+      "case": "fake-domain",
+      "firstBarrier": "ANCHORED_WITNESS_DOMAIN",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "A-S1-immutable-stage-forgery.json",
+      "firstBarrier": "permission denied for table assisted_planning_stages",
+      "status": "42501",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "A-S1-scope-certificate-forgeries.json",
+      "case": "scope-camera",
+      "firstBarrier": "ANCHORED_WITNESS_PHYSICAL_RESOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "A-S1-scope-certificate-forgeries.json",
+      "case": "scope-direct",
+      "firstBarrier": "ANCHORED_WITNESS_PHYSICAL_RESOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "A-S1-scope-certificate-forgeries.json",
+      "case": "scope-unit",
+      "firstBarrier": "ANCHORED_UNIT_NOT_ELIGIBLE",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "A-S1-scope-certificate-forgeries.json",
+      "case": "scope-blocks",
+      "firstBarrier": "ANCHORED_WITNESS_IDENTITY",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "A-S1-scope-certificate-forgeries.json",
+      "case": "scope-resource-invented",
+      "firstBarrier": "ANCHORED_WITNESS_PHYSICAL_RESOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "A-S1-scope-certificate-forgeries.json",
+      "case": "scope-corner",
+      "firstBarrier": "ANCHORED_WITNESS_SPACE_CONFLICT",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "A-S1-scope-snapshot-invented-camera.json",
+      "firstBarrier": "TASK_SCOPE_PHYSICAL_RESOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-S1-scope-snapshot-missing-direct.json",
+      "firstBarrier": "TASK_SCOPE_PHYSICAL_RESOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-S1-scope-snapshot-same-corner.json",
+      "firstBarrier": "TASK_SCOPE_PHYSICAL_CONFLICT",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-S1-scope-snapshot-same-unit.json",
+      "firstBarrier": "TASK_SCOPE_PHYSICAL_CONFLICT",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-S1-scope-snapshot-unknown-resource.json",
+      "firstBarrier": "TASK_SCOPE_PHYSICAL_RESOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-configuration-negatives.json",
+      "case": "unit-without-physical-members",
+      "firstBarrier": "Array must contain at least 1 element(s)",
+      "status": 400,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-configuration-negatives.json",
+      "case": "unknown-unit",
+      "firstBarrier": "ANCHORED_INVALID_ANCHOR_OR_UNIT",
+      "status": 422,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-configuration-negatives.json",
+      "case": "empty-domain",
+      "firstBarrier": "Array must contain at least 1 element(s)",
+      "status": 400,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-configuration-negatives.json",
+      "case": "duplicate-domain",
+      "firstBarrier": "Unidades duplicadas",
+      "status": 400,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-configuration-negatives.json",
+      "case": "ambiguous-choice",
+      "firstBarrier": "Unrecognized key(s) in object: 'eligibleItinerantUnitIds'",
+      "status": 400,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-configuration-negatives.json",
+      "case": "shared-task",
+      "firstBarrier": "ANCHORED_DUPLICATE_MEMBER",
+      "status": 422,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-configuration-negatives.json",
+      "case": "missing-segment",
+      "firstBarrier": "Array must contain exactly 1 element(s)",
+      "status": 400,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-configuration-negatives.json",
+      "case": "duplicate-segment",
+      "firstBarrier": "ANCHORED_DUPLICATE_MEMBER",
+      "status": 422,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-configuration-negatives.json",
+      "case": "unknown-task",
+      "firstBarrier": "ANCHORED_INVALID_MEMBER",
+      "status": 422,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-configuration-negatives.json",
+      "case": null,
+      "firstBarrier": "No tienes permisos para esta acci\u00f3n.",
+      "status": 403,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-configuration-negatives.json",
+      "case": null,
+      "firstBarrier": "No tienes permisos para esta acci\u00f3n.",
+      "status": 403,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-configuration-negatives.json",
+      "case": null,
+      "firstBarrier": "No tienes permisos para esta acci\u00f3n.",
+      "status": 403,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-configuration-negatives.json",
+      "case": null,
+      "firstBarrier": "Missing or invalid authorization header",
+      "status": 401,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-configuration-negatives.json",
+      "case": "stale",
+      "firstBarrier": "STALE_CONFIG_REVISION",
+      "status": 409,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-data-api-admin.json",
+      "firstBarrier": "permission denied for table plans",
+      "status": 403,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-data-api-aux.json",
+      "firstBarrier": "permission denied for table plans",
+      "status": 403,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-data-api-norole.json",
+      "firstBarrier": "permission denied for table plans",
+      "status": 403,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-data-api-production.json",
+      "firstBarrier": "permission denied for table plans",
+      "status": 403,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-data-api-viewer.json",
+      "firstBarrier": "permission denied for table plans",
+      "status": 403,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-execution-lock-negatives.json",
+      "case": "done",
+      "firstBarrier": "STALE_OBLIGATION_SOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-execution-lock-negatives.json",
+      "case": "in_progress",
+      "firstBarrier": "STALE_OBLIGATION_SOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-execution-lock-negatives.json",
+      "case": "time-lock",
+      "firstBarrier": "STALE_OBLIGATION_SOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-overlap-API.json",
+      "firstBarrier": "TASK_SCOPE_ANCHORED_MEMBER",
+      "status": 422,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-overlap-SQL.json",
+      "case": "scope-overlap",
+      "firstBarrier": "REALITY_AUTHORITY_TASK_OVERLAP",
+      "status": "P0001",
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-overlap-SQL.json",
+      "case": "anchor-overlap",
+      "firstBarrier": "REALITY_AUTHORITY_TASK_OVERLAP",
+      "status": "P0001",
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-protected-retire.json",
+      "firstBarrier": "ANCHORED_PROTECTED_DECISIONS",
+      "status": 409,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "A-rollback-protected-retire.json",
+      "firstBarrier": "ANCHORED_PROTECTED_DECISIONS",
+      "status": 409,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-S1-SQL-adversaries.json",
+      "case": "unit-missing",
+      "firstBarrier": "ANCHORED_UNIT_NOT_ELIGIBLE",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S1-SQL-adversaries.json",
+      "case": "unit-outside",
+      "firstBarrier": "ANCHORED_UNIT_NOT_ELIGIBLE",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S1-SQL-adversaries.json",
+      "case": "unit-split",
+      "firstBarrier": "ANCHORED_CERTIFICATE_INVALID",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S1-SQL-adversaries.json",
+      "case": "shared-physical-resource",
+      "firstBarrier": "ANCHORED_UNIT_TRANSITION_CONFLICT",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S1-SQL-adversaries.json",
+      "case": "composition-missing",
+      "firstBarrier": "ANCHORED_WITNESS_PHYSICAL_RESOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S1-SQL-adversaries.json",
+      "case": "direct-resource-omitted",
+      "firstBarrier": "ANCHORED_WITNESS_PHYSICAL_RESOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S1-SQL-adversaries.json",
+      "case": "window",
+      "firstBarrier": "ANCHORED_UNIT_UNAVAILABLE",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S1-SQL-adversaries.json",
+      "case": "gap",
+      "firstBarrier": "ANCHORED_UNIT_UNAVAILABLE",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S1-SQL-adversaries.json",
+      "case": "dependency",
+      "firstBarrier": "ANCHORED_WITNESS_IDENTITY",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S1-SQL-adversaries.json",
+      "case": "identity",
+      "firstBarrier": "ANCHORED_WITNESS_IDENTITY",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S1-SQL-adversaries.json",
+      "case": "virtual-main",
+      "firstBarrier": "ANCHORED_WITNESS_IDENTITY",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S1-SQL-adversaries.json",
+      "case": "fake-domain",
+      "firstBarrier": "ANCHORED_WITNESS_DOMAIN",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S1-SQL-adversaries.json",
+      "case": "future-omitted",
+      "firstBarrier": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S1-SQL-adversaries.json",
+      "case": "future-split",
+      "firstBarrier": "ANCHORED_CERTIFICATE_INVALID",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S1-immutable-stage-forgery.json",
+      "firstBarrier": "permission denied for table assisted_planning_stages",
+      "status": "42501",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S1-scope-certificate-forgeries.json",
+      "case": "scope-camera",
+      "firstBarrier": "ANCHORED_WITNESS_PHYSICAL_RESOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S1-scope-certificate-forgeries.json",
+      "case": "scope-direct",
+      "firstBarrier": "ANCHORED_WITNESS_PHYSICAL_RESOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S1-scope-certificate-forgeries.json",
+      "case": "scope-unit",
+      "firstBarrier": "ANCHORED_UNIT_NOT_ELIGIBLE",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S1-scope-certificate-forgeries.json",
+      "case": "scope-blocks",
+      "firstBarrier": "ANCHORED_WITNESS_IDENTITY",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S1-scope-certificate-forgeries.json",
+      "case": "scope-resource-invented",
+      "firstBarrier": "ANCHORED_WITNESS_PHYSICAL_RESOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S1-scope-certificate-forgeries.json",
+      "case": "scope-corner",
+      "firstBarrier": "ANCHORED_WITNESS_SPACE_CONFLICT",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S2-SQL-adversaries.json",
+      "case": "unit-missing",
+      "firstBarrier": "RUN_RESULT_INVALID",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S2-SQL-adversaries.json",
+      "case": "unit-outside",
+      "firstBarrier": "RUN_RESULT_INVALID",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S2-SQL-adversaries.json",
+      "case": "unit-split",
+      "firstBarrier": "RUN_RESULT_INVALID",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S2-SQL-adversaries.json",
+      "case": "shared-physical-resource",
+      "firstBarrier": "RUN_RESULT_INVALID",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S2-SQL-adversaries.json",
+      "case": "composition-missing",
+      "firstBarrier": "RUN_RESULT_INVALID",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S2-SQL-adversaries.json",
+      "case": "direct-resource-omitted",
+      "firstBarrier": "RUN_RESULT_INVALID",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S2-SQL-adversaries.json",
+      "case": "window",
+      "firstBarrier": "RUN_RESULT_INVALID",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S2-SQL-adversaries.json",
+      "case": "gap",
+      "firstBarrier": "RUN_RESULT_INVALID",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S2-SQL-adversaries.json",
+      "case": "dependency",
+      "firstBarrier": "ANCHORED_WITNESS_IDENTITY",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S2-SQL-adversaries.json",
+      "case": "identity",
+      "firstBarrier": "ANCHORED_WITNESS_IDENTITY",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S2-SQL-adversaries.json",
+      "case": "virtual-main",
+      "firstBarrier": "ANCHORED_WITNESS_IDENTITY",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S2-SQL-adversaries.json",
+      "case": "fake-domain",
+      "firstBarrier": "ANCHORED_WITNESS_DOMAIN",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S2-SQL-adversaries.json",
+      "case": "protected-choice",
+      "firstBarrier": "RUN_RESULT_INVALID",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S2-immutable-stage-forgery.json",
+      "firstBarrier": "permission denied for table assisted_planning_stages",
+      "status": "42501",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S2-scope-certificate-forgeries.json",
+      "case": "scope-camera",
+      "firstBarrier": "ANCHORED_WITNESS_PHYSICAL_RESOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S2-scope-certificate-forgeries.json",
+      "case": "scope-direct",
+      "firstBarrier": "ANCHORED_WITNESS_PHYSICAL_RESOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S2-scope-certificate-forgeries.json",
+      "case": "scope-unit",
+      "firstBarrier": "ANCHORED_UNIT_NOT_ELIGIBLE",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S2-scope-certificate-forgeries.json",
+      "case": "scope-blocks",
+      "firstBarrier": "ANCHORED_WITNESS_IDENTITY",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S2-scope-certificate-forgeries.json",
+      "case": "scope-resource-invented",
+      "firstBarrier": "ANCHORED_WITNESS_PHYSICAL_RESOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S2-scope-certificate-forgeries.json",
+      "case": "scope-corner",
+      "firstBarrier": "ANCHORED_WITNESS_SPACE_CONFLICT",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": true
+    },
+    {
+      "receipt": "B-S2-scope-snapshot-invented-camera.json",
+      "firstBarrier": "TASK_SCOPE_PHYSICAL_RESOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-S2-scope-snapshot-missing-direct.json",
+      "firstBarrier": "TASK_SCOPE_PHYSICAL_RESOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-S2-scope-snapshot-same-corner.json",
+      "firstBarrier": "TASK_SCOPE_PHYSICAL_CONFLICT",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-S2-scope-snapshot-same-unit.json",
+      "firstBarrier": "TASK_SCOPE_PHYSICAL_CONFLICT",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-S2-scope-snapshot-unknown-resource.json",
+      "firstBarrier": "TASK_SCOPE_PHYSICAL_RESOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-configuration-negatives.json",
+      "case": "unit-without-physical-members",
+      "firstBarrier": "Array must contain at least 1 element(s)",
+      "status": 400,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-configuration-negatives.json",
+      "case": "unknown-unit",
+      "firstBarrier": "ANCHORED_INVALID_ANCHOR_OR_UNIT",
+      "status": 422,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-configuration-negatives.json",
+      "case": "empty-domain",
+      "firstBarrier": "Array must contain at least 1 element(s)",
+      "status": 400,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-configuration-negatives.json",
+      "case": "duplicate-domain",
+      "firstBarrier": "Unidades duplicadas",
+      "status": 400,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-configuration-negatives.json",
+      "case": "ambiguous-choice",
+      "firstBarrier": "Unrecognized key(s) in object: 'eligibleItinerantUnitIds'",
+      "status": 400,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-configuration-negatives.json",
+      "case": "shared-task",
+      "firstBarrier": "ANCHORED_DUPLICATE_MEMBER",
+      "status": 422,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-configuration-negatives.json",
+      "case": "missing-segment",
+      "firstBarrier": "Array must contain exactly 1 element(s)",
+      "status": 400,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-configuration-negatives.json",
+      "case": "duplicate-segment",
+      "firstBarrier": "ANCHORED_DUPLICATE_MEMBER",
+      "status": 422,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-configuration-negatives.json",
+      "case": "unknown-task",
+      "firstBarrier": "ANCHORED_INVALID_MEMBER",
+      "status": 422,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-configuration-negatives.json",
+      "case": null,
+      "firstBarrier": "No tienes permisos para esta acci\u00f3n.",
+      "status": 403,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-configuration-negatives.json",
+      "case": null,
+      "firstBarrier": "No tienes permisos para esta acci\u00f3n.",
+      "status": 403,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-configuration-negatives.json",
+      "case": null,
+      "firstBarrier": "No tienes permisos para esta acci\u00f3n.",
+      "status": 403,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-configuration-negatives.json",
+      "case": null,
+      "firstBarrier": "Missing or invalid authorization header",
+      "status": 401,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-configuration-negatives.json",
+      "case": "stale",
+      "firstBarrier": "STALE_CONFIG_REVISION",
+      "status": 409,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-data-api-admin.json",
+      "firstBarrier": "permission denied for table plans",
+      "status": 403,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-data-api-aux.json",
+      "firstBarrier": "permission denied for table plans",
+      "status": 403,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-data-api-norole.json",
+      "firstBarrier": "permission denied for table plans",
+      "status": 403,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-data-api-production.json",
+      "firstBarrier": "permission denied for table plans",
+      "status": 403,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-data-api-viewer.json",
+      "firstBarrier": "permission denied for table plans",
+      "status": 403,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-execution-lock-negatives.json",
+      "case": "done",
+      "firstBarrier": "STALE_OBLIGATION_SOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-execution-lock-negatives.json",
+      "case": "in_progress",
+      "firstBarrier": "STALE_OBLIGATION_SOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-execution-lock-negatives.json",
+      "case": "time-lock",
+      "firstBarrier": "STALE_OBLIGATION_SOURCES",
+      "status": "P0001",
+      "rolledBack": true,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-overlap-API.json",
+      "firstBarrier": "TASK_SCOPE_ANCHORED_MEMBER",
+      "status": 422,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-overlap-SQL.json",
+      "case": "scope-overlap",
+      "firstBarrier": "REALITY_AUTHORITY_TASK_OVERLAP",
+      "status": "P0001",
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-overlap-SQL.json",
+      "case": "anchor-overlap",
+      "firstBarrier": "REALITY_AUTHORITY_TASK_OVERLAP",
+      "status": "P0001",
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-protected-retire.json",
+      "firstBarrier": "ANCHORED_PROTECTED_DECISIONS",
+      "status": 409,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    },
+    {
+      "receipt": "B-rollback-protected-retire.json",
+      "firstBarrier": "ANCHORED_PROTECTED_DECISIONS",
+      "status": 409,
+      "rolledBack": null,
+      "hashesRecomputed": null
+    }
+  ]
+}

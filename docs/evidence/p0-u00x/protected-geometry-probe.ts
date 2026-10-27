@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+import {createRequire} from 'node:module';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {resolve} from 'node:path';
+import {createHash} from 'node:crypto';
+import {executeAssistedPlanning as execute} from '../../../engine/planner-next/assistedPlanning';
+import {validatePlan} from '../../../engine/planner-next/validate';
+import {protectedGeometryDelta} from './protected-geometry-delta';
+const diagnostic=JSON.parse(readFileSync(process.argv[2],'utf8')),problem=diagnostic.problem;
+assert.equal(validatePlan(diagnostic.adapter.problem,diagnostic.witness.tasks).hardValid,true);
+const before=execute(problem);assert.equal(before.proposal,null);let intervention='',beforeHash='';
+const bundle=await build({stdin:{contents:`export {executeAssistedPlanning as execute} from './engine/planner-next/assistedPlanning';export {runExactItinerantPlanSearch as raw} from './engine/planner-next/exactItinerantPlan';`,resolveDir:process.cwd(),loader:'ts'},bundle:true,write:false,platform:'node',format:'cjs',packages:'external',plugins:[{name:'protected-native-geometry-memory',setup(b){b.onLoad({filter:/exactMainAndFeederCore\.ts$/},args=>{const source=readFileSync(args.path,'utf8');beforeHash=createHash('sha256').update(source).digest('hex');intervention=protectedGeometryDelta(source);return {contents:intervention,loader:'ts',resolveDir:resolve(args.path,'..')};});}}]});
+const module={exports:{} as {execute:typeof execute;raw:any}};new Function('require','module','exports',bundle.outputFiles[0].text)(createRequire(import.meta.url),module,module.exports);
+const after=module.exports.execute(problem),raw=module.exports.raw(problem.problem,{causalDiagnostic:true,fixedPlacements:problem.protectedPlacements,fixedPlacementsAsContext:true,nominalTaskIds:problem.scope.resolvedTaskIds});writeFileSync(process.argv[3],JSON.stringify({before,after,raw,problem,witness:diagnostic.witness,beforeHash,intervention,experimentIsStage:false},null,2));
+assert.ok(after.proposal);assert.equal(after.proposal.length,16);assert.equal(validatePlan(diagnostic.adapter.problem,[...after.evidence.nominalPhysicalFutureWitness!.tasks]).hardValid,true);
+for(const p of problem.protectedPlacements)assert.deepEqual(after.evidence.nominalPhysicalFutureWitness!.tasks.find(t=>t.id===p.id),p);
+console.log('PASS same accepted S1: native protected-slot geometry rescues all 16 pending obligations in memory');

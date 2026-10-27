@@ -55,29 +55,35 @@ export async function certificates({planId,db,run,draft,scopePolicies,save}:any)
    await db.query("UPDATE planning_runs SET assisted_result_json=$2::jsonb,result_fingerprint=encode(extensions.digest(convert_to($2::jsonb::text,'UTF8'),'sha256'),'hex') WHERE id=$1",[run.id,JSON.stringify(result)]);
    await db.query('UPDATE assisted_planning_sessions SET draft_snapshot_json=$2,draft_fingerprint=$3 WHERE id=$1',[draft.session.id,result.proposedDraftSnapshot,result.proposedDraftFingerprint]);
    await db.query('SET LOCAL ROLE service_role');await db.query('SELECT assisted_record_proposal_clean_validation($1,$2,$3,$4)',[planId,result.proposedDraftFingerprint,draft.draftBaseStageId,draft.currentConfigRevisionId]);
-  }catch(e:any){failure={message:e.message,code:e.code};}finally{await db.query('ROLLBACK');}
+  }catch(e:any){failure={message:e.message,code:e.code,detail:e.detail};}finally{await db.query('ROLLBACK');}
   results.push({mode,accepted:!failure,...failure,hashesRecomputed:true,rolledBack:true});save('scope-certificate-forgeries',results);assert.ok(failure,mode);
  }
 }
 export async function snapshot({planId,db,run,scopePolicies,save}:any){
  const valid=run.assisted_result_json.proposedDraftSnapshot,revision=run.config_revision_id;
- const check=async(name:string,s:any,legacy:false|'117'|'internal'=false)=>{
+ const check=async(name:string,s:any,legacy:false|'117'|'internal'|'internal-original'|'location'=false)=>{
   let failure:any;await db.query('BEGIN');try{
-   if(legacy==='internal')await db.query(readFileSync('docs/evidence/p0-u00x/diagnostic/snapshot-before-internal-transition.sql','utf8'));
+   if(legacy==='location')await db.query(readFileSync('docs/evidence/p0-u00x/diagnostic/snapshot-before-location-materialization.sql','utf8'));
+   if(legacy==='internal-original')await db.query(readFileSync('docs/evidence/p0-u00x/diagnostic/snapshot-before-internal-transition.sql','utf8'));
+   if(legacy==='internal')await db.query(readFileSync('docs/evidence/p0-u00x/diagnostic/snapshot-internal-only-counterfactual.sql','utf8'));
    if(legacy==='117'){const sql=readFileSync('supabase/migrations/117_daily_task_operation_scopes.sql','utf8'),body=sql.match(/CREATE FUNCTION public\.assert_task_scope_snapshot\([\s\S]*?\$\$;/)![0];await db.query(body.replace('CREATE FUNCTION','CREATE OR REPLACE FUNCTION'));}
    await db.query('SET LOCAL ROLE service_role');await db.query('SELECT assert_task_scope_snapshot($1,$2,$3)',[planId,s,revision]);
-  }catch(e:any){failure={message:e.message,code:e.code};}finally{await db.query('ROLLBACK');}
+  }catch(e:any){failure={message:e.message,code:e.code,detail:e.detail};}finally{await db.query('ROLLBACK');}
   save(name,{accepted:!failure,...failure,rolledBack:true});return failure;
  };
  assert.equal(await check('composed-snapshot-positive',valid),undefined);
  assert.ok(await check('literal-117-snapshot-counterfactual',valid,'117'));
- if(scopePolicies.length>1){const failure=await check('internal-transition-before-correction',valid,'internal');assert.match(failure?.message,/TASK_SCOPE_RESOURCE_TRANSITION/);}
+ const locationFailure=await check('location-materialization-before-correction',valid,'location');assert.match(locationFailure?.message,/TASK_SCOPE_PHYSICAL_RESOURCES/);
+ if(scopePolicies.length>1){
+  const first=await check('original-internal-probe-first-barrier',valid,'internal-original');assert.match(first?.message,/TASK_SCOPE_PHYSICAL_RESOURCES/);
+  const failure=await check('internal-transition-isolated-counterfactual',valid,'internal');assert.match(failure?.message,/TASK_SCOPE_RESOURCE_TRANSITION/);
+ }
  const source=scopePolicies[0],reality=valid.tasks.find((t:any)=>t.taskId===source.taskId);
  if(reality.startPlanned==null)return;
  const camera=(await db.query("SELECT r.id FROM plan_resource_items r JOIN resource_items i ON i.id=r.resource_item_id WHERE r.plan_id=$1 AND i.name LIKE '%CAM1'",[planId])).rows[0].id;
  for(const mode of ['invented-camera','missing-direct','unknown-resource','same-corner','same-unit']){
   const fake=structuredClone(valid),real=fake.tasks.find((t:any)=>t.taskId===source.taskId);
-  if(mode==='invented-camera')real.assignedResourceIds.push(camera);
+  if(mode==='invented-camera')real.assignedResourceIds.push(Number(camera));
   if(mode==='unknown-resource')real.assignedResourceIds.push(2147483647);
   if(mode==='missing-direct')real.assignedResourceIds=real.assignedResourceIds.filter((id:number)=>!source.declaredResourceIds.includes(id));
   if(mode==='same-corner'){const ordinary=fake.tasks.find((t:any)=>t.taskId!==real.taskId&&t.spaceId===real.spaceId);ordinary.startPlanned=real.startPlanned;const mins=(s:string)=>Number(s.slice(0,2))*60+Number(s.slice(3)),end=mins(real.startPlanned)+20;ordinary.endPlanned=`${String(Math.floor(end/60)).padStart(2,'0')}:${String(end%60).padStart(2,'0')}`;}
@@ -92,5 +98,6 @@ export async function snapshot({planId,db,run,scopePolicies,save}:any){
   }
   const failure=await check('scope-snapshot-'+mode,fake);assert.ok(failure,mode);
   if(mode==='same-unit'||mode==='same-corner')assert.match(failure.message,/TASK_SCOPE_PHYSICAL_CONFLICT/,mode);
+  else assert.match(failure.message,/TASK_SCOPE_PHYSICAL_RESOURCES/,mode);
  }
 }

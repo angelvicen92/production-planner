@@ -12,6 +12,9 @@ export function dailyTaskOperationScopesAuthority(row:Record<string,any>){
 }
 export function taskOperationScopesSupported(input:EngineInput){
  return !!input.plannerNext&&!input.setupPolicies?.length&&!input.roundSynchronizations?.length&&!input.technicalChains?.length
+  &&(!input.anchoredAccompaniments?.length||[1,2].includes(input.dailyAnchoredAccompanimentsVersion??0)
+   &&input.anchoredAccompaniments.every(a=>a&&Array.isArray(a.beforeTaskIds)&&Array.isArray(a.afterTaskIds)
+    &&input.tasks.some(t=>t.id===a.anchorTaskId&&t.plannerNextKind==='main')))
   &&!input.operationContinuityGroups?.length&&!input.operationalMealPolicies?.length
   &&!input.transportSettings&&!input.tasks.some(t=>t.jointGroupId||t.setupFamilyId);
 }

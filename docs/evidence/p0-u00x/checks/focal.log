@@ -1,0 +1,30 @@
+TAP version 13
+# Subtest: /workspace/production-planner/engine/planner-next/integration/nativeAnchoredAccompaniment.spec.ts
+ok 1 - /workspace/production-planner/engine/planner-next/integration/nativeAnchoredAccompaniment.spec.ts
+  ---
+  duration_ms: 976.714543
+  ...
+# Subtest: /workspace/production-planner/engine/planner-next/integration/nativeAnchoredChoice.spec.ts
+ok 2 - /workspace/production-planner/engine/planner-next/integration/nativeAnchoredChoice.spec.ts
+  ---
+  duration_ms: 1485.75514
+  ...
+# Subtest: /workspace/production-planner/engine/planner-next/integration/nativeRealityComposition.spec.ts
+ok 3 - /workspace/production-planner/engine/planner-next/integration/nativeRealityComposition.spec.ts
+  ---
+  duration_ms: 2493.416909
+  ...
+# Subtest: /workspace/production-planner/engine/planner-next/integration/nativeTaskOperationScopes.spec.ts
+ok 4 - /workspace/production-planner/engine/planner-next/integration/nativeTaskOperationScopes.spec.ts
+  ---
+  duration_ms: 1829.636495
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6791.777616

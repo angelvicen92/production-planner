@@ -53,3 +53,10 @@ test('a later shared coach release retains a complete anchored geometry without 
   assert.equal(validatePlan(adapter.problem,[...result.evidence.nominalPhysicalFutureWitness!.tasks]).hardValid,true);
  }
 });
+test('continuation keeps the protected anchored contract while packing pending mains on both sides',()=>{
+ const diagnostic=JSON.parse(gunzipSync(readFileSync(new URL('../../../docs/evidence/p0-u00x/diagnostic/continuation-before.json.gz',import.meta.url))).toString());
+ assert.equal(diagnostic.result.proposal,null);assert.equal(diagnostic.witnessValidation.hardValid,true);
+ const result=executeAssistedPlanning(diagnostic.problem);assert.ok(result.proposal);assert.equal(result.proposal.length,16);
+ const proof=result.evidence.nominalPhysicalFutureWitness!;assert.equal(proof.tasks.length,20);assert.equal(validatePlan(diagnostic.adapter.problem,[...proof.tasks]).hardValid,true);
+ for(const fixed of diagnostic.problem.protectedPlacements)assert.deepEqual(proof.tasks.find(t=>t.id===fixed.id),fixed);
+});

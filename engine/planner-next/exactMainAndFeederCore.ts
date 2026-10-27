@@ -1502,7 +1502,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       // historical closure; a preferred start is not a materialized meal.
       const selectedMainMealStart=mainFlow.mealSplitPreference
         ?meals.find(meal=>meal.spaceId===mainFlow.spaceId)?.start:undefined;
-      const ordered=hardGateCoreLeaf(placed,meals,coreIds,applicableContracts,false,selectedMainMealStart);
+      const ordered=hardGateCoreLeaf(placed,meals,coreIds,[...fixedMainContracts,...applicableContracts],false,selectedMainMealStart);
       if (ordered) {
         const orderedMeals = [...meals].sort((a, b) => a.start - b.start || a.id.localeCompare(b.id));
         const continuation = options.onHardValidCoreLeaf?.({ tasks: ordered, meals: orderedMeals,
@@ -2582,16 +2582,31 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         const historicalSet = new Set(historicalEnds);
         candidateEnds = [...historicalEnds, ...candidateEnds.filter((end) => !historicalSet.has(end))];
       }
-      for (const candidateEnd of candidateEnds) {
+      const nativeProtectedMains=!timeline&&problem.nativeAnchoredAccompanimentsVersion===2
+        ?protectedPlacements.filter(p=>problem.tasks.find(t=>t.id===p.id)?.kind==='main'):[];
+      // Preserve both outer boundaries and every alignment around an accepted
+      // Main. Pending work can occupy both sides of the same protected slot.
+      if(nativeProtectedMains.length)candidateEnds=[...new Set([...candidateEnds,...nativeProtectedMains.flatMap(p=>
+        Array.from({length:pattern.length+1},(_,after)=>p.end+after*duration))])];
+      const geometries=candidateEnds.flatMap(candidateEnd=>{
+        const base={candidateEnd,nativeSlots:null as number[]|null};
+        if(!nativeProtectedMains.length)return [base];
+        const count=pattern.length+nativeProtectedMains.length;
+        const all=Array.from({length:count},(_,index)=>candidateEnd-count*duration+index*duration);
+        if(!nativeProtectedMains.every(p=>p.end-p.start===duration&&all.includes(p.start)))return [base];
+        const pending=all.filter(start=>!nativeProtectedMains.some(p=>p.start===start));
+        return pending.length===pattern.length?[base,{candidateEnd,nativeSlots:pending}]:[base];
+      });
+      for (const {candidateEnd,nativeSlots} of geometries) {
         if (!consumeBranch("TIMELINE_SEARCH_BUDGET_EXHAUSTED"))
           return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
         evidence.timelineCandidatesExplored += 1;
-        const slots = timeline?.slots ?? pattern.map((_, index) => candidateEnd - pattern.length * duration + index * duration);
+        const slots = nativeSlots ?? timeline?.slots ?? pattern.map((_, index) => candidateEnd - pattern.length * duration + index * duration);
         if (slots.length > 0 && slots[0]! < problem.day.start) continue;
         for (const composite of positions) {
           if (!consumeBranch("COMPOSITE_POSITION_SEARCH_BUDGET_EXHAUSTED"))
             return fail("BRANCH_BUDGET_EXHAUSTED", [exhaustionReason], coreIds);
-          const architectureKey = [pattern.join("|"), timeline?.key ?? `END:${candidateEnd}`, composite.signature].join("::");
+          const architectureKey = [pattern.join("|"), timeline?.key ?? `END:${candidateEnd}${nativeSlots?"|PROTECTED_SLOTS:"+nativeSlots.join(","):""}`, composite.signature].join("::");
           evidence.architecturesChecked += 1;
           const rejection = fixedIds.size===0?proveMainFeederArchitectureImpossible(problem, mains, feederByMain,
             { pattern, slots }, certificate=>{
