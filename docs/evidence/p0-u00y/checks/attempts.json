@@ -1,0 +1,90 @@
+{
+  "results": [
+    {
+      "directory": "causal-before",
+      "status": "FAIL",
+      "error": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert.ok(fixed)\n\n    at journey (/workspace/production-planner/work/u00y/causal-before/source/docs/evidence/p0-u00y/journey.ts:47:99)\n    at async <anonymous> (/workspace/production-planner/work/u00y/causal-before/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+      "sourceCommit": null,
+      "remoteWrites": 0
+    },
+    {
+      "directory": "causal-valid-day",
+      "status": "FAIL",
+      "error": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert.ok(fixed)\n\n    at journey (/workspace/production-planner/work/u00y/causal-valid-day/source/docs/evidence/p0-u00y/journey.ts:48:99)\n    at async <anonymous> (/workspace/production-planner/work/u00y/causal-valid-day/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+      "sourceCommit": null,
+      "remoteWrites": 0
+    },
+    {
+      "directory": "gate-before",
+      "status": "FAIL",
+      "error": "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert.ok(fixed)\n\n    at journey (/workspace/production-planner/work/u00y/gate-before/source/docs/evidence/p0-u00y/journey.ts:48:99)\n    at async <anonymous> (/workspace/production-planner/work/u00y/gate-before/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+      "sourceCommit": null,
+      "remoteWrites": 0
+    },
+    {
+      "directory": "native-first",
+      "status": "FAIL",
+      "error": "error: syntax error at end of input\n    at /workspace/production-planner/node_modules/pg/lib/client.js:545:17\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async <anonymous> (/workspace/production-planner/work/u00y/native-first/source/script/demo/smokeNewDayIntegration.ts:75:65)",
+      "sourceCommit": null,
+      "remoteWrites": 0
+    },
+    {
+      "directory": "native-migration-check",
+      "status": "FAIL",
+      "error": "AssertionError [ERR_ASSERTION]: {\"message\":\"function public.joint_task_resources(integer, bigint) does not exist\"}\n\n500 !== 200\n\n    at saveUI (/workspace/production-planner/work/u00y/native-migration-check/source/docs/evidence/p0-u00y/nativeJourney.ts:43:232)\n    at async Module.nativeJourney (/workspace/production-planner/work/u00y/native-migration-check/source/docs/evidence/p0-u00y/nativeJourney.ts:46:33)\n    at async <anonymous> (/workspace/production-planner/work/u00y/native-migration-check/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+      "sourceCommit": null,
+      "remoteWrites": 0
+    },
+    {
+      "directory": "native-writer-check",
+      "status": "FAIL",
+      "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('daily-joint-groups').getByTestId('joint-operation').last() to be visible\u001b[22m\n\n    at saveUI (/workspace/production-planner/work/u00y/native-writer-check/source/docs/evidence/p0-u00y/nativeJourney.ts:44:76)\n    at async Module.nativeJourney (/workspace/production-planner/work/u00y/native-writer-check/source/docs/evidence/p0-u00y/nativeJourney.ts:46:33)\n    at async <anonymous> (/workspace/production-planner/work/u00y/native-writer-check/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+      "sourceCommit": null,
+      "remoteWrites": 0
+    },
+    {
+      "directory": "native-attacks",
+      "status": "FAIL",
+      "error": "locator.uncheck: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('daily-joint-groups').locator('input[type=checkbox]:checked').nth(1)\u001b[22m\n\n    at editMembers (/workspace/production-planner/work/u00y/native-attacks/source/docs/evidence/p0-u00y/nativeJourney.ts:52:96)\n    at async Module.nativeJourney (/workspace/production-planner/work/u00y/native-attacks/source/docs/evidence/p0-u00y/nativeJourney.ts:56:5)\n    at async <anonymous> (/workspace/production-planner/work/u00y/native-attacks/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+      "sourceCommit": null,
+      "remoteWrites": 0
+    },
+    {
+      "directory": "native-final",
+      "status": "FAIL",
+      "error": "AssertionError [ERR_ASSERTION]: {\"message\":\"column reference \\\"g\\\" is ambiguous\"}\n\n500 !== 200\n\n    at saveUI (/workspace/production-planner/work/u00y/native-final/source/docs/evidence/p0-u00y/nativeJourney.ts:44:232)\n    at async Module.nativeJourney (/workspace/production-planner/work/u00y/native-final/source/docs/evidence/p0-u00y/nativeJourney.ts:47:33)\n    at async <anonymous> (/workspace/production-planner/work/u00y/native-final/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+      "sourceCommit": null,
+      "remoteWrites": 0
+    },
+    {
+      "directory": "native-candidate",
+      "status": "FAIL",
+      "error": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByLabel('Email', { exact: true })\u001b[22m\n\n    at Module.nativeJourney (/workspace/production-planner/work/u00y/native-candidate/source/docs/evidence/p0-u00y/nativeJourney.ts:18:80)\n    at async <anonymous> (/workspace/production-planner/work/u00y/native-candidate/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+      "sourceCommit": null,
+      "remoteWrites": 0
+    },
+    {
+      "directory": "native-observed",
+      "status": "FAIL",
+      "error": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByLabel('Email', { exact: true })\u001b[22m\n\n    at Module.nativeJourney (/workspace/production-planner/work/u00y/native-observed/source/docs/evidence/p0-u00y/nativeJourney.ts:18:80)\n    at async <anonymous> (/workspace/production-planner/work/u00y/native-observed/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+      "sourceCommit": null,
+      "remoteWrites": 0
+    },
+    {
+      "directory": "regressions/composition",
+      "status": "FAIL",
+      "error": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByLabel('Email', { exact: true })\u001b[22m\n\n    at journey (/workspace/production-planner/work/u00y/regressions/composition/source/docs/evidence/p0-u00x/journey.ts:21:80)\n    at async <anonymous> (/workspace/production-planner/work/u00y/regressions/composition/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+      "sourceCommit": null,
+      "remoteWrites": 0
+    },
+    {
+      "directory": "regressions/scopes",
+      "status": "FAIL",
+      "error": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByLabel('Email', { exact: true })\u001b[22m\n\n    at journey (/workspace/production-planner/work/u00y/regressions/scopes/source/docs/evidence/p0-u00v/native.ts:25:80)\n    at async <anonymous> (/workspace/production-planner/work/u00y/regressions/scopes/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+      "sourceCommit": null,
+      "remoteWrites": 0
+    }
+  ],
+  "networkDiagnosis": "Chromium ERR_NETWORK_CHANGED on shared executor while other Docker networks changed; final browser stacks serialized",
+  "assertionsOrTimeoutsRelaxed": false
+}

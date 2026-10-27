@@ -9,6 +9,7 @@ export function latestAssistedSQLContracts(maxMigration=Infinity){
  const files=['078_assisted_planning_workflow.sql','079_assisted_proposal_runs.sql','080_assisted_clean_validation.sql','081_assisted_draft_editing.sql','082_assisted_stage_validation_exceptions.sql','083_assisted_config_refresh.sql','084_day_config_provenance.sql','085_optimizer_day_config_restore.sql','086_assisted_itinerant_resource_persistence.sql','087_participant_transition_margins.sql','089_assisted_native_sql_integrity.sql','090_assisted_manual_snapshot_fidelity.sql','091_assisted_restart_bootstrap.sql','092_main_flow_soft_preference.sql','099_transport_group_config_integrity.sql','102_round_preparation_day_override.sql','103_atomic_task_template_inverse.sql','104_operation_continuity.sql','105_new_day_planner_configuration.sql','106_itinerant_physical_composition.sql','108_assisted_participant_meal_validation.sql','113_assisted_post_stage_additions.sql','114_daily_round_synchronization.sql','115_daily_required_technical_chains.sql','116_daily_anchored_accompaniments.sql','117_daily_task_operation_scopes.sql'];
  files.push('118_anchored_operation_unit_choices.sql');
  files.push('119_composed_reality_authorities.sql');
+ files.push('120_native_joint_groups.sql');
  const contracts=new Map<string,{definition:string;signature:string;body:string}>();
  for(const file of files.filter(file=>Number(file.slice(0,3))<=maxMigration)){
   const sql=readFileSync(`supabase/migrations/${file}`,'utf8');
@@ -17,11 +18,11 @@ export function latestAssistedSQLContracts(maxMigration=Infinity){
    contracts.delete(rename[1]);contracts.set(rename[2],{...prior,definition:prior.definition.replace(`public.${rename[1]}(`,`public.${rename[2]}(`),signature:prior.signature.replace(`public.${rename[1]}(`,`public.${rename[2]}(`)});
   }
   for(const match of sql.matchAll(/CREATE(?: OR REPLACE)? FUNCTION public\.([a-z_][a-z0-9_]*)\s*\(([\s\S]*?)\)\s*RETURNS[\s\S]*?\bAS\s*\$\$([\s\S]*?)\$\$;/gi)){
-  const name=match[1];if(!name.startsWith('assisted_')&&!name.startsWith('assert_anchored')&&!name.startsWith('assert_daily_anchored')&&!name.startsWith('guard_anchored')&&!['assert_reality_authorities_disjoint','assert_daily_task_operation_scopes','assert_task_scope_snapshot','anchored_contracts','anchored_task_operations','guard_daily_anchored_accompaniments','guard_daily_anchored_stage','apply_day_config_operation','apply_day_config_operation_v4','apply_day_config_operation_v5','initialize_day_config_revision','guard_daily_round_synchronization','round_structure_canonical_json','assert_daily_round_structure','assert_daily_round_snapshot'].includes(name))continue;
+  const name=match[1];if(!name.startsWith('assisted_')&&!name.startsWith('assert_anchored')&&!name.startsWith('assert_daily_anchored')&&!name.startsWith('guard_anchored')&&!name.startsWith('joint_')&&!name.startsWith('guard_joint')&&!name.startsWith('assert_joint')&&!['guard_daily_joint_groups','assert_daily_joint_groups'].includes(name)&&!['assert_reality_authorities_disjoint','assert_daily_task_operation_scopes','assert_task_scope_snapshot','anchored_contracts','anchored_task_operations','guard_daily_anchored_accompaniments','guard_daily_anchored_stage','apply_day_config_operation','apply_day_config_operation_v4','apply_day_config_operation_v5','initialize_day_config_revision','guard_daily_round_synchronization','round_structure_canonical_json','assert_daily_round_structure','assert_daily_round_snapshot'].includes(name))continue;
   const types=match[2].split(',').filter(arg=>arg.trim()).map(arg=>arg.trim().split(/\s+/)[1].toLowerCase());
   contracts.set(name,{definition:match[0],signature:`public.${name}(${types.join(',')})`,body:match[3].replaceAll('\r\n','\n').trim()});
  }
-  if(file.startsWith('116_')||file.startsWith('117_')){
+  if(file.startsWith('116_')||file.startsWith('117_')||file.startsWith('120_')){
    // Resolve only this migration's literal string replacements. The resulting
    // bodies remain compared byte-for-byte with PostgreSQL by catalog preflight.
    const decode=(v:string)=>v.replaceAll("''", "'");
@@ -36,7 +37,7 @@ export function latestAssistedSQLContracts(maxMigration=Infinity){
    };
    for(const m of sql.matchAll(/old_text:='((?:''|[^'])*)';\s*new_text:='((?:''|[^'])*)';/g))
     for(const name of ['assisted_expected_obligation_sources','assisted_preview_s0_additions'])patch(name,decode(m[1]),decode(m[2]));
-   const source=sql.match(/old_text:='((?:''|[^'])*)';\s*IF strpos\(definition,old_text\)=0 THEN RAISE EXCEPTION '(?:ANCHORED|TASK_SCOPE)_UNEXPECTED_SOURCE_READER';[\s\S]*?old_text\|\|'((?:''|[^'])*)'\);/)!
+   const source=sql.match(/old_text:='((?:''|[^'])*)';\s*IF strpos\(definition,old_text\)=0 THEN RAISE EXCEPTION '(?:ANCHORED|TASK_SCOPE|JOINT_GROUP)_UNEXPECTED_SOURCE_READER';[\s\S]*?old_text\|\|'((?:''|[^'])*)'\);/)!
    patch('assisted_read_bootstrap_sources',decode(source[1]),decode(source[1])+decode(source[2]));
    for(const [name,block] of [...sql.matchAll(/definition:=pg_get_functiondef\('public\.(assisted_accept_stage|assisted_apply_snapshot)[^\n]*\n([\s\S]*?)(?=\n EXECUTE definition;)/g)].map(m=>[m[1],m[2]])){
     const prefix=decode(block.match(/prefix:='((?:''|[^'])*)';/)![1]);

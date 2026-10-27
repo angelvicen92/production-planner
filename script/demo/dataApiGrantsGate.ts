@@ -72,6 +72,18 @@ export function assertPrivilegeContract(catalog:DataApiCatalog) {
     }
     expected.functions.sort((a:any,b:any)=>a.signature<b.signature?-1:a.signature>b.signature?1:a.role<b.role?-1:a.role>b.role?1:0);
   }
+  if(Object.hasOwn(catalog.tables.find(t=>t.name==='plans')?.columns??{},'daily_joint_groups')){
+    const signatures=['apply_day_config_operation_before_joint_groups(integer,uuid,text,jsonb,bigint,jsonb,jsonb,jsonb,jsonb,jsonb)','assert_daily_joint_groups(integer,jsonb)','assert_joint_revision(integer,jsonb)','guard_daily_joint_groups()','guard_joint_revision()','guard_joint_source()','guard_joint_stage()','joint_contracts(jsonb)','joint_member_ids(jsonb)','joint_task_operations(integer,jsonb,jsonb,jsonb)','joint_task_resources(integer,bigint)'];
+    for(const role of ['anon','authenticated','service_role']){
+      const plan=catalog.tables.find(t=>t.name==='plans'&&t.role===role);assert.ok(plan);
+      assert.deepEqual(plan.columns.daily_joint_groups,role==='service_role'?['SELECT','INSERT','UPDATE']:role==='authenticated'?['SELECT']:[]);
+      for(const signature of signatures){
+        expected.functions.push({signature,role,execute:role==='service_role'&&!signature.startsWith('guard_')});
+        const fn=catalog.functions.find(f=>f.signature===signature&&f.role===role);assert.ok(fn,signature);assert.equal(fn.definer,false);assert.deepEqual(fn.settings,['search_path=""']);
+      }
+    }
+    expected.functions.sort((a:any,b:any)=>a.signature<b.signature?-1:a.signature>b.signature?1:a.role<b.role?-1:a.role>b.role?1:0);
+  }
   assert.deepEqual(privilegeContract(catalog),expected,
     'Data API contract changed: review every new object, required grant, column boundary and exposed role');
   // 103 adds one column covered by the existing table grants. The compact JSON

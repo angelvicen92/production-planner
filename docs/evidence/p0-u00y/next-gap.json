@@ -1,0 +1,84 @@
+{
+  "status": "PARTIAL",
+  "nativeJointCombinations": [
+    "STANDALONE_ONLY with ordinary physical auxiliaries and concrete resources",
+    "MAIN_WITH_VOCAL_FEEDER with disjoint physical joint groups and concrete resources"
+  ],
+  "nextSingleGap": "Diagnose composition of native joint groups with REQUIRED operational continuity of the canonical carpet phases",
+  "reason": "The two canonical pairs can now be authored; their physical integration into the complete REQUIRED production structure remains outside this contract.",
+  "otherFrontiers": [
+    "Operational meals coordinated by unit/space",
+    "Native coach route transitions",
+    "Reality/round/chain/setup/transport structural composition",
+    "requiresBand"
+  ],
+  "probes": [
+    {
+      "family": "Composition of joints and REQUIRED operation continuity",
+      "status": "BLOCKED",
+      "classification": "CONTRACT_COMBINATION_NOT_REPRESENTABLE",
+      "rejection": "UNSUPPORTED_JOINT_COMBINATION",
+      "realTaskIds": [
+        10,
+        15,
+        11,
+        16
+      ],
+      "consumerInfeasibilityClaimed": false
+    },
+    {
+      "family": "operationalMealPolicies",
+      "status": "MISSING_NATIVE_PRODUCER",
+      "classification": "CONTRACT_NOT_REPRESENTABLE",
+      "issues": [
+        {
+          "code": "unrecognized_keys",
+          "keys": [
+            "operationalMealPolicies"
+          ],
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'operationalMealPolicies'"
+        },
+        {
+          "code": "custom",
+          "message": "At least one capability is required",
+          "path": []
+        },
+        {
+          "code": "custom",
+          "message": "La estructura se edita con la revisión consultada, sin mezclar otras categorías.",
+          "path": []
+        }
+      ],
+      "consumerInfeasibilityClaimed": false
+    },
+    {
+      "family": "coachRouteTransitions",
+      "status": "MISSING_NATIVE_PRODUCER",
+      "classification": "CONTRACT_NOT_REPRESENTABLE",
+      "issues": [
+        {
+          "code": "unrecognized_keys",
+          "keys": [
+            "coachRouteTransitions"
+          ],
+          "path": [],
+          "message": "Unrecognized key(s) in object: 'coachRouteTransitions'"
+        },
+        {
+          "code": "custom",
+          "message": "At least one capability is required",
+          "path": []
+        },
+        {
+          "code": "custom",
+          "message": "La estructura se edita con la revisión consultada, sin mezclar otras categorías.",
+          "path": []
+        }
+      ],
+      "consumerInfeasibilityClaimed": false
+    }
+  ],
+  "remoteWrites": 0,
+  "experimentIsStage": false
+}

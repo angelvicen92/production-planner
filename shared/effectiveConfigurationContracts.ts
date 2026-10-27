@@ -39,6 +39,12 @@ export interface EffectiveConfigurationView {
     tasks:{id:number;label:string;kind:string;participantId:number|null;space:string;duration:number;eligible:boolean;selectedUnitId?:number|null}[];
     units:{id:number;name:string;resources?:{id:number;name:string}[];windows?:{start:string;end:string}[]}[];
   };
+  jointGroups?: {
+    revisionId:number|null;authority:import('./jointGroupStructure').JointGroupStructure|null;
+    supported:boolean;blockedReason:string|null;by:string|null;at:string|null;
+    tasks:{id:number;label:string;participantId:number|null;spaceId:number|null;space:string;duration:number;eligible:boolean;dependencies:number[];dependencyLabels:string[];resourceIds:readonly number[]}[];
+    resources:{id:number;name:string}[];
+  };
   taskOperationScopes?: {
     revisionId:number|null;authority:import('./dailyTaskOperationScopes').DailyTaskOperationScopes|null;
     supported:boolean;blockedReason:string|null;by:string|null;at:string|null;
