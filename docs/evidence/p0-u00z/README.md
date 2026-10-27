@@ -2,6 +2,8 @@
 
 Base exacta: `ade9fd65ccc91059a5a35f2b93b9ed5c0762b0a8`, U00y integrado. Rama `codex/p0-u00z-native-operational-meal-policies`. Un PR contra main; sin merge automático ni cambios en Supabase real, Replit o demo LA VOZ.
 
+Durante la revisión, main avanzó sólo en gobernanza a `53ceb251` (#1205). Se integra esa actualización documental y se resuelve la inserción concurrente del Master conservando ambos apartados. Producto y pruebas conservan su base técnica exacta; la [matriz transversal](composition-matrix.md) explicita antes/después, perfil integrado y límites del nuevo gate.
+
 Estado: **capacidad productiva en las combinaciones certificadas; P0/A2 desde UI sigue abierto**. [PR único #1204](https://github.com/angelvicen92/production-planner/pull/1204), sin merge. `validation.json` fija los recibos locales y sus límites; la CI del PR identifica el head remoto comprobado. Los ensayos diagnósticos no constituyen Stages.
 
 La autoridad diaria declara una pausa común para listas explícitas de espacios y recursos físicos, con ventana y duración. La unidad diaria es una ayuda de selección de sus miembros concretos, no otra obligación inferida. La severidad del contrato histórico es obligatoria/HARD; retirar la declaración desactiva esa obligación. No se ofrece una preferencia sin consumidor.

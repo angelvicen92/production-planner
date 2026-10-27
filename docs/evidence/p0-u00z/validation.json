@@ -89,5 +89,15 @@
   ],
   "globalA2UIComplete": false,
   "nextGap": "next-gap.json",
-  "publicEvidenceCredentialScan": "PASS"
+  "publicEvidenceCredentialScan": "PASS",
+  "governanceAdvance": {
+    "main": "53ceb25116f975d45eb71276a2d48d8aeddf20db",
+    "pr": 1205,
+    "files": [
+      "AGENTS.md",
+      "docs/governance/OPTIPLAN_MASTER_ADECUACION_APP.md"
+    ],
+    "productDelta": false,
+    "resolution": "Keep the permanent gate and U00z candidate section; preserve exact ade9fd65 technical base and evidence; add explicit composition matrix."
+  }
 }

@@ -2,6 +2,8 @@
 
 Base autorizada: U00y integrado `ade9fd65`. Fuente 06 v2.10, PDFs y autoridad por ámbito de Fuente 00. La autoría A2 completa sigue abierta; el replay del A2 importado es regresión, no autoría UI. Los resultados finales y su alcance se fijan en `validation.json`.
 
+La [matriz capacidad × capacidad](composition-matrix.md) aplica además el gate transversal incorporado en main por #1205: estados antes/después, perfil integrado creciente, mapa de obligaciones y guards conservadores que todavía excluyen casos potencialmente válidos.
+
 | Familia | Capacidad productiva | Combinaciones y primera frontera |
 | --- | --- | --- |
 | Participantes, tareas, ventanas y dependencias | Altas diarias, snapshots, dependencias y continuación con altas posteriores | No demuestra introducir las 266 obligaciones y todas sus relaciones desde UI. U00n/r/s. |
