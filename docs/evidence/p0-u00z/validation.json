@@ -47,7 +47,8 @@
     "hardAndRequiredConflicts": 0,
     "actualPg17AuthPostgrestChromium": true,
     "transactionRollback": true,
-    "protectedContinuationRollbackRedo": true
+    "protectedContinuationRollbackRedo": true,
+    "specificPhysicalConflictRejection": "OPERATIONAL_MEAL_PHYSICAL_CONFLICT, same authentic window/duration/scope; all certificate forgeries require SQL P0001"
   },
   "regression": {
     "a2": "a2/comparison.json",
@@ -80,7 +81,7 @@
     "budgetsTimeoutsExistingAssertionsChanged": false
   },
   "historicalUpgrade": "upgrade/upgrade121.json",
-  "sourceVersions": "Each manifest records executed product hashes and any checkout delta; primary core run predates the localized participant-channel extension, repeat uses the final 121. Both exact witnesses replay unchanged. CI executes both core runs against one final checkout.",
+  "sourceVersions": "Each manifest records executed product hashes and any checkout delta; primary core run predates the localized participant-channel extension, repeat uses the final 121. Both exact witnesses replay unchanged. CI executes both core runs against one final checkout. Final repeat and individual runs strengthen only the occupied-resource negative, keeping product/SQL unchanged.",
   "remainingLimits": [
     "Anchored authorities + operational pauses",
     "Rounds + operational pauses",

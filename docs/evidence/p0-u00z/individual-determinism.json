@@ -8,7 +8,7 @@
     {
       "label": "E",
       "ordinal": 1,
-      "directory": "/workspace/production-planner/work/u00z-channel-red",
+      "directory": "/workspace/production-planner/work/u00z-individual-physical",
       "exactColdRevision": true,
       "exactColdWitness": true,
       "work": {
@@ -75,7 +75,7 @@
     {
       "label": "E",
       "ordinal": 1,
-      "directory": "/workspace/production-planner/work/u00z-individual-public-final",
+      "directory": "/workspace/production-planner/work/u00z-individual-physical-public",
       "exactColdRevision": true,
       "exactColdWitness": true,
       "work": {
@@ -142,7 +142,7 @@
     {
       "label": "E",
       "ordinal": 2,
-      "directory": "/workspace/production-planner/work/u00z-channel-red",
+      "directory": "/workspace/production-planner/work/u00z-individual-physical",
       "exactColdRevision": true,
       "exactColdWitness": true,
       "work": {
@@ -209,7 +209,7 @@
     {
       "label": "E",
       "ordinal": 2,
-      "directory": "/workspace/production-planner/work/u00z-individual-public-final",
+      "directory": "/workspace/production-planner/work/u00z-individual-physical-public",
       "exactColdRevision": true,
       "exactColdWitness": true,
       "work": {

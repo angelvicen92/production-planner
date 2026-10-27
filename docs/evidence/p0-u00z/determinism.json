@@ -75,7 +75,7 @@
     {
       "label": "A",
       "ordinal": 1,
-      "directory": "/workspace/production-planner/work/u00z-native-head",
+      "directory": "/workspace/production-planner/work/u00z-physical-negative-certified",
       "exactColdRevision": true,
       "exactColdWitness": true,
       "work": {
@@ -137,7 +137,7 @@
         "futureRoundWitnessBranchesConsumed": 0,
         "branchBudgetLimit": 10000
       },
-      "stageFingerprint": "fb6651b2e038f3499fda91e4a4b38bd84713c5e7ebbcc5a29b7df231baaefbf0"
+      "stageFingerprint": "376f5bc2c84c05c33cf53b219b8db9c1b6e43cfc993d5e41ea7fa20f04d8eed2"
     },
     {
       "label": "B",
@@ -209,7 +209,7 @@
     {
       "label": "B",
       "ordinal": 1,
-      "directory": "/workspace/production-planner/work/u00z-native-head",
+      "directory": "/workspace/production-planner/work/u00z-physical-negative-certified",
       "exactColdRevision": true,
       "exactColdWitness": true,
       "work": {
@@ -271,7 +271,7 @@
         "futureRoundWitnessBranchesConsumed": 0,
         "branchBudgetLimit": 10000
       },
-      "stageFingerprint": "8b084faf24619a2111447c9c0f8221acd5fd3fb896b5044bbcbbf51cb67e221b"
+      "stageFingerprint": "3553abfc8f4b0f9bc5bdf624896c8b6f6304e3301875d6904de6061e14250853"
     },
     {
       "label": "B",
@@ -343,7 +343,7 @@
     {
       "label": "B",
       "ordinal": 2,
-      "directory": "/workspace/production-planner/work/u00z-native-head",
+      "directory": "/workspace/production-planner/work/u00z-physical-negative-certified",
       "exactColdRevision": true,
       "exactColdWitness": true,
       "work": {
@@ -405,7 +405,7 @@
         "futureRoundWitnessBranchesConsumed": 0,
         "branchBudgetLimit": 10000
       },
-      "stageFingerprint": "08efa28f381ff283c1f0ecc9cd7794871b8e47479c22941412718bee3c6e9294"
+      "stageFingerprint": "0e15fdc79b846b9d76e494f21a432625f21613913d8168015d78aea25a69d565"
     },
     {
       "label": "D",
@@ -477,7 +477,7 @@
     {
       "label": "D",
       "ordinal": 1,
-      "directory": "/workspace/production-planner/work/u00z-native-head",
+      "directory": "/workspace/production-planner/work/u00z-physical-negative-certified",
       "exactColdRevision": true,
       "exactColdWitness": true,
       "work": {
@@ -539,7 +539,7 @@
         "futureRoundWitnessBranchesConsumed": 0,
         "branchBudgetLimit": 10000
       },
-      "stageFingerprint": "823b08f4aa9999e43b80e13178e5eb2138480160aed09b2e5cc25ccf69748e71"
+      "stageFingerprint": "41d9d0834104762c1fcd10d0d802daf595a191b2272748c8f5cddd2f3dd75595"
     },
     {
       "label": "C",
@@ -611,7 +611,7 @@
     {
       "label": "C",
       "ordinal": 1,
-      "directory": "/workspace/production-planner/work/u00z-native-head",
+      "directory": "/workspace/production-planner/work/u00z-physical-negative-certified",
       "exactColdRevision": true,
       "exactColdWitness": true,
       "work": {
@@ -673,7 +673,7 @@
         "futureRoundWitnessBranchesConsumed": 0,
         "branchBudgetLimit": 10000
       },
-      "stageFingerprint": "24571776d809f5a151bdb47ae926ecbbf56c15b84066943b58188e314b1c9ea6"
+      "stageFingerprint": "9ff4a6e8ca36ca5658e8e8a4e05a376b1b9ea94c15bc5874ed9e6ca7135815b4"
     }
   ]
 }

@@ -59,13 +59,21 @@ export async function certificateAttacks(ctx:any){
  for(const mode of ['missing-meal','wrong-duration','wrong-window','missing-resource','invented-space','occupied-resource','omitted-draft-meal','invented-draft-meal','missing-future-task','protected-meal',...participantModes]){
   const original=run.assisted_result_json??run.assistedResultJson;if(mode==='protected-meal'&&!draft.activeStage.snapshotJson.operationalMeals?.length)continue;
   let error:any;await db.query('BEGIN');try{
-   const forged=structuredClone(original),proof=forged.evidence.nominalPhysicalFutureWitness,m=mode==='missing-resource'?proof.operationalMeals.find((m:any)=>m.resourceIds.length):mode==='protected-meal'?proof.operationalMeals.find((m:any)=>draft.activeStage.snapshotJson.operationalMeals.some((p:any)=>p.policyId===m.id)):proof.operationalMeals[0];
+   const forged=structuredClone(original),proof=forged.evidence.nominalPhysicalFutureWitness,m=mode==='missing-resource'?proof.operationalMeals.find((m:any)=>m.resourceIds.length):mode==='occupied-resource'?proof.operationalMeals.find((m:any)=>m.resourceIds.length&&proof.tasks.some((t:any)=>t.requiredResourceIds?.some((id:string)=>m.resourceIds.includes(id))))??proof.operationalMeals[0]:mode==='protected-meal'?proof.operationalMeals.find((m:any)=>draft.activeStage.snapshotJson.operationalMeals.some((p:any)=>p.policyId===m.id)):proof.operationalMeals[0];
    if(mode==='missing-meal')proof.operationalMeals.shift();
    if(mode==='wrong-duration'){m.end+=5;m.duration+=5;}
    if(mode==='wrong-window'){m.start+=480;m.end+=480;}
    if(mode==='missing-resource')m.resourceIds=[];
    if(mode==='invented-space')m.spaceIds=['space:2147483647'];
-   if(mode==='occupied-resource'){const t=proof.tasks.find((t:any)=>t.requiredResourceIds?.some((id:string)=>m.resourceIds.includes(id))||m.spaceIds.includes(t.spaceId));assert.ok(t);m.start=t.start;m.end=m.start+m.duration;}
+   if(mode==='occupied-resource'){
+    // Keep window, duration and scope authentic so the negative reaches the
+    // physical conflict check, rather than failing an earlier window check.
+    const authority=(await db.query('SELECT daily_operational_meal_policies authority FROM plans WHERE id=$1',[planId])).rows[0].authority;
+    const policy=authority.policies.find((p:any)=>'break:'+p.id===m.id),minute=(s:string)=>Number(s.slice(0,2))*60+Number(s.slice(3));
+    const start=minute(policy.window.start),end=minute(policy.window.end);
+    const t=proof.tasks.find((t:any)=>(t.requiredResourceIds?.some((id:string)=>m.resourceIds.includes(id))||t.blocksSpace!==false&&m.spaceIds.includes(t.spaceId))&&t.end>start&&Math.max(start,t.start)+m.duration<=end);assert.ok(t);
+    m.start=Math.max(start,t.start);m.end=m.start+m.duration;assert.ok(m.start<t.end&&m.end>t.start);
+   }
    if(mode==='omitted-draft-meal'){if(!forged.proposedDraftSnapshot.operationalMeals?.length)continue;delete forged.proposedDraftSnapshot.operationalMeals;}
    if(mode==='invented-draft-meal')forged.proposedDraftSnapshot.operationalMeals=[...(forged.proposedDraftSnapshot.operationalMeals??[]),{policyId:'break:invented',startPlanned:'10:00',endPlanned:'10:25'}];
    if(mode==='missing-future-task')proof.tasks.pop();
@@ -104,5 +112,7 @@ export async function certificateAttacks(ctx:any){
    else await db.query('SELECT assert_operational_meal_snapshot($1,$2,$3)',[planId,forged.proposedDraftSnapshot,draft.currentConfigRevisionId]);
   }catch(e:any){error={message:e.message,code:e.code};}finally{await db.query('ROLLBACK');}
   failures.push({mode,error,consumer:process.argv.includes('--public-negatives')?'assisted_record_proposal_clean_validation':'assert_operational_meal_snapshot',hashesRecomputed:true,rolledBack:true});save(`${label}-S${ordinal}-certificate-negatives`,failures);assert.ok(error,mode);
+  assert.equal(error.code,'P0001',`${mode}: must reach a real SQL rejection`);
+  if(mode==='occupied-resource'&&['A','B','D','E'].includes(label))assert.equal(error.message,'OPERATIONAL_MEAL_PHYSICAL_CONFLICT');
  }
 }

@@ -1,0 +1,74 @@
+{
+  "status": "INTERMEDIATE_HARNESS_FAILURE_NOT_PRODUCT_GATE",
+  "cause": "The first strengthening accidentally reused the occupied-resource selector for missing-resource. C declares a genuine resource with no consumers; selecting a consuming resource therefore fell back to a space-only pause, making that forgery a no-op. The expected rejection assertion failed. Restored the original missing-resource selector; complete subsequent run passes. No product or SQL delta.",
+  "partialPhysicalRejections": [
+    {
+      "certificate": "A-S1-certificate-negatives.json",
+      "firstSQLBarrier": {
+        "message": "OPERATIONAL_MEAL_PHYSICAL_CONFLICT",
+        "code": "P0001"
+      }
+    },
+    {
+      "certificate": "D-S1-certificate-negatives.json",
+      "firstSQLBarrier": {
+        "message": "OPERATIONAL_MEAL_PHYSICAL_CONFLICT",
+        "code": "P0001"
+      }
+    },
+    {
+      "certificate": "B-S1-certificate-negatives.json",
+      "firstSQLBarrier": {
+        "message": "OPERATIONAL_MEAL_PHYSICAL_CONFLICT",
+        "code": "P0001"
+      }
+    },
+    {
+      "certificate": "B-S2-certificate-negatives.json",
+      "firstSQLBarrier": {
+        "message": "OPERATIONAL_MEAL_PHYSICAL_CONFLICT",
+        "code": "P0001"
+      }
+    }
+  ],
+  "failedCertificate": [
+    {
+      "mode": "missing-meal",
+      "error": {
+        "message": "ANCHORED_WITNESS_MAIN_CONTINUITY",
+        "code": "P0001"
+      },
+      "consumer": "assisted_record_proposal_clean_validation",
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "mode": "wrong-duration",
+      "error": {
+        "message": "ANCHORED_WITNESS_MAIN_CONTINUITY",
+        "code": "P0001"
+      },
+      "consumer": "assisted_record_proposal_clean_validation",
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "mode": "wrong-window",
+      "error": {
+        "message": "ANCHORED_WITNESS_MAIN_CONTINUITY",
+        "code": "P0001"
+      },
+      "consumer": "assisted_record_proposal_clean_validation",
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "mode": "missing-resource",
+      "consumer": "assisted_record_proposal_clean_validation",
+      "hashesRecomputed": true,
+      "rolledBack": true
+    }
+  ],
+  "executedHarnessSha256": "2d8151a1f20e69f6b64bb05d2e5dca98c373ccb16a4d83cbb9b52a3c266c1488",
+  "completedGate": "repeat/receipts.json.gz"
+}
