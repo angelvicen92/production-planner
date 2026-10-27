@@ -8,7 +8,7 @@ export function dailyAnchoredAuthority(row:Record<string,any>){
  return parsed.data;
 }
 export function anchoredCombinationSupported(input:EngineInput){
- return !input.dailyTaskOperationScopes?.length&&input.plannerNext?.profile!=='STANDALONE_ONLY'&&!!input.plannerNext?.mainFlow&&!input.setupPolicies?.length
+ return input.plannerNext?.profile!=='STANDALONE_ONLY'&&!!input.plannerNext?.mainFlow&&!input.setupPolicies?.length
   &&!input.roundSynchronizations?.length&&!input.technicalChains?.length&&!input.operationContinuityGroups?.length
   &&!input.operationalMealPolicies?.length&&!input.transportSettings&&!input.tasks.some(t=>t.jointGroupId||t.setupFamilyId);
 }
@@ -18,6 +18,7 @@ export function withDailyAnchoredAccompaniments(input:EngineInput,raw:AnchoredAc
  const used=new Set<number>(),identities=new Set<string>();
  for(const policy of structure.policies){
   const ids=[...policy.beforeTaskIds,policy.anchorTaskId,...policy.afterTaskIds],domain=anchoredPolicyUnitIds(policy);
+  if(input.dailyTaskOperationScopes?.some(p=>ids.includes(p.taskId)))throw defect('ANCHORED_TASK_SCOPE_MEMBER');
   if(identities.has(policy.id))throw defect('ANCHORED_DUPLICATE_OPERATION');identities.add(policy.id);
   if(ids.some(id=>used.has(id))||new Set(ids).size!==ids.length)throw defect('ANCHORED_DUPLICATE_MEMBER');ids.forEach(id=>used.add(id));
   const anchor=input.tasks.find(t=>t.id===policy.anchorTaskId&&t.planId===input.planId);

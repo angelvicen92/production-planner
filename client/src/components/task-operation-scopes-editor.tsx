@@ -20,7 +20,7 @@ export function TaskOperationScopesEditor({value,canEdit,pending,onSave}:{value:
  return <div className="space-y-3" data-testid="daily-task-operation-scopes">
   <p role="status">Ámbito operativo por actividad · Revisión {value.revisionId??'inicial'} · {value.authority?'Declaración diaria de Producción':'Valores del día y de la plantilla'}</p>
   <p>La agenda, la ocupación del espacio y la herencia de recursos se eligen por separado. La ubicación real y sus disponibilidades se conservan. Los recursos directos, locks y miembros del equipo siguen siendo obligatorios.</p>
-  {!value.supported?<p>Combinación no soportada: esta declaración requiere actividades independientes, sin operaciones ancladas, conjuntas, rondas, cadenas, montajes ni transporte estructural.</p>:null}
+  {!value.supported?<p>Combinación no soportada: esta declaración requiere actividades independientes, sin operaciones conjuntas, rondas, cadenas, montajes ni transporte estructural.</p>:null}
   {value.blockedReason?<p role="alert">{value.blockedReason}</p>:null}
   <label className="block">Actividad real del día<select aria-label="Actividad de ámbito operativo" value={taskId} onChange={e=>selectTask(Number(e.target.value))}><option value={0}>Seleccionar actividad</option>{value.tasks.map(t=><option key={t.id} value={t.id}>{t.label} · {t.space}{t.eligible?'':' · Protegida'}</option>)}</select></label>
   {task?<>

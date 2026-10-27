@@ -2521,7 +2521,16 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
               : effectiveCoachTransitionMinutes(problem, main.coachId, feeder.spaceId, main.spaceId)));
             const withoutLeadIn = problem.day.start + feederLoad + terminalTransition
               + (pattern.length - runStart) * duration;
-            return [withoutLeadIn, withoutLeadIn + prerequisiteLeadIn];
+            // A native anchored cohort may have a later coach release than the day.
+            // Keep the existing load events and translate them by each authentic
+            // release. These are alternatives, never a new hard lower bound.
+            const releases=problem.nativeAnchoredAccompanimentsVersion===2
+              ?problem.coaches.filter(coach=>selected.some(({main})=>main.coachId===coach.id))
+                .flatMap(coach=>coach.availability.map(window=>window.start)):[];
+            return [...new Set([problem.day.start,...releases])].flatMap(start=>[
+              withoutLeadIn+Math.max(0,start-problem.day.start),
+              withoutLeadIn+Math.max(0,start-problem.day.start)+prerequisiteLeadIn,
+            ]);
           }),
           ...[...new Set(pattern)].flatMap((blockKey) => {
             const runStarts = pattern.flatMap((key, index) => key === blockKey
@@ -2544,7 +2553,16 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
                 : effectiveCoachTransitionMinutes(problem, main.coachId, feeder.spaceId, main.spaceId)));
               const withoutLeadIn = problem.day.start + feederLoad + earlierMainLoad + terminalTransition
                 + (pattern.length - runStart) * duration;
-              return [withoutLeadIn, withoutLeadIn + prerequisiteLeadIn];
+              // A native anchored cohort may have a later coach release than the day.
+            // Keep the existing load events and translate them by each authentic
+            // release. These are alternatives, never a new hard lower bound.
+            const releases=problem.nativeAnchoredAccompanimentsVersion===2
+              ?problem.coaches.filter(coach=>selected.some(({main})=>main.coachId===coach.id))
+                .flatMap(coach=>coach.availability.map(window=>window.start)):[];
+            return [...new Set([problem.day.start,...releases])].flatMap(start=>[
+              withoutLeadIn+Math.max(0,start-problem.day.start),
+              withoutLeadIn+Math.max(0,start-problem.day.start)+prerequisiteLeadIn,
+            ]);
             });
           }).flat(),
           ...departureEnds

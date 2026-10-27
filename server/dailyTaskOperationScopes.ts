@@ -12,7 +12,7 @@ export function dailyTaskOperationScopesAuthority(row:Record<string,any>){
 }
 export function taskOperationScopesSupported(input:EngineInput){
  return !!input.plannerNext&&!input.setupPolicies?.length&&!input.roundSynchronizations?.length&&!input.technicalChains?.length
-  &&!input.anchoredAccompaniments?.length&&!input.operationContinuityGroups?.length&&!input.operationalMealPolicies?.length
+  &&!input.operationContinuityGroups?.length&&!input.operationalMealPolicies?.length
   &&!input.transportSettings&&!input.tasks.some(t=>t.jointGroupId||t.setupFamilyId);
 }
 /** Capture explicit requirements before materialization; never subtract team members. */
@@ -25,6 +25,7 @@ export function withDailyTaskOperationScopes(input:EngineInput,raw:DailyTaskOper
  // A retired declaration owns no task fields and cannot constrain another structure.
  if(structure.policies.length&&!taskOperationScopesSupported(input))throw defect('UNSUPPORTED_TASK_SCOPE_COMBINATION');
  for(const p of structure.policies){
+  if(input.anchoredAccompaniments?.some(a=>[...a.beforeTaskIds,a.anchorTaskId,...a.afterTaskIds].includes(p.taskId)))throw defect('TASK_SCOPE_ANCHORED_MEMBER');
   const t=input.tasks.find(t=>t.id===p.taskId&&t.planId===input.planId);
   const unit=p.itinerantUnitId==null?null:input.itinerantCompositionSnapshot?.units.find(u=>u.id===p.itinerantUnitId&&u.plan_id===input.planId);
   if(!t||t.status==='cancelled'||t.operationalRole!=='productive_task'||!['auxiliary','technical'].includes(t.plannerNextKind??'')

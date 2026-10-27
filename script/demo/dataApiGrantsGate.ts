@@ -64,6 +64,14 @@ export function assertPrivilegeContract(catalog:DataApiCatalog) {
     }
     expected.functions.sort((a:any,b:any)=>a.signature<b.signature?-1:a.signature>b.signature?1:a.role<b.role?-1:a.role>b.role?1:0);
   }
+  const composition='assert_reality_authorities_disjoint(jsonb,jsonb)';
+  if(catalog.functions.some(f=>f.signature===composition)){
+    for(const role of ['anon','authenticated','service_role']){
+      expected.functions.push({signature:composition,role,execute:role==='service_role'});
+      const fn=catalog.functions.find(f=>f.signature===composition&&f.role===role);assert.ok(fn);assert.equal(fn.definer,false);assert.deepEqual(fn.settings,['search_path=""']);
+    }
+    expected.functions.sort((a:any,b:any)=>a.signature<b.signature?-1:a.signature>b.signature?1:a.role<b.role?-1:a.role>b.role?1:0);
+  }
   assert.deepEqual(privilegeContract(catalog),expected,
     'Data API contract changed: review every new object, required grant, column boundary and exposed role');
   // 103 adds one column covered by the existing table grants. The compact JSON

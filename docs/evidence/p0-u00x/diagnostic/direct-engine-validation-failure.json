@@ -1,0 +1,7 @@
+{
+  "status": "FAIL",
+  "mode": "missing-direct",
+  "actualHardValid": true,
+  "expectedHardValid": false,
+  "classification": "Investigate baseline validation barrier before any repair"
+}
