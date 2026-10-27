@@ -111,6 +111,21 @@ function runStorage(writes: string[], persistedFingerprint = "B"): IStorage {
   }, writes);
 }
 
+test('an explicitly declared native pause for unused physical members still materializes',async()=>{
+ const {readFileSync}=await import('node:fs'),{gunzipSync}=await import('node:zlib');
+ const {withDailyOperationalMeals}=await import('./operationalMealPolicy');
+ const receipts=JSON.parse(gunzipSync(readFileSync('docs/evidence/p0-u00z/diagnostic/receipts.json.gz')).toString());
+ const source=withDailyOperationalMeals(receipts['A-input.json'],{contractVersion:1,policies:[{id:'unused-explicit',window:{start:'12:00',end:'13:00'},durationMinutes:20,planResourceItemIds:[4],spaceIds:[]}]});
+ const initial=buildAssistedPlanningSnapshotV1(source.tasks.map(t=>({id:t.id,startPlanned:null,endPlanned:null,spaceId:t.spaceId,zoneId:t.zoneId})));
+ const emptyStage={...stage,ordinal:0,snapshotJson:initial,snapshotFingerprint:fingerprintAssistedPlanningSnapshotV1(initial)};
+ const emptySession={...session,draftSnapshotJson:initial,draftFingerprint:emptyStage.snapshotFingerprint};
+ const reads=storage({getActiveAssistedPlanningSession:async()=>emptySession,getPlanOptimizerSnapshot:async()=>({}),getPlanTaskTemplateSnapshots:async()=>[],getPlanConfigRevision:async()=>({planId,fingerprint:'B'}),getAssistedPlanningStage:async()=>emptyStage,listAssistedPlanningStages:async()=>[emptyStage]},[]);
+ const service=new AssistedProposalService(reads,queueMicrotask,access({find:async()=>({data:{...runRecord(),scope_task_ids_json:source.tasks.map(t=>t.id),scope_json:{selector:{kind:'TASK_IDS',taskIds:source.tasks.map(t=>t.id)}}},error:null}),finish:async()=>({error:null})}),executeAssistedPlanning,{buildInput:async()=>source,buildConfigRevision:dependencies().buildConfigRevision});
+ const result=await service.run(planId,9);assert.equal(result.outcome,'PROPOSAL');
+ assert.equal(result.proposedDraftSnapshot!.operationalMeals!.length,1);
+ assert.equal(result.proposedDraftSnapshot!.operationalMeals![0].policyId,'break:unused-explicit');
+});
+
 test("request requires an ACTIVE session before creating or scheduling a run", async () => {
   let created=0; let deferred=0;
   const runs=access({create:async()=>{created++;return {data:{id:9},error:null};}});

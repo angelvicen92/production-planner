@@ -171,6 +171,7 @@ test("planner-next remains isolated from legacy and production", () => {
     "server/roundSynchronizationStructure.ts",
     // U00y compares declared physical requirements through the existing read-only
     // assignment authority. This module never dispatches Planner Next search.
+    "server/operationalMealPolicy.ts",
     "server/jointGroupStructure.ts",
     "server/roundSynchronizationStructure.spec.ts",
     "server/operationContinuity.spec.ts",

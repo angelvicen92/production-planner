@@ -27,6 +27,13 @@ export interface EffectiveConfigurationView {
     available:boolean;mealApplicable:boolean;zeroBeforeRepresentable:boolean;counts:number[]};
   operationContinuity?: { revisionId:number|null; groups: ReturnType<typeof import("../server/operationContinuity").operationContinuityValues> };
   roundPreparations?: { revisionId: number | null; timeGridMinutes: number; lanes: RoundPreparationValue[] };
+  operationalMeals?: {
+    revisionId:number|null;authority:import('./operationalMealPolicy').DailyOperationalMeals|null;
+    supported:boolean;blockedReason:string|null;by:string|null;at:string|null;
+    spaces:{id:number;name:string}[];resources:{id:number;name:string}[];
+    units:{id:number;name:string;resourceIds:number[];windows:{start:string;end:string}[]}[];
+    materialized:{policyId:string;startPlanned:string;endPlanned:string}[];
+  };
   technicalChains?: {
     revisionId:number|null; authority:import("./technicalChainStructure").TechnicalChainStructure|null;
     supported:boolean; blockedReason:string|null; by:string|null; at:string|null;

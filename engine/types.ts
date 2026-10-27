@@ -344,6 +344,7 @@ export interface EngineInput {
   coachRouteTransitions?: EngineInputCoachRouteTransitionInput[];
   /** Flexible operational meals scoped by physical resources/spaces. */
   operationalMealPolicies?: EngineInputOperationalMealPolicyInput[];
+  dailyOperationalMealsVersion?: 1;
   /** Explicit hard availability of each referenced itinerant composition. */
   itinerantTeamAvailability?: EngineInputItinerantTeamAvailabilityInput[];
   workDay: TimeWindow;
