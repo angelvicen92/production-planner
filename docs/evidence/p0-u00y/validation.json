@@ -111,7 +111,17 @@
       "skipped": 0,
       "files": 425
     },
-    "unconfiguredDayCorrection": "PASS: authentic continuity UI/API, SQL catalog contracts and populated 119\u2192120 rehearsal"
+    "unconfiguredDayCorrection": "PASS: authentic continuity UI/API, SQL catalog contracts and populated 119\u2192120 rehearsal",
+    "tightPhysical": {
+      "status": "PASS",
+      "resourceWindowMinutes": 25,
+      "individualDemandMinutes": 35,
+      "physicalDemandMinutes": 25,
+      "groupedBranches": 8,
+      "separateBranches": 2,
+      "separateOutcome": "NO_PROPOSAL, not exhausted",
+      "experimentIsStage": false
+    }
   },
   "limits": [
     "Other structural combinations and flexible/coordinated meals remain outside this contract",

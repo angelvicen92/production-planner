@@ -59,3 +59,7 @@ Se certifican auxiliares físicas con recursos concretos, pausa global, standalo
 ## Revisión causal tras el primer head de CI
 
 El gate nativo nuevo pasó en GitHub, pero continuidad, alta de días e itinerancia física detectaron el mismo falso rechazo al crear una jornada sin perfil configurado. En la reproducción del head `cd56cbe4`, el HTTP devuelve 500 y la instrumentación read-only del inicializador revela `JOINT_AUTHORITY_NOT_MATERIALIZED`. Un envelope no nulo con `configuration:null` no produce `plannerNextAuthorities`; el guard comparaba `null taskOperations` con `[]`. Se preserva explícitamente la ausencia, manteniendo el rechazo de una autoridad conjunta declarada en un día sin perfil. El recorrido original, sin assertions/timeouts/budgets modificados, vuelve a pasar. No es un cambio de búsqueda ni una relajación de grupos.
+
+## Control saturado de ocupación física
+
+`diagnostic/tight-physical.json.gz` estrecha en memoria únicamente ventanas del input auténtico: el kit dispone de 25 minutos. Competidora + las dos obligaciones suman nominalmente 35 minutos, pero la operación conjunta consume diez una sola vez: 25 físicos en total. Con grupo: 7/7 HARD, ocho ramas. Sin grupo: sin propuesta, dos ramas y sin agotamiento. Los cierres individuales y ambas preparaciones permanecen obligatorios. El test focal reproduce ambos casos sin placements ni seeds. Esto contrasta el consumo real con el contador agregado de duración individual de la macro; no cambia una heurística ni constituye Stage.

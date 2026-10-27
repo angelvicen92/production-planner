@@ -5,13 +5,14 @@
   ],
   "currentDifferencesFromNative": [
     "client/src/components/joint-groups-editor.tsx",
+    "engine/planner-next/integration/nativeJointGroups.spec.ts",
     "supabase/migrations/120_native_joint_groups.sql",
     "shared/configurability.ts"
   ],
-  "note": "Original native executions and cold replays preserve their exact source hashes. Final differences: registry test metadata, read-only UI dependency text, and a SQL-only fix preserving absence on unconfigured days. That SQL path has its own before/after real UI/API regression and populated migration rehearsal. Final PR CI repeats the complete native gate on the final source.",
+  "note": "Original native executions and cold replays preserve their exact source hashes. Final differences: registry test metadata, read-only UI dependency text, and a SQL-only fix preserving absence on unconfigured days. That SQL path has its own before/after real UI/API regression and populated migration rehearsal. Final PR CI repeats the complete native gate on the final source. A saturated-resource regression test additionally proves 25 physical minutes versus 35 individual demand minutes; production search is unchanged.",
   "currentSourceHashes": {
     "client/src/components/joint-groups-editor.tsx": "83813f2915d3f4adf86d889249e02d673b1b87ac7d646e6fb6a90c6c1cc1920c",
-    "engine/planner-next/integration/nativeJointGroups.spec.ts": "3dd3f0c11fd0fba7999323bdefcecc04bd55c1a566b28f8e5866521afa34b02f",
+    "engine/planner-next/integration/nativeJointGroups.spec.ts": "89739a12278e55c417ca139672ab4eeef92f8d7914a5732ae37f2d410d629c1a",
     "server/jointGroupStructure.ts": "3ff3192e8a31012b790a2a14f837299c60c46868e9b0e3c467ebd84d8edd0d65",
     "shared/jointGroupStructure.ts": "074c95b3aed4ba1208b3f1e9111c9e4893c25adcbe9e113296ae1b518e46a0f4",
     "supabase/migrations/120_native_joint_groups.sql": "242d9875450404eb11ccb5a0fbfb4cca613889c7df075eaa53ac1fc40348adde",

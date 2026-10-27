@@ -1,0 +1,55 @@
+TAP version 13
+# Subtest: native group preserves both identities, dependencies and one shared physical occupation
+ok 1 - native group preserves both identities, dependencies and one shared physical occupation
+  ---
+  duration_ms: 82.275804
+  ...
+# Subtest: single-member scopes close visibly even without visible prerequisites; future groups stay complete and unaccepted
+ok 2 - single-member scopes close visibly even without visible prerequisites; future groups stay complete and unaccepted
+  ---
+  duration_ms: 33.071847
+  ...
+# Subtest: partial protection rejects explicitly; complete protection is preserved literally during continuation
+ok 3 - partial protection rejects explicitly; complete protection is preserved literally during continuation
+  ---
+  duration_ms: 32.478622
+  ...
+# Subtest: both participants govern feeding feasibility; incompatible feeding is physical, never exhausted search
+ok 4 - both participants govern feeding feasibility; incompatible feeding is physical, never exhausted search
+  ---
+  duration_ms: 27.813177
+  ...
+# Subtest: declarations reject unequal duration, space, resources, duplicate people, foreign/missing and internal dependencies
+ok 5 - declarations reject unequal duration, space, resources, duplicate people, foreign/missing and internal dependencies
+  ---
+  duration_ms: 4.009598
+  ...
+# Subtest: native authority is opt-in, cold revision replay verifies every member and absence stays historical
+ok 6 - native authority is opt-in, cold revision replay verifies every member and absence stays historical
+  ---
+  duration_ms: 5.172754
+  ...
+# Subtest: the existing consumer supports three different participants without a pair-only authoring restriction
+ok 7 - the existing consumer supports three different participants without a pair-only authoring restriction
+  ---
+  duration_ms: 13.676514
+  ...
+# Subtest: reversing member and input set order preserves the authored authority and deterministic proposal
+ok 8 - reversing member and input set order preserves the authored authority and deterministic proposal
+  ---
+  duration_ms: 46.613148
+  ...
+# Subtest: a saturated physical resource consumes the shared interval once, while separate obligations do not fit
+ok 9 - a saturated physical resource consumes the shared interval once, while separate obligations do not fit
+  ---
+  duration_ms: 28.340115
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 772.006362

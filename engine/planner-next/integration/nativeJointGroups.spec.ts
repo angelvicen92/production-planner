@@ -76,3 +76,12 @@ test('reversing member and input set order preserves the authored authority and 
  const b=withDailyJointGroups(other,{contractVersion:1,groups:[{id:'operation',taskIds:[5,2]}]});
  assert.deepEqual(a.dailyJointGroups,b.dailyJointGroups);assert.deepEqual(solve(a).result.proposal,solve(b).result.proposal);assert.equal(solve(a).result.evidence.fingerprint,solve(b).result.evidence.fingerprint);
 });
+
+test('a saturated physical resource consumes the shared interval once, while separate obligations do not fit',()=>{
+ const i=source();i.contestantAvailabilityById![1]={start:'09:00',end:'09:40'};i.contestantAvailabilityById![2]={start:'09:15',end:'09:40'};
+ i.planResourceItems[0].availabilityStart='09:05';i.planResourceItems[0].availabilityEnd='09:30';
+ const r=solve(withDailyJointGroups(i,structure));assert.equal(r.result.proposal!.length,7);assert.equal(r.result.evidence.hardValid,true);
+ const individualDemand=r.adapter.problem.tasks.filter(t=>t.requiredResourceIds?.includes('plan-resource:1')).reduce((n,t)=>n+t.duration,0);assert.equal(individualDemand,35);
+ const intervals=new Map(r.result.proposal!.filter(t=>t.requiredResourceIds?.includes('plan-resource:1')).map(t=>[`${t.start}:${t.end}`,t.end-t.start]));assert.equal([...intervals.values()].reduce((n,d)=>n+d,0),25);
+ const ordinary=solve(i);assert.equal(ordinary.result.proposal,null);assert.ok(!ordinary.result.evidence.reasonCodes.some(c=>/BUDGET|EXHAUST/.test(c)));
+});
