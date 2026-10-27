@@ -188,6 +188,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     }:undefined;
     const base = {
       id: canonical("task", source.id),
+      ...(input.dailyAnchoredAccompanimentsVersion===2&&input.anchoredAccompaniments?.some(p=>[...p.beforeTaskIds,p.anchorTaskId,...p.afterTaskIds].includes(source.id))?{anchoredUnitChoice:true as const}:{}),
       ...(nominal?{nominalResourceChoice:nominal}:{}),
       duration: protectedInterval && (protectedInterval.status === "COMPLETE_REAL" || protectedInterval.status === "COMPLETE_PLANNED")
         ? engineTimeToMinute(protectedInterval.interval.end) - engineTimeToMinute(protectedInterval.interval.start)
@@ -312,6 +313,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
   })).sort((a, b) => compare(a.id, b.id));
 
   const problem: PlannerNextProblem = {
+    ...(input.dailyAnchoredAccompanimentsVersion===2?{nativeAnchoredAccompanimentsVersion:2 as const}:{}),
     day: window(input.workDay),
     ...(input.mealMode === "flexible_meal_window" ? {} : { protectedMeal: window(input.meal) }),
     spaces,

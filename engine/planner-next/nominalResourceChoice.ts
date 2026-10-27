@@ -31,7 +31,9 @@ export const possibleTaskResourceIds=(task:Task)=>canonical([...(task.requiredRe
 
 /** A physical rejection applies only to the materialized variant of a task/spot. */
 export function nominalOperationEdgeKey(taskId:string,position:number,operation:readonly ScheduledTask[]):string {
-  const choices=operation.filter(task=>task.nominalResourceChoice?.selectedResourceId)
-    .map(task=>[task.id,task.nominalResourceChoice!.selectedResourceId!]).sort(([a],[b])=>a.localeCompare(b));
+  // One compound unit decision belongs to the matching root. A repair carrying
+  // only that anchor must use the same key as a residual edge carrying all phases.
+  const choices=operation.filter(task=>task.nominalResourceChoice?.selectedResourceId||task.id===taskId&&task.anchoredUnitChoice&&task.itinerantUnitId&&(task.allowedItinerantUnitIds?.length??0)>1)
+    .map(task=>[task.id,task.nominalResourceChoice?.selectedResourceId??task.itinerantUnitId!]).sort(([a],[b])=>a.localeCompare(b));
   return `${taskId}@${position}${choices.length?`#${JSON.stringify(choices)}`:''}`;
 }

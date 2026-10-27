@@ -1,4 +1,5 @@
-import {nominalOperationEdgeKey,nominalResourceVariants} from './nominalResourceChoice';
+import {mainOperationVariants} from './anchoredAccompaniment';
+import {nominalOperationEdgeKey} from './nominalResourceChoice';
 import type { PlannerNextProblem, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask, Task, ValidationSummary } from "./contracts";
 import { anchoredTaskIds, firstParticipantObligationTask, materializeAnchoredOperation } from "./anchoredAccompaniment";
 import { fingerprint } from "./fingerprint";
@@ -1347,7 +1348,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
     if(!bundleState)return;
     const repair=structuralCandidate?.repair??options.repairPreferredBundleCandidate;
     if(!repair)return;
-    for(const task of bundleState.scheduledTasks.filter((task:ScheduledTask)=>task.kind==='main'&&task.nominalResourceChoice)){
+    for(const task of bundleState.scheduledTasks.filter((task:ScheduledTask)=>task.kind==='main'&&(task.nominalResourceChoice||task.anchoredUnitChoice&&(task.allowedItinerantUnitIds?.length??0)>1))){
       const position=bundleState.matching.get(task.id);if(position===undefined)continue;
       const key=nominalOperationEdgeKey(task.id,position,[task]);
       const forbidden=new Set(bundleState.forbiddenEdges).add(key),signature=[...forbidden].sort().join("\u0000");
@@ -1957,7 +1958,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           !blockUsed.has(task.id) && task.id !== forcedTaskId && task.blockKey === pattern[position]
           && taskFitsRequiredCompositePosition(task, position, requiredBlocks, composite)).length;
       }
-      for (const source of mains) for(const task of nominalResourceVariants(source)) {
+      for (const source of mains) for(const task of mainOperationVariants(problem,source)) {
         if (blockUsed.has(task.id) || task.blockKey !== pattern[position]
           || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, composite)
           || (forcedTaskId !== undefined && task.id !== forcedTaskId)) continue;
@@ -2108,6 +2109,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
             departureDeadline:task.participantId === undefined ? null : latestDepartureStart.get(task.participantId)??null},
           operation:operation.map(item=>({kind:item.kind,start:item.start-anchor.start,end:item.end-anchor.start,
             duration:item.duration,spaceId:item.spaceId,coachId:item.coachId??null,
+            ...(item.anchoredUnitChoice&&(item.allowedItinerantUnitIds?.length??0)>1?{itinerantUnitId:item.itinerantUnitId}:{}),
             resources:[...(item.requiredResourceIds??[])].sort(),dependencies:item.dependencies.map(dependencyProfile)})),
           feeder:{duration:feeder.duration,spaceId:feeder.spaceId,availability:feeder.availability??null,
             dependencies:feeder.dependencies.map(dependencyProfile),resources:[...(feeder.requiredResourceIds??[])].sort(),
@@ -2202,7 +2204,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
       // A feeder failure changes cohort membership, not nominal order.  Exclude one
       // selected edge at a time so matching can produce every structurally distinct
       // cohort without regenerating permutations of a cohort already evaluated.
-      for(const edge of assignedEdges)if(edge.operation.some(task=>task.nominalResourceChoice))
+      for(const edge of assignedEdges)if(edge.operation.some(task=>task.nominalResourceChoice||task.anchoredUnitChoice&&(task.allowedItinerantUnitIds?.length??0)>1))
         enqueueForbidden(forbidden,matching,nominalOperationEdgeKey(edge.taskId,edge.position,edge.operation));
       for(const [taskId] of runAssignments)enqueueCohortExclusion(forbidden,matching,taskId);
     }
@@ -2250,7 +2252,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
         for (const position of positions) {
           if (task.blockKey !== pattern[position]
             || !taskFitsRequiredCompositePosition(task, position, requiredBlocks, composite)) continue;
-          for(const variant of nominalResourceVariants(task)){
+          for(const variant of mainOperationVariants(problem,task)){
             const edge = evaluate(variant, position);
             if (edge === "BUDGET_EXHAUSTED") return { outcome: "BUDGET_EXHAUSTED" };
             if (edge) taskEdges.push(edge);
@@ -2476,7 +2478,7 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
           // Structural lower-bound events let backward packing move away from an
           // unusably early preferred end without sweeping human clock values.  The
           // exact closure still decides whether either vocal/styling order works.
-          ...pattern.flatMap((blockKey, position) => mains.filter((main) => main.blockKey === blockKey).map((main) => {
+          ...pattern.flatMap((blockKey, position) => mains.filter((main) => main.blockKey === blockKey).flatMap((main) => {
             const ancestors = new Map<string, Task>();
             const collect = (id: string): void => {
               const task = problem.tasks.find((candidate) => candidate.id === id);
@@ -2494,7 +2496,14 @@ export function runExactMainAndFeederSearch(problem: PlannerNextProblem,
               .reduce((sum, id) => sum + (problem.tasks.find(t => t.id === id)?.duration ?? 0), 0);
             const earliestMainStart = problem.day.start
               + [...ancestors.values()].reduce((sum, task) => sum + task.duration, 0) + transition + beforeDuration;
-            return earliestMainStart + main.duration + (pattern.length - position - 1) * duration;
+            const operation=(problem.anchoredAccompaniments??[]).find(c=>c.anchorTaskId===main.id);
+            const totalBefore=(operation?.beforeTaskIds??[]).reduce((sum,id)=>sum+(problem.tasks.find(t=>t.id===id)?.duration??0),0);
+            const unitStarts=problem.nativeAnchoredAccompanimentsVersion===2&&operation&&main.allowedItinerantUnitIds?.length?(problem.itinerantUnits??[])
+              .filter(unit=>main.allowedItinerantUnitIds!.includes(unit.id)).flatMap(unit=>[
+                ...unit.availability.map(w=>w.start),
+                ...(unit.resourceIds??[]).flatMap(id=>problem.resources.find(r=>r.id===id)?.availability.map(w=>w.start)??[]),
+              ]).map(start=>Math.max(earliestMainStart,start+totalBefore)):[];
+            return [earliestMainStart,...unitStarts].map(start=>start + main.duration + (pattern.length - position - 1) * duration);
           })),
           ...pattern.flatMap((blockKey, runStart) => {
             if (runStart > 0 && pattern[runStart - 1] === blockKey) return [];

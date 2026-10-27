@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+import {createRequire} from 'node:module';
+import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
+import {resolve} from 'node:path';
+import {inspect} from './consumer';
+const output=resolve(process.argv[2]);mkdirSync(output,{recursive:true});
+const input=JSON.parse(readFileSync('work/u00w/native-sixth/native/multi-input.json','utf8'));
+const first=inspect(input,[input.anchoredAccompaniments[0].anchorTaskId]);assert.ok('result' in first&&first.result.proposal);
+const protectedPlacements=[...first.result.proposal!],ids=input.tasks.filter((t:any)=>!protectedPlacements.some(p=>p.id===`task:${t.id}`)).map((t:any)=>t.id);
+const before=inspect(input,ids,protectedPlacements);assert.ok('result' in before&&!before.result.proposal);
+let intervention='';
+const bundle=await build({stdin:{contents:`export {inspect} from './docs/evidence/p0-u00w/consumer';`,resolveDir:process.cwd(),loader:'ts'},bundle:true,write:false,platform:'node',format:'cjs',packages:'external',plugins:[{name:'protected-choice-memory',setup(b){b.onLoad({filter:/anchoredAccompaniment\.ts$/},args=>{const source=readFileSync(args.path,'utf8'),from='||c.itinerantUnitId!==operationUnit';assert.equal(source.split(from).length,2);intervention=source.replace(from,'||c.itinerantUnitId!==operationUnit&&!(c.itinerantUnitId===undefined&&operationUnit!==undefined&&domains.every(d=>d.includes(operationUnit)))');return {contents:intervention,loader:'ts',resolveDir:resolve(args.path,'..')};});}}]});
+const module={exports:{} as {inspect:typeof inspect}};new Function('require','module','exports',bundle.outputFiles[0].text)(createRequire(import.meta.url),module,module.exports);
+const after=module.exports.inspect(input,ids,protectedPlacements);
+writeFileSync(output+'/before-after.json',JSON.stringify({input,first,before,after,intervention,experimentIsStage:false},null,2));
+assert.ok('result' in after&&after.result.proposal);assert.equal(after.result.proposal.length,13);
+console.log('PASS: protected common choice survives preflight and continuation in memory');

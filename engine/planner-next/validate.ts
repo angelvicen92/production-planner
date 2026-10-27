@@ -484,6 +484,8 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
     if(expectedUnit&&!nominalResourceAssignmentMatches(expectedUnit,task)){
       addViolation('NOMINAL_RESOURCE_ASSIGNMENT','HARD',[task],task.requiredResourceIds??[],[task.spaceId],{expectedDomain:expectedUnit.nominalResourceChoice?.resourceIds??[]});
     }
+    if(problem.nativeAnchoredAccompanimentsVersion===2&&expectedUnit?.allowedItinerantUnitIds?.length&&task.itinerantUnitId===undefined
+      &&problem.anchoredAccompaniments?.some(c=>[...c.beforeTaskIds,c.anchorTaskId,...c.afterTaskIds].includes(task.id)))itinerantUnitMeal+=1;
     if(expectedUnit?.itinerantUnitId!==task.itinerantUnitId
       &&!(expectedUnit&&assignedItinerantResourcesValid(expectedUnit,task)))itinerantUnitMeal+=1;
     if(task.itinerantUnitId!==undefined&&(task.requiredResourceIds??[]).includes(task.itinerantUnitId))itinerantUnitResourceAlias=true;
@@ -817,7 +819,25 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   if(problem.resources.some(resource=>usedScheduledUnitIds.has(resource.id)))itinerantUnitResourceAlias=true;
 
   let anchoredAccompaniment=0;
-  for(const contract of problem.anchoredAccompaniments??[]){const sequence=anchoredSequence(contract);const actual=sequence.map(id=>scheduled.filter(t=>t.id===id));let invalid=actual.some(xs=>xs.length!==1);const flat=actual.map(xs=>xs[0]).filter((x):x is ScheduledTask=>Boolean(x));if(flat.length===sequence.length){invalid ||= flat.slice(1).some((t,i)=>flat[i]!.end!==t.start)||flat.some((t,i)=>t.end-t.start!==problem.tasks.find(x=>x.id===sequence[i])?.duration||t.participantId!==flat[0]!.participantId||t.spaceId!==problem.tasks.find(x=>x.id===t.id)?.spaceId||JSON.stringify([...(t.requiredResourceIds??[])].sort())!==JSON.stringify([...(problem.tasks.find(x=>x.id===t.id)?.requiredResourceIds??[])].sort()));if(contract.itinerantUnitId)invalid||=(problem.itinerantUnitMeals??[]).some(meal=>meal.itinerantUnitId===contract.itinerantUnitId&&flat[0]!.start<meal.interval.end&&meal.interval.start<flat.at(-1)!.end);}if(invalid)anchoredAccompaniment+=1;}
+  for(const contract of problem.anchoredAccompaniments??[]){
+    const sequence=anchoredSequence(contract),actual=sequence.map(id=>scheduled.filter(t=>t.id===id));
+    const flat=actual.map(xs=>xs[0]).filter((x):x is ScheduledTask=>Boolean(x));
+    const domainOperation=problem.nativeAnchoredAccompanimentsVersion===2&&sequence.some(id=>{const task=problem.tasks.find(t=>t.id===id);return task?.allowedItinerantUnitIds?.length&&!task.itinerantUnitId;});
+    let invalid=actual.some(xs=>xs.length!==1);
+    if(flat.length===sequence.length){
+      invalid ||= flat.slice(1).some((t,i)=>flat[i]!.end!==t.start);
+      if(domainOperation)invalid ||= !flat[0]!.itinerantUnitId||flat.some(t=>t.itinerantUnitId!==flat[0]!.itinerantUnitId);
+      invalid ||= flat.some((t,i)=>{
+       const source=problem.tasks.find(x=>x.id===sequence[i])!;
+       const expected=domainOperation&&t.itinerantUnitId?materializeItinerantUnitAssignment(problem,source,t.itinerantUnitId):source;
+       return !expected||t.end-t.start!==expected.duration||t.participantId!==flat[0]!.participantId||t.spaceId!==expected.spaceId
+        ||JSON.stringify([...(t.requiredResourceIds??[])].sort())!==JSON.stringify([...(expected.requiredResourceIds??[])].sort());
+      });
+      const unitId=domainOperation?flat[0]!.itinerantUnitId:contract.itinerantUnitId;
+      if(unitId)invalid||=(problem.itinerantUnitMeals??[]).some(meal=>meal.itinerantUnitId===unitId&&flat[0]!.start<meal.interval.end&&meal.interval.start<flat.at(-1)!.end);
+    }
+    if(invalid)anchoredAccompaniment+=1;
+  }
   const reasonCodes: string[] = [];
   if (scheduled.length !== problem.tasks.length) reasonCodes.push("UNPLANNED_TASKS");
   if (dependency) reasonCodes.push("DEPENDENCY_VIOLATION");

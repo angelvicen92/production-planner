@@ -1,0 +1,153 @@
+{
+  "remoteWrites": 0,
+  "stages": [
+    {
+      "planId": 1,
+      "label": "choice",
+      "stage": 1,
+      "revisionId": 9,
+      "scope": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "proposalCount": 5,
+      "witnessCount": 5,
+      "branches": 27,
+      "operations": [
+        {
+          "id": "2f49edac-af29-4186-a86f-8ac0d78b8e8a-cas",
+          "sourceTaskIds": [
+            3,
+            2,
+            4
+          ],
+          "selectedWitnessUnit": "itinerant-team:2",
+          "duration": 45,
+          "stagePlacedMembers": 3,
+          "physicalMainMinutes": 15
+        }
+      ],
+      "stageFingerprint": "03d4528aed31aa28745189183727ba42b2a64523f6da534048764604c1b263e9"
+    },
+    {
+      "planId": 2,
+      "label": "multi",
+      "stage": 1,
+      "revisionId": 19,
+      "scope": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "proposalCount": 4,
+      "witnessCount": 17,
+      "branches": 511,
+      "operations": [
+        {
+          "id": "e9dc3335-6230-4191-a8e0-5e9f32c7dabe-cas",
+          "sourceTaskIds": [
+            8,
+            7,
+            9
+          ],
+          "selectedWitnessUnit": "itinerant-team:5",
+          "duration": 45,
+          "stagePlacedMembers": 3,
+          "physicalMainMinutes": 15
+        },
+        {
+          "id": "d7342544-1603-445c-9344-d27760626b61",
+          "sourceTaskIds": [
+            14,
+            13,
+            15
+          ],
+          "selectedWitnessUnit": "itinerant-team:6",
+          "duration": 45,
+          "stagePlacedMembers": 0,
+          "physicalMainMinutes": 15
+        },
+        {
+          "id": "40575310-2cb3-4c6b-93bf-98ab84690e41",
+          "sourceTaskIds": [
+            20,
+            19,
+            21
+          ],
+          "selectedWitnessUnit": "itinerant-team:6",
+          "duration": 45,
+          "stagePlacedMembers": 0,
+          "physicalMainMinutes": 15
+        }
+      ],
+      "stageFingerprint": "f9af6b0019c17ac86a2e4a95c23c1b05d099a146dada614fde96b08d317d4922"
+    },
+    {
+      "planId": 2,
+      "label": "multi",
+      "stage": 2,
+      "revisionId": 19,
+      "scope": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22
+      ],
+      "proposalCount": 13,
+      "witnessCount": 17,
+      "branches": 121,
+      "operations": [
+        {
+          "id": "e9dc3335-6230-4191-a8e0-5e9f32c7dabe-cas",
+          "sourceTaskIds": [
+            8,
+            7,
+            9
+          ],
+          "selectedWitnessUnit": "itinerant-team:5",
+          "duration": 45,
+          "stagePlacedMembers": 3,
+          "physicalMainMinutes": 15
+        },
+        {
+          "id": "d7342544-1603-445c-9344-d27760626b61",
+          "sourceTaskIds": [
+            14,
+            13,
+            15
+          ],
+          "selectedWitnessUnit": "itinerant-team:6",
+          "duration": 45,
+          "stagePlacedMembers": 3,
+          "physicalMainMinutes": 15
+        },
+        {
+          "id": "40575310-2cb3-4c6b-93bf-98ab84690e41",
+          "sourceTaskIds": [
+            20,
+            19,
+            21
+          ],
+          "selectedWitnessUnit": "itinerant-team:5",
+          "duration": 45,
+          "stagePlacedMembers": 3,
+          "physicalMainMinutes": 15
+        }
+      ],
+      "stageFingerprint": "cc34f273a3fa1f0d01bc55d08d81d1177061a5969b8ef381b9841e3e38a9be9f"
+    }
+  ]
+}

@@ -1,3 +1,5 @@
+import {materializeItinerantUnitAssignment} from './itinerantUnitAssignment';
+import {nominalResourceVariants} from './nominalResourceChoice';
 import type { AnchoredAccompaniment, PlannerNextProblem, ScheduledSpaceMeal, ScheduledTask, Task } from "./contracts";
 import { canPlaceTask } from "./placement";
 
@@ -32,14 +34,17 @@ export function materializeAnchoredOperation(problem: PlannerNextProblem, anchor
   const scheduledAnchor={...anchor,start:anchorStart,end:anchorStart+anchor.duration};
   if(!contract) return canPlace(anchor,anchorStart,external,meals)?{contract:null as never,tasks:[scheduledAnchor],anchor:scheduledAnchor,start:anchorStart,end:scheduledAnchor.end}:null;
   const byId=new Map(problem.tasks.map(t=>[t.id,t]));
-  const before=contract.beforeTaskIds.map(id=>byId.get(id)); const after=contract.afterTaskIds.map(id=>byId.get(id));
+  const selected=(id:string)=>{const task=byId.get(id);return task&&problem.nativeAnchoredAccompanimentsVersion===2&&anchor.itinerantUnitId&&anchor.allowedItinerantUnitIds?.length
+   ?materializeItinerantUnitAssignment(problem,task,anchor.itinerantUnitId)??undefined:task;};
+  const before=contract.beforeTaskIds.map(selected); const after=contract.afterTaskIds.map(selected);
   if(before.some(x=>!x)||after.some(x=>!x))return null;
   let cursor=anchorStart; const scheduledBefore:ScheduledTask[]=[];
   for(let i=before.length-1;i>=0;i--){const task=before[i]!;cursor-=task.duration;scheduledBefore.unshift({...task,start:cursor,end:cursor+task.duration});}
   cursor=scheduledAnchor.end;const scheduledAfter:ScheduledTask[]=[];
   for(const task of after as Task[]){scheduledAfter.push({...task,start:cursor,end:cursor+task.duration});cursor+=task.duration;}
   const tasks=[...scheduledBefore,scheduledAnchor,...scheduledAfter];
-  if(!anchoredOperationAvoidsItinerantUnitMeals(problem,contract,tasks[0]!.start,tasks.at(-1)!.end))return null;
+  const selectedContract=problem.nativeAnchoredAccompanimentsVersion===2&&anchor.allowedItinerantUnitIds?.length&&anchor.itinerantUnitId?{...contract,itinerantUnitId:anchor.itinerantUnitId}:contract;
+  if(!anchoredOperationAvoidsItinerantUnitMeals(problem,selectedContract,tasks[0]!.start,tasks.at(-1)!.end))return null;
   if(tasks.some(t=>!canPlace(t,t.start,external,meals)))return null;
   if(tasks.slice(1).some((t,i)=>tasks[i]!.end!==t.start))return null;
   if(tasks.some(t=>t.participantId!==scheduledAnchor.participantId))return null;
@@ -62,8 +67,20 @@ export function anchoredAccompanimentPreflight(problem: PlannerNextProblem): str
     const local=new Set<string>();for(const taskId of [c.anchorTaskId??"",...segments]){if(local.has(taskId))reasons.add(taskId===c.anchorTaskId?`ANCHORED_ACCOMPANIMENT_NESTING_NOT_SUPPORTED:${id}`:`ANCHORED_ACCOMPANIMENT_DUPLICATE_TASK:${id}:${taskId}`);local.add(taskId);if(used.has(taskId))reasons.add(`ANCHORED_ACCOMPANIMENT_TASK_REUSED:${taskId}`);used.add(taskId);}
     for(const taskId of segments){const task=tasks.get(taskId);if(!task)reasons.add(`ANCHORED_ACCOMPANIMENT_UNKNOWN_SEGMENT:${id}:${taskId}`);else{if(task.kind!=="auxiliary")reasons.add(`ANCHORED_ACCOMPANIMENT_INVALID_SEGMENT_KIND:${id}:${taskId}`);if(anchor&&task.participantId!==anchor.participantId)reasons.add(`ANCHORED_ACCOMPANIMENT_PARTICIPANT_MISMATCH:${id}:${taskId}`);invalid||=!validTaskReferences(task,resources,spaces);}}
     const segmentUnits=segments.map(taskId=>tasks.get(taskId)?.itinerantUnitId),anchorUnit=anchor?.itinerantUnitId;const declaredSegments=segmentUnits.filter((x):x is string=>x!==undefined);const operationUnit=declaredSegments[0]??anchorUnit;
-    if((declaredSegments.length>0&&declaredSegments.length!==segmentUnits.length)||new Set(declaredSegments).size>1||(anchorUnit!==undefined&&operationUnit!==anchorUnit)||c.itinerantUnitId!==operationUnit){reasons.add(`ANCHORED_ACCOMPANIMENT_ITINERANT_UNIT_MISMATCH:${id}`);invalid=true;}
+    const members=[anchor,...segments.map(id=>tasks.get(id))],domains=members.map(t=>[...new Set(t?.allowedItinerantUnitIds??[])].sort());
+    if(problem.nativeAnchoredAccompanimentsVersion===2&&domains.some(d=>d.length>1)&&(!domains[0]?.length||domains.some(d=>JSON.stringify(d)!==JSON.stringify(domains[0]))
+      ||domains[0].some(id=>!problem.itinerantUnits?.some(u=>u.id===id&&u.resourceIds?.length)))){
+      reasons.add(`ANCHORED_ACCOMPANIMENT_ITINERANT_DOMAIN_MISMATCH:${id}`);invalid=true;
+    }
+    if((declaredSegments.length>0&&declaredSegments.length!==segmentUnits.length)||new Set(declaredSegments).size>1||(anchorUnit!==undefined&&operationUnit!==anchorUnit)||c.itinerantUnitId!==operationUnit&&!(problem.nativeAnchoredAccompanimentsVersion===2&&c.itinerantUnitId===undefined&&operationUnit!==undefined&&domains.every(d=>d.includes(operationUnit)))){reasons.add(`ANCHORED_ACCOMPANIMENT_ITINERANT_UNIT_MISMATCH:${id}`);invalid=true;}
     if(anchor)invalid||=!validTaskReferences(anchor,resources,spaces);if(invalid)reasons.add(`ANCHORED_ACCOMPANIMENT_INVALID_CONTRACT:${id}`);
   }return [...reasons].sort();
 }
 function validTaskReferences(task:Task,resources:Set<string>,spaces:Set<string>):boolean{const ids=task.requiredResourceIds??[];return task.duration>0&&spaces.has(task.spaceId)&&new Set(ids).size===ids.length&&ids.every(id=>resources.has(id));}
+
+export function mainOperationVariants(problem:PlannerNextProblem,task:Task):Task[]{
+ const contract=anchoredAccompanimentIndex(problem).get(task.id);
+ if(problem.nativeAnchoredAccompanimentsVersion!==2||!contract||!task.allowedItinerantUnitIds?.length)return nominalResourceVariants(task);
+ return [...new Set(task.itinerantUnitId?[task.itinerantUnitId]:task.allowedItinerantUnitIds)].sort()
+  .flatMap(id=>{const chosen=materializeItinerantUnitAssignment(problem,task,id);return chosen?[chosen]:[];});
+}

@@ -99,6 +99,8 @@ interface BaseTask {
   nonSubstitutableResourceIds?: string[];
   availability?: Window[];
   itinerantUnitId?: string;
+  /** Produced only by explicit daily anchored v2 authority. */
+  anchoredUnitChoice?: true;
   /** Solver-owned assignment domain. A singleton remains a specific unit. */
   allowedItinerantUnitIds?: string[];
   /** Explicit participant boundary overrides; zero must not be treated as absent. */
@@ -156,6 +158,8 @@ export type PlannerSearchPolicy =
   | "EXACT_CONSTRUCTIVE";
 
 export interface PlannerNextProblem {
+  /** Explicit native v2 adoption; historical snapshots retain their original contract. */
+  nativeAnchoredAccompanimentsVersion?: 2;
   day: Window;
   /** Legacy/global hard meal break. Absent for flexible participant meal windows. */
   protectedMeal?: Window;
