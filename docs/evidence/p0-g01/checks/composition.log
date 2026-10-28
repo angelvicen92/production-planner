@@ -1,0 +1,22 @@
+✔ five native projectors compose in every order on the four original audited days (911.00857ms)
+✔ overlapping ownership, alternative units, positive transitions and undeclared virtuality stay unsupported (5.102643ms)
+✔ fixed units, segments, joint unit and unused snapshots compose in both authoring orders (28.311166ms)
+✔ uncertified transitions, alternatives and unauthentic mappings remain unsupported (4.510699ms)
+✔ equal physical members cannot hide a different joint unit identity (0.843335ms)
+✔ native Main/Vocal admits fixed REQUIRED composition in both authoring orders (17.728048ms)
+✔ representative, non-representative peer and space close the visible REQUIRED unit without prerequisites (164.746906ms)
+✔ authority accepts all authoring orders but rejects physical duplication, bad phases and backwards dependencies (37.75137ms)
+✔ partial scope certifies the authentic global future with its physical pause, zero extra search, then preserves S1 (776.707118ms)
+✔ each phase exposes multiple realized permutations, and HARD dependencies can require a non-nominal one (599.357218ms)
+✔ phased technical operations retain their kind and accept flexible internal dependencies (24.009448ms)
+✔ a locally valid competitor prefix cannot consume the last contiguous future realization (120.072618ms)
+✔ explicit empty common identities survive daily authority and adapter; missing and null fail closed (36.267639ms)
+✔ mixed 17 obligation REQUIRED future is physical, certificate searches zero branches and continuation preserves S1 (560.318264ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7890.28561

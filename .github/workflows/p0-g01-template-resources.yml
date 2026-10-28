@@ -1,0 +1,64 @@
+name: P0 G01 template resources UI to SQL
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'client/src/pages/settings.tsx'
+      - 'client/src/components/template-specific-resources.tsx'
+      - 'client/src/lib/template-resource-requirements*'
+      - 'client/src/hooks/use-tasks.ts'
+      - 'shared/routes.ts'
+      - 'server/atomicTaskTemplate.ts'
+      - 'docs/evidence/p0-g01/**'
+      - 'docs/evidence/p0-u02d/journey.ts'
+      - '.github/workflows/p0-g01-template-resources.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  template-ui-sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$task_browser_path" ]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+          fi
+      - run: npm run check && npm run build
+      - run: npx --no-install tsc -p docs/evidence/p0-g01/tsconfig.json
+      - run: >-
+          node --import tsx --test client/src/lib/template-resource-requirements.test.ts
+          server/taskTemplateContract.spec.ts server/taskTemplateSnapshot.spec.ts
+          server/atomicTaskTemplate.spec.ts server/apiAuthorization.spec.ts
+          engine/planner-next/integration/concreteResourceRequirements.spec.ts
+          server/composedAnchoredRequired.spec.ts server/fixedItinerantPhaseComposition.spec.ts
+          server/requiredPhaseComposition.spec.ts
+      - run: node --import tsx docs/evidence/p0-g01/run.ts work/g01-ui
+      - run: node --import tsx docs/evidence/p0-g01/run.ts work/g01-api --api-baseline
+      - run: python3 docs/evidence/p0-u02d/verify.py work/g01-ui/native work/g01-ui-verify.json
+      - run: python3 docs/evidence/p0-u02d/verify.py work/g01-api/native work/g01-api-verify.json
+      - run: python3 docs/evidence/p0-g01/compare.py work/g01-ui/native work/g01-api/native work/g01-comparison.json
+      - run: node --import tsx docs/evidence/p0-u02d/baselines.ts p0-u00x work/g01-control-u00x
+      - run: node --import tsx docs/evidence/p0-u02d/baselines.ts p0-u02b work/g01-control-u02b
+      - run: python3 docs/evidence/p0-g01/verify-controls.py work/g01-control-u00x work/g01-control-u02b work/g01-control-verification
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g01-template-resources
+          path: |
+            work/g01-ui/native/*.json
+            work/g01-ui/native/*.png
+            work/g01-api/native/*.json
+            work/g01-*.json
+            work/g01-control-verification/*.json
+          retention-days: 14

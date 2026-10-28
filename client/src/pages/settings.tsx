@@ -1,3 +1,5 @@
+import { TemplateSpecificResources } from "@/components/template-specific-resources";
+import { setTemplateCoach, templateResourceOptions, validateTemplateResourceChanges } from "@/lib/template-resource-requirements";
 import {TemplateSetupFamily} from "@/components/setup-families-editor";
 import { ItinerantCompositionSettings } from '@/components/itinerant-composition-settings';
 import { NewDayPlannerEditor, TemplatePlannerRole } from "@/components/new-day-planner-editor";
@@ -2396,7 +2398,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
   const vocalCoachItems = Array.isArray(vocalCoachType?.items)
     ? vocalCoachType.items
     : [];
-  const vocalCoachItemIds = new Set(
+  const vocalCoachItemIds = new Set<number>(
     vocalCoachItems
       .map((it: any) => Number(it?.id))
       .filter((id: number) => Number.isFinite(id) && id > 0),
@@ -2643,6 +2645,12 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
     if (err) return toast({ title: err, variant: "destructive" });
     const changed = (...keys: string[]) => keys.some(key => JSON.stringify(editData[key]) !== JSON.stringify(editData.initial[key]));
     const coachChanged = changed("requiresCoach", "coachMode", "coachResourceItemId");
+    const resourcesChanged = changed("resourceRequirementsData");
+    if ((resourcesChanged || coachChanged) && (!canEditDependencies || resourceTypesQ.isLoading || resourceTypesQ.error)) {
+      return toast({ title: "No se pueden guardar recursos sin permiso ADMIN y un catálogo disponible.", variant: "destructive" });
+    }
+    const resourceError = validateTemplateResourceChanges(editData.initial.resourceRequirementsData, editData.resourceRequirementsData, templateResourceOptions(resourceTypesWithItems, vocalCoachItemIds));
+    if (resourcesChanged && resourceError) return toast({ title: resourceError, variant: "destructive" });
     const itinerantChanged = changed("requiresItinerantTeam", "allowedItinerantTeamIds");
     const dependenciesChanged = changed("hasDependency", "dependsOnTemplateIds");
 
@@ -2724,85 +2732,22 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
       if (!inverseDraft.has(id)) removedInverse.push(id);
     });
 
-    const previousRR =
-      editData.resourceRequirementsData && typeof editData.resourceRequirementsData === "object"
-        ? editData.resourceRequirementsData
-        : {};
-    const rrByTypeRaw =
-      previousRR.byType && typeof previousRR.byType === "object"
-        ? { ...previousRR.byType }
-        : previousRR.by_type && typeof previousRR.by_type === "object"
-          ? { ...previousRR.by_type }
-          : {};
-    const rrByItemRaw =
-      previousRR.byItem && typeof previousRR.byItem === "object"
-        ? { ...previousRR.byItem }
-        : previousRR.by_item && typeof previousRR.by_item === "object"
-          ? { ...previousRR.by_item }
-          : {};
-
-    if (Number.isFinite(vocalCoachTypeId) && vocalCoachTypeId > 0) {
-      delete (rrByTypeRaw as any)[String(vocalCoachTypeId)];
-      delete (rrByTypeRaw as any)[vocalCoachTypeId as any];
-    }
-    for (const coachItemId of vocalCoachItemIds) {
-      delete (rrByItemRaw as any)[String(coachItemId)];
-      delete (rrByItemRaw as any)[coachItemId as any];
-    }
-
-    if (coachChanged && Boolean(editData.requiresCoach)) {
-      if (editData.coachMode === "specific") {
-        const selectedCoachId = Number(editData.coachResourceItemId ?? NaN);
-        const selectedCoachIsValid =
-          Number.isFinite(selectedCoachId) && selectedCoachId > 0 && vocalCoachItemIds.has(selectedCoachId);
-        if (!selectedCoachIsValid) {
-          toast({
-            title: "Selecciona un vocal coach válido",
-            variant: "destructive",
-          });
-          return;
-        }
-        rrByItemRaw[selectedCoachId] = 1;
-      } else {
-        if (!(Number.isFinite(vocalCoachTypeId) && vocalCoachTypeId > 0)) {
-          toast({
-            title: "No existe el tipo de recurso Vocal Coach",
-            variant: "destructive",
-          });
-          return;
-        }
-        rrByTypeRaw[vocalCoachTypeId] = 1;
+    let nextResourceRequirements = editData.resourceRequirementsData;
+    if (coachChanged) {
+      try {
+        nextResourceRequirements = setTemplateCoach(nextResourceRequirements, vocalCoachTypeId, vocalCoachItemIds,
+          Boolean(editData.requiresCoach), editData.coachMode, Number(editData.coachResourceItemId));
+      } catch (error: any) {
+        return toast({ title: error.message, variant: "destructive" });
       }
     }
-
-    const rrByType = Object.fromEntries(
-      Object.entries(rrByTypeRaw)
-        .map(([k, v]) => [Number(k), Number(v)])
-        .filter(([k, v]) => Number.isFinite(k) && k > 0 && Number.isFinite(v) && v > 0),
-    );
-    const rrByItem = Object.fromEntries(
-      Object.entries(rrByItemRaw)
-        .map(([k, v]) => [Number(k), Number(v)])
-        .filter(([k, v]) => Number.isFinite(k) && k > 0 && Number.isFinite(v) && v > 0),
-    );
-
-    const nextResourceRequirements = {
-      ...previousRR,
-      byType: rrByType,
-      byItem: rrByItem,
-    };
-    const hasCoachRR =
-      (Number.isFinite(vocalCoachTypeId) && Number((rrByType as any)?.[vocalCoachTypeId] ?? 0) === 1) ||
-      Object.keys(rrByItem).some(
-        (k) => vocalCoachItemIds.has(Number(k)) && Number((rrByItem as any)?.[k] ?? 0) > 0,
-      );
 
     try {
       setIsSavingEdit(true);
 
       await updateTask.mutateAsync({
         id: editingId,
-        ...(canEditDependencies && addedInverse.length + removedInverse.length > 0 ? {
+        ...(canEditDependencies && (addedInverse.length + removedInverse.length > 0 || resourcesChanged || coachChanged) ? {
           inverse: {
             addedInverseIds: addedInverse,
             removedInverseIds: removedInverse,
@@ -2828,7 +2773,8 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
           ...(editData.uiColorInput !== editData.initial.uiColorInput ? { uiColor: normalizedUiColor } : {}),
           ...(editData.uiColorSecondaryInput !== editData.initial.uiColorSecondaryInput ? { uiColorSecondary: normalizedSecondaryColor } : {}),
           requiresAuxiliar: Boolean(editData.requiresAuxiliar),
-          ...(coachChanged ? { requiresCoach: hasCoachRR, resourceRequirements: nextResourceRequirements } : {}),
+          ...(coachChanged ? { requiresCoach: Boolean(editData.requiresCoach) } : {}),
+          ...(coachChanged || resourcesChanged ? { resourceRequirements: nextResourceRequirements } : {}),
           exclusiveAuxiliar: Boolean(editData.exclusiveAuxiliar),
           ...(dependenciesChanged ? {
           hasDependency: Boolean(editData.hasDependency),
@@ -2933,6 +2879,9 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                 <TemplateSetupFamily value={formData.setupId??null} onChange={setupId=>setFormData({...formData,setupId})} disabled={!canEditDependencies}/>
                 <TemplatePlannerRole rules={formData.rulesJson} onChange={rulesJson=>setFormData({...formData,rulesJson})} disabled={!canEditDependencies}/>
                 <label className="flex items-center gap-2"><Checkbox checked={!!formData.requiresCoach} onCheckedChange={checked=>setFormData({...formData,requiresCoach:checked===true})}/>Requiere el coach asignado al participante</label>
+                <TemplateSpecificResources requirements={formData.resourceRequirements} types={resourceTypesWithItems} coachIds={vocalCoachItemIds}
+                  onChange={resourceRequirements => setFormData(p => ({ ...p, resourceRequirements }))}
+                  disabled={!canEditDependencies || createTask.isPending} loading={resourceTypesQ.isLoading} error={!!resourceTypesQ.error} />
                 <label>Espacio de la plantilla<select aria-label="Espacio de la plantilla" className="block w-full rounded border bg-background p-2" value={formData.spaceId??""} onChange={event=>{const space=(spaces as any[]).find(space=>space.id===Number(event.target.value));setFormData({...formData,spaceId:space?.id??null,zoneId:space?.zoneId??null});}}><option value="">Sin asignar</option>{(spaces as any[]).map(space=><option key={space.id} value={space.id}>{space.name}</option>)}</select></label>
                 <label>Plantillas previas<select aria-label="Plantillas previas" multiple className="block w-full rounded border bg-background p-2" value={(formData.dependsOnTemplateIds??[]).map(String)} onChange={event=>setFormData({...formData,dependsOnTemplateIds:Array.from(event.target.selectedOptions,option=>Number(option.value))})}>{templates?.map(template=><option key={template.id} value={template.id}>{template.name}</option>)}</select></label>
                 <ContinuityGroupPicker value={formData.continuityGroupId??null} onChange={continuityGroupId=>setFormData({...formData,continuityGroupId})} disabled={!canEditDependencies}/>
@@ -2983,9 +2932,13 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                   </Label>
                 </div>
                 <Button
+                  disabled={!canEditDependencies || createTask.isPending}
                   onClick={() => {
                     const error = validateDraft(formData);
                     if (error) return toast({title: error, variant: "destructive"});
+                    const resourceError = validateTemplateResourceChanges(null, formData.resourceRequirements, templateResourceOptions(resourceTypesWithItems, vocalCoachItemIds));
+                    if (formData.resourceRequirements && (resourceTypesQ.isLoading || resourceTypesQ.error || resourceError))
+                      return toast({ title: resourceError ?? "Recarga el catálogo de recursos antes de guardar.", variant: "destructive" });
                     createTask.mutate({ ...formData, abbrev: String(formData.abbrev ?? "").trim() || null }, {
                       onSuccess: () => setIsAddOpen(false),
                     });
@@ -3037,7 +2990,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
           ).trim();
           const dependents = dependentsByTemplateId.get(Number(tpl?.id)) ?? [];
           return (
-            <Card key={tpl.id}>
+            <Card key={tpl.id} data-testid={`task-template-${tpl.id}`}>
               {isEditing ? <TemplateSetupFamily value={editData.setupId??null} onChange={setupId=>setEditData({...editData,setupId})} disabled={!canEditDependencies||isSavingEdit}/> : null}
               {isEditing ? <TemplatePlannerRole rules={editData.rulesJson} onChange={rulesJson=>setEditData({...editData,rulesJson})} disabled={!canEditDependencies||isSavingEdit}/> : null}
               {isEditing ? <ContinuityGroupPicker value={editData.continuityGroupId??null} onChange={continuityGroupId=>setEditData({...editData,continuityGroupId})} disabled={!canEditDependencies||isSavingEdit}/> : null}
@@ -3241,6 +3194,9 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">Recursos</p>
                     {resourceTypesQ.isLoading ? <p className="text-xs text-muted-foreground">Cargando recursos…</p> : null}
                     {resourceTypesQ.error ? <p className="text-xs text-destructive">No se pudieron cargar los recursos.</p> : null}
+                    <TemplateSpecificResources requirements={editData.resourceRequirementsData} types={resourceTypesWithItems} coachIds={vocalCoachItemIds}
+                      onChange={resourceRequirementsData => setEditData((p: any) => ({ ...p, resourceRequirementsData }))}
+                      disabled={!canEditDependencies || isSavingEdit} loading={resourceTypesQ.isLoading} error={!!resourceTypesQ.error} />
                     <div className="rounded-md border p-3 space-y-3">
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm">
                         <div className="space-y-2 rounded-md border p-3">
@@ -3269,7 +3225,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                                     setEditData((p: any) => ({ ...p, coachMode: v === "specific" ? "specific" : "any" }))
                                   }
                                 >
-                                  <SelectTrigger className="h-9">
+                                  <SelectTrigger className="h-9" aria-label="Modo de coach">
                                     <SelectValue placeholder="Selecciona modo" />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -3288,7 +3244,7 @@ function TaskTemplatesSettings({ resourceTypesQ }: { resourceTypesQ: any }) {
                                     }
                                     disabled={vocalCoachItems.length === 0}
                                   >
-                                    <SelectTrigger className="h-9">
+                                    <SelectTrigger className="h-9" aria-label="Coach específico">
                                       <SelectValue placeholder={vocalCoachItems.length ? "Selecciona coach" : "No hay coaches configurados"} />
                                     </SelectTrigger>
                                     <SelectContent>

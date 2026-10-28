@@ -10,7 +10,7 @@ import {buildEngineInput} from '../../../engine/buildInput';
 import {requiredFunctionBodies} from '../../../script/demo/a2Preflight';
 
 
-export async function journey({appUrl,users,db,directory,pass}:any){
+export async function journey({appUrl,users,db,directory,pass,authorTemplateResources}:any){
  assert.equal(db.host,'127.0.0.1');assert.equal(new URL(appUrl).hostname,'127.0.0.1');
  const {storage}=await import('../../../server/storage');
  const save=(n:string,v:unknown)=>writeFileSync(`${directory}/${n}.json`,JSON.stringify(v,null,2));
@@ -21,6 +21,13 @@ export async function journey({appUrl,users,db,directory,pass}:any){
  };
  const contentions:any[]=[];
  const api=async(path:string,method='GET',body?:unknown)=>{
+  // Optional UI producer, used by G01 against the unchanged composition assertions.
+  if (authorTemplateResources && path === '/api/task-templates' && method === 'POST' && Object.keys((body as any)?.resourceRequirements?.byItem ?? {}).length) {
+   return authorTemplateResources(body, async (input: unknown) => {
+    const response = await request(path, method, input);
+    assert.equal(response.status, 201); return response.body;
+   });
+  }
   const plan=path.match(/^\/api\/plans\/(\d+)\/assisted\/validate$/)?.[1];
   const token=plan?(await db.query('SELECT assisted_bootstrap_source_token($1) token',[Number(plan)])).rows[0].token:null;
   let r=await request(path,method,body);
