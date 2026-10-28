@@ -40,7 +40,7 @@ jobs:
           server/requiredPhaseComposition.spec.ts server/technicalChainStructure.spec.ts server/technicalChainSql.spec.ts
           server/assistedScopeResolver.spec.ts server/assistedNextScope.spec.ts server/assistedProposalService.spec.ts
           server/assistedPlanningWorkflow.spec.ts server/dayConfiguration.spec.ts server/apiAuthorization.spec.ts
-          engine/planner-next/technicalChains.spec.ts engine/planner-next/operationContinuity.spec.ts engine/planner-next/jointTasks.spec.ts
+          engine/planner-next/planMainFlowAndFeeders.spec.ts engine/planner-next/technicalChains.spec.ts engine/planner-next/operationContinuity.spec.ts engine/planner-next/jointTasks.spec.ts
           engine/planner-next/integration/nativeJointGroups.spec.ts engine/planner-next/integration/nativeOperationalMeals.spec.ts
           engine/planner-next/integration/nativeRealityComposition.spec.ts script/demo/assistedSQLContracts.spec.ts script/demo/a2Preflight.spec.ts
       - run: node --import tsx docs/evidence/p0-u01b/upgrade122.ts work/u01b-upgrade

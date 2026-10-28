@@ -80,7 +80,10 @@ export async function journey({appUrl,users,db,directory,pass}:any){
    }else if(!second)await api(configPath,'PUT',{technicalChains:{contractVersion:1,policies:[policy]},expectedRevisionId:view.technicalChains.revisionId});
    view=await api(viewPath);assert.deepEqual(view.technicalChains.authority.policies[0].phases,phases);save(`${label}-configuration`,view);
    const effectiveInput=await buildEngineInput(planId,storage);save(`${label}-input`,effectiveInput);
-   await page.goto(`${appUrl}/plans/${planId}?tab=configuration`);await page.getByTestId('daily-joint-groups').waitFor();await page.screenshot({path:`${directory}/${label}-configuration.png`,fullPage:true});
+   await page.goto(`${appUrl}/plans/${planId}?tab=configuration`);await page.getByTestId('daily-joint-groups').waitFor();await page.getByTestId('daily-technical-chain').scrollIntoViewIfNeeded();await page.getByTestId('daily-technical-chain').screenshot({path:`${directory}/${label}-required-phases.png`});await page.screenshot({path:`${directory}/${label}-configuration.png`,fullPage:true});
+   // UI configuration is complete. Stop its background polling before the
+   // deliberate API transaction/rollback probes contend for NOWAIT locks.
+   await page.goto('about:blank');
    if(label==='integrated'){
     const changed=structuredClone(view.technicalChains.authority);changed.policies[0].id+='-cas';
     const race=await Promise.all(['admin','production'].map(role=>request(configPath,'PUT',{technicalChains:changed,expectedRevisionId:view.technicalChains.revisionId},role)));

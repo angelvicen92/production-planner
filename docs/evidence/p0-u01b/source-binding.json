@@ -1,8 +1,8 @@
 {
   "base": "1c6014f9afde59230ff1d4073ff76eae907c3909",
   "bothNativeRuntimeProductFilesMatchFinalCheckout": true,
-  "additionalTechnicalAndHarmfulPrefixTestsRunOnSameProductAfterNativeCapture": true,
-  "capturedRuntimeFileCount": 862,
+  "additionalTechnicalAndHarmfulPrefixTestsRunOnSameProductAfterNativeCapture": false,
+  "capturedRuntimeFileCount": 963,
   "allRuntimeHashes": "native/manifest.json.gz and repeat/manifest.json.gz",
   "changedRuntimeSha256": {
     "client/src/components/technical-chain-editor.tsx": "b16c35a9a7ff001f52972807dcc1cfe6ffdc41e1140c49d6f9605d44f9337ccd",
@@ -20,6 +20,9 @@
     "server/technicalChainCertificate.ts": "d0ed72f41a5371dab8bf78d271a559d065c86ad47332e7400cd59e5d1ab1a9f4",
     "server/technicalChainStructure.ts": "2d5bf9ff75a36f4b07c10fc6e485aedd817c93bc8ef5f05492b6627b5fa90ca6",
     "shared/effectiveConfigurationContracts.ts": "465b9762ae7c9f1f967c1c8744de6b063deba8c952c703f08be5cf6ddb60fed0",
-    "shared/technicalChainStructure.ts": "71500c6d3dd2213d7ab0898c3c1f0f8267682458aebfee56fa3c40a08d90db26"
-  }
+    "shared/technicalChainStructure.ts": "71500c6d3dd2213d7ab0898c3c1f0f8267682458aebfee56fa3c40a08d90db26",
+    "script/demo/a2Preflight.ts": "63abf4b981f5d262510bd338a3813bee635f8e6b52d907860e981fda2e10b237",
+    "script/demo/assistedSQLContracts.ts": "a8898028c04109a62f5ba3e4e871f9031264bad61be3595bb82def93756a4c3a"
+  },
+  "isolationGuardPassedAfterExplicitReadOnlyBoundaryDeclaration": true
 }

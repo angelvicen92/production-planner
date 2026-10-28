@@ -158,6 +158,10 @@ test("planner-next remains isolated from legacy and production", () => {
     // explorer and Assisted validator; configuration never invokes search.
     "server/technicalChainCertificate.ts",
     "server/technicalChainStructure.spec.ts",
+    // U01b configuration reads the existing effective physical assignments;
+    // only its integration spec dispatches the existing Assisted consumer.
+    "server/technicalChainStructure.ts",
+    "server/requiredPhaseComposition.spec.ts",
     "server/assistedScopeResolver.ts",
     // U06a consumes the existing preflight/grid and proves the daily round
     // projection. These boundaries never dispatch search from configuration.

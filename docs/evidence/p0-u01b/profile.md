@@ -23,3 +23,12 @@ El tercer día vuelve al perfil de 15 obligaciones con pausa fija **08:30–08:4
 El control imposible reduce el kit a **08:00–08:40** y declara pausa 08:20–08:35: 70 > 40 minutos. Guarda la misma autoridad multifase; la búsqueda devuelve NO_PROPOSAL por capacidad material. El test de futuro añade otro control: una prefijación individualmente válida en medio del único intervalo continuo destruye la última realización de 40 minutos y no obtiene propuesta.
 
 Los IDs de los receipts son los retornados por API. Ninguna condición productiva usa nombres o identidades de estos ejemplos. La disponibilidad, duración, márgenes cero y requisitos están explícitos en las plantillas/snapshots creados por producto.
+
+| Perfil | Ramas S1 / S2 | Presupuesto por propuesta | Ramas extra del certificado |
+| --- | --- | --- | --- |
+| Integrado 3/2/2 | 81 / 80 | 10.000 | 0 |
+| Segunda topología 2/3 | 46 / 45 | 10.000 | 0 |
+| Pausa fija desplazada | 225 / 224 | 10.000 | 0 |
+| Imposible 70/40 | 6, sin propuesta | 10.000 | No se emite certificado |
+
+Los dos descartables repiten exactamente estos contadores. El inicio del bloque pasa de 08:15 a 08:45 al fijar la pausa interior; mantiene sus 40 minutos contiguos. No hubo agotamiento en estos casos.

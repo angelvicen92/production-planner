@@ -2,7 +2,7 @@
   "status": "PASS",
   "physical": [
     {
-      "base": "work/u01b-release-native/native",
+      "base": "work/u01b-complete-native/native",
       "label": "integrated",
       "stage": 1,
       "accepted": 1,
@@ -26,7 +26,7 @@
       ]
     },
     {
-      "base": "work/u01b-release-native/native",
+      "base": "work/u01b-complete-native/native",
       "label": "integrated",
       "stage": 2,
       "accepted": 15,
@@ -50,7 +50,7 @@
       ]
     },
     {
-      "base": "work/u01b-release-native/native",
+      "base": "work/u01b-complete-native/native",
       "label": "second",
       "stage": 1,
       "accepted": 1,
@@ -70,7 +70,7 @@
       ]
     },
     {
-      "base": "work/u01b-release-native/native",
+      "base": "work/u01b-complete-native/native",
       "label": "second",
       "stage": 2,
       "accepted": 11,
@@ -90,7 +90,7 @@
       ]
     },
     {
-      "base": "work/u01b-release-native/native",
+      "base": "work/u01b-complete-native/native",
       "label": "shifted",
       "stage": 1,
       "accepted": 1,
@@ -114,7 +114,7 @@
       ]
     },
     {
-      "base": "work/u01b-release-native/native",
+      "base": "work/u01b-complete-native/native",
       "label": "shifted",
       "stage": 2,
       "accepted": 15,
@@ -138,7 +138,7 @@
       ]
     },
     {
-      "base": "work/u01b-release-repeat/native",
+      "base": "work/u01b-complete-repeat/native",
       "label": "integrated",
       "stage": 1,
       "accepted": 1,
@@ -162,7 +162,7 @@
       ]
     },
     {
-      "base": "work/u01b-release-repeat/native",
+      "base": "work/u01b-complete-repeat/native",
       "label": "integrated",
       "stage": 2,
       "accepted": 15,
@@ -186,7 +186,7 @@
       ]
     },
     {
-      "base": "work/u01b-release-repeat/native",
+      "base": "work/u01b-complete-repeat/native",
       "label": "second",
       "stage": 1,
       "accepted": 1,
@@ -206,7 +206,7 @@
       ]
     },
     {
-      "base": "work/u01b-release-repeat/native",
+      "base": "work/u01b-complete-repeat/native",
       "label": "second",
       "stage": 2,
       "accepted": 11,
@@ -226,7 +226,7 @@
       ]
     },
     {
-      "base": "work/u01b-release-repeat/native",
+      "base": "work/u01b-complete-repeat/native",
       "label": "shifted",
       "stage": 1,
       "accepted": 1,
@@ -250,7 +250,7 @@
       ]
     },
     {
-      "base": "work/u01b-release-repeat/native",
+      "base": "work/u01b-complete-repeat/native",
       "label": "shifted",
       "stage": 2,
       "accepted": 15,

@@ -5,7 +5,9 @@
     "Incremental SQL needed explicit parentheses for JSONB containment; corrected before the final migration gates.",
     "The exact SQL-body parser interpreted $ in a replacement as JavaScript substitution; changed literal replacements to callbacks and checked actual PostgreSQL bodies.",
     "Default shell sandbox blocked build IPC/auth-test sockets; rerun with explicit network permission.",
-    "A forced technical permutation initially contradicted narrow fixture availability; the test now declares broad explicit availability."
+    "A forced technical permutation initially contradicted narrow fixture availability; the test now declares broad explicit availability.",
+    "CI isolation allowlist required the new test and the existing assignment-reader boundary; added exact entries, preserving the global assertion.",
+    "Supplementary screenshot run reached a safe 409 on redo under live UI polling. assisted_move_stage uses NOWAIT; dbError maps lock/deadlock to REBOOTSTRAP_STALE_SOURCES. Harness now stops UI polling after capturing configuration, before deliberate API transaction probes. No product lock or freshness guard changed."
   ],
   "allCountedNativeReceipts": "Only release-native/release-repeat, both complete and source-bound.",
   "noPreliminaryFailuresCountedAsAcceptance": true

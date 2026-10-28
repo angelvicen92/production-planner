@@ -16,7 +16,8 @@
       "files": 17,
       "tests": 143,
       "status": "PASS",
-      "log": "checks/focal.log"
+      "log": "checks/focal.log",
+      "supplementalIsolatedBoundaries": true
     },
     "legacyEditorCompatibilitySupplement": {
       "tests": 24,
@@ -71,6 +72,10 @@
       "snapshotsExact": true,
       "certificatesRevalidated": 22,
       "importedRegressionOnly": true
+    },
+    "isolationBoundary": {
+      "status": "PASS",
+      "log": "checks/isolation.log"
     }
   },
   "ci": {
