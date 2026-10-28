@@ -1,0 +1,87 @@
+{
+  "status": "PASS_LOCAL_CANDIDATE",
+  "base": "1c6014f9afde59230ff1d4073ff76eae907c3909",
+  "node": "v24.19.0",
+  "newMigration": 122,
+  "historicalMigrationsChanged": false,
+  "realSupabaseWrites": 0,
+  "deployment": false,
+  "merge": false,
+  "checks": {
+    "typescript": "PASS",
+    "evidenceTypeScript": "PASS",
+    "build": "PASS",
+    "migrationSequence": "PASS",
+    "focalProductTests": {
+      "files": 17,
+      "tests": 143,
+      "status": "PASS",
+      "log": "checks/focal.log"
+    },
+    "legacyEditorCompatibilitySupplement": {
+      "tests": 24,
+      "status": "PASS",
+      "log": "checks/compatibility.log"
+    },
+    "nativePhaseSupplement": {
+      "tests": 6,
+      "status": "PASS",
+      "log": "checks/native-phase-tests.log"
+    },
+    "disposableStacks": 2,
+    "nativeSqlStages": 12,
+    "positiveObligationsPerStack": [
+      15,
+      11,
+      15
+    ],
+    "recomputedHashMaterialRejections": 128,
+    "phaseCertificateExtraBranches": 0,
+    "exactProposalWitnessWorkAndSqlFingerprint": true,
+    "globalHardRequiredConflicts": 0,
+    "physicalNegative": {
+      "requiredMinutes": 70,
+      "availableMinutes": 40,
+      "outcome": "NO_PROPOSAL",
+      "branches": [
+        6,
+        6
+      ],
+      "budgetExhausted": false
+    },
+    "phaseRootDisplacement": {
+      "before": 495,
+      "after": 525,
+      "contiguous": true
+    },
+    "populatedUpgrade": {
+      "from": 121,
+      "to": 122,
+      "dailyTasks": 599,
+      "historicalStages": 11,
+      "rowsReadersRlsAndGrantsExact": true
+    },
+    "a2": {
+      "runs": 2,
+      "obligations": 266,
+      "stagesPerRun": 11,
+      "branchesPerRun": 27049,
+      "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+      "fullReportsExactExceptDurationMs": true,
+      "snapshotsExact": true,
+      "certificatesRevalidated": 22,
+      "importedRegressionOnly": true
+    }
+  },
+  "ci": {
+    "workflow": ".github/workflows/p0-u01b-required-phase-composition.yml",
+    "node": 20,
+    "status": "LIVE_PR_IS_AUTHORITY"
+  },
+  "limits": [
+    "STANDALONE_ONLY, global_hard_break, physical nominal tasks and at least one common required resource.",
+    "No certification of setup, rounds, transport, anchors, itinerant alternatives, byType/anyOf, complex physical scopes or participant meals with phases.",
+    "No claim of complete A2 creation from UI.",
+    "Full repository test suite not repeated locally; targeted candidate gate and applicable remote CI."
+  ]
+}

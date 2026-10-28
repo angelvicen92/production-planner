@@ -314,6 +314,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
 
   const problem: PlannerNextProblem = {
     ...(input.dailyOperationalMealsVersion===1?{nativeOperationalMealsVersion:1 as const}:{}),
+    ...(input.dailyTechnicalChainsVersion===1&&input.technicalChains?.some(p=>p.phases)?{nativeTechnicalChainPhasesVersion:1 as const}:{}),
     ...(input.dailyJointGroupsVersion===1?{nativeJointGroupsVersion:1}:{}),
     ...(input.dailyAnchoredAccompanimentsVersion===2?{nativeAnchoredAccompanimentsVersion:2 as const}:{}),
     day: window(input.workDay),

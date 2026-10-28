@@ -1,6 +1,6 @@
 import {applyDailyOperationalMeals} from '../server/operationalMealPolicy';
 import {applyDailyJointGroups} from "../server/jointGroupStructure";
-import { applyDailyTechnicalChains } from "../server/technicalChainStructure";
+import { applyDailyTechnicalChains, validateDailyTechnicalChains, hasDailyRequiredPhases } from "../server/technicalChainStructure";
 import { applyDailyAnchoredAccompaniments } from "../server/anchoredAccompanimentStructure";
 import { applyDailyTaskOperationScopes } from "../server/dailyTaskOperationScopes";
 import { applyDailyRoundStructure } from "../server/roundSynchronizationStructure";
@@ -1017,5 +1017,7 @@ export async function buildEngineInput(
     effectiveInput = applyDailyItinerantComposition(effectiveInput, await storage.getPlanItinerantUnitSnapshots(planId), planId);
   }
   const anchoredRevision=(p.daily_operational_meal_policies!=null||p.daily_joint_groups!=null||p.daily_anchored_accompaniments?.policies?.length||p.daily_task_operation_scopes!=null)&&p.current_config_revision_id!=null?await storage.getPlanConfigRevision(Number(p.current_config_revision_id)):null;
-  return applyDailyOperationalMeals(applyDailyJointGroups(applyDailyTaskOperationScopes(applyDailyAnchoredAccompaniments(applyDailyTechnicalChains(applyEffectiveOperationContinuity(applyEffectiveRoundPreparations(applyDailyRoundStructure(applyEffectiveMainFlowPreference(effectiveInput,p),p),p),p,taskTemplateSnapshots),p),p,anchoredRevision?.replaySnapshotJson),p,anchoredRevision?.replaySnapshotJson),p,anchoredRevision?.replaySnapshotJson),p,anchoredRevision?.replaySnapshotJson);
+  const composedInput = applyDailyOperationalMeals(applyDailyJointGroups(applyDailyTaskOperationScopes(applyDailyAnchoredAccompaniments(applyDailyTechnicalChains(applyEffectiveOperationContinuity(applyEffectiveRoundPreparations(applyDailyRoundStructure(applyEffectiveMainFlowPreference(effectiveInput,p),p),p),p,taskTemplateSnapshots),p),p,anchoredRevision?.replaySnapshotJson),p,anchoredRevision?.replaySnapshotJson),p,anchoredRevision?.replaySnapshotJson),p,anchoredRevision?.replaySnapshotJson);
+  // Validate ownership again with joint peers and physical pauses materialized.
+  return hasDailyRequiredPhases(composedInput) ? validateDailyTechnicalChains(composedInput,{contractVersion:1,policies:composedInput.technicalChains??[]}) : composedInput;
 }

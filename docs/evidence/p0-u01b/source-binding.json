@@ -1,0 +1,25 @@
+{
+  "base": "1c6014f9afde59230ff1d4073ff76eae907c3909",
+  "bothNativeRuntimeProductFilesMatchFinalCheckout": true,
+  "additionalTechnicalAndHarmfulPrefixTestsRunOnSameProductAfterNativeCapture": true,
+  "capturedRuntimeFileCount": 862,
+  "allRuntimeHashes": "native/manifest.json.gz and repeat/manifest.json.gz",
+  "changedRuntimeSha256": {
+    "client/src/components/technical-chain-editor.tsx": "b16c35a9a7ff001f52972807dcc1cfe6ffdc41e1140c49d6f9605d44f9337ccd",
+    "engine/buildInput.ts": "35abc1f2bd1db872ab6c555c8260505ec97783c64810ffc3b1359d91e7fccb30",
+    "engine/planner-next/assistedPlanning.ts": "81e5b6092a2099b3b85af331be5eff5d5af33c289d7e486faaa96d241203072b",
+    "engine/planner-next/contracts.ts": "800406794ab56c9bc2a14c22be6b34dadd539292dc8a020ad44935438a6d305c",
+    "engine/planner-next/integration/engineInputAdapter.ts": "03ae0908a80f6f211d24a05e459039d980534de1f237f7bd04ae650e123fa4c8",
+    "engine/planner-next/validate.ts": "33fa8b9e5e3df1e362e9efd0ad3dc347c3db8d07b4819f631a84c10c5165da69",
+    "server/assistedProposalService.ts": "3c8370150a3e15f33e8695cc24b025ad830d9b6dd442a0540cc15ae9d1c55564",
+    "server/assistedScopeResolver.ts": "1136da4c031699b3e515921b10d187e97933a2fb560a762b0103e95fef80b0b9",
+    "server/dayConfigurationService.ts": "ae3da097a0514ff238d002b8dec831b07a021e2da2d7f47ba68d366b9509f631",
+    "server/effectiveConfigurationView.ts": "e059eedd40d312c341b67c908ffb3203a589a2f8067b701bf4503e6ee5674e90",
+    "server/jointGroupStructure.ts": "bdcf0b786591ef6f45ca3bb97f7dc6c6d919640e4a09a5a300f4bb07a5931b7d",
+    "server/operationalMealPolicy.ts": "c5a419552f753c7382b1831210176a36ec24e874ab97d293e8655d7470a5920d",
+    "server/technicalChainCertificate.ts": "d0ed72f41a5371dab8bf78d271a559d065c86ad47332e7400cd59e5d1ab1a9f4",
+    "server/technicalChainStructure.ts": "2d5bf9ff75a36f4b07c10fc6e485aedd817c93bc8ef5f05492b6627b5fa90ca6",
+    "shared/effectiveConfigurationContracts.ts": "465b9762ae7c9f1f967c1c8744de6b063deba8c952c703f08be5cf6ddb60fed0",
+    "shared/technicalChainStructure.ts": "71500c6d3dd2213d7ab0898c3c1f0f8267682458aebfee56fa3c40a08d90db26"
+  }
+}

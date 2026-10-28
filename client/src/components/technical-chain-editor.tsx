@@ -6,23 +6,32 @@ export function TechnicalChainEditor({value,canEdit,pending,onSave}:{value:NonNu
   const stored=value.authority?.policies[0];
   const [editing,setEditing]=React.useState(false);
   const [id]=React.useState(()=>stored?.id??crypto.randomUUID());
-  const [members,setMembers]=React.useState(stored?.orderedTaskIds??[]);
+  const [phased,setPhased]=React.useState(!!stored?.phases);
+  const [phases,setPhases]=React.useState<number[][]>(stored?.phases??[stored?.orderedTaskIds??[]]);
   const [resources,setResources]=React.useState(stored?.requiredResourceIds??[]);
-  const selected=members.map(id=>value.tasks.find(t=>t.id===id)!);
-  const common=value.resources.filter(r=>selected.length>0&&selected.every(t=>t?.resourceIds.includes(r.id)));
+  const members=phases.flat(),selected=members.map(id=>value.tasks.find(t=>t.id===id)!);
+  const common=value.resources.filter(r=>selected.length>0&&selected.every(t=>(phased?t?.phaseResourceIds??t?.resourceIds:t?.resourceIds)?.includes(r.id)));
   const disabled=!canEdit||pending||!value.supported||!!value.blockedReason;
-  const valid=members.length>=2&&selected.every(t=>t?.eligible)&&resources.length>0&&resources.every(id=>common.some(r=>r.id===id));
-  const move=(index:number,delta:number)=>setMembers(ids=>{const next=[...ids];[next[index],next[index+delta]]=[next[index+delta],next[index]];return next;});
+  const eligible=(t:typeof value.tasks[number])=>phased?t.phaseEligible:t.eligible;
+  const valid=members.length>=2&&(!phased||phases.every(p=>p.length))&&selected.every(t=>t&&eligible(t))&&resources.length>0&&resources.every(id=>common.some(r=>r.id===id));
+  const label=(id:number)=>{const task=value.tasks.find(t=>t.id===id);return task?.jointMemberIds?.length?task.jointMemberIds.map(id=>value.tasks.find(t=>t.id===id)?.label).join(" + "):task?.label??"Referencia desconocida";};
+  const operations=value.tasks.filter(t=>!t.jointMemberIds?.length||t.id===Math.min(...t.jointMemberIds)||members.includes(t.id));
+  const move=(phase:number,index:number,delta:number)=>setPhases(all=>all.map((ids,p)=>{if(p!==phase)return ids;const next=[...ids];[next[index],next[index+delta]]=[next[index+delta],next[index]];return next;}));
+  const storedPhases=stored?.phases??(stored?[stored.orderedTaskIds]:[]);
   return <div className="space-y-3" data-testid="daily-technical-chain">
     <p role="status">{!value.supported?"Combinación no soportada":stored?"Cadena efectiva y versionada":"Cadena no configurada"} · Revisión {value.revisionId??"inicial"}</p>
-    <p>Adyacencia REQUIRED: cada operación comienza exactamente al finalizar la anterior. Continuidad REQUIRED: todas consumen el mismo equipo nominal seleccionado. Una regla válida puede tener un dominio físico vacío; guardar no garantiza una propuesta.</p>
+    <p>Adyacencia REQUIRED: operaciones consecutivas, sin huecos. Todas consumen el equipo nominal seleccionado. Guardar una regla no garantiza una realización físicamente viable.</p>
     {value.blockedReason?<p role="alert">Edición bloqueada por borrador, propuesta o decisiones protegidas. Conserva la regla vigente.</p>:null}
-    {!editing?<><p>{stored?.orderedTaskIds.map(id=>value.tasks.find(t=>t.id===id)?.label??"Referencia desconocida").join(" → ")}</p><p>{stored?.requiredResourceIds.map(id=>value.resources.find(r=>r.id===id)?.name??"Recurso desconocido").join(", ")}</p><Button disabled={disabled} onClick={()=>setEditing(true)}>{stored?"Modificar cadena técnica":"Crear cadena técnica"}</Button></>:<>
-      <fieldset disabled={disabled}><legend>Tareas técnicas reales · selecciona en orden</legend>{value.tasks.map(t=><label className="block" key={t.id}><input type="checkbox" aria-label={`Miembro ${t.label}`} disabled={!t.eligible} checked={members.includes(t.id)} onChange={e=>setMembers(ids=>e.target.checked?[...ids,t.id]:ids.filter(id=>id!==t.id))}/> {t.label} · {t.duration} min · {t.space} · {t.availability?.availabilityStart??"inicio de jornada"}–{t.availability?.availabilityEnd??"fin de jornada"}{!t.eligible?" · no elegible":""}</label>)}</fieldset>
-      <ol>{selected.map((t,i)=><li key={members[i]}>{i+1}. {t?.label??"Referencia desconocida"} <Button variant="outline" disabled={disabled||i===0} aria-label={`Subir ${t?.label}`} onClick={()=>move(i,-1)}>↑</Button> <Button variant="outline" disabled={disabled||i===selected.length-1} aria-label={`Bajar ${t?.label}`} onClick={()=>move(i,1)}>↓</Button></li>)}</ol>
-      <fieldset disabled={disabled}><legend>Equipo nominal requerido en todos los miembros</legend>{common.map(r=><label className="block" key={r.id}><input type="checkbox" aria-label={`Equipo ${r.name}`} checked={resources.includes(r.id)} onChange={e=>setResources(ids=>e.target.checked?[...ids,r.id]:ids.filter(id=>id!==r.id))}/> {r.name} · {r.start}–{r.end}</label>)}</fieldset>
-      {!valid?<p role="alert">Selecciona al menos dos tareas técnicas y equipo común. El orden debe coincidir con las dependencias lineales.</p>:null}
-      <Button disabled={disabled||!valid} onClick={()=>onSave({contractVersion:1,policies:[{id,orderedTaskIds:members,adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:resources}]})}>Guardar cadena técnica</Button>
+    {!editing?<><ol>{storedPhases.map((phase,i)=><li key={i}>{stored?.phases?`Fase ${i+1} · orden interno libre: `:""}{phase.map(label).join(stored?.phases?"; ":" → ")}</li>)}</ol><p>{stored?.phases?"Orden REQUIRED entre fases. Cada conjunta es una operación con todas sus obligaciones individuales.":null}</p><p>{stored?.requiredResourceIds.map(id=>value.resources.find(r=>r.id===id)?.name??"Recurso desconocido").join(", ")}</p><Button disabled={disabled} onClick={()=>setEditing(true)}>{stored?"Modificar cadena técnica":"Crear cadena técnica"}</Button></>:<>
+      <label className="block"><input type="checkbox" aria-label="Orden por fases" checked={phased} disabled={disabled||value.phasesSupported===false} onChange={e=>{setPhased(e.target.checked);setPhases([members]);}}/> Orden por fases REQUIRED · libertad dentro de cada fase</label>
+      {phases.map((phase,p)=><fieldset disabled={disabled} key={p} className="border p-2"><legend>{phased?`Fase ${p+1} · orden interno libre`:"Tareas técnicas reales · selecciona en orden"}</legend>
+        {operations.map(t=><label className="block" key={t.id}><input type="checkbox" aria-label={`Fase ${p+1}: ${label(t.id)}`} disabled={!eligible(t)||members.includes(t.id)&&!phase.includes(t.id)||!!t.jointMemberIds?.some(id=>members.includes(id)&&id!==t.id)} checked={phase.includes(t.id)} onChange={e=>setPhases(all=>all.map((ids,i)=>i!==p?ids:e.target.checked?[...ids,t.id]:ids.filter(id=>id!==t.id)))}/> {label(t.id)} · {t.duration} min · {t.space}{!eligible(t)?" · no elegible":""}</label>)}
+        {!phased?<ol>{phase.map((id,i)=><li key={id}>{label(id)} <Button variant="outline" disabled={disabled||i===0} aria-label={`Subir ${label(id)}`} onClick={()=>move(p,i,-1)}>↑</Button> <Button variant="outline" disabled={disabled||i===phase.length-1} aria-label={`Bajar ${label(id)}`} onClick={()=>move(p,i,1)}>↓</Button></li>)}</ol>:<Button variant="outline" disabled={disabled||phases.length===1} onClick={()=>setPhases(all=>all.filter((_,i)=>i!==p))}>Retirar fase {p+1}</Button>}
+      </fieldset>)}
+      {phased?<Button variant="outline" disabled={disabled} onClick={()=>setPhases(all=>[...all,[]])}>Añadir fase</Button>:null}
+      <fieldset disabled={disabled}><legend>Equipo nominal requerido en todas las operaciones</legend>{common.map(r=><label className="block" key={r.id}><input type="checkbox" aria-label={`Equipo ${r.name}`} checked={resources.includes(r.id)} onChange={e=>setResources(ids=>e.target.checked?[...ids,r.id]:ids.filter(id=>id!==r.id))}/> {r.name} · {r.start}–{r.end}</label>)}</fieldset>
+      {!valid?<p role="alert">Selecciona al menos dos operaciones y equipo común. Cada fase necesita miembros; las dependencias deben permitir el orden requerido.</p>:null}
+      <Button disabled={disabled||!valid} onClick={()=>onSave({contractVersion:1,policies:[{id,orderedTaskIds:members,...(phased?{phases}:{}),adjacency:"REQUIRED",resourceContinuity:"REQUIRED",requiredResourceIds:resources}]})}>Guardar cadena técnica</Button>
       <Button variant="outline" disabled={pending} onClick={()=>setEditing(false)}>Cancelar edición</Button>
     </>}
     {stored?<Button variant="outline" disabled={disabled} onClick={()=>onSave({contractVersion:1,policies:[]})}>Retirar cadena técnica</Button>:null}

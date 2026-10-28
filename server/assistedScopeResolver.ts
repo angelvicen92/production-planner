@@ -38,10 +38,18 @@ export function resolveAssistedScope(input: EngineInput, adapter: EngineInputAda
     }
     productIds = [...ids].sort((a,b)=>a-b);
   }
-  // Explicit REQUIRED chains are visible operational units, including all eligible siblings.
+  // Close joint peers before REQUIRED ownership, and peers introduced by that
+  // ownership afterwards. This is visible selection, independent of prerequisites.
   const chainMembers = new Set(productIds);
+  const closeJointPeers=()=>{
+    if(input.dailyJointGroupsVersion!==1)return;
+    const groups=new Set(input.tasks.filter(t=>chainMembers.has(t.id)).map(t=>t.jointGroupId).filter(Boolean));
+    for(const t of input.tasks)if(t.jointGroupId&&groups.has(t.jointGroupId)&&eligible.has(t.id))chainMembers.add(t.id);
+  };
+  closeJointPeers();
   for (const policy of input.dailyTechnicalChainsVersion===1?input.technicalChains??[]:[]) if (policy.orderedTaskIds.some(id=>chainMembers.has(id)))
     for (const id of policy.orderedTaskIds) if(eligible.has(id)) chainMembers.add(id);
+  closeJointPeers();
   productIds = [...chainMembers].sort((a,b)=>a-b);
   if(input.dailyAnchoredAccompanimentsVersion===1){
     const ids=new Set(productIds);

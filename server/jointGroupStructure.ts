@@ -1,3 +1,4 @@
+import { hasDailyRequiredPhases, requiredPhaseCompositionSupported } from "./technicalChainStructure";
 import {isDeepStrictEqual} from 'node:util';
 import type {EngineInput} from '../engine/types';
 import {jointGroupStructureSchema,persistedJointGroupStructureSchema,type JointGroupStructure} from '../shared/jointGroupStructure';
@@ -11,7 +12,7 @@ export function dailyJointAuthority(row:Record<string,any>){
 }
 /** Explicit boundary; existing consumers do not certify arbitrary composition. */
 export function jointCombinationSupported(input:EngineInput){
- return !!input.plannerNext&&!input.setupPolicies?.length&&!input.roundSynchronizations?.length&&!input.technicalChains?.length
+ return !!input.plannerNext&&!input.setupPolicies?.length&&!input.roundSynchronizations?.length&&(!input.technicalChains?.length||(hasDailyRequiredPhases(input)&&requiredPhaseCompositionSupported(input)))
   &&!input.anchoredAccompaniments?.length&&!input.dailyTaskOperationScopes?.length&&!input.operationContinuityGroups?.length
   &&(!input.operationalMealPolicies?.length||input.dailyOperationalMealsVersion===1)&&!input.transportSettings&&input.mealMode==='global_hard_break'
   &&!input.tasks.filter(t=>t.status!=='cancelled').some(t=>t.setupFamilyId||t.itinerantTeamRequirement&&t.itinerantTeamRequirement!=='none'

@@ -1,5 +1,6 @@
 import type { EngineInput } from "../engine/types";
 import { persistedTechnicalChainStructureSchema, technicalChainStructureSchema, type TechnicalChainStructure } from "../shared/technicalChainStructure";
+import { resolveEffectiveTaskResourceAssignments } from "../engine/planner-next/integration/effectiveTaskResourceAssignments";
 const defect = (code:string) => Object.assign(new Error(code),{status:422});
 export function dailyTechnicalChainAuthority(row:Record<string,any>) {
   if(row.daily_technical_chains==null)return null;
@@ -12,17 +13,73 @@ export function withDailyTechnicalChains(input:EngineInput,structure:TechnicalCh
   const parsed=technicalChainStructureSchema.parse(structure);
   return {...input,dailyTechnicalChainsVersion:parsed.policies.length?1:undefined,technicalChains:parsed.policies.length?parsed.policies:undefined};
 }
+/** The certified physical intersection. Other structure families retain their guards. */
+export function requiredPhaseCompositionSupported(input:EngineInput) {
+  return input.plannerNext?.profile==="STANDALONE_ONLY" && input.mealMode==="global_hard_break"
+    && !input.dailyTaskOperationScopes?.length && !input.roundSynchronizations?.length && !input.setupPolicies?.length
+    && !input.operationContinuityGroups?.length && !input.anchoredAccompaniments?.length && !input.transportSettings
+    && !input.itinerantTeamAvailability?.length && (!input.operationalMealPolicies?.length||input.dailyOperationalMealsVersion===1)
+    && !input.tasks.filter(t=>t.status!=="cancelled").some(t=>t.setupFamilyId||t.itinerantTeamRequirement&&t.itinerantTeamRequirement!=="none"
+      ||Object.keys(t.resourceRequirements?.byType??{}).length||t.resourceRequirements?.anyOf?.length
+      ||t.blocksSpace===false||t.agendaScope==="ITINERANT_UNIT"||t.allowsSpaceOverlap===true);
+}
+export function hasDailyRequiredPhases(input:EngineInput) {
+  return input.dailyTechnicalChainsVersion===1 && !!input.technicalChains?.length && input.technicalChains.every(p=>!!p.phases);
+}
 export function technicalChainCombinationSupported(input:EngineInput) {
-  return !input.dailyTaskOperationScopes?.length && input.plannerNext?.profile==="STANDALONE_ONLY" && !input.roundSynchronizations?.length && !input.setupPolicies?.length
+  const legacySupported=!input.dailyTaskOperationScopes?.length && input.plannerNext?.profile==="STANDALONE_ONLY" && !input.roundSynchronizations?.length && !input.setupPolicies?.length
     && !input.operationContinuityGroups?.length && !input.anchoredAccompaniments?.length && !input.operationalMealPolicies?.length
     && !input.itinerantTeamAvailability?.length && !input.tasks.some(t=>t.jointGroupId||t.setupFamilyId);
+  return hasDailyRequiredPhases(input)?requiredPhaseCompositionSupported(input):legacySupported||!input.technicalChains?.length&&requiredPhaseCompositionSupported(input);
+}
+function validatePhasedMembers(input:EngineInput,policy:NonNullable<EngineInput['technicalChains']>[number]) {
+  if(JSON.stringify(policy.phases!.flat())!==JSON.stringify(policy.orderedTaskIds))throw defect("TECHNICAL_CHAIN_INVALID_PHASES");
+  const byId=new Map(input.tasks.map(t=>[t.id,t])),phaseById=new Map(policy.phases!.flatMap((phase,i)=>phase.map(id=>[id,i] as const)));
+  const assignments=resolveEffectiveTaskResourceAssignments(input);
+  const groups=new Set<string>();
+  for(const id of policy.orderedTaskIds){
+    const task=byId.get(id);
+    if(!task||task.planId!==input.planId||task.status==="cancelled"||!['auxiliary','technical'].includes(task.plannerNextKind??'')
+      ||task.operationalRole!=="productive_task"||!input.planSpaceSettings?.some(s=>s.spaceId===task.spaceId))throw defect("TECHNICAL_CHAIN_INVALID_MEMBER");
+    if(task.jointGroupId){
+      if(groups.has(task.jointGroupId))throw defect("TECHNICAL_CHAIN_DUPLICATE_PHYSICAL_OPERATION");
+      groups.add(task.jointGroupId);
+      for(const peer of input.tasks.filter(t=>t.jointGroupId===task.jointGroupId))phaseById.set(peer.id,phaseById.get(id)!);
+    }
+    if(policy.requiredResourceIds.some(id=>!assignments.assignments.find(a=>a.taskId===task.id)?.effectiveResourceIds.includes(id)))
+      throw defect("TECHNICAL_CHAIN_RESOURCE_NOT_REQUIRED");
+  }
+  // Dependencies constrain permutations; they never impose the array's order.
+  // Check peers as individual obligations, including prerequisites outside the unit.
+  const visiting=new Set<number>(),done=new Set<number>();
+  const visit=(id:number)=>{
+    if(visiting.has(id))throw defect("TECHNICAL_CHAIN_INCOMPATIBLE_DEPENDENCIES");
+    if(done.has(id))return;
+    visiting.add(id);
+    const task=byId.get(id);if(!task||task.status==='cancelled')throw defect("TECHNICAL_CHAIN_INCOMPATIBLE_DEPENDENCIES");
+    for(const dep of task.dependsOnTaskIds??(task.dependsOnTaskId?[task.dependsOnTaskId]:[])){
+      if(phaseById.has(id)&&phaseById.has(dep)&&phaseById.get(dep)!>phaseById.get(id)!)throw defect("TECHNICAL_CHAIN_INCOMPATIBLE_DEPENDENCIES");
+      visit(dep);
+    }
+    visiting.delete(id);done.add(id);
+  };
+  for(const id of phaseById.keys())visit(id);
+  for(const [root,phase] of phaseById){
+    const pending=[root],seen=new Set<number>();
+    while(pending.length){
+      const id=pending.pop()!;if(seen.has(id))continue;seen.add(id);
+      if(phaseById.has(id)&&phaseById.get(id)!>phase)throw defect("TECHNICAL_CHAIN_INCOMPATIBLE_DEPENDENCIES");
+      const t=byId.get(id)!;pending.push(...(t.dependsOnTaskIds??(t.dependsOnTaskId?[t.dependsOnTaskId]:[])));
+    }
+  }
 }
 export function validateDailyTechnicalChains(input:EngineInput,structure:TechnicalChainStructure):EngineInput {
   const next=withDailyTechnicalChains(input,structure);
-  if(!technicalChainCombinationSupported(input))throw defect("UNSUPPORTED_TECHNICAL_CHAIN_COMBINATION");
+  if(!technicalChainCombinationSupported(next))throw defect("UNSUPPORTED_TECHNICAL_CHAIN_COMBINATION");
   for(const policy of structure.policies){
     const ids=policy.orderedTaskIds;
     if(new Set(ids).size!==ids.length||new Set(policy.requiredResourceIds).size!==policy.requiredResourceIds.length)throw defect("TECHNICAL_CHAIN_DUPLICATE_MEMBER_OR_RESOURCE");
+    if(policy.phases){validatePhasedMembers(next,policy);continue;}
     for(const [i,id] of ids.entries()){
       const task=input.tasks.find(t=>t.id===id&&t.planId===input.planId);
       if(!task||task.plannerNextKind!=="technical"||task.contestantId!=null||task.jointGroupId||task.setupFamilyId

@@ -1,0 +1,32 @@
+✔ preflight rejects schema/RPC/security drift, broad policy expressions, false policy roles and missing sequences (958.174727ms)
+✔ security rollback is based on the captured original state and requires separate approval (33.741844ms)
+✔ each extended 115 RPC remains independently protected against body drift (174.379242ms)
+✔ 115 and 116 bind distinct literal bodies; schema downgrade cannot mask a changed RPC (76.297198ms)
+✔ 116 and 117 bind distinct bodies; a scope-schema marker requires the new writer and source reader (116.987517ms)
+✔ 120 joint marker requires its exact writer, source readers and shared witness consumer (138.080932ms)
+✔ 121 operational authority requires its exact writer, sources and material certificate (237.447594ms)
+✔ 115 retains the literal 114 delegate and limits existing reader deltas to the daily chain authority (47.500506ms)
+✔ 116 binds exact source transitions and only the existing task writer loops (25.484418ms)
+✔ 117 retains literal 116 writers and binds only the scope transition and authority reader (10.372835ms)
+✔ 120 retains 119 delegation and limits existing body deltas to joint transitions and the physical witness (46.9252ms)
+✔ TASK_IDS accepts only pending/interrupted product obligations (17.841332ms)
+✔ SPACE resolves only pending/interrupted while protected and cancelled remain context (0.697362ms)
+✔ includePrerequisites authority expands only eligible prerequisites, never analytical future work (5.797636ms)
+✔ representative, non-representative peer and space close the visible REQUIRED unit without prerequisites (92.61595ms)
+✔ authority accepts all authoring orders but rejects physical duplication, bad phases and backwards dependencies (35.740177ms)
+✔ partial scope certifies the authentic global future with its physical pause, zero extra search, then preserves S1 (422.956146ms)
+✔ each phase exposes multiple realized permutations, and HARD dependencies can require a non-nominal one (871.116992ms)
+✔ phased technical operations retain their kind and accept flexible internal dependencies (47.517258ms)
+✔ a locally valid competitor prefix cannot consume the last contiguous future realization (143.503928ms)
+✔ daily REQUIRED authority needs CAS, strict topology and preserves true absence (5.999205ms)
+✔ membership, nominal inventory and linear dependencies fail closed (1.485325ms)
+✔ order is semantic in revision identity and explicit sibling selection (37.520828ms)
+✔ multiple common nominal resources are required in every real member (4.613849ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 13760.737823

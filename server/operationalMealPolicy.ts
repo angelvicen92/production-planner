@@ -1,3 +1,4 @@
+import { hasDailyRequiredPhases, requiredPhaseCompositionSupported } from "./technicalChainStructure";
 import {isDeepStrictEqual} from 'node:util';
 import type {EngineInput} from '../engine/types';
 import {dailyOperationalMealsSchema,persistedDailyOperationalMealsSchema,type DailyOperationalMeals} from '../shared/operationalMealPolicy';
@@ -10,7 +11,7 @@ export function dailyOperationalMealsAuthority(row:Record<string,any>){
  return parsed.data;
 }
 export function operationalMealsCombinationSupported(input:EngineInput){
- return !!input.plannerNext&&!input.setupPolicies?.length&&!input.roundSynchronizations?.length&&!input.technicalChains?.length
+ return !!input.plannerNext&&!input.setupPolicies?.length&&!input.roundSynchronizations?.length&&(!input.technicalChains?.length||(hasDailyRequiredPhases(input)&&requiredPhaseCompositionSupported(input)))
   &&!input.anchoredAccompaniments?.length&&!input.operationContinuityGroups?.length
   &&!input.transportSettings;
 }

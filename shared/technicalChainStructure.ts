@@ -4,6 +4,7 @@ const id = z.number().int().positive().max(2147483647);
 /** Arrays are ordered: never numerically sort orderedTaskIds. Empty policies removes the rule. */
 export const dailyTechnicalChainPolicySchema: z.ZodType<EngineInputTechnicalChainInput> = z.object({
   id:z.string().trim().min(1).max(120), orderedTaskIds:z.array(id).min(2),
+  phases:z.array(z.array(id).min(1)).min(1).optional(),
   adjacency:z.literal("REQUIRED"), resourceContinuity:z.literal("REQUIRED"),
   requiredResourceIds:z.array(id).min(1),
 }).strict();

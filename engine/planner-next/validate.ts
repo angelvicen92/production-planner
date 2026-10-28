@@ -743,7 +743,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
   for(const chain of getTechnicalChains(problem.tasks,problem.technicalChains)) {
     const rootTaskId=chain[0]?.id;if(!rootTaskId)continue;let invalid=false;
     const policy=problem.technicalChains?.find(candidate=>candidate.orderedTaskIds.length===chain.length&&candidate.orderedTaskIds.every((id,index)=>id===chain[index]?.id));
-    const strictTechnical=chain.every(task=>task.kind==="technical");
+    const strictTechnical=!policy?.phases&&chain.every(task=>task.kind==="technical");
     const memberIds=new Set(chain.map(task=>task.id));
     const validationOrder=policy?.phases?[...chain].sort((left,right)=>(scheduledById.get(left.id)?.start??Infinity)-(scheduledById.get(right.id)?.start??Infinity)||left.id.localeCompare(right.id)):chain;
     for(let i=0;i<validationOrder.length;i++){
@@ -763,7 +763,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       for(let index=1;index<validationOrder.length;index+=1)if(phaseById.get(validationOrder[index-1]!.id)!>phaseById.get(validationOrder[index]!.id)!)invalid=true;
     }
     if(policy?.resourceContinuity==="REQUIRED"&&chain.some(task=>policy.requiredResourceIds.some(id=>!(task.requiredResourceIds??[]).includes(id))))invalid=true;
-    for(const actual of scheduled.filter(task=>task.kind==="technical"&&!memberIds.has(task.id))){
+    for(const actual of scheduled.filter(task=>!policy?.phases&&task.kind==="technical"&&!memberIds.has(task.id))){
       const dependencies=Array.isArray(actual.dependencies)?actual.dependencies:[];
       if(dependencies.some(id=>memberIds.has(id))||chain.some(member=>member.dependencies.includes(actual.id)))invalid=true;
     }

@@ -22,9 +22,9 @@ function resolveLiteralReplacements(contracts:Map<string,{definition:string;sign
  const patch=(expression:string)=>{
   const args=split(expression,',');if(args.length!==3||args[0]!=='definition')throw Error('Invalid literal replacement');
   const from=literal(args[1]),to=literal(args[2]);if(!variables.definition.includes(from))throw Error('121 predecessor drift: '+from);
-  variables.definition=variables.definition.replaceAll(from,to);
+  variables.definition=variables.definition.replaceAll(from,()=>to);
  };
- const commit=()=>{for(const name of targets){const prior=contracts.get(name)!;contracts.set(name,{...prior,body:variables.definition,definition:prior.definition.replace(prior.body,variables.definition)});}};
+ const commit=()=>{for(const name of targets){const prior=contracts.get(name)!;contracts.set(name,{...prior,body:variables.definition,definition:prior.definition.replace(prior.body,()=>variables.definition)});}};
  for(const block of sql.matchAll(/DO \$migration\$([\s\S]*?)END \$migration\$;/g)){
   for(const raw of split(block[1],';')){
    const statement=raw.trim();
@@ -46,7 +46,7 @@ function resolveLiteralReplacements(contracts:Map<string,{definition:string;sign
      const name='assisted_preview_s0_additions',prior=contracts.get(name)!;
      const body=prior.body.replaceAll("coalesce(r.diff_json#>>'{jointGroupTransition,sessionId}'","coalesce(r.diff_json#>>'{operationalMealTransition,sessionId}',r.diff_json#>>'{jointGroupTransition,sessionId}'")
       .replaceAll("coalesce(transition_record.diff_json#>'{jointGroupTransition,sources}'","coalesce(transition_record.diff_json#>'{operationalMealTransition,sources}',transition_record.diff_json#>'{jointGroupTransition,sources}'");
-     contracts.set(name,{...prior,body,definition:prior.definition.replace(prior.body,body)});
+     contracts.set(name,{...prior,body,definition:prior.definition.replace(prior.body,()=>body)});
     }
    }
   }
@@ -64,6 +64,7 @@ export function latestAssistedSQLContracts(maxMigration=Infinity){
  files.push('119_composed_reality_authorities.sql');
  files.push('120_native_joint_groups.sql');
  files.push('121_daily_operational_meals.sql');
+ files.push('122_daily_required_phase_composition.sql');
  const contracts=new Map<string,{definition:string;signature:string;body:string}>();
  for(const file of files.filter(file=>Number(file.slice(0,3))<=maxMigration)){
   const sql=readFileSync(`supabase/migrations/${file}`,'utf8');
@@ -72,11 +73,11 @@ export function latestAssistedSQLContracts(maxMigration=Infinity){
    contracts.delete(rename[1]);contracts.set(rename[2],{...prior,definition:prior.definition.replace(`public.${rename[1]}(`,`public.${rename[2]}(`),signature:prior.signature.replace(`public.${rename[1]}(`,`public.${rename[2]}(`)});
   }
   for(const match of sql.matchAll(/CREATE(?: OR REPLACE)? FUNCTION public\.([a-z_][a-z0-9_]*)\s*\(([\s\S]*?)\)\s*RETURNS[\s\S]*?\bAS\s*\$\$([\s\S]*?)\$\$;/gi)){
-  const name=match[1];if(!['assert_daily_operational_meals','assert_operational_meal_snapshot','guard_daily_operational_meals'].includes(name)&&!name.startsWith('assisted_')&&!name.startsWith('assert_anchored')&&!name.startsWith('assert_daily_anchored')&&!name.startsWith('guard_anchored')&&!name.startsWith('joint_')&&!name.startsWith('guard_joint')&&!name.startsWith('assert_joint')&&!['guard_daily_joint_groups','assert_daily_joint_groups'].includes(name)&&!['assert_reality_authorities_disjoint','assert_daily_task_operation_scopes','assert_task_scope_snapshot','anchored_contracts','anchored_task_operations','guard_daily_anchored_accompaniments','guard_daily_anchored_stage','apply_day_config_operation','apply_day_config_operation_v4','apply_day_config_operation_v5','initialize_day_config_revision','guard_daily_round_synchronization','round_structure_canonical_json','assert_daily_round_structure','assert_daily_round_snapshot'].includes(name))continue;
+  const name=match[1];if(!['assert_daily_technical_chains','assert_daily_technical_chain_snapshot','assert_daily_operational_meals','assert_operational_meal_snapshot','guard_daily_operational_meals'].includes(name)&&!name.startsWith('assisted_')&&!name.startsWith('assert_anchored')&&!name.startsWith('assert_daily_anchored')&&!name.startsWith('guard_anchored')&&!name.startsWith('joint_')&&!name.startsWith('guard_joint')&&!name.startsWith('assert_joint')&&!['guard_daily_joint_groups','assert_daily_joint_groups'].includes(name)&&!['assert_reality_authorities_disjoint','assert_daily_task_operation_scopes','assert_task_scope_snapshot','anchored_contracts','anchored_task_operations','guard_daily_anchored_accompaniments','guard_daily_anchored_stage','apply_day_config_operation','apply_day_config_operation_v4','apply_day_config_operation_v5','initialize_day_config_revision','guard_daily_round_synchronization','round_structure_canonical_json','assert_daily_round_structure','assert_daily_round_snapshot'].includes(name))continue;
   const types=match[2].split(',').filter(arg=>arg.trim()).map(arg=>arg.trim().split(/\s+/)[1].toLowerCase());
   contracts.set(name,{definition:match[0],signature:`public.${name}(${types.join(',')})`,body:match[3].replaceAll('\r\n','\n').trim()});
  }
-  if(file.startsWith('121_'))resolveLiteralReplacements(contracts,sql);
+  if(file.startsWith('121_')||file.startsWith('122_'))resolveLiteralReplacements(contracts,sql);
   if(file.startsWith('116_')||file.startsWith('117_')||file.startsWith('120_')){
    // Resolve only this migration's literal string replacements. The resulting
    // bodies remain compared byte-for-byte with PostgreSQL by catalog preflight.
@@ -88,7 +89,7 @@ export function latestAssistedSQLContracts(maxMigration=Infinity){
    };
    const patch=(name:string,from:string,to:string)=>{
     const prior=contracts.get(name)!;if(!prior.body.includes(from))throw Error('116 predecessor drift '+name);
-    const body=prior.body.replaceAll(from,to);contracts.set(name,{...prior,body,definition:prior.definition.replace(prior.body,body)});
+    const body=prior.body.replaceAll(from,()=>to);contracts.set(name,{...prior,body,definition:prior.definition.replace(prior.body,()=>body)});
    };
    for(const m of sql.matchAll(/old_text:='((?:''|[^'])*)';\s*new_text:='((?:''|[^'])*)';/g))
     for(const name of ['assisted_expected_obligation_sources','assisted_preview_s0_additions'])patch(name,decode(m[1]),decode(m[2]));
