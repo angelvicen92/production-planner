@@ -1,0 +1,12 @@
+✔ engine/planner-next/operationContinuity.spec.ts (704.26383ms)
+✔ engine/planner-next/technicalChains.spec.ts (311.21508ms)
+✔ server/operationContinuity.spec.ts (9472.905195ms)
+✔ server/technicalChainStructure.spec.ts (484.799049ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10986.37251

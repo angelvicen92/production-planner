@@ -1,0 +1,20 @@
+{
+  "status": "BLOCKED",
+  "productDelta": false,
+  "firstRejection": {
+    "http": 400,
+    "message": "Unrecognized key(s) in object: 'phases'",
+    "contract": "dailyTechnicalChainPolicySchema"
+  },
+  "consumerSearchReusableInMemory": true,
+  "phaseSQLStageDemonstrated": false,
+  "remainingCertificateDefect": {
+    "function": "certifyDailyTechnicalChain",
+    "lostChannel": "operationalMeals"
+  },
+  "singleRecommendedDelta": "Extend existing native daily chain authority and certification to operation phases with joint representatives, closed scope and complete physical witness.",
+  "nextDeltaDetails": "next-delta.md",
+  "noSearchOrBudgetChangeJustified": true,
+  "unsupportedIsPhysicalInfeasibility": false,
+  "a2ImportedReplayIsUIAuthorship": false
+}

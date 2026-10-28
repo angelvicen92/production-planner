@@ -1,0 +1,42 @@
+[
+  {
+    "attempt": 1,
+    "status": "FAIL",
+    "classification": "HARNESS_ERROR",
+    "error": "TypeError: Cannot read properties of undefined (reading 'revisionId')",
+    "cause": "Harness used operationalMealPolicies instead of operationalMeals in EffectiveConfigurationView.",
+    "remoteWrites": 0,
+    "countedAsProductFailure": false
+  },
+  {
+    "attempt": 2,
+    "status": "FAIL",
+    "classification": "HARNESS_ERROR",
+    "error": "error: column \"configuration_fingerprint\" does not exist",
+    "cause": "Read-only diagnostic selected nonexistent configuration_fingerprint column, corrected to replay_snapshot_json.",
+    "remoteWrites": 0,
+    "countedAsProductFailure": false
+  },
+  {
+    "attempt": 3,
+    "status": "FAIL",
+    "classification": "HARNESS_ERROR",
+    "error": "TypeError: Cannot read properties of undefined (reading 'length')",
+    "cause": "Harness inspected session.stages instead of history after a genuine NO_PROPOSAL; the integrated positive and negative run were already produced.",
+    "remoteWrites": 0,
+    "countedAsProductFailure": false
+  },
+  {
+    "attempt": "direct-executor-initial",
+    "classification": "HARNESS_SEAM_MISMATCH",
+    "cause": "Called global executor without Assisted nominalTaskIds/projection; obtained a complete alternative while consuming the configured 10000 optimization branches. Corrected to exact Assisted problem/options and verified same fingerprint at 81 branches.",
+    "countedAsProductFailure": false,
+    "sourceChanged": false
+  },
+  {
+    "attempt": "intermediate-typechecks",
+    "classification": "HARNESS_TYPE_ERRORS",
+    "cause": "Nonexistent result.status and readonly-array argument corrected in diagnostic code. Final scoped TypeScript check passes.",
+    "countedAsProductFailure": false
+  }
+]

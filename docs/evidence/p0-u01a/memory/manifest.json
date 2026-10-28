@@ -1,0 +1,108 @@
+{
+  "memoryOnly": true,
+  "experimentIsStage": false,
+  "databaseWrites": 0,
+  "productSourceEdits": 0,
+  "script": {
+    "path": "docs/evidence/p0-u01a/memory.ts",
+    "sha256": "81a9b133d8a032c94d2be7365db33761964d7a903346cb700a18a01eeb06635e"
+  },
+  "inputHashes": {
+    "integrated-input": "c8ca9dd5826b941ead1dd17c63eeefdab567a912e282a5448f01d27cff96e03c",
+    "integrated-requested-policy": "dfc2dbd0f6168a6514c259315a3228866f426cdd0b5ed26654f02c167dffbd8b",
+    "impossible-input": "266513d66596eb6e3b5e584bd76844a04ef834860cbdfef2137c58f3bec73ac9",
+    "impossible-requested-policy": "bc3722a983939fe94184430cc4f5c51d559e312b16e25794c066790cc8bd84b9"
+  },
+  "receiptHashes": {
+    "rest-in-former-block.json": "4535019e1d9925d4ec17563b577088287d56529dbb8c297752d92f58c11705f0",
+    "guards.json": "b9eba039ec5f5575b8413b13976bfc752eeabdc48377feec0dea992759aaecd5",
+    "full.json": "63bed8cb82baef7bc6ac7860e9b46c6b9cc547e11975ec957bae2279d6055053",
+    "direct-execution.json": "df416a4db2e940ab7a6f3992195725febf6e6f540f4368dd43b34004a13a111f",
+    "joint-peer-scope.json": "b5bb7f7c515cf4dcb3e4eb4bd46384c0a94d88ad22b330bc03f5055528df981e",
+    "global-validation.json": "f593f4602e875805a30fab96321e3242f8bc5e84698ef5f31f3da41516605dc6",
+    "member-gate.json": "bf60e43b3b3c189dd932d36c175f72f285e02b7ef3ea8abc578813c5f86d9d2c",
+    "independent-scope.json": "f0daa3e76dfe4b1114afcc95fd2a9e9e441d6eeea1c0865002aa7f3c86fbf125",
+    "orthogonal-dimensions.json": "2d25cdcbc68ed086e0d4302fb37ee8a4e234b6bbedd2800cca178a3c01b8ed56",
+    "all-individual-members.json": "3b8cdeecef2c98435ca827c7425532fe508785054d60ea0b353493d7ecfc2be5",
+    "adapter.json": "d470c9ea78a8a3715ed632d48952a645684dfac3683226e2236deb0c871538ef",
+    "explorer.json": "9315ec39cf785a23c2db1cfb9f96ac916fe6b937db5193baeba4dc14085e635c",
+    "existing-chain-certificate.json": "03a1b60a5907d7410bcd639cfd9370c89075687eaef8cc843af17196102f8c00",
+    "continuity-alternative.json": "603801838c5f6a9f738353b803f91bf7b97dae5891a75a394b4443e974afa99a",
+    "closure.json": "7aba13f9ae36a8254cc94752e103378ec225694d59786f30469c3bd97c1a86e0",
+    "chain-certificate-without-rest.json": "924ad9532d74728da27e15981b129acdadb0c0cf0397f4175d9c4ba0ac186fce",
+    "core-preflight.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "member-scope.json": "4107f3a2f33ad702c4de77c8b96c3d717bd2e8c5df1a25832ba51dfaca757294",
+    "reverse-phase-3.json": "e4e3707ea393d30f64943fd3e6da38f87a4eca1ffe415a29109ea95dcd1b5fa4",
+    "summary.json": "ddf75d4bcdfc7e5968c254e7b5fa8b84a40a1f151253a92feb005b6f5d98409d",
+    "reverse-phase-1.json": "1ca031723b069a77b95b038447a098343ad78329a8a28a5c9b8f3fe9702e1687",
+    "continuation.json": "3b88207816d1a33858474f5fea74b3a20e113d66cbec5e4f6a6ebcab4d6ed531",
+    "impossible-declared.json": "287927e247adb239dd7c25adb328b53ee1af9f05fce281f531a702b64161774c",
+    "reverse-phase-2.json": "072efc8a98e64ce2ea9c57ce6c1f8db37f80268df52d27fa93825e773bdb879d"
+  },
+  "interventions": [
+    "Clone product EngineInput and add only dailyTechnicalChainsVersion=1 and the rejected phases policy.",
+    "Reverse enumeration within one phase, preserving phase membership and all other authorities.",
+    "Read-only scope and fixed-placement continuation calls, no sessions or Stages.",
+    "Move pause window inside the former block in one clone.",
+    "Compare both-joint-IDs serial representation separately, preserving its exhaustion.",
+    "Invoke existing chain certificate with full task witness; separately omit only pause requirement to isolate lost channel.",
+    "Local occupancy variants for orthogonal physical pause checks.",
+    "Omit joint tags/pause in a discarded clone solely to expose the next producer member guard."
+  ],
+  "determinism": [
+    {
+      "probe": "full",
+      "exactProposal": true,
+      "exactWitness": true,
+      "exactWork": true
+    },
+    {
+      "probe": "member-scope",
+      "exactProposal": true,
+      "exactWitness": true,
+      "exactWork": true
+    },
+    {
+      "probe": "independent-scope",
+      "exactProposal": true,
+      "exactWitness": true,
+      "exactWork": true
+    },
+    {
+      "probe": "continuation",
+      "exactProposal": true,
+      "exactWitness": true,
+      "exactWork": true
+    },
+    {
+      "probe": "reverse-phase-1",
+      "exactProposal": true,
+      "exactWitness": true,
+      "exactWork": true
+    },
+    {
+      "probe": "reverse-phase-2",
+      "exactProposal": true,
+      "exactWitness": true,
+      "exactWork": true
+    },
+    {
+      "probe": "reverse-phase-3",
+      "exactProposal": true,
+      "exactWitness": true,
+      "exactWork": true
+    },
+    {
+      "probe": "rest-in-former-block",
+      "exactProposal": true,
+      "exactWitness": true,
+      "exactWork": true
+    },
+    {
+      "probe": "joint-peer-scope",
+      "exactProposal": true,
+      "exactWitness": true,
+      "exactWork": true
+    }
+  ]
+}

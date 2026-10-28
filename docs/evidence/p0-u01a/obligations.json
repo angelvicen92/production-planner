@@ -1,0 +1,315 @@
+{
+  "planId": 1,
+  "source": "EngineInput rebuilt from actual UI/API day",
+  "phaseOperations": [
+    3,
+    2,
+    2
+  ],
+  "phaseIndividualTasks": 8,
+  "totalTasks": 15,
+  "explicitOperationalMeals": [
+    {
+      "id": "physical-rest",
+      "window": {
+        "start": "09:00",
+        "end": "09:30"
+      },
+      "durationMinutes": 15,
+      "planResourceItemIds": [
+        1
+      ],
+      "spaceIds": [
+        1,
+        2,
+        3
+      ]
+    }
+  ],
+  "individualMealsInThisProfile": false,
+  "obligations": [
+    {
+      "taskId": 1,
+      "participantId": 1,
+      "templateName": "Preparation",
+      "phase": null,
+      "isPhaseRepresentative": false,
+      "jointGroup": null,
+      "duration": 5,
+      "spaceId": 4,
+      "dependsOnTaskIds": [],
+      "resources": null,
+      "blocksSpace": true,
+      "agendaScope": "PHYSICAL_SPACE",
+      "resourceInheritance": "LOCATION"
+    },
+    {
+      "taskId": 2,
+      "participantId": 1,
+      "templateName": "First phase",
+      "phase": 1,
+      "isPhaseRepresentative": true,
+      "jointGroup": null,
+      "duration": 5,
+      "spaceId": 1,
+      "dependsOnTaskIds": [
+        1
+      ],
+      "resources": {
+        "byItem": {
+          "1": 1
+        }
+      },
+      "blocksSpace": true,
+      "agendaScope": "PHYSICAL_SPACE",
+      "resourceInheritance": "LOCATION"
+    },
+    {
+      "taskId": 3,
+      "participantId": 1,
+      "templateName": "Second phase",
+      "phase": 2,
+      "isPhaseRepresentative": true,
+      "jointGroup": null,
+      "duration": 5,
+      "spaceId": 2,
+      "dependsOnTaskIds": [
+        2
+      ],
+      "resources": {
+        "byItem": {
+          "1": 1
+        }
+      },
+      "blocksSpace": true,
+      "agendaScope": "PHYSICAL_SPACE",
+      "resourceInheritance": "LOCATION"
+    },
+    {
+      "taskId": 4,
+      "participantId": 1,
+      "templateName": "Synchronized operation",
+      "phase": 3,
+      "isPhaseRepresentative": true,
+      "jointGroup": "synchronized-operation",
+      "duration": 10,
+      "spaceId": 3,
+      "dependsOnTaskIds": [
+        3
+      ],
+      "resources": {
+        "byItem": {
+          "1": 1
+        }
+      },
+      "blocksSpace": true,
+      "agendaScope": "PHYSICAL_SPACE",
+      "resourceInheritance": "LOCATION"
+    },
+    {
+      "taskId": 5,
+      "participantId": 1,
+      "templateName": "Closing after joint",
+      "phase": null,
+      "isPhaseRepresentative": false,
+      "jointGroup": null,
+      "duration": 5,
+      "spaceId": 4,
+      "dependsOnTaskIds": [
+        4
+      ],
+      "resources": null,
+      "blocksSpace": true,
+      "agendaScope": "PHYSICAL_SPACE",
+      "resourceInheritance": "LOCATION"
+    },
+    {
+      "taskId": 6,
+      "participantId": 2,
+      "templateName": "Preparation",
+      "phase": null,
+      "isPhaseRepresentative": false,
+      "jointGroup": null,
+      "duration": 5,
+      "spaceId": 4,
+      "dependsOnTaskIds": [],
+      "resources": null,
+      "blocksSpace": true,
+      "agendaScope": "PHYSICAL_SPACE",
+      "resourceInheritance": "LOCATION"
+    },
+    {
+      "taskId": 7,
+      "participantId": 2,
+      "templateName": "First phase",
+      "phase": 1,
+      "isPhaseRepresentative": true,
+      "jointGroup": null,
+      "duration": 5,
+      "spaceId": 1,
+      "dependsOnTaskIds": [
+        6
+      ],
+      "resources": {
+        "byItem": {
+          "1": 1
+        }
+      },
+      "blocksSpace": true,
+      "agendaScope": "PHYSICAL_SPACE",
+      "resourceInheritance": "LOCATION"
+    },
+    {
+      "taskId": 8,
+      "participantId": 2,
+      "templateName": "Second phase",
+      "phase": 2,
+      "isPhaseRepresentative": true,
+      "jointGroup": null,
+      "duration": 5,
+      "spaceId": 2,
+      "dependsOnTaskIds": [
+        7
+      ],
+      "resources": {
+        "byItem": {
+          "1": 1
+        }
+      },
+      "blocksSpace": true,
+      "agendaScope": "PHYSICAL_SPACE",
+      "resourceInheritance": "LOCATION"
+    },
+    {
+      "taskId": 9,
+      "participantId": 2,
+      "templateName": "Synchronized operation",
+      "phase": 3,
+      "isPhaseRepresentative": false,
+      "jointGroup": "synchronized-operation",
+      "duration": 10,
+      "spaceId": 3,
+      "dependsOnTaskIds": [
+        8
+      ],
+      "resources": {
+        "byItem": {
+          "1": 1
+        }
+      },
+      "blocksSpace": true,
+      "agendaScope": "PHYSICAL_SPACE",
+      "resourceInheritance": "LOCATION"
+    },
+    {
+      "taskId": 10,
+      "participantId": 2,
+      "templateName": "Closing after joint",
+      "phase": null,
+      "isPhaseRepresentative": false,
+      "jointGroup": null,
+      "duration": 5,
+      "spaceId": 4,
+      "dependsOnTaskIds": [
+        9
+      ],
+      "resources": null,
+      "blocksSpace": true,
+      "agendaScope": "PHYSICAL_SPACE",
+      "resourceInheritance": "LOCATION"
+    },
+    {
+      "taskId": 11,
+      "participantId": 3,
+      "templateName": "Preparation",
+      "phase": null,
+      "isPhaseRepresentative": false,
+      "jointGroup": null,
+      "duration": 5,
+      "spaceId": 4,
+      "dependsOnTaskIds": [],
+      "resources": null,
+      "blocksSpace": true,
+      "agendaScope": "PHYSICAL_SPACE",
+      "resourceInheritance": "LOCATION"
+    },
+    {
+      "taskId": 12,
+      "participantId": 3,
+      "templateName": "First phase",
+      "phase": 1,
+      "isPhaseRepresentative": true,
+      "jointGroup": null,
+      "duration": 5,
+      "spaceId": 1,
+      "dependsOnTaskIds": [
+        11
+      ],
+      "resources": {
+        "byItem": {
+          "1": 1
+        }
+      },
+      "blocksSpace": true,
+      "agendaScope": "PHYSICAL_SPACE",
+      "resourceInheritance": "LOCATION"
+    },
+    {
+      "taskId": 13,
+      "participantId": 3,
+      "templateName": "Final independent member",
+      "phase": 3,
+      "isPhaseRepresentative": true,
+      "jointGroup": null,
+      "duration": 5,
+      "spaceId": 3,
+      "dependsOnTaskIds": [
+        12
+      ],
+      "resources": {
+        "byItem": {
+          "1": 1
+        }
+      },
+      "blocksSpace": true,
+      "agendaScope": "PHYSICAL_SPACE",
+      "resourceInheritance": "LOCATION"
+    },
+    {
+      "taskId": 14,
+      "participantId": 3,
+      "templateName": "Closing after single",
+      "phase": null,
+      "isPhaseRepresentative": false,
+      "jointGroup": null,
+      "duration": 5,
+      "spaceId": 4,
+      "dependsOnTaskIds": [
+        13
+      ],
+      "resources": null,
+      "blocksSpace": true,
+      "agendaScope": "PHYSICAL_SPACE",
+      "resourceInheritance": "LOCATION"
+    },
+    {
+      "taskId": 15,
+      "participantId": 3,
+      "templateName": "Independent competitor",
+      "phase": null,
+      "isPhaseRepresentative": false,
+      "jointGroup": null,
+      "duration": 15,
+      "spaceId": 5,
+      "dependsOnTaskIds": [],
+      "resources": {
+        "byItem": {
+          "1": 1
+        }
+      },
+      "blocksSpace": true,
+      "agendaScope": "PHYSICAL_SPACE",
+      "resourceInheritance": "LOCATION"
+    }
+  ]
+}

@@ -1,0 +1,266 @@
+{
+  "status": "PASS",
+  "productChange": false,
+  "phaseStageAccepted": false,
+  "physical": [
+    {
+      "base": "work/u01a-native-4/native",
+      "stage": 1,
+      "accepted": 1,
+      "futureObligations": 15,
+      "physicalOccupations": 14,
+      "branches": 21
+    },
+    {
+      "base": "work/u01a-native-4/native",
+      "stage": 2,
+      "accepted": 15,
+      "futureObligations": 15,
+      "physicalOccupations": 14,
+      "branches": 20
+    },
+    {
+      "base": "work/u01a-repeat/native",
+      "stage": 1,
+      "accepted": 1,
+      "futureObligations": 15,
+      "physicalOccupations": 14,
+      "branches": 21
+    },
+    {
+      "base": "work/u01a-repeat/native",
+      "stage": 2,
+      "accepted": 15,
+      "futureObligations": 15,
+      "physicalOccupations": 14,
+      "branches": 20
+    }
+  ],
+  "memory": [
+    {
+      "name": "full",
+      "proposalCount": 15,
+      "globalObligations": 15,
+      "branches": 81,
+      "phaseOrder": [
+        [
+          "task:2",
+          "task:7",
+          "task:12"
+        ],
+        [
+          "task:3",
+          "task:8"
+        ],
+        [
+          "task:4",
+          "task:13"
+        ]
+      ],
+      "fingerprint": "a5b8ae89a38572b992b36ec7e8147ee061cce1e56a23f7fb52b70f42c48b94e1"
+    },
+    {
+      "name": "member-scope",
+      "proposalCount": 8,
+      "globalObligations": 15,
+      "branches": 81,
+      "phaseOrder": [
+        [
+          "task:2",
+          "task:7",
+          "task:12"
+        ],
+        [
+          "task:3",
+          "task:8"
+        ],
+        [
+          "task:4",
+          "task:13"
+        ]
+      ],
+      "fingerprint": "a5b8ae89a38572b992b36ec7e8147ee061cce1e56a23f7fb52b70f42c48b94e1"
+    },
+    {
+      "name": "independent-scope",
+      "proposalCount": 1,
+      "globalObligations": 15,
+      "branches": 81,
+      "phaseOrder": [
+        [
+          "task:2",
+          "task:7",
+          "task:12"
+        ],
+        [
+          "task:3",
+          "task:8"
+        ],
+        [
+          "task:4",
+          "task:13"
+        ]
+      ],
+      "fingerprint": "a5b8ae89a38572b992b36ec7e8147ee061cce1e56a23f7fb52b70f42c48b94e1"
+    },
+    {
+      "name": "continuation",
+      "proposalCount": 14,
+      "globalObligations": 15,
+      "branches": 80,
+      "phaseOrder": [
+        [
+          "task:2",
+          "task:7",
+          "task:12"
+        ],
+        [
+          "task:3",
+          "task:8"
+        ],
+        [
+          "task:4",
+          "task:13"
+        ]
+      ],
+      "fingerprint": "a5b8ae89a38572b992b36ec7e8147ee061cce1e56a23f7fb52b70f42c48b94e1"
+    },
+    {
+      "name": "reverse-phase-1",
+      "proposalCount": 15,
+      "globalObligations": 15,
+      "branches": 89,
+      "phaseOrder": [
+        [
+          "task:7",
+          "task:12",
+          "task:2"
+        ],
+        [
+          "task:3",
+          "task:8"
+        ],
+        [
+          "task:4",
+          "task:13"
+        ]
+      ],
+      "fingerprint": "0517dfb8e53f113f8304242832bcbcc7dc039a1a559f5374081b5b6b54a1a914"
+    },
+    {
+      "name": "reverse-phase-2",
+      "proposalCount": 15,
+      "globalObligations": 15,
+      "branches": 81,
+      "phaseOrder": [
+        [
+          "task:2",
+          "task:7",
+          "task:12"
+        ],
+        [
+          "task:8",
+          "task:3"
+        ],
+        [
+          "task:4",
+          "task:13"
+        ]
+      ],
+      "fingerprint": "43b82cff4844b6423031677fa547e109d0acac7928306cd949699159cf87a2ad"
+    },
+    {
+      "name": "reverse-phase-3",
+      "proposalCount": 15,
+      "globalObligations": 15,
+      "branches": 81,
+      "phaseOrder": [
+        [
+          "task:2",
+          "task:7",
+          "task:12"
+        ],
+        [
+          "task:3",
+          "task:8"
+        ],
+        [
+          "task:13",
+          "task:4"
+        ]
+      ],
+      "fingerprint": "19a1e401e9037076c30dd38c10dd5cf45f512b5fbfa6b8137d59520fae651fe4"
+    },
+    {
+      "name": "rest-in-former-block",
+      "proposalCount": 15,
+      "globalObligations": 15,
+      "branches": 225,
+      "phaseOrder": [
+        [
+          "task:2",
+          "task:7",
+          "task:12"
+        ],
+        [
+          "task:3",
+          "task:8"
+        ],
+        [
+          "task:4",
+          "task:13"
+        ]
+      ],
+      "fingerprint": "bc8c4b38ecb7dbb53088432a90987d46eaa679725405ed516994c7eb8841f63c"
+    },
+    {
+      "name": "joint-peer-scope",
+      "proposalCount": 2,
+      "globalObligations": 15,
+      "branches": 81,
+      "phaseOrder": [
+        [
+          "task:2",
+          "task:7",
+          "task:12"
+        ],
+        [
+          "task:3",
+          "task:8"
+        ],
+        [
+          "task:4",
+          "task:13"
+        ]
+      ],
+      "fingerprint": "a5b8ae89a38572b992b36ec7e8147ee061cce1e56a23f7fb52b70f42c48b94e1"
+    }
+  ],
+  "determinism": [
+    {
+      "stage": 1,
+      "exactProposal": true,
+      "exactWitness": true,
+      "exactWork": true,
+      "exactSQLFingerprint": true,
+      "idOrTimeNormalization": false
+    },
+    {
+      "stage": 2,
+      "exactProposal": true,
+      "exactWitness": true,
+      "exactWork": true,
+      "exactSQLFingerprint": true,
+      "idOrTimeNormalization": false
+    }
+  ],
+  "trace": {
+    "branchesExplored": 81,
+    "coreBranches": 0,
+    "standaloneBacktracks": 0,
+    "technicalChainBranchesExplored": 73,
+    "technicalChainRootStartsConsidered": 4,
+    "technicalChainRootStartsFeasible": 1,
+    "lastExhaustionPhase": null
+  }
+}
