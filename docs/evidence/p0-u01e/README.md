@@ -1,7 +1,5 @@
 # P0-U01e — Auditoría causal de fases REQUIRED e itinerancia
 
-**Estado de publicación del borrador:** los cuatro archivos comprimidos `native/repeat/{manifest,receipts}.json.gz` están verificados localmente y pendientes de autorización explícita para adjuntarlos al repositorio público. Los scripts, informes y logs sí forman parte del borrador. La verificación offline de los recibos requiere esos adjuntos; la reproducción desde API puede ejecutarse con el harness.
-
 Base remota comprobada: `main` y rama `codex/p0-u01e-itinerant-phase-composition-audit` en `3ba5d4d393ddf58025622d745a76013ac0ea8399`, tree `7c69a2e453176efd1a54256393059eb2593549f8`. **Diagnóstico; ninguna capacidad productiva habilitada.**
 
 La jornada completa de **17 obligaciones** con unidad fija **sí tiene witness físico en memoria**: tres fases REQUIRED, composición efectiva por operación, conjunta, tres competidoras, dependencias, pausa y disponibilidad. La misma afirmación se comprueba con AB→AC→B,C y con una conjunta que consume una unidad B. Esto amplía materialmente el contrafactual reducido U01c. **No acredita Stage itinerante:** el producto rechaza la autoría antes de buscar.

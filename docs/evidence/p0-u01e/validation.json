@@ -40,5 +40,7 @@
     "u01e-candidate",
     "u01e-repeat"
   ],
-  "restIsolationProbe": "PASS; exact between stacks"
+  "restIsolationProbe": "PASS; exact between stacks",
+  "evidenceArchivesIncluded": true,
+  "archivePublicationExplicitlyAuthorized": true
 }
