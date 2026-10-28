@@ -1,0 +1,28 @@
+[
+  {
+    name: 'early-first-decision',
+    placed: 0,
+    branches: 10000,
+    valid: undefined
+  },
+  {
+    name: 'after-pause-window',
+    placed: 26,
+    branches: 217,
+    valid: true
+  }
+]
+[
+  {
+    name: 'early-first-decision',
+    placed: 0,
+    branches: 10000,
+    valid: undefined
+  },
+  {
+    name: 'after-pause-window',
+    placed: 26,
+    branches: 217,
+    valid: true
+  }
+]

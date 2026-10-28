@@ -1,0 +1,498 @@
+[
+  {
+    "mode": "wrong-CAS",
+    "error": {
+      "code": "P0001",
+      "message": "STALE_DRAFT"
+    },
+    "consumer": "assisted_accept_stage",
+    "hashRecomputed": false,
+    "rolledBack": true
+  },
+  {
+    "mode": "stale-base",
+    "error": {
+      "code": "P0001",
+      "message": "STALE_BASE_STAGE"
+    },
+    "consumer": "assisted_accept_stage",
+    "hashRecomputed": false,
+    "rolledBack": true
+  },
+  {
+    "mode": "forged-source",
+    "error": {
+      "code": "P0001",
+      "message": "STALE_OBLIGATION_SOURCES"
+    },
+    "consumer": "assisted_accept_stage",
+    "hashRecomputed": false,
+    "rolledBack": true
+  },
+  {
+    "mode": "forged-Draft",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_AUTHENTIC_PROPOSAL_REQUIRED"
+    },
+    "consumer": "assisted_accept_stage",
+    "hashRecomputed": true,
+    "rolledBack": true
+  },
+  {
+    "mode": "wrong-CAS",
+    "error": {
+      "code": "P0001",
+      "message": "STALE_DRAFT"
+    },
+    "consumer": "assisted_accept_stage",
+    "hashRecomputed": false,
+    "rolledBack": true
+  },
+  {
+    "mode": "stale-base",
+    "error": {
+      "code": "P0001",
+      "message": "STALE_BASE_STAGE"
+    },
+    "consumer": "assisted_accept_stage",
+    "hashRecomputed": false,
+    "rolledBack": true
+  },
+  {
+    "mode": "forged-source",
+    "error": {
+      "code": "P0001",
+      "message": "STALE_OBLIGATION_SOURCES"
+    },
+    "consumer": "assisted_accept_stage",
+    "hashRecomputed": false,
+    "rolledBack": true
+  },
+  {
+    "mode": "forged-Draft",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_AUTHENTIC_PROPOSAL_REQUIRED"
+    },
+    "consumer": "assisted_accept_stage",
+    "hashRecomputed": true,
+    "rolledBack": true
+  },
+  {
+    "mode": "peer-asynchronous",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "JOINT_SYNCHRONIZATION"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "peer-unit",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_UNIT_NOT_ELIGIBLE"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "third-party",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_WITNESS_RESOURCE_CONFLICT"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "split-anchor",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_CERTIFICATE_INVALID"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "virtual-main",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_WITNESS_IDENTITY"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "missing-direct",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "inherited-location",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "shared-member",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_UNIT_CAPACITY_CONFLICT"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "unavailable",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_WITNESS_RESOURCE_AVAILABILITY"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "pause-invasion",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "OPERATIONAL_MEAL_PHYSICAL_CONFLICT"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "phase-gap",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "TECHNICAL_CHAIN_PHASE_GAP"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "incomplete-witness",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "bad-hash",
+    "category": "AUTHENTICITY",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_AUTHENTIC_PROPOSAL_REQUIRED"
+    },
+    "hashesRecomputed": false,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "stale-revision",
+    "category": "VERSIONING",
+    "error": {
+      "code": "P0001",
+      "message": "STALE_TECHNICAL_CHAIN_REPLAY"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "wrong-CAS",
+    "error": {
+      "code": "P0001",
+      "message": "STALE_DRAFT"
+    },
+    "consumer": "assisted_accept_stage",
+    "hashRecomputed": false,
+    "rolledBack": true
+  },
+  {
+    "mode": "stale-base",
+    "error": {
+      "code": "P0001",
+      "message": "STALE_BASE_STAGE"
+    },
+    "consumer": "assisted_accept_stage",
+    "hashRecomputed": false,
+    "rolledBack": true
+  },
+  {
+    "mode": "forged-source",
+    "error": {
+      "code": "P0001",
+      "message": "STALE_OBLIGATION_SOURCES"
+    },
+    "consumer": "assisted_accept_stage",
+    "hashRecomputed": false,
+    "rolledBack": true
+  },
+  {
+    "mode": "forged-Draft",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_AUTHENTIC_PROPOSAL_REQUIRED"
+    },
+    "consumer": "assisted_accept_stage",
+    "hashRecomputed": true,
+    "rolledBack": true
+  },
+  {
+    "mode": "wrong-CAS",
+    "error": {
+      "code": "P0001",
+      "message": "STALE_DRAFT"
+    },
+    "consumer": "assisted_accept_stage",
+    "hashRecomputed": false,
+    "rolledBack": true
+  },
+  {
+    "mode": "stale-base",
+    "error": {
+      "code": "P0001",
+      "message": "STALE_BASE_STAGE"
+    },
+    "consumer": "assisted_accept_stage",
+    "hashRecomputed": false,
+    "rolledBack": true
+  },
+  {
+    "mode": "forged-source",
+    "error": {
+      "code": "P0001",
+      "message": "STALE_OBLIGATION_SOURCES"
+    },
+    "consumer": "assisted_accept_stage",
+    "hashRecomputed": false,
+    "rolledBack": true
+  },
+  {
+    "mode": "forged-Draft",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_AUTHENTIC_PROPOSAL_REQUIRED"
+    },
+    "consumer": "assisted_accept_stage",
+    "hashRecomputed": true,
+    "rolledBack": true
+  },
+  {
+    "mode": "peer-asynchronous",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "JOINT_SYNCHRONIZATION"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "peer-unit",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_UNIT_NOT_ELIGIBLE"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "third-party",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_WITNESS_RESOURCE_CONFLICT"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "split-anchor",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_CERTIFICATE_INVALID"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "virtual-main",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_WITNESS_IDENTITY"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "missing-direct",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "inherited-location",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "shared-member",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_UNIT_CAPACITY_CONFLICT"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "unavailable",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_WITNESS_RESOURCE_AVAILABILITY"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "pause-invasion",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "OPERATIONAL_MEAL_PHYSICAL_CONFLICT"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "phase-gap",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "TECHNICAL_CHAIN_PHASE_GAP"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "incomplete-witness",
+    "category": "PHYSICAL",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "bad-hash",
+    "category": "AUTHENTICITY",
+    "error": {
+      "code": "P0001",
+      "message": "ANCHORED_AUTHENTIC_PROPOSAL_REQUIRED"
+    },
+    "hashesRecomputed": false,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  },
+  {
+    "mode": "stale-revision",
+    "category": "VERSIONING",
+    "error": {
+      "code": "P0001",
+      "message": "STALE_TECHNICAL_CHAIN_REPLAY"
+    },
+    "hashesRecomputed": true,
+    "realAuthority": true,
+    "consumer": "assert_daily_technical_chain_snapshot",
+    "rolledBack": true
+  }
+]

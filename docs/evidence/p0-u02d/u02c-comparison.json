@@ -1,0 +1,30 @@
+[
+  {
+    "label": "integrated",
+    "proposal": true,
+    "work": true,
+    "nominalPhysicalFutureWitness": true,
+    "technicalChainCertificate": true
+  },
+  {
+    "label": "reverse-order",
+    "proposal": true,
+    "work": true,
+    "nominalPhysicalFutureWitness": true,
+    "technicalChainCertificate": true
+  },
+  {
+    "label": "segmented-joint",
+    "proposal": true,
+    "work": true,
+    "nominalPhysicalFutureWitness": true,
+    "technicalChainCertificate": true
+  },
+  {
+    "label": "segmented-reverse",
+    "proposal": true,
+    "work": true,
+    "nominalPhysicalFutureWitness": true,
+    "technicalChainCertificate": true
+  }
+]

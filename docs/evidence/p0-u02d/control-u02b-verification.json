@@ -1,0 +1,137 @@
+{
+  "status": "PASS",
+  "physical": [
+    {
+      "stack": "/tmp/u02d-control-u02b/native",
+      "label": "integrated",
+      "stage": 1,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 127
+    },
+    {
+      "stack": "/tmp/u02d-control-u02b/native",
+      "label": "integrated",
+      "stage": 2,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 126
+    },
+    {
+      "stack": "/tmp/u02d-control-u02b/native",
+      "label": "reverse-order",
+      "stage": 1,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 160
+    },
+    {
+      "stack": "/tmp/u02d-control-u02b/native",
+      "label": "reverse-order",
+      "stage": 2,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 159
+    },
+    {
+      "stack": "/tmp/u02d-control-u02b/native",
+      "label": "segmented-joint",
+      "stage": 1,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 196
+    },
+    {
+      "stack": "/tmp/u02d-control-u02b/native",
+      "label": "segmented-joint",
+      "stage": 2,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 195
+    },
+    {
+      "stack": "docs/evidence/p0-u02b/native",
+      "label": "integrated",
+      "stage": 1,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 127
+    },
+    {
+      "stack": "docs/evidence/p0-u02b/native",
+      "label": "integrated",
+      "stage": 2,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 126
+    },
+    {
+      "stack": "docs/evidence/p0-u02b/native",
+      "label": "reverse-order",
+      "stage": 1,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 160
+    },
+    {
+      "stack": "docs/evidence/p0-u02b/native",
+      "label": "reverse-order",
+      "stage": 2,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 159
+    },
+    {
+      "stack": "docs/evidence/p0-u02b/native",
+      "label": "segmented-joint",
+      "stage": 1,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 196
+    },
+    {
+      "stack": "docs/evidence/p0-u02b/native",
+      "label": "segmented-joint",
+      "stage": 2,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 195
+    }
+  ],
+  "determinism": [
+    {
+      "label": "integrated",
+      "stage": 1,
+      "literal": true
+    },
+    {
+      "label": "integrated",
+      "stage": 2,
+      "literal": true
+    },
+    {
+      "label": "reverse-order",
+      "stage": 1,
+      "literal": true
+    },
+    {
+      "label": "reverse-order",
+      "stage": 2,
+      "literal": true
+    },
+    {
+      "label": "segmented-joint",
+      "stage": 1,
+      "literal": true
+    },
+    {
+      "label": "segmented-joint",
+      "stage": 2,
+      "literal": true
+    }
+  ],
+  "SQLStages": 12,
+  "SQLMaterialNegatives": 300,
+  "remoteWrites": 0,
+  "integratedImpossible": "SEARCH_EXHAUSTED, not an infeasibility certificate"
+}

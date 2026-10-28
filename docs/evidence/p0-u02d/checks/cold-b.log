@@ -1,0 +1,7 @@
+PASS entire native application migration ledger
+PASS real password login for five Auth identities
+PASS integrated: 27 obligations, competitor 1→26 and anchor/Vocal 4→23 through SQL
+PASS reverse-order: 27 obligations, competitor 1→26 and anchor/Vocal 4→23 through SQL
+PASS segmented-joint: five native authorities; original search exhaustion preserved
+PASS segmented-reverse: five native authorities; original search exhaustion preserved
+{"status":"PASS","evidence":"/tmp/u02d-cold-b/native/integration.json","remoteWrites":0}

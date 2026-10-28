@@ -12,7 +12,7 @@ export function dailyOperationalMealsAuthority(row:Record<string,any>){
 }
 export function operationalMealsCombinationSupported(input:EngineInput){
  return !!input.plannerNext&&!input.setupPolicies?.length&&!input.roundSynchronizations?.length&&(!input.technicalChains?.length||(hasDailyRequiredPhases(input)&&requiredPhaseCompositionSupported(input)))
-  &&!input.anchoredAccompaniments?.length&&!input.operationContinuityGroups?.length
+  &&(!input.anchoredAccompaniments?.length||requiredPhaseCompositionSupported(input))&&!input.operationContinuityGroups?.length
   &&!input.transportSettings;
 }
 export function withDailyOperationalMeals(input:EngineInput,raw:DailyOperationalMeals):EngineInput{

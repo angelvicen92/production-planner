@@ -1,0 +1,61 @@
+name: P0 U02d composed anchored REQUIRED SQL
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'engine/**'
+      - 'server/**'
+      - 'shared/**'
+      - 'supabase/migrations/**'
+      - 'script/demo/**'
+      - 'docs/evidence/p0-u02d/**/*.ts'
+      - 'docs/evidence/p0-u02d/**/*.py'
+      - '.github/workflows/p0-u02d-composed-anchored-required.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  composed-sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$task_browser_path" ]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+          fi
+      - run: npm run check && npm run check:migrations && npm run build
+      - run: npx --no-install tsc -p docs/evidence/p0-u02d/tsconfig.json
+      - run: >-
+          node --import tsx --test --test-concurrency=1
+          server/composedAnchoredRequired.spec.ts server/fixedItinerantPhaseComposition.spec.ts
+          server/requiredPhaseComposition.spec.ts server/technicalChainSql.spec.ts
+          server/dayConfiguration.spec.ts server/apiAuthorization.spec.ts
+          engine/planner-next/integration/nativeRealityComposition.spec.ts
+          script/demo/assistedSQLContracts.spec.ts script/demo/a2Preflight.spec.ts
+      - run: node --import tsx docs/evidence/p0-u02d/upgrade126.ts work/u02d-upgrade
+      - run: node --import tsx docs/evidence/p0-u02d/run.ts work/u02d-a
+      - run: node --import tsx docs/evidence/p0-u02d/run.ts work/u02d-b
+      - run: python3 docs/evidence/p0-u02d/verify.py work/u02d-a/native work/u02d-verify-a.json
+      - run: python3 docs/evidence/p0-u02d/verify.py work/u02d-b/native work/u02d-verify-b.json
+      - run: python3 docs/evidence/p0-u02d/determinism.py work/u02d-a/native work/u02d-b/native work/u02d-determinism.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: u02d-composed-sql
+          path: |
+            work/u02d-a/native/*.json
+            work/u02d-a/native/*.png
+            work/u02d-b/native/*.json
+            work/u02d-upgrade/native/*.json*
+            work/u02d-*.json
+          retention-days: 14

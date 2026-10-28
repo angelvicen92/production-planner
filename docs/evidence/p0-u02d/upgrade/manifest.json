@@ -1,0 +1,8 @@
+{
+  "base": "8821b493ddf1d75d6526880294980590fc802fc3",
+  "remoteWrites": 0,
+  "bootstrap": "docs/evidence/p0-u00s/integration/sql-gate.ts",
+  "bootstrapSha256": "44681afc0b4f50c51ea89e3b4d7524ff956ab0a79addfc629aa17791247ebd7d",
+  "executedCodeSha256": "e0e61ba07277d7db42679517c33a449726c05db89bb71f2a17a36bc6ae950064",
+  "migrationSha256": "c3a7dacf3218e1e00839937ded77cde3038e5cf643d1e8bf5cca6c95ca1b0879"
+}

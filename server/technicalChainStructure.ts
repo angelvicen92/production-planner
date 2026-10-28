@@ -16,17 +16,34 @@ export function withDailyTechnicalChains(input:EngineInput,structure:TechnicalCh
 }
 /** The certified physical intersection. Other structure families retain their guards. */
 export function requiredPhaseCompositionSupported(input:EngineInput) {
+  const anchors=input.anchoredAccompaniments??[],scopes=input.dailyTaskOperationScopes??[];
+  if(anchors.length&&![1,2].includes(input.dailyAnchoredAccompanimentsVersion??0))return false;
+  const structural=new Set([...(input.technicalChains??[]).flatMap(p=>p.orderedTaskIds),
+    ...(input.dailyJointGroups??[]).flatMap(g=>g.taskIds),...input.tasks.filter(t=>t.jointGroupId).map(t=>t.id)]);
+  const owned=new Set<number>();
+  for(const a of anchors){
+    if(!Array.isArray(a?.beforeTaskIds)||!Array.isArray(a?.afterTaskIds)||!input.tasks.some(t=>t.id===a.anchorTaskId&&t.plannerNextKind==='main'))return false;
+    for(const id of [...a.beforeTaskIds,a.anchorTaskId,...a.afterTaskIds]){
+      if(owned.has(id)||structural.has(id))return false;owned.add(id);
+    }
+  }
+  for(const s of scopes){
+    if(!Number.isInteger(s?.taskId)||!input.tasks.some(t=>t.id===s.taskId)||owned.has(s.taskId)||structural.has(s.taskId))return false;
+    owned.add(s.taskId);
+  }
   // Native Main intentionally omits the historical profile discriminant. Its
   // materialization diagnostics distinguish it from a legacy mainFlow payload.
   return !!input.plannerNext && input.plannerNext.searchPolicy==="EXACT_CONSTRUCTIVE"
     && (input.plannerNext.profile==="STANDALONE_ONLY"
       || !!input.plannerNext.mainFlow && Array.isArray(input.plannerNextMaterializationIssues)) && input.mealMode==="global_hard_break"
-    && !input.dailyTaskOperationScopes?.length && !input.roundSynchronizations?.length && !input.setupPolicies?.length
-    && !input.operationContinuityGroups?.length && !input.anchoredAccompaniments?.length && !input.transportSettings
+    && !input.roundSynchronizations?.length && !input.setupPolicies?.length
+    && !input.operationContinuityGroups?.length && !input.transportSettings
     && fixedItinerantCompositionSupported(input) && (!input.operationalMealPolicies?.length||input.dailyOperationalMealsVersion===1)
     && !input.tasks.filter(t=>t.status!=="cancelled").some(t=>t.setupFamilyId
       ||Object.keys(t.resourceRequirements?.byType??{}).length||t.resourceRequirements?.anyOf?.length
-      ||t.blocksSpace===false||t.agendaScope==="ITINERANT_UNIT"||t.allowsSpaceOverlap===true);
+      ||((t.blocksSpace===false||t.agendaScope==="ITINERANT_UNIT")
+        &&!input.anchoredAccompaniments?.some(a=>[...a.beforeTaskIds,...a.afterTaskIds].includes(t.id))
+        &&!input.dailyTaskOperationScopes?.some(s=>s.taskId===t.id))||t.allowsSpaceOverlap===true);
 }
 export function hasDailyRequiredPhases(input:EngineInput) {
   return input.dailyTechnicalChainsVersion===1 && !!input.technicalChains?.length && input.technicalChains.every(p=>!!p.phases);

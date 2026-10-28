@@ -1,0 +1,65 @@
+[
+  {
+    "attempt": "a",
+    "status": "FAIL",
+    "error": "AssertionError [ERR_ASSERTION]: {\"kind\":\"jointGroups\",\"response\":{\"status\":500,\"body\":{\"message\":\"column reference \\\"p.daily_anchored_accompaniments\\\" is ambiguous\"}}}\n\n500 !== 200\n\n    at journey (/tmp/u02d-a/source/docs/evidence/p0-u02d/journey.ts:175:12)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async <anonymous> (/tmp/u02d-a/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities"
+    ]
+  },
+  {
+    "attempt": "a2",
+    "status": "FAIL",
+    "error": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByLabel('Email', { exact: true })\u001b[22m\n\n    at journey (/tmp/u02d-a2/source/docs/evidence/p0-u02d/journey.ts:82:80)\n    at async <anonymous> (/tmp/u02d-a2/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities"
+    ]
+  },
+  {
+    "attempt": "a3",
+    "status": "FAIL",
+    "error": "AssertionError [ERR_ASSERTION]: {\"mode\":\"peer-asynchronous\",\"error\":{\"message\":\"itinerant team id must be a positive integer\"}}\n+ actual - expected\n\n+ undefined\n- 'P0001'\n\n    at compositionAttacks (/tmp/u02d-a3/source/docs/evidence/p0-u02d/attacks.ts:49:10)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async journey (/tmp/u02d-a3/source/docs/evidence/p0-u02d/journey.ts:218:37)\n    at async <anonymous> (/tmp/u02d-a3/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities"
+    ]
+  },
+  {
+    "attempt": "a4",
+    "status": "FAIL",
+    "error": "TypeError: Cannot read properties of undefined (reading 'map')\n    at compositionAttacks (/tmp/u02d-a4/source/docs/evidence/p0-u02d/attacks.ts:58:262)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async journey (/tmp/u02d-a4/source/docs/evidence/p0-u02d/journey.ts:218:37)\n    at async <anonymous> (/tmp/u02d-a4/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities"
+    ]
+  },
+  {
+    "attempt": "cold-a",
+    "status": "FAIL",
+    "error": "Error: SASL: SCRAM-SERVER-FIRST-MESSAGE: client password must be a string\n    at Object.continueSession (/workspace/production-planner/node_modules/pg/lib/crypto/sasl.js:36:11)\n    at Client._handleAuthSASLContinue (/workspace/production-planner/node_modules/pg/lib/client.js:276:18)\n    at Connection.emit (node:events:509:28)\n    at /workspace/production-planner/node_modules/pg/lib/connection.js:116:12\n    at Parser.parse (/workspace/production-planner/node_modules/pg-protocol/src/parser.ts:103:9)\n    at Socket.<anonymous> (/workspace/production-planner/node_modules/pg-protocol/src/index.ts:7:48)\n    at Socket.emit (node:events:509:28)\n    at addChunk (node:internal/streams/readable:563:12)\n    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)\n    at Readable.push (node:internal/streams/readable:394:5)",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities"
+    ]
+  },
+  {
+    "attempt": "cold-a2",
+    "status": "FAIL",
+    "error": "TypeError: Cannot read properties of undefined (reading 'snapshot_json')\n    at journey (/tmp/u02d-cold-a2/source/docs/evidence/p0-u02d/journey.ts:241:222)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async <anonymous> (/tmp/u02d-cold-a2/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities"
+    ]
+  },
+  {
+    "attempt": "control-u00x-browser-not-selected",
+    "status": "FAIL",
+    "error": "browserType.launch: Executable doesn't exist at /home/agent/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell\n\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557\n\u2551 Looks like Playwright was just installed or updated.       \u2551\n\u2551 Please run the following command to download new browsers: \u2551\n\u2551                                                            \u2551\n\u2551     npx playwright install                                 \u2551\n\u2551                                                            \u2551\n\u2551 <3 Playwright Team                                         \u2551\n\u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d\n    at journey (/tmp/u02d-control-u00x/source/docs/evidence/p0-u00x/journey.ts:17:31)\n    at async <anonymous> (/tmp/u02d-control-u00x/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities"
+    ]
+  }
+]

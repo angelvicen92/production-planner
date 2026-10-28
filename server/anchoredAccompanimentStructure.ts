@@ -1,4 +1,5 @@
 import type {EngineInput} from '../engine/types';
+import {hasDailyRequiredPhases,requiredPhaseCompositionSupported} from './technicalChainStructure';
 import {anchoredAccompanimentStructureSchema,persistedAnchoredAccompanimentStructureSchema,anchoredPolicyUnitIds,type AnchoredAccompanimentStructure} from '../shared/anchoredAccompanimentStructure';
 const defect=(s:string)=>Object.assign(new Error(s),{status:422});
 export function dailyAnchoredAuthority(row:Record<string,any>){
@@ -8,9 +9,10 @@ export function dailyAnchoredAuthority(row:Record<string,any>){
  return parsed.data;
 }
 export function anchoredCombinationSupported(input:EngineInput){
- return input.plannerNext?.profile!=='STANDALONE_ONLY'&&!!input.plannerNext?.mainFlow&&!input.setupPolicies?.length
+ return input.plannerNext?.profile!=='STANDALONE_ONLY'&&!!input.plannerNext?.mainFlow&&((requiredPhaseCompositionSupported(input)
+  &&(!input.technicalChains?.length||hasDailyRequiredPhases(input)))||!input.setupPolicies?.length
   &&!input.roundSynchronizations?.length&&!input.technicalChains?.length&&!input.operationContinuityGroups?.length
-  &&!input.operationalMealPolicies?.length&&!input.transportSettings&&!input.tasks.some(t=>t.jointGroupId||t.setupFamilyId);
+  &&!input.operationalMealPolicies?.length&&!input.transportSettings&&!input.tasks.some(t=>t.jointGroupId||t.setupFamilyId));
 }
 export function withDailyAnchoredAccompaniments(input:EngineInput,raw:AnchoredAccompanimentStructure,declarations?:ReadonlyMap<number,number[]>):EngineInput{
  const structure=anchoredAccompanimentStructureSchema.parse(raw);
@@ -45,12 +47,14 @@ export function withDailyAnchoredAccompaniments(input:EngineInput,raw:AnchoredAc
    itinerantTeamRequirement:fixed===null?'any' as const:'specific' as const,itinerantTeamId:fixed,allowedItinerantTeamIds:domain,
    ...(t.id===p.anchorTaskId?{agendaScope:'PHYSICAL_SPACE' as const,resourceInheritance:'LOCATION' as const}:{blocksSpace:false,agendaScope:'ITINERANT_UNIT' as const,resourceInheritance:'OPERATION_ONLY' as const})};
  });
- return {...input,tasks,dailyAnchoredAccompanimentsVersion:structure.policies.length?structure.contractVersion:undefined,
+ const next:EngineInput={...input,tasks,dailyAnchoredAccompanimentsVersion:structure.policies.length?structure.contractVersion:undefined,
   anchoredAccompaniments:structure.policies.length?structure.policies.map(p=>({id:p.id,anchorTaskId:p.anchorTaskId,beforeTaskIds:p.beforeTaskIds,afterTaskIds:p.afterTaskIds,adjacency:p.adjacency,internalTransition:p.internalTransition,resourceContinuity:p.resourceContinuity})):undefined,
   // The only UNSUPPORTED_TASK_ROLE issue on a real Main is this profile's unit gate.
   // All other role, resource, dependency and coach defects remain authoritative.
   plannerNextMaterializationIssues:input.plannerNextMaterializationIssues?.filter(i=>!(i.code==='UNSUPPORTED_TASK_ROLE'&&structure.policies.some(p=>p.anchorTaskId===i.taskId))),
  };
+ if((input.technicalChains?.length||input.dailyJointGroups?.length||input.operationalMealPolicies?.length)&&!requiredPhaseCompositionSupported(next))throw defect('UNSUPPORTED_ANCHORED_COMBINATION');
+ return next;
 }
 export function applyDailyAnchoredAccompaniments(input:EngineInput,row:Record<string,any>,replay?:Record<string,any>):EngineInput{
  const raw=dailyAnchoredAuthority(row);if(!raw)return input;
