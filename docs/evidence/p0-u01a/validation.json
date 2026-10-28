@@ -1,0 +1,83 @@
+{
+  "status": "PASS_DIAGNOSTIC_GATE",
+  "functionalPhaseComposition": "BLOCKED_NOT_IMPLEMENTED",
+  "base": "8d521a3c8356e311609467f70d312b5f44aef6df",
+  "changedProductFiles": 0,
+  "newMigrations": 0,
+  "unmodifiedMigrationFilesAppliedInDisposableDatabases": 124,
+  "latestMigration": 121,
+  "node": "v24.19.0",
+  "postgres": "17.11",
+  "remoteApplicationWrites": 0,
+  "realSupabaseAccess": false,
+  "globalSuitesRun": false,
+  "a2FullRun": false,
+  "checks": {
+    "scopedTypeScript": {
+      "status": "PASS",
+      "log": "checks/typescript.log"
+    },
+    "focalProductSpecFiles": {
+      "status": "PASS",
+      "files": [
+        "engine/planner-next/technicalChains.spec.ts",
+        "engine/planner-next/operationContinuity.spec.ts",
+        "server/technicalChainStructure.spec.ts",
+        "server/operationContinuity.spec.ts"
+      ],
+      "reportedFilesPassed": 4,
+      "log": "checks/focal.log"
+    },
+    "freshDisposableStacks": {
+      "passed": 2,
+      "seconds": [
+        34.957,
+        35.231
+      ],
+      "obligationsPerPositive": 15,
+      "genuineStagesPerPositive": 2,
+      "phaseStages": 0,
+      "controlNegative": "NO_PROPOSAL / 6 branches / no new Stage"
+    },
+    "physicalAndDeterminism": {
+      "status": "PASS",
+      "evidence": "verification.json",
+      "nativeComparison": "Exact proposal, physical witness, work counters and SQL snapshot fingerprint across databases; no ID/time normalization.",
+      "memoryReplayCount": 9,
+      "memorySecondsForEarlierIdenticalEightProbeReplay": 2.092
+    },
+    "memoryPositive": {
+      "branches": 81,
+      "limit": 10000,
+      "backtracks": 0,
+      "globalHardValid": true,
+      "phaseRepresentatives": 7,
+      "individualPhaseObligations": 8,
+      "totalIndividualObligations": 15,
+      "sqlCertified": false
+    },
+    "firstAPIRejection": {
+      "status": 400,
+      "message": "Unrecognized key(s) in object: 'phases'",
+      "function": "dailyTechnicalChainPolicySchema.strict \u2192 dayConfigEditSchema parse"
+    },
+    "nextGuard": {
+      "status": 422,
+      "message": "UNSUPPORTED_TECHNICAL_CHAIN_COMBINATION"
+    },
+    "certificateLoss": {
+      "function": "certifyDailyTechnicalChain",
+      "status": "INVALID",
+      "reason": "OPERATIONAL_MEAL_VIOLATION",
+      "globalWitnessWithAllChannelsValid": true
+    }
+  },
+  "limitations": [
+    "No phase authority persisted, safeProposal, Draft or SQL Stage certified for phases.",
+    "No general composition with scopes/itinerant units, nominal alternatives, setup, rounds, anchors or transport demonstrated.",
+    "No regression claim beyond proportional focal checks and fresh supported profile; historical A2 untouched.",
+    "Node 20 CI environment not executed locally."
+  ],
+  "noMerge": true,
+  "noDeployment": true
+}

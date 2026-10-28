@@ -1,0 +1,15 @@
+# Autoridades consultadas y límites de la auditoría
+
+- `AGENTS.md` y Master, «Gate P0 de composición transversal y avance integrado»: jornada creciente por UI/API, matriz sin transitividad y primer rechazo/contrafactual antes de implementar. U01a aplica el gate y no eleva el estado del producto.
+- Fuente 00 v2.15: autoridad por ámbito, estado implementado comprobado en main y conservación de identidad/HARD. La versión de 01 vigente es v5.4; las menciones históricas de versiones previas dentro de las Fuentes no crean otra autoridad.
+- Fuente 01 v5.4, §§3–9 y 7A: obligaciones individuales/conjuntas, recursos efectivos, snapshots, Stage completo, protección y autoridad humana; operaciones técnicas sin participante son válidas cuando se declaran, no sustituyen tareas con participante.
+- Fuente 03 v3.8, actualización v3.3–3.5, scopes, §10.3.3 y operaciones técnicas: fases parcialmente ordenadas, geometría antes de asignación cuando corresponde, no inventar precedencia, supporting efímero y witness global antes de comprometer futuro. El perfil standalone con recursos/identidades fijas no ejecuta el matcher Main por analogía.
+- Fuente 04 v2.9, §§1–6 y 9–12: General→snapshot→override→EngineInput→propuesta→Draft→Stage, disponibilidad y ocupaciones explícitas, revisión/CAS/fingerprint, protección, no degradar un contrato no representable. Se reutilizan los canales existentes y no se reescribe 088 ni el histórico.
+- Fuente 05 v2.8, actualizaciones de supporting/orden parcial y gates §§3–5: distinguir representabilidad, factibilidad, scope completo, Stage y continuación; pruebas de ambos canales y determinismo. El cambio de Evidence no justifica suite global/A2 Full; el delta funcional posterior necesitará su propio gate.
+- Fuente 06 v2.10, §4.1: referencia de exigencia 3/2/2 y conjunta indivisible, con cierres posteriores fuera de continuidad. No aporta arquitectura específica, nombres, horario, placements ni fixtures al experimento.
+- Fuente 07 v2.3, §4.4 y §10: hipótesis X/Y/Z/W/M, call path material, comparación causal, distinguir agotamiento de inviabilidad y no añadir otra capa sin evidencia.
+- `docs/architecture/PLANNER_CAPABILITY_CATALOG.md`: DEP-04/05, SPA, RES y Assisted orientan hacia `technicalChains`, joint groups, scope y certificados existentes. Es inventario descriptivo; se verifica el código vigente y no se toma su texto histórico sobre closure como estado actual.
+- U00y: `README`, `authority-audit`, `a2-ui-inventory`, `next-gap` y runner/consumidor. U00z: `README`, `composition-matrix`, `a2-ui-inventory`, `next-gap`, runner y autoridad de pausa. Se mantienen sus combinaciones certificadas, sin importar sus inputs ni convertir sus rechazos antiguos en el primer fallo de este main.
+- `PLANNER_CAUSAL_DIAGNOSTIC_PROTOCOL.md`: se consulta al conservar el control de representación serial agotada. No se cambia búsqueda. El positivo usa accounting actual y no extrapola un diagnóstico A2 histórico.
+
+`source-binding.json` conserva hashes de las autoridades y fuentes productivas focales. Los manifiestos de ejecución fijan todas las fuentes productivas ejecutadas y el ledger aplicado en descartables.

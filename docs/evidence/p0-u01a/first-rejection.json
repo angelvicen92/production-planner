@@ -1,0 +1,60 @@
+{
+  "source": "Authentic HTTP receipt from native/receipts.json.gz: api-receipts.json",
+  "receipt": {
+    "path": "/api/plans/1/day-configuration",
+    "method": "PUT",
+    "request": {
+      "technicalChains": {
+        "contractVersion": 1,
+        "policies": [
+          {
+            "id": "required-unit",
+            "orderedTaskIds": [
+              2,
+              7,
+              12,
+              3,
+              8,
+              4,
+              13
+            ],
+            "phases": [
+              [
+                2,
+                7,
+                12
+              ],
+              [
+                3,
+                8
+              ],
+              [
+                4,
+                13
+              ]
+            ],
+            "adjacency": "REQUIRED",
+            "resourceContinuity": "REQUIRED",
+            "requiredResourceIds": [
+              1
+            ]
+          }
+        ]
+      },
+      "expectedRevisionId": 5
+    },
+    "response": {
+      "status": 400,
+      "body": {
+        "message": "Unrecognized key(s) in object: 'phases'"
+      }
+    }
+  },
+  "beforeAfterStateExactlyEqual": true,
+  "stateEvidence": "integrated-rejection-state-unchanged.json",
+  "classification": "CONTRACT_NOT_REPRESENTABLE",
+  "firstFunction": "dailyTechnicalChainPolicySchema.strict (shared/technicalChainStructure.ts)",
+  "beforeDailyAuthorityService": true,
+  "solverReached": false,
+  "proposalOrPhaseStageCreated": false
+}
