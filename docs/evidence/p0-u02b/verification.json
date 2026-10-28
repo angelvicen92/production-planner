@@ -1,0 +1,137 @@
+{
+  "status": "PASS",
+  "physical": [
+    {
+      "stack": "work/p0-u02b/cold-a2/native",
+      "label": "integrated",
+      "stage": 1,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 127
+    },
+    {
+      "stack": "work/p0-u02b/cold-a2/native",
+      "label": "integrated",
+      "stage": 2,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 126
+    },
+    {
+      "stack": "work/p0-u02b/cold-a2/native",
+      "label": "reverse-order",
+      "stage": 1,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 160
+    },
+    {
+      "stack": "work/p0-u02b/cold-a2/native",
+      "label": "reverse-order",
+      "stage": 2,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 159
+    },
+    {
+      "stack": "work/p0-u02b/cold-a2/native",
+      "label": "segmented-joint",
+      "stage": 1,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 196
+    },
+    {
+      "stack": "work/p0-u02b/cold-a2/native",
+      "label": "segmented-joint",
+      "stage": 2,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 195
+    },
+    {
+      "stack": "work/p0-u02b/cold-b2/native",
+      "label": "integrated",
+      "stage": 1,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 127
+    },
+    {
+      "stack": "work/p0-u02b/cold-b2/native",
+      "label": "integrated",
+      "stage": 2,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 126
+    },
+    {
+      "stack": "work/p0-u02b/cold-b2/native",
+      "label": "reverse-order",
+      "stage": 1,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 160
+    },
+    {
+      "stack": "work/p0-u02b/cold-b2/native",
+      "label": "reverse-order",
+      "stage": 2,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 159
+    },
+    {
+      "stack": "work/p0-u02b/cold-b2/native",
+      "label": "segmented-joint",
+      "stage": 1,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 196
+    },
+    {
+      "stack": "work/p0-u02b/cold-b2/native",
+      "label": "segmented-joint",
+      "stage": 2,
+      "obligations": 24,
+      "physicalOperations": 23,
+      "branches": 195
+    }
+  ],
+  "determinism": [
+    {
+      "label": "integrated",
+      "stage": 1,
+      "literal": true
+    },
+    {
+      "label": "integrated",
+      "stage": 2,
+      "literal": true
+    },
+    {
+      "label": "reverse-order",
+      "stage": 1,
+      "literal": true
+    },
+    {
+      "label": "reverse-order",
+      "stage": 2,
+      "literal": true
+    },
+    {
+      "label": "segmented-joint",
+      "stage": 1,
+      "literal": true
+    },
+    {
+      "label": "segmented-joint",
+      "stage": 2,
+      "literal": true
+    }
+  ],
+  "SQLStages": 12,
+  "SQLMaterialNegatives": 300,
+  "remoteWrites": 0,
+  "integratedImpossible": "SEARCH_EXHAUSTED, not an infeasibility certificate"
+}

@@ -16,7 +16,11 @@ export function withDailyTechnicalChains(input:EngineInput,structure:TechnicalCh
 }
 /** The certified physical intersection. Other structure families retain their guards. */
 export function requiredPhaseCompositionSupported(input:EngineInput) {
-  return input.plannerNext?.profile==="STANDALONE_ONLY" && input.mealMode==="global_hard_break"
+  // Native Main intentionally omits the historical profile discriminant. Its
+  // materialization diagnostics distinguish it from a legacy mainFlow payload.
+  return !!input.plannerNext && input.plannerNext.searchPolicy==="EXACT_CONSTRUCTIVE"
+    && (input.plannerNext.profile==="STANDALONE_ONLY"
+      || !!input.plannerNext.mainFlow && Array.isArray(input.plannerNextMaterializationIssues)) && input.mealMode==="global_hard_break"
     && !input.dailyTaskOperationScopes?.length && !input.roundSynchronizations?.length && !input.setupPolicies?.length
     && !input.operationContinuityGroups?.length && !input.anchoredAccompaniments?.length && !input.transportSettings
     && fixedItinerantCompositionSupported(input) && (!input.operationalMealPolicies?.length||input.dailyOperationalMealsVersion===1)

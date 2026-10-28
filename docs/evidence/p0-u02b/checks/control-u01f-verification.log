@@ -1,0 +1,1 @@
+{"status": "PASS", "SQLStages": 32, "itinerantStages": 24, "SQLNegatives": 648, "remoteWrites": 0, "impossibleCapacity": {"demand": 55, "available": 40, "branches": 4278}}

@@ -1,0 +1,492 @@
+{
+  "status": "PASS",
+  "physical": [
+    {
+      "base": "work/p0-u02b/control-u01d/native",
+      "label": "mixed",
+      "stage": 1,
+      "accepted": 1,
+      "globalObligations": 17,
+      "physicalOperations": 16,
+      "branches": 83,
+      "phaseOrder": [
+        [
+          "task:7",
+          "task:12",
+          "task:2"
+        ],
+        [
+          "task:3",
+          "task:8"
+        ],
+        [
+          "task:4",
+          "task:13"
+        ]
+      ]
+    },
+    {
+      "base": "work/p0-u02b/control-u01d/native",
+      "label": "mixed",
+      "stage": 2,
+      "accepted": 17,
+      "globalObligations": 17,
+      "physicalOperations": 16,
+      "branches": 82,
+      "phaseOrder": [
+        [
+          "task:7",
+          "task:12",
+          "task:2"
+        ],
+        [
+          "task:3",
+          "task:8"
+        ],
+        [
+          "task:4",
+          "task:13"
+        ]
+      ]
+    },
+    {
+      "base": "work/p0-u02b/control-u01d/native",
+      "label": "second",
+      "stage": 1,
+      "accepted": 1,
+      "globalObligations": 12,
+      "physicalOperations": 11,
+      "branches": 47,
+      "phaseOrder": [
+        [
+          "task:19",
+          "task:24"
+        ],
+        [
+          "task:20",
+          "task:25",
+          "task:21"
+        ]
+      ]
+    },
+    {
+      "base": "work/p0-u02b/control-u01d/native",
+      "label": "second",
+      "stage": 2,
+      "accepted": 12,
+      "globalObligations": 12,
+      "physicalOperations": 11,
+      "branches": 46,
+      "phaseOrder": [
+        [
+          "task:19",
+          "task:24"
+        ],
+        [
+          "task:20",
+          "task:25",
+          "task:21"
+        ]
+      ]
+    },
+    {
+      "base": "work/p0-u02b/control-u01d/native",
+      "label": "common",
+      "stage": 1,
+      "accepted": 1,
+      "globalObligations": 17,
+      "physicalOperations": 16,
+      "branches": 83,
+      "phaseOrder": [
+        [
+          "task:31",
+          "task:36",
+          "task:41"
+        ],
+        [
+          "task:32",
+          "task:37"
+        ],
+        [
+          "task:33",
+          "task:42"
+        ]
+      ]
+    },
+    {
+      "base": "work/p0-u02b/control-u01d/native",
+      "label": "common",
+      "stage": 2,
+      "accepted": 17,
+      "globalObligations": 17,
+      "physicalOperations": 16,
+      "branches": 82,
+      "phaseOrder": [
+        [
+          "task:31",
+          "task:36",
+          "task:41"
+        ],
+        [
+          "task:32",
+          "task:37"
+        ],
+        [
+          "task:33",
+          "task:42"
+        ]
+      ]
+    },
+    {
+      "base": "docs/evidence/p0-u01d/native",
+      "label": "mixed",
+      "stage": 1,
+      "accepted": 1,
+      "globalObligations": 17,
+      "physicalOperations": 16,
+      "branches": 83,
+      "phaseOrder": [
+        [
+          "task:7",
+          "task:12",
+          "task:2"
+        ],
+        [
+          "task:3",
+          "task:8"
+        ],
+        [
+          "task:4",
+          "task:13"
+        ]
+      ]
+    },
+    {
+      "base": "docs/evidence/p0-u01d/native",
+      "label": "mixed",
+      "stage": 2,
+      "accepted": 17,
+      "globalObligations": 17,
+      "physicalOperations": 16,
+      "branches": 82,
+      "phaseOrder": [
+        [
+          "task:7",
+          "task:12",
+          "task:2"
+        ],
+        [
+          "task:3",
+          "task:8"
+        ],
+        [
+          "task:4",
+          "task:13"
+        ]
+      ]
+    },
+    {
+      "base": "docs/evidence/p0-u01d/native",
+      "label": "second",
+      "stage": 1,
+      "accepted": 1,
+      "globalObligations": 12,
+      "physicalOperations": 11,
+      "branches": 47,
+      "phaseOrder": [
+        [
+          "task:19",
+          "task:24"
+        ],
+        [
+          "task:20",
+          "task:25",
+          "task:21"
+        ]
+      ]
+    },
+    {
+      "base": "docs/evidence/p0-u01d/native",
+      "label": "second",
+      "stage": 2,
+      "accepted": 12,
+      "globalObligations": 12,
+      "physicalOperations": 11,
+      "branches": 46,
+      "phaseOrder": [
+        [
+          "task:19",
+          "task:24"
+        ],
+        [
+          "task:20",
+          "task:25",
+          "task:21"
+        ]
+      ]
+    },
+    {
+      "base": "docs/evidence/p0-u01d/native",
+      "label": "common",
+      "stage": 1,
+      "accepted": 1,
+      "globalObligations": 17,
+      "physicalOperations": 16,
+      "branches": 83,
+      "phaseOrder": [
+        [
+          "task:31",
+          "task:36",
+          "task:41"
+        ],
+        [
+          "task:32",
+          "task:37"
+        ],
+        [
+          "task:33",
+          "task:42"
+        ]
+      ]
+    },
+    {
+      "base": "docs/evidence/p0-u01d/native",
+      "label": "common",
+      "stage": 2,
+      "accepted": 17,
+      "globalObligations": 17,
+      "physicalOperations": 16,
+      "branches": 82,
+      "phaseOrder": [
+        [
+          "task:31",
+          "task:36",
+          "task:41"
+        ],
+        [
+          "task:32",
+          "task:37"
+        ],
+        [
+          "task:33",
+          "task:42"
+        ]
+      ]
+    }
+  ],
+  "determinism": [
+    {
+      "label": "mixed",
+      "stage": 1,
+      "proposal": true,
+      "witness": true,
+      "work": true,
+      "SQLFingerprint": true,
+      "normalization": false
+    },
+    {
+      "label": "mixed",
+      "stage": 2,
+      "proposal": true,
+      "witness": true,
+      "work": true,
+      "SQLFingerprint": true,
+      "normalization": false
+    },
+    {
+      "label": "second",
+      "stage": 1,
+      "proposal": true,
+      "witness": true,
+      "work": true,
+      "SQLFingerprint": true,
+      "normalization": false
+    },
+    {
+      "label": "second",
+      "stage": 2,
+      "proposal": true,
+      "witness": true,
+      "work": true,
+      "SQLFingerprint": true,
+      "normalization": false
+    },
+    {
+      "label": "common",
+      "stage": 1,
+      "proposal": true,
+      "witness": true,
+      "work": true,
+      "SQLFingerprint": true,
+      "normalization": false
+    },
+    {
+      "label": "common",
+      "stage": 2,
+      "proposal": true,
+      "witness": true,
+      "work": true,
+      "SQLFingerprint": true,
+      "normalization": false
+    }
+  ],
+  "remoteWrites": 0,
+  "negativeBranches": [
+    4278,
+    4278
+  ],
+  "release": [
+    {
+      "stack": "work/p0-u02b/control-u01d/native",
+      "emptySetAllowsA": true,
+      "declaredCommonAProhibitsCompetition": true,
+      "sqlConsumer": true
+    },
+    {
+      "stack": "docs/evidence/p0-u01d/native",
+      "emptySetAllowsA": true,
+      "declaredCommonAProhibitsCompetition": true,
+      "sqlConsumer": true
+    }
+  ],
+  "materialRejectionCount": 142,
+  "authenticityRejectionCount": 36,
+  "materialRejectionsByMode": {
+    "bad-fingerprint": {
+      "count": 12,
+      "errors": [
+        "ANCHORED_AUTHENTIC_PROPOSAL_REQUIRED"
+      ],
+      "consumer": "assert_daily_technical_chain_snapshot",
+      "hashesRecomputed": false
+    },
+    "dependency": {
+      "count": 12,
+      "errors": [
+        "ANCHORED_WITNESS_DEPENDENCY"
+      ],
+      "consumer": "assert_daily_technical_chain_snapshot",
+      "hashesRecomputed": true
+    },
+    "duplicate-resource": {
+      "count": 6,
+      "errors": [
+        "ANCHORED_WITNESS_RESOURCE_CONFLICT"
+      ],
+      "consumer": "assert_daily_technical_chain_snapshot",
+      "hashesRecomputed": true
+    },
+    "false-release": {
+      "count": 12,
+      "errors": [
+        "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+      ],
+      "consumer": "assert_daily_technical_chain_snapshot",
+      "hashesRecomputed": true
+    },
+    "future-incomplete": {
+      "count": 12,
+      "errors": [
+        "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      ],
+      "consumer": "assert_daily_technical_chain_snapshot",
+      "hashesRecomputed": true
+    },
+    "harmful-prefix": {
+      "count": 6,
+      "errors": [
+        "ANCHORED_WITNESS_RESOURCE_CONFLICT"
+      ],
+      "consumer": "assert_daily_technical_chain_snapshot",
+      "hashesRecomputed": true
+    },
+    "invent-resource": {
+      "count": 8,
+      "errors": [
+        "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+      ],
+      "consumer": "assert_daily_technical_chain_snapshot",
+      "hashesRecomputed": true
+    },
+    "omit-task-resource": {
+      "count": 12,
+      "errors": [
+        "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+      ],
+      "consumer": "assert_daily_technical_chain_snapshot",
+      "hashesRecomputed": true
+    },
+    "pause-absent": {
+      "count": 12,
+      "errors": [
+        "OPERATIONAL_MEAL_GLOBAL_WITNESS_REQUIRED"
+      ],
+      "consumer": "assert_daily_technical_chain_snapshot",
+      "hashesRecomputed": true
+    },
+    "pause-altered": {
+      "count": 12,
+      "errors": [
+        "OPERATIONAL_MEAL_MATERIAL_INVALID"
+      ],
+      "consumer": "assert_daily_technical_chain_snapshot",
+      "hashesRecomputed": true
+    },
+    "peer-asynchronous": {
+      "count": 12,
+      "errors": [
+        "JOINT_SYNCHRONIZATION"
+      ],
+      "consumer": "assert_daily_technical_chain_snapshot",
+      "hashesRecomputed": true
+    },
+    "peer-omitted": {
+      "count": 12,
+      "errors": [
+        "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      ],
+      "consumer": "assert_daily_technical_chain_snapshot",
+      "hashesRecomputed": true
+    },
+    "phase-gap": {
+      "count": 12,
+      "errors": [
+        "TECHNICAL_CHAIN_PHASE_GAP"
+      ],
+      "consumer": "assert_daily_technical_chain_snapshot",
+      "hashesRecomputed": true
+    },
+    "phase-order": {
+      "count": 8,
+      "errors": [
+        "TECHNICAL_CHAIN_PHASE_ORDER"
+      ],
+      "consumer": "assert_daily_technical_chain_snapshot",
+      "hashesRecomputed": true
+    },
+    "protected-decision": {
+      "count": 6,
+      "errors": [
+        "ANCHORED_PROTECTED_DECISIONS"
+      ],
+      "consumer": "assert_daily_technical_chain_snapshot",
+      "hashesRecomputed": true
+    },
+    "stale-replay": {
+      "count": 12,
+      "errors": [
+        "STALE_TECHNICAL_CHAIN_REPLAY"
+      ],
+      "consumer": "assert_daily_technical_chain_snapshot",
+      "hashesRecomputed": true
+    },
+    "wrong-run": {
+      "count": 12,
+      "errors": [
+        "TECHNICAL_CHAIN_FUTURE_CERTIFICATE_REQUIRED"
+      ],
+      "consumer": "assert_daily_technical_chain_snapshot",
+      "hashesRecomputed": true
+    }
+  }
+}

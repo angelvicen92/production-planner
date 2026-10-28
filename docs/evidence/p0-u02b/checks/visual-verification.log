@@ -1,0 +1,1 @@
+{"status": "PASS", "SQLStages": 12, "SQLMaterialNegatives": 300, "remoteWrites": 0, "integratedImpossible": "SEARCH_EXHAUSTED, not an infeasibility certificate"}

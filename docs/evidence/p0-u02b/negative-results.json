@@ -1,0 +1,146 @@
+{
+  "errors": {
+    "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED": 24,
+    "JOINT_SYNCHRONIZATION": 12,
+    "TECHNICAL_CHAIN_PHASE_ORDER": 8,
+    "TECHNICAL_CHAIN_PHASE_GAP": 8,
+    "ANCHORED_WITNESS_RESOURCE_CONFLICT": 28,
+    "ANCHORED_WITNESS_DEPENDENCY": 24,
+    "OPERATIONAL_MEAL_GLOBAL_WITNESS_REQUIRED": 12,
+    "OPERATIONAL_MEAL_MATERIAL_INVALID": 12,
+    "ANCHORED_WITNESS_PHYSICAL_RESOURCES": 60,
+    "STALE_TECHNICAL_CHAIN_REPLAY": 12,
+    "ANCHORED_AUTHENTIC_PROPOSAL_REQUIRED": 24,
+    "TECHNICAL_CHAIN_FUTURE_CERTIFICATE_REQUIRED": 12,
+    "ANCHORED_WITNESS_PARTICIPANT_CONFLICT": 12,
+    "ANCHORED_WITNESS_RESOURCE_AVAILABILITY": 24,
+    "ANCHORED_UNIT_NOT_ELIGIBLE": 24,
+    "ANCHORED_WITNESS_DOMAIN": 12,
+    "OPERATIONAL_MEAL_PHYSICAL_CONFLICT": 6,
+    "STALE_DRAFT": 12,
+    "STALE_BASE_STAGE": 12,
+    "STALE_OBLIGATION_SOURCES": 12,
+    "ANCHORED_PROTECTED_DECISIONS": 12,
+    "ANCHORED_SELECTION_SNAPSHOT_MISMATCH": 6,
+    "ANCHORED_UNIT_UNAVAILABLE": 4
+  },
+  "modes": {
+    "peer-omitted": [
+      "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+    ],
+    "peer-asynchronous": [
+      "JOINT_SYNCHRONIZATION"
+    ],
+    "phase-order": [
+      "TECHNICAL_CHAIN_PHASE_ORDER"
+    ],
+    "phase-gap": [
+      "TECHNICAL_CHAIN_PHASE_GAP"
+    ],
+    "duplicate-resource": [
+      "ANCHORED_WITNESS_RESOURCE_CONFLICT"
+    ],
+    "dependency": [
+      "ANCHORED_WITNESS_DEPENDENCY"
+    ],
+    "pause-absent": [
+      "OPERATIONAL_MEAL_GLOBAL_WITNESS_REQUIRED"
+    ],
+    "pause-altered": [
+      "OPERATIONAL_MEAL_MATERIAL_INVALID"
+    ],
+    "omit-task-resource": [
+      "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+    ],
+    "invent-resource": [
+      "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+    ],
+    "false-release": [
+      "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+    ],
+    "future-incomplete": [
+      "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+    ],
+    "stale-replay": [
+      "STALE_TECHNICAL_CHAIN_REPLAY"
+    ],
+    "harmful-prefix": [
+      "ANCHORED_WITNESS_RESOURCE_CONFLICT"
+    ],
+    "bad-fingerprint": [
+      "ANCHORED_AUTHENTIC_PROPOSAL_REQUIRED"
+    ],
+    "wrong-run": [
+      "TECHNICAL_CHAIN_FUTURE_CERTIFICATE_REQUIRED"
+    ],
+    "coach-double": [
+      "ANCHORED_WITNESS_RESOURCE_CONFLICT"
+    ],
+    "vocal-main-dependency": [
+      "ANCHORED_WITNESS_DEPENDENCY"
+    ],
+    "participant-overlap": [
+      "ANCHORED_WITNESS_PARTICIPANT_CONFLICT"
+    ],
+    "coach-unavailable": [
+      "ANCHORED_WITNESS_RESOURCE_AVAILABILITY"
+    ],
+    "unit-not-eligible": [
+      "ANCHORED_UNIT_NOT_ELIGIBLE"
+    ],
+    "unit-identity": [
+      "ANCHORED_UNIT_NOT_ELIGIBLE"
+    ],
+    "unit-domain": [
+      "ANCHORED_WITNESS_DOMAIN"
+    ],
+    "member-omitted": [
+      "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+    ],
+    "member-invented": [
+      "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+    ],
+    "resource-unavailable": [
+      "ANCHORED_WITNESS_RESOURCE_AVAILABILITY"
+    ],
+    "rest-invaded": [
+      "ANCHORED_PROTECTED_DECISIONS",
+      "OPERATIONAL_MEAL_PHYSICAL_CONFLICT"
+    ],
+    "wrong-CAS": [
+      "STALE_DRAFT"
+    ],
+    "stale-base": [
+      "STALE_BASE_STAGE"
+    ],
+    "forged-source": [
+      "STALE_OBLIGATION_SOURCES"
+    ],
+    "forged-Draft": [
+      "ANCHORED_AUTHENTIC_PROPOSAL_REQUIRED"
+    ],
+    "protected-decision": [
+      "ANCHORED_PROTECTED_DECISIONS"
+    ],
+    "draft-resource-lie": [
+      "ANCHORED_SELECTION_SNAPSHOT_MISMATCH"
+    ],
+    "shared-A-overlap": [
+      "ANCHORED_WITNESS_RESOURCE_CONFLICT"
+    ],
+    "unit-unavailable": [
+      "ANCHORED_UNIT_UNAVAILABLE"
+    ]
+  },
+  "physicalClaimsExclude": [
+    "bad-fingerprint",
+    "wrong-run",
+    "stale-replay",
+    "protected-decision",
+    "wrong-CAS",
+    "stale-base",
+    "forged-source",
+    "forged-Draft"
+  ],
+  "allMutationsRolledBack": true
+}
