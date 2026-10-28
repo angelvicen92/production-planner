@@ -1,0 +1,109 @@
+{
+  "status": "PASS",
+  "separateProcesses": 0,
+  "sameInputs": true,
+  "newSQLStacksCompared": true,
+  "acceptedIntegratedStages": 0,
+  "results": [
+    {
+      "label": "integrated",
+      "scope": "full",
+      "literalDecisionsWitnessWork": true
+    },
+    {
+      "label": "integrated",
+      "scope": "partial",
+      "literalDecisionsWitnessWork": true
+    },
+    {
+      "label": "integrated",
+      "scope": "continuation",
+      "literalDecisionsWitnessWork": true
+    },
+    {
+      "label": "integrated",
+      "scope": "anchor-partial",
+      "literalDecisionsWitnessWork": true
+    },
+    {
+      "label": "integrated",
+      "scope": "anchor-continuation",
+      "literalDecisionsWitnessWork": true
+    },
+    {
+      "label": "integrated",
+      "scope": "supporting-scope",
+      "literalDecisionsWitnessWork": true
+    },
+    {
+      "label": "reverse-order",
+      "scope": "full",
+      "literalDecisionsWitnessWork": true
+    },
+    {
+      "label": "reverse-order",
+      "scope": "partial",
+      "literalDecisionsWitnessWork": true
+    },
+    {
+      "label": "reverse-order",
+      "scope": "continuation",
+      "literalDecisionsWitnessWork": true
+    },
+    {
+      "label": "reverse-order",
+      "scope": "anchor-partial",
+      "literalDecisionsWitnessWork": true
+    },
+    {
+      "label": "reverse-order",
+      "scope": "anchor-continuation",
+      "literalDecisionsWitnessWork": true
+    },
+    {
+      "label": "reverse-order",
+      "scope": "supporting-scope",
+      "literalDecisionsWitnessWork": true
+    },
+    {
+      "label": "segmented-joint",
+      "scope": "full",
+      "literalDecisionsWitnessWork": true
+    },
+    {
+      "label": "segmented-joint",
+      "scope": "partial",
+      "literalDecisionsWitnessWork": true
+    },
+    {
+      "label": "segmented-joint",
+      "scope": "anchor-partial",
+      "literalDecisionsWitnessWork": true
+    },
+    {
+      "label": "segmented-joint",
+      "scope": "supporting-scope",
+      "literalDecisionsWitnessWork": true
+    },
+    {
+      "label": "segmented-reverse",
+      "scope": "full",
+      "literalDecisionsWitnessWork": true
+    },
+    {
+      "label": "segmented-reverse",
+      "scope": "partial",
+      "literalDecisionsWitnessWork": true
+    },
+    {
+      "label": "segmented-reverse",
+      "scope": "anchor-partial",
+      "literalDecisionsWitnessWork": true
+    },
+    {
+      "label": "segmented-reverse",
+      "scope": "supporting-scope",
+      "literalDecisionsWitnessWork": true
+    }
+  ]
+}
