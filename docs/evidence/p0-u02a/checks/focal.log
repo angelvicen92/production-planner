@@ -1,0 +1,12 @@
+✔ engine/planner-next/integration/nativeJointGroups.spec.ts (3320.751759ms)
+✔ engine/planner-next/integration/nativeOperationalMeals.spec.ts (1723.463486ms)
+✔ server/fixedItinerantPhaseComposition.spec.ts (1129.402389ms)
+✔ server/technicalChainStructure.spec.ts (1287.490922ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7472.120387

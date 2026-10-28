@@ -1,0 +1,20 @@
+{
+  "predicateOnlyEvaluation": true,
+  "solverExecutedWithModifiedProfile": false,
+  "persisted": false,
+  "intervention": "Only plannerNext.profile in a clone; existing mainFlow and every task remain present. This is deliberately not a valid alternative day profile.",
+  "before": {
+    "fixed": false,
+    "phases": false,
+    "chain": false,
+    "joint": false,
+    "meal": false
+  },
+  "predicateOnly": {
+    "fixed": true,
+    "phases": true,
+    "chain": true,
+    "joint": true,
+    "meal": true
+  }
+}

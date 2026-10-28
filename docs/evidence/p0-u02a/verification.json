@@ -1,0 +1,111 @@
+{
+  "status": "PASS",
+  "runtimeBase": "bd6628d127624ba367f408422906b3da36150626",
+  "mainControl": [
+    4,
+    9
+  ],
+  "freshPhaseStages": 16,
+  "freshIntegratedStages": 0,
+  "counterfactual": [
+    {
+      "label": "integrated",
+      "case": "full",
+      "proposal": 24,
+      "globalObligations": 24,
+      "physicalOperations": 23,
+      "branches": 127
+    },
+    {
+      "label": "integrated",
+      "case": "repeat",
+      "proposal": 24,
+      "globalObligations": 24,
+      "physicalOperations": 23,
+      "branches": 127
+    },
+    {
+      "label": "integrated",
+      "case": "partial",
+      "proposal": 1,
+      "globalObligations": 24,
+      "physicalOperations": 23,
+      "branches": 127
+    },
+    {
+      "label": "integrated",
+      "case": "continuation",
+      "proposal": 23,
+      "globalObligations": 24,
+      "physicalOperations": 23,
+      "branches": 126
+    },
+    {
+      "label": "integrated",
+      "case": "scope-unit",
+      "proposal": 8,
+      "globalObligations": 24,
+      "physicalOperations": 23,
+      "branches": 127
+    },
+    {
+      "label": "integrated",
+      "case": "main-only",
+      "proposal": 3,
+      "globalObligations": 24,
+      "physicalOperations": 23,
+      "branches": 127
+    },
+    {
+      "label": "reverse-order",
+      "case": "full",
+      "proposal": 24,
+      "globalObligations": 24,
+      "physicalOperations": 23,
+      "branches": 160
+    },
+    {
+      "label": "reverse-order",
+      "case": "repeat",
+      "proposal": 24,
+      "globalObligations": 24,
+      "physicalOperations": 23,
+      "branches": 160
+    },
+    {
+      "label": "reverse-order",
+      "case": "partial",
+      "proposal": 1,
+      "globalObligations": 24,
+      "physicalOperations": 23,
+      "branches": 160
+    },
+    {
+      "label": "reverse-order",
+      "case": "continuation",
+      "proposal": 23,
+      "globalObligations": 24,
+      "physicalOperations": 23,
+      "branches": 159
+    },
+    {
+      "label": "reverse-order",
+      "case": "scope-unit",
+      "proposal": 8,
+      "globalObligations": 24,
+      "physicalOperations": 23,
+      "branches": 160
+    },
+    {
+      "label": "reverse-order",
+      "case": "main-only",
+      "proposal": 3,
+      "globalObligations": 24,
+      "physicalOperations": 23,
+      "branches": 160
+    }
+  ],
+  "negativeSearch": "SEARCH_EXHAUSTED on physically infeasible input; no infeasibility certificate claimed",
+  "supportingRepair": "task:10",
+  "physicalWitnessTasks": 24
+}

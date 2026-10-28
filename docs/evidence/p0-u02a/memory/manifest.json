@@ -1,0 +1,24 @@
+{
+  "receiptCount": 19,
+  "files": {
+    "impossible-effective.json": "645823e43dc80a7e1a435e1d0380605200d242b1c57de7f3a8e4ee66bde39597",
+    "impossible-full.json": "048df726e0e2f88c6ceb5f560046e9c1255a515f3388b81d4627637b7cbe2830",
+    "integrated-attacks.json": "3ddfea875d225615245a4de4407cbbdf600ce3737401bb72f2140a1af1a8f61b",
+    "integrated-continuation.json": "c1bb731309db0224bc05f4bd59876563e1e7b5435da36cc5a76fd47a7ef543e5",
+    "integrated-effective.json": "49e3a55545b6e5221939ae156e7555e444561743efb89f7ce8e51dd826fbb73f",
+    "integrated-full.json": "7e3009428ddec776836270d401d37c5ef567bcae6864164801cb5b15d6870c7e",
+    "integrated-main-only.json": "e29d21e357e528b156811a161edd1df989aa46e83d20b340b491f1b56e4bfd27",
+    "integrated-partial.json": "6c289fce360709b2efba2e14d514ac90b83a1774ce5d87378d6a3e421bdb8957",
+    "integrated-repeat.json": "80bd648c25a4b545284d680a51d2265382fdc86a855fe17130663e4b063c935b",
+    "integrated-scope-unit.json": "9fde20adad86b5e1d5de361e9bed762febfb6e88bb825a374833fffe50d50283",
+    "reverse-order-attacks.json": "ff5b358bd9ce066b97934c38039da96e030ebe05161897eaa69995bba343004b",
+    "reverse-order-continuation.json": "b3dfaebf7ca279da870b24ab7f35936b773a2d33c1633b7b2581b6a99b995a0f",
+    "reverse-order-effective.json": "d48c0ae0d42ad5ee788f4785d21e899917697b6d3e398f380ee748a5e85d301f",
+    "reverse-order-full.json": "a5762ef411bdd8b878f68182e4d23bc1c7676c6e4e7ab663741e889c2a38ea4c",
+    "reverse-order-main-only.json": "cac00f05225d5ce2398ed2baf4cc84122575ff6c1789d466f7d5c377fd53f7be",
+    "reverse-order-partial.json": "d8fbed40aff76f868923f536ab126f89f4052d52d9b84e1690b95e353ee2b9f1",
+    "reverse-order-repeat.json": "c974b5f478152e7dc738dc2407235b8db89952d1baca84d0eb94047e31f941cd",
+    "reverse-order-scope-unit.json": "66d87d991c966f955ee1a6feb4723e6804e1a99992c1aed178d76f8bf57d43e4",
+    "summary.json": "fafc88f8d1ba149df70b38bd2e78c20c4895537c16bece162d9f0e4ec9244480"
+  }
+}
