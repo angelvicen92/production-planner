@@ -46,6 +46,8 @@ function validatePhasedMembers(input:EngineInput,policy:NonNullable<EngineInput[
       groups.add(task.jointGroupId);
       for(const peer of input.tasks.filter(t=>t.jointGroupId===task.jointGroupId))phaseById.set(peer.id,phaseById.get(id)!);
     }
+    // [] adds no universal identity. Effective task requirements remain in the
+    // physical assignment authority; a nonempty declaration must hold for all.
     if(policy.requiredResourceIds.some(id=>!assignments.assignments.find(a=>a.taskId===task.id)?.effectiveResourceIds.includes(id)))
       throw defect("TECHNICAL_CHAIN_RESOURCE_NOT_REQUIRED");
   }

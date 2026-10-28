@@ -940,7 +940,7 @@ export function preflightEngineInputForPlannerNext(input: EngineInput): EngineIn
       const phases=p.phases,flatPhases=Array.isArray(phases)?phases.flatMap(phase=>Array.isArray(phase)?phase:[]):[];
       let invalid=typeof id!=="string"||id.trim()!==id||id.length===0||chainIds.has(id)
         ||ordered.length<2||ordered.some(value=>!Number.isSafeInteger(value)||!taskIds.has(value as number))||new Set(ordered).size!==ordered.length
-        ||resources.some(value=>!Number.isSafeInteger(value)||!resourceIds.has(value as number))||new Set(resources).size!==resources.length
+        ||!Array.isArray(p.requiredResourceIds)||resources.some(value=>!Number.isSafeInteger(value)||!resourceIds.has(value as number))||new Set(resources).size!==resources.length
         ||p.adjacency!=="REQUIRED"||p.resourceContinuity!=="REQUIRED";
       if(phases!==undefined&&(!Array.isArray(phases)||phases.length===0||phases.some(phase=>!Array.isArray(phase)||phase.length===0)
         ||flatPhases.some(value=>!Number.isSafeInteger(value)||!taskIds.has(value as number))||new Set(flatPhases).size!==flatPhases.length

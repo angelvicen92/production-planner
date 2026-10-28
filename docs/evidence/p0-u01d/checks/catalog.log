@@ -1,0 +1,21 @@
+✔ preflight rejects schema/RPC/security drift, broad policy expressions, false policy roles and missing sequences (282.890103ms)
+✔ security rollback is based on the captured original state and requires separate approval (14.521317ms)
+✔ each extended 115 RPC remains independently protected against body drift (81.040556ms)
+✔ 115 and 116 bind distinct literal bodies; schema downgrade cannot mask a changed RPC (22.060997ms)
+✔ 116 and 117 bind distinct bodies; a scope-schema marker requires the new writer and source reader (55.314061ms)
+✔ 120 joint marker requires its exact writer, source readers and shared witness consumer (37.627593ms)
+✔ 121 operational authority requires its exact writer, sources and material certificate (86.15321ms)
+✔ 123 binds both validators; a partial rollback cannot disguise the empty-set SQL contract (67.754755ms)
+✔ 115 retains the literal 114 delegate and limits existing reader deltas to the daily chain authority (38.216113ms)
+✔ 116 binds exact source transitions and only the existing task writer loops (21.604769ms)
+✔ 117 retains literal 116 writers and binds only the scope transition and authority reader (40.221892ms)
+✔ 120 retains 119 delegation and limits existing body deltas to joint transitions and the physical witness (13.804493ms)
+✔ 123 changes only the two existing phase validators and retains the historical linear branch (13.275736ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3368.642891

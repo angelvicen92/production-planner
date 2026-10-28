@@ -369,7 +369,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
   const technicalOwners=new Map<string,string>();
   for(const policy of problem.technicalChains??[]){
     let invalid=!policy.id||policy.orderedTaskIds.length<2||new Set(policy.orderedTaskIds).size!==policy.orderedTaskIds.length
-      ||policy.adjacency!=="REQUIRED"||policy.resourceContinuity!=="REQUIRED"||new Set(policy.requiredResourceIds).size!==policy.requiredResourceIds.length
+      ||policy.adjacency!=="REQUIRED"||policy.resourceContinuity!=="REQUIRED"||!Array.isArray(policy.requiredResourceIds)||new Set(policy.requiredResourceIds).size!==policy.requiredResourceIds.length
       ||policy.orderedTaskIds.some(id=>!problem.tasks.some(task=>task.id===id))
       ||policy.requiredResourceIds.some(id=>!problem.resources.some(resource=>resource.id===id));
     const flattened=policy.phases?.flat()??[];

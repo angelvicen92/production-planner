@@ -1,0 +1,30 @@
+PASS entire native application migration ledger
+PASS real password login for five Auth identities
+locator.fill: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for getByLabel('Email', { exact: true })[22m
+
+    at journey (/workspace/production-planner/work/u01d-u01b/source/docs/evidence/p0-u01b/journey.ts:28:80)
+    at async <anonymous> (/workspace/production-planner/work/u01d-u01b/source/script/demo/smokeNewDayIntegration.ts:122:18)
+{"status":"FAIL","evidence":"/workspace/production-planner/work/u01d-u01b/native/integration.json","remoteWrites":0}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+1 !== 0
+
+    at <anonymous> (/workspace/production-planner/docs/evidence/p0-u01b/run.ts:29:8)
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+    at async node:internal/modules/esm/loader:643:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 1,
+  expected: 0,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.19.0

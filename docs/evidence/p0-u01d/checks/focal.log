@@ -1,0 +1,31 @@
+✔ preflight rejects schema/RPC/security drift, broad policy expressions, false policy roles and missing sequences (289.131044ms)
+✔ security rollback is based on the captured original state and requires separate approval (31.874178ms)
+✔ each extended 115 RPC remains independently protected against body drift (117.469773ms)
+✔ 115 and 116 bind distinct literal bodies; schema downgrade cannot mask a changed RPC (59.960235ms)
+✔ 116 and 117 bind distinct bodies; a scope-schema marker requires the new writer and source reader (27.65812ms)
+✔ 120 joint marker requires its exact writer, source readers and shared witness consumer (61.457531ms)
+✔ 121 operational authority requires its exact writer, sources and material certificate (54.651384ms)
+✔ 115 retains the literal 114 delegate and limits existing reader deltas to the daily chain authority (19.955358ms)
+✔ 116 binds exact source transitions and only the existing task writer loops (8.390883ms)
+✔ 117 retains literal 116 writers and binds only the scope transition and authority reader (9.441043ms)
+✔ 120 retains 119 delegation and limits existing body deltas to joint transitions and the physical witness (39.979658ms)
+✔ representative, non-representative peer and space close the visible REQUIRED unit without prerequisites (55.899693ms)
+✔ authority accepts all authoring orders but rejects physical duplication, bad phases and backwards dependencies (12.538147ms)
+✔ partial scope certifies the authentic global future with its physical pause, zero extra search, then preserves S1 (179.522659ms)
+✔ each phase exposes multiple realized permutations, and HARD dependencies can require a non-nominal one (292.00958ms)
+✔ phased technical operations retain their kind and accept flexible internal dependencies (16.593532ms)
+✔ a locally valid competitor prefix cannot consume the last contiguous future realization (48.850739ms)
+✔ explicit empty common identities survive daily authority and adapter; missing and null fail closed (40.213673ms)
+✔ mixed 17 obligation REQUIRED future is physical, certificate searches zero branches and continuation preserves S1 (308.383769ms)
+✔ daily REQUIRED authority needs CAS, strict topology and preserves true absence (3.964316ms)
+✔ membership, nominal inventory and linear dependencies fail closed (0.943788ms)
+✔ order is semantic in revision identity and explicit sibling selection (19.682475ms)
+✔ multiple common nominal resources are required in every real member (2.918375ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5418.603967

@@ -1,0 +1,32 @@
+
+> rest-express@1.0.0 build
+> tsx script/build.ts
+
+building client...
+vite v7.3.0 building client environment for production...
+transforming...
+Browserslist: browsers data (caniuse-lite) is 12 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+✓ 2384 modules transformed.
+rendering chunks...
+computing gzip size...
+../dist/public/index.html                     0.43 kB │ gzip:   0.28 kB
+../dist/public/assets/index-DAaxRX09.css     99.71 kB │ gzip:  17.19 kB
+../dist/public/assets/index-CnLHqKYy.js   1,756.57 kB │ gzip: 485.40 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 10.89s
+building server...
+
+  dist/index.cjs  3.6mb ⚠️
+
+⚡ Done in 1549ms
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
