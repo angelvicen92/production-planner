@@ -1,0 +1,3 @@
+PASS two databases, three exact Stages, six cold replays and physical witnesses
+PASS physical SQL reconstruction and simultaneous independent/anchored operations
+{"status": "PASS", "SQLStages": 12, "SQLMaterialNegatives": 300, "remoteWrites": 0, "integratedImpossible": "SEARCH_EXHAUSTED, not an infeasibility certificate"}

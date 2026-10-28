@@ -1,0 +1,5 @@
+[
+  {"attempt":"g01-ui-a","status":"NOT_UI_CERTIFIED","cause":"The archive overlay omitted the optional U02d UI hook. The explicit authored.length > 0 assertion failed after the original API controls. No UI success counted."},
+  {"attempt":"g01-ui-b","status":"INTEGRATED_AND_CRUD_PASSED_HARNESS_RELOAD_WAIT_FAILED","cause":"The test counted the prior DOM immediately after clicking asynchronous Recargar. Added a wait for the same resource row to detach; retained the zero-row assertion. Product code unchanged."},
+  {"attempt":"g01-ui-final","status":"INTEGRATED_CRUD_AND_API_PERMISSIONS_PASSED_VIEWER_TEST_CONTRACT_MISMATCH","cause":"The test tried to enter Settings as VIEWER, but the existing App.tsx route allows ADMIN only. Corrected the test to assert the actual Dashboard redirect and absence of the editor, preserving the existing guard and 403 assertions. Product code unchanged."}
+]
