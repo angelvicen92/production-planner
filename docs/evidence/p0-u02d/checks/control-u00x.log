@@ -1,0 +1,5 @@
+PASS entire native application migration ledger
+PASS real password login for five Auth identities
+PASS A: composed native authorities through Stage
+PASS B: composed native authorities through Stage
+{"status":"PASS","evidence":"/tmp/u02d-control-u00x2/native/integration.json","remoteWrites":0}

@@ -1,0 +1,102 @@
+{
+  "databases": 2,
+  "stagesPerDatabase": [
+    {
+      "day": "integrated",
+      "route": "competitor",
+      "step": 1,
+      "sqlStageId": "3",
+      "ordinal": 1,
+      "accepted": 1,
+      "pending": 26,
+      "proposal": 1,
+      "branches": 207,
+      "snapshotFingerprint": "6af7e6d89806205c13ec6fc7239afff254da2e58014c6a9d503074d1ea1f127d"
+    },
+    {
+      "day": "integrated",
+      "route": "competitor",
+      "step": 2,
+      "sqlStageId": "5",
+      "ordinal": 2,
+      "accepted": 27,
+      "pending": 0,
+      "proposal": 26,
+      "branches": 205,
+      "snapshotFingerprint": "07d79e3ebfc6591c065317d20ab10d218d2117732de69494e7941cdedf52170a"
+    },
+    {
+      "day": "integrated",
+      "route": "anchor",
+      "step": 1,
+      "sqlStageId": "7",
+      "ordinal": 3,
+      "accepted": 4,
+      "pending": 23,
+      "proposal": 4,
+      "branches": 207,
+      "snapshotFingerprint": "293af4c0fd6dbc1d80d1cd6b842f5e66d8375cb6a78e124d473f30aa28ba4244"
+    },
+    {
+      "day": "integrated",
+      "route": "anchor",
+      "step": 2,
+      "sqlStageId": "9",
+      "ordinal": 4,
+      "accepted": 27,
+      "pending": 0,
+      "proposal": 23,
+      "branches": 185,
+      "snapshotFingerprint": "07d79e3ebfc6591c065317d20ab10d218d2117732de69494e7941cdedf52170a"
+    },
+    {
+      "day": "reverse-order",
+      "route": "competitor",
+      "step": 1,
+      "sqlStageId": "12",
+      "ordinal": 1,
+      "accepted": 1,
+      "pending": 26,
+      "proposal": 1,
+      "branches": 207,
+      "snapshotFingerprint": "860de832349b9bd84fd1bbc4c345452da7d97c456ea89d1940b8dc7f3da853fd"
+    },
+    {
+      "day": "reverse-order",
+      "route": "competitor",
+      "step": 2,
+      "sqlStageId": "14",
+      "ordinal": 2,
+      "accepted": 27,
+      "pending": 0,
+      "proposal": 26,
+      "branches": 205,
+      "snapshotFingerprint": "6ad315ef7386b303d02469517f7a61c7653a35d3a4f523759b7f907e251b3332"
+    },
+    {
+      "day": "reverse-order",
+      "route": "anchor",
+      "step": 1,
+      "sqlStageId": "16",
+      "ordinal": 3,
+      "accepted": 4,
+      "pending": 23,
+      "proposal": 4,
+      "branches": 207,
+      "snapshotFingerprint": "d1fc5afc1568dc4c29d697684c33229ec6946df176abe58e95dd03505595ad0d"
+    },
+    {
+      "day": "reverse-order",
+      "route": "anchor",
+      "step": 2,
+      "sqlStageId": "18",
+      "ordinal": 4,
+      "accepted": 27,
+      "pending": 0,
+      "proposal": 23,
+      "branches": 189,
+      "snapshotFingerprint": "6ad315ef7386b303d02469517f7a61c7653a35d3a4f523759b7f907e251b3332"
+    }
+  ],
+  "totalFinalAcceptedStages": 16
+}

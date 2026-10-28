@@ -1,0 +1,17 @@
+2026-10-28T18:04:14.0451884Z PASS A: UI REQUIRED rule → contiguous chain S1 → independent S2 → 4/4
+2026-10-28T18:04:22.1966957Z PASS B: valid rule, physically empty REQUIRED domain, no Stage
+2026-10-28T18:04:31.6107624Z PASS C: UI REQUIRED rule → contiguous chain S1 → independent S2 → 4/4
+2026-10-28T18:04:40.5168823Z AssertionError [ERR_ASSERTION]: {"path":"/api/plans/4/assisted/validate","status":409,"body":{"code":"REBOOTSTRAP_STALE_SOURCES","message":"REBOOTSTRAP_STALE_SOURCES"}}
+2026-10-28T18:04:40.5170185Z     at api (/home/runner/work/production-planner/production-planner/work/u00s-native/source/docs/evidence/p0-u00s/journey.ts:25:107)
+2026-10-28T18:04:40.5171074Z     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+2026-10-28T18:04:40.5172002Z     at async journey (/home/runner/work/production-planner/production-planner/work/u00s-native/source/docs/evidence/p0-u00s/journey.ts:130:5)
+2026-10-28T18:04:40.5173291Z     at async <anonymous> (/home/runner/work/production-planner/production-planner/work/u00s-native/source/script/demo/smokeNewDayIntegration.ts:122:18)
+2026-10-28T18:04:41.2994141Z {"status":"FAIL","evidence":"/home/runner/work/production-planner/production-planner/work/u00s-native/native/integration.json","remoteWrites":0}
+2026-10-28T18:04:41.3690214Z node:internal/modules/run_main:123
+2026-10-28T18:04:41.3690541Z     triggerUncaughtException(
+2026-10-28T18:04:41.3690763Z     ^
+2026-10-28T18:04:41.3690899Z 
+2026-10-28T18:04:41.3691130Z AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+2026-10-28T18:04:41.3691379Z 
+2026-10-28T18:04:41.3691454Z 1 !== 0
+2026-10-28T18:04:41.3691539Z 
