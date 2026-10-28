@@ -43,5 +43,14 @@
       "entire native application migration ledger",
       "real password login for five Auth identities"
     ]
+  },
+  {
+    "attempt": "cold-a2",
+    "status": "FAIL",
+    "error": "TypeError: Cannot read properties of undefined (reading 'snapshot_json')\n    at journey (/tmp/u02d-cold-a2/source/docs/evidence/p0-u02d/journey.ts:241:222)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async <anonymous> (/tmp/u02d-cold-a2/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+    "checks": [
+      "entire native application migration ledger",
+      "real password login for five Auth identities"
+    ]
   }
 ]

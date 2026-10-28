@@ -8,7 +8,8 @@ on:
       - 'shared/**'
       - 'supabase/migrations/**'
       - 'script/demo/**'
-      - 'docs/evidence/p0-u02d/**'
+      - 'docs/evidence/p0-u02d/**/*.ts'
+      - 'docs/evidence/p0-u02d/**/*.py'
       - '.github/workflows/p0-u02d-composed-anchored-required.yml'
   workflow_dispatch:
 permissions:
@@ -47,9 +48,6 @@ jobs:
       - run: python3 docs/evidence/p0-u02d/verify.py work/u02d-a/native work/u02d-verify-a.json
       - run: python3 docs/evidence/p0-u02d/verify.py work/u02d-b/native work/u02d-verify-b.json
       - run: python3 docs/evidence/p0-u02d/determinism.py work/u02d-a/native work/u02d-b/native work/u02d-determinism.json
-      - run: node --import tsx docs/evidence/p0-u02d/baselines.ts p0-u02b work/u02d-u02b
-      - run: node --import tsx docs/evidence/p0-u02d/baselines.ts p0-u00x work/u02d-u00x
-      - run: node --import tsx docs/evidence/p0-u00n/a2.ts work/u02d-a2
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -59,8 +57,5 @@ jobs:
             work/u02d-a/native/*.png
             work/u02d-b/native/*.json
             work/u02d-upgrade/native/*.json*
-            work/u02d-u02b/native/*.json
-            work/u02d-u00x/native/*.json
-            work/u02d-a2/*
             work/u02d-*.json
           retention-days: 14

@@ -94,5 +94,10 @@ for profile in read('profiles'):
      if t.get('startPlanned'):assert t in snap['tasks']
    prior=snap['tasks']
    entry['stages'].append({'id':sql['id'],'route':route,'ordinal':sql['ordinal'],'fingerprint':sql['snapshot_fingerprint'],'accepted':len(placed),'pending':27-len(placed),'branches':run['evidence']['work']['branchesExplored'],**verified})
+ final=read(label+'-final-input')
+ for t in final['tasks']:
+  row=next(r for r in snap['tasks'] if r['taskId']==t['id'])
+  assert t.get('startPlanned')==row.get('startPlanned') and t.get('endPlanned')==row.get('endPlanned')
+  assert set(t.get('assignedResourceIds') or [])==set(row.get('assignedResourceIds') or [])
  report['profiles'].append(entry)
 args.output.write_text(json.dumps(report,indent=2));print(json.dumps(report,indent=2))
