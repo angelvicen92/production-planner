@@ -14,7 +14,7 @@ export function dailyJointAuthority(row:Record<string,any>){
 /** Explicit boundary; existing consumers do not certify arbitrary composition. */
 export function jointCombinationSupported(input:EngineInput){
  return !!input.plannerNext&&!input.setupPolicies?.length&&!input.roundSynchronizations?.length&&(!input.technicalChains?.length||(hasDailyRequiredPhases(input)&&requiredPhaseCompositionSupported(input)))
-  &&!input.anchoredAccompaniments?.length&&!input.dailyTaskOperationScopes?.length&&!input.operationContinuityGroups?.length
+  &&((!input.anchoredAccompaniments?.length&&!input.dailyTaskOperationScopes?.length)||requiredPhaseCompositionSupported(input))&&!input.operationContinuityGroups?.length
   &&(!input.operationalMealPolicies?.length||input.dailyOperationalMealsVersion===1)&&!input.transportSettings&&input.mealMode==='global_hard_break'
   &&fixedItinerantCompositionSupported(input)
   &&!input.tasks.filter(t=>t.status!=='cancelled').some(t=>t.setupFamilyId
@@ -25,6 +25,7 @@ export function withDailyJointGroups(input:EngineInput,raw:JointGroupStructure):
  if(structure.groups.length&&!jointCombinationSupported(input))throw defect('UNSUPPORTED_JOINT_COMBINATION');
  const assignments=resolveEffectiveTaskResourceAssignments(input),byId=new Map(input.tasks.map(t=>[t.id,t]));
  for(const group of structure.groups){
+  if(group.taskIds.some(id=>input.dailyTaskOperationScopes?.some(s=>s.taskId===id)||input.anchoredAccompaniments?.some(a=>[...a.beforeTaskIds,a.anchorTaskId,...a.afterTaskIds].includes(id))))throw defect('JOINT_INVALID_MEMBER');
   const tasks=group.taskIds.map(id=>byId.get(id));
   if(tasks.some(t=>!t||t.planId!==input.planId||t.status==='cancelled'||t.plannerNextKind!=='auxiliary'||t.operationalRole!=='productive_task'||t.contestantId==null||t.setupFamilyId||t.blocksSpace===false||t.jointGroupId))throw defect('JOINT_INVALID_MEMBER');
   const members=tasks as EngineInput['tasks'],first=members[0];

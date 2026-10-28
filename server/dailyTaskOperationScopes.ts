@@ -1,4 +1,5 @@
 import type {EngineInput} from '../engine/types';
+import {hasDailyRequiredPhases,requiredPhaseCompositionSupported} from './technicalChainStructure';
 import {dailyTaskOperationScopesSchema,persistedDailyTaskOperationScopesSchema,type DailyTaskOperationScopes} from '../shared/dailyTaskOperationScopes';
 import {resolveConcreteTaskResourceRequirements} from '../engine/concreteTaskResourceRequirements';
 import {isDeepStrictEqual} from 'node:util';
@@ -11,12 +12,12 @@ export function dailyTaskOperationScopesAuthority(row:Record<string,any>){
  return parsed.data;
 }
 export function taskOperationScopesSupported(input:EngineInput){
- return !!input.plannerNext&&!input.setupPolicies?.length&&!input.roundSynchronizations?.length&&!input.technicalChains?.length
+ return !!input.plannerNext&&((requiredPhaseCompositionSupported(input)&&(!input.technicalChains?.length||hasDailyRequiredPhases(input)))||!input.setupPolicies?.length&&!input.roundSynchronizations?.length&&!input.technicalChains?.length
   &&(!input.anchoredAccompaniments?.length||[1,2].includes(input.dailyAnchoredAccompanimentsVersion??0)
    &&input.anchoredAccompaniments.every(a=>a&&Array.isArray(a.beforeTaskIds)&&Array.isArray(a.afterTaskIds)
     &&input.tasks.some(t=>t.id===a.anchorTaskId&&t.plannerNextKind==='main')))
   &&!input.operationContinuityGroups?.length&&(!input.operationalMealPolicies?.length||input.dailyOperationalMealsVersion===1)
-  &&!input.transportSettings&&!input.tasks.some(t=>t.jointGroupId||t.setupFamilyId);
+  &&!input.transportSettings&&!input.tasks.some(t=>t.jointGroupId||t.setupFamilyId));
 }
 /** Capture explicit requirements before materialization; never subtract team members. */
 export function taskScopeDirectResources(input:EngineInput,t:EngineInput['tasks'][number]){
@@ -41,11 +42,13 @@ export function withDailyTaskOperationScopes(input:EngineInput,raw:DailyTaskOper
   if(p.declaredResourceIds.some(id=>!input.planResourceItems.some(r=>r.id===id))||!isDeepStrictEqual(p.declaredResourceIds,taskScopeDirectResources(input,t)))throw defect('TASK_SCOPE_DIRECT_RESOURCE_MISSING');
  }
  const byTask=new Map(structure.policies.map(p=>[p.taskId,p]));
- return {...input,dailyTaskOperationScopes:structure.policies.length?structure.policies:undefined,tasks:input.tasks.map(t=>{
+ const next:EngineInput={...input,dailyTaskOperationScopes:structure.policies.length?structure.policies:undefined,tasks:input.tasks.map(t=>{
   const p=byTask.get(t.id);if(!p)return t;
   return {...t,agendaScope:p.agendaScope,resourceInheritance:p.resourceInheritance,blocksSpace:p.blocksSpace,declaredResourceIds:[...p.declaredResourceIds],
    ...(p.itinerantUnitId==null?{}:{itinerantTeamRequirement:'specific' as const,itinerantTeamId:p.itinerantUnitId,allowedItinerantTeamIds:[p.itinerantUnitId]})};
  })};
+ if((input.technicalChains?.length||input.dailyJointGroups?.length)&&!requiredPhaseCompositionSupported(next))throw defect('UNSUPPORTED_TASK_SCOPE_COMBINATION');
+ return next;
 }
 export function applyDailyTaskOperationScopes(input:EngineInput,row:Record<string,any>,replay?:Record<string,any>):EngineInput{
  const raw=dailyTaskOperationScopesAuthority(row);if(!raw)return input;
