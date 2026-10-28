@@ -67,6 +67,7 @@ export function latestAssistedSQLContracts(maxMigration=Infinity){
  files.push('122_daily_required_phase_composition.sql');
  files.push('123_daily_required_phases_no_common_resource.sql');
  files.push('124_fixed_itinerant_required_phase_composition.sql');
+ files.push('125_main_vocal_required_phase_composition.sql');
  const contracts=new Map<string,{definition:string;signature:string;body:string}>();
  for(const file of files.filter(file=>Number(file.slice(0,3))<=maxMigration)){
   const sql=readFileSync(`supabase/migrations/${file}`,'utf8');
@@ -79,7 +80,7 @@ export function latestAssistedSQLContracts(maxMigration=Infinity){
   const types=match[2].split(',').filter(arg=>arg.trim()).map(arg=>arg.trim().split(/\s+/)[1].toLowerCase());
   contracts.set(name,{definition:match[0],signature:`public.${name}(${types.join(',')})`,body:match[3].replaceAll('\r\n','\n').trim()});
  }
-  if(file.startsWith('121_')||file.startsWith('122_')||file.startsWith('123_')||file.startsWith('124_'))resolveLiteralReplacements(contracts,sql);
+  if(file.startsWith('121_')||file.startsWith('122_')||file.startsWith('123_')||file.startsWith('124_')||file.startsWith('125_'))resolveLiteralReplacements(contracts,sql);
   if(file.startsWith('116_')||file.startsWith('117_')||file.startsWith('120_')){
    // Resolve only this migration's literal string replacements. The resulting
    // bodies remain compared byte-for-byte with PostgreSQL by catalog preflight.

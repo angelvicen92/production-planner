@@ -1,0 +1,11 @@
+# Causa y delta
+
+Base exacta `6e6901ad0c19cbee39fe32560d38b1d51f80df62`, PR único desde `codex/p0-u02b-main-vocal-required-phase-stage`. Se contrastan AGENTS, Fuente 00 v2.15, 07 v2.3 §4.4, 01 v5.4 (recursos/protección), 03 v3.8 (fases, supporting, futuro global), 04 v2.9 (configuración, replay y Stage), 05 v2.8 (gates/determinismo), 06 v2.10 (parámetros A2, separados), Master y catálogo. U02a proporciona primer rechazo y contrafactual; no autoriza inferir Stage de su 24/24 en memoria.
+
+**X:** las 24 obligaciones físicamente realizables no podían guardar simultáneamente Main/Vocal, fases REQUIRED e itinerancia fija. **Y:** dos predicados exigían STANDALONE_ONLY; los guards SQL conservaban la misma exclusión. **Z:** producción debía renunciar a Main o a sus autoridades de macro. **W:** extender sólo esa admisión a Main nativo exacto, manteniendo las condiciones físicas y los consumidores. **M:** autoría real, revisión/replay, S1 de una competidora y S2 de las otras 23, recursos exactos, protección, negativos y dos bases frías.
+
+`requiredPhaseCompositionSupported` admite el Main construido por la autoridad nativa, que intencionadamente tiene `mainFlow` y omite el discriminante histórico `profile`. La presencia del resultado de materialización nativa distingue este caso de un payload Main histórico; la reconstrucción conserva sus defectos para preflight. `fixedItinerantCompositionSupported` conserva specific, mapping inequívoco, miembros fijos y transición explícita cero. Ambos exigen EXACT_CONSTRUCTIVE. No se modifica el perfil materializado ni su fingerprint para fabricar la admisión.
+
+125 extiende los dos guards existentes a los escenarios nativos STANDALONE_ONLY/MAIN_WITH_VOCAL_FEEDER y búsqueda EXACT_CONSTRUCTIVE. Los cuerpos se obtienen por `pg_get_functiondef`, con comprobación de predecessor; CREATE OR REPLACE conserva ownership, invoker, search_path y ACL. 001–124 permanecen literales. `joint_task_resources` 124 se reutiliza sin modificación.
+
+No cambia solver, ordering, matching, ledger, presupuesto, timeout, certificado, writer, editor o adapter. Los consumidores posteriores se recorren realmente. Los fallos de montaje del harness se distinguen en `attempts.md`; no son defectos del consumidor productivo ni certificados de rechazo físico.

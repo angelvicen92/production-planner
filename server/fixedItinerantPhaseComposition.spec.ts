@@ -45,3 +45,30 @@ test('equal physical members cannot hide a different joint unit identity',()=>{
  peer.itinerantTeamId=duplicate.id;peer.allowedItinerantTeamIds=[duplicate.id];
  assert.ok(fixedItinerantCompositionSupported(input));assert.throws(()=>withDailyJointGroups(input,auth.jointStructure),/JOINT_UNIT_MISMATCH/);
 });
+
+test('native Main/Vocal admits fixed REQUIRED composition in both authoring orders',()=>{
+ const native=JSON.parse(gunzipSync(readFileSync('docs/evidence/p0-u02a/native/receipts.json.gz')).toString());
+ for(const label of ['integrated','reverse-order']){
+  const input=structuredClone(native[label+'-input.json']) as EngineInput,auth=native[label+'-authoring.json'];
+  const chains={contractVersion:1 as const,policies:[auth.policy]},before=structuredClone(input);
+  assert.ok(input.plannerNext?.mainFlow);assert.equal(input.plannerNext?.profile,undefined);
+  for(const chainFirst of [true,false]){
+   let next=chainFirst?validateDailyTechnicalChains(input,chains):withDailyJointGroups(input,auth.jointStructure);
+   next=chainFirst?withDailyJointGroups(next,auth.jointStructure):validateDailyTechnicalChains(next,chains);
+   assert.deepEqual(next.plannerNext,input.plannerNext);assert.deepEqual(next.technicalChains,chains.policies);
+   assert.deepEqual(next.dailyJointGroups,auth.jointStructure.groups);
+  }
+  assert.deepEqual(input,before);
+  for(const mutate of [
+   (i:EngineInput)=>{delete i.plannerNextMaterializationIssues;},
+   (i:EngineInput)=>{i.plannerNext!.searchPolicy='BOUNDED_BACKTRACKING' as any;},
+   (i:EngineInput)=>{i.itinerantTeamAvailability![0].transitionMinutes=5;},
+   (i:EngineInput)=>{i.tasks.find(t=>t.itinerantTeamId)!.itinerantTeamRequirement='any';},
+   (i:EngineInput)=>{i.tasks[0].resourceRequirements={byType:{1:1}};},
+   (i:EngineInput)=>{i.dailyTaskOperationScopes=[{}] as any;},
+  ]){
+   const invalid=structuredClone(input);mutate(invalid);
+   assert.throws(()=>validateDailyTechnicalChains(invalid,chains),/UNSUPPORTED_TECHNICAL_CHAIN_COMBINATION/);
+  }
+ }
+});

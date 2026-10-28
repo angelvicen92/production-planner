@@ -1,0 +1,7 @@
+PASS entire native application migration ledger
+PASS real password login for five Auth identities
+PASS integrated: native authority, Draft, SQL and protected continuation
+PASS reverse-order: native authority, Draft, SQL and protected continuation
+PASS segmented-joint: native authority, Draft, SQL and protected continuation
+PASS impossible: native authority, Draft, SQL and protected continuation
+{"status":"PASS","evidence":"/workspace/production-planner/work/p0-u02b/cold-b2/native/integration.json","remoteWrites":0}

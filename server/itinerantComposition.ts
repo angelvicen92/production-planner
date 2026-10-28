@@ -98,7 +98,9 @@ export function applyDailyItinerantComposition(input: EngineInput, raw: unknown,
 export function fixedItinerantCompositionSupported(input: EngineInput): boolean {
   return input.tasks.filter(t => t.status !== 'cancelled').every(task => {
     if (!task.itinerantTeamRequirement || task.itinerantTeamRequirement === 'none') return true;
-    if (input.plannerNext?.profile !== 'STANDALONE_ONLY' || task.itinerantTeamRequirement !== 'specific' || task.itinerantTeamId == null
+    if (!input.plannerNext || input.plannerNext.searchPolicy !== 'EXACT_CONSTRUCTIVE'
+      || !(input.plannerNext.profile === 'STANDALONE_ONLY' || input.plannerNext.mainFlow && Array.isArray(input.plannerNextMaterializationIssues))
+      || task.itinerantTeamRequirement !== 'specific' || task.itinerantTeamId == null
       || (task.allowedItinerantTeamIds ?? []).some(id => id !== task.itinerantTeamId)) return false;
     const units = input.itinerantCompositionSnapshot?.units.filter(u => u.id === task.itinerantTeamId);
     const availability = input.itinerantTeamAvailability?.filter(u => u.itinerantTeamId === task.itinerantTeamId);
