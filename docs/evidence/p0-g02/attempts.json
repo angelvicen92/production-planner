@@ -74,6 +74,16 @@
       "id": "environment-recovery",
       "result": "INFRASTRUCTURE_INTERRUPTION",
       "reason": "Managed executor re-entered starting during the G01/U02d control after integrated passed. Its incomplete run is not counted as a final gate; restart with frozen sources."
+    },
+    {
+      "id": "ci-execution-date-calendar",
+      "result": "HISTORICAL_TEST_PRECONDITION",
+      "reason": "At Madrid midnight, the unchanged frozen 2026-10-29 plan became today. The automatic negative expected 409 but correctly received 200. Fix only the test precondition; finally restore date and compare all planning literally. Full native local SQL/Auth/HTTP/browser passes."
+    },
+    {
+      "id": "execution-date-local-browser",
+      "result": "LOCAL_RUNNER_RECOVERY",
+      "reason": "First focal attempt passed SQL/HTTP but cached Playwright browser was missing. A subsequent launch omitted selectors and was interrupted; its own stack was removed. Final run uses installed Chromium and correct selectors; PASS."
     }
   ],
   "allDiscardedLocal": true,

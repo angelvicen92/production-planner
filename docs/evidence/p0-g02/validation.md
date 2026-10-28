@@ -36,6 +36,7 @@ Los negativos SQL físicos usan propuestas reales y recalculan hashes de resulta
 | G01/U02d sin rutas | 8 Stages nuevos vs 8 históricos; 148 snapshots iguales |
 | A2 histórico y SPEC10-019 | Informe/snapshots/proyecciones históricos exactos |
 | Upgrade 126→127 poblado | 599 tareas y 11 Stages históricos exactos |
+| Cierre CI: negativo de fecha automática independiente del día real | TypeScript + SQL/Auth/HTTP/Mi Día PASS; planificación histórica restaurada literalmente |
 | Suite global inicial | 3.315/3.317; aislamiento corregido; ASST-010 falla igual en base limpia |
 
 `first/`, `repeat/`, `control-g01/`, `upgrade/` y `a2/` contienen recibos públicos y hashes; no logs privados de aplicación ni credenciales. El comparador G01 totaliza 16 Stages al sumar ocho actuales y ocho históricos: no son 16 Stages nuevos. La regresión A2 es una regeneración aislada del benchmark, separada de los Stages SQL de las nuevas jornadas.
@@ -43,3 +44,5 @@ Los negativos SQL físicos usan propuestas reales y recalculan hashes de resulta
 Las interrupciones y rechazos de desarrollo se conservan en `attempts.json`. El defecto de hash opcional se corrigió preservando la serialización histórica cuando no hay rutas; la prueba focal distingue ausencia/lista vacía de una regla explícita, y A2 compara el informe completo. No se modificaron canon, ordering, matching ni budgets para obtener estos resultados.
 
 El guard estricto de Data API detectó los cuatro nuevos objetos y exigió declarar exactamente sus privilegios. El catálogo de cuerpos SQL se amplió para reconocer 127 y comprobar writer, lectores y validadores existentes. El trigger no tiene permiso de ejecución directa ni siquiera para service_role; no se amplió ninguna ACL para pasar el test.
+
+El cierre CI modifica sólo `script/demo/smokeExecutionDateIntegrity.ts`: su fecha histórica fija coincidió con hoy en Madrid. El negativo ahora establece explícitamente otra fecha, exige el mismo 409, restaura la fecha aceptada y compara toda la planificación. No modifica el fixture congelado ni reglas A2. Los archivos capturados de producto siguen coincidiendo; `source-binding.json` declara el único delta posterior del harness, no importado por los journeys G02/G01. Reproducción focal: `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium node --import tsx script/demo/smokeA2Integration.ts work/g02-execution-date --historical-topology --execution-date-integrity`.

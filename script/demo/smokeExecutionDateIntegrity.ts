@@ -63,7 +63,13 @@ export async function runExecutionDateIntegrity({ appUrl, url, users, db, planId
   pass('P7 native 097 defect reproduced (HTTP 200, wrong Madrid day); 098 preserves and finishes the legacy run, then rejects new Start with HTTP 409');
 
   assert.equal((await request('admin', '/api/program-settings', 'PATCH', { clockMode: 'auto' })).status, 200);
-  await deny('actual automatic clock on historical plan');
+  // The frozen historical day can eventually be today. Establish the mismatch
+  // explicitly for this negative, then restore the exact accepted fixture.
+  const acceptedDate = original[0].plans.find((p: any) => p.id === planId).date;
+  await db.query("UPDATE plans SET date=(clock_timestamp() AT TIME ZONE 'Europe/Madrid')::date-1 WHERE id=$1", [planId]);
+  try { await deny('actual automatic clock on another plan date'); }
+  finally { await db.query('UPDATE plans SET date=$2 WHERE id=$1', [planId, acceptedDate]); }
+  assert.deepEqual(await planning(), original);
   const deviations: { time: string; start: number; correction: number; finish: number; endCorrection: number }[] = [];
   for (const time of ['08:59','21:10']) {
     await manual(time);

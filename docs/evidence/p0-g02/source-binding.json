@@ -3,21 +3,48 @@
     "archiveBase": "7302a333be10532b17284e5db06bdc62aed975e0",
     "runtimeSourceFiles": 1674,
     "checkoutDelta": [],
-    "allCurrentSourcesMatch": true,
-    "manifestSha256": "4ef41ac54c70b0f7eee320394482605be9bc63a4b0fa466119a445a6680af6d1"
+    "allCurrentSourcesMatch": false,
+    "manifestSha256": "4ef41ac54c70b0f7eee320394482605be9bc63a4b0fa466119a445a6680af6d1",
+    "allCurrentProductSourcesMatch": true,
+    "postCaptureTestHarnessDelta": [
+      {
+        "file": "script/demo/smokeExecutionDateIntegrity.ts",
+        "capturedSha256": "d12c7bfdc76ba28239063aa87158d4cd03a694f2b0e1f0fbcb22fccea279e4cb",
+        "currentSha256": "17617eb28aa30c152072361699dbe481f56be1953f1cef272b3c36846ac04994",
+        "role": "archived but not imported by the G02/G01 journeys; execution-only negative harness"
+      }
+    ]
   },
   "repeat": {
     "archiveBase": "7302a333be10532b17284e5db06bdc62aed975e0",
     "runtimeSourceFiles": 1674,
     "checkoutDelta": [],
-    "allCurrentSourcesMatch": true,
-    "manifestSha256": "4ef41ac54c70b0f7eee320394482605be9bc63a4b0fa466119a445a6680af6d1"
+    "allCurrentSourcesMatch": false,
+    "manifestSha256": "4ef41ac54c70b0f7eee320394482605be9bc63a4b0fa466119a445a6680af6d1",
+    "allCurrentProductSourcesMatch": true,
+    "postCaptureTestHarnessDelta": [
+      {
+        "file": "script/demo/smokeExecutionDateIntegrity.ts",
+        "capturedSha256": "d12c7bfdc76ba28239063aa87158d4cd03a694f2b0e1f0fbcb22fccea279e4cb",
+        "currentSha256": "17617eb28aa30c152072361699dbe481f56be1953f1cef272b3c36846ac04994",
+        "role": "archived but not imported by the G02/G01 journeys; execution-only negative harness"
+      }
+    ]
   },
   "control-g01": {
     "archiveBase": "7302a333be10532b17284e5db06bdc62aed975e0",
     "runtimeSourceFiles": 1673,
     "checkoutDelta": [],
-    "allCurrentSourcesMatch": true,
-    "manifestSha256": "41c14d2517c2171a0f5a49e3c3d0818f654caaa2fc85d0a9123638b173702007"
+    "allCurrentSourcesMatch": false,
+    "manifestSha256": "41c14d2517c2171a0f5a49e3c3d0818f654caaa2fc85d0a9123638b173702007",
+    "allCurrentProductSourcesMatch": true,
+    "postCaptureTestHarnessDelta": [
+      {
+        "file": "script/demo/smokeExecutionDateIntegrity.ts",
+        "capturedSha256": "d12c7bfdc76ba28239063aa87158d4cd03a694f2b0e1f0fbcb22fccea279e4cb",
+        "currentSha256": "17617eb28aa30c152072361699dbe481f56be1953f1cef272b3c36846ac04994",
+        "role": "archived but not imported by the G02/G01 journeys; execution-only negative harness"
+      }
+    ]
   }
 }
