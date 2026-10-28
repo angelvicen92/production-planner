@@ -1,0 +1,13 @@
+{
+  "base": "bd6628d127624ba367f408422906b3da36150626",
+  "baseTree": "ec70c58d5ffdcb67df2b631898a3733462629d4d",
+  "productFilesCompared": 1642,
+  "productDelta": [],
+  "nativeRunnerCheckoutDelta": [],
+  "explanation": "Final native run used stable harness sources. All 1642 production files match their captured hashes; offline scripts executed separately. No runtime or historical SQL change.",
+  "controls": {
+    "main": "control-main/receipts.json.gz",
+    "standalone": "control-phases/receipts.json.gz"
+  },
+  "remoteWrites": 0
+}

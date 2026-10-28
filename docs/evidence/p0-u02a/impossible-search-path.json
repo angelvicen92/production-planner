@@ -1,0 +1,202 @@
+{
+  "firstHardValidCoreLeaf": {
+    "coreTaskCount": 6,
+    "pipelineMaterializedTaskCount": 6,
+    "immutableCoreTaskCount": 6,
+    "protectedTaskCount": 0,
+    "pipelineOnlySupportingExcludedCount": 0,
+    "coreTasksByKind": {
+      "vocal": 3,
+      "main": 3
+    },
+    "pendingSupportingTotal": 18,
+    "pendingOrdinaryNoTransport": 18,
+    "pendingDynamicTransport": 0,
+    "pendingTasksByKind": {
+      "auxiliary": 17,
+      "technical": 1
+    }
+  },
+  "firstHardValidCoreTasks": [
+    {
+      "id": "task:63",
+      "kind": "vocal",
+      "participantId": "participant:15",
+      "spaceId": "space:9",
+      "start": 610,
+      "end": 620,
+      "protected": false
+    },
+    {
+      "id": "task:49",
+      "kind": "vocal",
+      "participantId": "participant:13",
+      "spaceId": "space:9",
+      "start": 620,
+      "end": 630,
+      "protected": false
+    },
+    {
+      "id": "task:64",
+      "kind": "main",
+      "participantId": "participant:15",
+      "spaceId": "space:8",
+      "start": 630,
+      "end": 640,
+      "protected": false
+    },
+    {
+      "id": "task:50",
+      "kind": "main",
+      "participantId": "participant:13",
+      "spaceId": "space:8",
+      "start": 640,
+      "end": 650,
+      "protected": false
+    },
+    {
+      "id": "task:56",
+      "kind": "vocal",
+      "participantId": "participant:14",
+      "spaceId": "space:9",
+      "start": 640,
+      "end": 650,
+      "protected": false
+    },
+    {
+      "id": "task:57",
+      "kind": "main",
+      "participantId": "participant:14",
+      "spaceId": "space:8",
+      "start": 650,
+      "end": 660,
+      "protected": false
+    }
+  ],
+  "firstStandaloneDeadEndCause": {
+    "kind": "MACRO_CANDIDATES_EXHAUSTED",
+    "phase": "MACRO",
+    "depth": 0,
+    "workItemId": "resource:task:69",
+    "workItemKind": "RESOURCE_TASK",
+    "taskIds": [
+      "task:69"
+    ],
+    "domainBefore": 6,
+    "domainAfter": 6,
+    "candidatesEvaluated": 6,
+    "blockingTaskId": null,
+    "blockingAuthority": "standaloneForwardDynamicDomain",
+    "firstPlacementRejection": null,
+    "ancestralDecisions": []
+  },
+  "macroSelectionOrder": [
+    "RESOURCE_TASK:resource:task:69"
+  ],
+  "macroSelectionSteps": [
+    {
+      "selected": "resource:task:69",
+      "reason": "minimum-macro-domain",
+      "candidates": [
+        {
+          "id": "resource:task:69",
+          "kind": "RESOURCE_TASK",
+          "domainSize": 6,
+          "domainMeasure": "hard-valid-top-level-macro-placements",
+          "domainExact": true,
+          "hardResourceAvailabilityMinutes": 40,
+          "totalDuration": 15,
+          "affectedTaskCount": 1
+        },
+        {
+          "id": "resource:task:70",
+          "kind": "RESOURCE_TASK",
+          "domainSize": 47,
+          "domainMeasure": "hard-valid-top-level-macro-placements",
+          "domainExact": true,
+          "hardResourceAvailabilityMinutes": 240,
+          "totalDuration": 10,
+          "affectedTaskCount": 1
+        },
+        {
+          "id": "resource:task:71",
+          "kind": "RESOURCE_TASK",
+          "domainSize": 47,
+          "domainMeasure": "hard-valid-top-level-macro-placements",
+          "domainExact": true,
+          "hardResourceAvailabilityMinutes": 240,
+          "totalDuration": 10,
+          "affectedTaskCount": 1
+        },
+        {
+          "id": "resource:task:72",
+          "kind": "RESOURCE_TASK",
+          "domainSize": 48,
+          "domainMeasure": "hard-valid-top-level-macro-placements",
+          "domainExact": true,
+          "hardResourceAvailabilityMinutes": 480,
+          "totalDuration": 5,
+          "affectedTaskCount": 1
+        },
+        {
+          "id": "technical-chain:task:52",
+          "kind": "TECHNICAL_CHAIN",
+          "domainSize": 96,
+          "domainMeasure": "hard-valid-top-level-macro-placements",
+          "domainExact": true,
+          "hardResourceAvailabilityMinutes": 520,
+          "totalDuration": 40,
+          "affectedTaskCount": 7
+        }
+      ]
+    }
+  ],
+  "firstMacroTrace": {
+    "fingerprint": "2694c1c325707ec8deaee372a44724936991b5d012ad841532b0f09c08a02321",
+    "macroUnitId": "resource:task:69",
+    "macroUnitKind": "RESOURCE_TASK",
+    "depth": 0,
+    "candidate": {
+      "starts": [
+        {
+          "taskId": "task:69",
+          "start": 480,
+          "end": 495
+        }
+      ],
+      "domainSize": 6,
+      "structuralCandidateCount": null,
+      "matchingFeasibleCandidateCount": null,
+      "roundMatchingResult": "NOT_APPLICABLE"
+    },
+    "pendingPrerequisiteReservation": {
+      "status": "PASS",
+      "cause": null,
+      "blockingTaskId": null,
+      "authorityId": null
+    },
+    "participantFuture": {
+      "status": "NOT_CHECKED",
+      "cause": null
+    },
+    "participantMealFuture": {
+      "status": "PASS",
+      "cause": "NO_APPLICABLE_OBLIGATION"
+    },
+    "operationalMealFuture": {
+      "status": "PRUNE",
+      "cause": "CAUSED_BY_ADDED_TASK:break:e6b930ab-84b5-4b3e-9db9-ea3e8a4d558f:CANDIDATES_0_TO_0"
+    },
+    "enteredRecurseAfterMacro": false,
+    "selectedAnotherMacroUnit": false,
+    "enteredOrdinarySearch": false,
+    "firstDescendantDeadEnd": null,
+    "firstOrdinaryRejection": null,
+    "reachedCompleteLeaf": false,
+    "terminalParticipantFuture": {
+      "status": "NOT_CHECKED",
+      "cause": null
+    },
+    "outcome": "PRUNED"
+  }
+}

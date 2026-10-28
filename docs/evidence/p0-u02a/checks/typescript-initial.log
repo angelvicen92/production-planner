@@ -1,0 +1,7 @@
+docs/evidence/p0-u02a/capacity.ts(11,26): error TS2322: Type 'Task | null' is not assignable to type 'Task'.
+  Type 'null' is not assignable to type 'Task'.
+docs/evidence/p0-u02a/memory.ts(28,64): error TS18048: 'partial.result.evidence.acceptedSupportingPlacements' is possibly 'undefined'.
+docs/evidence/p0-u02a/memory.ts(29,120): error TS2345: Argument of type 'readonly ScheduledTask[]' is not assignable to parameter of type 'any[]'.
+  The type 'readonly ScheduledTask[]' is 'readonly' and cannot be assigned to the mutable type 'any[]'.
+docs/evidence/p0-u02a/memory.ts(33,44): error TS18048: 'scoped.result.evidence.acceptedSupportingPlacements' is possibly 'undefined'.
+docs/evidence/p0-u02a/predicates.ts(10,288): error TS1117: An object literal cannot have multiple properties with the same name.

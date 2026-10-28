@@ -1,0 +1,30 @@
+# Call path completo y autoridad de cada frontera
+
+Lecturas: AGENTS, Master (Gate P0 y Decisión de Producto), Fuentes 00 v2.15/07 v2.3 §4.4; 01 v5.4 (producto, snapshots, recursos, continuidad); 02 v2.2 (frontera ORC/Stage); 03 v3.8 (SPEC-07, fases, geometría, supporting reparable y futuro global); 04 v2.9 (configuración tipada, identidad y persistencia); 05 v2.8 (gates y verdad automática); 06 v2.10 §§7–8 (capacidades mínimas A2). Catálogo descriptivo y Evidence indicada U00a/U00y/U01d/U01e/U01f contrastados con el código ejecutado. No se transforma el estado histórico del catálogo en una garantía actual de composición.
+
+| Tramo | Funciones/autoridades existentes | Resultado auténtico / contrafactual |
+| --- | --- | --- |
+| General | `newDayPlannerConfigurationSchema`, rutas general y `NewDayPlannerEditor` | Contrato Main/Vocal EXACT_CONSTRUCTIVE explícito; UI guarda Main y preferredEnd. No depende de A2 |
+| Creación del día | `POST plans`, `storage.createPlan` y migraciones nativas | UI crea plan y snapshots de configuración, recursos, espacios, plantillas y unidades |
+| Tareas/participantes | Formulario de participantes; POST `/daily-tasks`; snapshots de plantilla | Tres pares Vocal→Main con dos coaches; toda la macro y técnica. 24 IDs reales |
+| Autoridades diarias | `applyDayConfigurationOperation` → `withDailyOperationalMeals`, `withDailyJointGroups`, `validateDailyTechnicalChains` | Pausa UI persiste; conjunta/fases rechazan por perfil antes de solver |
+| Vista | `buildEffectiveConfigurationView`, `TechnicalChainEditor`, `JointGroupsEditor` | `supported/phasesSupported=false`; botones deshabilitados. La UI no promete guardar la macro |
+| Revisión/replay | `buildCanonicalPlanConfig`, identidad, writer v5, CAS y replay | Sólo configuración realmente guardada atraviesa revisión. Los PUT rechazados no cambian la fila del plan. Controles sí atraviesan Stage/replay |
+| Builder | `buildEngineInput` → `applyNewDayPlannerConfiguration` → `applyDailyItinerantComposition` | Main/feeder/coach y miembros reales sin pérdida; dependencias se resuelven por plantilla y participante |
+| Reconstrucción estructural | Builder aplica cadenas → anclajes → scopes → conjunta → pausa; revalida las fases al final | Cambiar sólo el endpoint no bastaría: los mismos predicates se vuelven a consumir aquí |
+| Copia diagnóstica | `memory.ts` | Añade sólo las dos autoridades rechazadas y jointGroupId en clon del builder. Conserva todas las tareas, Main, coaches, ventanas, miembros, márgenes y pausa |
+| Preflight/adapter | `preflightEngineInputForPlannerNext` → `adaptEngineInputToPlannerNextProblem` → `preflight` | Copia SUPPORTED; conserva 24 tareas, tres fases, peers, unidad física específica, recursos efectivos y pausa |
+| Scope/unidad | `resolveAssistedScope`, `expandVisiblePrerequisites`, `analyticalFutureEligibleTaskIds`, `buildAssistedProblem` | Scope macro resuelve 8 obligaciones; preparaciones supporting fuera de propuesta. Main-only propone 3; rival-only propone 1 |
+| Geometría Main/Vocal | `executeAssistedPlanning` → `executePlannerNext` → `constructExactItinerantPlan` / `runExactItinerantPlanSearch` → `constructExactMainAndFeederCore` | Main no se reemplaza por standalone. Una arquitectura y timeline; tres Main, tres Vocal; core llega a profundidad 3 |
+| Matching | `generateMainFlowPatterns`, dominios feeder/coach, matching ordinal y `incrementallyRepairMatchingWitness` | En primer día: dos comprobaciones feeder, cinco aristas; cinco invocaciones residual, tres builds y dos updates. Matching por bundles no se invoca en esta topología |
+| Colocación física | `searchStandaloneForCoreCandidate`, `getTechnicalChains`, `createTechnicalChainExplorer` → `createContiguousTechnicalChainExplorer`, joint scheduling y `canPlaceTask` | AB y B consumen miembros reales. Conjunta cuenta dos obligaciones/una ocupación. Macro conserva fases, orden interno flexible y liberación de A |
+| Futuro global | `physicalFutureIds` → `collectiveCoreProjection` → misma búsqueda y mismo ledger | Marcadores nativos conservan todas las 24 obligaciones y la pausa aun para scope de una tarea. No hay reservas ficticias ni segundo solver |
+| Propuesta/validación | `executeAssistedPlanning`, `validatePlan`, `certifyDailyTechnicalChain` | Runtime en memoria: proposal completa, witness global hard-valid, certificado WITNESS consumed=0. Reparación supporting cambia sólo una hora interna |
+| Servicio productivo | `AssistedProposalService`, `assertNominalProposalWitness` y codec | Por lectura conserva identidad, recursos/unidad y autentica el witness. **No recorrido con las autoridades integradas rechazadas**; controles sí |
+| Draft | apply de propuesta, snapshot occupations, validate | Certificado únicamente en controles U00a/U01f. No se entrega el clon a apply ni al writer |
+| Stage SQL | `assert_daily_joint_groups`, `assert_joint_revision`, `assert_daily_technical_chains`, `assert_anchored_choice_witness`, `assert_operational_meal_snapshot`, `assert_daily_technical_chain_snapshot`, `assisted_accept_stage` | Autoría integrada ya bloqueada por guards. Helpers físicos runtime/SQL coinciden en recursos fuente de las 24 tareas, pero Stage integrado sigue NOT_TESTED |
+| Continuación | Contexto protegido de `buildAssistedProblem`; protección/SQL de Assisted | Memoria: 1 → 23, decisión protegida literal. SQL: U01f 1 → 16 y U00a jornadas completas, no extrapolables al cruce |
+
+La primera decisión que elimina una alternativa físicamente necesaria es el guard de perfil, no el constructor de geometría, el orden de matching ni un timeout. El contrafactual distingue tres hechos: la estructura es representable por el contrato runtime; existe solución física; el producto todavía no puede persistirla íntegramente. Sólo el último sigue pendiente de la integración funcional.
+
+El resolver SQL `joint_task_resources` vigente 124 ya incluye miembros de unidad específica. Sus SELECT sobre las fuentes reales coinciden con `resolveEffectiveTaskResourceAssignments` para las 24 tareas, incluyendo técnica y coaches por su canal. No hay motivo observado para otro resolver, certificado, tabla o adapter.
