@@ -111,3 +111,7 @@ prevalece la Fuente 06. El repositorio `main`, la CI y Evidence describen el
 estado de implementación. Actualizar normas sólo mediante una nueva versión
 consolidada y un PR que eleve la Fuente 00; no mantener versiones oficiales
 paralelas en otros directorios.
+
+## Auditoría integral P0 (mapa vivo, no normativo)
+
+Para decidir prioridades, revisar composición transversal o desarrollar una nueva unidad de Planner/Assisted, consultar `docs/audits/p0-integral/README.md` y la matriz del corte vigente junto con `docs/evidence/` y `main`. Es un inventario descriptivo fechado; prevalecen las Fuentes oficiales 00–07, los contratos ejecutados y la Evidence del head real. No releer toda la auditoría en cada delta pequeño: abrir sólo las filas afectadas y sus dependencias. Antes de ampliar código ejecutar Gate de Auditoría Causal Integral (Fuente 07 §4.4), documentar primera pérdida y aceptación hasta Stage SQL. Nunca confundir un witness en memoria con capacidad productiva integrada.
