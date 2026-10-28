@@ -1,0 +1,36 @@
+TAP version 13
+# Subtest: ASST-010 proves the canonical assisted chain through rollback and divergence
+not ok 1 - ASST-010 proves the canonical assisted chain through rollback and divergence
+  ---
+  duration_ms: 342252.4456
+  type: 'test'
+  location: '/workspace/production-planner/work/u01f-before/source/server/benchmarks/runA2Assist7Evidence.spec.ts:1:125'
+  failureType: 'testCodeFailure'
+  error: |-
+    ["ASSISTED_SCOPE_INCOMPLETE","SEARCH_TIME_LIMIT_REACHED"]
+    + actual - expected
+    
+    + 'NO_PROPOSAL'
+    - 'PROPOSAL'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'PROPOSAL'
+  actual: 'NO_PROPOSAL'
+  operator: 'strictEqual'
+  stack: |-
+    acceptProposal (/workspace/production-planner/work/u01f-before/source/server/benchmarks/runA2Assist7Evidence.ts:168:354)
+    async runA2Assist7Evidence (/workspace/production-planner/work/u01f-before/source/server/benchmarks/runA2Assist7Evidence.ts:181:14)
+    async TestContext.<anonymous> (/workspace/production-planner/work/u01f-before/source/server/benchmarks/runA2Assist7Evidence.spec.ts:6:20)
+    async Test.run (node:internal/test_runner/test:1389:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 343287.05905

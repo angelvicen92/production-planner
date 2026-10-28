@@ -1,0 +1,467 @@
+{
+  "status": "PASS",
+  "postgres": "PostgreSQL 17.11 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "migrationSha256": "befd1cd8fd33044bd56bb9a7d42731da4cc92a524fd8ade6b6e4850e883670e6",
+  "counts": {
+    "assisted_bootstrap_sources": 1,
+    "assisted_obligation_transitions": 0,
+    "assisted_planning_sessions": 1,
+    "assisted_planning_stages": 11,
+    "contestants": 19,
+    "control_room_settings": 1,
+    "daily_tasks": 599,
+    "engine_plan_results": 0,
+    "itinerant_team_members": 0,
+    "itinerant_teams": 0,
+    "locks": 0,
+    "new_day_planner_configuration": 1,
+    "operation_continuity_groups": 0,
+    "operational_incident_events": 0,
+    "operational_incidents": 0,
+    "optimizer_settings": 1,
+    "plan_breaks": 0,
+    "plan_config_revisions": 1,
+    "plan_header_notes": 0,
+    "plan_itinerant_unit_snapshots": 0,
+    "plan_optimizer_snapshot_grouping_zones": 0,
+    "plan_optimizer_snapshot_heuristics": 9,
+    "plan_optimizer_snapshots": 1,
+    "plan_resource_bundle_snapshots": 1,
+    "plan_resource_items": 9,
+    "plan_resource_pools": 0,
+    "plan_space_resource_assignments": 4,
+    "plan_space_resource_type_requirements": 0,
+    "plan_space_settings": 23,
+    "plan_staff_assignments": 0,
+    "plan_task_template_snapshots": 31,
+    "plan_vocal_coach_rules": 0,
+    "plan_zone_resource_assignments": 0,
+    "plan_zone_resource_type_requirements": 0,
+    "plan_zone_settings": 10,
+    "plan_zone_staff_mode": 0,
+    "planning_accepted_exceptions": 0,
+    "planning_runs": 0,
+    "planning_stage_validations": 0,
+    "plans": 2,
+    "program_settings": 1,
+    "resource_availability": 0,
+    "resource_bundle_components": 0,
+    "resource_bundle_space_affinities": 0,
+    "resource_bundles": 0,
+    "resource_item_components": 0,
+    "resource_items": 22,
+    "resource_pools": 0,
+    "resource_types": 15,
+    "resources": 0,
+    "roles": 4,
+    "space_resource_defaults": 0,
+    "space_resource_type_defaults": 0,
+    "spaces": 46,
+    "staff_assignment_defaults": 0,
+    "staff_people": 0,
+    "staff_zone_mode_defaults": 0,
+    "task_status_events": 0,
+    "task_templates": 31,
+    "user_entity_links": 0,
+    "user_preferences": 0,
+    "user_roles": 1,
+    "vocal_coach_rules": 0,
+    "zone_resource_defaults": 0,
+    "zone_resource_type_defaults": 0,
+    "zones": 17
+  },
+  "allOriginalRowsExact": true,
+  "sourceReadersExact": true,
+  "policiesExact": true,
+  "historicalAuthoritiesUnadopted": true,
+  "grants": [
+    {
+      "name": "anchored_contracts",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "anchored_member_ids",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "anchored_task_operations",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "apply_day_config_operation_before_anchored_accompaniments",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "apply_day_config_operation_before_joint_groups",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "apply_day_config_operation_before_task_operation_scopes",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "apply_day_config_operation_v5",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "assert_anchored_choice_witness",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "assert_anchored_selected_snapshot",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "assert_daily_anchored_accompaniments",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "assert_daily_anchored_accompaniments_v1",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "assert_daily_anchored_snapshot",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "assert_daily_anchored_snapshot_v1",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "assert_daily_joint_groups",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "assert_daily_operational_meals",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "assert_daily_task_operation_scopes",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "assert_joint_revision",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "assert_operational_meal_snapshot",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "assert_reality_authorities_disjoint",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "assert_task_scope_revision",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "assert_task_scope_snapshot",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "execution_task_scope",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "guard_anchored_coach_source",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "guard_anchored_revision",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "guard_anchored_task_source",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "guard_daily_anchored_accompaniments",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "guard_daily_anchored_stage",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "guard_daily_joint_groups",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "guard_daily_operational_meals",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "guard_daily_task_operation_scopes",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "guard_joint_revision",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "guard_joint_source",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "guard_joint_stage",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "guard_task_scope_revision",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "guard_task_scope_source",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "guard_task_scope_stage",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "joint_contracts",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "joint_member_ids",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "joint_task_operations",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "joint_task_resources",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "task_scope_contracts",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "task_scope_member_ids",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    },
+    {
+      "name": "task_scope_task_operations",
+      "anon": false,
+      "authenticated": false,
+      "security_definer": false,
+      "settings": [
+        "search_path=\"\""
+      ]
+    }
+  ],
+  "remoteWrites": 0
+}

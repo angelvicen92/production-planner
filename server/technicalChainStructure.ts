@@ -1,6 +1,7 @@
 import type { EngineInput } from "../engine/types";
 import { persistedTechnicalChainStructureSchema, technicalChainStructureSchema, type TechnicalChainStructure } from "../shared/technicalChainStructure";
 import { resolveEffectiveTaskResourceAssignments } from "../engine/planner-next/integration/effectiveTaskResourceAssignments";
+import { fixedItinerantCompositionSupported } from "./itinerantComposition";
 const defect = (code:string) => Object.assign(new Error(code),{status:422});
 export function dailyTechnicalChainAuthority(row:Record<string,any>) {
   if(row.daily_technical_chains==null)return null;
@@ -18,8 +19,8 @@ export function requiredPhaseCompositionSupported(input:EngineInput) {
   return input.plannerNext?.profile==="STANDALONE_ONLY" && input.mealMode==="global_hard_break"
     && !input.dailyTaskOperationScopes?.length && !input.roundSynchronizations?.length && !input.setupPolicies?.length
     && !input.operationContinuityGroups?.length && !input.anchoredAccompaniments?.length && !input.transportSettings
-    && !input.itinerantTeamAvailability?.length && (!input.operationalMealPolicies?.length||input.dailyOperationalMealsVersion===1)
-    && !input.tasks.filter(t=>t.status!=="cancelled").some(t=>t.setupFamilyId||t.itinerantTeamRequirement&&t.itinerantTeamRequirement!=="none"
+    && fixedItinerantCompositionSupported(input) && (!input.operationalMealPolicies?.length||input.dailyOperationalMealsVersion===1)
+    && !input.tasks.filter(t=>t.status!=="cancelled").some(t=>t.setupFamilyId
       ||Object.keys(t.resourceRequirements?.byType??{}).length||t.resourceRequirements?.anyOf?.length
       ||t.blocksSpace===false||t.agendaScope==="ITINERANT_UNIT"||t.allowsSpaceOverlap===true);
 }

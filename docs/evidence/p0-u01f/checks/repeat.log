@@ -1,0 +1,12 @@
+PASS entire native application migration ledger
+PASS real password login for five Auth identities
+PASS baseline: API authority, Draft, SQL Stage and continuation certified
+PASS A-fixed: API authority, Draft, SQL Stage and continuation certified
+PASS B-segments: API authority, Draft, SQL Stage and continuation certified
+PASS C-joint-unit: API authority, Draft, SQL Stage and continuation certified
+PASS D-rest-competition: API authority, Draft, SQL Stage and continuation certified
+PASS impossible: NO_PROPOSAL without budget exhaustion
+PASS unused-snapshot: API authority, Draft, SQL Stage and continuation certified
+PASS second: API authority, Draft, SQL Stage and continuation certified
+PASS common-unit: API authority, Draft, SQL Stage and continuation certified
+{"status":"PASS","evidence":"/workspace/production-planner/work/u01f-certified-repeat/native/integration.json","remoteWrites":0}

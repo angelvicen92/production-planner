@@ -1,0 +1,352 @@
+{
+  "status": "PASS",
+  "physical": [
+    {
+      "stack": "native",
+      "label": "baseline",
+      "stage": 1,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "stack": "native",
+      "label": "baseline",
+      "stage": 2,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    },
+    {
+      "stack": "native",
+      "label": "A-fixed",
+      "stage": 1,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "stack": "native",
+      "label": "A-fixed",
+      "stage": 2,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    },
+    {
+      "stack": "native",
+      "label": "B-segments",
+      "stage": 1,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "stack": "native",
+      "label": "B-segments",
+      "stage": 2,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    },
+    {
+      "stack": "native",
+      "label": "C-joint-unit",
+      "stage": 1,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "stack": "native",
+      "label": "C-joint-unit",
+      "stage": 2,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    },
+    {
+      "stack": "native",
+      "label": "D-rest-competition",
+      "stage": 1,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 179
+    },
+    {
+      "stack": "native",
+      "label": "D-rest-competition",
+      "stage": 2,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 178
+    },
+    {
+      "stack": "native",
+      "label": "unused-snapshot",
+      "stage": 1,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "stack": "native",
+      "label": "unused-snapshot",
+      "stage": 2,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    },
+    {
+      "stack": "native",
+      "label": "second",
+      "stage": 1,
+      "obligations": 12,
+      "physicalOperations": 11,
+      "branches": 47
+    },
+    {
+      "stack": "native",
+      "label": "second",
+      "stage": 2,
+      "obligations": 12,
+      "physicalOperations": 11,
+      "branches": 5
+    },
+    {
+      "stack": "native",
+      "label": "common-unit",
+      "stage": 1,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "stack": "native",
+      "label": "common-unit",
+      "stage": 2,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    },
+    {
+      "stack": "native",
+      "label": "baseline",
+      "stage": 1,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "stack": "native",
+      "label": "baseline",
+      "stage": 2,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    },
+    {
+      "stack": "native",
+      "label": "A-fixed",
+      "stage": 1,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "stack": "native",
+      "label": "A-fixed",
+      "stage": 2,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    },
+    {
+      "stack": "native",
+      "label": "B-segments",
+      "stage": 1,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "stack": "native",
+      "label": "B-segments",
+      "stage": 2,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    },
+    {
+      "stack": "native",
+      "label": "C-joint-unit",
+      "stage": 1,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "stack": "native",
+      "label": "C-joint-unit",
+      "stage": 2,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    },
+    {
+      "stack": "native",
+      "label": "D-rest-competition",
+      "stage": 1,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 179
+    },
+    {
+      "stack": "native",
+      "label": "D-rest-competition",
+      "stage": 2,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 178
+    },
+    {
+      "stack": "native",
+      "label": "unused-snapshot",
+      "stage": 1,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "stack": "native",
+      "label": "unused-snapshot",
+      "stage": 2,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    },
+    {
+      "stack": "native",
+      "label": "second",
+      "stage": 1,
+      "obligations": 12,
+      "physicalOperations": 11,
+      "branches": 47
+    },
+    {
+      "stack": "native",
+      "label": "second",
+      "stage": 2,
+      "obligations": 12,
+      "physicalOperations": 11,
+      "branches": 5
+    },
+    {
+      "stack": "native",
+      "label": "common-unit",
+      "stage": 1,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "stack": "native",
+      "label": "common-unit",
+      "stage": 2,
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    }
+  ],
+  "determinism": [
+    {
+      "label": "baseline",
+      "stage": 1,
+      "exact": true
+    },
+    {
+      "label": "baseline",
+      "stage": 2,
+      "exact": true
+    },
+    {
+      "label": "A-fixed",
+      "stage": 1,
+      "exact": true
+    },
+    {
+      "label": "A-fixed",
+      "stage": 2,
+      "exact": true
+    },
+    {
+      "label": "B-segments",
+      "stage": 1,
+      "exact": true
+    },
+    {
+      "label": "B-segments",
+      "stage": 2,
+      "exact": true
+    },
+    {
+      "label": "C-joint-unit",
+      "stage": 1,
+      "exact": true
+    },
+    {
+      "label": "C-joint-unit",
+      "stage": 2,
+      "exact": true
+    },
+    {
+      "label": "D-rest-competition",
+      "stage": 1,
+      "exact": true
+    },
+    {
+      "label": "D-rest-competition",
+      "stage": 2,
+      "exact": true
+    },
+    {
+      "label": "unused-snapshot",
+      "stage": 1,
+      "exact": true
+    },
+    {
+      "label": "unused-snapshot",
+      "stage": 2,
+      "exact": true
+    },
+    {
+      "label": "second",
+      "stage": 1,
+      "exact": true
+    },
+    {
+      "label": "second",
+      "stage": 2,
+      "exact": true
+    },
+    {
+      "label": "common-unit",
+      "stage": 1,
+      "exact": true
+    },
+    {
+      "label": "common-unit",
+      "stage": 2,
+      "exact": true
+    }
+  ],
+  "SQLStages": 32,
+  "itinerantStages": 24,
+  "SQLNegatives": 648,
+  "remoteWrites": 0,
+  "impossibleCapacity": {
+    "demand": 55,
+    "available": 40,
+    "branches": 4278
+  }
+}
