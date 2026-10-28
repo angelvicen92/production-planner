@@ -1,0 +1,26 @@
+✔ NEXT-001 retains its frozen complete, hard-valid result (152.689872ms)
+✔ the adversarial scenario proves genuine bounded backtracking (105.372054ms)
+✔ partial branch rejection is not counted as backtracking (32.271304ms)
+✔ logical search budgets stop atomically with specific reasons (0.885442ms)
+✔ missing relationships and invalid availability never crash (21.385167ms)
+✔ unsupported focal structures are rejected explicitly (0.78949ms)
+✔ results and logical metrics are deterministic and array-order independent (254.260259ms)
+✔ planner-next remains isolated from legacy and production (137.164237ms)
+✔ representative, non-representative peer and space close the visible REQUIRED unit without prerequisites (177.911997ms)
+✔ authority accepts all authoring orders but rejects physical duplication, bad phases and backwards dependencies (43.789517ms)
+✔ partial scope certifies the authentic global future with its physical pause, zero extra search, then preserves S1 (774.770744ms)
+✔ each phase exposes multiple realized permutations, and HARD dependencies can require a non-nominal one (2013.749178ms)
+✔ phased technical operations retain their kind and accept flexible internal dependencies (93.084367ms)
+✔ a locally valid competitor prefix cannot consume the last contiguous future realization (789.731711ms)
+✔ daily REQUIRED authority needs CAS, strict topology and preserves true absence (14.299848ms)
+✔ membership, nominal inventory and linear dependencies fail closed (1.922291ms)
+✔ order is semantic in revision identity and explicit sibling selection (293.898263ms)
+✔ multiple common nominal resources are required in every real member (19.703621ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10709.161047

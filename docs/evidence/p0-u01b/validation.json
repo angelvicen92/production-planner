@@ -76,6 +76,23 @@
     "isolationBoundary": {
       "status": "PASS",
       "log": "checks/isolation.log"
+    },
+    "legacyUiRegression": {
+      "status": "PASS",
+      "cases": [
+        "A: linear chain then competitor",
+        "B: material empty domain, no Stage",
+        "C: several nominal required resources",
+        "D: independent S1, context-only future chain, protected S2"
+      ],
+      "genuineStages": 6,
+      "log": "checks/legacy-ui.log",
+      "receipts": "legacy/receipts.json.gz"
+    },
+    "finalProductSupplement": {
+      "tests": 18,
+      "status": "PASS",
+      "log": "checks/final-product.log"
     }
   },
   "ci": {

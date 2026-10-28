@@ -106,7 +106,7 @@ export async function buildEffectiveConfigurationView(storage:IStorage,planId:nu
     phasesSupported:requiredPhaseCompositionSupported(input),
     supported:technicalChainCombinationSupported(input)&&rawPlan.planner_next_profile.configuration?.transport==="NONE"&&rawPlan.planner_next_profile.configuration?.setup==="NONE",
     blockedReason:session&&(session.draftFingerprint!==session.workingFingerprint||Object.keys(session.draftScopeJson??{}).length)?"TECHNICAL_CHAIN_DIRTY_DRAFT":chainProposalActive?"TECHNICAL_CHAIN_PENDING_PROPOSAL":chainAuthority?.policies.some(p=>input.tasks.filter(t=>p.orderedTaskIds.includes(t.id)||p.phases&&t.jointGroupId&&input.tasks.some(member=>p.orderedTaskIds.includes(member.id)&&member.jointGroupId===t.jointGroupId)).map(t=>t.id).some(id=>input.tasks.some(t=>t.id===id&&(t.startPlanned!=null||t.status==="done"||t.status==="in_progress"))||input.locks.some(l=>l.taskId===id)))?"TECHNICAL_CHAIN_PROTECTED_DECISIONS":null,
-    tasks:input.tasks.map(t=>({id:t.id,label:`${t.templateName??"Tarea"} · ${t.contestantName??"Sin participante"}`,duration:t.durationOverrideMin??0,
+    tasks:input.tasks.map(t=>({id:t.id,label:t.contestantId==null?t.templateName??"Tarea":`${t.templateName??"Tarea"} · ${t.contestantName??"Sin participante"}`,duration:t.durationOverrideMin??0,
       space:input.planSpaceSettings?.find(s=>s.spaceId===t.spaceId)?.name??"Sin espacio",
       availability:input.planSpaceSettings?.find(s=>s.spaceId===t.spaceId),
       eligible:t.plannerNextKind==="technical"&&t.contestantId==null&&(t.status==="pending"||t.status==="interrupted")&&t.startPlanned==null&&!input.locks.some(l=>l.taskId===t.id),
