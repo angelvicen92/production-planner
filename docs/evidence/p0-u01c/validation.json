@@ -1,0 +1,40 @@
+{
+  "status": "PASS_DIAGNOSTIC_ONLY",
+  "base": "815dbc76cc1d7e52c3d298c9584cfcc82fff050b",
+  "node": "v24.19.0",
+  "productFilesChanged": 0,
+  "migrationsChanged": 0,
+  "remoteSupabaseWrites": 0,
+  "deployment": false,
+  "merge": false,
+  "checks": {
+    "focalFiles": 8,
+    "focalStatus": "PASS",
+    "evidenceTypeScript": "PASS",
+    "disposableStacks": 2,
+    "actualSqlStages": 8,
+    "mixedRequiredSqlStages": 0,
+    "independentPhysicsAndExactDeterminism": "PASS",
+    "commonBranches": [
+      83,
+      82
+    ],
+    "unphasedMixedBranches": [
+      20,
+      19
+    ],
+    "memoryRequiredMixedBranches": [
+      83,
+      82
+    ],
+    "physicalNegativeBranches": {
+      "native": 23,
+      "memory": 4278,
+      "budgetExhausted": false
+    },
+    "itinerantMemoryBranches": 2,
+    "focalTests": 94
+  },
+  "globalSuite": "NOT_RUN_NO_RUNTIME_CHANGE",
+  "A2Full": "NOT_RUN_NO_RUNTIME_CHANGE"
+}
