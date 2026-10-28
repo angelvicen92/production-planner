@@ -1,7 +1,7 @@
 import {dailyJointAuthority,jointCombinationSupported} from "./jointGroupStructure";
 import {dailyOperationalMealsAuthority,operationalMealsCombinationSupported} from './operationalMealPolicy';
 import {resolveEffectiveTaskResourceAssignments} from "../engine/planner-next/integration/effectiveTaskResourceAssignments";
-import { dailyTechnicalChainAuthority, technicalChainCombinationSupported } from "./technicalChainStructure";
+import { dailyTechnicalChainAuthority, technicalChainCombinationSupported, requiredPhaseCompositionSupported } from "./technicalChainStructure";
 import {dailyAnchoredAuthority,anchoredCombinationSupported} from './anchoredAccompanimentStructure';
 import {anchoredAccompanimentStructureSchema} from '../shared/anchoredAccompanimentStructure';
 import {dailyTaskOperationScopesAuthority,taskOperationScopesSupported,taskScopeDirectResources} from './dailyTaskOperationScopes';
@@ -98,16 +98,21 @@ export async function buildEffectiveConfigurationView(storage:IStorage,planId:nu
     for(const stage of stages.data??[])for(const task of (stage.snapshot_json as any)?.tasks??[])if(task.startPlanned!=null)protectedScopeTasks.add(Number(task.taskId));
     chainProposalActive=(runs.data??[]).some(r=>r.status!=="success"||(r.outcome==="PROPOSAL"&&!accepted.has(r.id)));
   }
+  const chainAssignments=resolveEffectiveTaskResourceAssignments(input);
   const technicalChains=rawPlan.planner_next_profile?{
     revisionId:rawPlan.current_config_revision_id==null?null:Number(rawPlan.current_config_revision_id),
     authority:chainAuthority?{contractVersion:1 as const,policies:chainAuthority.policies}:null,
     by:chainAuthority?.by??null,at:chainAuthority?.at??null,
+    phasesSupported:requiredPhaseCompositionSupported(input),
     supported:technicalChainCombinationSupported(input)&&rawPlan.planner_next_profile.configuration?.transport==="NONE"&&rawPlan.planner_next_profile.configuration?.setup==="NONE",
-    blockedReason:session&&(session.draftFingerprint!==session.workingFingerprint||Object.keys(session.draftScopeJson??{}).length)?"TECHNICAL_CHAIN_DIRTY_DRAFT":chainProposalActive?"TECHNICAL_CHAIN_PENDING_PROPOSAL":chainAuthority?.policies.some(p=>p.orderedTaskIds.some(id=>input.tasks.some(t=>t.id===id&&(t.startPlanned!=null||t.status==="done"||t.status==="in_progress"))||input.locks.some(l=>l.taskId===id)))?"TECHNICAL_CHAIN_PROTECTED_DECISIONS":null,
-    tasks:input.tasks.map(t=>({id:t.id,label:t.templateName??"Tarea",duration:t.durationOverrideMin??0,
+    blockedReason:session&&(session.draftFingerprint!==session.workingFingerprint||Object.keys(session.draftScopeJson??{}).length)?"TECHNICAL_CHAIN_DIRTY_DRAFT":chainProposalActive?"TECHNICAL_CHAIN_PENDING_PROPOSAL":chainAuthority?.policies.some(p=>input.tasks.filter(t=>p.orderedTaskIds.includes(t.id)||p.phases&&t.jointGroupId&&input.tasks.some(member=>p.orderedTaskIds.includes(member.id)&&member.jointGroupId===t.jointGroupId)).map(t=>t.id).some(id=>input.tasks.some(t=>t.id===id&&(t.startPlanned!=null||t.status==="done"||t.status==="in_progress"))||input.locks.some(l=>l.taskId===id)))?"TECHNICAL_CHAIN_PROTECTED_DECISIONS":null,
+    tasks:input.tasks.map(t=>({id:t.id,label:t.contestantId==null?t.templateName??"Tarea":`${t.templateName??"Tarea"} · ${t.contestantName??"Sin participante"}`,duration:t.durationOverrideMin??0,
       space:input.planSpaceSettings?.find(s=>s.spaceId===t.spaceId)?.name??"Sin espacio",
       availability:input.planSpaceSettings?.find(s=>s.spaceId===t.spaceId),
       eligible:t.plannerNextKind==="technical"&&t.contestantId==null&&(t.status==="pending"||t.status==="interrupted")&&t.startPlanned==null&&!input.locks.some(l=>l.taskId===t.id),
+      phaseEligible:['technical','auxiliary'].includes(t.plannerNextKind??'')&&t.operationalRole==='productive_task'&&(t.status==='pending'||t.status==='interrupted')&&t.startPlanned==null&&!input.locks.some(l=>l.taskId===t.id)&&!protectedScopeTasks.has(t.id),
+      jointMemberIds:t.jointGroupId?input.tasks.filter(p=>p.jointGroupId===t.jointGroupId).map(p=>p.id):[],
+      phaseResourceIds:chainAssignments.assignments.find(a=>a.taskId===t.id)?.effectiveResourceIds??[],
       resourceIds:input.planResourceItems.filter(r=>Number(t.resourceRequirements?.byItem?.[r.resourceItemId])>0).map(r=>r.id)})),
     resources:input.planResourceItems.map(r=>({id:r.id,name:r.name,start:r.availabilityStart??input.workDay.start,end:r.availabilityEnd??input.workDay.end})),
   }:undefined;

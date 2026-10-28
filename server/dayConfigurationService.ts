@@ -186,6 +186,7 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
     dailyOperationalMealsAuthority(plan);
     if(!plan.planner_next_profile?.configuration||plan.planner_next_configuration!=null)throw Object.assign(new Error("OPERATIONAL_MEAL_AUTHORITY_CONFLICT"),{status:422});
     nextInput=withDailyOperationalMeals(optimizerInput,operationalMealEdit);
+    if(nextInput.dailyTechnicalChainsVersion===1)nextInput=validateDailyTechnicalChains(nextInput,{contractVersion:1,policies:nextInput.technicalChains??[]});
     const readiness=preflightEngineInputForPlannerNext(nextInput);
     if(readiness.status!=="SUPPORTED")throw Object.assign(new Error(`UNSUPPORTED_OPERATIONAL_MEAL: ${readiness.reasonCodes.join(", ")}`),{status:422});
   }
@@ -194,6 +195,7 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
     if(!plan.planner_next_profile||plan.planner_next_configuration!=null)throw Object.assign(new Error('JOINT_AUTHORITY_CONFLICT'),{status:422});
     const baseRepository=new Proxy(repository,{get(target,key,receiver){return key==='getPlanEngineInputDetails'?async(id:number)=>{const details=await target.getPlanEngineInputDetails(id);return {...details,plan:{...(details as any).plan,daily_joint_groups:null}};}:Reflect.get(target,key,receiver);}});
     nextInput=withDailyJointGroups(await buildEngineInput(planId,baseRepository),jointEdit);
+    if(nextInput.dailyTechnicalChainsVersion===1)nextInput=validateDailyTechnicalChains(nextInput,{contractVersion:1,policies:nextInput.technicalChains??[]});
     const readiness=preflightEngineInputForPlannerNext(nextInput);
     if(readiness.status!=='SUPPORTED')throw Object.assign(new Error(`UNSUPPORTED_JOINT_GROUP: ${readiness.reasonCodes.join(', ')}`),{status:422});
   }
@@ -202,6 +204,7 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
     if(!plan.planner_next_profile||plan.planner_next_configuration!=null)throw Object.assign(new Error('TASK_SCOPE_AUTHORITY_CONFLICT'),{status:422});
     const baseRepository=new Proxy(repository,{get(target,key,receiver){return key==='getPlanEngineInputDetails'?async(id:number)=>{const details=await target.getPlanEngineInputDetails(id);return {...details,plan:{...(details as any).plan,daily_task_operation_scopes:null}};}:Reflect.get(target,key,receiver);}});
     nextInput=withDailyTaskOperationScopes({...await buildEngineInput(planId,baseRepository),dailyTaskOperationScopes:current.input.dailyTaskOperationScopes},scopeEdit);
+    if(nextInput.dailyTechnicalChainsVersion===1)nextInput=validateDailyTechnicalChains(nextInput,{contractVersion:1,policies:nextInput.technicalChains??[]});
     const readiness=preflightEngineInputForPlannerNext(nextInput);
     if(readiness.status!=='SUPPORTED')throw Object.assign(new Error(`UNSUPPORTED_TASK_SCOPE: ${readiness.reasonCodes.join(', ')}`),{status:422});
   }
@@ -211,6 +214,7 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
     // Rebuild the native base when editing/removing, rather than retaining old virtual fields.
     const baseRepository=new Proxy(repository,{get(target,key,receiver){return key==='getPlanEngineInputDetails'?async(id:number)=>{const details=await target.getPlanEngineInputDetails(id);return {...details,plan:{...(details as any).plan,daily_anchored_accompaniments:null}};}:Reflect.get(target,key,receiver);}});
     nextInput=withDailyAnchoredAccompaniments(await buildEngineInput(planId,baseRepository),anchoredEdit);
+    if(nextInput.dailyTechnicalChainsVersion===1)nextInput=validateDailyTechnicalChains(nextInput,{contractVersion:1,policies:nextInput.technicalChains??[]});
     const readiness=preflightEngineInputForPlannerNext(nextInput);
     if(readiness.status!=='SUPPORTED')throw Object.assign(new Error(`UNSUPPORTED_ANCHORED_OPERATION: ${readiness.reasonCodes.join(', ')}`),{status:422});
   }
@@ -228,6 +232,7 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
     dailyTechnicalChainAuthority(plan);
     if (!plan.planner_next_profile || plan.planner_next_configuration != null || plan.planner_next_profile.configuration?.transport !== "NONE" || plan.planner_next_profile.configuration?.setup !== "NONE") throw Object.assign(new Error("TECHNICAL_CHAIN_AUTHORITY_CONFLICT"),{status:422});
     nextInput = validateDailyTechnicalChains(nextInput,chainEdit);
+    if(nextInput.dailyTechnicalChainsVersion===1)nextInput=validateDailyTechnicalChains(nextInput,{contractVersion:1,policies:nextInput.technicalChains??[]});
     const readiness=preflightEngineInputForPlannerNext(nextInput);
     if(readiness.status!=="SUPPORTED")throw Object.assign(new Error(`UNSUPPORTED_TECHNICAL_CHAIN: ${readiness.reasonCodes.join(", ")}`),{status:422});
   }
@@ -240,6 +245,7 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
     const snapshots=await repository.getPlanTaskTemplateSnapshots(planId);
     const baseline=applyEffectiveOperationContinuity({...nextInput,operationContinuityGroups:undefined},{...plan,operation_continuity_overrides:[]},snapshots);
     nextInput=candidateOperationContinuity(nextInput,continuityEdit??continuityRestore!.operationContinuity,!!continuityRestore,baseline);
+    if(nextInput.dailyTechnicalChainsVersion===1)nextInput=validateDailyTechnicalChains(nextInput,{contractVersion:1,policies:nextInput.technicalChains??[]});
     const readiness=preflightEngineInputForPlannerNext(nextInput);
     if(readiness.status!=="SUPPORTED") throw Object.assign(new Error("La continuidad no es representable con la configuración efectiva."),{status:422});
   }

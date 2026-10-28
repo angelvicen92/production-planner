@@ -36,8 +36,8 @@ export interface EffectiveConfigurationView {
   };
   technicalChains?: {
     revisionId:number|null; authority:import("./technicalChainStructure").TechnicalChainStructure|null;
-    supported:boolean; blockedReason:string|null; by:string|null; at:string|null;
-    tasks:{id:number;label:string;duration:number;space:string;availability?:{availabilityStart?:string|null;availabilityEnd?:string|null};eligible:boolean;resourceIds:number[]}[];
+    supported:boolean;phasesSupported?:boolean; blockedReason:string|null; by:string|null; at:string|null;
+    tasks:{id:number;label:string;duration:number;space:string;availability?:{availabilityStart?:string|null;availabilityEnd?:string|null};eligible:boolean;phaseEligible?:boolean;phaseResourceIds?:readonly number[];jointMemberIds?:number[];resourceIds:readonly number[]}[];
     resources:{id:number;name:string;start:string;end:string}[];
   };
   anchoredAccompaniments?: {

@@ -1,0 +1,15 @@
+{
+  "status": "FINAL_CANDIDATE_PASSED",
+  "preliminaryAttempts": [
+    "Harness used the wrong template PATCH URL; corrected to existing /api/ta/:id.",
+    "Incremental SQL needed explicit parentheses for JSONB containment; corrected before the final migration gates.",
+    "The exact SQL-body parser interpreted $ in a replacement as JavaScript substitution; changed literal replacements to callbacks and checked actual PostgreSQL bodies.",
+    "Default shell sandbox blocked build IPC/auth-test sockets; rerun with explicit network permission.",
+    "A forced technical permutation initially contradicted narrow fixture availability; the test now declares broad explicit availability.",
+    "CI isolation allowlist required the new test and the existing assignment-reader boundary; added exact entries, preserving the global assertion.",
+    "Supplementary screenshot run reached a safe 409 on redo under live UI polling. assisted_move_stage uses NOWAIT; dbError maps lock/deadlock to REBOOTSTRAP_STALE_SOURCES. Harness now stops UI polling after capturing configuration, before deliberate API transaction probes. No product lock or freshness guard changed.",
+    "The historical Chromium chain gate found changed accessible labels in linear mode. Restored its original member labels and technical task names; phases alone use phase labels. Re-ran the complete historical UI gate A/B/C/D and both native phase stacks."
+  ],
+  "allCountedNativeReceipts": "Only last-native/last-repeat, both complete and source-bound; legacy UI receipts stored separately.",
+  "noPreliminaryFailuresCountedAsAcceptance": true
+}

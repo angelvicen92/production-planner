@@ -166,7 +166,7 @@ export function materializeAssistedSnapshotOccupations(problem:PlannerNextProble
 
 /** Revalidate the persisted physical witness, never rediscover it with another search. */
 export function assertNominalProposalWitness(input:EngineInput,draft:AssistedPlanningSnapshotV1,result:AssistedProposalRunResultV1){
-  if(input.dailyOperationalMealsVersion!==1&&input.dailyJointGroupsVersion!==1&&input.dailyAnchoredAccompanimentsVersion!==2&&!input.tasks.some(task=>task.resourceRequirements?.anyOf?.length||Object.keys(task.resourceRequirements?.byType??{}).length))return;
+  if(!(input.dailyTechnicalChainsVersion===1&&input.technicalChains?.some(p=>p.phases))&&input.dailyOperationalMealsVersion!==1&&input.dailyJointGroupsVersion!==1&&input.dailyAnchoredAccompanimentsVersion!==2&&!input.tasks.some(task=>task.resourceRequirements?.anyOf?.length||Object.keys(task.resourceRequirements?.byType??{}).length))return;
   const adapter=adaptEngineInputToPlannerNextProblem(input);
   if(adapter.status!=='SUPPORTED')throw new Error('INVALID_NOMINAL_PHYSICAL_WITNESS');
   const problem=adapter.problem,proof=result.evidence.nominalPhysicalFutureWitness as any;
@@ -451,7 +451,7 @@ export class AssistedProposalService {
     const globalMealGate=globalMealEvidence.globalMealGate;
     const technicalChainCertificate=input.dailyTechnicalChainsVersion===1&&proposal
       ?certifyDailyTechnicalChain(adapter.problem,[...protectedPlacements,...(execution.proposal??[])],
-        adapter.problem.budget.maxBranchExpansions-Number(execution.evidence.work.branchBudgetConsumed??execution.evidence.work.branchesExplored??0)):null;
+        adapter.problem.budget.maxBranchExpansions-Number(execution.evidence.work.branchBudgetConsumed??execution.evidence.work.branchesExplored??0),execution.evidence.nominalPhysicalFutureWitness):null;
     const technicalChainGate=!technicalChainCertificate||technicalChainCertificate.status==="WITNESS";
     const evidence={...execution.evidence,...(technicalChainCertificate?{technicalChainCertificate}:{}),hardValid:candidateViolations.every(item=>item.severity!=="HARD"),requiredValid:newRequiredViolationCount===0,
       inheritedAcceptedHardViolationCount:delta.inheritedHardViolationCount,inheritedAcceptedRequiredViolationCount:delta.inheritedRequiredViolationCount,
