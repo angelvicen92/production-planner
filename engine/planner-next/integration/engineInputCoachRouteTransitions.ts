@@ -25,10 +25,12 @@ export function projectEngineInputCoachRouteTransitions(
   return Array.isArray(value) && value.length === 0 ? undefined : value;
 }
 
-export function resolveEngineInputCoachRouteTransitions(
+function resolveRoutes(
   input: EngineInput,
   timeGridMinutes: unknown,
-  configuredCoachIds: ReadonlySet<number>,
+  configuredCoachIds: ReadonlySet<number> | undefined,
+  field: "coachRouteTransitions" | "resourceRouteTransitions",
+  identityField: "coachPlanResourceItemId" | "planResourceItemId",
 ): {
   present: boolean;
   invalidContainer: boolean;
@@ -36,8 +38,8 @@ export function resolveEngineInputCoachRouteTransitions(
   defects: readonly EngineInputCoachRouteTransitionDefect[];
 } {
   const runtime = input as unknown as Record<string, unknown>;
-  const present = Object.prototype.hasOwnProperty.call(runtime, "coachRouteTransitions");
-  const value = runtime.coachRouteTransitions;
+  const present = Object.prototype.hasOwnProperty.call(runtime, field);
+  const value = runtime[field];
   const invalidContainer = present && value !== undefined && !Array.isArray(value);
   const entries = Array.isArray(value) ? value : [];
   const planResourceIds = new Set(input.planResourceItems.map(({ id }) => id));
@@ -50,13 +52,13 @@ export function resolveEngineInputCoachRouteTransitions(
     const route = raw && typeof raw === "object" && !Array.isArray(raw)
       ? raw as Record<string, unknown>
       : {};
-    const coachPlanResourceItemId = route.coachPlanResourceItemId;
+    const coachPlanResourceItemId = route[identityField];
     const fromSpaceId = route.fromSpaceId;
     const toSpaceId = route.toSpaceId;
     const minutes = route.minutes;
     const coachValid = positiveInteger(coachPlanResourceItemId)
       && planResourceIds.has(coachPlanResourceItemId)
-      && configuredCoachIds.has(coachPlanResourceItemId);
+      && (configuredCoachIds === undefined || configuredCoachIds.has(coachPlanResourceItemId));
     const fromValid = positiveInteger(fromSpaceId) && spaceIds.has(fromSpaceId);
     const toValid = positiveInteger(toSpaceId) && spaceIds.has(toSpaceId);
     const minutesValid = positiveInteger(minutes)
@@ -67,7 +69,8 @@ export function resolveEngineInputCoachRouteTransitions(
     const duplicate = keys.has(key);
     keys.add(key);
 
-    if (!coachValid || !fromValid || !toValid || !minutesValid || !directionValid || duplicate) {
+    if (!coachValid || !fromValid || !toValid || !minutesValid || !directionValid || duplicate
+      || field === "resourceRouteTransitions" && Object.keys(route).some(key => ![identityField,"fromSpaceId","toSpaceId","minutes"].includes(key))) {
       defects.push({
         index,
         details: {
@@ -100,4 +103,19 @@ export function resolveEngineInputCoachRouteTransitions(
     routes: Object.freeze(routes),
     defects: Object.freeze(defects),
   };
+}
+
+export function resolveEngineInputCoachRouteTransitions(input: EngineInput, grid: unknown, coachIds: ReadonlySet<number>) {
+  return resolveRoutes(input, grid, coachIds, "coachRouteTransitions", "coachPlanResourceItemId");
+}
+
+/** The historical validator and its positive/grid/direction rules also govern resources. */
+export function resolveEngineInputResourceRouteTransitions(input: EngineInput, grid: unknown) {
+  const resolved = resolveRoutes(input, grid, undefined, "resourceRouteTransitions", "planResourceItemId");
+  const legacyKeys = new Set((Array.isArray(input.coachRouteTransitions) ? input.coachRouteTransitions : [])
+    .filter(r => r && typeof r === "object")
+    .map(r => `${r.coachPlanResourceItemId}\0${r.fromSpaceId}\0${r.toSpaceId}`));
+  return {...resolved, routes: resolved.routes.map(({coachPlanResourceItemId,...route}) => ({...route,planResourceItemId:coachPlanResourceItemId})),
+    defects: [...resolved.defects, ...resolved.routes.flatMap((r,index) => legacyKeys.has(`${r.coachPlanResourceItemId}\0${r.fromSpaceId}\0${r.toSpaceId}`)
+      ? [{index,details:{ambiguousCoachDeclaration:true}}] : [])]};
 }

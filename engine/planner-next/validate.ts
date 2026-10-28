@@ -21,7 +21,7 @@ import type {
 } from "./contracts";
 import { contains, overlaps } from "./time";
 import { occupationAvoidsProtectedMeal } from "./spaceMeals";
-import { effectiveResourceTransitionMinutes } from "./placement";
+import { effectiveResourceTransitionMinutes, sharedPhysicalResources, resourceRouteTransitionPreflightReasons } from "./resourceRouteTransitions";
 import { materializeItinerantUnitAssignment } from "./itinerantUnitAssignment";
 import { continuityBridgesWithinSpan, hasRequiredSecondaryContinuity, requiredSecondarySpaces, secondaryTasks } from "./secondaryContinuity";
 import { preparationAvoidsMeal, preparationAvoidsOccupations, preparationWithinAvailability, preparationWithinDay, setupPreparationId, setupPreparationSequence, spaceOccupations } from "./setupPreparation";
@@ -169,6 +169,7 @@ export function preflight(problem: PlannerNextProblem): string[] {
   const coachIds = new Set(coaches.map(({ id }) => id));
   const spaceIds = new Set(spaces.map(({ id }) => id));
   coachRouteTransitionPreflightReasons(problem).forEach((reason) => reasons.add(reason));
+  resourceRouteTransitionPreflightReasons(problem).forEach(reason => reasons.add(reason));
   if (resources.some((resource) => resource.assignedSpaceId !== undefined
     && (typeof resource.assignedSpaceId !== "string" || !spaceIds.has(resource.assignedSpaceId)))) {
     reasons.add("MISSING_RESOURCE_ASSIGNED_SPACE_REFERENCE");
@@ -527,7 +528,7 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
         || synchronizedTransportTasks(problem, a, b);
       const sharedParticipant = a.participantId !== undefined && b.participantId !== undefined && a.participantId === b.participantId;
       if (!internal && (sharedParticipant || (a.coachId !== undefined && a.coachId === b.coachId) || (a.spaceId === b.spaceId && a.blocksSpace!==false && b.blocksSpace!==false))) { overlap += 1; addViolation("OVERLAP_VIOLATION","HARD",[a,b],[],[a.spaceId,b.spaceId],{overlapStart:Math.max(a.start,b.start),overlapEnd:Math.min(a.end,b.end),participantId:sharedParticipant?a.participantId:null,coachId:a.coachId===b.coachId?a.coachId:null}); }
-      const sharedResources=(a.requiredResourceIds ?? []).filter((id) => (b.requiredResourceIds ?? []).includes(id));
+      const sharedResources=sharedPhysicalResources(a,b);
       if (!internal && sharedResources.length>0) { resourceOverlap += 1; addViolation("RESOURCE_OVERLAP_VIOLATION","HARD",[a,b],sharedResources,[a.spaceId,b.spaceId],{overlapStart:Math.max(a.start,b.start),overlapEnd:Math.min(a.end,b.end)}); }
     }
   }
@@ -556,8 +557,8 @@ export function validatePlan(problem: PlannerNextProblem, scheduled: ScheduledTa
       const unorderedA = scheduled[first], unorderedB = scheduled[second];
       if (!unorderedA || !unorderedB) continue;
       const [a, b] = unorderedA.start <= unorderedB.start ? [unorderedA, unorderedB] : [unorderedB, unorderedA];
-      const shared = (a.requiredResourceIds ?? []).filter((id) => (b.requiredResourceIds ?? []).includes(id));
-      const margin = shared.reduce((maximum, id) => Math.max(maximum, effectiveResourceTransitionMinutes(problem, id)), 0);
+      const shared = sharedPhysicalResources(a,b);
+      const margin = shared.reduce((maximum, id) => Math.max(maximum, effectiveResourceTransitionMinutes(problem, id, a.spaceId, b.spaceId)), 0);
       if (shared.length > 0 && a.spaceId !== b.spaceId && b.start - a.end < margin && !isInternalAnchoredPair(problem,a,b)) { resourceTransition += 1; addViolation("RESOURCE_TRANSITION_VIOLATION","HARD",[a,b],shared,[a.spaceId,b.spaceId],{requiredMinutes:margin,actualMinutes:b.start-a.end}); }
       const sameUnit=a.itinerantUnitId!==undefined&&a.itinerantUnitId===b.itinerantUnitId;
       const unitMargin=sameUnit?problem.itinerantUnits?.find(unit=>unit.id===a.itinerantUnitId)?.transitionMinutes??0:0;

@@ -1,0 +1,23 @@
+{
+  "first": {
+    "archiveBase": "7302a333be10532b17284e5db06bdc62aed975e0",
+    "runtimeSourceFiles": 1674,
+    "checkoutDelta": [],
+    "allCurrentSourcesMatch": true,
+    "manifestSha256": "4ef41ac54c70b0f7eee320394482605be9bc63a4b0fa466119a445a6680af6d1"
+  },
+  "repeat": {
+    "archiveBase": "7302a333be10532b17284e5db06bdc62aed975e0",
+    "runtimeSourceFiles": 1674,
+    "checkoutDelta": [],
+    "allCurrentSourcesMatch": true,
+    "manifestSha256": "4ef41ac54c70b0f7eee320394482605be9bc63a4b0fa466119a445a6680af6d1"
+  },
+  "control-g01": {
+    "archiveBase": "7302a333be10532b17284e5db06bdc62aed975e0",
+    "runtimeSourceFiles": 1673,
+    "checkoutDelta": [],
+    "allCurrentSourcesMatch": true,
+    "manifestSha256": "41c14d2517c2171a0f5a49e3c3d0818f654caaa2fc85d0a9123638b173702007"
+  }
+}

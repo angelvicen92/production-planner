@@ -64,6 +64,13 @@ export interface TechnicalChainPolicy {
   requiredResourceIds: string[];
 }
 
+export interface ResourceRouteTransition {
+  resourceId: string;
+  fromSpaceId: string;
+  toSpaceId: string;
+  minutes: Minute;
+}
+
 export interface CoachRouteTransition {
   coachId: string;
   fromSpaceId: string;
@@ -213,6 +220,7 @@ export interface PlannerNextProblem {
   participantTransitionMinutes: number;
   resourceTransitionMinutes: number;
   coachRouteTransitions?: CoachRouteTransition[];
+  resourceRouteTransitions?: ResourceRouteTransition[];
   roundSynchronizations?: RoundSynchronizationPolicy[];
   technicalChains?: TechnicalChainPolicy[];
   /** Derived inferred-chain identity retained by Assisted scope projection; never a policy. */

@@ -6,11 +6,8 @@ import { effectiveCoachTransitionMinutes } from "./coachRouteTransitions";
 import { participantGapMinutes } from "./participantTransition";
 import {nominalResourceVariants,nominalResourceAssignmentMatches} from './nominalResourceChoice';
 
-/** Resolves the resource-specific margin without mutation or throwing for an unknown id. */
-export function effectiveResourceTransitionMinutes(problem: PlannerNextProblem, resourceId: string): number {
-  return problem.resources.find(({ id }) => id === resourceId)?.transitionMinutes
-    ?? problem.resourceTransitionMinutes;
-}
+export { effectiveResourceTransitionMinutes } from "./resourceRouteTransitions";
+import { effectiveResourceTransitionMinutes, sharedPhysicalResources } from "./resourceRouteTransitions";
 
 export function taskAvoidsItinerantUnitMeals(problem:PlannerNextProblem,task:Task,start:number,end:number):boolean {
   return !task.itinerantUnitId||(problem.itinerantUnitMeals??[]).every(meal=>meal.itinerantUnitId!==task.itinerantUnitId||!overlaps(meal.interval,{start,end}));
@@ -129,7 +126,7 @@ export function exactTaskDynamicStartDomain(problem:PlannerNextProblem,task:Task
     if(other.dependencies.includes(task.id))domain=intersectExactStartIntervals(domain,[{start:Number.NEGATIVE_INFINITY,end:other.start-task.duration}]);
     const sharedParticipant=task.participantId!==undefined&&other.participantId===task.participantId;
     const sharedCoach=task.coachId!==undefined&&other.coachId===task.coachId;
-    const sharedResources=(task.requiredResourceIds??[]).filter(id=>(other.requiredResourceIds??[]).includes(id));
+    const sharedResources=sharedPhysicalResources(task,other);
     const sharedItinerantUnit=task.itinerantUnitId!==undefined&&task.itinerantUnitId===other.itinerantUnitId;
     const sameLocation=task.spaceId===other.spaceId;
     const sharedSpace=sameLocation&&task.blocksSpace!==false&&other.blocksSpace!==false;
@@ -140,8 +137,8 @@ export function exactTaskDynamicStartDomain(problem:PlannerNextProblem,task:Task
     if(sharedParticipant){before=participantGapMinutes(problem,task,other);after=participantGapMinutes(problem,other,task);}
     if(!sameLocation){
       if(sharedCoach&&task.coachId!==undefined){before=Math.max(before,effectiveCoachTransitionMinutes(problem,task.coachId,task.spaceId,other.spaceId));after=Math.max(after,effectiveCoachTransitionMinutes(problem,task.coachId,other.spaceId,task.spaceId));}
-      for(const id of sharedResources)before=after=Math.max(before,after,effectiveResourceTransitionMinutes(problem,id));
-      if(sharedItinerantUnit){const transition=problem.itinerantUnits?.find(unit=>unit.id===task.itinerantUnitId)?.transitionMinutes??0;before=after=Math.max(before,after,transition);}
+      for(const id of sharedResources){before=Math.max(before,effectiveResourceTransitionMinutes(problem,id,task.spaceId,other.spaceId));after=Math.max(after,effectiveResourceTransitionMinutes(problem,id,other.spaceId,task.spaceId));}
+      if(sharedItinerantUnit){const transition=problem.itinerantUnits?.find(unit=>unit.id===task.itinerantUnitId)?.transitionMinutes??0;before=Math.max(before,transition);after=Math.max(after,transition);}
     }
     domain=subtractOccupation(domain,{start:other.start-before,end:other.end+after},task.duration);
   }
@@ -192,8 +189,7 @@ export function diagnoseTaskPlacement(problem: PlannerNextProblem, task: Task, s
       && other.participantId === task.participantId;
     const sharedCoach = task.coachId !== undefined
       && other.coachId === task.coachId;
-    const sharedResources = (task.requiredResourceIds ?? [])
-      .filter((id) => (other.requiredResourceIds ?? []).includes(id));
+    const sharedResources = sharedPhysicalResources(task,other);
     const sharedResource = sharedResources.length > 0;
     const sharedItinerantUnit = task.itinerantUnitId !== undefined
       && other.itinerantUnitId === task.itinerantUnitId;
@@ -220,7 +216,7 @@ export function diagnoseTaskPlacement(problem: PlannerNextProblem, task: Task, s
     if (sharedParticipant && gap < participantMargin) return reject("TRANSITION_PARTICIPANT",other.id);
     if (other.spaceId === task.spaceId) continue;
     if (sharedCoach && gap < coachMargin) return reject("TRANSITION_COACH",other.id);
-    if (sharedResources.some(id=>gap<effectiveResourceTransitionMinutes(problem,id))) return reject("TRANSITION_REQUIRED_RESOURCE",other.id);
+    if (sharedResources.some(id=>gap<effectiveResourceTransitionMinutes(problem,id,afterOther?other.spaceId:task.spaceId,afterOther?task.spaceId:other.spaceId))) return reject("TRANSITION_REQUIRED_RESOURCE",other.id);
     const itinerantTransition=sharedItinerantUnit?problem.itinerantUnits?.find(unit=>unit.id===task.itinerantUnitId)?.transitionMinutes??0:0;
     if (sharedItinerantUnit && gap < itinerantTransition) return reject("TRANSITION_REQUIRED_RESOURCE",other.id);
   }

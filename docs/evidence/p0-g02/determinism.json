@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "days": 2,
+  "stagesPerDatabase": 4,
+  "sameIds": true,
+  "decisionsAndWitnessesEqual": true,
+  "sqlSnapshotsAndFingerprintsEqual": true,
+  "branchCountersEqual": true,
+  "ignoredObservationKeys": [
+    "durationMs",
+    "elapsedMs",
+    "executionMs",
+    "totalDurationMs"
+  ],
+  "remoteWrites": 0
+}

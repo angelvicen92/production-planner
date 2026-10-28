@@ -1,3 +1,4 @@
+import { sharedPhysicalResources } from "./resourceRouteTransitions";
 import {mainOperationVariants} from './anchoredAccompaniment';
 import {nominalOperationEdgeKey} from './nominalResourceChoice';
 import type { PlannerNextProblem, ScheduledSetupPreparation, ScheduledSpaceMeal, ScheduledTask, Task, ValidationSummary } from "./contracts";
@@ -774,8 +775,7 @@ export const residualMatchingOperationsMayInteract = (problem: PlannerNextProble
 
   const participant = candidate.participantId !== undefined && candidate.participantId === added.participantId;
   const coach = candidate.coachId !== undefined && candidate.coachId === added.coachId;
-  const sharedResources = (candidate.requiredResourceIds ?? [])
-    .filter((id) => (added.requiredResourceIds ?? []).includes(id));
+  const sharedResources = sharedPhysicalResources(candidate,added);
   const overlap = candidate.start < added.end && added.start < candidate.end;
   if (overlap) return participant || coach || candidate.spaceId === added.spaceId || sharedResources.length > 0;
   if (candidate.spaceId === added.spaceId) return false;
@@ -788,7 +788,7 @@ export const residualMatchingOperationsMayInteract = (problem: PlannerNextProble
   if (coach && gap < effectiveCoachTransitionMinutes(problem, candidate.coachId!,
     candidateAfterAdded ? added.spaceId : candidate.spaceId,
     candidateAfterAdded ? candidate.spaceId : added.spaceId)) return true;
-  return sharedResources.some((id) => gap < effectiveResourceTransitionMinutes(problem, id));
+  return sharedResources.some((id) => gap < effectiveResourceTransitionMinutes(problem, id, candidateAfterAdded ? added.spaceId : candidate.spaceId, candidateAfterAdded ? candidate.spaceId : added.spaceId));
 }));
 
 function latestDepartureStartByParticipant(problem: PlannerNextProblem): ReadonlyMap<string, number> {

@@ -1,0 +1,81 @@
+{
+  "attempts": [
+    {
+      "id": "migration-probe",
+      "result": "PASS",
+      "scope": "complete local migration ledger; no product journey"
+    },
+    {
+      "id": "first",
+      "result": "HARNESS_REJECTED",
+      "reason": "G01 button label was A\u00f1adir recurso, not the harness label"
+    },
+    {
+      "id": "second",
+      "result": "PRODUCT_WIRING_REJECTED",
+      "reason": "candidateInput reintroduced mealWindow in isolated route edit; route operation now uses the native input directly"
+    },
+    {
+      "id": "third",
+      "result": "PRODUCT_WIRING_REJECTED",
+      "reason": "buildInput did not load the effective revision for the new daily authority; included in existing revision read"
+    },
+    {
+      "id": "fourth",
+      "result": "HARNESS_REJECTED",
+      "reason": "counted routes before editor load when deleting; explicit wait added"
+    },
+    {
+      "id": "fifth",
+      "result": "HARNESS_REJECTED",
+      "reason": "restricted Data API correctly denied SELECT instead of returning RLS empty rows; both outcomes now checked"
+    },
+    {
+      "id": "sixth",
+      "result": "EXISTING_CONTRACT_REJECTED",
+      "reason": "technical task without resources rejected by existing UNSUPPORTED_STANDALONE_TASK_KIND; fixture now consumes SON and no CAM; no guard relaxed"
+    },
+    {
+      "id": "seventh",
+      "result": "EXISTING_CONTRACT_REJECTED",
+      "reason": "Independent technical operations require a supported chain or unit; retaining SON alone does not satisfy that shape. The no-CAM control now uses the existing ordinary auxiliary contract."
+    },
+    {
+      "id": "eighth",
+      "result": "HARNESS_REJECTED",
+      "reason": "The physical attack initially selected the no-CAM task by space alone; it now selects by actual consumption, direction and route duration."
+    },
+    {
+      "id": "ninth",
+      "result": "EXISTING_CONTRACT_REJECTED",
+      "reason": "Vocal feeder generic resources are explicitly unsupported. The native case uses coach-only Vocal plus concrete CAM preparation/Main, without relaxing that guard."
+    },
+    {
+      "id": "tenth",
+      "result": "EXISTING_CONTINUATION_LIMIT",
+      "reason": "Accepting isolated Vocal leaves pending Main without an unfixed feeder. The certified native path accepts Main together with its prerequisites, preserving that existing unit."
+    },
+    {
+      "id": "final-a,b,c",
+      "result": "PASS_DEVELOPMENT_CONTROLS",
+      "reason": "Both native topologies reach four SQL Stages per database and physical decisions match literally. Subsequent catalogue-security gate and isolation-test updates are excluded from the final frozen source runs."
+    },
+    {
+      "id": "upgrade-first",
+      "result": "SECURITY_GATE_REJECTED",
+      "reason": "The strict Data API inventory detected the four new functions. Their exact signatures, private ACLs, invoker security, empty search_path and column grants were added to the existing manifest; no guard removed."
+    },
+    {
+      "id": "a2-initial",
+      "result": "CERTIFICATE_HASH_REGRESSION",
+      "reason": "All 266 decisions, 11 snapshots and counters were identical, but an absent route became a null element in the collective certificate hash. Conditional serialization restores all 22 historical certificate fingerprints; final isolated A2 passes exact report/snapshot comparison."
+    },
+    {
+      "id": "environment-recovery",
+      "result": "INFRASTRUCTURE_INTERRUPTION",
+      "reason": "Managed executor re-entered starting during the G01/U02d control after integrated passed. Its incomplete run is not counted as a final gate; restart with frozen sources."
+    }
+  ],
+  "allDiscardedLocal": true,
+  "remoteWrites": 0
+}

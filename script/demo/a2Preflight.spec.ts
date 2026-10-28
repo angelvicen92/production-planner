@@ -87,3 +87,22 @@ test('123 binds both validators; a partial rollback cannot disguise the empty-se
   assert.equal(inspectA2Catalog(bad,'2026-10-30').compatible,false);
  }
 });
+
+test('127 requires exact directional consumers, versioned writer and source readers',()=>{
+ const catalog=compatible();catalog.columns.push({table_name:'plans',column_name:'daily_resource_route_transitions',sequence:null});
+ catalog.functions=[...requiredFunctionBodies(false,127)].map(([name,body])=>({name,definition:`CREATE FUNCTION ${name}() AS $function$\n${body}\n$function$;`,serviceExecute:!name.startsWith('guard_')&&name!=='assisted_apply_snapshot',anonExecute:false,authenticatedExecute:false}));
+ assert.deepEqual(inspectA2Catalog(catalog,'2026-10-30').issues,[]);
+ for(const name of ['apply_day_config_operation_v5','assisted_expected_obligation_sources','assisted_preview_s0_additions','assisted_read_bootstrap_sources','assert_anchored_choice_witness','assert_task_scope_snapshot','resource_transition_minutes','resource_transition_pair_minutes','guard_daily_resource_routes']){
+  const changed=structuredClone(catalog),fn=changed.functions.find(f=>f.name===name);assert.ok(fn,name);
+  fn.definition=fn.definition.replace(/SELECT|BEGIN/,word=>word==='BEGIN'?'BEGIN PERFORM 1;':'SELECT /* changed physical authority */');
+  assert.ok(inspectA2Catalog(changed,'2026-10-30').issues.includes('RPC_BODY_DRIFT:'+name),name);
+ }
+ for(const name of ['assert_daily_resource_routes','resource_transition_minutes','resource_transition_pair_minutes','guard_daily_resource_routes']){
+  const changed=structuredClone(catalog);changed.functions.find(f=>f.name===name)!.authenticatedExecute=true;
+  assert.ok(inspectA2Catalog(changed,'2026-10-30').issues.includes('RPC_CLIENT_WRITE_GRANT:'+name),name);
+ }
+ const trigger=structuredClone(catalog);trigger.functions.find(f=>f.name==='guard_daily_resource_routes')!.serviceExecute=true;
+ assert.ok(inspectA2Catalog(trigger,'2026-10-30').issues.includes('RPC_TRIGGER_EXECUTION_GRANT:guard_daily_resource_routes'));
+ const stale=structuredClone(catalog);stale.columns=stale.columns.filter(c=>c.column_name!=='daily_resource_route_transitions');
+ assert.equal(inspectA2Catalog(stale,'2026-10-30').compatible,false);
+});

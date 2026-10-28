@@ -110,7 +110,8 @@ export class PreparedFutureCollectiveParticipantClosure {
         taskIds: [...(this.source.transportPolicy?.departure.taskIds ?? [])].sort() }, this.source.participantTransitionMinutes,
       this.source.resourceTransitionMinutes, this.source.anchoredAccompaniments, this.source.participantMealCapacity,
       this.source.protectedMeal, canonical(this.source.itinerantUnits ?? []), this.source.itinerantUnitMeals,
-      this.source.resourceMeals, this.source.coachRouteTransitions, this.source.operationalMealPolicies]);
+      this.source.resourceMeals, this.source.coachRouteTransitions,
+      ...(this.source.resourceRouteTransitions?.length ? [this.source.resourceRouteTransitions] : []), this.source.operationalMealPolicies]);
     const dependsOn = (id: string, target: string, seen = new Set<string>()): boolean => {
       if (seen.has(id)) return false;
       seen.add(id);

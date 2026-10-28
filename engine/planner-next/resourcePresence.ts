@@ -24,7 +24,7 @@ export function resourceRouteMetrics(problem: PlannerNextProblem, tasks: Schedul
       const previous = own[index - 1], current = own[index];
       if (!previous || !current || previous.spaceId === current.spaceId) continue;
       moves += 1;
-      slack += Math.max(0, current.start - previous.end - effectiveResourceTransitionMinutes(problem, resource.id));
+      slack += Math.max(0, current.start - previous.end - effectiveResourceTransitionMinutes(problem, resource.id, previous.spaceId, current.spaceId));
     }
     moveCountById[resource.id] = moves;
     transitionSlackMinutesById[resource.id] = slack;
