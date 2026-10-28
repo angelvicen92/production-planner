@@ -76,3 +76,14 @@ test('121 operational authority requires its exact writer, sources and material 
  c.columns=c.columns.filter(x=>x.column_name!=='daily_operational_meal_policies');
  assert.ok(inspectA2Catalog(c,'2026-10-30').issues.includes('RPC_BODY_DRIFT:apply_day_config_operation_v5'));
 });
+
+
+test('123 binds both validators; a partial rollback cannot disguise the empty-set SQL contract',()=>{
+ const c=compatible();c.columns.push({table_name:'plans',column_name:'daily_operational_meal_policies',sequence:null});
+ c.functions=[...requiredFunctionBodies(false,123)].map(([name,body])=>({name,definition:`CREATE FUNCTION ${name}() AS $function$\n${body}\n$function$;`,serviceExecute:!name.startsWith('guard_')&&name!=='assisted_apply_snapshot',anonExecute:false,authenticatedExecute:false}));
+ assert.deepEqual(inspectA2Catalog(c,'2026-10-30').issues,[]);
+ for(const name of ['assert_daily_technical_chain_snapshot','assert_daily_technical_chains']){
+  const bad=structuredClone(c);bad.functions.find(f=>f.name===name)!.definition=`CREATE FUNCTION ${name}() AS $function$\n${requiredFunctionBodies(false,122).get(name)}\n$function$;`;
+  assert.equal(inspectA2Catalog(bad,'2026-10-30').compatible,false);
+ }
+});

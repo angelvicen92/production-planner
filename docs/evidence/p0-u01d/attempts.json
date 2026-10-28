@@ -1,0 +1,36 @@
+{
+  "firstBlockerSource": "../p0-u01c/causal-path.md",
+  "productDelta": "explicit empty array for phases, existing physical authorities retained",
+  "harnessCorrections": [
+    {
+      "log": "checks/probe.log",
+      "cause": "An identical authority edit correctly returned TECHNICAL_CHAIN_NO_CHANGES; changed the test to a real internal phase permutation."
+    },
+    {
+      "log": "checks/probe2.log",
+      "cause": "Phase permutation attack also broke a dependency; now choose a swap preserving all dependencies to reach the phase consumer."
+    },
+    {
+      "log": "checks/probe3.log",
+      "cause": "Invented-resource attack picked a resource already required in second topology; now choose an absent real identity."
+    },
+    {
+      "log": "checks/native.log",
+      "cause": "Malformed hash rejected by SQL CHECK before witness consumer; use valid 64-character inconsistent hash to test authentication."
+    },
+    {
+      "logs": [
+        "checks/u01b.log",
+        "checks/u01b-retry.log"
+      ],
+      "cause": "UI loading timeouts during concurrent gates. Same timeouts, isolated replay passed all four U01b profiles."
+    },
+    {
+      "log": "checks/legacy.log",
+      "cause": "Product journey passed, but checkout hash gate detected a test edit during execution. Stable-source replay checks/legacy-final.log passed."
+    }
+  ],
+  "budgetsChanged": false,
+  "timeoutsChanged": false,
+  "remoteWrites": 0
+}

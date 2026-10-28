@@ -1,0 +1,32 @@
+✖ ASST-010 proves the canonical assisted chain through rollback and divergence (361056.325873ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 363221.047663
+
+✖ failing tests:
+
+test at server/benchmarks/runA2Assist7Evidence.spec.ts:1:125
+✖ ASST-010 proves the canonical assisted chain through rollback and divergence (361056.325873ms)
+  AssertionError [ERR_ASSERTION]: ["ASSISTED_SCOPE_INCOMPLETE","SEARCH_TIME_LIMIT_REACHED"]
+  + actual - expected
+  
+  + 'NO_PROPOSAL'
+  - 'PROPOSAL'
+  
+      at acceptProposal (/workspace/production-planner/work/u01d-baseline/server/benchmarks/runA2Assist7Evidence.ts:168:354)
+      at async runA2Assist7Evidence (/workspace/production-planner/work/u01d-baseline/server/benchmarks/runA2Assist7Evidence.ts:181:14)
+      at async TestContext.<anonymous> (/workspace/production-planner/work/u01d-baseline/server/benchmarks/runA2Assist7Evidence.spec.ts:6:20)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'NO_PROPOSAL',
+    expected: 'PROPOSAL',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

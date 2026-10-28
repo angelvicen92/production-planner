@@ -3,6 +3,9 @@ import test from 'node:test';
 import {readFileSync} from 'node:fs';
 import {gunzipSync} from 'node:zlib';
 import type {EngineInput} from '../engine/types';
+import {technicalChainStructureSchema} from '../shared/technicalChainStructure';
+import {preflightEngineInputForPlannerNext} from '../engine/planner-next/integration/engineInputPreflight';
+import {preflight} from '../engine/planner-next/validate';
 import {validateDailyTechnicalChains} from './technicalChainStructure';
 import {withDailyJointGroups} from './jointGroupStructure';
 import {dailyOperationalMealsSchema} from '../shared/operationalMealPolicy';
@@ -111,4 +114,46 @@ test('a locally valid competitor prefix cannot consume the last contiguous futur
  const pending=createPlanningScope({kind:'TASK_IDS',value:'remaining'},{},a.problem.tasks.filter(t=>t.id!==rival.id).map(t=>t.id));
  const rejected=executeAssistedPlanning(buildAssistedProblem(a.problem,pending,[fixed],eligible));
  assert.equal(rejected.proposal,null);assert.ok(!rejected.evidence.reasonCodes.some(c=>c.includes('BUDGET_EXHAUSTED')));
+});
+
+const mixedFixture=()=>{
+ const r=JSON.parse(gunzipSync(readFileSync('docs/evidence/p0-u01c/native/receipts.json.gz')).toString());
+ const base:EngineInput=structuredClone(r['mixed-input.json']);
+ const policy={...r['mixed-requested-policy.json'],requiredResourceIds:[]};
+ return {base,policy,structure:{contractVersion:1 as const,policies:[policy]}};
+};
+test('explicit empty common identities survive daily authority and adapter; missing and null fail closed',()=>{
+ const {base,policy,structure}=mixedFixture();
+ assert.ok(technicalChainStructureSchema.safeParse(structure).success);
+ assert.equal(technicalChainStructureSchema.safeParse({...structure,policies:[{...policy,phases:undefined}]}).success,false);
+ const native=validateDailyTechnicalChains(base,structure),adapter=adapt(native);
+ assert.deepEqual(native.technicalChains![0].requiredResourceIds,[]);
+ assert.equal(adapter.status,'SUPPORTED');if(adapter.status!=='SUPPORTED')throw Error('adapter');
+ assert.deepEqual(adapter.problem.technicalChains![0].requiredResourceIds,[]);
+ assert.deepEqual(native.tasks,base.tasks);
+ for(const value of [undefined,null]){
+  const invalid:any={...policy,requiredResourceIds:value};
+  assert.equal(technicalChainStructureSchema.safeParse({...structure,policies:[invalid]}).success,false);
+  assert.throws(()=>validateDailyTechnicalChains(base,{...structure,policies:[invalid]}));
+  const bad:any={...native,technicalChains:[invalid]};
+  assert.equal(preflightEngineInputForPlannerNext(bad).status,'UNSUPPORTED');
+  const problem=structuredClone(adapter.problem);problem.technicalChains![0].requiredResourceIds=value as any;
+  assert.ok(preflight(problem).includes('INVALID_TECHNICAL_CHAIN_POLICY'));
+ }
+ for(const ids of [[base.planResourceItems[0].id],[2147483647]])
+  assert.throws(()=>validateDailyTechnicalChains(base,{...structure,policies:[{...policy,requiredResourceIds:ids}]}),/RESOURCE_NOT_REQUIRED/);
+});
+test('mixed 17 obligation REQUIRED future is physical, certificate searches zero branches and continuation preserves S1',()=>{
+ const {base,structure}=mixedFixture(),input=validateDailyTechnicalChains(base,structure),a=adapt(input);
+ assert.equal(a.status,'SUPPORTED');if(a.status!=='SUPPORTED')throw Error('adapter');
+ const rival=base.tasks.at(-3)!;
+ const scope=resolveAssistedScope(input,a,{kind:'TASK_IDS',taskIds:[rival.id]}),eligible=new Set(a.problem.tasks.map(t=>t.id));
+ const first=executeAssistedPlanning(buildAssistedProblem(a.problem,scope.scope,[],eligible));
+ assert.equal(first.proposal?.length,1);const proof=first.evidence.nominalPhysicalFutureWitness!;
+ assert.equal(proof.tasks.length,17);assert.equal((proof.operationalMeals as any[]).length,1);
+ const certificate=certifyDailyTechnicalChain(a.problem,[...first.proposal!],0,proof);
+ assert.equal(certificate?.status,'WITNESS');assert.equal(certificate?.consumed,0);
+ const rest=createPlanningScope({kind:'TASK_IDS',value:'pending'},{},a.problem.tasks.filter(t=>t.id!==first.proposal![0].id).map(t=>t.id));
+ const second=executeAssistedPlanning(buildAssistedProblem(a.problem,rest,first.proposal!,eligible));
+ assert.equal(second.proposal?.length,16);assert.equal(second.evidence.protectedPlacementsPreserved,true);
 });

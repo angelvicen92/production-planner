@@ -1,0 +1,99 @@
+{
+  "base": "5343f569b9ef93884e7bc9dcc0e05f57f86d0641",
+  "functionalStatus": "PRODUCTIVE_COMPOSED_WITHIN_CERTIFIED_NOMINAL_SCOPE",
+  "mergeGate": "NOT_GREEN_LOCAL_BASELINE_FAILURE",
+  "node": "v24.19.0",
+  "checks": {
+    "typescript": "PASS",
+    "evidenceTypeScript": "PASS",
+    "migrationSequence": "PASS",
+    "build": "PASS",
+    "compositionTests": 155,
+    "compositionStatus": "PASS",
+    "catalogTests": 13,
+    "catalogStatus": "PASS",
+    "globalSuite": {
+      "tests": 3302,
+      "pass": 3301,
+      "fail": 1,
+      "failure": "ASST-010: ASSISTED_SCOPE_INCOMPLETE / SEARCH_TIME_LIMIT_REACHED",
+      "baselineControl": {
+        "commit": "5343f569b9ef93884e7bc9dcc0e05f57f86d0641",
+        "overlays": 0,
+        "sameFailure": true,
+        "sameStackLocation": "server/benchmarks/runA2Assist7Evidence.ts:181",
+        "log": "checks/baseline-asst010.log"
+      },
+      "budgetOrTimeoutIncrease": false
+    },
+    "newProduct": {
+      "coldStacks": 2,
+      "mixedObligations": 17,
+      "secondTopologyObligations": 12,
+      "actualSqlStages": 12,
+      "emptyCommonSetSqlStages": 8,
+      "sharedResourceSqlStages": 4,
+      "additionalCertificateBranches": 0,
+      "mixedBranches": [
+        83,
+        82
+      ],
+      "secondBranches": [
+        47,
+        46
+      ],
+      "impossibleBranches": 4278,
+      "impossibleBudgetExhausted": false,
+      "hardRequiredViolations": 0,
+      "exactColdDeterminism": true,
+      "sqlMaterialRejections": 142,
+      "sqlAuthenticityRejections": 36
+    },
+    "U01b": {
+      "status": "PASS",
+      "realSqlStages": 6,
+      "profiles": [
+        "integrated",
+        "second",
+        "shifted",
+        "impossible"
+      ],
+      "log": "checks/u01b-isolated.log"
+    },
+    "historicalLinear": {
+      "status": "PASS",
+      "realSqlStages": 6,
+      "profiles": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "log": "checks/legacy-final.log"
+    },
+    "upgrade122To123": {
+      "status": "PASS",
+      "originalTasks": 599,
+      "originalStages": 11,
+      "allRowsReadersRlsGrantsPreserved": true
+    },
+    "A2Imported": {
+      "status": "PASS",
+      "independentRuns": 2,
+      "completed": 266,
+      "stagesPerRun": 11,
+      "branchesPerRun": 27049,
+      "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+      "completeReportsEqualExceptDuration": true,
+      "allSnapshotsExact": true,
+      "certificatesRevalidated": 22,
+      "uiAuthorshipClaimed": false
+    }
+  },
+  "ciAuthority": "Live GitHub checks on the final PR HEAD; workflows include the dedicated U01d gate and all applicable existing gates. Local global failure is explicitly retained, not waived.",
+  "remoteSupabaseWrites": 0,
+  "deployment": false,
+  "merge": false,
+  "budgetsChanged": false,
+  "timeoutsChanged": false
+}

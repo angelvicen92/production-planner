@@ -50,3 +50,14 @@ test('120 retains 119 delegation and limits existing body deltas to joint transi
  for(const name of changed)assert.equal(requiredFunctionBodies(false,120).get(name),current.get(name)!.body,name);
  for(const name of ['assisted_accept_stage','assisted_apply_snapshot','assert_task_scope_snapshot'])assert.equal(current.get(name)!.body,old.get(name)!.body,name);
 });
+
+
+test('123 changes only the two existing phase validators and retains the historical linear branch',()=>{
+ const old=latestAssistedSQLContracts(122),current=latestAssistedSQLContracts(123);
+ assert.deepEqual([...old].filter(([name,v])=>current.get(name)?.body!==v.body).map(([name])=>name).sort(),['assert_daily_technical_chain_snapshot','assert_daily_technical_chains']);
+ for(const name of ['assert_daily_technical_chains','assert_daily_technical_chain_snapshot']){
+  const tail=(body:string)=>body.slice(body.indexOf(' END IF;\n IF jsonb_typeof(p_structure)')>=0?body.indexOf(' END IF;\n IF jsonb_typeof(p_structure)'):body.indexOf(' total:='));
+  assert.equal(tail(current.get(name)!.body),tail(old.get(name)!.body));
+ }
+ assert.match(current.get('assert_daily_technical_chain_snapshot')!.body,/coalesce\(jsonb_agg/);
+});
