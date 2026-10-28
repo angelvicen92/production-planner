@@ -1,0 +1,150 @@
+{
+  "base": "815dbc76cc1d7e52c3d298c9584cfcc82fff050b",
+  "ui": {
+    "saveDisabled": true,
+    "commonResourceOptions": 0,
+    "phases": [
+      [
+        19,
+        24,
+        29
+      ],
+      [
+        20,
+        25
+      ],
+      [
+        21,
+        30
+      ]
+    ]
+  },
+  "apiAndSql": [
+    {
+      "ids": [],
+      "api": {
+        "status": 400,
+        "body": {
+          "message": "Array must contain at least 1 element(s)"
+        }
+      },
+      "sql": {
+        "accepted": false,
+        "code": "P0001",
+        "message": "TECHNICAL_CHAIN_INVALID_PHASES"
+      }
+    },
+    {
+      "ids": [
+        4
+      ],
+      "api": {
+        "status": 422,
+        "body": {
+          "message": "TECHNICAL_CHAIN_RESOURCE_NOT_REQUIRED"
+        }
+      },
+      "sql": {
+        "accepted": false,
+        "code": "P0001",
+        "message": "TECHNICAL_CHAIN_RESOURCE_NOT_REQUIRED"
+      }
+    },
+    {
+      "ids": [
+        5
+      ],
+      "api": {
+        "status": 422,
+        "body": {
+          "message": "TECHNICAL_CHAIN_RESOURCE_NOT_REQUIRED"
+        }
+      },
+      "sql": {
+        "accepted": false,
+        "code": "P0001",
+        "message": "TECHNICAL_CHAIN_RESOURCE_NOT_REQUIRED"
+      }
+    },
+    {
+      "ids": [
+        6
+      ],
+      "api": {
+        "status": 422,
+        "body": {
+          "message": "TECHNICAL_CHAIN_RESOURCE_NOT_REQUIRED"
+        }
+      },
+      "sql": {
+        "accepted": false,
+        "code": "P0001",
+        "message": "TECHNICAL_CHAIN_RESOURCE_NOT_REQUIRED"
+      }
+    },
+    {
+      "ids": [
+        4,
+        5
+      ],
+      "api": {
+        "status": 422,
+        "body": {
+          "message": "TECHNICAL_CHAIN_RESOURCE_NOT_REQUIRED"
+        }
+      },
+      "sql": {
+        "accepted": false,
+        "code": "P0001",
+        "message": "TECHNICAL_CHAIN_RESOURCE_NOT_REQUIRED"
+      }
+    }
+  ],
+  "alternativesA": {
+    "alternatives": [
+      {
+        "name": "split-authorities",
+        "status": 400,
+        "body": {
+          "message": "Array must contain at most 1 element(s)"
+        }
+      },
+      {
+        "name": "omit-common-field",
+        "status": 400,
+        "body": {
+          "message": "Required"
+        }
+      },
+      {
+        "name": "continuity-OFF",
+        "status": 400,
+        "body": {
+          "message": "Invalid literal value, expected \"REQUIRED\""
+        }
+      }
+    ],
+    "scope": {
+      "status": 422,
+      "body": {
+        "message": "UNSUPPORTED_TASK_SCOPE_COMBINATION"
+      }
+    }
+  },
+  "itinerant": {
+    "rejection": {
+      "status": 422,
+      "body": {
+        "message": "UNSUPPORTED_TECHNICAL_CHAIN_COMBINATION"
+      }
+    },
+    "sql": {
+      "accepted": false,
+      "code": "P0001",
+      "message": "UNSUPPORTED_TECHNICAL_CHAIN_COMBINATION"
+    },
+    "guard": "UNSUPPORTED_TECHNICAL_CHAIN_COMBINATION",
+    "requiredPhaseCompositionSupported": false
+  },
+  "notStageRejections": true
+}

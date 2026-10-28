@@ -1,0 +1,125 @@
+{
+  "status": "PASS",
+  "base": "815dbc76cc1d7e52c3d298c9584cfcc82fff050b",
+  "remoteWrites": 0,
+  "physical": [
+    {
+      "stack": "docs/evidence/p0-u01c/native",
+      "profile": "common",
+      "stage": 1,
+      "accepted": 1,
+      "branches": 83,
+      "requiredPhases": true
+    },
+    {
+      "stack": "docs/evidence/p0-u01c/native",
+      "profile": "common",
+      "stage": 2,
+      "accepted": 17,
+      "branches": 82,
+      "requiredPhases": true
+    },
+    {
+      "stack": "docs/evidence/p0-u01c/native",
+      "profile": "mixed",
+      "stage": 1,
+      "accepted": 1,
+      "branches": 20,
+      "requiredPhases": false
+    },
+    {
+      "stack": "docs/evidence/p0-u01c/native",
+      "profile": "mixed",
+      "stage": 2,
+      "accepted": 17,
+      "branches": 19,
+      "requiredPhases": false
+    },
+    {
+      "stack": "docs/evidence/p0-u01c/repeat",
+      "profile": "common",
+      "stage": 1,
+      "accepted": 1,
+      "branches": 83,
+      "requiredPhases": true
+    },
+    {
+      "stack": "docs/evidence/p0-u01c/repeat",
+      "profile": "common",
+      "stage": 2,
+      "accepted": 17,
+      "branches": 82,
+      "requiredPhases": true
+    },
+    {
+      "stack": "docs/evidence/p0-u01c/repeat",
+      "profile": "mixed",
+      "stage": 1,
+      "accepted": 1,
+      "branches": 20,
+      "requiredPhases": false
+    },
+    {
+      "stack": "docs/evidence/p0-u01c/repeat",
+      "profile": "mixed",
+      "stage": 2,
+      "accepted": 17,
+      "branches": 19,
+      "requiredPhases": false
+    }
+  ],
+  "determinism": [
+    {
+      "profile": "common",
+      "stage": 1,
+      "proposalWitnessWorkSqlFingerprintExact": true,
+      "normalization": false
+    },
+    {
+      "profile": "common",
+      "stage": 2,
+      "proposalWitnessWorkSqlFingerprintExact": true,
+      "normalization": false
+    },
+    {
+      "profile": "mixed",
+      "stage": 1,
+      "proposalWitnessWorkSqlFingerprintExact": true,
+      "normalization": false
+    },
+    {
+      "profile": "mixed",
+      "stage": 2,
+      "proposalWitnessWorkSqlFingerprintExact": true,
+      "normalization": false
+    }
+  ],
+  "negative": [
+    {
+      "stack": "docs/evidence/p0-u01c/native",
+      "case": "impossible-S1-run",
+      "branches": 23,
+      "budgetExhausted": false
+    },
+    {
+      "stack": "docs/evidence/p0-u01c/native",
+      "case": "impossible-memory-full",
+      "branches": 4278,
+      "budgetExhausted": false
+    },
+    {
+      "stack": "docs/evidence/p0-u01c/repeat",
+      "case": "impossible-S1-run",
+      "branches": 23,
+      "budgetExhausted": false
+    },
+    {
+      "stack": "docs/evidence/p0-u01c/repeat",
+      "case": "impossible-memory-full",
+      "branches": 4278,
+      "budgetExhausted": false
+    }
+  ],
+  "nativeStages": 8,
+  "mixedRequiredStages": 0
+}
