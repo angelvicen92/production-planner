@@ -1,0 +1,48 @@
+{
+  "status": "PASS",
+  "base": "39e26f1c2e84cc8160c2066e197d61bc8b972384",
+  "runtime": {
+    "native": {
+      "runnerBaseLabel": "39e26f1c2e84cc8160c2066e197d61bc8b972384",
+      "executedProductBase": "39e26f1c2e84cc8160c2066e197d61bc8b972384",
+      "productFiles": 1643,
+      "identicalToCheckout": true,
+      "productHash": "28f7df4b6216261261ceaedbed974f12693f6bf1ac6d56016fbfe722f4061415",
+      "dispatchAndCacheOnlyInDiscardedCopy": true
+    },
+    "repeat": {
+      "runnerBaseLabel": "39e26f1c2e84cc8160c2066e197d61bc8b972384",
+      "executedProductBase": "39e26f1c2e84cc8160c2066e197d61bc8b972384",
+      "productFiles": 1643,
+      "identicalToCheckout": true,
+      "productHash": "28f7df4b6216261261ceaedbed974f12693f6bf1ac6d56016fbfe722f4061415",
+      "dispatchAndCacheOnlyInDiscardedCopy": true
+    },
+    "control-u02b": {
+      "runnerBaseLabel": "39e26f1c2e84cc8160c2066e197d61bc8b972384",
+      "executedProductBase": "39e26f1c2e84cc8160c2066e197d61bc8b972384",
+      "productFiles": 1643,
+      "identicalToCheckout": true,
+      "productHash": "28f7df4b6216261261ceaedbed974f12693f6bf1ac6d56016fbfe722f4061415",
+      "dispatchAndCacheOnlyInDiscardedCopy": true
+    },
+    "control-u00x": {
+      "runnerBaseLabel": "cc0b674ebaadb8c41c5438302a62eb29de684833",
+      "executedProductBase": "39e26f1c2e84cc8160c2066e197d61bc8b972384",
+      "productFiles": 1643,
+      "identicalToCheckout": true,
+      "productHash": "28f7df4b6216261261ceaedbed974f12693f6bf1ac6d56016fbfe722f4061415",
+      "dispatchAndCacheOnlyInDiscardedCopy": true
+    }
+  },
+  "deliveredHarnessSHA256": {
+    "sql-probe.ts": "0201c3c5680aab3e79c884e5888a5beb696350708feae3a4a2cc774dab8bbd67",
+    "replay.ts": "36b99930c723e3ce013fc29cc85ec6222ee2e6cd010f6f55f27f9b6064ece381",
+    "search-probe.ts": "9a910baa2c6a08aa15bb3ed2f2a67488790c6187a3b4bfcd76f722e55ad0b570",
+    "memory.ts": "67ced9d1d2fb525bd778cf5c22c35adbe4f4203e732eefdc167fd33d37bf713c",
+    "journey.ts": "5f1e2a7aa14b9406361de6037adb63573ab8e229568bb8b72339da951ec583a0",
+    "run.ts": "ccc1aaf2c265fef0f8b3bd7bc3f2e0f0498862800aea346ee92793d955b01a1e"
+  },
+  "productionChanges": 0,
+  "remoteApplicationWrites": 0
+}

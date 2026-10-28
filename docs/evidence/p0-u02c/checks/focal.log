@@ -1,0 +1,17 @@
+✔ engine/planner-next/integration/nativeAnchoredAccompaniment.spec.ts (893.668564ms)
+✔ engine/planner-next/integration/nativeAnchoredChoice.spec.ts (879.418295ms)
+✔ engine/planner-next/integration/nativeRealityComposition.spec.ts (865.854548ms)
+✔ script/demo/a2Preflight.spec.ts (4535.639978ms)
+✔ script/demo/assistedSQLContracts.spec.ts (4134.71666ms)
+✔ server/fixedItinerantPhaseComposition.spec.ts (2079.331399ms)
+✔ server/requiredPhaseComposition.spec.ts (6600.51284ms)
+✔ server/technicalChainSql.spec.ts (8807.005188ms)
+✔ server/technicalChainStructure.spec.ts (2553.703085ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 31367.644398
