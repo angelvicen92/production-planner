@@ -92,3 +92,24 @@ export function applyDailyItinerantComposition(input: EngineInput, raw: unknown,
       ...(independentResources.length ? {declaredResourceIds:[...new Set([...(task.declaredResourceIds??[]),...independentResources])].sort((a,b)=>a-b)} : {})};
   })};
 }
+
+/** Certified boundary for nominal joint/REQUIRED phases. Unused snapshots do
+ * not constrain independent operations. U04a owns snapshot mapping/immutability. */
+export function fixedItinerantCompositionSupported(input: EngineInput): boolean {
+  return input.tasks.filter(t => t.status !== 'cancelled').every(task => {
+    if (!task.itinerantTeamRequirement || task.itinerantTeamRequirement === 'none') return true;
+    if (input.plannerNext?.profile !== 'STANDALONE_ONLY' || task.itinerantTeamRequirement !== 'specific' || task.itinerantTeamId == null
+      || (task.allowedItinerantTeamIds ?? []).some(id => id !== task.itinerantTeamId)) return false;
+    const units = input.itinerantCompositionSnapshot?.units.filter(u => u.id === task.itinerantTeamId);
+    const availability = input.itinerantTeamAvailability?.filter(u => u.itinerantTeamId === task.itinerantTeamId);
+    if (units?.length !== 1 || availability?.length !== 1) return false;
+    const unit = units[0], effective = availability[0];
+    return unit.plan_id === input.planId && unit.transition_minutes === 0 && effective.transitionMinutes === 0
+      && unit.members.length > 0 && new Set(unit.members.map(m => m.planResourceItemId)).size === unit.members.length
+      && unit.members.every(m => {
+        const matches = input.planResourceItems.filter(r => r.resourceItemId === m.resourceItemId);
+        return matches.length === 1 && matches[0].id === m.planResourceItemId;
+      }) && JSON.stringify(unit.members.map(m => m.planResourceItemId).sort((a,b) => a-b))
+        === JSON.stringify([...(effective.planResourceItemIds ?? [])].sort((a,b) => a-b));
+  });
+}

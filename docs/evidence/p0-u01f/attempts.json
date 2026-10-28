@@ -1,0 +1,63 @@
+{
+  "productionChangesAfterFirstSQLStagePass": [],
+  "harnessCorrections": [
+    {
+      "attempt": "dev",
+      "issue": "U01d attack invent-resource had no additional existing resource in the 12-obligation topology",
+      "resolution": "Select a real daily inventory member absent from the target task, including members unused by that witness"
+    },
+    {
+      "attempt": "dev2",
+      "issue": "The 12-obligation topology used a closing task instead of a physical competitor in rest-invasion probe",
+      "resolution": "Choose a real independent task requiring the affected resource"
+    },
+    {
+      "attempt": "dev3",
+      "issue": "Adding another rest for A duplicated a resource across pause policies, rejected correctly by schema",
+      "resolution": "Second topology has no initial pause; propose a single new A-only rest outside accepted spaces"
+    },
+    {
+      "attempt": "dev4",
+      "issue": "SQL source-negative passed a JS array as a pg parameter for jsonb",
+      "resolution": "Serialize JSON before invoking the genuine source validator"
+    },
+    {
+      "attempt": "dev5/dev6",
+      "issue": "Scope diagnostic proposals remained pending and correctly blocked configuration editing",
+      "resolution": "Discard them through the real proposal API before proceeding"
+    },
+    {
+      "attempt": "candidate",
+      "issue": "Second S2 already protected the entire chain, so structural attacks reached protection before synchronization",
+      "resolution": "Run structural attacks at S1 and test a physically feasible protected-unit permutation at S2"
+    },
+    {
+      "attempt": "final/regr UI",
+      "issue": "Intermittent browser startup and shared Vite optimizer cache in old linear runner",
+      "resolution": "Separate discarded roots/cache as U01b/U01d already do; no timeout changes. Final serial UI and legacy runs pass"
+    },
+    {
+      "attempt": "repeat",
+      "issue": "Validation returned REBOOTSTRAP_STALE_SOURCES after transaction probes",
+      "resolution": "Keep NOWAIT/CAS; record it. Harness may retry validation once only with identical source token, Draft and base. Neither certified cold stack required that retry"
+    },
+    {
+      "attempt": "offline supporting probe",
+      "issue": "Passed persisted API placements to a function expecting ScheduledTask values",
+      "resolution": "Select the corresponding unchanged scheduled rows from the genuine global witness"
+    }
+  ],
+  "counterfactuals": [
+    {
+      "probe": "resource-only-rest with old resolver",
+      "result": "Still rejected because accepted unit members were materialized in assigned_resource_ids",
+      "interpretation": "Preserved redundant protection; no Stage vulnerability claimed"
+    }
+  ],
+  "knownUnrelatedFailure": {
+    "test": "ASST-010",
+    "candidate": "FAIL SEARCH_TIME_LIMIT_REACHED",
+    "exactBase": "Same failure at same call",
+    "action": "No search or timeout change"
+  }
+}

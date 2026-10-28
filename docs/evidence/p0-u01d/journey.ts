@@ -15,7 +15,7 @@ export async function journey({appUrl,users,db,directory,pass}:any){
  const {storage}=await import('../../../server/storage');
  const save=(n:string,v:unknown)=>writeFileSync(`${directory}/${n}.json`,JSON.stringify(v,null,2));
  const catalogChecks:any[]=[];
- for(const [name,expected] of requiredFunctionBodies(false,123)){
+ for(const [name,expected] of requiredFunctionBodies(false)){
   const definitions=(await db.query("SELECT pg_get_functiondef(oid) definition FROM pg_proc WHERE pronamespace='public'::regnamespace AND proname=$1",[name])).rows;
   assert.ok(definitions.some((d:any)=>{const m=d.definition.match(/\bAS\s+(\$\w*\$)([\s\S]*)/i);return m&&m[2].slice(0,m[2].indexOf(m[1])).trim()===expected;}),name);
   catalogChecks.push({name,exactBody:true});

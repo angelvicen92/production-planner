@@ -1,0 +1,76 @@
+{
+  "status": "FUNCTIONAL_GATE_PASS_GLOBAL_SUITE_BASELINE_FAILURE",
+  "base": "f5d56eeb477e86e1c3b960e3ac37db37d3046c84",
+  "node": "v24.19.0",
+  "typescript": "PASS",
+  "harnessTypeScript": "PASS",
+  "build": "PASS",
+  "migrationSequence": "001\u2013124 PASS; 001\u2013123 unchanged",
+  "focal": {
+    "passed": 44,
+    "failed": 0
+  },
+  "fullSuite": {
+    "passed": 3304,
+    "total": 3305,
+    "failure": "ASST-010",
+    "reasonCodes": [
+      "ASSISTED_SCOPE_INCOMPLETE",
+      "SEARCH_TIME_LIMIT_REACHED"
+    ],
+    "location": "server/benchmarks/runA2Assist7Evidence.ts:181",
+    "baselineReproducedAtExactBase": true,
+    "candidateDurationMs": 862256.118377,
+    "baselineDurationMs": 343287.05905
+  },
+  "coldStacks": {
+    "passed": 2,
+    "SQLStages": 32,
+    "itinerantStages": 24,
+    "negativeWitnessProbes": 648,
+    "exactDeterminism": true,
+    "sourceContentionRetriesInCertifiedStacks": 0
+  },
+  "upgrade": {
+    "status": "PASS",
+    "historicalTasks": 599,
+    "historicalStages": 11,
+    "allRowsReadersRLSAndFunctionOwnershipACLExact": true,
+    "migrationSha256": "befd1cd8fd33044bd56bb9a7d42731da4cc92a524fd8ade6b6e4850e883670e6"
+  },
+  "regressions": {
+    "U01b": "PASS",
+    "U01d": "PASS",
+    "linear": "PASS",
+    "A2Imported": {
+      "status": "PASS",
+      "isolated": true,
+      "node": "v24.19.0",
+      "seconds": 56.799471555,
+      "completed": 266,
+      "stages": 11,
+      "branches": 27049,
+      "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+      "fullReportEqualExceptDurationMs": true,
+      "snapshotsEqual": true,
+      "certificatesRevalidated": 11
+    },
+    "A2Repeat": "PASS full report and snapshots identical"
+  },
+  "ci": {
+    "workflow": ".github/workflows/p0-u01f-fixed-itinerant-phase-composition.yml",
+    "status": "Consult live PR head checks; this file records local validation, not a future CI result"
+  },
+  "limits": [
+    "Specific fixed units only",
+    "Explicit zero unit transition",
+    "STANDALONE_ONLY nominal physical profile",
+    "No any/byType/anyOf, dynamic membership or positive transitions",
+    "No complex explicit agenda/inheritance/occupation scopes or Main/Vocal/setup/rounds/transport/anchors on this macro",
+    "A2 imported regression is not full UI authoring"
+  ],
+  "remoteMigrations": 0,
+  "remoteDataWrites": 0,
+  "published": false,
+  "merged": false
+}

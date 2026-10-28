@@ -3,6 +3,7 @@ import {isDeepStrictEqual} from 'node:util';
 import type {EngineInput} from '../engine/types';
 import {jointGroupStructureSchema,persistedJointGroupStructureSchema,type JointGroupStructure} from '../shared/jointGroupStructure';
 import {resolveEffectiveTaskResourceAssignments} from '../engine/planner-next/integration/effectiveTaskResourceAssignments';
+import { fixedItinerantCompositionSupported } from "./itinerantComposition";
 const defect=(s:string)=>Object.assign(new Error(s),{status:422});
 export function dailyJointAuthority(row:Record<string,any>){
  if(row.daily_joint_groups==null)return null;
@@ -15,7 +16,8 @@ export function jointCombinationSupported(input:EngineInput){
  return !!input.plannerNext&&!input.setupPolicies?.length&&!input.roundSynchronizations?.length&&(!input.technicalChains?.length||(hasDailyRequiredPhases(input)&&requiredPhaseCompositionSupported(input)))
   &&!input.anchoredAccompaniments?.length&&!input.dailyTaskOperationScopes?.length&&!input.operationContinuityGroups?.length
   &&(!input.operationalMealPolicies?.length||input.dailyOperationalMealsVersion===1)&&!input.transportSettings&&input.mealMode==='global_hard_break'
-  &&!input.tasks.filter(t=>t.status!=='cancelled').some(t=>t.setupFamilyId||t.itinerantTeamRequirement&&t.itinerantTeamRequirement!=='none'
+  &&fixedItinerantCompositionSupported(input)
+  &&!input.tasks.filter(t=>t.status!=='cancelled').some(t=>t.setupFamilyId
    ||Object.keys(t.resourceRequirements?.byType??{}).length||t.resourceRequirements?.anyOf?.length);
 }
 export function withDailyJointGroups(input:EngineInput,raw:JointGroupStructure):EngineInput{
@@ -29,6 +31,7 @@ export function withDailyJointGroups(input:EngineInput,raw:JointGroupStructure):
   if(new Set(members.map(t=>t.contestantId)).size!==members.length)throw defect('JOINT_DUPLICATE_PARTICIPANT');
   if(members.some(t=>t.durationOverrideMin!==first.durationOverrideMin)||!first.durationOverrideMin||first.durationOverrideMin%5)throw defect('JOINT_DURATION_MISMATCH');
   if(members.some(t=>t.spaceId!==first.spaceId)||!input.planSpaceSettings?.some(s=>s.spaceId===first.spaceId))throw defect('JOINT_SPACE_MISMATCH');
+  if(members.some(t=>(t.itinerantTeamId??null)!==(first.itinerantTeamId??null)))throw defect('JOINT_UNIT_MISMATCH');
   const resources=members.map(t=>assignments.assignments.find(a=>a.taskId===t.id)?.effectiveResourceIds);
   if(resources.some(r=>!r||!isDeepStrictEqual(r,resources[0]))||members.some(t=>Object.values(t.resourceRequirements?.byItem??{}).some(q=>q!==1)))throw defect('JOINT_RESOURCE_MISMATCH');
   if(members.some(t=>(t.dependsOnTaskIds??[]).some(id=>group.taskIds.includes(id))))throw defect('JOINT_INTERNAL_DEPENDENCY');

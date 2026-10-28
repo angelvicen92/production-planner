@@ -1,0 +1,75 @@
+name: P0 U01f fixed itinerant REQUIRED phase composition
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'engine/**'
+      - 'server/**'
+      - 'shared/**'
+      - 'client/src/**'
+      - 'supabase/migrations/**'
+      - 'script/demo/**'
+      - 'docs/evidence/p0-u01f/**'
+      - '.github/workflows/p0-u01f-fixed-itinerant-phase-composition.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  required-phase-composition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$task_browser_path" ]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+          fi
+      - run: npm run check && npm run check:migrations && npm run build
+      - run: npx --no-install tsc -p docs/evidence/p0-u01f/tsconfig.json
+      - run: >-
+          node --import tsx --test --test-concurrency=1
+          server/fixedItinerantPhaseComposition.spec.ts server/requiredPhaseComposition.spec.ts server/technicalChainStructure.spec.ts server/technicalChainSql.spec.ts
+          server/assistedScopeResolver.spec.ts server/assistedNextScope.spec.ts server/assistedProposalService.spec.ts
+          server/assistedPlanningWorkflow.spec.ts server/dayConfiguration.spec.ts server/apiAuthorization.spec.ts
+          engine/planner-next/planMainFlowAndFeeders.spec.ts engine/planner-next/technicalChains.spec.ts engine/planner-next/operationContinuity.spec.ts engine/planner-next/jointTasks.spec.ts
+          engine/planner-next/integration/nativeJointGroups.spec.ts engine/planner-next/integration/nativeOperationalMeals.spec.ts
+          engine/planner-next/integration/nativeRealityComposition.spec.ts script/demo/assistedSQLContracts.spec.ts script/demo/a2Preflight.spec.ts
+      - run: node --import tsx docs/evidence/p0-u01f/upgrade124.ts work/u01f-upgrade
+      - run: node --import tsx docs/evidence/p0-u01f/run.ts work/u01f-native
+      - run: node --import tsx docs/evidence/p0-u01f/run.ts work/u01f-repeat
+      - run: node --import tsx docs/evidence/p0-u01f/supporting.ts work/u01f-native/native work/u01f-supporting.json
+      - run: python3 docs/evidence/p0-u01f/verify.py work/u01f-native/native work/u01f-repeat/native work/u01f-verification.json
+      - run: node --import tsx docs/evidence/p0-u00n/a2.ts work/u01f-a2
+      - run: node --import tsx docs/evidence/p0-u00n/a2.ts work/u01f-a2-repeat
+      - name: Preserve U01b common-resource topologies and pauses
+        run: node --import tsx docs/evidence/p0-u01b/run.ts work/u01f-u01b
+      - name: Preserve historical linear UI and SQL contracts
+        run: node --import tsx docs/evidence/p0-u00s/run.ts work/u01f-legacy
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: u01f-required-phase-composition
+          path: |
+            work/u01f-legacy/native/*.json
+            work/u01f-u01b/native/*.json
+            work/u01f-upgrade/manifest.json
+            work/u01f-upgrade/native/*.json
+            work/u01f-upgrade/native/*.json.gz
+            work/u01f-native/manifest.json
+            work/u01f-native/native/*.json
+            work/u01f-native/native/*.png
+            work/u01f-repeat/manifest.json
+            work/u01f-repeat/native/*.json
+            work/u01f-verification.json
+            work/u01f-a2/*
+            work/u01f-a2-repeat/*
+          retention-days: 14
