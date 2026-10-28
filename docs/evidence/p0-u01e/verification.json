@@ -1,0 +1,563 @@
+{
+  "status": "PASS",
+  "physical": [
+    {
+      "base": "native",
+      "label": "baseline",
+      "scope": "full",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "baseline",
+      "scope": "partial",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "baseline",
+      "scope": "continuation",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    },
+    {
+      "base": "native",
+      "label": "baseline",
+      "scope": "scope-unit",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "A-fixed",
+      "scope": "full",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "A-fixed",
+      "scope": "partial",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "A-fixed",
+      "scope": "continuation",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    },
+    {
+      "base": "native",
+      "label": "A-fixed",
+      "scope": "scope-unit",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "B-segments",
+      "scope": "full",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "B-segments",
+      "scope": "partial",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "B-segments",
+      "scope": "continuation",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    },
+    {
+      "base": "native",
+      "label": "B-segments",
+      "scope": "scope-unit",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "C-joint-unit",
+      "scope": "full",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "C-joint-unit",
+      "scope": "partial",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "C-joint-unit",
+      "scope": "continuation",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    },
+    {
+      "base": "native",
+      "label": "C-joint-unit",
+      "scope": "scope-unit",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "D-rest-competition",
+      "scope": "full",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 179
+    },
+    {
+      "base": "native",
+      "label": "D-rest-competition",
+      "scope": "partial",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 179
+    },
+    {
+      "base": "native",
+      "label": "D-rest-competition",
+      "scope": "continuation",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 178
+    },
+    {
+      "base": "native",
+      "label": "D-rest-competition",
+      "scope": "scope-unit",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 179
+    },
+    {
+      "base": "native",
+      "label": "unused-snapshot",
+      "scope": "full",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "unused-snapshot",
+      "scope": "partial",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "unused-snapshot",
+      "scope": "continuation",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    },
+    {
+      "base": "native",
+      "label": "unused-snapshot",
+      "scope": "scope-unit",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "baseline",
+      "scope": "full",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "baseline",
+      "scope": "partial",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "baseline",
+      "scope": "continuation",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    },
+    {
+      "base": "native",
+      "label": "baseline",
+      "scope": "scope-unit",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "A-fixed",
+      "scope": "full",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "A-fixed",
+      "scope": "partial",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "A-fixed",
+      "scope": "continuation",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    },
+    {
+      "base": "native",
+      "label": "A-fixed",
+      "scope": "scope-unit",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "B-segments",
+      "scope": "full",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "B-segments",
+      "scope": "partial",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "B-segments",
+      "scope": "continuation",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    },
+    {
+      "base": "native",
+      "label": "B-segments",
+      "scope": "scope-unit",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "C-joint-unit",
+      "scope": "full",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "C-joint-unit",
+      "scope": "partial",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "C-joint-unit",
+      "scope": "continuation",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    },
+    {
+      "base": "native",
+      "label": "C-joint-unit",
+      "scope": "scope-unit",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "D-rest-competition",
+      "scope": "full",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 179
+    },
+    {
+      "base": "native",
+      "label": "D-rest-competition",
+      "scope": "partial",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 179
+    },
+    {
+      "base": "native",
+      "label": "D-rest-competition",
+      "scope": "continuation",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 178
+    },
+    {
+      "base": "native",
+      "label": "D-rest-competition",
+      "scope": "scope-unit",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 179
+    },
+    {
+      "base": "native",
+      "label": "unused-snapshot",
+      "scope": "full",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "unused-snapshot",
+      "scope": "partial",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    },
+    {
+      "base": "native",
+      "label": "unused-snapshot",
+      "scope": "continuation",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 82
+    },
+    {
+      "base": "native",
+      "label": "unused-snapshot",
+      "scope": "scope-unit",
+      "obligations": 17,
+      "physicalOperations": 16,
+      "branches": 83
+    }
+  ],
+  "determinism": [
+    {
+      "label": "baseline",
+      "scope": "full",
+      "exact": true
+    },
+    {
+      "label": "baseline",
+      "scope": "repeat",
+      "exact": true
+    },
+    {
+      "label": "baseline",
+      "scope": "partial",
+      "exact": true
+    },
+    {
+      "label": "baseline",
+      "scope": "continuation",
+      "exact": true
+    },
+    {
+      "label": "baseline",
+      "scope": "scope-unit",
+      "exact": true
+    },
+    {
+      "label": "A-fixed",
+      "scope": "full",
+      "exact": true
+    },
+    {
+      "label": "A-fixed",
+      "scope": "repeat",
+      "exact": true
+    },
+    {
+      "label": "A-fixed",
+      "scope": "partial",
+      "exact": true
+    },
+    {
+      "label": "A-fixed",
+      "scope": "continuation",
+      "exact": true
+    },
+    {
+      "label": "A-fixed",
+      "scope": "scope-unit",
+      "exact": true
+    },
+    {
+      "label": "B-segments",
+      "scope": "full",
+      "exact": true
+    },
+    {
+      "label": "B-segments",
+      "scope": "repeat",
+      "exact": true
+    },
+    {
+      "label": "B-segments",
+      "scope": "partial",
+      "exact": true
+    },
+    {
+      "label": "B-segments",
+      "scope": "continuation",
+      "exact": true
+    },
+    {
+      "label": "B-segments",
+      "scope": "scope-unit",
+      "exact": true
+    },
+    {
+      "label": "C-joint-unit",
+      "scope": "full",
+      "exact": true
+    },
+    {
+      "label": "C-joint-unit",
+      "scope": "repeat",
+      "exact": true
+    },
+    {
+      "label": "C-joint-unit",
+      "scope": "partial",
+      "exact": true
+    },
+    {
+      "label": "C-joint-unit",
+      "scope": "continuation",
+      "exact": true
+    },
+    {
+      "label": "C-joint-unit",
+      "scope": "scope-unit",
+      "exact": true
+    },
+    {
+      "label": "D-rest-competition",
+      "scope": "full",
+      "exact": true
+    },
+    {
+      "label": "D-rest-competition",
+      "scope": "repeat",
+      "exact": true
+    },
+    {
+      "label": "D-rest-competition",
+      "scope": "partial",
+      "exact": true
+    },
+    {
+      "label": "D-rest-competition",
+      "scope": "continuation",
+      "exact": true
+    },
+    {
+      "label": "D-rest-competition",
+      "scope": "scope-unit",
+      "exact": true
+    },
+    {
+      "label": "unused-snapshot",
+      "scope": "full",
+      "exact": true
+    },
+    {
+      "label": "unused-snapshot",
+      "scope": "repeat",
+      "exact": true
+    },
+    {
+      "label": "unused-snapshot",
+      "scope": "partial",
+      "exact": true
+    },
+    {
+      "label": "unused-snapshot",
+      "scope": "continuation",
+      "exact": true
+    },
+    {
+      "label": "unused-snapshot",
+      "scope": "scope-unit",
+      "exact": true
+    },
+    {
+      "label": "impossible",
+      "scope": "full",
+      "exact": true
+    },
+    {
+      "label": "impossible",
+      "scope": "repeat",
+      "exact": true
+    }
+  ],
+  "SQLStages": 4,
+  "itinerantStages": 0,
+  "remoteWrites": 0,
+  "impossibleCapacity": {
+    "resource": "A",
+    "phases": 25,
+    "competition": 15,
+    "rest": 15,
+    "demand": 55,
+    "available": 40,
+    "branches": 4278
+  }
+}

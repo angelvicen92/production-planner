@@ -1,0 +1,393 @@
+{
+  "memoryOnly": true,
+  "stage": false,
+  "supportingRepair": {
+    "changedTaskIds": [
+      "task:18",
+      "task:23"
+    ],
+    "acceptedSupportingPlacements": [],
+    "validation": {
+      "hardValid": true,
+      "dependencyViolationCount": 0,
+      "overlapViolationCount": 0,
+      "transitionViolationCount": 0,
+      "availabilityViolationCount": 0,
+      "taskAvailabilityViolationCount": 0,
+      "blockViolationCount": 0,
+      "resourceAvailabilityViolationCount": 0,
+      "resourceOverlapViolationCount": 0,
+      "resourceTransitionViolationCount": 0,
+      "secondaryContinuityViolationCount": 0,
+      "setupViolationCount": 0,
+      "setupPreparationViolationCount": 0,
+      "jointGroupViolationCount": 0,
+      "technicalOperationViolationCount": 0,
+      "technicalChainViolationCount": 0,
+      "spaceMealViolationCount": 0,
+      "mainFlowMealViolationCount": 0,
+      "anchoredAccompanimentViolationCount": 0,
+      "participantMealViolationCount": 0,
+      "resourceMealViolationCount": 0,
+      "operationalMealViolationCount": 0,
+      "itinerantUnitMealViolationCount": 0,
+      "reasonCodes": [],
+      "unstructuredReasonCodes": [],
+      "violations": []
+    },
+    "certificate": {
+      "status": "WITNESS",
+      "consumed": 0,
+      "contextOnly": true,
+      "tasks": [
+        {
+          "taskId": 19,
+          "startPlanned": "08:15",
+          "endPlanned": "08:20",
+          "spaceId": 1,
+          "assignedResourceIds": [
+            4,
+            5
+          ]
+        },
+        {
+          "taskId": 24,
+          "startPlanned": "08:20",
+          "endPlanned": "08:25",
+          "spaceId": 1,
+          "assignedResourceIds": [
+            4,
+            5
+          ]
+        },
+        {
+          "taskId": 29,
+          "startPlanned": "08:25",
+          "endPlanned": "08:30",
+          "spaceId": 1,
+          "assignedResourceIds": [
+            4,
+            5
+          ]
+        },
+        {
+          "taskId": 20,
+          "startPlanned": "08:30",
+          "endPlanned": "08:35",
+          "spaceId": 2,
+          "assignedResourceIds": [
+            4,
+            5
+          ]
+        },
+        {
+          "taskId": 25,
+          "startPlanned": "08:35",
+          "endPlanned": "08:40",
+          "spaceId": 2,
+          "assignedResourceIds": [
+            4,
+            5
+          ]
+        },
+        {
+          "taskId": 21,
+          "startPlanned": "08:40",
+          "endPlanned": "08:50",
+          "spaceId": 3,
+          "assignedResourceIds": [
+            5
+          ]
+        },
+        {
+          "taskId": 26,
+          "startPlanned": "08:40",
+          "endPlanned": "08:50",
+          "spaceId": 3,
+          "assignedResourceIds": [
+            5
+          ]
+        },
+        {
+          "taskId": 30,
+          "startPlanned": "08:50",
+          "endPlanned": "08:55",
+          "spaceId": 3,
+          "assignedResourceIds": [
+            6
+          ]
+        }
+      ],
+      "operationalMeals": [
+        {
+          "id": "break:physical-rest",
+          "resourceIds": [
+            "plan-resource:4",
+            "plan-resource:5"
+          ],
+          "spaceIds": [
+            "space:1",
+            "space:2",
+            "space:3"
+          ],
+          "duration": 15,
+          "start": 540,
+          "end": 555
+        }
+      ]
+    },
+    "unchangedScopeProposal": [
+      {
+        "id": "task:19",
+        "duration": 5,
+        "spaceId": "space:1",
+        "dependencies": [
+          "task:18"
+        ],
+        "requiredResourceIds": [
+          "plan-resource:4",
+          "plan-resource:5"
+        ],
+        "nonSubstitutableResourceIds": [
+          "plan-resource:4",
+          "plan-resource:5"
+        ],
+        "itinerantUnitId": "itinerant-team:1",
+        "allowedItinerantUnitIds": [
+          "itinerant-team:1"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:7",
+        "start": 495,
+        "end": 500
+      },
+      {
+        "id": "task:24",
+        "duration": 5,
+        "spaceId": "space:1",
+        "dependencies": [
+          "task:23"
+        ],
+        "requiredResourceIds": [
+          "plan-resource:4",
+          "plan-resource:5"
+        ],
+        "nonSubstitutableResourceIds": [
+          "plan-resource:4",
+          "plan-resource:5"
+        ],
+        "itinerantUnitId": "itinerant-team:1",
+        "allowedItinerantUnitIds": [
+          "itinerant-team:1"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:8",
+        "start": 500,
+        "end": 505
+      },
+      {
+        "id": "task:29",
+        "duration": 5,
+        "spaceId": "space:1",
+        "dependencies": [
+          "task:28"
+        ],
+        "requiredResourceIds": [
+          "plan-resource:4",
+          "plan-resource:5"
+        ],
+        "nonSubstitutableResourceIds": [
+          "plan-resource:4",
+          "plan-resource:5"
+        ],
+        "itinerantUnitId": "itinerant-team:1",
+        "allowedItinerantUnitIds": [
+          "itinerant-team:1"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:9",
+        "start": 505,
+        "end": 510
+      },
+      {
+        "id": "task:20",
+        "duration": 5,
+        "spaceId": "space:2",
+        "dependencies": [
+          "task:19"
+        ],
+        "requiredResourceIds": [
+          "plan-resource:4",
+          "plan-resource:5"
+        ],
+        "nonSubstitutableResourceIds": [
+          "plan-resource:4",
+          "plan-resource:5"
+        ],
+        "itinerantUnitId": "itinerant-team:1",
+        "allowedItinerantUnitIds": [
+          "itinerant-team:1"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:7",
+        "start": 510,
+        "end": 515
+      },
+      {
+        "id": "task:25",
+        "duration": 5,
+        "spaceId": "space:2",
+        "dependencies": [
+          "task:24"
+        ],
+        "requiredResourceIds": [
+          "plan-resource:4",
+          "plan-resource:5"
+        ],
+        "nonSubstitutableResourceIds": [
+          "plan-resource:4",
+          "plan-resource:5"
+        ],
+        "itinerantUnitId": "itinerant-team:1",
+        "allowedItinerantUnitIds": [
+          "itinerant-team:1"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:8",
+        "start": 515,
+        "end": 520
+      },
+      {
+        "id": "task:21",
+        "duration": 10,
+        "spaceId": "space:3",
+        "dependencies": [
+          "task:20"
+        ],
+        "requiredResourceIds": [
+          "plan-resource:5"
+        ],
+        "nonSubstitutableResourceIds": [
+          "plan-resource:5"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:7",
+        "jointGroupId": "joint-group:synchronized-operation",
+        "start": 520,
+        "end": 530
+      },
+      {
+        "id": "task:26",
+        "duration": 10,
+        "spaceId": "space:3",
+        "dependencies": [
+          "task:25"
+        ],
+        "requiredResourceIds": [
+          "plan-resource:5"
+        ],
+        "nonSubstitutableResourceIds": [
+          "plan-resource:5"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:8",
+        "jointGroupId": "joint-group:synchronized-operation",
+        "start": 520,
+        "end": 530
+      },
+      {
+        "id": "task:30",
+        "duration": 5,
+        "spaceId": "space:3",
+        "dependencies": [
+          "task:29"
+        ],
+        "requiredResourceIds": [
+          "plan-resource:6"
+        ],
+        "nonSubstitutableResourceIds": [
+          "plan-resource:6"
+        ],
+        "participantMarginBeforeMinutes": 0,
+        "participantMarginAfterMinutes": 0,
+        "kind": "auxiliary",
+        "participantId": "participant:9",
+        "start": 530,
+        "end": 535
+      }
+    ]
+  },
+  "forcedSameUnit": {
+    "original": {
+      "taskId": 30,
+      "status": "pending",
+      "spaceId": 3,
+      "explicitZoneId": 1,
+      "mappedZoneId": 1,
+      "effectiveZoneId": 1,
+      "zoneResolution": "MATCH",
+      "directResourceIds": [
+        6
+      ],
+      "byItemResourceIds": [
+        6
+      ],
+      "spaceResourceIds": [],
+      "zoneResourceIds": [],
+      "effectiveResourceIds": [
+        6
+      ]
+    },
+    "forced": {
+      "taskId": 30,
+      "status": "pending",
+      "spaceId": 3,
+      "explicitZoneId": 1,
+      "mappedZoneId": 1,
+      "effectiveZoneId": 1,
+      "zoneResolution": "MATCH",
+      "directResourceIds": [
+        6
+      ],
+      "byItemResourceIds": [
+        6
+      ],
+      "spaceResourceIds": [],
+      "zoneResourceIds": [],
+      "effectiveResourceIds": [
+        4,
+        5,
+        6
+      ]
+    },
+    "unit": {
+      "itinerantTeamId": 1,
+      "windows": [
+        {
+          "start": "08:00",
+          "end": "12:00"
+        }
+      ],
+      "planResourceItemIds": [
+        4,
+        5
+      ],
+      "transitionMinutes": 0
+    },
+    "explanation": "Requiring the fixed AB unit on the final C task consumes ABC. Release requires dropping that unit requirement, not renaming its space."
+  }
+}

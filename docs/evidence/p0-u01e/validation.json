@@ -1,0 +1,46 @@
+{
+  "status": "PASS",
+  "mode": "DIAGNOSTIC_ONLY",
+  "base": "3ba5d4d393ddf58025622d745a76013ac0ea8399",
+  "newCapability": false,
+  "nativeStages": 4,
+  "itinerantStages": 0,
+  "disposableStacks": 2,
+  "focalTests": {
+    "passed": 41,
+    "failed": 0,
+    "files": 7,
+    "log": "checks/focal.log"
+  },
+  "harnessTypeScript": "PASS",
+  "offlineVerification": "PASS",
+  "supportingProbe": "PASS; exact between stacks",
+  "budgetsChanged": false,
+  "productionSourceChanged": false,
+  "A2FullExecuted": false,
+  "globalSuiteExecuted": false,
+  "supabaseRealAccessed": false,
+  "replitAccessed": false,
+  "merge": false,
+  "attempts": [
+    {
+      "name": "u01e-native",
+      "failure": "Harness scope.taskIds instead of resolvedTaskIds"
+    },
+    {
+      "name": "u01e-probe2",
+      "failure": "Harness collective-availability probe applied to unused-snapshot member without a unit; A-D and impossible already passed"
+    },
+    {
+      "name": "u01e-final",
+      "failure": "Harness agenda clone reused task objects; corrected deep clone; production input immutability asserted thereafter"
+    }
+  ],
+  "finalRuns": [
+    "u01e-candidate",
+    "u01e-repeat"
+  ],
+  "restIsolationProbe": "PASS; exact between stacks",
+  "evidenceArchivesIncluded": true,
+  "archivePublicationExplicitlyAuthorized": true
+}
