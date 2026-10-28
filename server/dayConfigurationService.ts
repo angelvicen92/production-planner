@@ -1,3 +1,4 @@
+import {dailyOperationalMealsAuthority,withDailyOperationalMeals} from './operationalMealPolicy';
 import {dailyJointAuthority,withDailyJointGroups} from "./jointGroupStructure";
 import { dailyTechnicalChainAuthority, validateDailyTechnicalChains } from "./technicalChainStructure";
 import {dailyAnchoredAuthority,withDailyAnchoredAccompaniments} from './anchoredAccompanimentStructure';
@@ -136,6 +137,7 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
   if (optimizerStateError || !optimizerState) throw optimizerStateError;
   const chainEdit = operation === "EDIT" ? (payload as DayConfigEdit).technicalChains : undefined;
   const anchoredEdit = operation === "EDIT" ? (payload as DayConfigEdit).anchoredAccompaniments : undefined;
+  const operationalMealEdit=operation === "EDIT" ? (payload as DayConfigEdit).operationalMealPolicies : undefined;
   const jointEdit = operation === "EDIT" ? (payload as DayConfigEdit).jointGroups : undefined;
   const scopeEdit = operation === "EDIT" ? (payload as DayConfigEdit).taskOperationScopes : undefined;
   const structureEdit = operation === "EDIT" ? (payload as DayConfigEdit).roundSynchronization : undefined;
@@ -145,7 +147,7 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
   const continuityEdit = operation === "EDIT" ? (payload as DayConfigEdit).operationContinuity : undefined;
   const continuityRestore = operation === "RESTORE" && (payload as DayConfigRestore).capability === "OPERATION_CONTINUITY" ? payload as Extract<DayConfigRestore,{capability:"OPERATION_CONTINUITY"}> : undefined;
   const expectedRevision = plan.current_config_revision_id == null ? null : Number(plan.current_config_revision_id);
-  if ((jointEdit || scopeEdit || anchoredEdit || chainEdit || structureEdit || roundEdit || roundRestore || continuityEdit || continuityRestore) && (payload as DayConfigEdit).expectedRevisionId !== expectedRevision)
+  if ((operationalMealEdit || jointEdit || scopeEdit || anchoredEdit || chainEdit || structureEdit || roundEdit || roundRestore || continuityEdit || continuityRestore) && (payload as DayConfigEdit).expectedRevisionId !== expectedRevision)
     throw Object.assign(new Error("STALE_CONFIG_REVISION"), { status: 409 });
   const mainPreferenceBaseline=operation==="REFRESH"&&(payload as DayConfigRefresh).capabilities.includes("BLOCK_COUNT_POLICY")
     ?mainFlowPreferenceFromRow(general):undefined;
@@ -180,6 +182,13 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
   const optimizerInput = optimizerSelected ? await buildEngineInput(planId,candidateRepository) : current.input;
   transportBoundsSchema.parse(optimizerInput);
   let nextInput = structureEdit || chainEdit ? optimizerInput : candidateInput(optimizerInput, plan, general, operation, payload);
+  if(operationalMealEdit){
+    dailyOperationalMealsAuthority(plan);
+    if(!plan.planner_next_profile?.configuration||plan.planner_next_configuration!=null)throw Object.assign(new Error("OPERATIONAL_MEAL_AUTHORITY_CONFLICT"),{status:422});
+    nextInput=withDailyOperationalMeals(optimizerInput,operationalMealEdit);
+    const readiness=preflightEngineInputForPlannerNext(nextInput);
+    if(readiness.status!=="SUPPORTED")throw Object.assign(new Error(`UNSUPPORTED_OPERATIONAL_MEAL: ${readiness.reasonCodes.join(", ")}`),{status:422});
+  }
   if(jointEdit){
     dailyJointAuthority(plan);
     if(!plan.planner_next_profile||plan.planner_next_configuration!=null)throw Object.assign(new Error('JOINT_AUTHORITY_CONFLICT'),{status:422});
@@ -244,7 +253,7 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
   });
   if (error?.code === "55P03" || error?.code === "40P01")
     throw Object.assign(new Error("STALE_CONFIG_SOURCES"),{status:409,cause:error});
-  if (error) throw Object.assign(error, { status: error.message.includes("PERMISSION_DENIED") ? 403 : /STALE_|ROUND_|TECHNICAL_CHAIN|ANCHORED_|TASK_SCOPE|JOINT_|OPERATION_CONTINUITY/.test(error.message) ? 409 : 500 });
+  if (error) throw Object.assign(error, { status: error.message.includes("PERMISSION_DENIED") ? 403 : /STALE_|ROUND_|TECHNICAL_CHAIN|ANCHORED_|TASK_SCOPE|JOINT_|OPERATIONAL_MEAL|OPERATION_CONTINUITY/.test(error.message) ? 409 : 500 });
   const { data: updated, error: updatedError } = await supabaseAdmin.from("plans").select("*").eq("id", planId).single();
   if (updatedError || !updated) throw updatedError;
   return { ...mapPlan(updated), revisionId: Number(data) };

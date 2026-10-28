@@ -159,6 +159,7 @@ export type PlannerSearchPolicy =
 
 export interface PlannerNextProblem {
   /** Explicit native v2 adoption; historical snapshots retain their original contract. */
+  nativeOperationalMealsVersion?: 1;
   nativeJointGroupsVersion?: 1;
   nativeAnchoredAccompanimentsVersion?: 2;
   day: Window;

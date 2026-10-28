@@ -166,7 +166,7 @@ export function materializeAssistedSnapshotOccupations(problem:PlannerNextProble
 
 /** Revalidate the persisted physical witness, never rediscover it with another search. */
 export function assertNominalProposalWitness(input:EngineInput,draft:AssistedPlanningSnapshotV1,result:AssistedProposalRunResultV1){
-  if(input.dailyJointGroupsVersion!==1&&input.dailyAnchoredAccompanimentsVersion!==2&&!input.tasks.some(task=>task.resourceRequirements?.anyOf?.length||Object.keys(task.resourceRequirements?.byType??{}).length))return;
+  if(input.dailyOperationalMealsVersion!==1&&input.dailyJointGroupsVersion!==1&&input.dailyAnchoredAccompanimentsVersion!==2&&!input.tasks.some(task=>task.resourceRequirements?.anyOf?.length||Object.keys(task.resourceRequirements?.byType??{}).length))return;
   const adapter=adaptEngineInputToPlannerNextProblem(input);
   if(adapter.status!=='SUPPORTED')throw new Error('INVALID_NOMINAL_PHYSICAL_WITNESS');
   const problem=adapter.problem,proof=result.evidence.nominalPhysicalFutureWitness as any;
@@ -412,9 +412,9 @@ export class AssistedProposalService {
         const domain=task.allowedItinerantUnitIds?.length?task.allowedItinerantUnitIds:task.itinerantUnitId?[task.itinerantUnitId]:[];
         const resources=[...(task.requiredResourceIds??[]),...(task.coachId===undefined?[]:[task.coachId]),
           ...(acceptedTasks.has(task.id)?[]:(adapter.problem.itinerantUnits??[]).filter(unit=>domain.includes(unit.id)).flatMap(unit=>unit.resourceIds??[]))];
-        return policy.spaceIds.includes(task.spaceId)||resources.some(id=>policy.resourceIds.includes(id));
+        return (!input.dailyOperationalMealsVersion||task.blocksSpace!==false)&&policy.spaceIds.includes(task.spaceId)||resources.some(id=>policy.resourceIds.includes(id));
       });
-      if(consumers.length&&consumers.every(task=>acceptedTasks.has(task.id)))
+      if((consumers.length||input.dailyOperationalMealsVersion===1)&&consumers.every(task=>acceptedTasks.has(task.id)))
         acceptedMeals.push({policyId:selected.id,startPlanned:minuteToEngineTime(selected.start),endPlanned:minuteToEngineTime(selected.end)});
     }
     const sourceFamilyByCanonical=new Map(adapter.identityMap.filter(i=>i.namespace==="setup-family").map(i=>[i.canonicalId,i.sourceId]));

@@ -1,5 +1,5 @@
 import type { OperationalMealPolicy, PlannerNextProblem, ScheduledOperationalMeal, ScheduledTask, Window } from "./contracts";
-import { assessOperationalMealFutureFeasibility, operationalMealCandidates, operationalMealWitnessFingerprint, type OperationalMealSearchBudget, type OperationalMealWitness } from "./operationalMeals";
+import { taskConflictsWithPolicy, assessOperationalMealFutureFeasibility, operationalMealCandidates, operationalMealWitnessFingerprint, type OperationalMealSearchBudget, type OperationalMealWitness } from "./operationalMeals";
 import { overlaps } from "./time";
 
 export type OperationalMealReservationStatus = "PASS" | "PRUNE" | "ABSTAIN";
@@ -23,8 +23,6 @@ export interface OperationalMealReservationProbe { readonly status:OperationalMe
   readonly remainingIntervalsBefore:readonly OperationalMealRemainingInterval[];readonly witnessBefore:string|null }
 export interface OperationalMealOrderingKey { readonly preservesWitness:boolean;readonly preservesInterval:boolean;readonly bestSlack:number }
 
-const resourceIds=(task:ScheduledTask):readonly string[]=>task.coachId===undefined?(task.requiredResourceIds??[]):[...(task.requiredResourceIds??[]),task.coachId];
-const affects=(task:ScheduledTask,policy:OperationalMealPolicy):boolean=>policy.spaceIds.includes(task.spaceId)||resourceIds(task).some(id=>policy.resourceIds.includes(id));
 const policyConflict=(left:OperationalMealPolicy,right:OperationalMealPolicy):boolean=>left.resourceIds.some(id=>right.resourceIds.includes(id))||left.spaceIds.some(id=>right.spaceIds.includes(id));
 const intersect=(left:Window[],right:readonly Window[]):Window[]=>left.flatMap(a=>right.map(b=>({start:Math.max(a.start,b.start),end:Math.min(a.end,b.end)}))).filter(x=>x.end>x.start);
 const subtract=(source:Window[],occupied:Window):Window[]=>source.flatMap(interval=>{
@@ -54,7 +52,7 @@ export class PreparedOperationalMealAuthority {
     let free:Window[]=[{...policy.window}];
     for(const id of policy.resourceIds){const authority=this.problem.resources.find(x=>x.id===id)??this.problem.coaches.find(x=>x.id===id);free=intersect(free,authority?.availability??[]);}
     for(const id of policy.spaceIds){const authority=this.problem.spaces.find(x=>x.id===id);free=intersect(free,authority?.availability??[]);}
-    for(const task of tasks)if(affects(task,policy))free=subtract(free,{start:task.start,end:task.end});
+    for(const task of tasks)if(taskConflictsWithPolicy(task,policy,this.problem.nativeOperationalMealsVersion===1))free=subtract(free,{start:task.start,end:task.end});
     return free.sort((a,b)=>a.start-b.start||a.end-b.end);
   }
   private witnessValid(tasks:readonly ScheduledTask[]):boolean{
@@ -77,7 +75,7 @@ export class PreparedOperationalMealAuthority {
   }
   currentWitness():OperationalMealWitness|null{return this.lastWitness;}
   orderingKey(tasks:readonly ScheduledTask[],candidate:ScheduledTask):OperationalMealOrderingKey{
-    const next=[...tasks,candidate],policies=(this.problem.operationalMealPolicies??[]).filter(policy=>affects(candidate,policy));
+    const next=[...tasks,candidate],policies=(this.problem.operationalMealPolicies??[]).filter(policy=>taskConflictsWithPolicy(candidate,policy,this.problem.nativeOperationalMealsVersion===1));
     const preservesWitness=this.lastWitness?.complete===true&&this.lastWitness.scheduled
       .filter(meal=>policies.some(policy=>policy.id===meal.id))
       .every(meal=>!overlaps(meal,candidate))===true;
@@ -88,12 +86,12 @@ export class PreparedOperationalMealAuthority {
   }
   assess(tasks:readonly ScheduledTask[],addedTasks:readonly ScheduledTask[],budget:OperationalMealSearchBudget,phase:"CORE"|"STANDALONE"|"MACRO",depth:number):OperationalMealReservationProbe{
     this.evidence.checks++;const policies=[...(this.problem.operationalMealPolicies??[])].sort((a,b)=>a.id.localeCompare(b.id));
-    const affected=policies.filter(policy=>addedTasks.some(task=>affects(task,policy)));this.evidence.affectedPoliciesChecked+=affected.length;
+    const affected=policies.filter(policy=>addedTasks.some(task=>taskConflictsWithPolicy(task,policy,this.problem.nativeOperationalMealsVersion===1)));this.evidence.affectedPoliciesChecked+=affected.length;
     if(affected.length===0){this.evidence.irrelevantFastPasses++;this.evidence.passes++;return {status:"PASS",witness:this.lastWitness,affectedPolicyIds:[],blockingPolicyId:null,remainingIntervals:[],causality:null,candidateCountBefore:null,candidateCountAfter:null,remainingIntervalsBefore:[],witnessBefore:this.witnessFingerprint};}
     let blocking:OperationalMealPolicy|undefined,remaining:Window[]=[];
     const individualPolicies=this.lastWitness?affected:policies;
     for(const policy of individualPolicies){this.evidence.individualDomainChecks++;const free=this.intervals(policy,tasks);if(!free.some(x=>x.end-x.start>=policy.duration)){blocking=policy;remaining=free;break;}}
-    if(blocking){this.evidence.individualZeroDomainPrunes++;this.evidence.prunes++;const causing=addedTasks.find(task=>affects(task,blocking!));
+    if(blocking){this.evidence.individualZeroDomainPrunes++;this.evidence.prunes++;const causing=addedTasks.find(task=>taskConflictsWithPolicy(task,blocking!,this.problem.nativeOperationalMealsVersion===1));
       const baselineTasks=tasks.filter(task=>!addedTasks.includes(task)),before=this.intervals(blocking,baselineTasks),candidateCountBefore=operationalMealCandidates(this.problem,blocking,baselineTasks,[]).length;
       const causality=causing?"CAUSED_BY_ADDED_TASK":"PREEXISTING_ZERO_DOMAIN";if(!causing)this.evidence.preexistingZeroDomainPrunes++;
       this.evidence.firstPrune??={phase,causality,causingTaskId:causing?.id??null,causingStart:causing?.start??null,policyId:blocking.id,resourceIds:[...blocking.resourceIds],spaceIds:[...blocking.spaceIds],window:{...blocking.window},duration:blocking.duration,

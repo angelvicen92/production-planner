@@ -84,6 +84,17 @@ export function assertPrivilegeContract(catalog:DataApiCatalog) {
     }
     expected.functions.sort((a:any,b:any)=>a.signature<b.signature?-1:a.signature>b.signature?1:a.role<b.role?-1:a.role>b.role?1:0);
   }
+  if(Object.hasOwn(catalog.tables.find(t=>t.name==='plans')?.columns??{},'daily_operational_meal_policies')){
+    for(const role of ['anon','authenticated','service_role']){
+      const plan=catalog.tables.find(t=>t.name==='plans'&&t.role===role);assert.ok(plan);
+      assert.deepEqual(plan.columns.daily_operational_meal_policies,role==='service_role'?['SELECT','INSERT','UPDATE']:role==='authenticated'?['SELECT']:[]);
+      for(const signature of ['assert_daily_operational_meals(integer,jsonb)','assert_operational_meal_snapshot(integer,jsonb,bigint)','guard_daily_operational_meals()']){
+        expected.functions.push({signature,role,execute:role==='service_role'&&!signature.startsWith('guard_')});
+        const fn=catalog.functions.find(f=>f.signature===signature&&f.role===role);assert.ok(fn,signature);assert.equal(fn.definer,false);assert.deepEqual(fn.settings,['search_path=""']);
+      }
+    }
+    expected.functions.sort((a:any,b:any)=>a.signature<b.signature?-1:a.signature>b.signature?1:a.role<b.role?-1:a.role>b.role?1:0);
+  }
   assert.deepEqual(privilegeContract(catalog),expected,
     'Data API contract changed: review every new object, required grant, column boundary and exposed role');
   // 103 adds one column covered by the existing table grants. The compact JSON

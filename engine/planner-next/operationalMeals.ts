@@ -45,8 +45,8 @@ function scopedResourceIds(task: ScheduledTask): readonly string[] {
     : [...(task.requiredResourceIds ?? []), task.coachId];
 }
 
-function taskConflictsWithPolicy(task: ScheduledTask, policy: OperationalMealPolicy): boolean {
-  return policy.spaceIds.includes(task.spaceId)
+export function taskConflictsWithPolicy(task: ScheduledTask, policy: OperationalMealPolicy, physicalScope = false): boolean {
+  return (!physicalScope || task.blocksSpace !== false) && policy.spaceIds.includes(task.spaceId)
     || scopedResourceIds(task).some((id) => policy.resourceIds.includes(id));
 }
 
@@ -91,7 +91,7 @@ export function operationalMealCandidates(
       start,
       end,
     };
-    if (tasks.some((task) => taskConflictsWithPolicy(task, policy) && overlaps(task, candidate))) continue;
+    if (tasks.some((task) => taskConflictsWithPolicy(task, policy, problem.nativeOperationalMealsVersion===1) && overlaps(task, candidate))) continue;
     if (placed.some((meal) => mealScopesOverlap(meal, candidate) && overlaps(meal, candidate))) continue;
     candidates.push(candidate);
   }
@@ -193,7 +193,7 @@ export function assessOperationalMealFutureFeasibility(
       || [...meal.resourceIds].sort().join("\0") !== [...policy.resourceIds].sort().join("\0")
       || [...meal.spaceIds].sort().join("\0") !== [...policy.spaceIds].sort().join("\0")
       || !scopeAvailable(problem, policy, meal.start, meal.end)
-      || tasks.some((task) => taskConflictsWithPolicy(task, policy) && overlaps(task, meal));
+      || tasks.some((task) => taskConflictsWithPolicy(task, policy, problem.nativeOperationalMealsVersion===1) && overlaps(task, meal));
   });
   const pending = policies.filter((policy) => !fixedById.has(policy.id));
   const scheduled = invalidFixed.length ? null : search(pending, [...fixedMeals], []);

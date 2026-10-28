@@ -13,7 +13,7 @@ export function dailyJointAuthority(row:Record<string,any>){
 export function jointCombinationSupported(input:EngineInput){
  return !!input.plannerNext&&!input.setupPolicies?.length&&!input.roundSynchronizations?.length&&!input.technicalChains?.length
   &&!input.anchoredAccompaniments?.length&&!input.dailyTaskOperationScopes?.length&&!input.operationContinuityGroups?.length
-  &&!input.operationalMealPolicies?.length&&!input.transportSettings&&input.mealMode==='global_hard_break'
+  &&(!input.operationalMealPolicies?.length||input.dailyOperationalMealsVersion===1)&&!input.transportSettings&&input.mealMode==='global_hard_break'
   &&!input.tasks.filter(t=>t.status!=='cancelled').some(t=>t.setupFamilyId||t.itinerantTeamRequirement&&t.itinerantTeamRequirement!=='none'
    ||Object.keys(t.resourceRequirements?.byType??{}).length||t.resourceRequirements?.anyOf?.length);
 }

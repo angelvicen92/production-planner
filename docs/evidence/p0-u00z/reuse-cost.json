@@ -1,0 +1,127 @@
+{
+  "method": "git diff --numstat against exact base, product paths only; excludes tests, scripts, evidence and workflow; physical lines, not a complexity estimate",
+  "added": 468,
+  "removed": 30,
+  "newSQLHelpers": 3,
+  "newWriterFunctions": 0,
+  "newTables": 0,
+  "newColumns": 1,
+  "newSolvers": 0,
+  "files": [
+    {
+      "file": "client/src/components/effective-configuration.tsx",
+      "added": 2,
+      "removed": 0
+    },
+    {
+      "file": "client/src/components/operational-meals-editor.tsx",
+      "added": 44,
+      "removed": 0
+    },
+    {
+      "file": "client/src/lib/day-section-preferences.ts",
+      "added": 1,
+      "removed": 0
+    },
+    {
+      "file": "engine/buildInput.ts",
+      "added": 3,
+      "removed": 2
+    },
+    {
+      "file": "engine/planner-next/assistedPlanning.ts",
+      "added": 2,
+      "removed": 2
+    },
+    {
+      "file": "engine/planner-next/contracts.ts",
+      "added": 1,
+      "removed": 0
+    },
+    {
+      "file": "engine/planner-next/integration/engineInputAdapter.ts",
+      "added": 1,
+      "removed": 0
+    },
+    {
+      "file": "engine/planner-next/operationalMeals.ts",
+      "added": 4,
+      "removed": 4
+    },
+    {
+      "file": "engine/planner-next/preparedOperationalMealAuthority.ts",
+      "added": 5,
+      "removed": 7
+    },
+    {
+      "file": "engine/types.ts",
+      "added": 1,
+      "removed": 0
+    },
+    {
+      "file": "server/assistedProposalService.ts",
+      "added": 3,
+      "removed": 3
+    },
+    {
+      "file": "server/dailyTaskOperationScopes.ts",
+      "added": 1,
+      "removed": 1
+    },
+    {
+      "file": "server/dayConfigurationService.ts",
+      "added": 11,
+      "removed": 2
+    },
+    {
+      "file": "server/effectiveConfigurationView.ts",
+      "added": 14,
+      "removed": 1
+    },
+    {
+      "file": "server/effectivePlanConfigRevision.ts",
+      "added": 1,
+      "removed": 1
+    },
+    {
+      "file": "server/jointGroupStructure.ts",
+      "added": 1,
+      "removed": 1
+    },
+    {
+      "file": "server/operationalMealPolicy.ts",
+      "added": 34,
+      "removed": 0
+    },
+    {
+      "file": "server/routes.ts",
+      "added": 2,
+      "removed": 2
+    },
+    {
+      "file": "shared/configurability.ts",
+      "added": 1,
+      "removed": 1
+    },
+    {
+      "file": "shared/dayConfig.ts",
+      "added": 5,
+      "removed": 3
+    },
+    {
+      "file": "shared/effectiveConfigurationContracts.ts",
+      "added": 7,
+      "removed": 0
+    },
+    {
+      "file": "shared/operationalMealPolicy.ts",
+      "added": 25,
+      "removed": 0
+    },
+    {
+      "file": "supabase/migrations/121_daily_operational_meals.sql",
+      "added": 299,
+      "removed": 0
+    }
+  ]
+}

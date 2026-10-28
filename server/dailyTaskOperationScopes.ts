@@ -15,7 +15,7 @@ export function taskOperationScopesSupported(input:EngineInput){
   &&(!input.anchoredAccompaniments?.length||[1,2].includes(input.dailyAnchoredAccompanimentsVersion??0)
    &&input.anchoredAccompaniments.every(a=>a&&Array.isArray(a.beforeTaskIds)&&Array.isArray(a.afterTaskIds)
     &&input.tasks.some(t=>t.id===a.anchorTaskId&&t.plannerNextKind==='main')))
-  &&!input.operationContinuityGroups?.length&&!input.operationalMealPolicies?.length
+  &&!input.operationContinuityGroups?.length&&(!input.operationalMealPolicies?.length||input.dailyOperationalMealsVersion===1)
   &&!input.transportSettings&&!input.tasks.some(t=>t.jointGroupId||t.setupFamilyId);
 }
 /** Capture explicit requirements before materialization; never subtract team members. */
