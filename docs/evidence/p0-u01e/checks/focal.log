@@ -1,0 +1,261 @@
+TAP version 13
+# Subtest: explicit global→daily and physical FK mappings reject coincidence, duplicates, missing and cross-day identities
+ok 1 - explicit global→daily and physical FK mappings reject coincidence, duplicates, missing and cross-day identities
+  ---
+  duration_ms: 6.26774
+  type: 'test'
+  ...
+# Subtest: generic A+B allowed; A+C conflicts by CAM_A; forbidden C rejected; selected members counted once
+ok 2 - generic A+B allowed; A+C conflicts by CAM_A; forbidden C rejected; selected members counted once
+  ---
+  duration_ms: 28.020849
+  type: 'test'
+  ...
+# Subtest: independent physical requirements survive selection of another unit
+ok 3 - independent physical requirements survive selection of another unit
+  ---
+  duration_ms: 2.993237
+  type: 'test'
+  ...
+# Subtest: a catalog byItem physical requirement maps independently and survives choosing another unit
+ok 4 - a catalog byItem physical requirement maps independently and survives choosing another unit
+  ---
+  duration_ms: 2.945726
+  type: 'test'
+  ...
+# Subtest: unit windows are explicit intersections; null adds no restriction; 0 transition remains explicit
+ok 5 - unit windows are explicit intersections; null adds no restriction; 0 transition remains explicit
+  ---
+  duration_ms: 2.991165
+  type: 'test'
+  ...
+# Subtest: catalog rejects empty, duplicate, invalid and untyped compositions
+ok 6 - catalog rejects empty, duplicate, invalid and untyped compositions
+  ---
+  duration_ms: 2.478864
+  type: 'test'
+  ...
+# Subtest: physical member windows, explicit unit meals and transitions remain separate authorities
+ok 7 - physical member windows, explicit unit meals and transitions remain separate authorities
+  ---
+  duration_ms: 3.878782
+  type: 'test'
+  ...
+# Subtest: catalog and daily row order do not change the adapted composition or its fingerprint
+ok 8 - catalog and daily row order do not change the adapted composition or its fingerprint
+  ---
+  duration_ms: 5.129509
+  type: 'test'
+  ...
+# Subtest: native group preserves both identities, dependencies and one shared physical occupation
+ok 9 - native group preserves both identities, dependencies and one shared physical occupation
+  ---
+  duration_ms: 68.329423
+  type: 'test'
+  ...
+# Subtest: single-member scopes close visibly even without visible prerequisites; future groups stay complete and unaccepted
+ok 10 - single-member scopes close visibly even without visible prerequisites; future groups stay complete and unaccepted
+  ---
+  duration_ms: 24.150921
+  type: 'test'
+  ...
+# Subtest: partial protection rejects explicitly; complete protection is preserved literally during continuation
+ok 11 - partial protection rejects explicitly; complete protection is preserved literally during continuation
+  ---
+  duration_ms: 25.347022
+  type: 'test'
+  ...
+# Subtest: both participants govern feeding feasibility; incompatible feeding is physical, never exhausted search
+ok 12 - both participants govern feeding feasibility; incompatible feeding is physical, never exhausted search
+  ---
+  duration_ms: 7.999157
+  type: 'test'
+  ...
+# Subtest: declarations reject unequal duration, space, resources, duplicate people, foreign/missing and internal dependencies
+ok 13 - declarations reject unequal duration, space, resources, duplicate people, foreign/missing and internal dependencies
+  ---
+  duration_ms: 3.085677
+  type: 'test'
+  ...
+# Subtest: native authority is opt-in, cold revision replay verifies every member and absence stays historical
+ok 14 - native authority is opt-in, cold revision replay verifies every member and absence stays historical
+  ---
+  duration_ms: 4.097992
+  type: 'test'
+  ...
+# Subtest: the existing consumer supports three different participants without a pair-only authoring restriction
+ok 15 - the existing consumer supports three different participants without a pair-only authoring restriction
+  ---
+  duration_ms: 9.810284
+  type: 'test'
+  ...
+# Subtest: reversing member and input set order preserves the authored authority and deterministic proposal
+ok 16 - reversing member and input set order preserves the authored authority and deterministic proposal
+  ---
+  duration_ms: 37.613135
+  type: 'test'
+  ...
+# Subtest: a saturated physical resource consumes the shared interval once, while separate obligations do not fit
+ok 17 - a saturated physical resource consumes the shared interval once, while separate obligations do not fit
+  ---
+  duration_ms: 17.2444
+  type: 'test'
+  ...
+# Subtest: one common pause spans both subspaces; unrelated work overlaps and no fixed time is supplied
+ok 18 - one common pause spans both subspaces; unrelated work overlaps and no fixed time is supplied
+  ---
+  duration_ms: 56.977212
+  type: 'test'
+  ...
+# Subtest: independent mobile units eat independently; a recomposed unit uses both authorities without inventing a third
+ok 19 - independent mobile units eat independently; a recomposed unit uses both authorities without inventing a third
+  ---
+  duration_ms: 21.948153
+  type: 'test'
+  ...
+# Subtest: partial scope retains one globally valid witness; protected tasks and materialized pause survive continuation
+ok 20 - partial scope retains one globally valid witness; protected tasks and materialized pause survive continuation
+  ---
+  duration_ms: 22.659464
+  type: 'test'
+  ...
+# Subtest: explicit scope also supports a single space, a resource alone and names unrelated to any fixture
+ok 21 - explicit scope also supports a single space, a resource alone and names unrelated to any fixture
+  ---
+  duration_ms: 31.81945
+  type: 'test'
+  ...
+# Subtest: the real joint consumer composes the same explicit pause without losing siblings or shared occupancy
+ok 22 - the real joint consumer composes the same explicit pause without losing siblings or shared occupancy
+  ---
+  duration_ms: 19.514168
+  type: 'test'
+  ...
+# Subtest: visual agenda and inheritance do not create physical occupation, while shared unit members retain their pauses
+ok 23 - visual agenda and inheritance do not create physical occupation, while shared unit members retain their pauses
+  ---
+  duration_ms: 17.215656
+  type: 'test'
+  ...
+# Subtest: foreign IDs, empty scopes, duplicate members, impossible windows and stale replay reject before search
+ok 24 - foreign IDs, empty scopes, duplicate members, impossible windows and stale replay reject before search
+  ---
+  duration_ms: 9.848703
+  type: 'test'
+  ...
+# Subtest: NEXT-005 schedules two compact independent itinerant units deterministically
+ok 25 - NEXT-005 schedules two compact independent itinerant units deterministically
+  ---
+  duration_ms: 2727.487015
+  type: 'test'
+  ...
+# Subtest: resource transition contract rejects invalid values crash-safely
+ok 26 - resource transition contract rejects invalid values crash-safely
+  ---
+  duration_ms: 3.123174
+  type: 'test'
+  ...
+# Subtest: exact-resource transitions use maximum shared margin and validator counts a pair once
+ok 27 - exact-resource transitions use maximum shared margin and validator counts a pair once
+  ---
+  duration_ms: 1.372256
+  type: 'test'
+  ...
+# Subtest: an impossible itinerant task publishes no partial plan
+ok 28 - an impossible itinerant task publishes no partial plan
+  ---
+  duration_ms: 14.961483
+  type: 'test'
+  ...
+# Subtest: representative, non-representative peer and space close the visible REQUIRED unit without prerequisites
+ok 29 - representative, non-representative peer and space close the visible REQUIRED unit without prerequisites
+  ---
+  duration_ms: 32.238352
+  type: 'test'
+  ...
+# Subtest: authority accepts all authoring orders but rejects physical duplication, bad phases and backwards dependencies
+ok 30 - authority accepts all authoring orders but rejects physical duplication, bad phases and backwards dependencies
+  ---
+  duration_ms: 15.575898
+  type: 'test'
+  ...
+# Subtest: partial scope certifies the authentic global future with its physical pause, zero extra search, then preserves S1
+ok 31 - partial scope certifies the authentic global future with its physical pause, zero extra search, then preserves S1
+  ---
+  duration_ms: 242.796971
+  type: 'test'
+  ...
+# Subtest: each phase exposes multiple realized permutations, and HARD dependencies can require a non-nominal one
+ok 32 - each phase exposes multiple realized permutations, and HARD dependencies can require a non-nominal one
+  ---
+  duration_ms: 342.229625
+  type: 'test'
+  ...
+# Subtest: phased technical operations retain their kind and accept flexible internal dependencies
+ok 33 - phased technical operations retain their kind and accept flexible internal dependencies
+  ---
+  duration_ms: 22.027525
+  type: 'test'
+  ...
+# Subtest: a locally valid competitor prefix cannot consume the last contiguous future realization
+ok 34 - a locally valid competitor prefix cannot consume the last contiguous future realization
+  ---
+  duration_ms: 84.408226
+  type: 'test'
+  ...
+# Subtest: explicit empty common identities survive daily authority and adapter; missing and null fail closed
+ok 35 - explicit empty common identities survive daily authority and adapter; missing and null fail closed
+  ---
+  duration_ms: 37.135388
+  type: 'test'
+  ...
+# Subtest: mixed 17 obligation REQUIRED future is physical, certificate searches zero branches and continuation preserves S1
+ok 36 - mixed 17 obligation REQUIRED future is physical, certificate searches zero branches and continuation preserves S1
+  ---
+  duration_ms: 355.429619
+  type: 'test'
+  ...
+# Subtest: SQL material certificate verifies complete chains, authentic prefixes and context-only futures
+ok 37 - SQL material certificate verifies complete chains, authentic prefixes and context-only futures
+  ---
+  duration_ms: 2062.666495
+  type: 'test'
+  ...
+# Subtest: daily REQUIRED authority needs CAS, strict topology and preserves true absence
+ok 38 - daily REQUIRED authority needs CAS, strict topology and preserves true absence
+  ---
+  duration_ms: 5.308985
+  type: 'test'
+  ...
+# Subtest: membership, nominal inventory and linear dependencies fail closed
+ok 39 - membership, nominal inventory and linear dependencies fail closed
+  ---
+  duration_ms: 1.494571
+  type: 'test'
+  ...
+# Subtest: order is semantic in revision identity and explicit sibling selection
+ok 40 - order is semantic in revision identity and explicit sibling selection
+  ---
+  duration_ms: 27.067854
+  type: 'test'
+  ...
+# Subtest: multiple common nominal resources are required in every real member
+ok 41 - multiple common nominal resources are required in every real member
+  ---
+  duration_ms: 5.666593
+  type: 'test'
+  ...
+1..41
+# tests 41
+# suites 0
+# pass 41
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9437.166765
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
