@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "days": 2,
+  "stagesPerDatabase": 4,
+  "sameIds": true,
+  "adaptedProblemsEqual": true,
+  "decisionsAndWitnessesEqual": true,
+  "sqlSnapshotsAndFingerprintsEqual": true,
+  "branchCountersEqual": true,
+  "sourceHashesEqual": true,
+  "checkoutDelta": [],
+  "ignoredExecutionDurationKeys": [
+    "futureItinerantOperationalMealsMs",
+    "futureItinerantParticipantFutureMs",
+    "futureItinerantParticipantMealsMs",
+    "futureItinerantPrerequisiteSearchMs",
+    "futureItinerantPriorRevalidationMs",
+    "futureItinerantStructuralSearchMs",
+    "futureItinerantTechnicalFutureMs"
+  ],
+  "remoteWrites": 0
+}

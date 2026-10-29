@@ -1,0 +1,21 @@
+{
+  "authorizedBase": "78e6a9dc0941d50b0046e95b341591ad0232331e",
+  "remoteBranchVerifiedAtBase": true,
+  "nativeSourceManifestsEqual": true,
+  "nativeCheckoutDeltas": [],
+  "allProductSourcesMatchCandidate": true,
+  "officialSourcesAndHistoricalReceiptsUnchanged": true,
+  "remoteSupabaseWrites": 0,
+  "postNativeHarnessOnlyChanges": [
+    {
+      "file": "docs/evidence/p0-u02d/journey.ts",
+      "from": "requiredFunctionBodies(false,127)",
+      "to": "requiredFunctionBodies(false,128)",
+      "reason": "Strict catalogue assertion tracks the new ledger; fixtures, planning requests and physical assertions are unchanged. This runner is not invoked by G03b."
+    },
+    {
+      "file": "docs/evidence/p0-g03b/upgrade128.ts",
+      "change": "Correct inherited header comment from 126\u2192127 to 127\u2192128. Executed SQL/code and migration hash are unchanged."
+    }
+  ]
+}

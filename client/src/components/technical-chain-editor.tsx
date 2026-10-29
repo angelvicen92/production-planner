@@ -5,7 +5,9 @@ import type { TechnicalChainStructure } from "@shared/technicalChainStructure";
 export function TechnicalChainEditor({value,canEdit,pending,onSave}:{value:NonNullable<EffectiveConfigurationView['technicalChains']>;canEdit:boolean;pending:boolean;onSave:(v:TechnicalChainStructure)=>void}) {
   const stored=value.authority?.policies[0];
   const [editing,setEditing]=React.useState(false);
-  const [id]=React.useState(()=>stored?.id??crypto.randomUUID());
+  // The daily contract admits one chain. A stable local identity makes native
+  // authoring reproducible; existing authorities retain their original identity.
+  const [id]=React.useState(()=>stored?.id??"daily-technical-chain");
   const [phased,setPhased]=React.useState(!!stored?.phases);
   const [phases,setPhases]=React.useState<number[][]>(stored?.phases??[stored?.orderedTaskIds??[]]);
   const [resources,setResources]=React.useState(stored?.requiredResourceIds??[]);

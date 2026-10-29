@@ -2,6 +2,7 @@ import type { EngineInput } from "../engine/types";
 import { persistedTechnicalChainStructureSchema, technicalChainStructureSchema, type TechnicalChainStructure } from "../shared/technicalChainStructure";
 import { resolveEffectiveTaskResourceAssignments } from "../engine/planner-next/integration/effectiveTaskResourceAssignments";
 import { fixedItinerantCompositionSupported } from "./itinerantComposition";
+import { resolveFlexibleParticipantMealTasks } from "../engine/planner-next/integration/flexibleParticipantMealTasks";
 const defect = (code:string) => Object.assign(new Error(code),{status:422});
 export function dailyTechnicalChainAuthority(row:Record<string,any>) {
   if(row.daily_technical_chains==null)return null;
@@ -16,6 +17,12 @@ export function withDailyTechnicalChains(input:EngineInput,structure:TechnicalCh
 }
 /** The certified physical intersection. Other structure families retain their guards. */
 export function requiredPhaseCompositionSupported(input:EngineInput) {
+  // Flexible meals use the existing global physical witness. Joint operations
+  // retain their separately certified admission; this delta admits phases only.
+  const mealsSupported=input.mealMode==="global_hard_break"
+    || input.mealMode==="flexible_meal_window" && !input.dailyJointGroups?.length
+      && !input.tasks.some(t=>t.status!=="cancelled"&&t.jointGroupId)
+      && resolveFlexibleParticipantMealTasks(input).defects.length===0;
   const anchors=input.anchoredAccompaniments??[],scopes=input.dailyTaskOperationScopes??[];
   if(anchors.length&&![1,2].includes(input.dailyAnchoredAccompanimentsVersion??0))return false;
   const structural=new Set([...(input.technicalChains??[]).flatMap(p=>p.orderedTaskIds),
@@ -35,7 +42,7 @@ export function requiredPhaseCompositionSupported(input:EngineInput) {
   // materialization diagnostics distinguish it from a legacy mainFlow payload.
   return !!input.plannerNext && input.plannerNext.searchPolicy==="EXACT_CONSTRUCTIVE"
     && (input.plannerNext.profile==="STANDALONE_ONLY"
-      || !!input.plannerNext.mainFlow && Array.isArray(input.plannerNextMaterializationIssues)) && input.mealMode==="global_hard_break"
+      || !!input.plannerNext.mainFlow && Array.isArray(input.plannerNextMaterializationIssues)) && mealsSupported
     && !input.roundSynchronizations?.length && !input.setupPolicies?.length
     && !input.operationContinuityGroups?.length && !input.transportSettings
     && fixedItinerantCompositionSupported(input) && (!input.operationalMealPolicies?.length||input.dailyOperationalMealsVersion===1)
