@@ -13,9 +13,9 @@
 test at server/apiAuthorization.spec.ts:1:7928
 ✖ resource availability writes and reads retain their roles for Express casing and trailing slashes (85.361104ms)
   AssertionError [ERR_ASSERTION]: {"method":"POST","path":"/API/RESOURCE-ITEMS","role":"norole"}
-  
+
   200 !== 403
-  
+
       at TestContext.<anonymous> (/workspace/production-planner/server/apiAuthorization.spec.ts:130:11)
       at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
       at async Test.run (node:internal/test_runner/test:1389:7)
