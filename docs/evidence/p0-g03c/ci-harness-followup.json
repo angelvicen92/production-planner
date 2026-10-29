@@ -1,0 +1,94 @@
+{
+  "head": "b81ffa81e07ebc9428ad0b11d43705441b0d7c22",
+  "runId": 40840020717,
+  "jobId": 123333849048,
+  "error": "spawnSync git ENOBUFS; git archive HEAD exceeded 256 MiB stdout buffer",
+  "steps": [
+    {
+      "name": "Set up job",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 1
+    },
+    {
+      "name": "Run actions/checkout@v4",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 2
+    },
+    {
+      "name": "Run actions/setup-node@v4",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 3
+    },
+    {
+      "name": "Run npm ci",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 4
+    },
+    {
+      "name": "Select Chromium",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 5
+    },
+    {
+      "name": "Run npm run check && npm run check:migrations && npm run build",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 6
+    },
+    {
+      "name": "Run npx --no-install tsc -p docs/evidence/p0-g03c/tsconfig.json",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 7
+    },
+    {
+      "name": "Run node --import tsx --test --test-concurrency=1 server/flexibleMealPhaseComposition.spec.ts server/requiredPhaseComposition.spec.ts server/fixedItinerantPhaseComposition.spec.ts server/composedAnchoredRequired.spec.ts server/technicalChainSql.spec.ts server/apiAuthorization.spec.ts engine/planner-next/participantMeals.spec.ts script/demo/a2Preflight.spec.ts script/demo/assistedSQLContracts.spec.ts",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 8
+    },
+    {
+      "name": "Two new disposable databases and unchanged admission",
+      "status": "completed",
+      "conclusion": "failure",
+      "number": 9
+    },
+    {
+      "name": "Memory probes, physical verification and literal determinism",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 10
+    },
+    {
+      "name": "Run actions/upload-artifact@v4",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 11
+    },
+    {
+      "name": "Post Run actions/setup-node@v4",
+      "status": "completed",
+      "conclusion": "skipped",
+      "number": 21
+    },
+    {
+      "name": "Post Run actions/checkout@v4",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 22
+    },
+    {
+      "name": "Complete job",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 23
+    }
+  ],
+  "fix": "Write identical git archive bytes to an owned temporary tar file, extract, then delete it; no planner limits or product changes",
+  "revalidation": "archive-io-verification.json and hosted CI on follow-up head"
+}

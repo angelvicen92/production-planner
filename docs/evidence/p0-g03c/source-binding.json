@@ -39,5 +39,12 @@
       "04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.8.md"
     ],
     "allActualFilesLiteralToBase": true
+  },
+  "archiveIOFollowup": {
+    "status": "PASS",
+    "archiveBytes": 269639680,
+    "productAndOfficialFilesCompared": 1671,
+    "literalToNativeExecution": true,
+    "plannerLimitsChanged": false
   }
 }

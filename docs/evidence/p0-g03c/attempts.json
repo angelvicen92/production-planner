@@ -26,6 +26,13 @@
       "kind": "harness",
       "path": "work/g03c-final-a",
       "result": "Selector Expandir ambiguo entre tres botones. Corregido a button[title=\"Expandir todos\"] visible. Intento no contado como base fría PASS."
+    },
+    {
+      "kind": "hosted_ci_harness",
+      "head": "b81ffa81e07ebc9428ad0b11d43705441b0d7c22",
+      "runId": 40840020717,
+      "jobId": 123333849048,
+      "result": "Tipos/build y 58 focales PASS; git archive HEAD supera el buffer stdout de 256 MiB al incluir Evidence. Se usa un archivo temporal de tar con los mismos bytes/fuentes, sin ampliar límites ni tocar producto."
     }
   ],
   "productChangesRetained": false,

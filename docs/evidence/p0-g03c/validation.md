@@ -49,3 +49,5 @@ python3 -c 'import gzip,json; r=json.load(gzip.open("docs/evidence/p0-g03c/nativ
 ```
 
 Los probes son explícitamente diagnósticos: pueden construir autoridades en memoria, pero no tienen writer de producto ni acceso a una RPC de aceptación. El verificador independiente informa física para la entrada recibida; no autentica un Stage ni reemplaza el certificado existente.
+
+La primera CI del PR detectó `spawnSync git ENOBUFS` al archivar más de 256 MiB de Evidence por stdout. El runner escribe el mismo `git archive HEAD` a un tar temporal propio y lo elimina tras extraerlo; no se amplía ningún límite del planificador. El cambio se verifica contra los hashes del producto y la CI repite las dos bases sobre el nuevo head.

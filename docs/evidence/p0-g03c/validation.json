@@ -131,5 +131,17 @@
   "hostedCI": "See exact PR head checks; not inferred from local validation",
   "remoteWrites": 0,
   "merge": false,
-  "deployment": false
+  "deployment": false,
+  "hostedCIHarnessFollowup": {
+    "firstHead": "b81ffa81e07ebc9428ad0b11d43705441b0d7c22",
+    "error": "git archive stdout ENOBUFS",
+    "fixVerification": {
+      "status": "PASS",
+      "archiveBytes": 269639680,
+      "productAndOfficialFilesCompared": 1671,
+      "literalToNativeExecution": true,
+      "plannerLimitsChanged": false
+    },
+    "followupCI": "pending exact new head checks"
+  }
 }
