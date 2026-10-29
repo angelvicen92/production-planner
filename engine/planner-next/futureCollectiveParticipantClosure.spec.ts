@@ -388,3 +388,15 @@ test("Stage backtracks from A to B; the future witness stays outside proposal an
   assert.ok(result.evidence.standaloneDiagnostic?.futureCollectiveClosureFirstPrune);
   assert.deepEqual(assisted, saved);
 });
+
+test('absent and empty resource routes retain historical certificates; an explicit route binds the authority',()=>{
+ const source=fixture(),fixed=coreContext(source);
+ const historical=new PreparedFutureCollectiveParticipantClosure(source).evaluate(fixed);
+ const empty={...source,resourceRouteTransitions:[]};
+ assert.deepEqual(new PreparedFutureCollectiveParticipantClosure(empty).evaluate(fixed),historical);
+ const declared={...source,resourceRouteTransitions:[{resourceId:'coach',fromSpaceId:'shared',toSpaceId:'exit',minutes:5}]};
+ const next=new PreparedFutureCollectiveParticipantClosure(declared).evaluate(fixed);
+ assert.notEqual(next.signature,historical.signature);
+ assert.deepEqual(next.matching,historical.matching);
+ assert.equal(next.certified,historical.certified);
+});

@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "historicalProjectionEqual": true,
+  "sourceFingerprint": "c87529bcfc12b5216b8631e080d6f1e69ea70055145f494406a40314615a8f4d",
+  "problemFingerprint": "102198c4e02c048791a0c2a80f7e517f64893c5689f95245e6381902c940ced3",
+  "planFingerprint": "c6b4b01c57a5237e19d95767a8714a7ab3c3535f8135439952d90feb0bcaf7e5",
+  "scheduledGapMinutes": 30,
+  "rejectsTwentyNineMinutes": true,
+  "acceptsThirtyMinutes": true
+}

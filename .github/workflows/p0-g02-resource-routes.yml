@@ -1,0 +1,69 @@
+name: P0 G02 directional physical resource routes
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'engine/**'
+      - 'server/resourceRouteTransitions*'
+      - 'server/dayConfigurationService.ts'
+      - 'server/effectivePlanConfigRevision.ts'
+      - 'server/effectiveConfigurationView.ts'
+      - 'server/assistedProposalService.ts'
+      - 'shared/resourceRouteTransitions.ts'
+      - 'shared/dayConfig.ts'
+      - 'client/src/components/resource-routes-editor.tsx'
+      - 'client/src/components/effective-configuration.tsx'
+      - 'supabase/migrations/127_resource_route_transitions.sql'
+      - 'docs/evidence/p0-g02/**'
+      - '.github/workflows/p0-g02-resource-routes.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  routes-ui-sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$task_browser_path" ]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+          fi
+      - run: npm run check && npm run check:migrations && npm run build
+      - run: npx --no-install tsc -p docs/evidence/p0-g02/tsconfig.json
+      - run: >-
+          npx --no-install tsx --test
+          engine/planner-next/resourceRouteTransitions.spec.ts
+          engine/planner-next/coachRouteTransitions.spec.ts
+          server/resourceRouteTransitions.spec.ts
+          server/composedAnchoredRequired.spec.ts
+          server/requiredPhaseComposition.spec.ts
+          engine/planner-next/integration/concreteResourceRequirements.spec.ts
+          server/effectivePlanConfigRevision.spec.ts
+          script/demo/a2Preflight.spec.ts
+      - run: node --import tsx docs/evidence/p0-g02/run.ts work/g02-a
+      - run: node --import tsx docs/evidence/p0-g02/run.ts work/g02-b
+      - run: python3 docs/evidence/p0-g02/compare.py work/g02-a/native work/g02-b/native work/g02-determinism.json
+      - run: node --import tsx docs/evidence/p0-g01/run.ts work/g02-control-g01
+      - run: python3 docs/evidence/p0-u02d/verify.py work/g02-control-g01/native work/g02-control-u02d.json
+      - run: python3 docs/evidence/p0-g01/compare.py work/g02-control-g01/native docs/evidence/p0-g01/api work/g02-control-g01.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g02-resource-routes
+          path: |
+            work/g02-a/native/*.json
+            work/g02-a/native/*.png
+            work/g02-b/native/*.json
+            work/g02-control-g01/native/*.json
+            work/g02-*.json
+          retention-days: 14

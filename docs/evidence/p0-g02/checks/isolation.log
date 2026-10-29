@@ -1,0 +1,30 @@
+✔ coach route transition rejects 29 minutes and accepts 30 (100.907012ms)
+✔ coach route transition is directional and preserves fallback (52.854917ms)
+✔ invalid route is rejected before adaptation (2.678843ms)
+✔ placement diagnosis identifies the blocking coach overlap with canPlaceTask parity (0.359121ms)
+✔ placement diagnosis identifies the blocking coach transition without overlap (0.176561ms)
+✔ NEXT-001 retains its frozen complete, hard-valid result (104.01587ms)
+✔ the adversarial scenario proves genuine bounded backtracking (91.623062ms)
+✔ partial branch rejection is not counted as backtracking (26.477609ms)
+✔ logical search budgets stop atomically with specific reasons (0.956164ms)
+✔ missing relationships and invalid availability never crash (9.334488ms)
+✔ unsupported focal structures are rejected explicitly (3.750298ms)
+✔ results and logical metrics are deterministic and array-order independent (124.438888ms)
+✔ planner-next remains isolated from legacy and production (54.486002ms)
+✔ CAM identity and direction: 5 rejected, 10 accepted, reverse fallback and no effective consumption (10.576926ms)
+✔ resource fallback and simultaneous resources use max, with independent opposite routes (0.885991ms)
+✔ domains, residual matching and Evidence resolve the same temporal direction in either search order (0.989354ms)
+✔ coach compatibility: canonical 29/30, legacy fallback, duplicate declaration rejected and no double count (0.572688ms)
+✔ route preflight rejects missing identities, same space, duplicates, zero and off grid (0.263479ms)
+✔ EngineInput real daily IDs, fingerprints, unavailable catalog and historical ambiguity (53.737344ms)
+✔ native route contract is canonical, positive, directional and revision guarded (5.419316ms)
+✔ native route validates daily identity, effective catalog and compatibility without mutating input (3.438948ms)
+✔ daily storage and revision replay must agree; empty removal preserves historical absence (2.814053ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4085.884894

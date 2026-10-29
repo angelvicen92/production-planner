@@ -176,6 +176,10 @@ test("planner-next remains isolated from legacy and production", () => {
     // U00y compares declared physical requirements through the existing read-only
     // assignment authority. This module never dispatches Planner Next search.
     "server/operationalMealPolicy.ts",
+    // G02 reuses read-only route/catalog validation; its contract spec exercises
+    // that projection. Configuration never dispatches Planner Next search.
+    "server/resourceRouteTransitions.ts",
+    "server/resourceRouteTransitions.spec.ts",
     "server/jointGroupStructure.ts",
     "server/roundSynchronizationStructure.spec.ts",
     "server/operationContinuity.spec.ts",

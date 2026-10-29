@@ -275,6 +275,13 @@ export interface EngineInputTechnicalChainInput {
   requiredResourceIds: number[];
 }
 
+export interface EngineInputResourceRouteTransitionInput {
+  planResourceItemId: number;
+  fromSpaceId: number;
+  toSpaceId: number;
+  minutes: number;
+}
+
 export interface EngineInputCoachRouteTransitionInput {
   coachPlanResourceItemId: number;
   fromSpaceId: number;
@@ -342,6 +349,7 @@ export interface EngineInput {
   technicalChains?: EngineInputTechnicalChainInput[];
   /** Directional hard travel time for one concrete coach between two spaces. */
   coachRouteTransitions?: EngineInputCoachRouteTransitionInput[];
+  resourceRouteTransitions?: EngineInputResourceRouteTransitionInput[];
   /** Flexible operational meals scoped by physical resources/spaces. */
   operationalMealPolicies?: EngineInputOperationalMealPolicyInput[];
   dailyOperationalMealsVersion?: 1;

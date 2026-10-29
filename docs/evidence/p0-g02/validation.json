@@ -1,0 +1,45 @@
+{
+  "status": "LOCAL_PRODUCT_GATES_PASS",
+  "base": "7302a333be10532b17284e5db06bdc62aed975e0",
+  "coldDatabases": 2,
+  "daysPerDatabase": 2,
+  "newRouteSQLStages": 8,
+  "regressionSQLStages": 8,
+  "negativesPerDatabase": 29,
+  "beforeAfter": {
+    "beforeMinutes": 5,
+    "afterMinutes": 25,
+    "requirements": [
+      10,
+      15,
+      25
+    ],
+    "productiveDurationMinutes": 10,
+    "combination": "MAXIMUM"
+  },
+  "focalTests": 41,
+  "sqlContractTests": 9,
+  "isolationRecheckTests": 22,
+  "typescript": true,
+  "build": true,
+  "migrations": true,
+  "upgradeHistoricalTasks": 599,
+  "upgradeHistoricalStages": 11,
+  "a2": {
+    "status": "PASS",
+    "isolated": true,
+    "node": "v24.19.0",
+    "seconds": 73.950340044,
+    "completed": 266,
+    "stages": 11,
+    "branches": 27049,
+    "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+    "fullReportEqualExceptDurationMs": true,
+    "snapshotsEqual": true,
+    "certificatesRevalidated": 11
+  },
+  "knownGlobalFailure": "ASST-010 reproduced on authorized base; see test-results.json",
+  "sourceBindingsExact": true,
+  "remoteWrites": 0,
+  "merged": false
+}

@@ -1,0 +1,253 @@
+{
+  "productHead": "25e36e4cecb927be134bb91566f3700dec5511e8",
+  "checkedAt": "2026-10-28T23:11:00Z",
+  "runs": [
+    {
+      "id": 40783684168,
+      "name": "New day Planner Next",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783684168"
+    },
+    {
+      "id": 40783681572,
+      "name": "Admin Invites CI",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681572"
+    },
+    {
+      "id": 40783681605,
+      "name": "P0 U00h concrete resources",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681605"
+    },
+    {
+      "id": 40783681556,
+      "name": "Atomic task template save",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681556"
+    },
+    {
+      "id": 40783681635,
+      "name": "P0 U00p daily synchronized rounds",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681635"
+    },
+    {
+      "id": 40783681429,
+      "name": "P0 U00y native joint operations",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681429"
+    },
+    {
+      "id": 40783681701,
+      "name": "P0 U00l Main nominal resources",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681701"
+    },
+    {
+      "id": 40783681539,
+      "name": "P0 U00n post-Stage additions",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681539"
+    },
+    {
+      "id": 40783681499,
+      "name": "P0 U00s daily REQUIRED technical chains",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681499"
+    },
+    {
+      "id": 40783681483,
+      "name": "P0 U00f transport gate",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681483"
+    },
+    {
+      "id": 40783681744,
+      "name": "Persistent War Room",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681744"
+    },
+    {
+      "id": 40783681862,
+      "name": "Baseline CI",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681862"
+    },
+    {
+      "id": 40783681741,
+      "name": "P0 U00v native standalone operational scopes",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681741"
+    },
+    {
+      "id": 40783681603,
+      "name": "P0 U00w anchored whole-unit choices",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681603"
+    },
+    {
+      "id": 40783681764,
+      "name": "P0 U00j typed nominal resources",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681764"
+    },
+    {
+      "id": 40783681748,
+      "name": "P0 U00i nominal resource causal gate",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681748"
+    },
+    {
+      "id": 40783681657,
+      "name": "P0 U01b required phase composition",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681657"
+    },
+    {
+      "id": 40783681716,
+      "name": "P0 U00x composed native Reality",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681716"
+    },
+    {
+      "id": 40783681651,
+      "name": "Itinerant physical composition",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681651"
+    },
+    {
+      "id": 40783681740,
+      "name": "P0 U00u native anchored operation",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681740"
+    },
+    {
+      "id": 40783681542,
+      "name": "P0 U00z native operational pauses",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681542"
+    },
+    {
+      "id": 40783681674,
+      "name": "Operation continuity",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681674"
+    },
+    {
+      "id": 40783681648,
+      "name": "Planner Engine CI",
+      "status": "in_progress",
+      "conclusion": null,
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681648"
+    },
+    {
+      "id": 40783681698,
+      "name": "P0 U02d composed anchored REQUIRED SQL",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681698"
+    },
+    {
+      "id": 40783681604,
+      "name": "P0 U00g participant meals",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681604"
+    },
+    {
+      "id": 40783681614,
+      "name": "Live day execution",
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681614"
+    },
+    {
+      "id": 40783681490,
+      "name": "P0 U01d required phases without common resource",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681490"
+    },
+    {
+      "id": 40783681709,
+      "name": "P0 G02 directional physical resource routes",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681709"
+    },
+    {
+      "id": 40783681596,
+      "name": "P0 U02b Main Vocal REQUIRED phase composition",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681596"
+    },
+    {
+      "id": 40783681642,
+      "name": "P0 U01f fixed itinerant REQUIRED phase composition",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681642"
+    },
+    {
+      "id": 40783681541,
+      "name": "Data API grants",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681541"
+    },
+    {
+      "id": 40783681717,
+      "name": "P0 G01 template resources UI to SQL",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40783681717"
+    }
+  ],
+  "followup": {
+    "scope": "One disposable execution-date negative; no product, A2 rule, guard, budget, ordering or accepted fixture change",
+    "frozenPlanDate": "2026-10-29",
+    "madridCalendarDateAtFailure": "2026-10-29",
+    "unchangedBaseHarnessSha256": "d12c7bfdc76ba28239063aa87158d4cd03a694f2b0e1f0fbcb22fccea279e4cb",
+    "failure": "Actual automatic clock matched the frozen historical plan date; HTTP 200 was valid, the negative assumed HTTP 409.",
+    "fix": "Explicit other date only during the negative; finally restore accepted date; assert full planning literal equality before continuing.",
+    "typescript": "PASS",
+    "localNativeHttpSqlBrowser": "PASS",
+    "receipt": "execution-date-integrity.json"
+  },
+  "transientFailures": [
+    {
+      "workflow": "P0 U00g participant meals",
+      "failure": "source reader SHARE NOWAIT lock on daily_tasks during replay",
+      "retry": "PASS; no changes"
+    },
+    {
+      "workflow": "Live day execution",
+      "failure": "-120 second correction just after Madrid midnight crossed civil day",
+      "retry": "59/59 PASS unchanged"
+    }
+  ]
+}

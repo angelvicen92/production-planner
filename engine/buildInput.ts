@@ -1,3 +1,4 @@
+import {applyDailyResourceRoutes} from "../server/resourceRouteTransitions";
 import {applyDailyOperationalMeals} from '../server/operationalMealPolicy';
 import {applyDailyJointGroups} from "../server/jointGroupStructure";
 import { applyDailyTechnicalChains, validateDailyTechnicalChains, hasDailyRequiredPhases } from "../server/technicalChainStructure";
@@ -1016,8 +1017,8 @@ export async function buildEngineInput(
     if ((p.planner_next_configuration ?? p.plannerNextConfiguration) != null) throw new ItinerantCompositionError('autoridades históricas y heredadas incompatibles');
     effectiveInput = applyDailyItinerantComposition(effectiveInput, await storage.getPlanItinerantUnitSnapshots(planId), planId);
   }
-  const anchoredRevision=(p.daily_operational_meal_policies!=null||p.daily_joint_groups!=null||p.daily_anchored_accompaniments?.policies?.length||p.daily_task_operation_scopes!=null)&&p.current_config_revision_id!=null?await storage.getPlanConfigRevision(Number(p.current_config_revision_id)):null;
-  const composedInput = applyDailyOperationalMeals(applyDailyJointGroups(applyDailyTaskOperationScopes(applyDailyAnchoredAccompaniments(applyDailyTechnicalChains(applyEffectiveOperationContinuity(applyEffectiveRoundPreparations(applyDailyRoundStructure(applyEffectiveMainFlowPreference(effectiveInput,p),p),p),p,taskTemplateSnapshots),p),p,anchoredRevision?.replaySnapshotJson),p,anchoredRevision?.replaySnapshotJson),p,anchoredRevision?.replaySnapshotJson),p,anchoredRevision?.replaySnapshotJson);
+  const anchoredRevision=(p.daily_resource_route_transitions!=null||p.daily_operational_meal_policies!=null||p.daily_joint_groups!=null||p.daily_anchored_accompaniments?.policies?.length||p.daily_task_operation_scopes!=null)&&p.current_config_revision_id!=null?await storage.getPlanConfigRevision(Number(p.current_config_revision_id)):null;
+  const composedInput = applyDailyResourceRoutes(applyDailyOperationalMeals(applyDailyJointGroups(applyDailyTaskOperationScopes(applyDailyAnchoredAccompaniments(applyDailyTechnicalChains(applyEffectiveOperationContinuity(applyEffectiveRoundPreparations(applyDailyRoundStructure(applyEffectiveMainFlowPreference(effectiveInput,p),p),p),p,taskTemplateSnapshots),p),p,anchoredRevision?.replaySnapshotJson),p,anchoredRevision?.replaySnapshotJson),p,anchoredRevision?.replaySnapshotJson),p,anchoredRevision?.replaySnapshotJson),p,anchoredRevision?.replaySnapshotJson);
   // Validate ownership again with joint peers and physical pauses materialized.
   return hasDailyRequiredPhases(composedInput) ? validateDailyTechnicalChains(composedInput,{contractVersion:1,policies:composedInput.technicalChains??[]}) : composedInput;
 }

@@ -1,0 +1,61 @@
+{
+  "status": "PASS",
+  "coldDatabases": 2,
+  "acceptedSQLStages": 16,
+  "results": [
+    {
+      "label": "integrated",
+      "scope": "competitor-S1-run",
+      "literalDecisionsCountersCertificatesDraftSQL": true
+    },
+    {
+      "label": "integrated",
+      "scope": "competitor-S2-run",
+      "literalDecisionsCountersCertificatesDraftSQL": true
+    },
+    {
+      "label": "integrated",
+      "scope": "anchor-S1-run",
+      "literalDecisionsCountersCertificatesDraftSQL": true
+    },
+    {
+      "label": "integrated",
+      "scope": "anchor-S2-run",
+      "literalDecisionsCountersCertificatesDraftSQL": true
+    },
+    {
+      "label": "reverse-order",
+      "scope": "competitor-S1-run",
+      "literalDecisionsCountersCertificatesDraftSQL": true
+    },
+    {
+      "label": "reverse-order",
+      "scope": "competitor-S2-run",
+      "literalDecisionsCountersCertificatesDraftSQL": true
+    },
+    {
+      "label": "reverse-order",
+      "scope": "anchor-S1-run",
+      "literalDecisionsCountersCertificatesDraftSQL": true
+    },
+    {
+      "label": "reverse-order",
+      "scope": "anchor-S2-run",
+      "literalDecisionsCountersCertificatesDraftSQL": true
+    },
+    {
+      "label": "segmented-joint",
+      "scope": "exhausted-run",
+      "literalDecisionsCountersCertificatesDraftSQL": true
+    },
+    {
+      "label": "segmented-reverse",
+      "scope": "exhausted-run",
+      "literalDecisionsCountersCertificatesDraftSQL": true
+    }
+  ],
+  "comparison": "UI vs existing API",
+  "uiAuthoredTemplates": 26,
+  "literalTemplateSQLSnapshots": 148,
+  "remoteWrites": 0
+}

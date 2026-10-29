@@ -1,0 +1,27 @@
+{
+  "base": "7302a333be10532b17284e5db06bdc62aed975e0",
+  "global": {
+    "tests": 3317,
+    "pass": 3315,
+    "initialFailures": [
+      "isolation allowlist (fixed and rechecked)",
+      "ASST-010"
+    ]
+  },
+  "asst010": {
+    "baseActual": "NO_PROPOSAL",
+    "candidateActual": "NO_PROPOSAL",
+    "expected": "PROPOSAL",
+    "baseReproduced": true,
+    "candidateReproduced": true,
+    "testSourceUnchanged": true,
+    "baseLogSha256": "fec9d8947a4811435c391b309acedb40a9da7f341e9673e1e0b72dc56d069af7",
+    "candidateLogSha256": "f1614ea8a86494a40ee9d330f634e97ef6607dcb4e6f5fe391caa83a7287bfb6",
+    "baseOriginalLogSha256": "e5e961bc0ce0cc7724f735a4a3048cee2db418cb5c962a0b2348ebb318d74350"
+  },
+  "newFocalTests": 41,
+  "isolationRecheckTests": 22,
+  "sqlContractTests": 9,
+  "budgetsUnchanged": true,
+  "remoteWrites": 0
+}

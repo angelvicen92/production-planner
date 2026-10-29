@@ -1,3 +1,4 @@
+import { effectiveResourceTransitionMinutes } from "./resourceRouteTransitions";
 import { participantGapMinutes } from "./participantTransition";
 import type { PlannerNextProblem, Task } from "./contracts";
 import { PLANNER_NEXT_SUPPORTED_TIME_GRID_MINUTES } from "./integration/plannerNextCapabilities";
@@ -63,14 +64,7 @@ export function effectiveCoachTransitionMinutes(
   fromSpaceId: string,
   toSpaceId: string,
 ): number {
-  if (fromSpaceId === toSpaceId) return 0;
-
-  return problem.coachRouteTransitions?.find(
-    (route) =>
-      route.coachId === coachId
-      && route.fromSpaceId === fromSpaceId
-      && route.toSpaceId === toSpaceId,
-  )?.minutes ?? problem.resourceTransitionMinutes;
+  return effectiveResourceTransitionMinutes(problem, coachId, fromSpaceId, toSpaceId);
 }
 
 export function latestFeederEndBeforeMain(

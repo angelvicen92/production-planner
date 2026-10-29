@@ -90,6 +90,7 @@ function canonicalProblem(problem: PlannerNextProblem): unknown {
     ...(problem.resourceMeals ? { resourceMeals: sorted(problem.resourceMeals, (entry) => `${entry.id}\0${entry.sourceTaskId}`).map(entry=>({...entry,resourceIds:[...entry.resourceIds].sort(compare)})) } : {}),
     ...(problem.operationalMealPolicies ? { operationalMealPolicies: sorted(problem.operationalMealPolicies, (entry) => entry.id).map((entry) => ({ ...entry, resourceIds: [...entry.resourceIds].sort(compare), spaceIds: [...entry.spaceIds].sort(compare) })) } : {}),
     ...(problem.itinerantUnitMeals ? { itinerantUnitMeals: sorted(problem.itinerantUnitMeals, entry=>entry.id) } : {}),
+    ...(problem.resourceRouteTransitions ? {resourceRouteTransitions:sorted(problem.resourceRouteTransitions,entry=>`${entry.resourceId}\0${entry.fromSpaceId}\0${entry.toSpaceId}`)} : {}),
     ...(problem.coachRouteTransitions ? { coachRouteTransitions: sorted(problem.coachRouteTransitions, (entry) => `${entry.coachId}\0${entry.fromSpaceId}\0${entry.toSpaceId}`) } : {}),
     ...(problem.roundSynchronizations ? { roundSynchronizations: sorted(problem.roundSynchronizations, (entry) => entry.id).map((entry) => ({ ...entry, lanes: sorted(entry.lanes, (lane) => lane.spaceId).map((lane) => ({ ...lane, taskIds: [...lane.taskIds].sort(compare) })) })) } : {}),
     ...(problem.technicalChains ? { technicalChains: sorted(problem.technicalChains,(entry)=>entry.id).map(entry=>({...entry,orderedTaskIds:[...entry.orderedTaskIds],...(entry.phases?{phases:entry.phases.map(phase=>[...phase])}:{}),requiredResourceIds:[...entry.requiredResourceIds].sort(compare)})) } : {}),
@@ -126,6 +127,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
   };
   const config = {...input.plannerNext!,participantTransitionMinutes:
     input.defaultParticipantTransitionMinutes??input.plannerNext!.participantTransitionMinutes};
+  const sourceResourceRouteTransitions = input.resourceRouteTransitions ?? [];
   const sourceCoachRouteTransitions = input.coachRouteTransitions ?? [];
   const sourceRoundSynchronizations = input.roundSynchronizations ?? [];
   const sourceTechnicalChains = input.technicalChains ?? [];
@@ -148,7 +150,8 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     return [task.id, projection] as const;
   }));
   const configuredCoachIds=new Set(Object.values(input.vocalCoachPlanResourceItemIdByContestantId??{}));
-  const routeCoachIds = sourceCoachRouteTransitions.map((route) => route.coachPlanResourceItemId);
+  const routeCoachIds = sourceCoachRouteTransitions.map((route) => route.coachPlanResourceItemId)
+    .concat(sourceResourceRouteTransitions.map(r=>r.planResourceItemId).filter(id=>configuredCoachIds.has(id)));
   const mealResourceIds=new Set([
     ...resourceMealResolution.meals.flatMap(meal=>[...meal.resourceIds]),
     ...operationalMealPolicies.flatMap((meal) => [...meal.resourceIds]),
@@ -156,12 +159,13 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
   const coachResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => projection.coachResourceId === undefined ? [] : [projection.coachResourceId]).concat([...mealResourceIds].filter(id=>configuredCoachIds.has(id)), routeCoachIds));
   const requiredSpaceIds = new Set(activeTasks.map((task) => task.spaceId!).concat(
     ...(config.mainFlow?[config.mainFlow.spaceId]:[]),
+    sourceResourceRouteTransitions.flatMap(route=>[route.fromSpaceId,route.toSpaceId]),
     sourceCoachRouteTransitions.flatMap((route) => [route.fromSpaceId, route.toSpaceId]),
     sourceRoundSynchronizations.flatMap((policy) => policy.lanes.map((lane) => lane.spaceId)),
     operationalMealPolicies.flatMap((policy) => [...policy.spaceIds]),
   ));
   const nominalResourceIds=assignments.flatMap(assignment=>[...(assignment.nominalAvailableResourceIds??[])]);
-  const requiredResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => [...projection.genericResourceIds]).concat([...mealResourceIds].filter(id=>!coachResourceIds.has(id)), (input.itinerantTeamAvailability ?? []).flatMap(unit=>unit.planResourceItemIds ?? []),nominalResourceIds));
+  const requiredResourceIds = new Set([...projectionsByTaskId.values()].flatMap((projection) => [...projection.genericResourceIds]).concat([...mealResourceIds].filter(id=>!coachResourceIds.has(id)), (input.itinerantTeamAvailability ?? []).flatMap(unit=>unit.planResourceItemIds ?? []),nominalResourceIds,sourceResourceRouteTransitions.map(r=>r.planResourceItemId).filter(id=>!coachResourceIds.has(id))));
 
   const itinerantUnits = [...(input.itinerantTeamAvailability ?? [])].sort((a, b) => a.itinerantTeamId - b.itinerantTeamId).map((availability) => {
     const id = availability.itinerantTeamId;
@@ -339,6 +343,7 @@ export function adaptEngineInputToPlannerNextProblem(input: EngineInput): Engine
     participantTransitionMinutes: config.participantTransitionMinutes,
     resourceTransitionMinutes: config.resourceTransitionMinutes,
     ...(coachRouteTransitions.length ? { coachRouteTransitions } : {}),
+    ...(sourceResourceRouteTransitions.length ? {resourceRouteTransitions:sourceResourceRouteTransitions.map(({planResourceItemId,...r})=>({...r,resourceId:canonical("plan-resource",planResourceItemId),fromSpaceId:canonical("space",r.fromSpaceId),toSpaceId:canonical("space",r.toSpaceId)})).sort((a,b)=>compare(`${a.resourceId}\0${a.fromSpaceId}\0${a.toSpaceId}`,`${b.resourceId}\0${b.fromSpaceId}\0${b.toSpaceId}`))} : {}),
     ...(roundSynchronizations.length ? { roundSynchronizations } : {}),
     ...(technicalChains.length ? { technicalChains } : {}),
     budget: { ...config.searchBudget },

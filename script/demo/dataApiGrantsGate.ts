@@ -95,6 +95,23 @@ export function assertPrivilegeContract(catalog:DataApiCatalog) {
     }
     expected.functions.sort((a:any,b:any)=>a.signature<b.signature?-1:a.signature>b.signature?1:a.role<b.role?-1:a.role>b.role?1:0);
   }
+  // 127 adds one daily column and four private invoker consumers. Keep the
+  // inventory exact: no wildcard acceptance of future functions or grants.
+  if(Object.hasOwn(catalog.tables.find(t=>t.name==='plans')?.columns??{},'daily_resource_route_transitions')){
+    const signatures=['assert_daily_resource_routes(integer,jsonb)','resource_transition_minutes(jsonb,text,text,text,integer)',
+      'resource_transition_pair_minutes(jsonb,jsonb,jsonb,integer)','guard_daily_resource_routes()'];
+    for(const role of ['anon','authenticated','service_role']){
+      const plan=catalog.tables.find(t=>t.name==='plans'&&t.role===role);assert.ok(plan);
+      assert.deepEqual(plan.columns.daily_resource_route_transitions,role==='service_role'?['SELECT','INSERT','UPDATE']:role==='authenticated'?['SELECT']:[]);
+      for(const signature of signatures){
+        const execute=role==='service_role'&&!signature.startsWith('guard_');
+        expected.functions.push({signature,role,execute});
+        const fn=catalog.functions.find(f=>f.signature===signature&&f.role===role);assert.ok(fn,signature);
+        assert.equal(fn.definer,false);assert.deepEqual(fn.settings,['search_path=""']);assert.equal(fn.execute,execute);
+      }
+    }
+    expected.functions.sort((a:any,b:any)=>a.signature<b.signature?-1:a.signature>b.signature?1:a.role<b.role?-1:a.role>b.role?1:0);
+  }
   assert.deepEqual(privilegeContract(catalog),expected,
     'Data API contract changed: review every new object, required grant, column boundary and exposed role');
   // 103 adds one column covered by the existing table grants. The compact JSON
