@@ -1,0 +1,135 @@
+{
+  "status": "DIAGNOSTIC_ONLY",
+  "base": "1683233131913df451dc97986c084c442f3aa87e",
+  "nativeColdDatabases": 2,
+  "nativeObligationsPerDatabase": 65,
+  "nativePhases": [
+    3,
+    2,
+    2
+  ],
+  "jointAuthoritySaved": false,
+  "nativeEvaWindowAuthorable": false,
+  "newCombinedSQLStages": 0,
+  "productiveDelta": [],
+  "migration129": false,
+  "witnessSearchAdditionalBranches": 0,
+  "genericMemoryProbe": {
+    "productive": 15,
+    "meals": 3,
+    "branches": 84,
+    "physicalPhaseOperations": 7,
+    "physicalPhaseMinutes": 40,
+    "negativeCasesPerExecution": 12,
+    "protectedContinuation": true
+  },
+  "macroMemoryProbe": {
+    "status": "MEMORY_WITNESS_ONLY",
+    "canonical": true,
+    "obligations": 65,
+    "productive": 46,
+    "meals": 19,
+    "visibleObligations": 8,
+    "physicalOperations": 7,
+    "problemFingerprint": "0a75f01ec466f3378b87be0a812a207fa32a23e1c7de62b79ae743a8a416cd6e",
+    "branches": 2884,
+    "certificate": "WITNESS",
+    "certificateSearch": 0,
+    "protectedContinuation": true,
+    "firstEvaStart": 960,
+    "acceptedStages": 0
+  },
+  "unrestrictedEvaCounterfactual": {
+    "status": "MEMORY_WITNESS_ONLY",
+    "canonical": false,
+    "obligations": 65,
+    "productive": 46,
+    "meals": 19,
+    "visibleObligations": 8,
+    "physicalOperations": 7,
+    "problemFingerprint": "ffd75ca05c14cd3eccada8352caf0b1d96cca4f57049f41cf14eaeaaad263682",
+    "branches": 864,
+    "certificate": "WITNESS",
+    "certificateSearch": 0,
+    "protectedContinuation": true,
+    "firstEvaStart": 540,
+    "acceptedStages": 0
+  },
+  "determinism": {
+    "status": "PASS_DIAGNOSTIC",
+    "nativeInputsLiteral": true,
+    "problemsWitnessesDecisionsFingerprintsBranchesLiteral": true,
+    "sourceHashesEqual": true,
+    "sqlStateEqual": true,
+    "sqlAdministrativeFieldsExcluded": [
+      "daily_technical_chains.by",
+      "daily_technical_chains.at"
+    ],
+    "newCombinedSQLStages": 0,
+    "ignoredExecutionDurationKeys": [
+      "futureItinerantOperationalMealsMs",
+      "futureItinerantParticipantFutureMs",
+      "futureItinerantParticipantMealsMs",
+      "futureItinerantPrerequisiteSearchMs",
+      "futureItinerantPriorRevalidationMs",
+      "futureItinerantStructuralSearchMs",
+      "futureItinerantTechnicalFutureMs"
+    ],
+    "idRemapping": false,
+    "remoteWrites": 0
+  },
+  "focalTests": {
+    "pass": 144,
+    "fail": 0
+  },
+  "typescript": "PASS",
+  "build": "PASS",
+  "migrationLedger": "128_UNCHANGED",
+  "officialManifest": {
+    "status": "PRE_EXISTING_FAILURE",
+    "missingListedPaths": [
+      "00_INDICE_Y_AUTORIDAD_FUENTES_OPTIPLAN_v2.14.md",
+      "01_PRODUCTO_DOMINIO_OPERACION_v5.3.md",
+      "04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.8.md"
+    ],
+    "allActualFilesLiteralToBase": true
+  },
+  "historicalReceiptsRechecked": {
+    "g03b": "60/60 and 15/15 in both original databases",
+    "g02": "literal directional control",
+    "g01": "UI/API literal",
+    "u02d": "both original databases; no new SQL execution"
+  },
+  "newIsolatedA2Runs": [
+    {
+      "status": "PASS",
+      "isolated": true,
+      "node": "v24.19.0",
+      "seconds": 143.815646859,
+      "completed": 266,
+      "stages": 11,
+      "branches": 27049,
+      "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+      "fullReportEqualExceptDurationMs": true,
+      "snapshotsEqual": true,
+      "certificatesRevalidated": 11
+    },
+    {
+      "status": "PASS",
+      "isolated": true,
+      "node": "v24.19.0",
+      "seconds": 125.262198175,
+      "completed": 266,
+      "stages": 11,
+      "branches": 27049,
+      "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+      "fullReportEqualExceptDurationMs": true,
+      "snapshotsEqual": true,
+      "certificatesRevalidated": 11
+    }
+  ],
+  "hostedCI": "See exact PR head checks; not inferred from local validation",
+  "remoteWrites": 0,
+  "merge": false,
+  "deployment": false
+}

@@ -1,0 +1,14 @@
+{
+  "receiptCount": 9,
+  "canonicalJSONSHA256": {
+    "adapter.json": "7ec6f6425c2fcb9aa9d39709164b04f88a02235093b68af2f58202c737e4fcb9",
+    "certificate.json": "90b4a43720cfb24e919c34caaa7fd9361db59d85f1432890fbf2000fe6dee74e",
+    "continuation.json": "cc706bb90566a82970a190fee2896586be157106b9dfed9f7211fb83398fc3df",
+    "counterfactual.json": "4e06557acdb43691fa412de5dbc0e4d1a0b4777d1457088a33972d15441580e7",
+    "input.json": "ca97d3bebf8507c8179852d0373c24109f334f5c94d556ed3e6c1d9522100abf",
+    "problem.json": "1b9433a5405d8e8a7d7bb54ac2a6e48056b7fda1c17bd55f10c109057e01e8e7",
+    "run.json": "3acde13b7b7fe575620daaab84480f5c6de7ed10db187bb29b06be44a14989fd",
+    "scope.json": "a101e1c8ad837882e11fb1dd5c88b337363341a2e01d69a88f82e7fb12a9949d",
+    "summary.json": "193ec4a7320ac08321fa1a9ab65ed6e0f836d8c4391913b9b0abfc2b464bdbaf"
+  }
+}

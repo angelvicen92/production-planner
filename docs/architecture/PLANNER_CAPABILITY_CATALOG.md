@@ -405,6 +405,10 @@ Las cuatro jornadas guardan las cinco autoridades por UI/API nativas. Ambos órd
 
 La autoría nativa usa una identidad de cadena diaria estable y conserva los IDs existentes. Propuesta, Draft, revalidación y Stage siguen sujetos a comidas completas, ventanas/duración, capacidad conjunta, no solapamiento, dependencias, recursos, revisión y protección. El catálogo descriptivo no sustituye los recibos UI→SQL, las dos bases frías ni la CI del head. La conjunta con comidas flexibles conserva su guard; tampoco se amplían A/B con transición positiva, transporte, rondas, setup P15, requiresBand u otros contratos no certificados. No acredita la macro A2 completa ni autoría nueva 266/266.
 
+### P0-G03c — diagnóstico de conjunta, fases y comidas flexibles
+
+[Evidence](../evidence/p0-g03c/README.md) y [call path](../evidence/p0-g03c/causal-gate.md): el consumidor existente produce witnesses físicos completos de la intersección en memoria, con certificado sin búsqueda y supporting efímero. La autoría nativa crea 65 obligaciones y tres fases; la conjunta conserva su guard y SQL READ ONLY rechaza. La ventana de EVA desde las 16:00 exigida por Fuente 06 tiene modelo/API/consumidor, pero carece de productor horario nativo en catálogo y Recursos del día. DIAGNOSTIC_ONLY: sin admisión nueva, 129, Stage combinado ni ampliación de cobertura productiva.
+
 ### P0-G02 — rutas direccionales de cualquier identidad física diaria
 
 El editor nativo de Configuración del día produce `{planResourceItemId,fromSpaceId,toSpaceId,minutes}` mediante la operación diaria v5, CAS y revisión/replay existentes. Builder y adapter conservan las identidades reales. `resourceRouteTransitions.ts` comparte resolución con el wrapper histórico de coach: ruta explícita, respaldo por recurso y general; mismo espacio sin traslado, dirección independiente y máximo entre recursos comunes. Colocación, dominios, interacción residual, validación y Evidence usan ese contrato. El witness físico conjunto existente certifica el futuro de jornadas con rutas; no cambia ordering ni budgets.

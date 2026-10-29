@@ -1,0 +1,11 @@
+{
+  "status": "PASS_MEMORY_ONLY",
+  "productiveObligations": 46,
+  "productivePhysicalOperations": 45,
+  "participantMeals": 19,
+  "jointGroups": 1,
+  "physicalPhaseOperations": 7,
+  "physicalPhaseMinutes": 140,
+  "certificateSearch": 0,
+  "sqlStage": false
+}

@@ -1,0 +1,43 @@
+{
+  "base": "1683233131913df451dc97986c084c442f3aa87e",
+  "files": {
+    "client/src/components/create-resource-pool.tsx": "1ec94021b48046e1dcebc7c29ecad381dfd431f0ac7b9d223859fb98d19fd3b0",
+    "client/src/components/resources-list.tsx": "cd7dbd774ac6a5270a86716a4240687d0c4e6e2dae0227152745554a36b11616",
+    "client/src/components/day-workspace/day-resources-workspace.tsx": "8529c95d9d1f74a460ceb2a2ada21e29c030cc19ee76a8b15bbfe804b7949f1b",
+    "server/resourceAvailabilityWindow.ts": "18ead5b7b6f034dc827e271a098c8602b79ea68ff341ef4f80c27c97ec68e3ae",
+    "server/routes.ts": "e10fccdcd015924e106f526a6f98075ad8eeccbad60e5d479eea7c2416542775",
+    "server/jointGroupStructure.ts": "ee1a65be70dd5a8576c9214488b46d86279ff5a52e14e4b2799475aa735af0cc",
+    "server/technicalChainStructure.ts": "6a0ab5c8d250c4fab54fc825654e8053f130fd83251c68808bbc1e191200034b",
+    "server/technicalChainCertificate.ts": "d0ed72f41a5371dab8bf78d271a559d065c86ad47332e7400cd59e5d1ab1a9f4",
+    "server/assistedProposalService.ts": "71cd56436ea923851fabf30db7703da3c1653be5b24ad7b431639323edf71bc6",
+    "engine/planner-next/assistedPlanning.ts": "66d056e1e29e3e1555fc661856d609e557a591697c47e5c4cad6ef2aa54503de",
+    "engine/planner-next/technicalChains.ts": "66a6964d46de5fb752d80ad4b2389511ee720d41d14ed124ad149cccea4a93be",
+    "engine/planner-next/jointTasks.ts": "526e189bbba8e84a0d25bb9e22df813e5377e8467bfe59bf25f2bcfcf6b55fe0",
+    "engine/planner-next/validate.ts": "27d710cce3d1d44ab26314c642ac0775ba47b4ab02af447f06b1d1538eb8a6b9",
+    "supabase/migrations/128_flexible_participant_meals_required_phases.sql": "8356c1f9254acf0089867f50f9475f42bd0921783b9bac8c50f86dcbf4a5509a"
+  },
+  "productDelta": [],
+  "officialFiles": {
+    "docs/source/official/00_INDICE_Y_AUTORIDAD_FUENTES_OPTIPLAN_v2.15.md": "7082cee03feb295c71104f559d118608e85c5946f81de1139d6ad902f0e3810f",
+    "docs/source/official/01_PRODUCTO_DOMINIO_OPERACION_v5.4.md": "e55dc386d647888b913ed55457bb71564b16ccc4c088310c820bf57d984957bc",
+    "docs/source/official/02_ORC_CORE_CONSOLIDADO_v2.2.md": "1c5d58017ed3b0931cd4d0bc9c121e19c5edc9acb10005c5b759ccd94b937bdf",
+    "docs/source/official/03_PLANNER_CONSTRUCCION_BUSQUEDA_ASSISTED_v3.8.md": "7073930bb7bcbff09cb05553eecd28d357daf1860e55c6a6b9ab1ffe73172ffd",
+    "docs/source/official/04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.9.md": "d85981443e4e8e1bd073c59684e0b1e7d4a2fae6113a647007dee0f65eb1e8a4",
+    "docs/source/official/05_VALIDACION_CALIDAD_BENCHMARK_v2.8.md": "2d0aa69ebb5d1949b315a8ebb85c0ad96f0f9939e9441d1ef09a1f1ae9924a13",
+    "docs/source/official/06_A2_CANONICO_INTERPRETACION_Y_TAREAS_v2.10.md": "42d0b3b78e732a2e4f1a1a01be9fa39bd82fbda366dd869d3785aedf6155faab",
+    "docs/source/official/07_PROTOCOLO_MAESTRO_CONTINUIDAD_v2.3.md": "7243ed2d186ef19af7ee9717c9b72d94ebca34791257a434be1aab76bed27351",
+    "docs/source/official/ENSAYO_A2_LV 15 JUNIO 2025 -  DESGLOSE A2.pdf": "8f96af987db37a0c8b5c1fd8870aad36d46b721ed81a0535bc22b8fb10f312b3",
+    "docs/source/official/ENSAYO_A2_LV.pdf": "5b0d49fcf1c1bc58b93e212b30bbf84738654b0ca38224b1465b595ad9c01b3a",
+    "docs/source/official/README.md": "3ddf7bf021644edccd9a9551c5b5016943a51aa9bb02b11c6c8fcf040fa9e054",
+    "docs/source/official/SHA256SUMS": "0d4e32433c9be68061ff26c19b44c8da106e4fa2e2cbe4a9a47c2c16aca0e7bb"
+  },
+  "officialManifestCheck": {
+    "status": "PRE_EXISTING_FAILURE",
+    "missingListedPaths": [
+      "00_INDICE_Y_AUTORIDAD_FUENTES_OPTIPLAN_v2.14.md",
+      "01_PRODUCTO_DOMINIO_OPERACION_v5.3.md",
+      "04_INTEGRACION_CONFIGURACION_EFECTIVA_v2.8.md"
+    ],
+    "allActualFilesLiteralToBase": true
+  }
+}

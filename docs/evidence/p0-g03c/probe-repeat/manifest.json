@@ -1,0 +1,25 @@
+{
+  "receiptCount": 20,
+  "canonicalJSONSHA256": {
+    "adapter.json": "3afd902292b71ccb5c6f8fe47b62dff511202c6b1b1cfc82e44784b60b4c9243",
+    "admission.json": "382c28ddf833d097a1ade831b06078d30547a39c13e7da8e0b825a456edc371a",
+    "all-certificate.json": "96984682bbf1dacad6c12b65050f8810e318b3ec274e655ebf9a4829a1da9883",
+    "all-problem.json": "37119115a9c3dabeed8134b4386e6329c03fc0e5a973a79ecda7953eb4708b5a",
+    "all-run.json": "2dc053bf9a671c0e6567780ce1a0e595a25c8383bcec8f714ce196b2c380ef34",
+    "all-scope.json": "dc1007da27fa6fa4bfd846fd5a2481a718edd7342be147fdc6975cabb70697b0",
+    "all-validation.json": "0479539d4ba5d1e142d956bdf55cb400a799d07a14151f01454bd5dfd933bcf6",
+    "competitor-certificate.json": "96984682bbf1dacad6c12b65050f8810e318b3ec274e655ebf9a4829a1da9883",
+    "competitor-problem.json": "0d8022c62cc61de6433d9013f87fd8831a75355f6ebbd334cbb85fe4a51647a5",
+    "competitor-run.json": "a63622570b0c75d842806f891ab45c7de52200b15a566ddd33991c08d1002dc8",
+    "competitor-scope.json": "e5311a379efa1470d63dcd5bfa770b42e59262325d696ce4ffaa196888645a50",
+    "competitor-validation.json": "0479539d4ba5d1e142d956bdf55cb400a799d07a14151f01454bd5dfd933bcf6",
+    "continuation.json": "3d76b51f8d0b090d7bb85407db446cc548757e9a26c660a3ead4fb2e5ffbf82f",
+    "input.json": "18839f7239f13d8c8108aab8fb488b2517815c5a48f98732994e6b4545d8c389",
+    "joint-certificate.json": "96984682bbf1dacad6c12b65050f8810e318b3ec274e655ebf9a4829a1da9883",
+    "joint-problem.json": "ee97e82c2d70719d5a9d683b05569a6e43cc74eea7285d20bd16fd4f73d375bc",
+    "joint-run.json": "ab1202da6f8c596b4e5e47833909a9b9140cbde426c386f6d8ebf547edb65077",
+    "joint-scope.json": "7cf9aa211d22accbb00539cd841bc897ed6b26373587acf5a409633053a5bb92",
+    "joint-validation.json": "0479539d4ba5d1e142d956bdf55cb400a799d07a14151f01454bd5dfd933bcf6",
+    "negatives.json": "c8dc3a882092e6797c8e5c988e300be67cf87504dddd56067fb3cc640dea3e40"
+  }
+}
