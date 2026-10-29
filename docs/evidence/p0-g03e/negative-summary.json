@@ -1,0 +1,2722 @@
+{
+  "status": "PASS",
+  "categories": {
+    "PHYSICAL": 132,
+    "AUTHENTICITY": 16,
+    "REVISION": 8,
+    "SOURCE": 8,
+    "DRAFT_IDENTITY": 8,
+    "PROTECTION": 28
+  },
+  "allTransactionsRolledBack": true,
+  "allSQLRejected": true,
+  "cases": [
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "missing-meal",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_GLOBAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "duplicate-meal",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_GLOBAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "meal-window",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_WITNESS_MATERIAL"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "meal-duration",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_WITNESS_MATERIAL"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "meal-capacity",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_CAPACITY"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "participant-overlap",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_RESOURCE_CONFLICT"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "missing-task",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "resource-omission",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "phase-gap",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "TECHNICAL_CHAIN_PHASE_GAP"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "bad-hash",
+      "category": "AUTHENTICITY",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_AUTHENTIC_PROPOSAL_REQUIRED"
+      },
+      "hashesRecomputed": false,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "stale-revision",
+      "category": "REVISION",
+      "error": {
+        "code": "P0001",
+        "message": "STALE_TECHNICAL_CHAIN_REPLAY"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "invalid-source",
+      "category": "SOURCE",
+      "error": {
+        "code": "P0001",
+        "message": "PLANNER_NEXT_CONFIGURATION_IMMUTABLE"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "missing-peer",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "duplicate-peer",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "peer-time",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_SYNCHRONIZATION"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "peer-duration",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_IDENTITY"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "peer-space",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_IDENTITY"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "peer-resources",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "peer-unit",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_UNIT_NOT_ELIGIBLE"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "phase-order",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_RESOURCE_CONFLICT"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "draft-witness-mismatch",
+      "category": "DRAFT_IDENTITY",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_SELECTION_SNAPSHOT_MISMATCH"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "scope-member",
+      "category": "AUTHENTICITY",
+      "error": {
+        "code": "P0001",
+        "message": "RUN_RESULT_INVALID"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "direct-authority",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_REQUIRES_VERSIONED_OPERATION"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "direct-placement",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_REQUIRES_ASSISTED_MATERIALIZATION"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 1,
+      "mode": "resource-window",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_RESOURCE_AVAILABILITY"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "missing-meal",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_GLOBAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "duplicate-meal",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_GLOBAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "meal-window",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_WITNESS_MATERIAL"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "meal-duration",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_WITNESS_MATERIAL"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "meal-capacity",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_CAPACITY"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "participant-overlap",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_RESOURCE_CONFLICT"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "missing-task",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "resource-omission",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "phase-gap",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_PROTECTED_DECISIONS"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "bad-hash",
+      "category": "AUTHENTICITY",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_AUTHENTIC_PROPOSAL_REQUIRED"
+      },
+      "hashesRecomputed": false,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "stale-revision",
+      "category": "REVISION",
+      "error": {
+        "code": "P0001",
+        "message": "STALE_TECHNICAL_CHAIN_REPLAY"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "invalid-source",
+      "category": "SOURCE",
+      "error": {
+        "code": "P0001",
+        "message": "PLANNER_NEXT_CONFIGURATION_IMMUTABLE"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "missing-peer",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "duplicate-peer",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "peer-time",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_PROTECTED_DECISIONS"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "peer-duration",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_IDENTITY"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "peer-space",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_IDENTITY"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "peer-resources",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "peer-unit",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_UNIT_NOT_ELIGIBLE"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "phase-order",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_PROTECTED_DECISIONS"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "draft-witness-mismatch",
+      "category": "DRAFT_IDENTITY",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_SELECTION_SNAPSHOT_MISMATCH"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "scope-member",
+      "category": "AUTHENTICITY",
+      "error": {
+        "code": "P0001",
+        "message": "RUN_RESULT_INVALID"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "direct-authority",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_REQUIRES_VERSIONED_OPERATION"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "direct-placement",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_REQUIRES_ASSISTED_MATERIALIZATION"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "macro",
+      "stage": 2,
+      "mode": "resource-window",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_RESOURCE_AVAILABILITY"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "missing-meal",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_GLOBAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "duplicate-meal",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_GLOBAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "meal-window",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_WITNESS_MATERIAL"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "meal-duration",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_WITNESS_MATERIAL"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "meal-capacity",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_CAPACITY"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "participant-overlap",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_DEPENDENCY"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "missing-task",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "resource-omission",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "phase-gap",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_RESOURCE_CONFLICT"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "bad-hash",
+      "category": "AUTHENTICITY",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_AUTHENTIC_PROPOSAL_REQUIRED"
+      },
+      "hashesRecomputed": false,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "stale-revision",
+      "category": "REVISION",
+      "error": {
+        "code": "P0001",
+        "message": "STALE_TECHNICAL_CHAIN_REPLAY"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "invalid-source",
+      "category": "SOURCE",
+      "error": {
+        "code": "P0001",
+        "message": "PLANNER_NEXT_CONFIGURATION_IMMUTABLE"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "missing-peer",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "duplicate-peer",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "peer-time",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_SYNCHRONIZATION"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "peer-duration",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_IDENTITY"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "peer-space",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_IDENTITY"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "peer-resources",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "peer-unit",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_UNIT_NOT_ELIGIBLE"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "third-party",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_RESOURCE_CONFLICT"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "phase-order",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_SYNCHRONIZATION"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "draft-witness-mismatch",
+      "category": "DRAFT_IDENTITY",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_SELECTION_SNAPSHOT_MISMATCH"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "scope-member",
+      "category": "AUTHENTICITY",
+      "error": {
+        "code": "P0001",
+        "message": "RUN_RESULT_INVALID"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "direct-authority",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_REQUIRES_VERSIONED_OPERATION"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 1,
+      "mode": "direct-placement",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_REQUIRES_ASSISTED_MATERIALIZATION"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "missing-meal",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_GLOBAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "duplicate-meal",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_GLOBAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "meal-window",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_WITNESS_MATERIAL"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "meal-duration",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_WITNESS_MATERIAL"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "meal-capacity",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_CAPACITY"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "participant-overlap",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_DEPENDENCY"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "missing-task",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "resource-omission",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "phase-gap",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_PROTECTED_DECISIONS"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "bad-hash",
+      "category": "AUTHENTICITY",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_AUTHENTIC_PROPOSAL_REQUIRED"
+      },
+      "hashesRecomputed": false,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "stale-revision",
+      "category": "REVISION",
+      "error": {
+        "code": "P0001",
+        "message": "STALE_TECHNICAL_CHAIN_REPLAY"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "invalid-source",
+      "category": "SOURCE",
+      "error": {
+        "code": "P0001",
+        "message": "PLANNER_NEXT_CONFIGURATION_IMMUTABLE"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "missing-peer",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "duplicate-peer",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "peer-time",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_PROTECTED_DECISIONS"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "peer-duration",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_IDENTITY"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "peer-space",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_IDENTITY"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "peer-resources",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "peer-unit",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_UNIT_NOT_ELIGIBLE"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "third-party",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_RESOURCE_CONFLICT"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "phase-order",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_PROTECTED_DECISIONS"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "draft-witness-mismatch",
+      "category": "DRAFT_IDENTITY",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_SELECTION_SNAPSHOT_MISMATCH"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "scope-member",
+      "category": "AUTHENTICITY",
+      "error": {
+        "code": "P0001",
+        "message": "RUN_RESULT_INVALID"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "direct-authority",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_REQUIRES_VERSIONED_OPERATION"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "a",
+      "day": "generic",
+      "stage": 2,
+      "mode": "direct-placement",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_REQUIRES_ASSISTED_MATERIALIZATION"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "missing-meal",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_GLOBAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "duplicate-meal",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_GLOBAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "meal-window",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_WITNESS_MATERIAL"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "meal-duration",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_WITNESS_MATERIAL"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "meal-capacity",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_CAPACITY"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "participant-overlap",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_RESOURCE_CONFLICT"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "missing-task",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "resource-omission",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "phase-gap",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "TECHNICAL_CHAIN_PHASE_GAP"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "bad-hash",
+      "category": "AUTHENTICITY",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_AUTHENTIC_PROPOSAL_REQUIRED"
+      },
+      "hashesRecomputed": false,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "stale-revision",
+      "category": "REVISION",
+      "error": {
+        "code": "P0001",
+        "message": "STALE_TECHNICAL_CHAIN_REPLAY"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "invalid-source",
+      "category": "SOURCE",
+      "error": {
+        "code": "P0001",
+        "message": "PLANNER_NEXT_CONFIGURATION_IMMUTABLE"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "missing-peer",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "duplicate-peer",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "peer-time",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_SYNCHRONIZATION"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "peer-duration",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_IDENTITY"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "peer-space",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_IDENTITY"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "peer-resources",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "peer-unit",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_UNIT_NOT_ELIGIBLE"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "phase-order",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_RESOURCE_CONFLICT"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "draft-witness-mismatch",
+      "category": "DRAFT_IDENTITY",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_SELECTION_SNAPSHOT_MISMATCH"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "scope-member",
+      "category": "AUTHENTICITY",
+      "error": {
+        "code": "P0001",
+        "message": "RUN_RESULT_INVALID"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "direct-authority",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_REQUIRES_VERSIONED_OPERATION"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "direct-placement",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_REQUIRES_ASSISTED_MATERIALIZATION"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 1,
+      "mode": "resource-window",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_RESOURCE_AVAILABILITY"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "missing-meal",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_GLOBAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "duplicate-meal",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_GLOBAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "meal-window",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_WITNESS_MATERIAL"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "meal-duration",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_WITNESS_MATERIAL"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "meal-capacity",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_CAPACITY"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "participant-overlap",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_RESOURCE_CONFLICT"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "missing-task",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "resource-omission",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "phase-gap",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_PROTECTED_DECISIONS"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "bad-hash",
+      "category": "AUTHENTICITY",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_AUTHENTIC_PROPOSAL_REQUIRED"
+      },
+      "hashesRecomputed": false,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "stale-revision",
+      "category": "REVISION",
+      "error": {
+        "code": "P0001",
+        "message": "STALE_TECHNICAL_CHAIN_REPLAY"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "invalid-source",
+      "category": "SOURCE",
+      "error": {
+        "code": "P0001",
+        "message": "PLANNER_NEXT_CONFIGURATION_IMMUTABLE"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "missing-peer",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "duplicate-peer",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "peer-time",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_PROTECTED_DECISIONS"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "peer-duration",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_IDENTITY"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "peer-space",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_IDENTITY"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "peer-resources",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "peer-unit",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_UNIT_NOT_ELIGIBLE"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "phase-order",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_PROTECTED_DECISIONS"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "draft-witness-mismatch",
+      "category": "DRAFT_IDENTITY",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_SELECTION_SNAPSHOT_MISMATCH"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "scope-member",
+      "category": "AUTHENTICITY",
+      "error": {
+        "code": "P0001",
+        "message": "RUN_RESULT_INVALID"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "direct-authority",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_REQUIRES_VERSIONED_OPERATION"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "direct-placement",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_REQUIRES_ASSISTED_MATERIALIZATION"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "macro",
+      "stage": 2,
+      "mode": "resource-window",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_RESOURCE_AVAILABILITY"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "missing-meal",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_GLOBAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "duplicate-meal",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_GLOBAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "meal-window",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_WITNESS_MATERIAL"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "meal-duration",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_WITNESS_MATERIAL"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "meal-capacity",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_CAPACITY"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "participant-overlap",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_DEPENDENCY"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "missing-task",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "resource-omission",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "phase-gap",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_RESOURCE_CONFLICT"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "bad-hash",
+      "category": "AUTHENTICITY",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_AUTHENTIC_PROPOSAL_REQUIRED"
+      },
+      "hashesRecomputed": false,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "stale-revision",
+      "category": "REVISION",
+      "error": {
+        "code": "P0001",
+        "message": "STALE_TECHNICAL_CHAIN_REPLAY"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "invalid-source",
+      "category": "SOURCE",
+      "error": {
+        "code": "P0001",
+        "message": "PLANNER_NEXT_CONFIGURATION_IMMUTABLE"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "missing-peer",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "duplicate-peer",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "peer-time",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_SYNCHRONIZATION"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "peer-duration",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_IDENTITY"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "peer-space",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_IDENTITY"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "peer-resources",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "peer-unit",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_UNIT_NOT_ELIGIBLE"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "third-party",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_RESOURCE_CONFLICT"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "phase-order",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_SYNCHRONIZATION"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "draft-witness-mismatch",
+      "category": "DRAFT_IDENTITY",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_SELECTION_SNAPSHOT_MISMATCH"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "scope-member",
+      "category": "AUTHENTICITY",
+      "error": {
+        "code": "P0001",
+        "message": "RUN_RESULT_INVALID"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "direct-authority",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_REQUIRES_VERSIONED_OPERATION"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 1,
+      "mode": "direct-placement",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_REQUIRES_ASSISTED_MATERIALIZATION"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "missing-meal",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_GLOBAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "duplicate-meal",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_GLOBAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "meal-window",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_WITNESS_MATERIAL"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "meal-duration",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_WITNESS_MATERIAL"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "meal-capacity",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "OPERATIONAL_PARTICIPANT_CAPACITY"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "participant-overlap",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_DEPENDENCY"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "missing-task",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "resource-omission",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "phase-gap",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_PROTECTED_DECISIONS"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "bad-hash",
+      "category": "AUTHENTICITY",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_AUTHENTIC_PROPOSAL_REQUIRED"
+      },
+      "hashesRecomputed": false,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "stale-revision",
+      "category": "REVISION",
+      "error": {
+        "code": "P0001",
+        "message": "STALE_TECHNICAL_CHAIN_REPLAY"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "invalid-source",
+      "category": "SOURCE",
+      "error": {
+        "code": "P0001",
+        "message": "PLANNER_NEXT_CONFIGURATION_IMMUTABLE"
+      },
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "missing-peer",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "duplicate-peer",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_FUTURE_STRUCTURAL_WITNESS_REQUIRED"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "peer-time",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_PROTECTED_DECISIONS"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "peer-duration",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_IDENTITY"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "peer-space",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_IDENTITY"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "peer-resources",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_PHYSICAL_RESOURCES"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "peer-unit",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_UNIT_NOT_ELIGIBLE"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "third-party",
+      "category": "PHYSICAL",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_WITNESS_RESOURCE_CONFLICT"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "phase-order",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_PROTECTED_DECISIONS"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "draft-witness-mismatch",
+      "category": "DRAFT_IDENTITY",
+      "error": {
+        "code": "P0001",
+        "message": "ANCHORED_SELECTION_SNAPSHOT_MISMATCH"
+      },
+      "tsRejected": true,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "scope-member",
+      "category": "AUTHENTICITY",
+      "error": {
+        "code": "P0001",
+        "message": "RUN_RESULT_INVALID"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "direct-authority",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_REQUIRES_VERSIONED_OPERATION"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    },
+    {
+      "database": "b",
+      "day": "generic",
+      "stage": 2,
+      "mode": "direct-placement",
+      "category": "PROTECTION",
+      "error": {
+        "code": "P0001",
+        "message": "JOINT_REQUIRES_ASSISTED_MATERIALIZATION"
+      },
+      "tsRejected": false,
+      "hashesRecomputed": true,
+      "rolledBack": true
+    }
+  ],
+  "futureFeasibility": "Executable integration test: two nonempty individual meal domains but no collective realization; rejected without exhaustion; early counterfactual feasible",
+  "admissionNotCountedAsPhysicalProof": true,
+  "sqlAttacks": 200
+}

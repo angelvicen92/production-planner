@@ -6,6 +6,7 @@
 | Conjunta + pausa global, fases y unidades fijas previas | Conservada | U02d/G01 y sus contratos físicos |
 | Fases REQUIRED + conjunta + comidas flexibles | Nueva, en los perfiles nativos standalone y Main/Vocal, recursos concretos y unidades fijas sin transición | Dos jornadas UI de distinta topología hasta S1/S2 |
 | Conjunta flexible sin fases | Cerrada en TS/SQL | Autoría exige guardar primero las fases; no permite retirarlas mientras exista la conjunta |
+| Técnica independiente fuera de fases en Main/Vocal | Consumidor devuelve `UNSUPPORTED_STANDALONE_TASK_KIND`, cero ramas; no certificada por esta unidad | Diagnóstico genérico inicial, sin Stage de ese día |
 | Nueva intersección con anclajes, ámbitos especiales, pausas físicas adicionales o rutas | Cerrada | Fuera del witness focal de esta unidad |
 | A/B con transición positiva, alternativas de unidad, rondas, transporte, setups, requiresBand y demás capacidades no certificadas | Sin ampliación | No se infiere soporte por compartir recursos o nombres |
 

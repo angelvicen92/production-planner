@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "baseline": "native G03d macro counterfactual repeated on authorized base",
+  "samePhysicalWitnessExceptNewAuthenticJointIdentity": true,
+  "sameTaskAndMealIdsDurationsTimesSpacesUnitsResources": true,
+  "productiveObligations": 46,
+  "meals": 19,
+  "unitObligations": 8,
+  "unitPhysicalOperations": 7,
+  "branchesBeforeAndAfter": 2884,
+  "certificateSearchBeforeAndAfter": 0,
+  "beforeStages": 0,
+  "afterS1S2StagesPerDatabase": 2,
+  "authorityChange": "In-memory probe-joint becomes UI-saved deterministic joint identity",
+  "unusedResourceDifference": "G03d also created an inactive ad hoc microphone; it participates in no operation or witness",
+  "remoteWrites": 0
+}

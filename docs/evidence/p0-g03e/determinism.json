@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "sameIds": true,
+  "physicalDifferencesNormalized": false,
+  "inputsProblemsFingerprintsDecisionsSQLLiteral": true,
+  "effectiveConfigurationValuesRevisionsFingerprintsLiteral": true,
+  "bothPeersScopeAndAuthenticProposalsLiteral": true,
+  "ignoredEffectiveConfigurationProvenanceKeys": [
+    "jointGroups.by",
+    "jointGroups.at",
+    "technicalChains.by",
+    "technicalChains.at",
+    "values.overrideMetadata.createdBy",
+    "values.overrideMetadata.createdAt"
+  ],
+  "stagesPerDatabase": 4,
+  "sourceHashesEqual": true,
+  "ignoredExecutionDurationKeys": [
+    "futureItinerantOperationalMealsMs",
+    "futureItinerantParticipantFutureMs",
+    "futureItinerantParticipantMealsMs",
+    "futureItinerantPrerequisiteSearchMs",
+    "futureItinerantPriorRevalidationMs",
+    "futureItinerantStructuralSearchMs",
+    "futureItinerantTechnicalFutureMs"
+  ],
+  "remoteWrites": 0
+}

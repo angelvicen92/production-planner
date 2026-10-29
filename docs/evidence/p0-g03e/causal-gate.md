@@ -29,3 +29,9 @@ La UI muestra que las fases deben guardarse primero. Una conjunta nueva deriva s
 ## Experimentos de entorno
 
 Los intentos iniciales con servidor Vite agotaron conexiones de Chromium y mostraron `ERR_INSUFFICIENT_RESOURCES`/`ERR_NETWORK_CHANGED`. No llegaron al consumidor nuevo. El harness usa el build de producción local en Chromium y mantiene exactamente Auth, PostgREST, el ledger y los endpoints reales; no cambia timeouts o presupuestos de producto. Las bases se ejecutan secuencialmente para evitar cambios de red Docker durante navegación.
+
+## Primer límite material adicional observado
+
+El control genérico inicial añadió una **técnica independiente fuera de las fases** al perfil Main/Vocal. El adapter conservó su identidad, pero el consumidor constructivo devolvió `UNSUPPORTED_STANDALONE_TASK_KIND` con cero ramas: no era agotamiento ni demostración de inviabilidad física. No se abrió ese consumidor ni se amplió la admisión de otra familia. La competidora definitiva es una auxiliar con participante propio sin otras obligaciones productivas, dentro del contrato ya consumido por el probe focal; conserva su comida individual. La frontera técnica se mantiene explícita en esta unidad.
+
+La CI detectó además dos dependencias de prueba: el nuevo módulo de integración estaba fuera de la lista cerrada de aislamiento, y el recorrido U02d comparaba siempre el cuerpo 129. Se reutilizó el módulo de comidas/fases ya autorizado, sin cambiar las reglas de aislamiento ni código del motor. U02d detecta el cuerpo instalado y exige la comparación literal completa de 129 o 130; no omite funciones ni acepta hashes en lugar de cuerpos.

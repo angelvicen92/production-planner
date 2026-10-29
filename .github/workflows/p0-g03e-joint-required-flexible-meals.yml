@@ -59,6 +59,8 @@ jobs:
           path: |
             work/g03e-*/native/*.json
             work/g03e-*/native/*.png
+            work/g03e-*/manifest.json
+            work/g03e-*/checkout-delta.json
             work/g03e-*.json
           retention-days: 14
   upgrade-a2:
@@ -111,5 +113,7 @@ jobs:
           path: |
             work/control-${{ matrix.control }}/native/*.json
             work/control-${{ matrix.control }}/native/*.png
+            work/control-${{ matrix.control }}/manifest.json
+            work/control-${{ matrix.control }}/checkout-delta.json
             work/control-${{ matrix.control }}.json
           retention-days: 14

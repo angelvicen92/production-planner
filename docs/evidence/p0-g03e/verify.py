@@ -36,7 +36,7 @@ for label,count,total in [('macro',19,65),('generic',5,18)]:
         for m in meals:
             assert sum(x['start']<=m['start']<x['end'] for x in meals)<=problem['participantMealCapacity']['maxSimultaneous']
         all_ids={**by_id,**{m['sourceTaskId']:m for m in meals}}
-        resources={r['id']:r for r in problem['resources']}
+        resources={r['id']:r for r in problem['resources']+problem['coaches']}
         for t in tasks:
             for rid in t.get('requiredResourceIds',[])+([t['coachId']] if t.get('coachId') else []):
                 assert any(w['start']<=t['start'] and t['end']<=w['end'] for w in resources[rid]['availability'])
