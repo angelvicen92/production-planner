@@ -1,0 +1,66 @@
+{
+  "attempts": [
+    {
+      "attempt": "first",
+      "classification": "HARNESS_OR_RUNTIME_NOT_PRODUCT_FRONTIER",
+      "status": "FAIL",
+      "error": "TypeError: r.clone is not a function\n    at responseTo (/workspace/production-planner/work/g03-first/source/docs/evidence/p0-g03/journey.ts:28:62)\n    at runNextTicks (node:internal/process/task_queues:65:5)\n    at process.processImmediate (node:internal/timers:502:9)\n    at async journey (/workspace/production-planner/work/g03-first/source/docs/evidence/p0-g03/journey.ts:45:14)\n    at async <anonymous> (/workspace/production-planner/work/g03-first/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+      "countedAsProductEvidence": false
+    },
+    {
+      "attempt": "second",
+      "classification": "HARNESS_OR_RUNTIME_NOT_PRODUCT_FRONTIER",
+      "status": "FAIL",
+      "error": "locator.click: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('tab', { name: /personal|staff/i })\u001b[22m\n\n    at tab (/workspace/production-planner/work/g03-second/source/docs/evidence/p0-g03/journey.ts:30:104)\n    at async journey (/workspace/production-planner/work/g03-second/source/docs/evidence/p0-g03/journey.ts:63:4)\n    at async <anonymous> (/workspace/production-planner/work/g03-second/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+      "countedAsProductEvidence": false
+    },
+    {
+      "attempt": "third",
+      "classification": "HARNESS_OR_RUNTIME_NOT_PRODUCT_FRONTIER",
+      "status": "FAIL",
+      "error": "page.waitForResponse: Timeout 20000ms exceeded while waiting for event \"response\"\n    at responseTo (/workspace/production-planner/work/g03-third/source/docs/evidence/p0-g03/journey.ts:27:22)\n    at journey (/workspace/production-planner/work/g03-third/source/docs/evidence/p0-g03/journey.ts:77:10)\n    at async <anonymous> (/workspace/production-planner/work/g03-third/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+      "countedAsProductEvidence": false
+    },
+    {
+      "attempt": "fourth",
+      "classification": "HARNESS_OR_RUNTIME_NOT_PRODUCT_FRONTIER",
+      "status": "FAIL",
+      "error": "locator.selectOption: Error: Element is not a <select> element\nCall log:\n\u001b[2m  - waiting for locator('#meal-task-template')\u001b[22m\n\u001b[2m    - locator resolved to <button dir=\"ltr\" type=\"button\" role=\"combobox\" data-state=\"closed\" aria-expanded=\"false\" id=\"meal-task-template\" aria-autocomplete=\"none\" aria-controls=\"radix-:rj:\" aria-describedby=\"meal-template-help\" class=\"flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span\u2026>\u2026</button>\u001b[22m\n\u001b[2m  - attempting select option action\u001b[22m\n\u001b[2m    - waiting for element to be visible and enabled\u001b[22m\n\n    at journey (/workspace/production-planner/work/g03-fourth/source/docs/evidence/p0-g03/journey.ts:82:45)\n    at async <anonymous> (/workspace/production-planner/work/g03-fourth/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+      "countedAsProductEvidence": false
+    },
+    {
+      "attempt": "fifth",
+      "classification": "HARNESS_OR_RUNTIME_NOT_PRODUCT_FRONTIER",
+      "status": "FAIL",
+      "error": "locator.click: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('option', { name: 'Prueba vocal - Luc\u00eda', exact: true })\u001b[22m\n\n    at addTask (/workspace/production-planner/work/g03-fifth/source/docs/evidence/p0-g03/journey.ts:98:137)\n    at async journey (/workspace/production-planner/work/g03-fifth/source/docs/evidence/p0-g03/journey.ts:102:107)\n    at async <anonymous> (/workspace/production-planner/work/g03-fifth/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+      "countedAsProductEvidence": false
+    },
+    {
+      "attempt": "sixth",
+      "classification": "HARNESS_OR_RUNTIME_NOT_PRODUCT_FRONTIER",
+      "status": "FAIL",
+      "error": "locator.fill: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByLabel('Nombre del nuevo concursante')\u001b[22m\n\n    at journey (/workspace/production-planner/work/g03-sixth/source/docs/evidence/p0-g03/journey.ts:91:58)\n    at async <anonymous> (/workspace/production-planner/work/g03-sixth/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+      "countedAsProductEvidence": false
+    },
+    {
+      "attempt": "seventh",
+      "classification": "HARNESS_OR_RUNTIME_NOT_PRODUCT_FRONTIER",
+      "status": "FAIL",
+      "error": "page.goto: Page crashed\nCall log:\n\u001b[2m  - navigating to \"http://127.0.0.1:42941/settings\", waiting until \"load\"\u001b[22m\n\n    at tab (/workspace/production-planner/work/g03-seventh/source/docs/evidence/p0-g03/journey.ts:31:44)\n    at journey (/workspace/production-planner/work/g03-seventh/source/docs/evidence/p0-g03/journey.ts:65:10)\n    at async <anonymous> (/workspace/production-planner/work/g03-seventh/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+      "countedAsProductEvidence": false
+    }
+  ],
+  "final": {
+    "attempt": "eighth",
+    "status": "PASS",
+    "browserErrors": [],
+    "networkEvents": [],
+    "sameProductBase": "92aa61272342b99795616ecb343161751d9d6c6f",
+    "sourceDeltaDuringRun": []
+  },
+  "notes": [
+    "No failed locator or renderer/transport failure is presented as the product frontier.",
+    "The fourth owned stack was explicitly cleaned before the final run.",
+    "Final run used no read recovery and no mutation retry."
+  ]
+}

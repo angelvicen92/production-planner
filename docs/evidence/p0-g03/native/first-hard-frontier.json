@@ -1,0 +1,1395 @@
+{
+  "planId": 1,
+  "taskCount": 60,
+  "participants": 19,
+  "control": "Crear cadena técnica",
+  "disabled": true,
+  "authority": {
+    "revisionId": 1,
+    "authority": null,
+    "by": null,
+    "at": null,
+    "phasesSupported": false,
+    "supported": false,
+    "blockedReason": null,
+    "tasks": [
+      {
+        "id": 1,
+        "label": "Sodexo · C01",
+        "duration": 40,
+        "space": "Sin espacio",
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [],
+        "resourceIds": []
+      },
+      {
+        "id": 2,
+        "label": "Sodexo · C02",
+        "duration": 40,
+        "space": "Sin espacio",
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [],
+        "resourceIds": []
+      },
+      {
+        "id": 3,
+        "label": "Sodexo · C03",
+        "duration": 40,
+        "space": "Sin espacio",
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [],
+        "resourceIds": []
+      },
+      {
+        "id": 4,
+        "label": "Sodexo · C04",
+        "duration": 40,
+        "space": "Sin espacio",
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [],
+        "resourceIds": []
+      },
+      {
+        "id": 5,
+        "label": "Sodexo · C05",
+        "duration": 40,
+        "space": "Sin espacio",
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [],
+        "resourceIds": []
+      },
+      {
+        "id": 6,
+        "label": "Sodexo · C06",
+        "duration": 40,
+        "space": "Sin espacio",
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [],
+        "resourceIds": []
+      },
+      {
+        "id": 7,
+        "label": "Sodexo · C07",
+        "duration": 40,
+        "space": "Sin espacio",
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [],
+        "resourceIds": []
+      },
+      {
+        "id": 8,
+        "label": "Sodexo · C08",
+        "duration": 40,
+        "space": "Sin espacio",
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [],
+        "resourceIds": []
+      },
+      {
+        "id": 9,
+        "label": "Sodexo · C09",
+        "duration": 40,
+        "space": "Sin espacio",
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [],
+        "resourceIds": []
+      },
+      {
+        "id": 10,
+        "label": "Sodexo · C10",
+        "duration": 40,
+        "space": "Sin espacio",
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [],
+        "resourceIds": []
+      },
+      {
+        "id": 11,
+        "label": "Sodexo · C11",
+        "duration": 40,
+        "space": "Sin espacio",
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [],
+        "resourceIds": []
+      },
+      {
+        "id": 12,
+        "label": "Sodexo · C12",
+        "duration": 40,
+        "space": "Sin espacio",
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [],
+        "resourceIds": []
+      },
+      {
+        "id": 13,
+        "label": "Sodexo · C13",
+        "duration": 40,
+        "space": "Sin espacio",
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [],
+        "resourceIds": []
+      },
+      {
+        "id": 14,
+        "label": "Sodexo · C14",
+        "duration": 40,
+        "space": "Sin espacio",
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [],
+        "resourceIds": []
+      },
+      {
+        "id": 15,
+        "label": "Sodexo · C15",
+        "duration": 40,
+        "space": "Sin espacio",
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [],
+        "resourceIds": []
+      },
+      {
+        "id": 16,
+        "label": "Sodexo · C16",
+        "duration": 40,
+        "space": "Sin espacio",
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [],
+        "resourceIds": []
+      },
+      {
+        "id": 17,
+        "label": "Sodexo · C17",
+        "duration": 40,
+        "space": "Sin espacio",
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [],
+        "resourceIds": []
+      },
+      {
+        "id": 18,
+        "label": "Sodexo · C18",
+        "duration": 40,
+        "space": "Sin espacio",
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [],
+        "resourceIds": []
+      },
+      {
+        "id": 19,
+        "label": "Sodexo · C19",
+        "duration": 40,
+        "space": "Sin espacio",
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [],
+        "resourceIds": []
+      },
+      {
+        "id": 20,
+        "label": "Prueba vocal - Lucía · C01",
+        "duration": 15,
+        "space": "Caracola Lucía",
+        "availability": {
+          "id": 2,
+          "spaceId": 2,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Caracola Lucía",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          1
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 21,
+        "label": "Ensayo vocal - Estudio 7 · Lucía · C01",
+        "duration": 15,
+        "space": "Estudio 7",
+        "availability": {
+          "id": 1,
+          "spaceId": 1,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Estudio 7",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          1
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 22,
+        "label": "Prueba vocal - Lucía · C02",
+        "duration": 15,
+        "space": "Caracola Lucía",
+        "availability": {
+          "id": 2,
+          "spaceId": 2,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Caracola Lucía",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          1
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 23,
+        "label": "Ensayo vocal - Estudio 7 · Lucía · C02",
+        "duration": 15,
+        "space": "Estudio 7",
+        "availability": {
+          "id": 1,
+          "spaceId": 1,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Estudio 7",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          1
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 24,
+        "label": "Prueba vocal - Lucía · C03",
+        "duration": 15,
+        "space": "Caracola Lucía",
+        "availability": {
+          "id": 2,
+          "spaceId": 2,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Caracola Lucía",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          1
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 25,
+        "label": "Ensayo vocal - Estudio 7 · Lucía · C03",
+        "duration": 15,
+        "space": "Estudio 7",
+        "availability": {
+          "id": 1,
+          "spaceId": 1,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Estudio 7",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          1
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 26,
+        "label": "Prueba vocal - Lucía · C04",
+        "duration": 15,
+        "space": "Caracola Lucía",
+        "availability": {
+          "id": 2,
+          "spaceId": 2,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Caracola Lucía",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          1
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 27,
+        "label": "Ensayo vocal - Estudio 7 · Lucía · C04",
+        "duration": 15,
+        "space": "Estudio 7",
+        "availability": {
+          "id": 1,
+          "spaceId": 1,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Estudio 7",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          1
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 28,
+        "label": "Prueba vocal - José María · C05",
+        "duration": 15,
+        "space": "Caracola José María",
+        "availability": {
+          "id": 3,
+          "spaceId": 3,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Caracola José María",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 29,
+        "label": "Ensayo vocal - Estudio 7 · José María · C05",
+        "duration": 15,
+        "space": "Estudio 7",
+        "availability": {
+          "id": 1,
+          "spaceId": 1,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Estudio 7",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 30,
+        "label": "Prueba vocal - José María · C06",
+        "duration": 15,
+        "space": "Caracola José María",
+        "availability": {
+          "id": 3,
+          "spaceId": 3,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Caracola José María",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 31,
+        "label": "Ensayo vocal - Estudio 7 · José María · C06",
+        "duration": 15,
+        "space": "Estudio 7",
+        "availability": {
+          "id": 1,
+          "spaceId": 1,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Estudio 7",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 32,
+        "label": "Prueba vocal - José María · C07",
+        "duration": 15,
+        "space": "Caracola José María",
+        "availability": {
+          "id": 3,
+          "spaceId": 3,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Caracola José María",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 33,
+        "label": "Ensayo vocal - Estudio 7 · José María · C07",
+        "duration": 15,
+        "space": "Estudio 7",
+        "availability": {
+          "id": 1,
+          "spaceId": 1,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Estudio 7",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 34,
+        "label": "Prueba vocal - José María · C08",
+        "duration": 15,
+        "space": "Caracola José María",
+        "availability": {
+          "id": 3,
+          "spaceId": 3,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Caracola José María",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 35,
+        "label": "Ensayo vocal - Estudio 7 · José María · C08",
+        "duration": 15,
+        "space": "Estudio 7",
+        "availability": {
+          "id": 1,
+          "spaceId": 1,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Estudio 7",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 36,
+        "label": "Prueba vocal - José María · C09",
+        "duration": 15,
+        "space": "Caracola José María",
+        "availability": {
+          "id": 3,
+          "spaceId": 3,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Caracola José María",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 37,
+        "label": "Ensayo vocal - Estudio 7 · José María · C09",
+        "duration": 15,
+        "space": "Estudio 7",
+        "availability": {
+          "id": 1,
+          "spaceId": 1,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Estudio 7",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 38,
+        "label": "Prueba vocal - José María · C10",
+        "duration": 15,
+        "space": "Caracola José María",
+        "availability": {
+          "id": 3,
+          "spaceId": 3,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Caracola José María",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 39,
+        "label": "Ensayo vocal - Estudio 7 · José María · C10",
+        "duration": 15,
+        "space": "Estudio 7",
+        "availability": {
+          "id": 1,
+          "spaceId": 1,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Estudio 7",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 40,
+        "label": "Prueba vocal - José María · C11",
+        "duration": 15,
+        "space": "Caracola José María",
+        "availability": {
+          "id": 3,
+          "spaceId": 3,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Caracola José María",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 41,
+        "label": "Ensayo vocal - Estudio 7 · José María · C11",
+        "duration": 15,
+        "space": "Estudio 7",
+        "availability": {
+          "id": 1,
+          "spaceId": 1,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Estudio 7",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 42,
+        "label": "Prueba vocal - Lucía · C12",
+        "duration": 15,
+        "space": "Caracola Lucía",
+        "availability": {
+          "id": 2,
+          "spaceId": 2,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Caracola Lucía",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          1
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 43,
+        "label": "Ensayo vocal - Estudio 7 · Lucía · C12",
+        "duration": 15,
+        "space": "Estudio 7",
+        "availability": {
+          "id": 1,
+          "spaceId": 1,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Estudio 7",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          1
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 44,
+        "label": "Prueba vocal - Lucía · C13",
+        "duration": 15,
+        "space": "Caracola Lucía",
+        "availability": {
+          "id": 2,
+          "spaceId": 2,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Caracola Lucía",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          1
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 45,
+        "label": "Ensayo vocal - Estudio 7 · Lucía · C13",
+        "duration": 15,
+        "space": "Estudio 7",
+        "availability": {
+          "id": 1,
+          "spaceId": 1,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Estudio 7",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          1
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 46,
+        "label": "Prueba vocal - Lucía · C14",
+        "duration": 15,
+        "space": "Caracola Lucía",
+        "availability": {
+          "id": 2,
+          "spaceId": 2,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Caracola Lucía",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          1
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 47,
+        "label": "Ensayo vocal - Estudio 7 · Lucía · C14",
+        "duration": 15,
+        "space": "Estudio 7",
+        "availability": {
+          "id": 1,
+          "spaceId": 1,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Estudio 7",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          1
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 48,
+        "label": "Prueba vocal - Lucía · C15",
+        "duration": 15,
+        "space": "Caracola Lucía",
+        "availability": {
+          "id": 2,
+          "spaceId": 2,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Caracola Lucía",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          1
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 49,
+        "label": "Ensayo vocal - Estudio 7 · Lucía · C15",
+        "duration": 15,
+        "space": "Estudio 7",
+        "availability": {
+          "id": 1,
+          "spaceId": 1,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Estudio 7",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          1
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 50,
+        "label": "Prueba vocal - José María · C16",
+        "duration": 15,
+        "space": "Caracola José María",
+        "availability": {
+          "id": 3,
+          "spaceId": 3,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Caracola José María",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 51,
+        "label": "Ensayo vocal - Estudio 7 · José María · C16",
+        "duration": 15,
+        "space": "Estudio 7",
+        "availability": {
+          "id": 1,
+          "spaceId": 1,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Estudio 7",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 52,
+        "label": "Prueba vocal - José María · C17",
+        "duration": 15,
+        "space": "Caracola José María",
+        "availability": {
+          "id": 3,
+          "spaceId": 3,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Caracola José María",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 53,
+        "label": "Ensayo vocal - Estudio 7 · José María · C17",
+        "duration": 15,
+        "space": "Estudio 7",
+        "availability": {
+          "id": 1,
+          "spaceId": 1,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Estudio 7",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 54,
+        "label": "Prueba vocal - José María · C18",
+        "duration": 15,
+        "space": "Caracola José María",
+        "availability": {
+          "id": 3,
+          "spaceId": 3,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Caracola José María",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 55,
+        "label": "Ensayo vocal - Estudio 7 · José María · C18",
+        "duration": 15,
+        "space": "Estudio 7",
+        "availability": {
+          "id": 1,
+          "spaceId": 1,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Estudio 7",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 56,
+        "label": "Prueba vocal - José María · C19",
+        "duration": 15,
+        "space": "Caracola José María",
+        "availability": {
+          "id": 3,
+          "spaceId": 3,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Caracola José María",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 57,
+        "label": "Ensayo vocal - Estudio 7 · José María · C19",
+        "duration": 15,
+        "space": "Estudio 7",
+        "availability": {
+          "id": 1,
+          "spaceId": 1,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Estudio 7",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": false,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          2
+        ],
+        "resourceIds": []
+      },
+      {
+        "id": 58,
+        "label": "Reality Hall · C06",
+        "duration": 30,
+        "space": "Hall",
+        "availability": {
+          "id": 4,
+          "spaceId": 4,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Hall",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": true,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          3,
+          4,
+          5,
+          7
+        ],
+        "resourceIds": [
+          7
+        ]
+      },
+      {
+        "id": 59,
+        "label": "Reality Control · Unidad C + EVA · C12",
+        "duration": 30,
+        "space": "Control",
+        "availability": {
+          "id": 5,
+          "spaceId": 5,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Control",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": true,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          3,
+          4,
+          5,
+          7
+        ],
+        "resourceIds": [
+          7
+        ]
+      },
+      {
+        "id": 60,
+        "label": "Reality Buggy · C11",
+        "duration": 30,
+        "space": "Buggy",
+        "availability": {
+          "id": 6,
+          "spaceId": 6,
+          "zoneId": 1,
+          "availabilityStart": null,
+          "availabilityEnd": null,
+          "source": "default",
+          "name": "Buggy",
+          "parentSpaceId": null,
+          "priorityLevel": 1,
+          "groupingLevel": 0,
+          "groupingMinChain": 4,
+          "groupingApplyToDescendants": false
+        },
+        "eligible": false,
+        "phaseEligible": true,
+        "jointMemberIds": [],
+        "phaseResourceIds": [
+          3,
+          4,
+          5,
+          7
+        ],
+        "resourceIds": [
+          7
+        ]
+      }
+    ],
+    "resources": [
+      {
+        "id": 1,
+        "name": "Lucía",
+        "start": "09:00",
+        "end": "21:00"
+      },
+      {
+        "id": 2,
+        "name": "José María",
+        "start": "09:00",
+        "end": "21:00"
+      },
+      {
+        "id": 3,
+        "name": "CAM3",
+        "start": "09:00",
+        "end": "21:00"
+      },
+      {
+        "id": 4,
+        "name": "CAM4",
+        "start": "09:00",
+        "end": "21:00"
+      },
+      {
+        "id": 5,
+        "name": "SON1",
+        "start": "09:00",
+        "end": "21:00"
+      },
+      {
+        "id": 6,
+        "name": "SON2",
+        "start": "09:00",
+        "end": "21:00"
+      },
+      {
+        "id": 7,
+        "name": "EVA",
+        "start": "09:00",
+        "end": "21:00"
+      }
+    ]
+  },
+  "mealMode": "flexible_meal_window",
+  "remoteWrites": 0
+}

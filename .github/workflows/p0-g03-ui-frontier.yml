@@ -1,0 +1,43 @@
+name: P0 G03 UI first frontier diagnostic
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/evidence/p0-g03/**'
+      - '.github/workflows/p0-g03-ui-frontier.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$task_browser_path" ]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+          fi
+      - run: npx --no-install tsc -p docs/evidence/p0-g03/tsconfig.json
+      - run: node --import tsx --test server/requiredPhaseComposition.spec.ts server/fixedItinerantPhaseComposition.spec.ts server/composedAnchoredRequired.spec.ts
+      - run: node --import tsx docs/evidence/p0-g03/run.ts work/g03-ci
+      - run: python3 docs/evidence/p0-g03/crosswalk.py work/g03-ci/native
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g03-ui-first-frontier
+          path: |
+            work/g03-ci/native/*.json
+            work/g03-ci/native/*.png
+            work/g03-ci/manifest.json
+            docs/evidence/p0-g03/reconciliation.json
+          retention-days: 14

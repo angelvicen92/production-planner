@@ -1,0 +1,362 @@
+[
+  {
+    "participant": "C01",
+    "family": "Prueba vocal - Lucía",
+    "taskId": 20,
+    "templateId": 2
+  },
+  {
+    "participant": "C01",
+    "family": "Ensayo vocal - Estudio 7",
+    "taskId": 21,
+    "templateId": 3
+  },
+  {
+    "participant": "C02",
+    "family": "Prueba vocal - Lucía",
+    "taskId": 22,
+    "templateId": 2
+  },
+  {
+    "participant": "C02",
+    "family": "Ensayo vocal - Estudio 7",
+    "taskId": 23,
+    "templateId": 3
+  },
+  {
+    "participant": "C03",
+    "family": "Prueba vocal - Lucía",
+    "taskId": 24,
+    "templateId": 2
+  },
+  {
+    "participant": "C03",
+    "family": "Ensayo vocal - Estudio 7",
+    "taskId": 25,
+    "templateId": 3
+  },
+  {
+    "participant": "C04",
+    "family": "Prueba vocal - Lucía",
+    "taskId": 26,
+    "templateId": 2
+  },
+  {
+    "participant": "C04",
+    "family": "Ensayo vocal - Estudio 7",
+    "taskId": 27,
+    "templateId": 3
+  },
+  {
+    "participant": "C05",
+    "family": "Prueba vocal - José María",
+    "taskId": 28,
+    "templateId": 4
+  },
+  {
+    "participant": "C05",
+    "family": "Ensayo vocal - Estudio 7",
+    "taskId": 29,
+    "templateId": 5
+  },
+  {
+    "participant": "C06",
+    "family": "Prueba vocal - José María",
+    "taskId": 30,
+    "templateId": 4
+  },
+  {
+    "participant": "C06",
+    "family": "Ensayo vocal - Estudio 7",
+    "taskId": 31,
+    "templateId": 5
+  },
+  {
+    "participant": "C07",
+    "family": "Prueba vocal - José María",
+    "taskId": 32,
+    "templateId": 4
+  },
+  {
+    "participant": "C07",
+    "family": "Ensayo vocal - Estudio 7",
+    "taskId": 33,
+    "templateId": 5
+  },
+  {
+    "participant": "C08",
+    "family": "Prueba vocal - José María",
+    "taskId": 34,
+    "templateId": 4
+  },
+  {
+    "participant": "C08",
+    "family": "Ensayo vocal - Estudio 7",
+    "taskId": 35,
+    "templateId": 5
+  },
+  {
+    "participant": "C09",
+    "family": "Prueba vocal - José María",
+    "taskId": 36,
+    "templateId": 4
+  },
+  {
+    "participant": "C09",
+    "family": "Ensayo vocal - Estudio 7",
+    "taskId": 37,
+    "templateId": 5
+  },
+  {
+    "participant": "C10",
+    "family": "Prueba vocal - José María",
+    "taskId": 38,
+    "templateId": 4
+  },
+  {
+    "participant": "C10",
+    "family": "Ensayo vocal - Estudio 7",
+    "taskId": 39,
+    "templateId": 5
+  },
+  {
+    "participant": "C11",
+    "family": "Prueba vocal - José María",
+    "taskId": 40,
+    "templateId": 4
+  },
+  {
+    "participant": "C11",
+    "family": "Ensayo vocal - Estudio 7",
+    "taskId": 41,
+    "templateId": 5
+  },
+  {
+    "participant": "C12",
+    "family": "Prueba vocal - Lucía",
+    "taskId": 42,
+    "templateId": 2
+  },
+  {
+    "participant": "C12",
+    "family": "Ensayo vocal - Estudio 7",
+    "taskId": 43,
+    "templateId": 3
+  },
+  {
+    "participant": "C13",
+    "family": "Prueba vocal - Lucía",
+    "taskId": 44,
+    "templateId": 2
+  },
+  {
+    "participant": "C13",
+    "family": "Ensayo vocal - Estudio 7",
+    "taskId": 45,
+    "templateId": 3
+  },
+  {
+    "participant": "C14",
+    "family": "Prueba vocal - Lucía",
+    "taskId": 46,
+    "templateId": 2
+  },
+  {
+    "participant": "C14",
+    "family": "Ensayo vocal - Estudio 7",
+    "taskId": 47,
+    "templateId": 3
+  },
+  {
+    "participant": "C15",
+    "family": "Prueba vocal - Lucía",
+    "taskId": 48,
+    "templateId": 2
+  },
+  {
+    "participant": "C15",
+    "family": "Ensayo vocal - Estudio 7",
+    "taskId": 49,
+    "templateId": 3
+  },
+  {
+    "participant": "C16",
+    "family": "Prueba vocal - José María",
+    "taskId": 50,
+    "templateId": 4
+  },
+  {
+    "participant": "C16",
+    "family": "Ensayo vocal - Estudio 7",
+    "taskId": 51,
+    "templateId": 5
+  },
+  {
+    "participant": "C17",
+    "family": "Prueba vocal - José María",
+    "taskId": 52,
+    "templateId": 4
+  },
+  {
+    "participant": "C17",
+    "family": "Ensayo vocal - Estudio 7",
+    "taskId": 53,
+    "templateId": 5
+  },
+  {
+    "participant": "C18",
+    "family": "Prueba vocal - José María",
+    "taskId": 54,
+    "templateId": 4
+  },
+  {
+    "participant": "C18",
+    "family": "Ensayo vocal - Estudio 7",
+    "taskId": 55,
+    "templateId": 5
+  },
+  {
+    "participant": "C19",
+    "family": "Prueba vocal - José María",
+    "taskId": 56,
+    "templateId": 4
+  },
+  {
+    "participant": "C19",
+    "family": "Ensayo vocal - Estudio 7",
+    "taskId": 57,
+    "templateId": 5
+  },
+  {
+    "participant": "C06",
+    "family": "Reality Hall",
+    "taskId": 58,
+    "templateId": 6
+  },
+  {
+    "participant": "C12",
+    "family": "Reality Control · Unidad C + EVA",
+    "taskId": 59,
+    "templateId": 7
+  },
+  {
+    "participant": "C11",
+    "family": "Reality Buggy",
+    "taskId": 60,
+    "templateId": 8
+  },
+  {
+    "participant": "C01",
+    "family": "Sodexo",
+    "taskId": 1,
+    "templateId": 1
+  },
+  {
+    "participant": "C02",
+    "family": "Sodexo",
+    "taskId": 2,
+    "templateId": 1
+  },
+  {
+    "participant": "C03",
+    "family": "Sodexo",
+    "taskId": 3,
+    "templateId": 1
+  },
+  {
+    "participant": "C04",
+    "family": "Sodexo",
+    "taskId": 4,
+    "templateId": 1
+  },
+  {
+    "participant": "C05",
+    "family": "Sodexo",
+    "taskId": 5,
+    "templateId": 1
+  },
+  {
+    "participant": "C06",
+    "family": "Sodexo",
+    "taskId": 6,
+    "templateId": 1
+  },
+  {
+    "participant": "C07",
+    "family": "Sodexo",
+    "taskId": 7,
+    "templateId": 1
+  },
+  {
+    "participant": "C08",
+    "family": "Sodexo",
+    "taskId": 8,
+    "templateId": 1
+  },
+  {
+    "participant": "C09",
+    "family": "Sodexo",
+    "taskId": 9,
+    "templateId": 1
+  },
+  {
+    "participant": "C10",
+    "family": "Sodexo",
+    "taskId": 10,
+    "templateId": 1
+  },
+  {
+    "participant": "C11",
+    "family": "Sodexo",
+    "taskId": 11,
+    "templateId": 1
+  },
+  {
+    "participant": "C12",
+    "family": "Sodexo",
+    "taskId": 12,
+    "templateId": 1
+  },
+  {
+    "participant": "C13",
+    "family": "Sodexo",
+    "taskId": 13,
+    "templateId": 1
+  },
+  {
+    "participant": "C14",
+    "family": "Sodexo",
+    "taskId": 14,
+    "templateId": 1
+  },
+  {
+    "participant": "C15",
+    "family": "Sodexo",
+    "taskId": 15,
+    "templateId": 1
+  },
+  {
+    "participant": "C16",
+    "family": "Sodexo",
+    "taskId": 16,
+    "templateId": 1
+  },
+  {
+    "participant": "C17",
+    "family": "Sodexo",
+    "taskId": 17,
+    "templateId": 1
+  },
+  {
+    "participant": "C18",
+    "family": "Sodexo",
+    "taskId": 18,
+    "templateId": 1
+  },
+  {
+    "participant": "C19",
+    "family": "Sodexo",
+    "taskId": 19,
+    "templateId": 1
+  }
+]

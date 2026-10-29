@@ -1,0 +1,23 @@
+{
+  "source_sha256": "42d0b3b78e732a2e4f1a1a01be9fa39bd82fbda366dd869d3785aedf6155faab",
+  "historical_inventory_sha256": "90acca2ce57f706c2909bae4d6549f29aa0ef376c80b1df215bb64dca83fe7b8",
+  "canonical_obligations": 266,
+  "families": 31,
+  "new_ui_base_fields": 60,
+  "unattempted_after_hard": 206,
+  "complete_canonical_obligations_certified": 0,
+  "new_stages": 0,
+  "semantic_join": [
+    "participant code",
+    "canonical task family"
+  ],
+  "source_ids_copied": false,
+  "placements_copied": false,
+  "duration_window_identity_checks": "PASS",
+  "full_EngineInput_equivalence": "NOT_REACHED",
+  "notes": [
+    "Base fields authored are not complete A2 semantics.",
+    "No ratio of Assisted completion is claimed.",
+    "Prior Stage evidence certifies only the linked contract/topology, not these new IDs."
+  ]
+}
