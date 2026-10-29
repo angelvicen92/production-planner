@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "inputsDecisionsWitnessesFingerprintsSQLAndBranchesLiteralToG03b": true,
+  "physicalDifferencesNormalized": false,
+  "ignoredExecutionDurationKeys": [
+    "futureItinerantOperationalMealsMs",
+    "futureItinerantParticipantFutureMs",
+    "futureItinerantParticipantMealsMs",
+    "futureItinerantPrerequisiteSearchMs",
+    "futureItinerantPriorRevalidationMs",
+    "futureItinerantStructuralSearchMs",
+    "futureItinerantTechnicalFutureMs"
+  ],
+  "completed": [
+    60,
+    15
+  ],
+  "stages": 4,
+  "localCleanupNote": "All assertions finished before a pending telemetry response delayed cleanup. Browser closure released it; test finally now closes browser before draining receipts. No SQL/planner operation retried."
+}

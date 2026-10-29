@@ -1,0 +1,9 @@
+{
+  "SHA256": {
+    "certificates.json": "56840288fb23ed47d09e0c7502f7bf27a8cbe0aac655ff4f2b147328cf88e457",
+    "comparison.json": "0c7c9e665a660cb75cedaecbd575cda8841131b742c2da64ef85f32c1103c0ac",
+    "run.json.gz": "cbee75321f1a0d33f0de3580a5aa8a1d835a33b133445891d9774c39199486c9",
+    "snapshots.json.gz": "32ca8b6ef3d8e523410821f6192d070a66bb270df1fdc88e937d89431270bd92"
+  },
+  "remoteWrites": 0
+}

@@ -8,6 +8,10 @@ on:
       - 'client/src/components/create-resource-pool.tsx'
       - 'client/src/components/day-workspace/day-resources-workspace.tsx'
       - 'server/dayConfigurationService.ts'
+      - 'server/apiAuthorization.ts'
+      - 'server/apiAuthorization.spec.ts'
+      - 'docs/evidence/p0-g02/journey.ts'
+      - 'docs/evidence/p0-g03b/journey.ts'
       - 'server/routes.ts'
       - 'shared/routes.ts'
       - 'supabase/migrations/129*'
@@ -48,7 +52,9 @@ jobs:
           server/composedAnchoredRequired.spec.ts server/technicalChainSql.spec.ts
           server/dayConfiguration.spec.ts server/apiAuthorization.spec.ts
           server/globalParticipantMealGate.spec.ts server/assistedProposalService.spec.ts
-          engine/planner-next/participantMeals.spec.ts script/demo/assistedSQLContracts.spec.ts
+          engine/planner-next/participantMeals.spec.ts
+          engine/planner-next/resourceRouteTransitions.spec.ts server/resourceRouteTransitions.spec.ts
+          script/demo/assistedSQLContracts.spec.ts
           script/demo/a2Preflight.spec.ts
       - run: node --import tsx docs/evidence/p0-g03d/upgrade129.mts work/g03d-upgrade129
       - run: node --import tsx docs/evidence/p0-g03d/failures.mts work/g03d-failures
@@ -97,6 +103,7 @@ jobs:
       - run: G03D_CONTROL=g03b node --import tsx docs/evidence/p0-g03d/run.ts work/g03d-control-g03b
       - run: python3 docs/evidence/p0-g03b/verify.py work/g03d-control-g03b/native work/g03d-control-g03b.json
       - run: G03D_CONTROL=g03b-eva node --import tsx docs/evidence/p0-g03d/run.ts work/g03d-eva
+      - run: G03D_CONTROL=g02 node --import tsx docs/evidence/p0-g03d/run.ts work/g03d-control-g02
   a2-regression:
     runs-on: ubuntu-latest
     timeout-minutes: 15

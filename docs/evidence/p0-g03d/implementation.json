@@ -1,0 +1,69 @@
+{
+  "productiveFiles": [
+    {
+      "path": "client/src/components/create-resource-pool.tsx",
+      "added": 10,
+      "removed": 1
+    },
+    {
+      "path": "client/src/components/day-workspace/day-resources-workspace.tsx",
+      "added": 22,
+      "removed": 2
+    },
+    {
+      "path": "client/src/components/resource-availability-editor.tsx",
+      "added": 53,
+      "removed": 0
+    },
+    {
+      "path": "client/src/components/resources-list.tsx",
+      "added": 12,
+      "removed": 1
+    },
+    {
+      "path": "server/apiAuthorization.ts",
+      "added": 3,
+      "removed": 1
+    },
+    {
+      "path": "server/dayConfigurationService.ts",
+      "added": 27,
+      "removed": 0
+    },
+    {
+      "path": "server/routes.ts",
+      "added": 15,
+      "removed": 2
+    },
+    {
+      "path": "shared/routes.ts",
+      "added": 3,
+      "removed": 0
+    },
+    {
+      "path": "supabase/migrations/129_resource_availability_native_ui.sql",
+      "added": 133,
+      "removed": 0
+    }
+  ],
+  "productiveLinesAdded": 278,
+  "productiveLinesRemoved": 7,
+  "productiveNetLines": 271,
+  "newTables": 0,
+  "newColumns": 0,
+  "newRPCs": 0,
+  "newPrivateTriggerFunctions": 1,
+  "newTriggers": 1,
+  "newDependencies": 0,
+  "engineFilesChanged": 0,
+  "secondRevisionSystem": false,
+  "testHarnessChanges": [
+    "server/apiAuthorization.spec.ts",
+    "script/demo/assistedSQLContracts.ts",
+    "script/demo/dataApiGrantsGate.ts",
+    "docs/evidence/p0-u02d/journey.ts",
+    "docs/evidence/p0-g03b/journey.ts",
+    "docs/evidence/p0-g02/journey.ts"
+  ],
+  "migrationReason": "Atomic daily availability with CAS, source transition and protection; fields already existed."
+}

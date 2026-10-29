@@ -1,0 +1,16 @@
+{
+  "status": "MEMORY_WITNESS_ONLY",
+  "canonical": true,
+  "obligations": 65,
+  "productive": 46,
+  "meals": 19,
+  "visibleObligations": 8,
+  "physicalOperations": 7,
+  "problemFingerprint": "0a75f01ec466f3378b87be0a812a207fa32a23e1c7de62b79ae743a8a416cd6e",
+  "branches": 2884,
+  "certificate": "WITNESS",
+  "certificateSearch": 0,
+  "protectedContinuation": true,
+  "firstEvaStart": 960,
+  "acceptedStages": 0
+}

@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "inputsProblemsDecisionsWitnessesSQLFingerprintsAndBranchesLiteralToG02": true,
+  "days": 2,
+  "stages": 4,
+  "physicalDifferencesNormalized": false,
+  "ignoredExecutionDurationKeys": [],
+  "unavailableRouteGuardTestedBeforeS0": true,
+  "capturedSourceGuardTestedAfterS0": true,
+  "remoteWrites": 0
+}

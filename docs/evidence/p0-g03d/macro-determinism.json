@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "positiveAndUnrestrictedInputsProblemsDecisionsFingerprintsBranchesLiteral": true,
+  "physicalDifferencesNormalized": false,
+  "ignoredExecutionDurationKeys": [
+    "futureItinerantOperationalMealsMs",
+    "futureItinerantParticipantFutureMs",
+    "futureItinerantParticipantMealsMs",
+    "futureItinerantPrerequisiteSearchMs",
+    "futureItinerantPriorRevalidationMs",
+    "futureItinerantStructuralSearchMs",
+    "futureItinerantTechnicalFutureMs"
+  ],
+  "sqlStages": 0
+}

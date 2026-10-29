@@ -1,0 +1,29 @@
+{
+  "authorizedBase": "84056c3de8bf16769ce2c1ec32113fbc7443f532",
+  "nativeCodeCommit": "851ed6aa0badbaa4a170768b25792b212328b472",
+  "twoColdSourceHashesEqual": true,
+  "runtimeProductLiteralToExecutedManifest": true,
+  "nativeExecutedJourneyRunAndFrontierLiteral": true,
+  "followups": {
+    "server/apiAuthorization.spec.ts": "Type annotations only; emitted JavaScript equality in test-type-followup.json",
+    "docs/evidence/p0-g03d/g03bEva.ts": "Read-only navigation restored to original G03b protocol; not executed in the two cold native runs; close browser before draining receipts",
+    "docs/evidence/p0-g03b/journey.ts": "Close owned browser before draining pending response receipts; cleanup only, not executed in the two cold native runs",
+    "docs/evidence/p0-g02/journey.ts": "Exercise unavailable route negative before S0; separately reject direct captured-source mutation after S0. No topology, input, physical decision or product change."
+  },
+  "unchangedToBase": {
+    "engine": true,
+    "docs/source/official": true,
+    "migrations001to128": true
+  },
+  "remoteWrites": 0,
+  "officialManifest": {
+    "status": "PRE_EXISTING_FAILURE",
+    "missingListedVersions": [
+      "00 v2.14",
+      "01 v5.3",
+      "04 v2.8"
+    ],
+    "allActualOfficialFilesLiteralToAuthorizedBase": true
+  },
+  "literalSourceVerification": "PASS against both archived source manifests, including all nine productive files"
+}
