@@ -1,7 +1,7 @@
 {
   "status": "LOCAL_PASS",
   "authorizedBase": "84056c3de8bf16769ce2c1ec32113fbc7443f532",
-  "runtimeCodeCommit": "851ed6aa0badbaa4a170768b25792b212328b472",
+  "runtimeCodeCommit": "49b5aa0d86d535c3b7615dc48c8e27bddc807b75",
   "checks": {
     "focalContract": {
       "pass": 172,
@@ -224,5 +224,34 @@
   "remoteWrites": 0,
   "remoteMigrations": 0,
   "merged": false,
-  "deployed": false
+  "deployed": false,
+  "runtimeOverlay": {
+    "docs/evidence/p0-g03d/journey.ts": "1ab8587581906a991810c3df555d629313fa30848a531a7da15dd2ea5afa5c67"
+  },
+  "navigationModelAndSQLComparison": {
+    "status": "PASS",
+    "onlyHarnessReadNavigationChanged": true,
+    "inputsProblemsDecisionsFingerprintsBranchesAndSQLLiteralToOriginalColdPair": true,
+    "physicalDifferencesNormalized": false,
+    "comparedReceipts": [
+      "native-input",
+      "native-adapter",
+      "native-sql-state",
+      "generic-input",
+      "generic-adapter",
+      "generic-S1-sql",
+      "generic-S2-sql",
+      "deterministic"
+    ],
+    "ignoredExecutionDurationKeys": [
+      "futureItinerantOperationalMealsMs",
+      "futureItinerantParticipantFutureMs",
+      "futureItinerantParticipantMealsMs",
+      "futureItinerantPrerequisiteSearchMs",
+      "futureItinerantPriorRevalidationMs",
+      "futureItinerantStructuralSearchMs",
+      "futureItinerantTechnicalFutureMs"
+    ],
+    "remoteWrites": 0
+  }
 }

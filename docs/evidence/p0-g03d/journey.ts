@@ -93,7 +93,8 @@ export async function journey({appUrl,users,db,directory,pass}:any) {
   await page.goto(appUrl+'/plans');await page.getByRole('button',{name:'Crear día',exact:true}).click();let modal=page.getByRole('dialog');await modal.getByLabel('Fecha',{exact:true}).fill('2027-06-29');
   const day=await responseTo('/api/plans','POST',()=>modal.getByRole('button',{name:'Crear día',exact:true}).click());await modal.waitFor({state:'hidden'});let planId=Number(day.id);
   const openDay=async()=>{
-   if(page.url()!==`${appUrl}/plans/${planId}?tab=tasks`)await page.goto(`${appUrl}/plans/${planId}?tab=tasks`);
+   // Match the original G03b producer: reload persisted state per operation.
+   await page.goto(`${appUrl}/plans/${planId}?tab=tasks`);
    try{await page.getByLabel('Nombre del nuevo concursante').waitFor({timeout:15000});}
    catch(error){
     const retry=page.getByRole('button',{name:'Reintentar',exact:true});

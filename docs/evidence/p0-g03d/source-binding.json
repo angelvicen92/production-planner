@@ -1,6 +1,6 @@
 {
   "authorizedBase": "84056c3de8bf16769ce2c1ec32113fbc7443f532",
-  "nativeCodeCommit": "851ed6aa0badbaa4a170768b25792b212328b472",
+  "nativeCodeCommit": "49b5aa0d86d535c3b7615dc48c8e27bddc807b75",
   "twoColdSourceHashesEqual": true,
   "runtimeProductLiteralToExecutedManifest": true,
   "nativeExecutedJourneyRunAndFrontierLiteral": true,
@@ -12,7 +12,8 @@
     "script/demo/a2Preflight.ts": "Harness catalog detects 129 writer before exact body comparison; no engine or product change",
     "historical runners": "Archive HEAD to disk via shared helper; native Git blobs independently exact, no buffer ceiling",
     "historical resource probes": "Send current revision only when installed guard exists; baseline HTTP contract unchanged. Captured-source negative now demands earlier SQL guard rejection.",
-    "historical source attacks": "Rejections before hashing are labeled source protection; existing physical witness mutations retain original checks. Workspace creates ad hoc before S0; execution uses an existing daily identity."
+    "historical source attacks": "Rejections before hashing are labeled source protection; existing physical witness mutations retain original checks. Workspace creates ad hoc before S0; execution uses an existing daily identity.",
+    "docs/evidence/p0-g03d/journey.ts": "Restored original G03b read-only navigation per operation, then two fresh databases and all four macros repeated. Model, branches, fingerprints and SQL literal to original pair."
   },
   "unchangedToBase": {
     "engine": true,
@@ -29,5 +30,12 @@
     ],
     "allActualOfficialFilesLiteralToAuthorizedBase": true
   },
-  "literalSourceVerification": "PASS against both archived source manifests, including all nine productive files"
+  "literalSourceVerification": "PASS all nine productive files and native journey/run/frontier/macro against both current archived source manifests",
+  "nativeProductOriginalCommit": "851ed6aa0badbaa4a170768b25792b212328b472",
+  "nativeArchiveBaseCommit": "49b5aa0d86d535c3b7615dc48c8e27bddc807b75",
+  "nativeWorkingOverlayFiles": {
+    "docs/evidence/p0-g03d/journey.ts": "1ab8587581906a991810c3df555d629313fa30848a531a7da15dd2ea5afa5c67"
+  },
+  "originalColdPairPreservedInCommit": "83165e7e",
+  "navigationComparison": "navigation-comparison.json"
 }

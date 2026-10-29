@@ -10,14 +10,14 @@ npx --no-install tsc -p docs/evidence/p0-g03d/tsconfig.json
 node --import tsx docs/evidence/p0-g03d/upgrade129.mts work/g03d-upgrade
 node --import tsx docs/evidence/p0-g03d/failures.mts work/g03d-failures
 node --import tsx docs/evidence/p0-g03d/oldWriter.mts work/g03d-old-writer
-node --import tsx docs/evidence/p0-g03d/run.ts work/g03d-cold-a
-node --import tsx docs/evidence/p0-g03d/run.ts work/g03d-cold-b
-python3 docs/evidence/p0-g03d/verify.py work/g03d-cold-a/native work/g03d-verification-a.json
-python3 docs/evidence/p0-g03d/verify.py work/g03d-cold-b/native work/g03d-verification-b.json
-python3 docs/evidence/p0-g03d/compare.py work/g03d-cold-a/native work/g03d-cold-b/native work/g03d-determinism.json
+node --import tsx docs/evidence/p0-g03d/run.ts work/g03d-nav-a
+node --import tsx docs/evidence/p0-g03d/run.ts work/g03d-nav-b
+python3 docs/evidence/p0-g03d/verify.py work/g03d-nav-a/native work/g03d-verification-a.json
+python3 docs/evidence/p0-g03d/verify.py work/g03d-nav-b/native work/g03d-verification-b.json
+python3 docs/evidence/p0-g03d/compare.py work/g03d-nav-a/native work/g03d-nav-b/native work/g03d-determinism.json
 for copy in a b; do
-  node --import tsx docs/evidence/p0-g03d/macroProbe.ts work/g03d-macro-$copy work/g03d-cold-$copy/native
-  node --import tsx docs/evidence/p0-g03d/macroProbe.ts work/g03d-unrestricted-$copy work/g03d-cold-$copy/native --unrestricted-eva
+  node --import tsx docs/evidence/p0-g03d/macroProbe.ts work/g03d-macro-$copy work/g03d-nav-$copy/native
+  node --import tsx docs/evidence/p0-g03d/macroProbe.ts work/g03d-unrestricted-$copy work/g03d-nav-$copy/native --unrestricted-eva
   python3 docs/evidence/p0-g03c/verify.py work/g03d-macro-$copy work/g03d-macro-verification-$copy.json
 done
 G03D_CONTROL=g03b-eva node --import tsx docs/evidence/p0-g03d/run.ts work/g03d-eva
@@ -39,7 +39,7 @@ Para leer un recibo público:
 python3 -c 'import gzip,json; r=json.load(gzip.open("docs/evidence/p0-g03d/native/receipts.json.gz")); print(json.dumps(r["native-input.json"],indent=2))'
 ```
 
-Los paquetes excluyen contraseñas, JWT y logs privados. `attempts.json` identifica errores de harness, diagnóstico de scope incompleto y el overlay de desarrollo, sin contarlos como inviabilidad ni como bases aprobadas. El origen 851ed6aa de las dos bases permanece en la historia; los follow-ups de tests no cambian el producto ejecutado.
+Los paquetes excluyen contraseñas, JWT y logs privados. `attempts.json` identifica errores de harness, diagnóstico de scope incompleto y el overlay de desarrollo, sin contarlos como inviabilidad ni como bases aprobadas. La pareja final archiva 49b5aa0d con el overlay de navegación de lectura identificado en source-binding.json. La pareja original 851ed6aa permanece en historia. Los nueve archivos productivos son literales; navigation-comparison.json comprueba modelos y SQL sin diferencias físicas.
 
 Los controles históricos G01/U02d se identifican separadamente de una nueva ejecución SQL. El upgrade sobre datos poblados sí se ejecuta de nuevo y comprueba cuerpos SQL/ACL/RLS/lectores reales. El benchmark A2 importado es regresión, no autoría nativa de sus 266 obligaciones.
 

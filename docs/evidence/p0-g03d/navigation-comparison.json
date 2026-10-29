@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "onlyHarnessReadNavigationChanged": true,
+  "inputsProblemsDecisionsFingerprintsBranchesAndSQLLiteralToOriginalColdPair": true,
+  "physicalDifferencesNormalized": false,
+  "comparedReceipts": [
+    "native-input",
+    "native-adapter",
+    "native-sql-state",
+    "generic-input",
+    "generic-adapter",
+    "generic-S1-sql",
+    "generic-S2-sql",
+    "deterministic"
+  ],
+  "ignoredExecutionDurationKeys": [
+    "futureItinerantOperationalMealsMs",
+    "futureItinerantParticipantFutureMs",
+    "futureItinerantParticipantMealsMs",
+    "futureItinerantPrerequisiteSearchMs",
+    "futureItinerantPriorRevalidationMs",
+    "futureItinerantStructuralSearchMs",
+    "futureItinerantTechnicalFutureMs"
+  ],
+  "remoteWrites": 0
+}

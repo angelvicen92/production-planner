@@ -21,5 +21,16 @@
   "productChanged": false,
   "engineChanged": false,
   "guardRelaxed": false,
-  "executionFixtureSHA256": "6b94a02c5210b11062db0863caeb878f505abae9cbc5f577a8bf5f037ba8dc19"
+  "executionFixtureSHA256": "6b94a02c5210b11062db0863caeb878f505abae9cbc5f577a8bf5f037ba8dc19",
+  "nativeReadNavigation": {
+    "earlierHead": "49b5aa0d",
+    "otherWorkflowsGreen": 37,
+    "overlayAttempts": 2,
+    "pluginMessage": "unknown runtime error",
+    "causeNotEstablished": true,
+    "change": "Original G03b reload per operation, no changes to mutations, assertions or limits",
+    "twoFreshNativeDatabases": "PASS",
+    "macrosRepeated": 4,
+    "modelAndSQLLiteralToOriginalPair": true
+  }
 }
