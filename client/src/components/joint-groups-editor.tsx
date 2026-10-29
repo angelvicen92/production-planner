@@ -13,11 +13,17 @@ export function JointGroupsEditor({value,canEdit,pending,onSave}:{value:NonNulla
   new Set(members.map(t=>t.spaceId)).size!==1?'El espacio físico debe ser común.':
   members.some(t=>JSON.stringify(t.resourceIds)!==JSON.stringify(members[0].resourceIds))?'Los requisitos físicos deben coincidir.':
   members.some(t=>t.dependencies.some(id=>selected.includes(id)))?'Una dependencia interna contradice la simultaneidad.':null;
- const save=()=>onSave({contractVersion:1,groups:[...groups.filter(g=>g.id!==editing),{id:editing??crypto.randomUUID(),taskIds:[...selected].sort((a,b)=>a-b)}]});
+ const save=async()=>{
+  const taskIds=[...selected].sort((a,b)=>a-b);
+  const base=editing??'joint-'+Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(taskIds)))),v=>v.toString(16).padStart(2,'0')).join('');
+  let id=base;
+  for(let suffix=2;!editing&&groups.some(g=>g.id===id);suffix++)id=base+':'+suffix;
+  onSave({contractVersion:1,groups:[...groups.filter(g=>g.id!==editing),{id,taskIds}]});
+ };
  return <div className="space-y-3" data-testid="daily-joint-groups">
   <p role="status">Revisión {value.revisionId??'inicial'} · {value.authority?'Declaración diaria de Producción':'Sin operaciones conjuntas declaradas'}</p>
   <p>Una operación física, con inicio y fin comunes. Cada participante conserva su tarea, disponibilidad y dependencias. Espacio y recursos compartidos se ocupan una sola vez.</p>
-  {!value.supported?<p role="alert">Esta combinación aún no admite operaciones conjuntas. Se admiten auxiliares con recursos concretos, solas o junto a Main/Vocal, con pausa global y sin otras estructuras.</p>:null}
+  {!value.supported?<p role="alert">Esta combinación aún no admite operaciones conjuntas. Con comidas individuales flexibles, guarda primero las fases REQUIRED compatibles. Se admiten recursos concretos y unidades fijas sin transición; otras estructuras pueden impedir la composición.</p>:null}
   {value.blockedReason?<p role="alert">{value.blockedReason}</p>:null}
   {groups.map((g,i)=>{const tasks=g.taskIds.map(id=>value.tasks.find(t=>t.id===id));const enabled=editable&&tasks.every(t=>t?.eligible);return <div key={g.id} className="rounded border p-3" data-testid="joint-operation">
    <p>Operación conjunta {i+1}: {tasks.map(t=>t?.label??'Miembro no disponible').join(' + ')}</p>

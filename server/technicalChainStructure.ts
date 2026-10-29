@@ -17,12 +17,12 @@ export function withDailyTechnicalChains(input:EngineInput,structure:TechnicalCh
 }
 /** The certified physical intersection. Other structure families retain their guards. */
 export function requiredPhaseCompositionSupported(input:EngineInput) {
-  // Flexible meals use the existing global physical witness. Joint operations
-  // retain their separately certified admission; this delta admits phases only.
+  // Phases and authentic joint peers share the existing global physical witness.
+  // Joint authoring separately requires phases before admitting flexible meals.
   const mealsSupported=input.mealMode==="global_hard_break"
-    || input.mealMode==="flexible_meal_window" && !input.dailyJointGroups?.length
-      && !input.tasks.some(t=>t.status!=="cancelled"&&t.jointGroupId)
-      && resolveFlexibleParticipantMealTasks(input).defects.length===0;
+    || input.mealMode==="flexible_meal_window" && resolveFlexibleParticipantMealTasks(input).defects.length===0;
+  if(input.mealMode==="flexible_meal_window"&&(input.dailyJointGroups?.length||input.tasks.some(t=>t.status!=="cancelled"&&t.jointGroupId))
+    &&(input.anchoredAccompaniments?.length||input.dailyTaskOperationScopes?.length||input.operationalMealPolicies?.length||input.resourceRouteTransitions?.length))return false;
   const anchors=input.anchoredAccompaniments??[],scopes=input.dailyTaskOperationScopes??[];
   if(anchors.length&&![1,2].includes(input.dailyAnchoredAccompanimentsVersion??0))return false;
   const structural=new Set([...(input.technicalChains??[]).flatMap(p=>p.orderedTaskIds),
@@ -56,6 +56,8 @@ export function hasDailyRequiredPhases(input:EngineInput) {
   return input.dailyTechnicalChainsVersion===1 && !!input.technicalChains?.length && input.technicalChains.every(p=>!!p.phases);
 }
 export function technicalChainCombinationSupported(input:EngineInput) {
+  if(input.mealMode==="flexible_meal_window"&&(input.dailyJointGroups?.length||input.tasks.some(t=>t.status!=="cancelled"&&t.jointGroupId))
+    &&!hasDailyRequiredPhases(input))return false;
   const legacySupported=!input.dailyTaskOperationScopes?.length && input.plannerNext?.profile==="STANDALONE_ONLY" && !input.roundSynchronizations?.length && !input.setupPolicies?.length
     && !input.operationContinuityGroups?.length && !input.anchoredAccompaniments?.length && !input.operationalMealPolicies?.length
     && !input.itinerantTeamAvailability?.length && !input.tasks.some(t=>t.jointGroupId||t.setupFamilyId);

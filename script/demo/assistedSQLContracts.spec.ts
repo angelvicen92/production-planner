@@ -62,6 +62,13 @@ test('120 retains 119 delegation and limits existing body deltas to joint transi
 });
 
 
+test('130 changes only admission in the existing joint and phase validators',()=>{
+ const old=latestAssistedSQLContracts(129),current=latestAssistedSQLContracts(130);
+ assert.deepEqual([...old].filter(([name,v])=>current.get(name)?.body!==v.body).map(([name])=>name).sort(),['assert_daily_joint_groups','assert_daily_technical_chains']);
+ assert.match(current.get('assert_daily_joint_groups')!.body,/p\.meal_mode='flexible_meal_window' AND \(p\.daily_technical_chains/);
+ for(const name of ['assert_anchored_choice_witness','assert_daily_technical_chain_snapshot','apply_day_config_operation_v5','assisted_accept_stage'])assert.equal(current.get(name)!.body,old.get(name)!.body,name);
+});
+
 test('123 changes only the two existing phase validators and retains the historical linear branch',()=>{
  const old=latestAssistedSQLContracts(122),current=latestAssistedSQLContracts(123);
  assert.deepEqual([...old].filter(([name,v])=>current.get(name)?.body!==v.body).map(([name])=>name).sort(),['assert_daily_technical_chain_snapshot','assert_daily_technical_chains']);

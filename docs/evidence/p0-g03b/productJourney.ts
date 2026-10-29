@@ -81,7 +81,7 @@ export async function finishDay({appUrl,users,db,directory,pass,page,read,respon
  const final=await api(path),protection=[];
  const finalInput=await buildEngineInput(planId,storage);save(label+'-final-input',finalInput);
  assert.equal(adapt(finalInput).status,'SUPPORTED');
- assert.equal(view.jointGroups.supported,false);save(label+'-next-frontier',{control:'Crear operación conjunta',supported:view.jointGroups.supported,mealMode:input.mealMode,phasesSaved:true,firstRemainingComposition:'joint operations with flexible participant meals'});
+ assert.equal(view.jointGroups.supported,true);save(label+'-next-frontier',{control:'Crear operación conjunta',supported:view.jointGroups.supported,mealMode:input.mealMode,phasesSaved:true,firstRemainingComposition:'positive itinerant transitions, rounds, transport and setups remain outside this intersection'});
  const denied=await request(config,'PUT',{technicalChains:{contractVersion:1,policies:[]},expectedRevisionId:final.currentConfigRevisionId});assert.equal(denied.status,409);protection.push(denied);
  for(const role of ['service_role','postgres']){
   let error:any;await db.query('BEGIN');try{

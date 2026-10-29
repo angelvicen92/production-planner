@@ -24,7 +24,6 @@ test('native flexible meals and phases preserve all authorities, guards and immu
  assert.equal(adapter.problem.participantMeals!.length,19);assert.equal(adapter.problem.tasks.length,41);
  assert.ok(requiredPhaseCompositionSupported(base));
  for(const mutate of [
-  (b:EngineInput)=>{b.dailyJointGroups=[{id:'joint',taskIds:structure.policies[0].orderedTaskIds.slice(0,2)}];},
   (b:EngineInput)=>{b.contestantMealMaxSimultaneous=0;},
   (b:EngineInput)=>{b.tasks.find(t=>t.itinerantTeamId)!.itinerantTeamRequirement='any';},
   (b:EngineInput)=>{b.transportSettings={} as any;},
