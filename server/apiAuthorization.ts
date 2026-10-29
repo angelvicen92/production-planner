@@ -3,6 +3,8 @@ import type {RequestHandler} from 'express';
 
 // Supabase service_role bypasses RLS; every API handler needs this boundary.
 export function apiRequiredRoles(method:string,path:string):readonly AppRole[]|null {
+ // Express matches route casing insensitively; normalize only the authorization key.
+ path=path.toLowerCase();
  const within=(prefix:string)=>path===prefix||path.startsWith(`${prefix}/`);
  if(/^\/admin(?:\/|$)/i.test(path))return ['admin'];
  if(within('/debug'))return ['admin'];
@@ -13,7 +15,7 @@ export function apiRequiredRoles(method:string,path:string):readonly AppRole[]|n
  if(/^\/tasks\/[^/]+\/(?:status|real-time)\/?$/i.test(path))return ['admin','production','aux'];
  if(/^\/tasks\/[^/]+\/reset\/?$/.test(path))return ['admin','production'];
  if(/^\/(?:new-day-planner-configuration|operation-continuity-groups)(?:\/|$)/i.test(path))return method==='GET'?['admin','production','aux','viewer']:['admin'];
- const catalogs=['/new-day-planner-configuration','/operation-continuity-groups','/settings','/program-settings','/optimizer-settings','/task-templates','/zones','/spaces','/resource-types','/resource-items','/resource-pools','/staff-people','/staff-defaults','/itinerant-teams'];
+ const catalogs=['/new-day-planner-configuration','/operation-continuity-groups','/settings','/program-settings','/optimizer-settings','/task-templates','/zones','/spaces','/resource-types','/resource-types-with-items','/resource-items','/resource-pools','/staff-people','/staff-defaults','/itinerant-teams'];
  // Match these catalog routes with Express's default casing semantics and segment limits.
  if(catalogs.some(within)||/^\/(?:ta|task-templates|zones|spaces|itinerant-teams)(?:\/|$)/i.test(path)||/^\/vocal-coach-rules\/?$/i.test(path))return method==='GET'?['admin','production','aux','viewer']:['admin'];
  if(['/plans','/locks','/daily-tasks'].some(within))return method==='GET'?['admin','production','aux','viewer']:['admin','production'];

@@ -50,7 +50,7 @@ import { assistedProposalApplySchema, assistedProposalRequestSchema } from "@sha
 import { assistedConfigRefreshApplySchema } from "@shared/assistedConfigRefreshContracts";
 import { AssistedConfigRefreshError, AssistedConfigRefreshService } from "./assistedConfigRefresh";
 import { getEffectiveConfigurationResponse } from "./effectiveConfigurationHttp";
-import { applyDayConfigurationOperation, previewDayConfigurationRefresh } from "./dayConfigurationService";
+import { applyResourceAvailabilityOperation, applyDayConfigurationOperation, previewDayConfigurationRefresh } from "./dayConfigurationService";
 
 function mapPlanZoneAvailability(row: any) {
   return planZoneAvailabilityResponseSchema.parse({ id: Number(row.id), planId: Number(row.plan_id), zoneId: Number(row.zone_id), availabilityStart: row.availability_start ?? null, availabilityEnd: row.availability_end ?? null, source: String(row.source), createdAt: String(row.created_at), updatedAt: String(row.updated_at) });
@@ -1398,6 +1398,9 @@ function mapDeleteError(err: any, fallback: string) {
         .strict()
         .parse(req.body);
 
+      const { data: activeType, error: typeError } = await supabaseAdmin.from("resource_types").select("id").eq("id",input.typeId).eq("is_active",true).maybeSingle();
+      if (typeError) throw typeError;
+      if (!activeType) return res.status(400).json({message:"El tipo de recurso no existe o está inactivo."});
       const availabilityPatch = buildAvailabilityWindowPatch({
         start: input.defaultAvailabilityStart,
         end: input.defaultAvailabilityEnd,
@@ -2127,6 +2130,16 @@ function mapDeleteError(err: any, fallback: string) {
 
       const input = api.plans.resourceItems.update.input.parse(req.body);
 
+      const hasWindow = Object.prototype.hasOwnProperty.call(input,"availabilityStart") || Object.prototype.hasOwnProperty.call(input,"availabilityEnd");
+      if (hasWindow) {
+        if (input.expectedRevisionId === undefined || input.isAvailable !== undefined || input.name !== undefined)
+          return res.status(400).json({message:"Guarda el horario con la revisión consultada, sin mezclar nombre o activación."});
+        const normalized = buildAvailabilityWindowPatch({start:input.availabilityStart,end:input.availabilityEnd});
+        return res.json(await applyResourceAvailabilityOperation(planId,(req as any).user.id,itemId,{
+          availabilityStart:normalized.availability_start,availabilityEnd:normalized.availability_end,expectedRevisionId:input.expectedRevisionId,
+        }));
+      }
+
       // Si quieren renombrar, solo permitimos en adhoc
       if (input.name !== undefined) {
         const { data: row, error: rowErr } = await supabaseAdmin
@@ -2161,7 +2174,7 @@ function mapDeleteError(err: any, fallback: string) {
       if (error) throw error;
       res.json({ success: true });
     } catch (err: any) {
-      res.status(400).json({ message: err?.message || "Cannot update plan resource item" });
+      res.status(err?.status ?? (/RESOURCE_AVAILABILITY_|STALE_/.test(err?.message ?? "") ? 409 : 400)).json({ message: err?.message || "Cannot update plan resource item" });
     }
   });
 

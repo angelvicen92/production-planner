@@ -167,6 +167,8 @@ const resourceAvailabilityWindowFields = {
   availabilityEnd: canonicalResourceAvailabilityTime.nullable().optional(),
 };
 
+export const resourceAvailabilityWindowSchema = z.object(resourceAvailabilityWindowFields).strict().superRefine(validateResourceAvailabilityWindowPair);
+
 function validateResourceAvailabilityWindowPair(
   value: { availabilityStart?: string | null; availabilityEnd?: string | null },
   context: z.RefinementCtx,
@@ -1008,6 +1010,7 @@ export const api = {
             isAvailable: z.boolean().optional(),
             name: z.string().min(1).optional(),
             ...resourceAvailabilityWindowFields,
+            expectedRevisionId: z.number().int().positive().nullable().optional(),
           })
           .strict()
           .superRefine(validateResourceAvailabilityWindowPair),
