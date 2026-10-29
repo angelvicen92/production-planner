@@ -141,16 +141,18 @@ export async function runProductionScopeJourney({ appUrl, url, anon, users, db, 
   for(const role of ['admin','production']) await exercise(a,role);
   // Resource identities keep their independent pre-existing authority, even with editorial staff.
   await assign(staff[0],'space',a,'editorial');
-  const resource=(await db.query("INSERT INTO resource_items(type_id,name) SELECT id,'G0 recurso nominal' FROM resource_types ORDER BY id LIMIT 1 RETURNING id,type_id")).rows[0];
-  assert.ok(resource,'local nominal resource fixture');
-  const snapshot=(await db.query("INSERT INTO plan_resource_items(plan_id,type_id,resource_item_id,name) VALUES($1,$2,$3,'G0 recurso nominal') RETURNING id",[planId,resource.type_id,resource.id])).rows[0];
+  // Reuse an accepted daily identity; never create/delete captured resources.
+  const snapshot=(await db.query(`SELECT r.id,r.resource_item_id FROM plan_resource_items r WHERE r.plan_id=$1 AND r.resource_item_id IS NOT NULL
+    AND NOT EXISTS(SELECT 1 FROM plan_space_resource_assignments a WHERE a.plan_id=$1 AND a.space_id=$2 AND a.plan_resource_item_id=r.id)
+    AND NOT EXISTS(SELECT 1 FROM user_entity_links l WHERE l.user_id=$3 AND l.entity_type='resource_item' AND l.entity_id=r.resource_item_id)
+    ORDER BY r.id LIMIT 1`,[planId,a.space_id,users.aux.id])).rows[0];
+  assert.ok(snapshot,'accepted A2 supplies an existing nominal resource');
+  const resource={id:snapshot.resource_item_id};
   await db.query('INSERT INTO plan_space_resource_assignments(plan_id,space_id,plan_resource_item_id) VALUES($1,$2,$3)',[planId,a.space_id,snapshot.id]);
   await db.query("INSERT INTO user_entity_links(user_id,entity_type,entity_id) VALUES($1,'resource_item',$2)",[users.aux.id,resource.id]);
   await exercise(a);
   await db.query("DELETE FROM user_entity_links WHERE user_id=$1 AND entity_type='resource_item'",[users.aux.id]);
   await db.query('DELETE FROM plan_space_resource_assignments WHERE plan_resource_item_id=$1',[snapshot.id]);
-  await db.query('DELETE FROM plan_resource_items WHERE id=$1',[snapshot.id]);
-  await db.query('DELETE FROM resource_items WHERE id=$1',[resource.id]);
   await db.query("UPDATE plan_staff_assignments SET staff_role='production' WHERE staff_person_id=$1",[staff[0].id]);
   pass('G0 concurrent revocation rechecked after lock; global roles and legitimate nominal resources preserved');
   for(const table of ['task_status_events','locks','operational_incident_events']) {

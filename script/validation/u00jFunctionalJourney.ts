@@ -148,7 +148,10 @@ export async function runU00jFunctionalJourney({appUrl,users,db,directory,pass}:
           if(guard==='future-identity')proof.tasks.find((t:any)=>t.id===`task:${tasks[1].id}`).participantId='participant:999';
           if(guard==='type-identity')nominal.nominalResourceChoice.requestedResourceTypeId=`resource-type:${otherType.id}`;
           if(guard==='domain')nominal.nominalResourceChoice.resourceIds=[`plan-resource:${daily[1].id}`];
-          if(guard==='unavailable')await db.query('UPDATE public.plan_resource_items SET is_available=false WHERE id=$1',[daily[1].id]);
+          if(guard==='unavailable'){
+           if(versionedResourceWindows){await assert.rejects(db.query('UPDATE public.plan_resource_items SET is_available=false WHERE id=$1',[daily[1].id]),{code:'P0001',message:'RESOURCE_AVAILABILITY_CAPTURED_SOURCES'});adversaries.push({guard,error:'RESOURCE_AVAILABILITY_CAPTURED_SOURCES',hashesRecomputed:false,rolledBack:true,blockedAt:'guard_resource_availability_operation'});continue;}
+           await db.query('UPDATE public.plan_resource_items SET is_available=false WHERE id=$1',[daily[1].id]);
+          }
 
           if(guard==='time-lock')await db.query("INSERT INTO public.locks(plan_id,task_id,lock_type,locked_start,locked_end,created_by,reason) VALUES ($1,$2,'time','10:00','10:20',$3,'reverted adversary')",[planId,tasks[0].id,users.admin.id]);
           if(guard==='space-availability')await db.query("UPDATE public.plan_space_settings SET availability_start='10:00',availability_end='12:00' WHERE plan_id=$1 AND space_id=$2",[planId,rooms[0].id]);

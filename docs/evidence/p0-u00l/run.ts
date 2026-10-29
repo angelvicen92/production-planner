@@ -13,7 +13,7 @@ for(const label of ['pre-identity','current','without-variant-keys']){
  const ref=label==='pre-identity'?manifest.base:manifest.candidate,source=join(target,`source-${label}`);mkdirSync(source);
  const env={...process.env,GIT_CEILING_DIRECTORIES:target,SUPABASE_URL:'http://127.0.0.1:1',SUPABASE_ANON_KEY:'offline',SUPABASE_SERVICE_ROLE_KEY:'offline'};
  try{
-  archiveEvidenceSource(output,source,ref);
+  archiveEvidenceSource(target,source,ref);
   symlinkSync(join(repo,'node_modules'),join(source,'node_modules'),'dir');
   const dir=join(source,'docs/evidence/p0-u00l');mkdirSync(dir,{recursive:true});
   const worker=label==='pre-identity'?'pre-identity-probe.ts':'choice-probe.ts';copyFileSync(join(repo,'docs/evidence/p0-u00l',worker),join(dir,worker));

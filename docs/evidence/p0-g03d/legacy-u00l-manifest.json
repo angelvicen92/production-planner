@@ -1,0 +1,44 @@
+{
+  "base": "4eca413065d3832bce8ccbbf005b8829beaed5e7",
+  "candidate": "018000fee7f19260a8365780f5ba4bd1364fe13c",
+  "node": "v24.19.0",
+  "remoteWrites": 0,
+  "probes": [
+    {
+      "label": "pre-identity",
+      "ref": "4eca413065d3832bce8ccbbf005b8829beaed5e7",
+      "patchSha256": "3cc221b3b09f9418ad6a272340f7cb435ebf3f1267fc6457474cde1097f09ef2",
+      "runtimeHashes": {
+        "engine/planner-next/anonymousPipelineWitness.ts": "3299ebf0309ad9b52b93e0fbfd890268caf224dbdec91e1ea60def9f26d3e8bf",
+        "engine/planner-next/exactMainAndFeederCore.ts": "0c4d42cfdfe002fb088d33a9810c1cb88b43b87c56aa340f7ec7b2670f2db9db",
+        "engine/planner-next/nominalResourceChoice.ts": "da4182d341edb408cf75156741453c04f0bf7f14e64b8de8668ad52ab46131c1"
+      }
+    },
+    {
+      "label": "current",
+      "ref": "018000fee7f19260a8365780f5ba4bd1364fe13c",
+      "runtimeHashes": {
+        "engine/planner-next/anonymousPipelineWitness.ts": "9fab1f0f95a396d7c4347138cc0d21a7cb4f019ea8af26baa92da91d6dd5b8d6",
+        "engine/planner-next/exactMainAndFeederCore.ts": "93ffe4b67db5cc94d2046ee09dfc0a5b497f829fc6937a7ebf9b7c72f6d57c04",
+        "engine/planner-next/nominalResourceChoice.ts": "97a4ba4fc8300139089985bdb81c07a78a1d0257374035600fff002a06f96a72"
+      }
+    },
+    {
+      "label": "without-variant-keys",
+      "ref": "018000fee7f19260a8365780f5ba4bd1364fe13c",
+      "change": {
+        "file": "engine/planner-next/nominalResourceChoice.ts",
+        "old": "  return `${taskId}@${position}${choices.length?`#${JSON.stringify(choices)}`:''}`;",
+        "replacement": "  return `${taskId}@${position}`;",
+        "beforeSha256": "97a4ba4fc8300139089985bdb81c07a78a1d0257374035600fff002a06f96a72",
+        "afterSha256": "b7d0a5969e1206d690dd8a8637e49a5955f345c5af129a6075360c5c3f7e4856"
+      },
+      "runtimeHashes": {
+        "engine/planner-next/anonymousPipelineWitness.ts": "9fab1f0f95a396d7c4347138cc0d21a7cb4f019ea8af26baa92da91d6dd5b8d6",
+        "engine/planner-next/exactMainAndFeederCore.ts": "93ffe4b67db5cc94d2046ee09dfc0a5b497f829fc6937a7ebf9b7c72f6d57c04",
+        "engine/planner-next/nominalResourceChoice.ts": "b7d0a5969e1206d690dd8a8637e49a5955f345c5af129a6075360c5c3f7e4856"
+      }
+    }
+  ],
+  "status": "PASS"
+}

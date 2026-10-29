@@ -116,7 +116,7 @@ export async function certificateAttacks({db,planId,run,draft,policy,input,save,
    await db.query('SET LOCAL ROLE service_role');
    await db.query('SELECT public.assert_daily_technical_chain_snapshot($1,$2,$3,$4)',[planId,forged.proposedDraftSnapshot,mode==='stale-replay'?draft.currentConfigRevisionId-1:draft.currentConfigRevisionId,mode==='wrong-run'?run.id+2147483647:run.id]);
   }catch(e:any){error={message:e.message,code:e.code};}finally{await db.query('ROLLBACK');}
-  failures.push({mode,error,consumer:'assert_daily_technical_chain_snapshot',hashesRecomputed:mode!=='bad-fingerprint',deliberateFingerprintInconsistency:mode==='bad-fingerprint',rolledBack:true});save(`${label}-S${ordinal}-forgeries`,failures);
+  failures.push({mode,error,consumer:mode==='coach-unavailable'?'guard_resource_availability_operation':'assert_daily_technical_chain_snapshot',hashesRecomputed:!['bad-fingerprint','coach-unavailable'].includes(mode),deliberateFingerprintInconsistency:mode==='bad-fingerprint',rolledBack:true});save(`${label}-S${ordinal}-forgeries`,failures);
   assert.equal(error?.code,'P0001',mode);if(!['bad-fingerprint','wrong-run'].includes(mode))assert.doesNotMatch(error.message,/AUTHENTIC_PROPOSAL|FINGERPRINT|CERTIFICATE_REQUIRED/);
   if(mode==='phase-order')assert.equal(error.message,'TECHNICAL_CHAIN_PHASE_ORDER');
   if(mode==='phase-gap')assert.equal(error.message,'TECHNICAL_CHAIN_PHASE_GAP');
@@ -127,7 +127,7 @@ export async function certificateAttacks({db,planId,run,draft,policy,input,save,
   if(mode==='coach-double')assert.equal(error.message,'ANCHORED_WITNESS_RESOURCE_CONFLICT');
   if(mode==='vocal-main-dependency')assert.equal(error.message,'ANCHORED_WITNESS_DEPENDENCY');
   if(mode==='participant-overlap')assert.equal(error.message,'ANCHORED_WITNESS_PARTICIPANT_CONFLICT');
-  if(mode==='coach-unavailable')assert.equal(error.message,'ANCHORED_WITNESS_RESOURCE_AVAILABILITY');
+  if(mode==='coach-unavailable')assert.equal(error.message,'RESOURCE_AVAILABILITY_CAPTURED_SOURCES');
   if(mode==='dependency')assert.equal(error.message,'ANCHORED_WITNESS_DEPENDENCY');
  }
 }

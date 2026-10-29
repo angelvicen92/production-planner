@@ -47,9 +47,10 @@ export async function compositionAttacks({db,planId,run,draft,input,save,prefix}
    await db.query('SELECT public.assert_daily_technical_chain_snapshot($1,$2,$3,$4)',[planId,candidate.proposedDraftSnapshot,mode==='stale-revision'?draft.currentConfigRevisionId-1:draft.currentConfigRevisionId,run.id]);
   }catch(e:any){error={code:e.code,message:e.message};}finally{await db.query('ROLLBACK');}
   assert.equal(error?.code,'P0001',JSON.stringify({mode,error}));
-  const category=mode==='bad-hash'?'AUTHENTICITY':mode==='stale-revision'?'VERSIONING':'PHYSICAL';
+  if(mode==='unavailable')assert.equal(error.message,'RESOURCE_AVAILABILITY_CAPTURED_SOURCES');
+  const category=mode==='unavailable'?'PROTECTION':mode==='bad-hash'?'AUTHENTICITY':mode==='stale-revision'?'VERSIONING':'PHYSICAL';
   if(category==='PHYSICAL')assert.doesNotMatch(error.message,/AUTHENTIC_PROPOSAL|FINGERPRINT|CERTIFICATE_REQUIRED|STALE/);
-  failures.push({mode,category,error,hashesRecomputed:mode!=='bad-hash',realAuthority:true,consumer:'assert_daily_technical_chain_snapshot',rolledBack:true});save(prefix+'-negatives',failures);
+  failures.push({mode,category,error,hashesRecomputed:!['bad-hash','unavailable'].includes(mode),realAuthority:true,consumer:mode==='unavailable'?'guard_resource_availability_operation':'assert_daily_technical_chain_snapshot',rolledBack:true});save(prefix+'-negatives',failures);
  }
  // The scope consumer independently admits the complete genuine peer pair and
  // rejects desynchronization; no equality of location alone authorizes sharing.
