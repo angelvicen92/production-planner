@@ -5,7 +5,7 @@ read=lambda name:json.loads((root/(name+'.json')).read_text())
 minute=lambda h:int(h[:2])*60+int(h[3:])
 overlap=lambda a,b:a['start']<b['end'] and b['start']<a['end']
 reports=[]
-for label,count,total in [('macro',19,65),('generic',4,17)]:
+for label,count,total in [('macro',19,65),('generic',5,18)]:
     source=read(label+'-input');problem=read(label+'-adapter')['problem']
     assert source['mealMode']=='flexible_meal_window'
     assert len(source['tasks'])==total and len(problem['participantMeals'])==count

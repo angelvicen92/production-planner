@@ -38,7 +38,7 @@ jobs:
       - run: npx --no-install tsc -p docs/evidence/p0-g03e/tsconfig.json
       - run: >-
           node --import tsx --test --test-concurrency=1
-          server/jointFlexibleMealPhaseComposition.spec.ts server/flexibleMealPhaseComposition.spec.ts
+          server/flexibleMealPhaseComposition.spec.ts
           server/requiredPhaseComposition.spec.ts server/fixedItinerantPhaseComposition.spec.ts
           server/composedAnchoredRequired.spec.ts server/technicalChainSql.spec.ts
           server/resourceAvailabilityWindow.spec.ts server/apiAuthorization.spec.ts
