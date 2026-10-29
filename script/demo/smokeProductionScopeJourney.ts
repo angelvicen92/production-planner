@@ -142,17 +142,22 @@ export async function runProductionScopeJourney({ appUrl, url, anon, users, db, 
   // Resource identities keep their independent pre-existing authority, even with editorial staff.
   await assign(staff[0],'space',a,'editorial');
   // Reuse an accepted daily identity; never create/delete captured resources.
-  const snapshot=(await db.query(`SELECT r.id,r.resource_item_id FROM plan_resource_items r WHERE r.plan_id=$1 AND r.resource_item_id IS NOT NULL
+  const snapshot=(await db.query(`SELECT r.id,r.resource_item_id,i.is_active original_active FROM plan_resource_items r JOIN resource_items i ON i.id=r.resource_item_id WHERE r.plan_id=$1 AND r.is_available AND r.resource_item_id IS NOT NULL
     AND NOT EXISTS(SELECT 1 FROM plan_space_resource_assignments a WHERE a.plan_id=$1 AND a.space_id=$2 AND a.plan_resource_item_id=r.id)
     AND NOT EXISTS(SELECT 1 FROM user_entity_links l WHERE l.user_id=$3 AND l.entity_type='resource_item' AND l.entity_id=r.resource_item_id)
     ORDER BY r.id LIMIT 1`,[planId,a.space_id,users.aux.id])).rows[0];
   assert.ok(snapshot,'accepted A2 supplies an existing nominal resource');
   const resource={id:snapshot.resource_item_id};
+  // The historical catalog is deliberately inactive. Exercise the existing
+  // active-catalog execution rule and restore that exact flag afterwards.
+  await db.query('UPDATE resource_items SET is_active=true WHERE id=$1',[resource.id]);
   await db.query('INSERT INTO plan_space_resource_assignments(plan_id,space_id,plan_resource_item_id) VALUES($1,$2,$3)',[planId,a.space_id,snapshot.id]);
   await db.query("INSERT INTO user_entity_links(user_id,entity_type,entity_id) VALUES($1,'resource_item',$2)",[users.aux.id,resource.id]);
   await exercise(a);
   await db.query("DELETE FROM user_entity_links WHERE user_id=$1 AND entity_type='resource_item'",[users.aux.id]);
   await db.query('DELETE FROM plan_space_resource_assignments WHERE plan_resource_item_id=$1',[snapshot.id]);
+  await db.query('UPDATE resource_items SET is_active=$2 WHERE id=$1',[resource.id,snapshot.original_active]);
+  assert.equal((await db.query('SELECT is_active FROM resource_items WHERE id=$1',[resource.id])).rows[0].is_active,snapshot.original_active);
   await db.query("UPDATE plan_staff_assignments SET staff_role='production' WHERE staff_person_id=$1",[staff[0].id]);
   pass('G0 concurrent revocation rechecked after lock; global roles and legitimate nominal resources preserved');
   for(const table of ['task_status_events','locks','operational_incident_events']) {
