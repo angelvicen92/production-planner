@@ -1,0 +1,55 @@
+[
+  {
+    "attempt": "first",
+    "classification": "HARNESS_SYNTAX",
+    "status": "FAIL",
+    "error": "TransformError: Transform failed with 1 error:\n/workspace/production-planner/work/g03b-first/source/docs/evidence/p0-g03b/journey.ts:133:199: ERROR: Expected \"}\" but found \"]\"\n    at failureErrorWithLog (/workspace/production-planner/node_modules/esbuild/lib/main.js:1467:15)\n    at /workspace/production-planner/node_modules/esbuild/lib/main.js:736:50\n    at responseCallbacks.<computed> (/workspace/production-planner/node_modules/esbuild/lib/main.js:603:9)\n    at handleIncomingPacket (/workspace/production-planner/node_modules/esbuild/lib/main.js:658:12)\n    at Socket.readFromStdout (/workspace/production-planner/node_modules/esbuild/lib/main.js:581:7)\n    at Socket.emit (node:events:509:28)\n    at addChunk (node:internal/streams/readable:563:12)\n    at readableAddChunkPushByteMode (node:internal/streams/readable:514:3)\n    at Readable.push (node:internal/streams/readable:394:5)\n    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)",
+    "countedAsFinalAcceptance": false
+  },
+  {
+    "attempt": "second",
+    "classification": "HARNESS_UI_SECTION_RACE",
+    "status": "FAIL",
+    "error": "locator.check: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByTestId('section-assisted-scope').locator('label').filter({ hasText: 'Reality Hall' }).first().getByRole('checkbox')\u001b[22m\n\n    at finishDay (/workspace/production-planner/work/g03b-second/source/docs/evidence/p0-g03b/productJourney.ts:52:92)\n    at async journey (/workspace/production-planner/work/g03b-second/source/docs/evidence/p0-g03b/journey.ts:117:16)\n    at async <anonymous> (/workspace/production-planner/work/g03b-second/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+    "countedAsFinalAcceptance": false
+  },
+  {
+    "attempt": "third",
+    "classification": "SQL_VIRTUAL_MEAL_MARGIN_MISMATCH",
+    "status": "FAIL",
+    "error": "AssertionError [ERR_ASSERTION]: /api/plans/1/assisted/validate: 500 {\"code\":\"ASSISTED_VALIDATION_FAILED\",\"message\":\"ASSISTED_VALIDATION_FAILED\"}\n    at responseTo (/workspace/production-planner/work/g03b-third/source/docs/evidence/p0-g03b/journey.ts:29:10)\n    at async finishDay (/workspace/production-planner/work/g03b-third/source/docs/evidence/p0-g03b/productJourney.ts:70:18)\n    at async journey (/workspace/production-planner/work/g03b-third/source/docs/evidence/p0-g03b/journey.ts:117:16)\n    at async <anonymous> (/workspace/production-planner/work/g03b-third/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+    "countedAsFinalAcceptance": false
+  },
+  {
+    "attempt": "fourth",
+    "classification": "SQL_SYNTAX_CORRECTED_LOCALLY",
+    "status": "FAIL",
+    "error": "error: syntax error at end of input\n    at /workspace/production-planner/node_modules/pg/lib/client.js:545:17\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async <anonymous> (/workspace/production-planner/work/g03b-fourth/source/script/demo/smokeNewDayIntegration.ts:75:65)",
+    "countedAsFinalAcceptance": false
+  },
+  {
+    "attempt": "a",
+    "classification": "ADDITIONAL_TOPOLOGY_CORE_FRONTIER",
+    "status": "FAIL",
+    "error": "AssertionError [ERR_ASSERTION]: [\"ASSISTED_SCOPE_INCOMPLETE\",\"CORE_INFEASIBLE\",\"NO_COMPLETE_HARD_VALID_CORE\"]\n+ actual - expected\n\n+ 'NO_PROPOSAL'\n- 'PROPOSAL'\n\n    at finishDay (/workspace/production-planner/work/g03b-a/source/docs/evidence/p0-g03b/productJourney.ts:59:10)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async journey (/workspace/production-planner/work/g03b-a/source/docs/evidence/p0-g03b/journey.ts:134:16)\n    at async <anonymous> (/workspace/production-planner/work/g03b-a/source/script/demo/smokeNewDayIntegration.ts:122:18)",
+    "countedAsFinalAcceptance": false
+  },
+  {
+    "attempt": "control-g01-catalog-127",
+    "classification": "HARNESS_CATALOG_EXPECTATION",
+    "status": "FAIL_BEFORE_PHYSICAL_JOURNEY",
+    "correction": "Strict expected catalogue version updated 127\u2192128; no fixture or physical expectation changed."
+  },
+  {
+    "attempt": "control-g02-packed-reference",
+    "classification": "HARNESS_PACKED_BASELINE_READER",
+    "status": "REFERENCE_PATH_ERROR_AFTER_NATIVE_PASS",
+    "correction": "Read original deterministic.json from the immutable gzip receipt; literal comparison passed without rerunning product."
+  },
+  {
+    "attempt": "legacy-chain-benchmark",
+    "classification": "MISSING_UNVERSIONED_BENCHMARK_PREREQUISITE",
+    "status": "ENOENT",
+    "countedAsPassed": false
+  }
+]

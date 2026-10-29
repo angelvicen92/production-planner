@@ -399,6 +399,12 @@ Las cuatro jornadas guardan las cinco autoridades por UI/API nativas. Ambos órd
 
 `PRODUCTIVE_COMPOSED` para este contrato demostrado; familia global PARTIAL. AB→AC conserva SEARCH_EXHAUSTED a 10.000, sin Stage; el probe condicionado U02c permanece sólo como evidencia de viabilidad. No se amplía búsqueda, alternativas any, membresía dinámica, transiciones positivas, rondas, setups, transporte ni requiresBand. A2 completo desde UI sigue abierto. Sin Supabase remoto, Replit ni merge.
 
+### P0-G03b — fases REQUIRED con comidas individuales flexibles (candidato)
+
+[Evidence y límites](../evidence/p0-g03b/README.md) y [matriz](../evidence/p0-g03b/composition-matrix.md). Extiende la admisión diaria de fases a `flexible_meal_window`, reutilizando `participantMeals`, la proyección colectiva, el exacto y su witness físico global. 128 amplía el canal de comidas del consumidor SQL existente a fases sin pausa operacional ficticia y distingue ocupaciones virtuales de comidas de los márgenes entre tareas productivas. No introduce otro scheduler, certificado, búsqueda, writer o privilegios.
+
+La autoría nativa usa una identidad de cadena diaria estable y conserva los IDs existentes. Propuesta, Draft, revalidación y Stage siguen sujetos a comidas completas, ventanas/duración, capacidad conjunta, no solapamiento, dependencias, recursos, revisión y protección. El catálogo descriptivo no sustituye los recibos UI→SQL, las dos bases frías ni la CI del head. La conjunta con comidas flexibles conserva su guard; tampoco se amplían A/B con transición positiva, transporte, rondas, setup P15, requiresBand u otros contratos no certificados. No acredita la macro A2 completa ni autoría nueva 266/266.
+
 ### P0-G02 — rutas direccionales de cualquier identidad física diaria
 
 El editor nativo de Configuración del día produce `{planResourceItemId,fromSpaceId,toSpaceId,minutes}` mediante la operación diaria v5, CAS y revisión/replay existentes. Builder y adapter conservan las identidades reales. `resourceRouteTransitions.ts` comparte resolución con el wrapper histórico de coach: ruta explícita, respaldo por recurso y general; mismo espacio sin traslado, dirección independiente y máximo entre recursos comunes. Colocación, dominios, interacción residual, validación y Evidence usan ese contrato. El witness físico conjunto existente certifica el futuro de jornadas con rutas; no cambia ordering ni budgets.

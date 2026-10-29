@@ -1,0 +1,42 @@
+{
+  "status": "PASS_LOCAL",
+  "newNativeSQLStages": 8,
+  "coldDatabases": 2,
+  "nativeProfilesPerDatabase": 2,
+  "globalMealsPerProfile": [
+    19,
+    4
+  ],
+  "witnessAttacks": 96,
+  "acceptAttacks": 32,
+  "g03OriginalInputLiteral": true,
+  "determinism": "PASS_EXCEPT_EXECUTION_DURATION",
+  "g01_u02d_literal": "PASS",
+  "g02_literal": "PASS",
+  "a2": {
+    "status": "PASS",
+    "isolated": true,
+    "node": "v24.19.0",
+    "seconds": 129.231232892,
+    "completed": 266,
+    "stages": 11,
+    "branches": 27049,
+    "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+    "fullReportEqualExceptDurationMs": true,
+    "snapshotsEqual": true,
+    "certificatesRevalidated": 11
+  },
+  "upgrade128": "PASS",
+  "typescript": "PASS",
+  "build": "PASS",
+  "ledger": "PASS",
+  "focalGates": [
+    97,
+    65
+  ],
+  "hostedCI": "See the exact PR head checks; local success is not a hosted CI assertion.",
+  "remoteSupabaseWrites": 0,
+  "merge": false,
+  "deployment": false,
+  "isolationFollowupTests": 11
+}

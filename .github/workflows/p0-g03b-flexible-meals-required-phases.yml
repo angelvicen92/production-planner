@@ -1,0 +1,62 @@
+name: P0 G03b flexible meals with REQUIRED phases
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'server/technicalChainStructure.ts'
+      - 'server/flexibleMealPhaseComposition.spec.ts'
+      - 'client/src/components/technical-chain-editor.tsx'
+      - 'supabase/migrations/128*'
+      - 'script/demo/assistedSQLContracts*'
+      - 'script/demo/a2Preflight*'
+      - 'docs/evidence/p0-g03b/**'
+      - '.github/workflows/p0-g03b-flexible-meals-required-phases.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  phases-meals-ui-sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$task_browser_path" ]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+          fi
+      - run: npm run check && npm run check:migrations && npm run build
+      - run: npx --no-install tsc -p docs/evidence/p0-g03b/tsconfig.json
+      - run: >-
+          node --import tsx --test --test-concurrency=1
+          server/flexibleMealPhaseComposition.spec.ts server/requiredPhaseComposition.spec.ts
+          server/fixedItinerantPhaseComposition.spec.ts server/composedAnchoredRequired.spec.ts
+          server/technicalChainSql.spec.ts server/apiAuthorization.spec.ts
+          engine/planner-next/participantMeals.spec.ts
+          engine/planner-next/planMainFlowAndFeeders.spec.ts
+          script/demo/a2Preflight.spec.ts script/demo/assistedSQLContracts.spec.ts
+      - run: node --import tsx docs/evidence/p0-g03b/upgrade128.ts work/g03b-upgrade
+      - run: node --import tsx docs/evidence/p0-g03b/run.ts work/g03b-a
+      - run: node --import tsx docs/evidence/p0-g03b/run.ts work/g03b-b
+      - run: python3 docs/evidence/p0-g03b/verify.py work/g03b-a/native work/g03b-verification-a.json
+      - run: python3 docs/evidence/p0-g03b/verify.py work/g03b-b/native work/g03b-verification-b.json
+      - run: python3 docs/evidence/p0-g03b/compare.py work/g03b-a/native work/g03b-b/native work/g03b-determinism.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g03b-flexible-meals-phases
+          path: |
+            work/g03b-a/native/*.json
+            work/g03b-a/native/*.png
+            work/g03b-b/native/*.json
+            work/g03b-upgrade/native/*.json*
+            work/g03b-*.json
+          retention-days: 14

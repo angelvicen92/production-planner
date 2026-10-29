@@ -180,6 +180,7 @@ test("planner-next remains isolated from legacy and production", () => {
     // that projection. Configuration never dispatches Planner Next search.
     "server/resourceRouteTransitions.ts",
     "server/resourceRouteTransitions.spec.ts",
+    "server/flexibleMealPhaseComposition.spec.ts",
     "server/jointGroupStructure.ts",
     "server/roundSynchronizationStructure.spec.ts",
     "server/operationContinuity.spec.ts",

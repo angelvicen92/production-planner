@@ -3,6 +3,16 @@ import test from 'node:test';
 import {latestAssistedSQLContracts} from './assistedSQLContracts';
 import {requiredFunctionBodies} from './a2Preflight';
 
+test('128 extends only phase admission and the existing individual meal witness channel',()=>{
+ const old=latestAssistedSQLContracts(127),current=latestAssistedSQLContracts(128);
+ assert.deepEqual([...old].filter(([name,v])=>current.get(name)?.body!==v.body).map(([name])=>name).sort(),['assert_anchored_choice_witness','assert_daily_technical_chains']);
+ for(const name of ['assert_anchored_choice_witness','assert_daily_technical_chains'])assert.equal(requiredFunctionBodies(false,128).get(name),current.get(name)!.body);
+ assert.equal(current.get('assert_daily_joint_groups')!.body,old.get('assert_daily_joint_groups')!.body);
+ const body=current.get('assert_anchored_choice_witness')!.body;
+ for(const marker of ['OPERATIONAL_PARTICIPANT_GLOBAL_WITNESS_REQUIRED','OPERATIONAL_PARTICIPANT_WITNESS_MATERIAL','OPERATIONAL_PARTICIPANT_CAPACITY','OPERATIONAL_PARTICIPANT_DEPENDENCY'])assert.ok(body.includes(marker));
+ assert.match(current.get('assert_daily_technical_chains')!.body,/flexible_meal_window.*daily_joint_groups/);
+});
+
 test('115 retains the literal 114 delegate and limits existing reader deltas to the daily chain authority',()=>{
  const old=latestAssistedSQLContracts(114),current=latestAssistedSQLContracts(115);
  assert.equal(current.get('apply_day_config_operation_before_technical_chains')!.body,old.get('apply_day_config_operation_v5')!.body);

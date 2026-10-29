@@ -106,3 +106,13 @@ test('127 requires exact directional consumers, versioned writer and source read
  const stale=structuredClone(catalog);stale.columns=stale.columns.filter(c=>c.column_name!=='daily_resource_route_transitions');
  assert.equal(inspectA2Catalog(stale,'2026-10-30').compatible,false);
 });
+
+test('128 binds phase admission and flexible future meals independently',()=>{
+ const catalog=compatible();catalog.columns.push({table_name:'plans',column_name:'daily_resource_route_transitions',sequence:null});
+ catalog.functions=[...requiredFunctionBodies(false,128)].map(([name,body])=>({name,definition:`CREATE FUNCTION ${name}() AS $function$\n${body}\n$function$;`,serviceExecute:!name.startsWith('guard_')&&name!=='assisted_apply_snapshot',anonExecute:false,authenticatedExecute:false}));
+ assert.deepEqual(inspectA2Catalog(catalog,'2026-10-30').issues,[]);
+ for(const name of ['assert_anchored_choice_witness','assert_daily_technical_chains']){
+  const stale=structuredClone(catalog);stale.functions.find(f=>f.name===name)!.definition=`CREATE FUNCTION ${name}() AS $function$\n${requiredFunctionBodies(false,127).get(name)}\n$function$;`;
+  assert.equal(inspectA2Catalog(stale,'2026-10-30').compatible,false,name);
+ }
+});

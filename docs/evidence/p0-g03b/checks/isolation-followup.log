@@ -1,0 +1,19 @@
+✔ NEXT-001 retains its frozen complete, hard-valid result (48.339938ms)
+✔ the adversarial scenario proves genuine bounded backtracking (30.936396ms)
+✔ partial branch rejection is not counted as backtracking (13.106872ms)
+✔ logical search budgets stop atomically with specific reasons (1.358238ms)
+✔ missing relationships and invalid availability never crash (1.110388ms)
+✔ unsupported focal structures are rejected explicitly (0.854761ms)
+✔ results and logical metrics are deterministic and array-order independent (50.320244ms)
+✔ planner-next remains isolated from legacy and production (18.634183ms)
+✔ native flexible meals and phases preserve all authorities, guards and immutable input (50.219597ms)
+✔ phase-only scope certifies nineteen pending meals; missing, duplicate, shifted and overlapping meals fail certification (250.351489ms)
+✔ individually nonempty meal domains cannot justify losing the last collective realization (32.764861ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1914.875899
