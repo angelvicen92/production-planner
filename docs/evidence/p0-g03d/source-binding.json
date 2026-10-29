@@ -8,7 +8,10 @@
     "server/apiAuthorization.spec.ts": "Type annotations only; emitted JavaScript equality in test-type-followup.json",
     "docs/evidence/p0-g03d/g03bEva.ts": "Read-only navigation restored to original G03b protocol; not executed in the two cold native runs; close browser before draining receipts",
     "docs/evidence/p0-g03b/journey.ts": "Close owned browser before draining pending response receipts; cleanup only, not executed in the two cold native runs",
-    "docs/evidence/p0-g02/journey.ts": "Exercise unavailable route negative before S0; separately reject direct captured-source mutation after S0. No topology, input, physical decision or product change."
+    "docs/evidence/p0-g02/journey.ts": "Exercise unavailable route negative before S0; separately reject direct captured-source mutation after S0. No topology, input, physical decision or product change.",
+    "script/demo/a2Preflight.ts": "Harness catalog detects 129 writer before exact body comparison; no engine or product change",
+    "historical runners": "Archive HEAD to disk via shared helper; native Git blobs independently exact, no buffer ceiling",
+    "historical resource probes": "Send current revision only when installed guard exists; baseline HTTP contract unchanged. Captured-source negative now demands earlier SQL guard rejection."
   },
   "unchangedToBase": {
     "engine": true,

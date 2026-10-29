@@ -27,7 +27,7 @@ G03D_CONTROL=g02 node --import tsx docs/evidence/p0-g03d/run.ts work/g03d-contro
 env -u DATABASE_URL node --import tsx docs/evidence/p0-u00n/a2.ts work/g03d-a2
 ```
 
-Ejecutar los stacks en secuencia. Los focales exactos están en `checks/focal.log` y el [workflow](../../../.github/workflows/p0-g03d-resource-windows.yml). El gate local comprende 171 pruebas del contrato y 9 focales de rutas direccionales; no se denomina suite global completamente ejecutada.
+Ejecutar los stacks en secuencia. Los focales exactos están en `checks/focal.log` y el [workflow](../../../.github/workflows/p0-g03d-resource-windows.yml). El gate local comprende 172 pruebas del contrato y 9 focales de rutas direccionales; no se denomina suite global completamente ejecutada.
 
 Los macros son contrafactuales en memoria. La ventana positiva permanece auténtica; sólo se añade conjunta en memoria. El control retira esa ventana. Ninguno escribe Draft, proposal run o Stage SQL.
 
@@ -42,3 +42,5 @@ python3 -c 'import gzip,json; r=json.load(gzip.open("docs/evidence/p0-g03d/nativ
 Los paquetes excluyen contraseñas, JWT y logs privados. `attempts.json` identifica errores de harness, diagnóstico de scope incompleto y el overlay de desarrollo, sin contarlos como inviabilidad ni como bases aprobadas. El origen 851ed6aa de las dos bases permanece en la historia; los follow-ups de tests no cambian el producto ejecutado.
 
 Los controles históricos G01/U02d se identifican separadamente de una nueva ejecución SQL. El upgrade sobre datos poblados sí se ejecuta de nuevo y comprueba cuerpos SQL/ACL/RLS/lectores reales. El benchmark A2 importado es regresión, no autoría nativa de sus 266 obligaciones.
+
+La primera CI del head 8750c80a pasa los tres jobs G03d. Los fallos de controles históricos y su clasificación están en `ci-first-pass.json`. El preflight identifica el writer 129 antes de comparar cuerpos exactos; los runners archivan a disco mediante `archiveEvidenceSource` (6.481 blobs exactos), y los probes horarios históricos envían revisión cuando la instalación tiene 129. No se relajan aserciones físicas ni guards.

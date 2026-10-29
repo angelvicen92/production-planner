@@ -1,3 +1,4 @@
+import {archiveEvidenceSource} from '../demo/archiveEvidenceSource';
 /** Archive the candidate; dispatch injection affects only its disposable copy. */
 import assert from 'node:assert/strict';
 import {execFileSync,spawnSync} from 'node:child_process';
@@ -10,7 +11,7 @@ const directory=resolve(process.argv[2]??'work/u00g-functional');
 assert.ok(!existsSync(directory),'Use a fresh directory; existing Evidence is never overwritten');
 const source=join(directory,'source');mkdirSync(source,{recursive:true,mode:0o700});
 const head=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
-execFileSync('tar',['-x','-C',source],{input:execFileSync('git',['archive',head],{cwd:repo,maxBuffer:256*1024*1024})});
+archiveEvidenceSource(directory,source,head,repo);
 const patch=execFileSync('git',['diff','--binary','HEAD'],{cwd:repo,maxBuffer:64*1024*1024});
 if(patch.length){assert.ok(process.argv.includes('--working-tree'),'Commit the candidate or explicitly use --working-tree during development');execFileSync('git',['apply','-'],{cwd:source,input:patch,env:{...process.env,GIT_CEILING_DIRECTORIES:directory}});}
 for(const folder of ['script/validation','supabase/migrations'])for(const file of readdirSync(join(repo,folder)))if(!existsSync(join(source,folder,file))){mkdirSync(join(source,folder),{recursive:true});copyFileSync(join(repo,folder,file),join(source,folder,file));}

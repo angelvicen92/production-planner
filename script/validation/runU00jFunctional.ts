@@ -1,3 +1,4 @@
+import {archiveEvidenceSource} from '../demo/archiveEvidenceSource';
 /** Native stack dispatch is injected only in an archived disposable copy. */
 import assert from 'node:assert/strict';
 import {execFileSync,spawnSync} from 'node:child_process';
@@ -10,7 +11,7 @@ const baseline=process.argv.includes('--baseline');
 const beforeIntegrity=process.argv.includes('--before-integrity-guard');
 const ref=baseline?'438d92ca9a4f3db6358809b904268f6da33b4ecd':'HEAD';
 const repo=process.cwd(),source=join(directory,'source');mkdirSync(source,{recursive:true});
-execFileSync('tar',['-x','-C',source],{input:execFileSync('git',['archive',ref],{maxBuffer:256*1024*1024})});
+archiveEvidenceSource(directory,source,ref);
 const patch=baseline?Buffer.alloc(0):execFileSync('git',['diff','--binary','HEAD'],{maxBuffer:64*1024*1024});
 if(patch.length)execFileSync('git',['apply','-'],{cwd:source,input:patch,env:{...process.env,GIT_CEILING_DIRECTORIES:directory}});
 for(const file of execFileSync('git',['ls-files','--others','--exclude-standard','--','engine','server','shared','supabase'],{encoding:'utf8'}).trim().split('\n').filter(Boolean)){

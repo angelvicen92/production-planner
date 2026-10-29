@@ -108,7 +108,7 @@ export async function journey({appUrl,users,db,directory,pass}:{appUrl:string;us
           ['baseline','DELETE FROM public.assisted_bootstrap_sources WHERE session_id=$1',[s1.session.id],'REBOOTSTRAP_BASELINE_UNAVAILABLE'],
         ] as const){
           if(!reason)continue;
-          const negative=await sqlReceipt(`${label}-negative-${name}`,async()=>{await db.query(sql,args as any);const p=(await db.query('SELECT public.assisted_preview_bootstrap_additions($1) v',[planId])).rows[0].v;assert.equal(p.reason,reason);return p;});assert.ok(negative.ok,JSON.stringify(negative));
+          const negative=await sqlReceipt(`${label}-negative-${name}`,async()=>{await db.query(sql,args as any);const p=(await db.query('SELECT public.assisted_preview_bootstrap_additions($1) v',[planId])).rows[0].v;assert.equal(p.reason,reason);return p;});if(name==='authority'){assert.equal(negative.ok,false);assert.match(negative.message,/RESOURCE_AVAILABILITY_CAPTURED_SOURCES/);}else assert.ok(negative.ok,JSON.stringify(negative));
         }
       }finally{await db.query('ROLLBACK');}
       await db.query('BEGIN');try{const causal=await sqlReceipt(`${label}-source-comparison-causal`,async()=>{

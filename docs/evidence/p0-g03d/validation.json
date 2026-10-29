@@ -4,7 +4,7 @@
   "runtimeCodeCommit": "851ed6aa0badbaa4a170768b25792b212328b472",
   "checks": {
     "focalContract": {
-      "pass": 171,
+      "pass": 172,
       "fail": 0
     },
     "directionalResourceRoutes": {
@@ -17,7 +17,9 @@
     "migrationSequence": 129,
     "diffCheck": "PASS",
     "authorization": "PASS including actual HTTP casing/trailing slash and six identities",
-    "ui": "PASS real Chromium native positive hours"
+    "ui": "PASS real Chromium native positive hours",
+    "archiveBlobs": "PASS all 6481 tracked blobs, 267551243 bytes",
+    "integrationTypescript": "PASS"
   },
   "twoColdDatabases": {
     "status": "PASS",

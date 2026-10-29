@@ -1,3 +1,4 @@
+import {archiveEvidenceSource} from '../../../script/demo/archiveEvidenceSource';
 /** Reuse the existing native stack; only migration timing/dispatch changes in a disposable archive. */
 import assert from 'node:assert/strict';
 import {execFileSync,spawnSync} from 'node:child_process';
@@ -11,7 +12,7 @@ assert.ok(!existsSync(output),'Choose fresh output');
 // Never pass inherited remote application credentials to a child process.
 for(const k of ['SUPABASE_URL','SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY','VITE_SUPABASE_URL','VITE_SUPABASE_ANON_KEY','DATABASE_URL'])delete process.env[k];
 const repo=process.cwd(),source=join(output,'source');mkdirSync(source,{recursive:true});
-execFileSync('tar',['-x','-C',source],{input:execFileSync('git',['archive','HEAD'],{maxBuffer:256*1024*1024})});
+archiveEvidenceSource(output,source);
 const files=execFileSync('git',['ls-files','--cached','--others','--exclude-standard','--','engine','server','client','shared','supabase','script','docs/source/official','docs/evidence/p0-u00t','package.json','package-lock.json'],{encoding:'utf8'}).trim().split('\n').filter(f=>existsSync(f)&&(!f.startsWith('docs/evidence/p0-u00t/')||f.endsWith('.ts')));
 const sha=(v:Buffer|string)=>createHash('sha256').update(v).digest('hex');
 const hashes=Object.fromEntries(files.map(f=>[f,sha(readFileSync(join(repo,f)))]));

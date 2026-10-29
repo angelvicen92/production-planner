@@ -68,7 +68,7 @@ Regresión A2 importada ejecutada de nuevo: **266/266, 11 Stages, 27.049 ramas**
 
 [Comandos, controles y límites de validación](validation.md), [resultado machine-readable](validation.json), [vinculación al código](source-binding.json) y [ensayos fallidos/clasificados](attempts.json) separan la evidencia nueva, regresiones nuevas y recibos históricos revalidados. Las dos bases funcionales corresponden al código `851ed6aa`; el follow-up del test HTTP añade sólo tipos y genera JavaScript idéntico. Los ajustes posteriores de navegación, cierre de recibos y orden de negativos de G03b/G02 sólo afectan al harness; no se ejecutan en esas dos bases.
 
-La CI alojada del head exacto del PR es un gate independiente. No se sustituye por los focales locales ni por el A2 importado.
+La primera CI G03d del head `8750c80a` pasa sus tres jobs. [Clasificación de los controles históricos y correcciones de harness](ci-first-pass.json): archivo a disco con todos los blobs verificados, detección exacta de 129 y adopción de CAS en probes legacy; las aserciones físicas siguen intactas. La CI alojada del head exacto del PR es un gate independiente. No se sustituye por los focales locales ni por el A2 importado.
 
 ## 9. Siguiente frontera concreta
 

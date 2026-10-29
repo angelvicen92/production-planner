@@ -27,7 +27,13 @@ export async function journey({appUrl,users,db,directory,pass}:any){
   const response={status:r.status,body:await r.json() as any};receipts.push({path,method,request:body,response});return response;
  };
  const contentions:any[]=[];
+ // Historical baseline probes keep their original HTTP contract.
+ const versionedResourceWindows=(await db.query("SELECT to_regprocedure('public.guard_resource_availability_operation()') IS NOT NULL present")).rows[0].present;
  const api=async(path:string,method='GET',body?:unknown)=>{
+  if(versionedResourceWindows&&method==='PATCH'&&/^\/api\/plans\/\d+\/resource-items\/\d+$/.test(path)&&body&&typeof body==='object'&&'availabilityStart' in body){
+   const revision=await request(path.replace(/\/resource-items\/\d+$/,'/day-configuration/refresh'));assert.equal(revision.status,200);body={...body,expectedRevisionId:revision.body.revisionId};
+  }
+
   const plan=path.match(/^\/api\/plans\/(\d+)\/assisted\/validate$/)?.[1];
   const token=plan?(await db.query('SELECT assisted_bootstrap_source_token($1) token',[Number(plan)])).rows[0].token:null;
   let r=await request(path,method,body);

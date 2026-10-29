@@ -1,3 +1,4 @@
+import {archiveEvidenceSource} from '../../../script/demo/archiveEvidenceSource';
 /** Reuse the existing PostgreSQL-only bootstrap; stop at 103, then invoke the audited upgrade. */
 import assert from 'node:assert/strict';
 import {execFileSync,spawnSync} from 'node:child_process';
@@ -7,7 +8,7 @@ import {join,resolve} from 'node:path';
 const output=resolve(process.argv[2]);assert.ok(!existsSync(output),'Choose fresh output');
 for(const k of ['SUPABASE_URL','SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY','VITE_SUPABASE_URL','VITE_SUPABASE_ANON_KEY','DATABASE_URL'])delete process.env[k];
 const repo=process.cwd(),source=join(output,'source');mkdirSync(source,{recursive:true});
-execFileSync('tar',['-x','-C',source],{input:execFileSync('git',['archive','HEAD'],{maxBuffer:256*1024*1024})});
+archiveEvidenceSource(output,source);
 mkdirSync(join(source,'docs/evidence/p0-u00t'),{recursive:true});
 for(const f of readdirSync('docs/evidence/p0-u00t').filter(f=>f.endsWith('.ts')))copyFileSync('docs/evidence/p0-u00t/'+f,join(source,'docs/evidence/p0-u00t',f));
 symlinkSync(join(repo,'node_modules'),join(source,'node_modules'),'dir');

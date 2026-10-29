@@ -11,6 +11,17 @@ function compatible(){
  for(const [table,columns] of Object.entries({program_settings:['default_participant_transition_minutes'],task_templates:['participant_margin_before_minutes','participant_margin_after_minutes']}))for(const column of columns)catalog.columns.push({table_name:table,column_name:column,sequence:null});
  return catalog;
 }
+test('129 selects exact availability writer and source readers; partial rollback still fails closed',()=>{
+ const catalog=compatible();
+ catalog.columns.push({table_name:'plans',column_name:'daily_resource_route_transitions',sequence:null});
+ catalog.functions=[...requiredFunctionBodies(false,129)].map(([name,body])=>({name,definition:`CREATE FUNCTION ${name}() AS $function$\n${body}\n$function$;`,serviceExecute:!name.startsWith('guard_')&&name!=='assisted_apply_snapshot',anonExecute:false,authenticatedExecute:false}));
+ assert.deepEqual(inspectA2Catalog(catalog,'2026-10-30').issues,[]);
+ for(const name of ['apply_day_config_operation_v5','assisted_expected_obligation_sources','assisted_preview_s0_additions']){
+  const changed=structuredClone(catalog);
+  changed.functions.find(f=>f.name===name)!.definition=`CREATE FUNCTION ${name}() AS $function$\n${requiredFunctionBodies(false,128).get(name)}\n$function$;`;
+  assert.equal(inspectA2Catalog(changed,'2026-10-30').compatible,false,name);
+ }
+});
 test('preflight rejects schema/RPC/security drift, broad policy expressions, false policy roles and missing sequences',()=>{
  const now=Date.parse('2026-10-10T19:00:00Z');
  for(const stamp of [undefined,null,'invalid','2026-10-10T18:44:59Z','2026-10-10T19:00:01Z'])assert.equal(auditIsFresh(stamp,now),false);

@@ -1,3 +1,4 @@
+import {archiveEvidenceSource} from '../../../script/demo/archiveEvidenceSource';
 /** Literal continuity regression with system Chromium selected in an archive.
  * No assertions, timeouts, budgets or product behavior are changed. */
 import assert from 'node:assert/strict';
@@ -7,7 +8,7 @@ import {resolve,join,dirname} from 'node:path';
 import {createHash} from 'node:crypto';
 const out=resolve(process.argv[2]);assert.ok(!existsSync(out));const source=join(out,'source');mkdirSync(source,{recursive:true});
 for(const k of ['SUPABASE_URL','SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY','VITE_SUPABASE_URL','VITE_SUPABASE_ANON_KEY','DATABASE_URL'])delete process.env[k];
-execFileSync('tar',['-x','-C',source],{input:execFileSync('git',['archive','HEAD'],{maxBuffer:256*1024*1024})});symlinkSync(join(process.cwd(),'node_modules'),join(source,'node_modules'),'dir');
+archiveEvidenceSource(output,source);symlinkSync(join(process.cwd(),'node_modules'),join(source,'node_modules'),'dir');
 const files=['supabase/migrations/120_native_joint_groups.sql','script/demo/a2Preflight.ts','script/demo/assistedSQLContracts.ts','script/demo/dataApiGrantsGate.ts'];
 for(const file of files){mkdirSync(dirname(join(source,file)),{recursive:true});copyFileSync(file,join(source,file));}
 const traceFile=join(source,'server/dayConfigurationService.ts'),traceBefore=readFileSync(traceFile,'utf8'),traceFrom='if (error) throw error;\n  return Number(data);',traceTo="if(error){console.error('U00Y_CAUSAL_INIT',{code:error.code,message:error.message,details:error.details});throw error;}\n  return Number(data);";assert.equal(traceBefore.split(traceFrom).length,2);writeFileSync(traceFile,traceBefore.replace(traceFrom,traceTo));
