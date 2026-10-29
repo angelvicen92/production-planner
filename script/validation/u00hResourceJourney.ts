@@ -14,7 +14,13 @@ export async function runU00hResourceJourney({appUrl,users,db,directory,pass}:{a
     const r=await fetch(appUrl+path,{method,headers:{'Content-Type':'application/json',Authorization:`Bearer ${users[role].token}`},body:body===undefined?undefined:JSON.stringify(body)});
     return {status:r.status,body:await r.json() as any};
   };
-  const api=async(path:string,method='GET',body?:unknown)=>{const r=await request(path,method,body);assert.ok(r.status<300,JSON.stringify({path,...r}));return r.body;};
+  // Historical baseline probes keep their original HTTP contract.
+  const versionedResourceWindows=(await db.query("SELECT to_regprocedure('public.guard_resource_availability_operation()') IS NOT NULL present")).rows[0].present;
+  const api=async(path:string,method='GET',body?:unknown)=>{
+   if(versionedResourceWindows&&method==='PATCH'&&/^\/api\/plans\/\d+\/resource-items\/\d+$/.test(path)&&body&&typeof body==='object'&&'availabilityStart' in body){
+    const revision=await request(path.replace(/\/resource-items\/\d+$/,'/day-configuration/refresh'));assert.equal(revision.status,200);body={...body,expectedRevisionId:revision.body.revisionId};
+   }
+  const r=await request(path,method,body);assert.ok(r.status<300,JSON.stringify({path,...r}));return r.body;};
   const poll=async(path:string,id:number)=>{const end=Date.now()+180_000;while(Date.now()<end){const run=await api(`${path}/proposals/${id}`);if(!['pending','running'].includes(run.status))return run;await new Promise(r=>setTimeout(r,100));}throw Error('proposal timeout');};
   const expected=(s:any)=>({expectedDraftFingerprint:s.draftFingerprint,expectedBaseStageId:s.draftBaseStageId});
   const zone=await api('/api/zones','POST',{name:'U00h production'});

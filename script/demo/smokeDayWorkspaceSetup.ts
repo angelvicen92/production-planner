@@ -20,8 +20,9 @@ export async function runDayWorkspaceSetup({appUrl,planId,users,db,directory,pas
   const base=`/plans/${planId}`;
   try {
     await page.goto(`${appUrl}/login`);await page.getByLabel("Email",{exact:true}).fill(users.production.email);await page.getByLabel("Contraseña (opcional para enlace)",{exact:true}).fill(users.production.password);await page.getByRole("button",{name:"Entrar con contraseña",exact:true}).click();await page.waitForURL("**/dashboard");
-    await page.goto(`${appUrl}/plans/${planId}?tab=tasks`);
-    await page.getByRole("tab",{name:"Planning",exact:true}).click();await page.getByTestId("assisted-workspace").waitFor();
+    // Configure the day before Planning captures its resource authorities.
+    // The desktop/mobile navigation below still opens and verifies clean S0.
+    await page.goto(`${appUrl}/plans/${planId}?tab=resources`);
     await page.getByRole("tab",{name:"Concursantes",exact:true}).click();
     const initialContestants=(await api(`${base}/contestants`)).data;
     const initialTaskIds=(await api(base)).data.dailyTasks.map((task:any)=>Number(task.id)).sort((a:number,b:number)=>a-b);

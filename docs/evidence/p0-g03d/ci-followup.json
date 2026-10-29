@@ -1,0 +1,36 @@
+{
+  "head": "018000fee7f19260a8365780f5ba4bd1364fe13c",
+  "corrections": {
+    "driverVariables": "Two archive target variables fixed; all changed TS drivers compile together.",
+    "capturedSourceNegatives": "Require exact RESOURCE_AVAILABILITY_CAPTURED_SOURCES and label guard separately; no forged witness/hashes claimed when rejected before that consumer.",
+    "executionFixture": "Reuse existing captured daily/global identity and restore temporary assignments; no plan_resource_items INSERT/DELETE.; historical catalog starts inactive, so activate and restore its exact flag for the nominal-authority test.",
+    "obsoleteG03": "Unnecessary edit to historical G03/run.ts reverted to authorized base. That diagnostic asserts the phase barrier closed by 128 and is outside this delta; current G03b/G03c checks remain active.",
+    "G01": "Run failed with 55P03 relation plan_task_template_snapshots before solver, zero branches and null result. Report status/message explicitly before asserting outcome. No timeout/budget or retry semantics changed.",
+    "workspaceFixture": "Create ad hoc resource in preparation before first Planning/S0 visit; same CRUD, reload and desktop/mobile navigation assertions.",
+    "earlierGuard": "U00n verifier accepts exact captured-source SQL rejection separately from historical admission rejection; U02b/U01f/U02d and nominal probes identify guard before hashing.",
+    "generatedControlImport": "U02b copies its runner to a shallower work directory. Resolve shared archive helper from the repository before writing the generated driver."
+  },
+  "newLocalRegressions": {
+    "U00n": "PASS native UI/SQL and independent 118 assertions",
+    "standalone": "PASS native application, phases/tasks, narrow window negative and post-bootstrap additions",
+    "U00l": "PASS all three original causal probes",
+    "execution": "PASS all original nominal/staff authorization, concurrent revocation, incidents and 266 accepted placements; historical catalog active flag restored exactly",
+    "workspace": "PASS task failure/retry, participant CRUD, ad hoc creation/assignment/reload, roles, clean S0, desktop/mobile",
+    "U00a": "PASS two real UI days, Main/Vocal proposals, Drafts, validation, Stages, stale-run rejection and catalog isolation via the generated U02b control"
+  },
+  "productChanged": false,
+  "engineChanged": false,
+  "guardRelaxed": false,
+  "executionFixtureSHA256": "6b94a02c5210b11062db0863caeb878f505abae9cbc5f577a8bf5f037ba8dc19",
+  "nativeReadNavigation": {
+    "earlierHead": "49b5aa0d",
+    "otherWorkflowsGreen": 37,
+    "overlayAttempts": 2,
+    "pluginMessage": "unknown runtime error",
+    "causeNotEstablished": true,
+    "change": "Original G03b reload per operation, no changes to mutations, assertions or limits",
+    "twoFreshNativeDatabases": "PASS",
+    "macrosRepeated": 4,
+    "modelAndSQLLiteralToOriginalPair": true
+  }
+}

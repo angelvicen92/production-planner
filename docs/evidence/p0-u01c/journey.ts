@@ -17,7 +17,13 @@ export async function journey({appUrl,users,db,directory,pass}:any){
   const r=await fetch(appUrl+path,{method,headers:{'Content-Type':'application/json',Authorization:`Bearer ${users.admin.token}`},body:body===undefined?undefined:JSON.stringify(body)});
   const response={status:r.status,body:await r.json() as any};receipts.push({path,method,request:body,response});return response;
  };
- const api=async(path:string,method='GET',body?:unknown)=>{const r=await request(path,method,body);assert.ok(r.status<300,JSON.stringify({path,...r}));return r.body;};
+ // Historical baseline probes keep their original HTTP contract.
+ const versionedResourceWindows=(await db.query("SELECT to_regprocedure('public.guard_resource_availability_operation()') IS NOT NULL present")).rows[0].present;
+ const api=async(path:string,method='GET',body?:unknown)=>{
+  if(versionedResourceWindows&&method==='PATCH'&&/^\/api\/plans\/\d+\/resource-items\/\d+$/.test(path)&&body&&typeof body==='object'&&'availabilityStart' in body){
+   const revision=await request(path.replace(/\/resource-items\/\d+$/,'/day-configuration/refresh'));assert.equal(revision.status,200);body={...body,expectedRevisionId:revision.body.revisionId};
+  }
+ const r=await request(path,method,body);assert.ok(r.status<300,JSON.stringify({path,...r}));return r.body;};
  const sqlProbe=async(planId:number,structure:any)=>{
   try{await db.query('SELECT public.assert_daily_technical_chains($1,$2)',[planId,structure]);return {accepted:true};}
   catch(e:any){return {accepted:false,code:e.code,message:e.message};}

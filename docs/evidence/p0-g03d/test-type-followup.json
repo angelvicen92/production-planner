@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "file": "server/apiAuthorization.spec.ts",
+  "sourceCommit": "851ed6aa",
+  "typeAnnotationsOnly": true,
+  "emittedJavaScriptIdentical": true,
+  "emittedSHA256": "cef0c7162e1bf9163416a3240da64482b0735f3883b8bf7e2e50248f6aeab220"
+}

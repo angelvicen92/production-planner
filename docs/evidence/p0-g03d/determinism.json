@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "sameIds": true,
+  "physicalDifferencesNormalized": false,
+  "inputsProblemsFingerprintsDecisionsSQLLiteral": true,
+  "stagesPerDatabase": 2,
+  "sourceHashesEqual": true,
+  "ignoredExecutionDurationKeys": [
+    "futureItinerantOperationalMealsMs",
+    "futureItinerantParticipantFutureMs",
+    "futureItinerantParticipantMealsMs",
+    "futureItinerantPrerequisiteSearchMs",
+    "futureItinerantPriorRevalidationMs",
+    "futureItinerantStructuralSearchMs",
+    "futureItinerantTechnicalFutureMs"
+  ],
+  "remoteWrites": 0
+}

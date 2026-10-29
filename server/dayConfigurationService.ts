@@ -274,3 +274,30 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
   if (updatedError || !updated) throw updatedError;
   return { ...mapPlan(updated), revisionId: Number(data) };
 }
+
+/** The existing v5 writer owns CAS, canonical revision and the S0 source transition. */
+export async function applyResourceAvailabilityOperation(
+  planId: number, actorId: string, itemId: number,
+  window: { availabilityStart: string | null; availabilityEnd: string | null; expectedRevisionId: number | null },
+  repository: IStorage = storage,
+) {
+  const { data: plan, error: planError } = await supabaseAdmin.from("plans").select("current_config_revision_id").eq("id",planId).single();
+  if (planError || !plan) throw Object.assign(new Error("PLAN_NOT_FOUND"),{status:404});
+  if ((plan.current_config_revision_id == null ? null : Number(plan.current_config_revision_id)) !== window.expectedRevisionId)
+    throw Object.assign(new Error("STALE_CONFIG_REVISION"),{status:409});
+  const current = await buildCanonicalPlanConfig(planId,repository);
+  if (!current.input.planResourceItems.some(row=>row.id===itemId)) throw Object.assign(new Error("RESOURCE_NOT_FOUND"),{status:404});
+  const nextInput = {...current.input, planResourceItems:current.input.planResourceItems.map(row=>row.id===itemId
+    ? {...row,availabilityStart:window.availabilityStart,availabilityEnd:window.availabilityEnd} : row)};
+  const candidate = await buildCanonicalPlanConfig(planId,repository,nextInput);
+  const {data,error} = await supabaseAdmin.rpc("apply_day_config_operation_v5",{
+    p_plan_id:planId,p_actor:actorId,p_operation:"RESOURCE_AVAILABILITY",
+    p_payload:{resourceAvailability:{id:itemId,availabilityStart:window.availabilityStart,availabilityEnd:window.availabilityEnd},expectedRevisionId:window.expectedRevisionId},
+    p_expected_revision:window.expectedRevisionId,p_expected_identity:current.identity,p_expected_replay:current.replay,
+    p_candidate_identity:candidate.identity,p_candidate_replay:candidate.replay,
+    p_diff:{operation:"EDIT",resourceAvailability:{id:itemId,availabilityStart:window.availabilityStart,availabilityEnd:window.availabilityEnd}},
+  });
+  if(error?.message==='INVALID_OPERATION') throw Object.assign(new Error('La edición horaria no está disponible en esta instalación.'),{status:409});
+  if(error) throw Object.assign(new Error(error.message),{status:error.code==='55P03'||error.code==='40P01'||/STALE_|RESOURCE_AVAILABILITY_/.test(error.message)?409:error.message.includes('PERMISSION_DENIED')?403:500});
+  return {success:true,revisionId:Number(data)};
+}

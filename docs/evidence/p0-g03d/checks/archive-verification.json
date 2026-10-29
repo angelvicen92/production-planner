@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "head": "8750c80a5eea5ce1216b7812e0234e0443ebe894",
+  "trackedBlobCount": 6481,
+  "trackedBytes": 267551243,
+  "allExtractedBlobsEqualGitTree": true,
+  "archiveRemovedAfterExtract": true,
+  "gitArchiveStdoutNotBuffered": true
+}

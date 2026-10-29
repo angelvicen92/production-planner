@@ -1,0 +1,87 @@
+{
+  "excludedFromFinalColdDatabaseCount": [
+    {
+      "run": "g03d-attempt-1",
+      "classification": "HARNESS_ASSERTION",
+      "reason": "JS optional category:undefined compared against its omitted persisted representation; corrected JSON-contract comparison."
+    },
+    {
+      "run": "g03d-smoke-1",
+      "classification": "IMPLEMENTATION_FOUND_AND_FIXED",
+      "reason": "JSON subtraction precedence in new SQL branch; parentheses added and authentic UI smoke repeated successfully."
+    },
+    {
+      "run": "g03d-native-a",
+      "classification": "HARNESS_ROUTE",
+      "reason": "Used nonexistent /assisted/bootstrap; corrected to the existing /assisted/session and clean S0 verified."
+    },
+    {
+      "run": "g03d-native-a2",
+      "classification": "POSITIVE_UI_SQL_BUT_INADEQUATE_NEGATIVE",
+      "reason": "15/15 SQL passed; initial impossible-window probe requested an incomplete scope and returned MISSING_MAIN_TASK. Replaced by full-scope before/after with only the window changed."
+    },
+    {
+      "run": "g03d-final-a and g03d-candidate-a",
+      "classification": "DEVELOPMENT_RUNS",
+      "reason": "Successful physical runs retained as development receipts; final authoritative cold pair is g03d-cold-a/b with matched executed-source hashes."
+    },
+    {
+      "run": "g03d-g03b-eva",
+      "classification": "SECOND_TOPOLOGY_DEV_OVERLAY",
+      "reason": "60/60 EVA S1/S2 succeeded; later unrelated second topology hit unknown Vite runtime overlay, no browser pageerror. Not called infeasibility or a passed whole run."
+    },
+    {
+      "run": "g03d-eva-stages",
+      "classification": "DEV_OVERLAY",
+      "reason": "Unknown Vite development overlay intercepted clicks during a probe with navigation reuse; internal cause not established. Original per-operation G03b navigation restored. New g03d-eva-final completes 60/60 S1/S2. No model infeasibility inferred."
+    },
+    {
+      "run": "g03d-upgrade129",
+      "classification": "EXPECTED_NEW_OBJECT_REVIEW",
+      "reason": "Data API gate detected exactly three EXECUTE=false entries for the new guard. Gate explicitly checks deny/invoker/search_path; no permission broadened."
+    },
+    {
+      "run": "g03d-upgrade-final/final-2",
+      "classification": "INAPPLICABLE_LEGACY_FIXTURE",
+      "reason": "Historical seed has no plan revision pointer and sparse round replay; abandoned that negative fixture. Separate genuine UI ledger-128 test proves 409 with no writes."
+    },
+    {
+      "run": "candidate TypeScript first pass",
+      "classification": "TEST_TYPE_ANNOTATIONS",
+      "reason": "Added Response/number annotations to new HTTP test; TypeScript and emitted-JavaScript equality pass. No productive or native-journey runtime changed."
+    },
+    {
+      "run": "g03d-g03b-final",
+      "classification": "PASSED_PHYSICAL_ASSERTIONS_DELAYED_CLEANUP",
+      "reason": "60/60 and 15/15, all SQL assertions and deterministic records finished. Pending telemetry body delayed finally; closing only owned browser released it and runner completed PASS. Cleanup now closes browser before draining receipts. No SQL or planner operation retried."
+    },
+    {
+      "run": "g03d-g02-final",
+      "classification": "NEW_EARLIER_PROTECTION_REJECTION",
+      "reason": "Negative direct is_available mutation after S0 now rejects as RESOURCE_AVAILABILITY_CAPTURED_SOURCES, before route UNAVAILABLE_CATALOG check. Original unavailable-route test moved before S0; captured-source mutation separately must reject. No engine or physical fixture change."
+    },
+    {
+      "run": "g03d-cold-a/b",
+      "classification": "VALID_ORIGINAL_PAIR_REPRODUCED_AFTER_HARNESS_CHANGE",
+      "reason": "Original pair remains in history. Fresh g03d-nav-a/b repeats identical models and SQL after restoring original read-only navigation."
+    },
+    {
+      "run": "CI 49b5aa0d native-ui-sql attempts 1/2",
+      "classification": "DEV_PLUGIN_OVERLAY_REPRODUCED",
+      "reason": "Unknown non-Error runtime overlay blocked pointer events at Add task. Attempt 2 first database completed; second stopped before solver. No pageerror or attributable trace. No infeasibility inferred, no further blind retry. Restore original G03b navigation per operation; fresh two-database models/SQL literal to prior pair.",
+      "workflowRun": 40892811575,
+      "jobs": [
+        123513851061,
+        123524262655
+      ]
+    }
+  ],
+  "finalColdDatabases": [
+    "g03d-nav-a",
+    "g03d-nav-b"
+  ],
+  "noPositiveHoursInjected": true,
+  "guardsRelaxed": false,
+  "plannerBudgetsChanged": false,
+  "remoteWrites": 0
+}

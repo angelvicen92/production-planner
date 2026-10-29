@@ -1,3 +1,4 @@
+import {archiveEvidenceSource} from '../../../script/demo/archiveEvidenceSource';
 /** Apply literal 121 to populated historical 120, using the existing owned PG17 bootstrap. */
 import assert from 'node:assert/strict';
 import {execFileSync,spawnSync} from 'node:child_process';
@@ -7,7 +8,7 @@ import {resolve,join} from 'node:path';
 const output=resolve(process.argv[2]);assert.ok(!existsSync(output),'Choose fresh output');
 for(const k of ['SUPABASE_URL','SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY','VITE_SUPABASE_URL','VITE_SUPABASE_ANON_KEY','DATABASE_URL'])delete process.env[k];
 const repo=process.cwd(),source=join(output,'source');mkdirSync(source,{recursive:true});
-execFileSync('tar',['-x','-C',source],{input:execFileSync('git',['archive','HEAD'],{maxBuffer:256*1024*1024})});
+archiveEvidenceSource(output,source);
 symlinkSync(join(repo,'node_modules'),join(source,'node_modules'),'dir');
 const migration='supabase/migrations/121_daily_operational_meals.sql';copyFileSync(migration,join(source,migration));
 for(const file of ['script/demo/assistedSQLContracts.ts','script/demo/a2Preflight.ts','script/demo/dataApiGrantsGate.ts','script/demo/fixtures/data-api-privileges.json','script/demo/fixtures/data-api-privileges-116.json'])copyFileSync(file,join(source,file));

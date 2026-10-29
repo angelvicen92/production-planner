@@ -1,0 +1,17 @@
+✔ CAM identity and direction: 5 rejected, 10 accepted, reverse fallback and no effective consumption (11.330904ms)
+✔ resource fallback and simultaneous resources use max, with independent opposite routes (1.276787ms)
+✔ domains, residual matching and Evidence resolve the same temporal direction in either search order (1.261645ms)
+✔ coach compatibility: canonical 29/30, legacy fallback, duplicate declaration rejected and no double count (0.720868ms)
+✔ route preflight rejects missing identities, same space, duplicates, zero and off grid (0.342277ms)
+✔ EngineInput real daily IDs, fingerprints, unavailable catalog and historical ambiguity (36.774261ms)
+✔ native route contract is canonical, positive, directional and revision guarded (4.699244ms)
+✔ native route validates daily identity, effective catalog and compatibility without mutating input (3.421755ms)
+✔ daily storage and revision replay must agree; empty removal preserves historical absence (2.957735ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1036.126439

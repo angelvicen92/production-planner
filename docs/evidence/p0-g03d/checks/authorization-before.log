@@ -1,0 +1,29 @@
+✖ resource availability writes and reads retain their roles for Express casing and trailing slashes (85.361104ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1136.407722
+
+✖ failing tests:
+
+test at server/apiAuthorization.spec.ts:1:7928
+✖ resource availability writes and reads retain their roles for Express casing and trailing slashes (85.361104ms)
+  AssertionError [ERR_ASSERTION]: {"method":"POST","path":"/API/RESOURCE-ITEMS","role":"norole"}
+
+  200 !== 403
+
+      at TestContext.<anonymous> (/workspace/production-planner/server/apiAuthorization.spec.ts:130:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 200,
+    expected: 403,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

@@ -1,0 +1,117 @@
+name: P0 G03d native resource availability
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'client/src/components/resource-availability-editor.tsx'
+      - 'client/src/components/resources-list.tsx'
+      - 'client/src/components/create-resource-pool.tsx'
+      - 'client/src/components/day-workspace/day-resources-workspace.tsx'
+      - 'server/dayConfigurationService.ts'
+      - 'server/apiAuthorization.ts'
+      - 'server/apiAuthorization.spec.ts'
+      - 'docs/evidence/p0-g02/journey.ts'
+      - 'docs/evidence/p0-g03b/journey.ts'
+      - 'server/routes.ts'
+      - 'shared/routes.ts'
+      - 'supabase/migrations/129*'
+      - 'docs/evidence/p0-g03d/**'
+      - '.github/workflows/p0-g03d-resource-windows.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-ui-sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$task_browser_path" ]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+            node --input-type=module -e 'import {chromium} from "playwright"; console.log("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH="+chromium.executablePath())' >> "$GITHUB_ENV"
+          fi
+      - run: npm run check && npm run check:migrations && npm run build
+      - run: npx --no-install tsc -p docs/evidence/p0-g03d/tsconfig.json
+      - run: >-
+          node --import tsx --test --test-concurrency=1
+          engine/buildInput.resourceAvailability.spec.ts
+          engine/planner-next/integration/effectivePlanResourceAvailability.spec.ts
+          engine/planner-next/integration/engineInputAdapter.spec.ts
+          server/resourceAvailabilityWindow.spec.ts server/flexibleMealPhaseComposition.spec.ts
+          server/requiredPhaseComposition.spec.ts server/fixedItinerantPhaseComposition.spec.ts
+          server/composedAnchoredRequired.spec.ts server/technicalChainSql.spec.ts
+          server/dayConfiguration.spec.ts server/apiAuthorization.spec.ts
+          server/globalParticipantMealGate.spec.ts server/assistedProposalService.spec.ts
+          engine/planner-next/participantMeals.spec.ts
+          engine/planner-next/resourceRouteTransitions.spec.ts server/resourceRouteTransitions.spec.ts
+          script/demo/assistedSQLContracts.spec.ts
+          script/demo/a2Preflight.spec.ts
+      - run: node --import tsx docs/evidence/p0-g03d/upgrade129.mts work/g03d-upgrade129
+      - run: node --import tsx docs/evidence/p0-g03d/failures.mts work/g03d-failures
+      - run: node --import tsx docs/evidence/p0-g03d/oldWriter.mts work/g03d-old-writer
+      - name: Two cold native databases and unchanged joint frontier
+        run: |
+          node --import tsx docs/evidence/p0-g03d/run.ts work/g03d-native-a
+          node --import tsx docs/evidence/p0-g03d/run.ts work/g03d-native-b
+          for copy in a b; do
+            python3 docs/evidence/p0-g03d/verify.py work/g03d-native-$copy/native work/g03d-verification-$copy.json
+            node --import tsx docs/evidence/p0-g03d/macroProbe.ts work/g03d-macro-$copy work/g03d-native-$copy/native
+            node --import tsx docs/evidence/p0-g03d/macroProbe.ts work/g03d-unrestricted-$copy work/g03d-native-$copy/native --unrestricted-eva
+            python3 docs/evidence/p0-g03c/verify.py work/g03d-macro-$copy work/g03d-macro-verification-$copy.json
+          done
+          python3 docs/evidence/p0-g03d/compare.py work/g03d-native-a/native work/g03d-native-b/native work/g03d-determinism.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g03d-public-receipts
+          path: |
+            work/g03d-native-*/native/*.json
+            work/g03d-native-*/native/*.png
+            work/g03d-macro-*/*.json
+            work/g03d-unrestricted-*/*.json
+            work/g03d-*.json
+          retention-days: 14
+  g03b-control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$task_browser_path" ]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+            node --input-type=module -e 'import {chromium} from "playwright"; console.log("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH="+chromium.executablePath())' >> "$GITHUB_ENV"
+          fi
+      - run: G03D_CONTROL=g03b node --import tsx docs/evidence/p0-g03d/run.ts work/g03d-control-g03b
+      - run: python3 docs/evidence/p0-g03b/verify.py work/g03d-control-g03b/native work/g03d-control-g03b.json
+      - run: G03D_CONTROL=g03b-eva node --import tsx docs/evidence/p0-g03d/run.ts work/g03d-eva
+      - run: G03D_CONTROL=g02 node --import tsx docs/evidence/p0-g03d/run.ts work/g03d-control-g02
+  a2-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: node --import tsx docs/evidence/p0-u00n/a2.ts work/g03d-a2

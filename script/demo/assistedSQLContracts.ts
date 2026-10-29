@@ -75,6 +75,7 @@ export function latestAssistedSQLContracts(maxMigration=Infinity){
  files.push('126_composed_anchored_required_authorities.sql');
  files.push('127_resource_route_transitions.sql');
  files.push('128_flexible_participant_meals_required_phases.sql');
+ files.push('129_resource_availability_native_ui.sql');
  const contracts=new Map<string,{definition:string;signature:string;body:string}>();
  for(const file of files.filter(file=>Number(file.slice(0,3))<=maxMigration)){
   const sql=readFileSync(`supabase/migrations/${file}`,'utf8');
@@ -87,6 +88,15 @@ export function latestAssistedSQLContracts(maxMigration=Infinity){
   const types=match[2].split(',').filter(arg=>arg.trim()).map(arg=>arg.trim().split(/\s+/)[1].toLowerCase());
   contracts.set(name,{definition:match[0],signature:`public.${name}(${types.join(',')})`,body:match[3].replaceAll('\r\n','\n').trim()});
  }
+  if(file.startsWith('129_')){
+   // Read this migration's literal branch; PostgreSQL remains the independent
+   // authority for the full exact-body comparison. No SQL is evaluated here.
+   const branch=sql.match(/branch:=\$branch\$([\s\S]*?)\$branch\$/)![1];
+   const patch=(name:string,from:string,to:string)=>{const prior=contracts.get(name)!;if(!prior.body.includes(from))throw Error('129 predecessor drift: '+name);const body=prior.body.replaceAll(from,()=>to);contracts.set(name,{...prior,body,definition:prior.definition.replace(prior.body,()=>body)});};
+   patch('apply_day_config_operation_v5','structure_selected:=',branch+'\n structure_selected:=');
+   for(const m of sql.matchAll(/branch:=replace\(branch,'((?:''|[^'])*)','((?:''|[^'])*)'\);/g))
+    for(const name of ['assisted_expected_obligation_sources','assisted_preview_s0_additions'])patch(name,m[1].replaceAll("''","'"),m[2].replaceAll("''","'"));
+  }
   if(file.startsWith('121_')||file.startsWith('122_')||file.startsWith('123_')||file.startsWith('124_')||file.startsWith('125_')||file.startsWith('126_')||file.startsWith('127_')||file.startsWith('128_'))resolveLiteralReplacements(contracts,sql);
   if(file.startsWith('116_')||file.startsWith('117_')||file.startsWith('120_')){
    // Resolve only this migration's literal string replacements. The resulting

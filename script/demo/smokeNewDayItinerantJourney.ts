@@ -21,7 +21,13 @@ export async function runNewDayItinerantJourney({appUrl,url,anon,service,users,d
     assert.ok(response.status<500,JSON.stringify({path,status:response.status,value}));
     return {status:response.status,body:value};
   };
-  const api=async(path:string,method="GET",body?:unknown)=>{const r=await request(path,method,body);assert.ok(r.status<300,JSON.stringify({path,...r}));return r.body;};
+  // Historical baseline probes keep their original HTTP contract.
+  const versionedResourceWindows=(await db.query("SELECT to_regprocedure('public.guard_resource_availability_operation()') IS NOT NULL present")).rows[0].present;
+  const api=async(path:string,method="GET",body?:unknown)=>{
+   if(versionedResourceWindows&&method==='PATCH'&&/^\/api\/plans\/\d+\/resource-items\/\d+$/.test(path)&&body&&typeof body==='object'&&'availabilityStart' in body){
+    const revision=await request(path.replace(/\/resource-items\/\d+$/,'/day-configuration/refresh'));assert.equal(revision.status,200);body={...body,expectedRevisionId:revision.body.revisionId};
+   }
+  const r=await request(path,method,body);assert.ok(r.status<300,JSON.stringify({path,...r}));return r.body;};
   const report:any={remoteWrites:0,days:[],checks:[],startedAt:new Date().toISOString()};
   const save=()=>writeFileSync(`${directory}/journey.json`,JSON.stringify(report,null,2));
   const check=(name:string)=>{report.checks.push(name);pass(name);save();};

@@ -1,3 +1,4 @@
+import {archiveEvidenceSource} from '../../../script/demo/archiveEvidenceSource';
 /** Existing A2 HTTP/UI harness, with populated 103 before the forward-only upgrade. */
 import assert from 'node:assert/strict';
 import {execFileSync,spawnSync} from 'node:child_process';
@@ -12,7 +13,7 @@ for(const k of ['SUPABASE_URL','SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY','
 const repo=process.cwd(),source=join(output,'source');mkdirSync(source,{recursive:true});
 const productDelta=execFileSync('git',['diff','--name-only','3ade5d2774584f92f86b2b8670bbb3f19fc5f83c','--','engine','server','client','shared','supabase','script','package.json','package-lock.json'],{encoding:'utf8'}).trim().split('\n').filter(Boolean);
 assert.ok(productDelta.every(f=>f==='server/routes.ts'),'only the localized historical GET repair is authorized');
-execFileSync('tar',['-x','-C',source],{input:execFileSync('git',['archive','HEAD'],{maxBuffer:256*1024*1024})});
+archiveEvidenceSource(output,source);
 for(const f of productDelta)copyFileSync(join(repo,f),join(source,f));
 for(const f of readdirSync('docs/evidence/p0-u00t').filter(f=>f.endsWith('.ts'))){mkdirSync(join(source,'docs/evidence/p0-u00t'),{recursive:true});copyFileSync('docs/evidence/p0-u00t/'+f,join(source,'docs/evidence/p0-u00t',f));}
 symlinkSync(join(repo,'node_modules'),join(source,'node_modules'),'dir');

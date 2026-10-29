@@ -1,0 +1,8 @@
+{
+  "receiptCount": 3,
+  "canonicalJSONSHA256": {
+    "failures.json": "d116d0da8793ce0b9a66529ccb447cad95bea100f4574d30155efe2c20295911",
+    "integration.json": "9c4ac4ac341f3e1617e01689812d4a075ccea049d02428d5e047653fb13e571d",
+    "protected-states.json": "f43c424d74f3d43bf4f10b79b64c853eb069f37152ee3345596ac784ae5fecd9"
+  }
+}

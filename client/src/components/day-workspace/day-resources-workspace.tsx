@@ -1,3 +1,5 @@
+import { ResourceAvailabilityEditor, ResourceAvailabilityFields, fullResourceWorkday, type ResourceWindow } from "@/components/resource-availability-editor";
+import { resourceAvailabilityWindowSchema } from "@shared/routes";
 import { Label } from "@/components/ui/label";
 import { PersistedDaySection } from "./day-collapsible-section";
 import { useToast } from "@/hooks/use-toast";
@@ -38,6 +40,8 @@ type PlanResourceItemRow = {
   resourceItemId: number | null;
   name: string;
   isAvailable: boolean;
+  availabilityStart: string | null;
+  availabilityEnd: string | null;
   source: "default" | "adhoc" | string;
   type: { id: number; code: string; name: string };
 };
@@ -68,6 +72,8 @@ export function PlanResourcesTab({
 
   const [addTypeId, setAddTypeId] = useState<string>("");
   const [addName, setAddName] = useState("");
+  const [addWindow, setAddWindow] = useState<ResourceWindow>(fullResourceWorkday);
+  const [revisionId, setRevisionId] = useState<number | null>(null);
 
   // Zonas/Espacios (para mostrar el árbol en el plan)
   const { data: zones = [], isLoading: zonesLoading } = useZones();
@@ -331,6 +337,8 @@ export function PlanResourcesTab({
         buildUrl(api.plans.resourceItems.list.path, { id: planId }),
       );
 
+      const config = await apiRequest<{revisionId:number|null}>("GET",`/api/plans/${planId}/day-configuration/refresh`);
+      setRevisionId(config.revisionId);
       setRows(json ?? []);
     } catch (e: any) {
       setError(friendlyError(e));
@@ -477,6 +485,8 @@ export function PlanResourcesTab({
             </div>
           </div>
 
+          <ResourceAvailabilityFields value={addWindow} onChange={setAddWindow} disabled={!canEdit || creating} />
+
           <Button
             disabled={!canEdit || creating || !addName.trim() || !addTypeId}
             onClick={async () => {
@@ -487,12 +497,14 @@ export function PlanResourcesTab({
 
               setCreating(true);
               try {
+                resourceAvailabilityWindowSchema.parse(addWindow);
                 await apiRequest(
                   "POST",
                   buildUrl(api.plans.resourceItems.create.path, { id: planId }),
-                  { typeId, name },
+                  { typeId, name, ...addWindow },
                 );
                 setAddName("");
+                setAddWindow(fullResourceWorkday);
                 await load();
                 onChanged?.();
               } catch (e: any) {
@@ -1308,6 +1320,7 @@ export function PlanResourcesTab({
               {list.map((r) => (
                 <div
                   key={r.id}
+                  data-testid={`daily-resource-${r.id}`}
                   className="flex flex-wrap items-center gap-2 rounded-lg border p-2"
                 >
                   <Badge variant="outline">
@@ -1322,7 +1335,7 @@ export function PlanResourcesTab({
                   >
                     Ver agenda
                   </Button>
-                  <Checkbox disabled={!canEdit}
+                  <Checkbox disabled={!canEdit} aria-label={`Disponible en el día: ${r.name}`}
                     checked={r.isAvailable}
                     onCheckedChange={async (v) => {
                       const next = !!v;
@@ -1394,6 +1407,13 @@ export function PlanResourcesTab({
                     </span>
                   )}
 
+                  <ResourceAvailabilityEditor name={r.name} value={{availabilityStart:r.availabilityStart,availabilityEnd:r.availabilityEnd}}
+                    disabled={!canEdit} description="Horario del snapshot de este día, independiente de la casilla de activación."
+                    onSave={async window=>{
+                      const saved=await apiRequest<{revisionId:number}>("PATCH",buildUrl(api.plans.resourceItems.update.path,{id:planId,itemId:r.id}),{...window,expectedRevisionId:revisionId});
+                      const fresh=await apiRequest<PlanResourceItemRow[]>("GET",buildUrl(api.plans.resourceItems.list.path,{id:planId}));
+                      setRows(fresh);setRevisionId(saved.revisionId);onChanged?.();
+                    }} />
                   {r.source === "adhoc" ? (
                     <button disabled={!canEdit}
                       className="text-sm text-red-600 hover:underline ml-auto"

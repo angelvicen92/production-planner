@@ -21,7 +21,13 @@ export async function journey({appUrl,users,db,directory,pass}:any){
  save('sql-catalog',catalogChecks);
  const receipts:any[]=[];
  const request=async(path:string,method='GET',body?:unknown,role='admin')=>{const r=await fetch(appUrl+path,{method,headers:{'Content-Type':'application/json',...(role==='anonymous'?{}:{Authorization:`Bearer ${users[role].token}`})},body:body===undefined?undefined:JSON.stringify(body)});const response={status:r.status,body:await r.json() as any};receipts.push({path,method,request:body,response});return response;};
- const api=async(path:string,method='GET',body?:unknown)=>{const r=await request(path,method,body);assert.ok(r.status<300,JSON.stringify({path,...r}));return r.body;};
+ // Historical baseline probes keep their original HTTP contract.
+ const versionedResourceWindows=(await db.query("SELECT to_regprocedure('public.guard_resource_availability_operation()') IS NOT NULL present")).rows[0].present;
+ const api=async(path:string,method='GET',body?:unknown)=>{
+  if(versionedResourceWindows&&method==='PATCH'&&/^\/api\/plans\/\d+\/resource-items\/\d+$/.test(path)&&body&&typeof body==='object'&&'availabilityStart' in body){
+   const revision=await request(path.replace(/\/resource-items\/\d+$/,'/day-configuration/refresh'));assert.equal(revision.status,200);body={...body,expectedRevisionId:revision.body.revisionId};
+  }
+ const r=await request(path,method,body);assert.ok(r.status<300,JSON.stringify({path,...r}));return r.body;};
  const browser=await chromium.launch({headless:true,args:['--no-sandbox'],executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH??'/usr/bin/chromium'});
  const page=await browser.newPage({viewport:{width:1440,height:1100}});await page.addInitScript(()=>{crypto.randomUUID=()=> '87f00000-0000-4000-8000-000000000001';});const events:any[]=[];page.on('pageerror',e=>events.push(e.message));
  try{

@@ -62,7 +62,11 @@ for base in [a.native,a.repeat]:
     for attack in read(base,f'{label}-S{n}-{suffix}'):
      assert attack['error']['code']=='P0001'
      if attack['mode'] not in ['bad-fingerprint','wrong-run']:
-      assert not any(s in attack['error']['message'] for s in ['FINGERPRINT','AUTHENTIC_PROPOSAL','CERTIFICATE_REQUIRED']);report['SQLMaterialNegatives']+=1
+      assert not any(s in attack['error']['message'] for s in ['FINGERPRINT','AUTHENTIC_PROPOSAL','CERTIFICATE_REQUIRED'])
+      if attack.get('consumer')=='guard_resource_availability_operation':
+       assert attack['mode'] in ['coach-unavailable','resource-unavailable'] and attack['error']['message']=='RESOURCE_AVAILABILITY_CAPTURED_SOURCES'
+       report['SQLSourceProtectionNegatives']=report.get('SQLSourceProtectionNegatives',0)+1
+      else:report['SQLMaterialNegatives']+=1
    report['SQLStages']+=1;report['physical'].append({'stack':str(base),'label':label,'stage':n,'obligations':24,'physicalOperations':23,'branches':r['evidence']['work']['branchesExplored']})
  neg=read(base,'impossible-S1-run')['assisted_result_json'];assert neg['outcome']=='NO_PROPOSAL' and neg['evidence']['work']['branchesExplored']==10000 and any('BUDGET' in c for c in neg['evidence']['reasonCodes'])
 for label in labels:

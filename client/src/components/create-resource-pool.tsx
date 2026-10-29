@@ -1,3 +1,5 @@
+import { ResourceAvailabilityFields, fullResourceWorkday, type ResourceWindow } from "./resource-availability-editor";
+import { resourceAvailabilityWindowSchema } from "@shared/routes";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,6 +75,7 @@ export function CreateResourceItem({
   onCreated: () => void;
   onStatusChange?: (status: CreationStatus) => void;
 }) {
+  const [window, setWindow] = useState<ResourceWindow>(fullResourceWorkday);
   const [typeId, setTypeId] = useState<string>("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -85,10 +88,13 @@ export function CreateResourceItem({
       setLoading(true);
       setError(null);
 
+      resourceAvailabilityWindowSchema.parse(window);
       const parsedTypeId = Number(typeId);
-      await apiRequest("POST", "/api/resource-items", { typeId: parsedTypeId, name });
+      await apiRequest("POST", "/api/resource-items", { typeId: parsedTypeId, name,
+        defaultAvailabilityStart:window.availabilityStart, defaultAvailabilityEnd:window.availabilityEnd });
 
       setName("");
+      setWindow(fullResourceWorkday);
       onCreated();
     } catch (e: any) {
       setError(e?.message || "Error creando unidad");
@@ -132,6 +138,9 @@ export function CreateResourceItem({
           />
         </div>
       </div>
+
+      <ResourceAvailabilityFields value={window} onChange={setWindow} disabled={loading} />
+      <p className="text-xs text-muted-foreground">El catálogo inicializa futuras jornadas. Cada día conserva su snapshot.</p>
 
       {error && <p className="text-sm text-red-500">{error}</p>}
 

@@ -1,0 +1,350 @@
+{
+  "head": "8750c80a5eea5ce1216b7812e0234e0443ebe894",
+  "specificWorkflow": {
+    "run": 40866339292,
+    "jobs": [
+      {
+        "id": 123421955362,
+        "name": "a2-regression",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 123421955758,
+        "name": "g03b-control",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 123421955877,
+        "name": "native-ui-sql",
+        "status": "completed",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "historicalFirstPass": [
+    {
+      "name": "P0 U00v native standalone operational scopes",
+      "job": 123421954873,
+      "failedStep": "Populated historical upgrade and exact SQL bodies, readers and permissions",
+      "archive": true,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:35:09.7615194Z <ref *1> Error: spawnSync git ENOBUFS"
+      ]
+    },
+    {
+      "name": "P0 U00z native operational pauses",
+      "job": 123421954597,
+      "failedStep": "Run node --import tsx docs/evidence/p0-u00z/upgrade121.ts work/u00z-upgrade",
+      "archive": true,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:34:44.5223804Z <ref *1> Error: spawnSync git ENOBUFS"
+      ]
+    },
+    {
+      "name": "P0 U00i nominal resource causal gate",
+      "job": 123421955755,
+      "failedStep": "Two UI/API days, SQL attacks and protected continuation",
+      "archive": true,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:35:23.6505051Z <ref *1> Error: spawnSync git ENOBUFS"
+      ]
+    },
+    {
+      "name": "P0 U00w anchored whole-unit choices",
+      "job": 123421955495,
+      "failedStep": "Run node --import tsx docs/evidence/p0-u00w/upgrade118.ts work/u00w-upgrade",
+      "archive": true,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:35:47.7604486Z <ref *1> Error: spawnSync git ENOBUFS"
+      ]
+    },
+    {
+      "name": "Template Authorization CI",
+      "job": 123421955774,
+      "failedStep": "Baseline versus candidate; native Auth, HTTP, PostgreSQL and admin UI",
+      "archive": false,
+      "catalog": true,
+      "errors": [
+        "2026-10-29T11:36:19.7466749Z AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+      ]
+    },
+    {
+      "name": "P0 U00l Main nominal resources",
+      "job": 123421955393,
+      "failedStep": "Both variants, rejection ablation and recovery in the same spot",
+      "archive": true,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:36:40.1345730Z <ref *1> Error: spawnSync git ENOBUFS"
+      ]
+    },
+    {
+      "name": "P0 U00j typed nominal resources",
+      "job": 123421955480,
+      "failedStep": "Two native days through Stage, attacks and replay",
+      "archive": true,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:37:11.8519740Z <ref *1> Error: spawnSync git ENOBUFS"
+      ]
+    },
+    {
+      "name": "Live day execution",
+      "job": 123421956761,
+      "failedStep": "Nominal Production authority, incidents and accepted A2 preservation",
+      "archive": false,
+      "catalog": true,
+      "errors": [
+        "2026-10-29T11:36:59.3676875Z AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+      ]
+    },
+    {
+      "name": "P0 G03b flexible meals with REQUIRED phases",
+      "job": 123421954691,
+      "failedStep": "Run node --import tsx docs/evidence/p0-g03b/upgrade128.ts work/g03b-upgrade",
+      "archive": true,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:36:38.9921590Z <ref *1> Error: spawnSync git ENOBUFS"
+      ]
+    },
+    {
+      "name": "P0 G02 directional physical resource routes",
+      "job": 123421955459,
+      "failedStep": "Run node --import tsx docs/evidence/p0-g02/run.ts work/g02-a",
+      "archive": true,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:36:48.6594495Z <ref *1> Error: spawnSync git ENOBUFS"
+      ]
+    },
+    {
+      "name": "P0 U01d required phases without common resource",
+      "job": 123421955637,
+      "failedStep": "Run node --import tsx docs/evidence/p0-u01d/upgrade123.ts work/u01d-upgrade",
+      "archive": true,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:36:44.5174238Z <ref *1> Error: spawnSync git ENOBUFS"
+      ]
+    },
+    {
+      "name": "P0 U00n post-Stage additions",
+      "job": 123421955860,
+      "failedStep": "Two actual days, atomic admission, attacks, restore and branch",
+      "archive": false,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:37:19.5511946Z AssertionError [ERR_ASSERTION]: {\\\"ok\\\":false,\\\"code\\\":\\\"P0001\\\",\\\"message\\\":\\\"RESOURCE_AVAILABILITY_CAPTURED_SOURCES\\\",\\\"where\\\":\\\"PL/pgSQL function public.guar",
+        "2026-10-29T11:37:20.2588691Z AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:"
+      ]
+    },
+    {
+      "name": "Itinerant physical composition",
+      "job": 123421955886,
+      "failedStep": "Run npm run demo:a2:smoke -- work/itinerant-composition --restricted-data-api --historical-topology --itinerant-composition --production-runtime",
+      "archive": false,
+      "catalog": true,
+      "errors": [
+        "2026-10-29T11:37:50.4816210Z AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+      ]
+    },
+    {
+      "name": "Atomic task template save",
+      "job": 123421955259,
+      "failedStep": "Real PostgreSQL rollback, concurrency, Auth, HTTP and browser",
+      "archive": false,
+      "catalog": true,
+      "errors": [
+        "2026-10-29T11:37:57.9662056Z AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+      ]
+    },
+    {
+      "name": "Operation continuity",
+      "job": 123421955570,
+      "failedStep": "Run node --import tsx script/demo/smokeA2Integration.ts work/operation-continuity --operation-continuity",
+      "archive": false,
+      "catalog": true,
+      "errors": [
+        "2026-10-29T11:38:35.5478488Z AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+      ]
+    },
+    {
+      "name": "P0 U00h concrete resources",
+      "job": 123421953988,
+      "failedStep": "Run node --import tsx script/validation/runU00hResources.ts work/u00h-candidate",
+      "archive": true,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:34:48.8878654Z <ref *1> Error: spawnSync git ENOBUFS"
+      ]
+    },
+    {
+      "name": "Data API grants",
+      "job": 123421954517,
+      "failedStep": "Restricted defaults, effective permissions and native product journey",
+      "archive": false,
+      "catalog": true,
+      "errors": [
+        "2026-10-29T11:35:12.5106324Z AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+      ]
+    },
+    {
+      "name": "P0 U02d composed anchored REQUIRED SQL",
+      "job": 123421953792,
+      "failedStep": "Run node --import tsx docs/evidence/p0-u02d/upgrade126.ts work/u02d-upgrade",
+      "archive": true,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:35:09.5561019Z <ref *1> Error: spawnSync git ENOBUFS"
+      ]
+    },
+    {
+      "name": "P0 G01 template resources UI to SQL",
+      "job": 123421954435,
+      "failedStep": "Run node --import tsx docs/evidence/p0-g01/run.ts work/g01-ui",
+      "archive": true,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:35:12.3295538Z <ref *1> Error: spawnSync git ENOBUFS"
+      ]
+    },
+    {
+      "name": "Template creation and margins",
+      "job": 123421954604,
+      "failedStep": "Real UI, HTTP, SQL, roles and future snapshots versus baseline",
+      "archive": false,
+      "catalog": true,
+      "errors": [
+        "2026-10-29T11:35:04.5685494Z AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+      ]
+    },
+    {
+      "name": "Catalog Authorization CI",
+      "job": 123421954242,
+      "failedStep": "Real Auth, HTTP handlers, PostgREST and PostgreSQL; baseline versus candidate",
+      "archive": false,
+      "catalog": true,
+      "errors": [
+        "2026-10-29T11:36:05.0427151Z AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+      ]
+    },
+    {
+      "name": "P0-U00t release rehearsal",
+      "job": 123421954774,
+      "failedStep": "Literal populated 103 to 115, catalog and raw RLS comparison",
+      "archive": true,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:35:51.0321925Z <ref *1> Error: spawnSync git ENOBUFS"
+      ]
+    },
+    {
+      "name": "Persistent War Room",
+      "job": 123421953555,
+      "failedStep": "Native ledger, real Auth/HTTP/RLS, accepted A2 and independent browsers",
+      "archive": false,
+      "catalog": true,
+      "errors": [
+        "2026-10-29T11:35:44.8223737Z AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:"
+      ]
+    },
+    {
+      "name": "P0 U00x composed native Reality",
+      "job": 123421954330,
+      "failedStep": "Run node --import tsx docs/evidence/p0-u00x/upgrade119.ts work/u00x-upgrade",
+      "archive": true,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:35:51.7790930Z <ref *1> Error: spawnSync git ENOBUFS"
+      ]
+    },
+    {
+      "name": "P0 U00y native joint operations",
+      "job": 123421954292,
+      "failedStep": "Run node --import tsx docs/evidence/p0-u00y/upgrade120.ts work/u00y-upgrade",
+      "archive": true,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:36:23.2819150Z <ref *1> Error: spawnSync git ENOBUFS"
+      ]
+    },
+    {
+      "name": "P0 U00s daily REQUIRED technical chains",
+      "job": 123421954225,
+      "failedStep": "Native REQUIRED chains, physical negative, future witness and SQL attacks",
+      "archive": true,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:36:17.9074271Z <ref *1> Error: spawnSync git ENOBUFS"
+      ]
+    },
+    {
+      "name": "P0 U00u native anchored operation",
+      "job": 123421954769,
+      "failedStep": "Run node --import tsx docs/evidence/p0-u00u/upgrade116.ts work/u00u-upgrade",
+      "archive": true,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:36:28.1297254Z <ref *1> Error: spawnSync git ENOBUFS"
+      ]
+    },
+    {
+      "name": "New day Planner Next",
+      "job": 123421953598,
+      "failedStep": "Run node --import tsx script/demo/smokeNewDayIntegration.ts work/standalone-day-planner --standalone-only --post-bootstrap-additions",
+      "archive": false,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:38:22.1943271Z AssertionError [ERR_ASSERTION]: {\\\"path\\\":\\\"/api/plans/3/resource-items/2\\\",\\\"status\\\":400,\\\"body\\\":{\\\"message\\\":\\\"Guarda el horario con la revisión consultada, "
+      ]
+    },
+    {
+      "name": "P0 U02b Main Vocal REQUIRED phase composition",
+      "job": 123421954379,
+      "failedStep": "Run node --import tsx docs/evidence/p0-u02b/upgrade125.ts work/u02b-upgrade",
+      "archive": true,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:36:54.1437948Z <ref *1> Error: spawnSync git ENOBUFS"
+      ]
+    },
+    {
+      "name": "P0 U01b required phase composition",
+      "job": 123421954677,
+      "failedStep": "Run node --import tsx docs/evidence/p0-u01b/upgrade122.ts work/u01b-upgrade",
+      "archive": true,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:36:50.5402910Z <ref *1> Error: spawnSync git ENOBUFS"
+      ]
+    },
+    {
+      "name": "P0 U00g participant meals",
+      "job": 123421954252,
+      "failedStep": "Run node --import tsx script/validation/runU00gFunctional.ts work/u00g-functional",
+      "archive": true,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:35:49.3287365Z <ref *1> Error: spawnSync git ENOBUFS"
+      ]
+    },
+    {
+      "name": "P0 U01f fixed itinerant REQUIRED phase composition",
+      "job": 123421955131,
+      "failedStep": "Run node --import tsx docs/evidence/p0-u01f/upgrade124.ts work/u01f-upgrade",
+      "archive": true,
+      "catalog": false,
+      "errors": [
+        "2026-10-29T11:38:11.3700002Z <ref *1> Error: spawnSync git ENOBUFS"
+      ]
+    }
+  ],
+  "correction": "Archive to disk, preflight detects 129, legacy API probes supply current revision, direct captured-source negative expects controlled earlier rejection. No product, engine, budget, timeout or physical fixture changed."
+}

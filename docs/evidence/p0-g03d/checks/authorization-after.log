@@ -1,0 +1,14 @@
+✔ itinerant catalog writes require ADMIN for Express casing and trailing slash variants (110.061923ms)
+✔ real HTTP middleware blocks anonymous/debug and task writes while preserving authorized application flows (114.838862ms)
+✔ template aliases and Express casing use the catalog admin authority before any handler (82.618038ms)
+✔ time correction and history share execution role boundaries including Express casing (1.03402ms)
+✔ bulk execution reset requires ADMIN through real HTTP including casing and trailing slash (35.033561ms)
+✔ resource availability writes and reads retain their roles for Express casing and trailing slashes (193.073434ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1396.250456

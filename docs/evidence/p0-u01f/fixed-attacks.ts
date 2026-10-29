@@ -24,7 +24,8 @@ export async function fixedAttacks({db,planId,run,draft,policy,input,save,label,
    if(mode==='member-omitted'||mode==='universal-omitted')member.requiredResourceIds=member.requiredResourceIds.slice(1);
    if(mode==='member-invented')member.requiredResourceIds.push('plan-resource:2147483647');
    if(mode==='resource-unavailable')await db.query('UPDATE plan_resource_items SET is_available=false WHERE id=$1',[Number(member.requiredResourceIds[0].split(':')[1])]);
-   if(mode==='unit-unavailable'){member.start=660;member.end=660+member.duration;}
+   if(mode==='resource-unavailable')assert.equal(error.message,'RESOURCE_AVAILABILITY_CAPTURED_SOURCES');
+  if(mode==='unit-unavailable'){member.start=660;member.end=660+member.duration;}
    if(mode==='shared-A-overlap'){
     const other=task(policy.phases[1][0]);assert.notEqual(member.itinerantUnitId,other.itinerantUnitId);
     assert.ok(member.requiredResourceIds.some((id:string)=>other.requiredResourceIds.includes(id)));
@@ -56,9 +57,10 @@ export async function fixedAttacks({db,planId,run,draft,policy,input,save,label,
    await db.query('SET LOCAL ROLE service_role');
    await db.query('SELECT assert_daily_technical_chain_snapshot($1,$2,$3,$4)',[planId,candidate.proposedDraftSnapshot,draft.currentConfigRevisionId,run.id]);
   }catch(e:any){error={code:e.code,message:e.message};}finally{await db.query('ROLLBACK');}
-  failures.push({mode,error,consumer:'assert_daily_technical_chain_snapshot',hashesRecomputed:true,rolledBack:true});save(`${label}-S${ordinal}-unit-forgeries`,failures);
+  failures.push({mode,error,consumer:mode==='resource-unavailable'?'guard_resource_availability_operation':'assert_daily_technical_chain_snapshot',hashesRecomputed:mode!=='resource-unavailable',rolledBack:true});save(`${label}-S${ordinal}-unit-forgeries`,failures);
   assert.equal(error?.code,'P0001',JSON.stringify({mode,error}));assert.doesNotMatch(error.message,/FINGERPRINT|AUTHENTIC_PROPOSAL/);
   if(mode==='protected-unit-permutation')assert.equal(error.message,'ANCHORED_PROTECTED_DECISIONS');
+  if(mode==='resource-unavailable')assert.equal(error.message,'RESOURCE_AVAILABILITY_CAPTURED_SOURCES');
   if(mode==='unit-unavailable')assert.equal(error.message,'ANCHORED_UNIT_UNAVAILABLE');
   if(mode==='member-omitted'||mode==='member-invented'||mode==='universal-omitted')assert.equal(error.message,'ANCHORED_WITNESS_PHYSICAL_RESOURCES');
   if(mode==='shared-A-overlap')assert.equal(error.message,'ANCHORED_WITNESS_RESOURCE_CONFLICT');

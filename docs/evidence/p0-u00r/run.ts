@@ -1,3 +1,4 @@
+import {archiveEvidenceSource} from '../../../script/demo/archiveEvidenceSource';
 /** Run the working candidate in a disposable archive; dispatch changes only there. */
 import assert from 'node:assert/strict';
 import {execFileSync,spawnSync} from 'node:child_process';
@@ -6,7 +7,7 @@ import {existsSync,mkdirSync,readFileSync,writeFileSync,copyFileSync,symlinkSync
 import {join,resolve,dirname} from 'node:path';
 const output=resolve(process.argv[2]);assert.ok(!existsSync(output),'Choose fresh output');
 const repo=process.cwd(),source=join(output,'source');mkdirSync(source,{recursive:true});
-execFileSync('tar',['-x','-C',source],{input:execFileSync('git',['archive','HEAD'],{maxBuffer:256*1024*1024})});
+archiveEvidenceSource(output,source);
 const files=execFileSync('git',['ls-files','--cached','--others','--exclude-standard','--','engine','server','client','shared','supabase','script','docs/source/official','docs/evidence/p0-u00r','package.json','package-lock.json'],{encoding:'utf8'}).trim().split('\n').filter(existsSync).filter(f=>!f.startsWith('docs/evidence/p0-u00r/')||['docs/evidence/p0-u00r/journey.ts','docs/evidence/p0-u00r/run.ts'].includes(f));
 const sha=(v:Buffer|string)=>createHash('sha256').update(v).digest('hex');
 const hashes=Object.fromEntries(files.map(f=>[f,sha(readFileSync(join(repo,f)))]));

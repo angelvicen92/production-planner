@@ -6,6 +6,10 @@ import {resolve} from 'node:path';
 const [directory,unit]=process.argv.slice(2);assert.ok(['p0-u01f','p0-u01d','p0-u01b','p0-u00s','p0-u00a'].includes(unit));
 mkdirSync('work/p0-u02b',{recursive:true});
 let runner=readFileSync('docs/evidence/p0-u02b/run.ts','utf8');
+// This driver is copied from docs/evidence/ into a shallower work/ directory.
+const helperImport="from '../../../script/demo/archiveEvidenceSource';";
+assert.ok(runner.includes(helperImport));
+runner=runner.replace(helperImport,`from ${JSON.stringify(resolve('script/demo/archiveEvidenceSource.ts'))};`);
 const dispatch=unit==='p0-u00a'?'./smokeNewDayJourney':'../../docs/evidence/'+unit+'/journey';
 runner=runner.replace('../../docs/evidence/p0-u02b/journey',dispatch);
 if(unit==='p0-u01f')runner=runner.replace("writeFileSync(join(output,'manifest.json')",`const gate='docs/evidence/p0-u01f/journey.ts';copyFileSync(join(repo,gate),join(source,gate));writeFileSync(join(output,'control-overlay.json'),JSON.stringify({file:gate,sha256:sha(readFileSync(join(source,gate))),catalog:'current literal migration bodies; fixtures and assertions unchanged'}));\nwriteFileSync(join(output,'manifest.json')`);

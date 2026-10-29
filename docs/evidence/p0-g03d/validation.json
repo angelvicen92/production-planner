@@ -1,0 +1,257 @@
+{
+  "status": "LOCAL_PASS",
+  "authorizedBase": "84056c3de8bf16769ce2c1ec32113fbc7443f532",
+  "runtimeCodeCommit": "49b5aa0d86d535c3b7615dc48c8e27bddc807b75",
+  "checks": {
+    "focalContract": {
+      "pass": 172,
+      "fail": 0
+    },
+    "directionalResourceRoutes": {
+      "pass": 9,
+      "fail": 0
+    },
+    "typescript": "PASS",
+    "evidenceTypescript": "PASS",
+    "build": "PASS",
+    "migrationSequence": 129,
+    "diffCheck": "PASS",
+    "authorization": "PASS including actual HTTP casing/trailing slash and six identities",
+    "ui": "PASS real Chromium native positive hours",
+    "archiveBlobs": "PASS all 6481 tracked blobs, 267551243 bytes",
+    "integrationTypescript": "PASS"
+  },
+  "twoColdDatabases": {
+    "status": "PASS",
+    "sameIds": true,
+    "physicalDifferencesNormalized": false,
+    "inputsProblemsFingerprintsDecisionsSQLLiteral": true,
+    "stagesPerDatabase": 2,
+    "sourceHashesEqual": true,
+    "ignoredExecutionDurationKeys": [
+      "futureItinerantOperationalMealsMs",
+      "futureItinerantParticipantFutureMs",
+      "futureItinerantParticipantMealsMs",
+      "futureItinerantPrerequisiteSearchMs",
+      "futureItinerantPriorRevalidationMs",
+      "futureItinerantStructuralSearchMs",
+      "futureItinerantTechnicalFutureMs"
+    ],
+    "remoteWrites": 0
+  },
+  "nativeGenericStages": {
+    "first": {
+      "status": "PASS",
+      "days": [
+        {
+          "label": "generic",
+          "obligations": 15,
+          "meals": 4,
+          "stages": [
+            {
+              "ordinal": 1,
+              "planned": 3,
+              "pendingMealsCertified": 4,
+              "branches": 67,
+              "snapshotFingerprint": "0997f3e7b6fd42ef955a9063a43c908a77c11ca6a8bf37fad391d8859df5936e"
+            },
+            {
+              "ordinal": 2,
+              "planned": 15,
+              "pendingMealsCertified": 0,
+              "branches": 51,
+              "snapshotFingerprint": "03cf28dab4409930d5409b2cf7ea54cb9fba40bfb4f073a83fa32a861c4676e5"
+            }
+          ],
+          "physicalChecks": "PASS",
+          "coldSQL": "PASS",
+          "protectedContinuation": "EXACT"
+        }
+      ],
+      "sqlStages": 2,
+      "remoteWrites": 0
+    },
+    "repeat": {
+      "status": "PASS",
+      "days": [
+        {
+          "label": "generic",
+          "obligations": 15,
+          "meals": 4,
+          "stages": [
+            {
+              "ordinal": 1,
+              "planned": 3,
+              "pendingMealsCertified": 4,
+              "branches": 67,
+              "snapshotFingerprint": "0997f3e7b6fd42ef955a9063a43c908a77c11ca6a8bf37fad391d8859df5936e"
+            },
+            {
+              "ordinal": 2,
+              "planned": 15,
+              "pendingMealsCertified": 0,
+              "branches": 51,
+              "snapshotFingerprint": "03cf28dab4409930d5409b2cf7ea54cb9fba40bfb4f073a83fa32a861c4676e5"
+            }
+          ],
+          "physicalChecks": "PASS",
+          "coldSQL": "PASS",
+          "protectedContinuation": "EXACT"
+        }
+      ],
+      "sqlStages": 2,
+      "remoteWrites": 0
+    }
+  },
+  "eva": {
+    "savedWindow": [
+      "16:00",
+      "21:00"
+    ],
+    "macroFiveOperationsStartAtOrAfter": 960,
+    "unrestrictedFirstStart": 540,
+    "macroCombinedSQLStage": false,
+    "realSupportedStages": {
+      "completed": 60,
+      "stages": 2,
+      "futureMealsCertifiedInS1": 19,
+      "allThreeEvaPhaseOperationsInsideWindow": true
+    }
+  },
+  "negativeGuards": [
+    "missing-or-half-pair",
+    "invalid-HH:mm",
+    "start-not-before-end",
+    "missing-revision",
+    "stale-revision",
+    "unknown-resource",
+    "inactive-type",
+    "full-workday-null-pair",
+    "isAvailable-independent",
+    "impossible-window-NO_PROPOSAL",
+    "protected-SQL-Stages",
+    "done",
+    "in_progress",
+    "locks",
+    "dirty-Draft",
+    "pending-run",
+    "direct-SQL-window",
+    "HTTP-save-fault",
+    "HTTP-reload-fault",
+    "old-writer-128-no-partial-write"
+  ],
+  "regressions": {
+    "g03b": {
+      "status": "PASS",
+      "inputsDecisionsWitnessesFingerprintsSQLAndBranchesLiteralToG03b": true,
+      "physicalDifferencesNormalized": false,
+      "ignoredExecutionDurationKeys": [
+        "futureItinerantOperationalMealsMs",
+        "futureItinerantParticipantFutureMs",
+        "futureItinerantParticipantMealsMs",
+        "futureItinerantPrerequisiteSearchMs",
+        "futureItinerantPriorRevalidationMs",
+        "futureItinerantStructuralSearchMs",
+        "futureItinerantTechnicalFutureMs"
+      ],
+      "completed": [
+        60,
+        15
+      ],
+      "stages": 4,
+      "localCleanupNote": "All assertions finished before a pending telemetry response delayed cleanup. Browser closure released it; test finally now closes browser before draining receipts. No SQL/planner operation retried."
+    },
+    "g02": {
+      "status": "PASS",
+      "inputsProblemsDecisionsWitnessesSQLFingerprintsAndBranchesLiteralToG02": true,
+      "days": 2,
+      "stages": 4,
+      "physicalDifferencesNormalized": false,
+      "ignoredExecutionDurationKeys": [],
+      "unavailableRouteGuardTestedBeforeS0": true,
+      "capturedSourceGuardTestedAfterS0": true,
+      "remoteWrites": 0
+    },
+    "g03c": {
+      "status": "PASS",
+      "positiveAndUnrestrictedInputsProblemsDecisionsFingerprintsBranchesLiteral": true,
+      "physicalDifferencesNormalized": false,
+      "ignoredExecutionDurationKeys": [
+        "futureItinerantOperationalMealsMs",
+        "futureItinerantParticipantFutureMs",
+        "futureItinerantParticipantMealsMs",
+        "futureItinerantPrerequisiteSearchMs",
+        "futureItinerantPriorRevalidationMs",
+        "futureItinerantStructuralSearchMs",
+        "futureItinerantTechnicalFutureMs"
+      ],
+      "sqlStages": 0
+    },
+    "a2": {
+      "status": "PASS",
+      "isolated": true,
+      "node": "v24.19.0",
+      "seconds": 78.55132808900001,
+      "completed": 266,
+      "stages": 11,
+      "branches": 27049,
+      "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+      "fullReportEqualExceptDurationMs": true,
+      "snapshotsEqual": true,
+      "certificatesRevalidated": 11
+    },
+    "g01U02d": "Independent historical receipt revalidation, not new native SQL runs; see historical-controls/"
+  },
+  "upgrade129": {
+    "status": "PASS",
+    "originalRowsExact": true,
+    "dailyTasks": 599,
+    "historicalStages": 11,
+    "sourceReadersExact": true,
+    "RLSAndOriginalACLExact": true,
+    "newGuardExecutableByAPIroles": false
+  },
+  "hostedCI": {
+    "status": "SEPARATE_GATE",
+    "authority": "Exact PR head checks; local receipts do not claim hosted CI completion"
+  },
+  "limitations": [
+    "No post-placement availability recertification: controlled backend/SQL rejection.",
+    "Joint + REQUIRED phases + flexible meals remains memory-only, never claimed as combined SQL Stage.",
+    "Official SHA256SUMS lists three pre-existing removed versions; actual official sources equal authorized base."
+  ],
+  "engineChanged": false,
+  "remoteWrites": 0,
+  "remoteMigrations": 0,
+  "merged": false,
+  "deployed": false,
+  "runtimeOverlay": {
+    "docs/evidence/p0-g03d/journey.ts": "1ab8587581906a991810c3df555d629313fa30848a531a7da15dd2ea5afa5c67"
+  },
+  "navigationModelAndSQLComparison": {
+    "status": "PASS",
+    "onlyHarnessReadNavigationChanged": true,
+    "inputsProblemsDecisionsFingerprintsBranchesAndSQLLiteralToOriginalColdPair": true,
+    "physicalDifferencesNormalized": false,
+    "comparedReceipts": [
+      "native-input",
+      "native-adapter",
+      "native-sql-state",
+      "generic-input",
+      "generic-adapter",
+      "generic-S1-sql",
+      "generic-S2-sql",
+      "deterministic"
+    ],
+    "ignoredExecutionDurationKeys": [
+      "futureItinerantOperationalMealsMs",
+      "futureItinerantParticipantFutureMs",
+      "futureItinerantParticipantMealsMs",
+      "futureItinerantPrerequisiteSearchMs",
+      "futureItinerantPriorRevalidationMs",
+      "futureItinerantStructuralSearchMs",
+      "futureItinerantTechnicalFutureMs"
+    ],
+    "remoteWrites": 0
+  }
+}

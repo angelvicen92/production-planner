@@ -69,7 +69,11 @@ def verify(data):
         check(get('attack-finish-versus-admission')['code'] == '55P03', f'{label}: two-connection finish race')
         check(get('attack-atomic-counts')['before'] == get('attack-atomic-counts')['after'], f'{label}: no partial transaction effects')
         for name in ['edit','delete','participant','assignment','authority','baseline','partial-baseline','task-row-baseline','participant-row-baseline']:
-            check(get('negative-' + name)['ok'] and not get('negative-' + name)['value']['allowed'], f'{label}: pure-addition boundary {name}')
+            negative=get('negative-' + name)
+            if name=='authority' and negative['ok'] is False:
+                check(not negative['ok'] and negative['code']=='P0001' and negative['message']=='RESOURCE_AVAILABILITY_CAPTURED_SOURCES', f'{label}: captured authority mutation rejected before admission')
+            else:
+                check(negative['ok'] and not negative['value']['allowed'], f'{label}: pure-addition boundary {name}')
         for name in ['omit','move-protected']:
             attack = get('attack-' + name)
             check(not attack['accepted'] and attack['hashesRecomputed'] and attack['message'] == 'RUN_RESULT_INVALID', f'{label}: recalculated-hash attack {name}')

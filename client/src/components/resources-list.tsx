@@ -1,3 +1,4 @@
+import { ResourceAvailabilityEditor } from "./resource-availability-editor";
 import { useSettingsSection } from "@/hooks/use-settings-section";
 import { SettingsSection } from "@/components/settings/settings-section";
 import { useEffect, useMemo, useState } from "react";
@@ -27,6 +28,8 @@ type ResourceItem = {
   id: number;
   name: string;
   isActive: boolean;
+  defaultAvailabilityStart: string | null;
+  defaultAvailabilityEnd: string | null;
 };
 
 type ResourceType = {
@@ -449,8 +452,9 @@ export function ResourcesList() {
                             const value = draftNames[i.id] ?? i.name;
 
                             return (
-                              <div key={i.id} className="flex items-center gap-2">
+                              <div key={i.id} data-testid={`global-resource-${i.id}`} className="flex flex-wrap items-center gap-2">
                                 <Input
+                                  className="min-w-40 flex-1"
                                   value={value}
                                   onChange={(e) =>
                                     setDraftNames((prev) => ({ ...prev, [i.id]: e.target.value }))
@@ -462,6 +466,13 @@ export function ResourcesList() {
                                     }
                                   }}
                                 />
+                                <ResourceAvailabilityEditor name={i.name}
+                                  value={{availabilityStart:i.defaultAvailabilityStart,availabilityEnd:i.defaultAvailabilityEnd}}
+                                  description="Valor por defecto para jornadas futuras. Los días existentes conservan su horario."
+                                  onSave={async window=>{
+                                    await apiRequest("PATCH",`/api/resource-items/${i.id}`,{defaultAvailabilityStart:window.availabilityStart,defaultAvailabilityEnd:window.availabilityEnd});
+                                    const saved=await apiRequest<ResourceType[]>("GET","/api/resource-types-with-items");setTypes(saved);
+                                  }} />
                                 <Button
                                   size="sm"
                                   variant="outline"

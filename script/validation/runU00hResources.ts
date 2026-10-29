@@ -1,3 +1,4 @@
+import {archiveEvidenceSource} from '../demo/archiveEvidenceSource';
 /** Native stack dispatch is injected only in an archived disposable copy. */
 import assert from 'node:assert/strict';
 import {execFileSync,spawnSync} from 'node:child_process';
@@ -9,7 +10,7 @@ assert.ok(!existsSync(directory),'Use a fresh evidence directory');
 const baseline=process.argv.includes('--baseline');
 const ref=baseline?'5256102bf5c7eb925fd24ab1d868c2d22bc91a6e':'HEAD';
 const repo=process.cwd(),source=join(directory,'source');mkdirSync(source,{recursive:true});
-execFileSync('tar',['-x','-C',source],{input:execFileSync('git',['archive',ref],{maxBuffer:256*1024*1024})});
+archiveEvidenceSource(directory,source,ref);
 const patch=baseline?Buffer.alloc(0):execFileSync('git',['diff','--binary','HEAD'],{maxBuffer:64*1024*1024});
 if(patch.length)execFileSync('git',['apply','-'],{cwd:source,input:patch,env:{...process.env,GIT_CEILING_DIRECTORIES:directory}});
 copyFileSync(join(repo,'script/validation/u00hResourceJourney.ts'),join(source,'script/validation/u00hResourceJourney.ts'));

@@ -91,7 +91,7 @@ export async function journey({appUrl,users,db,directory,pass,authorTemplateReso
   await page.goto(appUrl+'/login');await page.getByLabel('Email',{exact:true}).fill(users.admin.email);await page.getByLabel('Contraseña (opcional para enlace)',{exact:true}).fill(users.admin.password);await page.getByRole('button',{name:'Entrar con contraseña',exact:true}).click();await page.waitForURL('**/dashboard');
   // Compare every existing SQL contract byte for byte, without replacing it.
   const catalog=[];
-  for(const [name,expected] of requiredFunctionBodies(false,128)){
+  for(const [name,expected] of requiredFunctionBodies(false,129)){
    const rows=(await db.query("SELECT pg_get_functiondef(oid) definition FROM pg_proc WHERE pronamespace='public'::regnamespace AND proname=$1",[name])).rows;
    assert.ok(rows.some((d:any)=>{const m=d.definition.match(/\bAS\s+(\$\w*\$)([\s\S]*)/i);return m&&m[2].slice(0,m[2].indexOf(m[1])).trim()===expected;}),name);catalog.push({name,exactBody:true});
   }save('sql-catalog',catalog);
@@ -209,7 +209,7 @@ export async function journey({appUrl,users,db,directory,pass,authorTemplateReso
    const poll=async(id:number)=>{for(let n=0;n<600;n++){const run=await api(`${path}/proposals/${id}`);if(!['pending','running'].includes(run.status))return run;await new Promise(r=>setTimeout(r,100));}throw Error('proposal timeout');};
    if(segmented){
     const state=await api(path),started=await api(path+'/proposals','POST',{...expected(state),selector:{kind:'TASK_IDS',taskIds:input.tasks.map(t=>t.id)},includePrerequisites:true}),run=await poll(started.runId);
-    save(label+'-exhausted-run',run);assert.equal(run.assisted_result_json.outcome,'NO_PROPOSAL');assert.equal(run.assisted_result_json.evidence.work.branchesExplored,10000);assert.equal((await api(path)).history.length,1);
+    save(label+'-exhausted-run',run);assert.equal(run.status,'success',JSON.stringify({status:run.status,message:run.message}));assert.equal(run.assisted_result_json.outcome,'NO_PROPOSAL');assert.equal(run.assisted_result_json.evidence.work.branchesExplored,10000);assert.equal((await api(path)).history.length,1);
     days.push({label,planId,status:'SEARCH_EXHAUSTED',acceptedStages:0});save('profiles',days);pass(label+': five native authorities; original search exhaustion preserved');continue;
    }
    assert.equal(full.result?.proposal?.length,27);

@@ -116,3 +116,19 @@ test('bulk execution reset requires ADMIN through real HTTP including casing and
     }
   } finally { await new Promise<void>(resolve=>server.close(()=>resolve())); }
 });
+
+test('resource availability writes and reads retain their roles for Express casing and trailing slashes',async()=>{
+ const app=express();let writes=0;
+ app.use('/api',createApiAuthorization({authenticate:(req,res,next)=>{const id=req.header('x-test-user');if(!id)return void res.sendStatus(401);(req as any).user={id};next();},lookupRole:async id=>id==='norole'?null:id as AppRole}));
+ app.use('/api',(req,res)=>{if(!['GET','HEAD'].includes(req.method))writes++;res.json({ok:true});});
+ const server=app.listen(0,'127.0.0.1');await new Promise<void>(r=>server.once('listening',r));const address=server.address();assert.ok(address&&typeof address!=='string');
+ try{
+  const cases=[['POST','/api/resource-items',false],['PATCH','/api/resource-items/1',false],['GET','/api/resource-types-with-items',false],['POST','/api/plans/1/resource-items',true],['PATCH','/api/plans/1/resource-items/1',true],['GET','/api/plans/1/resource-items',true]] as const;
+  for(const [method,base,daily] of cases)for(const path of [base,base.toUpperCase(),base.toUpperCase()+'/'])for(const role of [undefined,'norole','viewer','aux','production','admin']){
+   const reading=method==='GET',allowed=reading?role!=null&&role!=='norole':role==='admin'||daily&&role==='production';
+   const before:number=writes;const response:Response=await fetch(`http://127.0.0.1:${address.port}${path}`,{method,headers:role?{'x-test-user':role}:{}});
+   assert.equal(response.status,role==null?401:allowed?200:403,JSON.stringify({method,path,role}));
+   assert.equal(writes,before+(allowed&&!reading?1:0),'denial precedes the service_role handler');
+  }
+ }finally{await new Promise<void>(r=>server.close(()=>r()));}
+});

@@ -1,0 +1,196 @@
+{
+  "status": "PASS",
+  "nativeInputDeltaOnlyAvailability": [
+    [
+      "/planResourceItems/6/availabilityEnd",
+      null,
+      "21:00"
+    ],
+    [
+      "/planResourceItems/6/availabilityStart",
+      null,
+      "16:00"
+    ]
+  ],
+  "sourceWindow": {
+    "start": "16:00",
+    "end": "21:00"
+  },
+  "stages": [
+    {
+      "ordinal": 1,
+      "planned": 3,
+      "branches": 1364,
+      "mealsGloballyCertified": 19,
+      "evaConsumers": [
+        {
+          "id": "task:58",
+          "end": 990,
+          "kind": "auxiliary",
+          "start": 960,
+          "spaceId": "space:4",
+          "duration": 30,
+          "dependencies": [],
+          "participantId": "participant:6",
+          "itinerantUnitId": "itinerant-team:3",
+          "requiredResourceIds": [
+            "plan-resource:3",
+            "plan-resource:4",
+            "plan-resource:5",
+            "plan-resource:7"
+          ],
+          "allowedItinerantUnitIds": [
+            "itinerant-team:3"
+          ],
+          "nonSubstitutableResourceIds": [
+            "plan-resource:3",
+            "plan-resource:4",
+            "plan-resource:5",
+            "plan-resource:7"
+          ]
+        },
+        {
+          "id": "task:60",
+          "end": 1020,
+          "kind": "auxiliary",
+          "start": 990,
+          "spaceId": "space:6",
+          "duration": 30,
+          "dependencies": [],
+          "participantId": "participant:11",
+          "itinerantUnitId": "itinerant-team:3",
+          "requiredResourceIds": [
+            "plan-resource:3",
+            "plan-resource:4",
+            "plan-resource:5",
+            "plan-resource:7"
+          ],
+          "allowedItinerantUnitIds": [
+            "itinerant-team:3"
+          ],
+          "nonSubstitutableResourceIds": [
+            "plan-resource:3",
+            "plan-resource:4",
+            "plan-resource:5",
+            "plan-resource:7"
+          ]
+        },
+        {
+          "id": "task:59",
+          "end": 1050,
+          "kind": "auxiliary",
+          "start": 1020,
+          "spaceId": "space:5",
+          "duration": 30,
+          "dependencies": [],
+          "participantId": "participant:12",
+          "itinerantUnitId": "itinerant-team:3",
+          "requiredResourceIds": [
+            "plan-resource:3",
+            "plan-resource:4",
+            "plan-resource:5",
+            "plan-resource:7"
+          ],
+          "allowedItinerantUnitIds": [
+            "itinerant-team:3"
+          ],
+          "nonSubstitutableResourceIds": [
+            "plan-resource:3",
+            "plan-resource:4",
+            "plan-resource:5",
+            "plan-resource:7"
+          ]
+        }
+      ],
+      "snapshotFingerprint": "b6772c4c7a595f3a80cf699a9beb7282af652d87a9301889cdcfa074d9e093e8"
+    },
+    {
+      "ordinal": 2,
+      "planned": 60,
+      "branches": 849,
+      "mealsGloballyCertified": 19,
+      "evaConsumers": [
+        {
+          "id": "task:58",
+          "end": 990,
+          "kind": "auxiliary",
+          "start": 960,
+          "spaceId": "space:4",
+          "duration": 30,
+          "dependencies": [],
+          "participantId": "participant:6",
+          "itinerantUnitId": "itinerant-team:3",
+          "requiredResourceIds": [
+            "plan-resource:3",
+            "plan-resource:4",
+            "plan-resource:5",
+            "plan-resource:7"
+          ],
+          "allowedItinerantUnitIds": [
+            "itinerant-team:3"
+          ],
+          "nonSubstitutableResourceIds": [
+            "plan-resource:3",
+            "plan-resource:4",
+            "plan-resource:5",
+            "plan-resource:7"
+          ]
+        },
+        {
+          "id": "task:60",
+          "end": 1020,
+          "kind": "auxiliary",
+          "start": 990,
+          "spaceId": "space:6",
+          "duration": 30,
+          "dependencies": [],
+          "participantId": "participant:11",
+          "itinerantUnitId": "itinerant-team:3",
+          "requiredResourceIds": [
+            "plan-resource:3",
+            "plan-resource:4",
+            "plan-resource:5",
+            "plan-resource:7"
+          ],
+          "allowedItinerantUnitIds": [
+            "itinerant-team:3"
+          ],
+          "nonSubstitutableResourceIds": [
+            "plan-resource:3",
+            "plan-resource:4",
+            "plan-resource:5",
+            "plan-resource:7"
+          ]
+        },
+        {
+          "id": "task:59",
+          "end": 1050,
+          "kind": "auxiliary",
+          "start": 1020,
+          "spaceId": "space:5",
+          "duration": 30,
+          "dependencies": [],
+          "participantId": "participant:12",
+          "itinerantUnitId": "itinerant-team:3",
+          "requiredResourceIds": [
+            "plan-resource:3",
+            "plan-resource:4",
+            "plan-resource:5",
+            "plan-resource:7"
+          ],
+          "allowedItinerantUnitIds": [
+            "itinerant-team:3"
+          ],
+          "nonSubstitutableResourceIds": [
+            "plan-resource:3",
+            "plan-resource:4",
+            "plan-resource:5",
+            "plan-resource:7"
+          ]
+        }
+      ],
+      "snapshotFingerprint": "3b513a2082f3d9b5babed65050701a8b70145cd53d6bb2fa265c7bad29181a79"
+    }
+  ],
+  "combinedJointStage": false
+}

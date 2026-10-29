@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "days": [
+    {
+      "label": "generic",
+      "obligations": 15,
+      "meals": 4,
+      "stages": [
+        {
+          "ordinal": 1,
+          "planned": 3,
+          "pendingMealsCertified": 4,
+          "branches": 67,
+          "snapshotFingerprint": "0997f3e7b6fd42ef955a9063a43c908a77c11ca6a8bf37fad391d8859df5936e"
+        },
+        {
+          "ordinal": 2,
+          "planned": 15,
+          "pendingMealsCertified": 0,
+          "branches": 51,
+          "snapshotFingerprint": "03cf28dab4409930d5409b2cf7ea54cb9fba40bfb4f073a83fa32a861c4676e5"
+        }
+      ],
+      "physicalChecks": "PASS",
+      "coldSQL": "PASS",
+      "protectedContinuation": "EXACT"
+    }
+  ],
+  "sqlStages": 2,
+  "remoteWrites": 0
+}

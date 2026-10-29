@@ -1,3 +1,4 @@
+import {archiveEvidenceSource} from '../../../script/demo/archiveEvidenceSource';
 /** Causal probes in archived, disposable sources; no service or product writes. */
 import assert from 'node:assert/strict';
 import {gunzipSync} from 'node:zlib';
@@ -12,7 +13,7 @@ for(const label of ['pre-identity','current','without-variant-keys']){
  const ref=label==='pre-identity'?manifest.base:manifest.candidate,source=join(target,`source-${label}`);mkdirSync(source);
  const env={...process.env,GIT_CEILING_DIRECTORIES:target,SUPABASE_URL:'http://127.0.0.1:1',SUPABASE_ANON_KEY:'offline',SUPABASE_SERVICE_ROLE_KEY:'offline'};
  try{
-  execFileSync('tar',['-x','-C',source],{input:execFileSync('git',['archive',ref],{maxBuffer:256*1024*1024})});
+  archiveEvidenceSource(target,source,ref);
   symlinkSync(join(repo,'node_modules'),join(source,'node_modules'),'dir');
   const dir=join(source,'docs/evidence/p0-u00l');mkdirSync(dir,{recursive:true});
   const worker=label==='pre-identity'?'pre-identity-probe.ts':'choice-probe.ts';copyFileSync(join(repo,'docs/evidence/p0-u00l',worker),join(dir,worker));
