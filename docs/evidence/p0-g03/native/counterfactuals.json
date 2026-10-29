@@ -1,0 +1,17 @@
+[
+  {
+    "mode": "actual",
+    "guard": false,
+    "error": {
+      "message": "UNSUPPORTED_TECHNICAL_CHAIN_COMBINATION",
+      "status": 422
+    },
+    "mutated": false
+  },
+  {
+    "mode": "only-global-meal-mode",
+    "guard": true,
+    "error": null,
+    "mutated": false
+  }
+]

@@ -1,0 +1,339 @@
+{
+  "checkedAt": "2026-10-29T00:58:15.605Z",
+  "main": "92aa61272342b99795616ecb343161751d9d6c6f",
+  "baselinePr": {
+    "number": 1218,
+    "head": "26940c0bb763344299fa3a0d6976671dd36e6e07",
+    "merged": true,
+    "mergeCommit": "92aa61272342b99795616ecb343161751d9d6c6f"
+  },
+  "baselineWorkflows": [
+    {
+      "id": 40785667300,
+      "name": "P0 U00u native anchored operation",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 33,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785667300/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785667300/logs",
+      "workflow_id": 396745109
+    },
+    {
+      "id": 40785666513,
+      "name": "P0 U00y native joint operations",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 18,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666513/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666513/logs",
+      "workflow_id": 398253885
+    },
+    {
+      "id": 40785666527,
+      "name": "P0 U00w anchored whole-unit choices",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 22,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666527/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666527/logs",
+      "workflow_id": 397687333
+    },
+    {
+      "id": 40785666409,
+      "name": "Operation continuity",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 87,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666409/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666409/logs",
+      "workflow_id": 392463062
+    },
+    {
+      "id": 40785666512,
+      "name": "P0 U00f transport gate",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 73,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666512/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666512/logs",
+      "workflow_id": 393589662
+    },
+    {
+      "id": 40785666509,
+      "name": "P0 U00x composed native Reality",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 21,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666509/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666509/logs",
+      "workflow_id": 397817660
+    },
+    {
+      "id": 40785666385,
+      "name": "Atomic task template save",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 80,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666385/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666385/logs",
+      "workflow_id": 391985987
+    },
+    {
+      "id": 40785666449,
+      "name": "P0 U00v native standalone operational scopes",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 27,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666449/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666449/logs",
+      "workflow_id": 397124783
+    },
+    {
+      "id": 40785666480,
+      "name": "P0 U00z native operational pauses",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 15,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666480/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666480/logs",
+      "workflow_id": 398574111
+    },
+    {
+      "id": 40785666451,
+      "name": "Admin Invites CI",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 73,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666451/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666451/logs",
+      "workflow_id": 391918464
+    },
+    {
+      "id": 40785666528,
+      "name": "P0 U01b required phase composition",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 12,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666528/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666528/logs",
+      "workflow_id": 399067035
+    },
+    {
+      "id": 40785666309,
+      "name": "P0 U02d composed anchored REQUIRED SQL",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 6,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666309/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666309/logs",
+      "workflow_id": 399719405
+    },
+    {
+      "id": 40785666408,
+      "name": "P0 G02 directional physical resource routes",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 2,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666408/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666408/logs",
+      "workflow_id": 399991399
+    },
+    {
+      "id": 40785666537,
+      "name": "P0 U01f fixed itinerant REQUIRED phase composition",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 8,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666537/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666537/logs",
+      "workflow_id": 399391436
+    },
+    {
+      "id": 40785666321,
+      "name": "P0 G01 template resources UI to SQL",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 3,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666321/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666321/logs",
+      "workflow_id": 399852288
+    },
+    {
+      "id": 40785666458,
+      "name": "New day Planner Next",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 87,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666458/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666458/logs",
+      "workflow_id": 392597524
+    },
+    {
+      "id": 40785666561,
+      "name": "P0 U01d required phases without common resource",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 9,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666561/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666561/logs",
+      "workflow_id": 399241170
+    },
+    {
+      "id": 40785666674,
+      "name": "Live day execution",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 145,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666674/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666674/logs",
+      "workflow_id": 384534610
+    },
+    {
+      "id": 40785666476,
+      "name": "P0 U00h concrete resources",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 64,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666476/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666476/logs",
+      "workflow_id": 394548592
+    },
+    {
+      "id": 40785666434,
+      "name": "P0 U00n post-Stage additions",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 46,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666434/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666434/logs",
+      "workflow_id": 395567852
+    },
+    {
+      "id": 40785666497,
+      "name": "P0 U00j typed nominal resources",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 57,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666497/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666497/logs",
+      "workflow_id": 395089381
+    },
+    {
+      "id": 40785666323,
+      "name": "P0 U00g participant meals",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 71,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666323/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666323/logs",
+      "workflow_id": 394321665
+    },
+    {
+      "id": 40785666511,
+      "name": "P0 U00p daily synchronized rounds",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 47,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666511/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666511/logs",
+      "workflow_id": 395900871
+    },
+    {
+      "id": 40785666357,
+      "name": "P0 U00s daily REQUIRED technical chains",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 41,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666357/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666357/logs",
+      "workflow_id": 396235286
+    },
+    {
+      "id": 40785666428,
+      "name": "P0 U00i nominal resource causal gate",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 61,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666428/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666428/logs",
+      "workflow_id": 394918367
+    },
+    {
+      "id": 40785666353,
+      "name": "Baseline CI",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 3181,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666353/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666353/logs",
+      "workflow_id": 323964867
+    },
+    {
+      "id": 40785666473,
+      "name": "Persistent War Room",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 130,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666473/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666473/logs",
+      "workflow_id": 384643075
+    },
+    {
+      "id": 40785666534,
+      "name": "P0 U00l Main nominal resources",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 52,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666534/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666534/logs",
+      "workflow_id": 395358384
+    },
+    {
+      "id": 40785666501,
+      "name": "Itinerant physical composition",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 86,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666501/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666501/logs",
+      "workflow_id": 392207210
+    },
+    {
+      "id": 40785666334,
+      "name": "P0 U02b Main Vocal REQUIRED phase composition",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 7,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666334/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666334/logs",
+      "workflow_id": 399563428
+    },
+    {
+      "id": 40785666541,
+      "name": "Data API grants",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 193,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666541/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666541/logs",
+      "workflow_id": 390707482
+    },
+    {
+      "id": 40785666514,
+      "name": "Planner Engine CI",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 639,
+      "jobs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666514/jobs",
+      "logs_url": "https://api.github.com/repos/angelvicen92/production-planner/actions/runs/40785666514/logs",
+      "workflow_id": 330215660
+    }
+  ],
+  "baselineConclusion": "32/32 SUCCESS",
+  "baselineTreeEquivalence": {
+    "prHead": "26940c0bb763344299fa3a0d6976671dd36e6e07",
+    "main": "92aa61272342b99795616ecb343161751d9d6c6f",
+    "bothTree": "030c1d917914309b85dd95e6b9c9b5fab8e51912",
+    "literalTwoCommitDiffEmpty": true
+  }
+}

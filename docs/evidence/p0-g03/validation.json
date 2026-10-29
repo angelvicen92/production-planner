@@ -1,0 +1,50 @@
+{
+  "status": "PASS_DIAGNOSTIC_HARD_FRONTIER",
+  "startedAt": "2026-10-29T01:13:18.477Z",
+  "finishedAt": "2026-10-29T01:17:30.894Z",
+  "localGates": {
+    "typescript": "PASS",
+    "harnessTypescript": "PASS",
+    "migrations": "PASS",
+    "build": "PASS",
+    "existingCompositionTests": {
+      "passed": 14,
+      "failed": 0
+    },
+    "chromiumAuthPostgresPostgrest": "PASS",
+    "uiParticipants": 19,
+    "uiBaseFieldObligations": 60,
+    "canonicalCrosswalkRows": 266,
+    "canonicalFamilies": 31,
+    "partialAdapter": "SUPPORTED",
+    "participantMealsPreserved": 19,
+    "counterfactual": "ONE_FIELD_CAUSE_CONFIRMED",
+    "sqlReadonlyRejection": "UNSUPPORTED_TECHNICAL_CHAIN_COMBINATION",
+    "browserErrors": [],
+    "networkEvents": [],
+    "acceptedStagesS1Plus": 0,
+    "fullA2Authoring": "NOT_REACHED",
+    "fullA2Representability": "NOT_REACHED",
+    "assisted266": "NOT_CLAIMED"
+  },
+  "uiMutationReceipts": 267,
+  "uiWritePathCounts": {
+    "/api/bootstrap-role": 174,
+    "/api/zones": 1,
+    "/api/spaces": 6,
+    "/api/resource-types": 2,
+    "/api/resource-items": 7,
+    "/api/itinerant-teams": 3,
+    "/api/task-templates": 8,
+    "/api/ta/6": 1,
+    "/api/ta/7": 1,
+    "/api/ta/8": 1,
+    "/api/program-settings": 1,
+    "/api/new-day-planner-configuration": 1,
+    "/api/plans": 1,
+    "/api/plans/:new/contestants": 19,
+    "/api/daily-tasks": 41
+  },
+  "ci": "See ci-baseline.json for G02; current G03 head checks are separate.",
+  "remoteWrites": 0
+}

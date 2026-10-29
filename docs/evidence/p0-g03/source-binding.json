@@ -1,0 +1,27 @@
+{
+  "productBase": "92aa61272342b99795616ecb343161751d9d6c6f",
+  "remoteMainVerified": "92aa61272342b99795616ecb343161751d9d6c6f",
+  "branch": "codex/p0-g03-a2-ui-first-frontier-audit",
+  "productPathsUnchangedAgainstBase": true,
+  "officialSourcesAndHistoricalCutUnchanged": true,
+  "runnerCheckoutDelta": [],
+  "sourceHashCount": 1672,
+  "sourceHashesArtifact": "native/source-manifest.json.gz",
+  "onlyArchiveModifications": [
+    {
+      "file": "vite.config.ts",
+      "from": "export default defineConfig({",
+      "to": "export default defineConfig({\n  cacheDir: path.resolve(import.meta.dirname, \"work/vite-cache\"),",
+      "before": "f648b48bb45dab59d0a5e208180273da469b0a66a474dc7762e04d628291d41c",
+      "after": "f16968f44bc75d3619bbe4803056f11a99f706ab1972bbc8e40ce92317108fa0"
+    },
+    {
+      "file": "script/demo/smokeNewDayIntegration.ts",
+      "from": "const journey=process.argv.includes(\"--daily-rounds\")?",
+      "to": "const journey=process.argv.includes(\"--u02b\")?(await import(\"../../docs/evidence/p0-g03/journey\")).journey:process.argv.includes(\"--daily-rounds\")?",
+      "before": "154f8d95a4182d012a81b63d2cb388759e8064110df8b510389be7ac186d9c58",
+      "after": "d8de72f6ca0d85734bece071df16fd37a1bebe78e3b879c47abea54a9b312d17"
+    }
+  ],
+  "remoteWrites": 0
+}

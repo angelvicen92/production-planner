@@ -1,0 +1,21 @@
+{
+  "format": "JSON keys are original native/*.json filenames",
+  "receipt_count": 15,
+  "canonical_json_sha256": {
+    "adapter.json": "b49f375f6f60b6c7038536cfe73da3467f338388b6568652ecf66e0ed73cc193",
+    "browser-errors.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "counterfactuals.json": "116c478eeced121ae9e94168c3ff3df0754232d5f440f1c80fb99c216f7138c0",
+    "effective-configuration.json": "97b9174895d73985e81686593cbbc40c9e9f65b3aa863381892c0e5fe174b9ef",
+    "engine-input.json": "9302c1703add11c552e281faef753f00fa1039dbdc6c7d89f0b8e910bd4dcf18",
+    "first-hard-frontier.json": "83e9ef7679624b98946dc133133f6bda9039e0be52784541c5b428b0e2108a77",
+    "identity-map.json": "ef7e2f98c7dc60d587d650236285709a89f5f97737c7cab4707e393fd02faa57",
+    "integration.json": "cc137aa2ca871fba74fdee29c06ab30e01cf5c06cdc6933935a83b085bb7fbc0",
+    "network-events.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "semantic-identities.json": "5e0d696d3e843332812fd3ffa48528631567c34a6189e073864f870872e6723e",
+    "sql-authority.json": "18518fa9cba85117b1c2cc0a70e7dc63a739b6189d92a67078c6408fb784d071",
+    "sql-plan.json": "dc455f310b5052e22352b2cf22a5a16b44ffe587647c6c1eca0568460fb4d44e",
+    "sql-readonly-rejection.json": "27f922879f83ddc1957e35122e56449a0465bdfa9339654a25ef4e7b8500dc85",
+    "sql-tasks.json": "d7fcac5eabb77694d9d60fd1b5f654e1083d316f70842a369b83e0997cb46ce3",
+    "ui-writes.json": "118d39ee94263aa4cb56308acffa93cebd81553a8c29ca347daf794456af2004"
+  }
+}

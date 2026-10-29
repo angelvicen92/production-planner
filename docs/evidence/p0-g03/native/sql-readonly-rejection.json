@@ -1,0 +1,28 @@
+{
+  "code": "P0001",
+  "message": "UNSUPPORTED_TECHNICAL_CHAIN_COMBINATION",
+  "readOnly": true,
+  "policy": {
+    "contractVersion": 1,
+    "policies": [
+      {
+        "id": "g03-phase-a",
+        "orderedTaskIds": [
+          58,
+          59,
+          60
+        ],
+        "phases": [
+          [
+            58,
+            59,
+            60
+          ]
+        ],
+        "adjacency": "REQUIRED",
+        "resourceContinuity": "REQUIRED",
+        "requiredResourceIds": []
+      }
+    ]
+  }
+}
