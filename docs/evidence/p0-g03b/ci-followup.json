@@ -1,0 +1,21 @@
+{
+  "head": "7b1ae4712a6f5333acc85933c807d250ada55467",
+  "pr": "https://github.com/angelvicen92/production-planner/pull/1220",
+  "classification": "MISSING_EXPLICIT_INTEGRATION_TEST_ALLOWLIST_ENTRY",
+  "failure": "server/flexibleMealPhaseComposition.spec.ts must remain isolated from Planner Next",
+  "affectedRuns": [
+    40815940841,
+    40815940945,
+    40815940930,
+    40815940923
+  ],
+  "correction": "Add only this integration test to the existing explicit import allowlist; include the isolation spec in G03b CI.",
+  "localVerification": {
+    "tests": 11,
+    "passed": 11,
+    "failed": 0
+  },
+  "runtimeProductDelta": false,
+  "nativeAcceptanceRepeatedLocally": false,
+  "hostedFinalHead": "Verify current PR head checks; these failed runs are retained as prior-head evidence."
+}

@@ -29,6 +29,7 @@ Para comparar G02 con el baseline comprimido, extraer sólo `deterministic.json`
 | TypeScript app y harness, build, ledger 128 | PASS |
 | Focales de composición/comidas/propuesta/permisos/SQL | 97 PASS |
 | Gate posterior de SQL 128, cadenas y core colectivo | 65 PASS |
+| Aislamiento de Planner Next y nueva integración | 11 PASS tras añadir el test exacto al allowlist |
 | Nuevo negativo colectivo con dominios individuales no vacíos | NO_PROPOSAL sin agotamiento; contrafactual válido |
 | UI, contratos, CAS, revisión y fuentes de G03 | Input previo literalmente igual; sólo se añade la autoridad de fases |
 | Dos bases frías, dos topologías por base | 8 Stages SQL nuevos, 0 HARD/REQUIRED nuevos |
@@ -53,3 +54,5 @@ La única modificación del runner histórico U02d cambia su expectativa de cat�
 `attempts.json` distingue errores de harness/sintaxis, el rechazo SQL real por clasificar una comida virtual como transición productiva y la topología de ventanas tardías no resuelta. El benchmark legacy de cadenas requiere un JSON raíz no versionado y su invocación sin ese prerrequisito devolvió ENOENT; no se fabrica ese baseline ni se cuenta como benchmark pasado. Los focales de cadenas y el benchmark de comidas sí se ejecutaron.
 
 La CI alojada del head del único PR es una comprobación separada y prevalece sobre recibos locales. El workflow G03b reproduce upgrade, dos bases, negativos y verificadores independientes; los workflows existentes conservan sus gates. No se aumenta ningún presupuesto o timeout del planificador. No se declara aquí una nueva suite global completamente verde a partir de los focales.
+
+La primera CI detectó el nuevo spec de integración fuera del allowlist explícito de imports. `ci-followup.json` conserva los cuatro jobs afectados. Se autoriza sólo ese archivo de test y se incorpora el test de aislamiento al workflow G03b; no cambian puntos de entrada productivos, búsqueda, fuentes o recibos nativos. El gate focal de aislamiento pasa 11/11.

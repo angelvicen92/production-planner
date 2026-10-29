@@ -37,5 +37,6 @@
   "hostedCI": "See the exact PR head checks; local success is not a hosted CI assertion.",
   "remoteSupabaseWrites": 0,
   "merge": false,
-  "deployment": false
+  "deployment": false,
+  "isolationFollowupTests": 11
 }

@@ -17,5 +17,11 @@
       "file": "docs/evidence/p0-g03b/upgrade128.ts",
       "change": "Correct inherited header comment from 126\u2192127 to 127\u2192128. Executed SQL/code and migration hash are unchanged."
     }
+  ],
+  "postNativeTestOnlyChanges": [
+    {
+      "file": "engine/planner-next/planMainFlowAndFeeders.spec.ts",
+      "change": "Authorize the exact new server/flexibleMealPhaseComposition.spec.ts integration test in the existing explicit import boundary; no runtime entry or engine algorithm changes."
+    }
   ]
 }

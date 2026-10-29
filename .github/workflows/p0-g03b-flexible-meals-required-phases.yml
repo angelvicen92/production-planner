@@ -41,6 +41,7 @@ jobs:
           server/fixedItinerantPhaseComposition.spec.ts server/composedAnchoredRequired.spec.ts
           server/technicalChainSql.spec.ts server/apiAuthorization.spec.ts
           engine/planner-next/participantMeals.spec.ts
+          engine/planner-next/planMainFlowAndFeeders.spec.ts
           script/demo/a2Preflight.spec.ts script/demo/assistedSQLContracts.spec.ts
       - run: node --import tsx docs/evidence/p0-g03b/upgrade128.ts work/g03b-upgrade
       - run: node --import tsx docs/evidence/p0-g03b/run.ts work/g03b-a
