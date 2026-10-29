@@ -1,0 +1,23 @@
+{
+  "status": "PASS_DIAGNOSTIC",
+  "nativeInputsLiteral": true,
+  "problemsWitnessesDecisionsFingerprintsBranchesLiteral": true,
+  "sourceHashesEqual": true,
+  "sqlStateEqual": true,
+  "sqlAdministrativeFieldsExcluded": [
+    "daily_technical_chains.by",
+    "daily_technical_chains.at"
+  ],
+  "newCombinedSQLStages": 0,
+  "ignoredExecutionDurationKeys": [
+    "futureItinerantOperationalMealsMs",
+    "futureItinerantParticipantFutureMs",
+    "futureItinerantParticipantMealsMs",
+    "futureItinerantPrerequisiteSearchMs",
+    "futureItinerantPriorRevalidationMs",
+    "futureItinerantStructuralSearchMs",
+    "futureItinerantTechnicalFutureMs"
+  ],
+  "idRemapping": false,
+  "remoteWrites": 0
+}

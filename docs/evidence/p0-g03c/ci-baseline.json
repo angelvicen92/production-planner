@@ -1,0 +1,54 @@
+{
+  "sha": "1683233131913df451dc97986c084c442f3aa87e",
+  "checks": [
+    {
+      "name": "baseline-ci",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40834605783/job/123316340099"
+    },
+    {
+      "name": "data-api-grants (assisted)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40834538903/job/123316130346"
+    },
+    {
+      "name": "data-api-grants (execution)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40834538903/job/123316130321"
+    },
+    {
+      "name": "data-api-grants (headers)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40834538903/job/123316130317"
+    },
+    {
+      "name": "data-api-grants (control-room)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40834538903/job/123316130262"
+    },
+    {
+      "name": "data-api-grants (configuration)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40834538903/job/123316130243"
+    },
+    {
+      "name": "data-api-grants (war-room)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40834538903/job/123316130077"
+    },
+    {
+      "name": "baseline-ci",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/angelvicen92/production-planner/actions/runs/40834538886/job/123316129916"
+    }
+  ],
+  "notCandidateCI": true
+}

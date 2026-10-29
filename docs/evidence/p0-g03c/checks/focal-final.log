@@ -1,0 +1,874 @@
+TAP version 13
+# Subtest: native group preserves both identities, dependencies and one shared physical occupation
+ok 1 - native group preserves both identities, dependencies and one shared physical occupation
+  ---
+  duration_ms: 176.819296
+  type: 'test'
+  ...
+# Subtest: single-member scopes close visibly even without visible prerequisites; future groups stay complete and unaccepted
+ok 2 - single-member scopes close visibly even without visible prerequisites; future groups stay complete and unaccepted
+  ---
+  duration_ms: 46.421021
+  type: 'test'
+  ...
+# Subtest: partial protection rejects explicitly; complete protection is preserved literally during continuation
+ok 3 - partial protection rejects explicitly; complete protection is preserved literally during continuation
+  ---
+  duration_ms: 55.787969
+  type: 'test'
+  ...
+# Subtest: both participants govern feeding feasibility; incompatible feeding is physical, never exhausted search
+ok 4 - both participants govern feeding feasibility; incompatible feeding is physical, never exhausted search
+  ---
+  duration_ms: 10.009909
+  type: 'test'
+  ...
+# Subtest: declarations reject unequal duration, space, resources, duplicate people, foreign/missing and internal dependencies
+ok 5 - declarations reject unequal duration, space, resources, duplicate people, foreign/missing and internal dependencies
+  ---
+  duration_ms: 2.725877
+  type: 'test'
+  ...
+# Subtest: native authority is opt-in, cold revision replay verifies every member and absence stays historical
+ok 6 - native authority is opt-in, cold revision replay verifies every member and absence stays historical
+  ---
+  duration_ms: 3.9529
+  type: 'test'
+  ...
+# Subtest: the existing consumer supports three different participants without a pair-only authoring restriction
+ok 7 - the existing consumer supports three different participants without a pair-only authoring restriction
+  ---
+  duration_ms: 12.565649
+  type: 'test'
+  ...
+# Subtest: reversing member and input set order preserves the authored authority and deterministic proposal
+ok 8 - reversing member and input set order preserves the authored authority and deterministic proposal
+  ---
+  duration_ms: 69.733241
+  type: 'test'
+  ...
+# Subtest: a saturated physical resource consumes the shared interval once, while separate obligations do not fit
+ok 9 - a saturated physical resource consumes the shared interval once, while separate obligations do not fit
+  ---
+  duration_ms: 15.772617
+  type: 'test'
+  ...
+# Subtest: canonical validation rechecks a stored physical witness without another search
+ok 10 - canonical validation rechecks a stored physical witness without another search
+  ---
+  duration_ms: 28.948332
+  type: 'test'
+  ...
+# Subtest: persisted witness rejects omitted choice, even with recalculated certificate hash
+ok 11 - persisted witness rejects omitted choice, even with recalculated certificate hash
+  ---
+  duration_ms: 2.584978
+  type: 'test'
+  ...
+# Subtest: persisted witness rejects future resource omitted, even with recalculated certificate hash
+ok 12 - persisted witness rejects future resource omitted, even with recalculated certificate hash
+  ---
+  duration_ms: 1.826019
+  type: 'test'
+  ...
+# Subtest: persisted witness rejects invented alternative, even with recalculated certificate hash
+ok 13 - persisted witness rejects invented alternative, even with recalculated certificate hash
+  ---
+  duration_ms: 1.445759
+  type: 'test'
+  ...
+# Subtest: persisted witness rejects future identity omitted, even with recalculated certificate hash
+ok 14 - persisted witness rejects future identity omitted, even with recalculated certificate hash
+  ---
+  duration_ms: 1.708233
+  type: 'test'
+  ...
+# Subtest: persisted witness rejects collision with critical future, even with recalculated certificate hash
+ok 15 - persisted witness rejects collision with critical future, even with recalculated certificate hash
+  ---
+  duration_ms: 4.611547
+  type: 'test'
+  ...
+# Subtest: places a joint auxiliary group atomically and visibly
+ok 16 - places a joint auxiliary group atomically and visibly
+  ---
+  duration_ms: 256.17549
+  type: 'test'
+  ...
+# Subtest: requires a common start and rejects external conflicts
+ok 17 - requires a common start and rejects external conflicts
+  ---
+  duration_ms: 3.567526
+  type: 'test'
+  ...
+# Subtest: preflight joint group reason codes are deterministic
+ok 18 - preflight joint group reason codes are deterministic
+  ---
+  duration_ms: 2.867421
+  type: 'test'
+  ...
+# Subtest: validation reports a synchronized group once
+ok 19 - validation reports a synchronized group once
+  ---
+  duration_ms: 118.089217
+  type: 'test'
+  ...
+# Subtest: validation rejects undeclared and changed joint membership deterministically
+ok 20 - validation rejects undeclared and changed joint membership deterministically
+  ---
+  duration_ms: 179.340559
+  type: 'test'
+  ...
+# Subtest: SPEC10-017 allows dependent joint groups and rejects internal dependencies
+ok 21 - SPEC10-017 allows dependent joint groups and rejects internal dependencies
+  ---
+  duration_ms: 1.370916
+  type: 'test'
+  ...
+# Subtest: constructive policies reject the first productive slot and retain the meal-feasible alternative
+ok 22 - constructive policies reject the first productive slot and retain the meal-feasible alternative
+  ---
+  duration_ms: 333.957129
+  type: 'test'
+  ...
+# Subtest: shared meal budget never exceeds remaining allowance and reports atomic exhaustion
+ok 23 - shared meal budget never exceeds remaining allowance and reports atomic exhaustion
+  ---
+  duration_ms: 4.02648
+  type: 'test'
+  ...
+# Subtest: validation never searches and rejects omitted published meals
+ok 24 - validation never searches and rejects omitted published meals
+  ---
+  duration_ms: 1.014021
+  type: 'test'
+  ...
+# Subtest: a flexible-window problem without a global break still requires its individual meal
+ok 25 - a flexible-window problem without a global break still requires its individual meal
+  ---
+  duration_ms: 0.317206
+  type: 'test'
+  ...
+# Subtest: joint infeasibility publishes no structural or meal partials under either policy
+ok 26 - joint infeasibility publishes no structural or meal partials under either policy
+  ---
+  duration_ms: 1037.46572
+  type: 'test'
+  ...
+# Subtest: direct preflight enforces protected state and canonical grid
+ok 27 - direct preflight enforces protected state and canonical grid
+  ---
+  duration_ms: 0.66692
+  type: 'test'
+  ...
+# Subtest: a provisional terminal abstention preserves later meal combinations
+ok 28 - a provisional terminal abstention preserves later meal combinations
+  ---
+  duration_ms: 0.453531
+  type: 'test'
+  ...
+# Subtest: partial abstention explores complete combinations; exhaustive unknowns and later budget retain their distinct reasons
+ok 29 - partial abstention explores complete combinations; exhaustive unknowns and later budget retain their distinct reasons
+  ---
+  duration_ms: 0.765479
+  type: 'test'
+  ...
+# Subtest: joint witness schedules every meal once, respects capacity, and is deterministic
+ok 30 - joint witness schedules every meal once, respects capacity, and is deterministic
+  ---
+  duration_ms: 3.534512
+  type: 'test'
+  ...
+# Subtest: joint witness rejects capacity collision although every meal has an individual candidate
+ok 31 - joint witness rejects capacity collision although every meal has an individual candidate
+  ---
+  duration_ms: 0.569675
+  type: 'test'
+  ...
+# Subtest: cheap probe soundly prunes a zero individual domain
+ok 32 - cheap probe soundly prunes a zero individual domain
+  ---
+  duration_ms: 0.252519
+  type: 'test'
+  ...
+# Subtest: analytic probe represents fragmented holes and exact boundaries without scanning starts
+ok 33 - analytic probe represents fragmented holes and exact boundaries without scanning starts
+  ---
+  duration_ms: 1.781472
+  type: 'test'
+  ...
+# Subtest: analytic dependency bounds retain the exact boundary and eliminate later starts arithmetically
+ok 34 - analytic dependency bounds retain the exact boundary and eliminate later starts arithmetically
+  ---
+  duration_ms: 0.458839
+  type: 'test'
+  ...
+# Subtest: cheap probe analytically prunes collective capacity overload
+ok 35 - cheap probe analytically prunes collective capacity overload
+  ---
+  duration_ms: 0.338858
+  type: 'test'
+  ...
+# Subtest: inconclusive cheap probe never substitutes for exact joint search
+ok 36 - inconclusive cheap probe never substitutes for exact joint search
+  ---
+  duration_ms: 0.758818
+  type: 'test'
+  ...
+# Subtest: cheap and exact meal authorities honor variable duration and capacity
+ok 37 - cheap and exact meal authorities honor variable duration and capacity
+  ---
+  duration_ms: 0.745668
+  type: 'test'
+  ...
+# Subtest: meals occupy only their participant and exact boundaries remain valid
+ok 38 - meals occupy only their participant and exact boundaries remain valid
+  ---
+  duration_ms: 0.211477
+  type: 'test'
+  ...
+# Subtest: both search policies publish a complete hard-valid participant meal result
+ok 39 - both search policies publish a complete hard-valid participant meal result
+  ---
+  duration_ms: 71.935899
+  type: 'test'
+  ...
+# Subtest: Stage protection keeps pending execution and rejects movement without weakening external fixed-interval preflight
+ok 40 - Stage protection keeps pending execution and rejects movement without weakening external fixed-interval preflight
+  ---
+  duration_ms: 0.584837
+  type: 'test'
+  ...
+# Subtest: CAM identity and direction: 5 rejected, 10 accepted, reverse fallback and no effective consumption
+ok 41 - CAM identity and direction: 5 rejected, 10 accepted, reverse fallback and no effective consumption
+  ---
+  duration_ms: 11.97958
+  type: 'test'
+  ...
+# Subtest: resource fallback and simultaneous resources use max, with independent opposite routes
+ok 42 - resource fallback and simultaneous resources use max, with independent opposite routes
+  ---
+  duration_ms: 1.191798
+  type: 'test'
+  ...
+# Subtest: domains, residual matching and Evidence resolve the same temporal direction in either search order
+ok 43 - domains, residual matching and Evidence resolve the same temporal direction in either search order
+  ---
+  duration_ms: 1.537386
+  type: 'test'
+  ...
+# Subtest: coach compatibility: canonical 29/30, legacy fallback, duplicate declaration rejected and no double count
+ok 44 - coach compatibility: canonical 29/30, legacy fallback, duplicate declaration rejected and no double count
+  ---
+  duration_ms: 0.655784
+  type: 'test'
+  ...
+# Subtest: route preflight rejects missing identities, same space, duplicates, zero and off grid
+ok 45 - route preflight rejects missing identities, same space, duplicates, zero and off grid
+  ---
+  duration_ms: 0.2738
+  type: 'test'
+  ...
+# Subtest: EngineInput real daily IDs, fingerprints, unavailable catalog and historical ambiguity
+ok 46 - EngineInput real daily IDs, fingerprints, unavailable catalog and historical ambiguity
+  ---
+  duration_ms: 19.580583
+  type: 'test'
+  ...
+# Subtest: preflight rejects schema/RPC/security drift, broad policy expressions, false policy roles and missing sequences
+ok 47 - preflight rejects schema/RPC/security drift, broad policy expressions, false policy roles and missing sequences
+  ---
+  duration_ms: 794.461443
+  type: 'test'
+  ...
+# Subtest: security rollback is based on the captured original state and requires separate approval
+ok 48 - security rollback is based on the captured original state and requires separate approval
+  ---
+  duration_ms: 109.126386
+  type: 'test'
+  ...
+# Subtest: each extended 115 RPC remains independently protected against body drift
+ok 49 - each extended 115 RPC remains independently protected against body drift
+  ---
+  duration_ms: 221.605917
+  type: 'test'
+  ...
+# Subtest: 115 and 116 bind distinct literal bodies; schema downgrade cannot mask a changed RPC
+ok 50 - 115 and 116 bind distinct literal bodies; schema downgrade cannot mask a changed RPC
+  ---
+  duration_ms: 50.215841
+  type: 'test'
+  ...
+# Subtest: 116 and 117 bind distinct bodies; a scope-schema marker requires the new writer and source reader
+ok 51 - 116 and 117 bind distinct bodies; a scope-schema marker requires the new writer and source reader
+  ---
+  duration_ms: 44.080444
+  type: 'test'
+  ...
+# Subtest: 120 joint marker requires its exact writer, source readers and shared witness consumer
+ok 52 - 120 joint marker requires its exact writer, source readers and shared witness consumer
+  ---
+  duration_ms: 157.019875
+  type: 'test'
+  ...
+# Subtest: 121 operational authority requires its exact writer, sources and material certificate
+ok 53 - 121 operational authority requires its exact writer, sources and material certificate
+  ---
+  duration_ms: 90.402813
+  type: 'test'
+  ...
+# Subtest: 123 binds both validators; a partial rollback cannot disguise the empty-set SQL contract
+ok 54 - 123 binds both validators; a partial rollback cannot disguise the empty-set SQL contract
+  ---
+  duration_ms: 46.775585
+  type: 'test'
+  ...
+# Subtest: 127 requires exact directional consumers, versioned writer and source readers
+ok 55 - 127 requires exact directional consumers, versioned writer and source readers
+  ---
+  duration_ms: 301.306378
+  type: 'test'
+  ...
+# Subtest: 128 binds phase admission and flexible future meals independently
+ok 56 - 128 binds phase admission and flexible future meals independently
+  ---
+  duration_ms: 56.229112
+  type: 'test'
+  ...
+# Subtest: 128 extends only phase admission and the existing individual meal witness channel
+ok 57 - 128 extends only phase admission and the existing individual meal witness channel
+  ---
+  duration_ms: 57.977555
+  type: 'test'
+  ...
+# Subtest: 115 retains the literal 114 delegate and limits existing reader deltas to the daily chain authority
+ok 58 - 115 retains the literal 114 delegate and limits existing reader deltas to the daily chain authority
+  ---
+  duration_ms: 74.654622
+  type: 'test'
+  ...
+# Subtest: 116 binds exact source transitions and only the existing task writer loops
+ok 59 - 116 binds exact source transitions and only the existing task writer loops
+  ---
+  duration_ms: 15.481112
+  type: 'test'
+  ...
+# Subtest: 117 retains literal 116 writers and binds only the scope transition and authority reader
+ok 60 - 117 retains literal 116 writers and binds only the scope transition and authority reader
+  ---
+  duration_ms: 44.889211
+  type: 'test'
+  ...
+# Subtest: 120 retains 119 delegation and limits existing body deltas to joint transitions and the physical witness
+ok 61 - 120 retains 119 delegation and limits existing body deltas to joint transitions and the physical witness
+  ---
+  duration_ms: 32.061761
+  type: 'test'
+  ...
+# Subtest: 123 changes only the two existing phase validators and retains the historical linear branch
+ok 62 - 123 changes only the two existing phase validators and retains the historical linear branch
+  ---
+  duration_ms: 13.235337
+  type: 'test'
+  ...
+# Subtest: itinerant catalog writes require ADMIN for Express casing and trailing slash variants
+ok 63 - itinerant catalog writes require ADMIN for Express casing and trailing slash variants
+  ---
+  duration_ms: 232.500827
+  type: 'test'
+  ...
+# Subtest: real HTTP middleware blocks anonymous/debug and task writes while preserving authorized application flows
+ok 64 - real HTTP middleware blocks anonymous/debug and task writes while preserving authorized application flows
+  ---
+  duration_ms: 131.834971
+  type: 'test'
+  ...
+# Subtest: template aliases and Express casing use the catalog admin authority before any handler
+ok 65 - template aliases and Express casing use the catalog admin authority before any handler
+  ---
+  duration_ms: 91.108558
+  type: 'test'
+  ...
+# Subtest: time correction and history share execution role boundaries including Express casing
+ok 66 - time correction and history share execution role boundaries including Express casing
+  ---
+  duration_ms: 0.950095
+  type: 'test'
+  ...
+# Subtest: bulk execution reset requires ADMIN through real HTTP including casing and trailing slash
+ok 67 - bulk execution reset requires ADMIN through real HTTP including casing and trailing slash
+  ---
+  duration_ms: 36.639286
+  type: 'test'
+  ...
+# Subtest: persisted RPC failure retains the diagnostic instead of object coercion
+ok 68 - persisted RPC failure retains the diagnostic instead of object coercion
+  ---
+  duration_ms: 4.380444
+  type: 'test'
+  ...
+# Subtest: an explicitly declared native pause for unused physical members still materializes
+ok 69 - an explicitly declared native pause for unused physical members still materializes
+  ---
+  duration_ms: 176.744669
+  type: 'test'
+  ...
+# Subtest: request requires an ACTIVE session before creating or scheduling a run
+ok 70 - request requires an ACTIVE session before creating or scheduling a run
+  ---
+  duration_ms: 9.911686
+  type: 'test'
+  ...
+# Subtest: stage proposalRunId recovers its structural witness for the runner
+ok 71 - stage proposalRunId recovers its structural witness for the runner
+  ---
+  duration_ms: 24.006317
+  type: 'test'
+  ...
+# Subtest: accepted run lineage recovers a joint witness from result_json after configuration refresh
+ok 72 - accepted run lineage recovers a joint witness from result_json after configuration refresh
+  ---
+  duration_ms: 14.6892
+  type: 'test'
+  ...
+# Subtest: a stage prefers its V2 structural witness while retaining V1 compatibility
+ok 73 - a stage prefers its V2 structural witness while retaining V1 compatibility
+  ---
+  duration_ms: 9.244929
+  type: 'test'
+  ...
+# Subtest: the nearest stage witness takes precedence and the parent is the fallback
+ok 74 - the nearest stage witness takes precedence and the parent is the fallback
+  ---
+  duration_ms: 46.335763
+  type: 'test'
+  ...
+# Subtest: lineage never combines an itinerary with a different newer supporting pipeline
+ok 75 - lineage never combines an itinerary with a different newer supporting pipeline
+  ---
+  duration_ms: 4.548127
+  type: 'test'
+  ...
+# Subtest: lineage retains an uncoupled itinerary when no supporting pipeline exists
+ok 76 - lineage retains an uncoupled itinerary when no supporting pipeline exists
+  ---
+  duration_ms: 10.098839
+  type: 'test'
+  ...
+# Subtest: request captures the exact assisted authorities, creates one run, and schedules one deferred job without product writes
+ok 77 - request captures the exact assisted authorities, creates one run, and schedules one deferred job without product writes
+  ---
+  duration_ms: 5.69539
+  type: 'test'
+  ...
+# Subtest: a deferred execution failure marks the returned run failed exactly once and makes no product write
+ok 78 - a deferred execution failure marks the returned run failed exactly once and makes no product write
+  ---
+  duration_ms: 3.710853
+  type: 'test'
+  ...
+# Subtest: run fails closed on a stale effective config before invoking Planner Next or finish
+ok 79 - run fails closed on a stale effective config before invoking Planner Next or finish
+  ---
+  duration_ms: 1.156406
+  type: 'test'
+  ...
+# Subtest: run derives protected placements only from the base stage and preserves their exact identity and interval
+ok 80 - run derives protected placements only from the base stage and preserves their exact identity and interval
+  ---
+  duration_ms: 14.250027
+  type: 'test'
+  ...
+# Subtest: product proposal round-trips protected and newly selected round preparations without duplicates
+ok 81 - product proposal round-trips protected and newly selected round preparations without duplicates
+  ---
+  duration_ms: 61.946093
+  type: 'test'
+  ...
+# Subtest: material participant meals update their source row and restore as fixed meal context
+ok 82 - material participant meals update their source row and restore as fixed meal context
+  ---
+  duration_ms: 10.452442
+  type: 'test'
+  ...
+# Subtest: operational meals consolidate only after all space/resource/coach consumers, preserving accepted intervals on replay
+ok 83 - operational meals consolidate only after all space/resource/coach consumers, preserving accepted intervals on replay
+  ---
+  duration_ms: 100.613988
+  type: 'test'
+  ...
+# Subtest: run grandfathers an unchanged ACTIVE exception from an earlier config revision into the runner baseline
+ok 84 - run grandfathers an unchanged ACTIVE exception from an earlier config revision into the runner baseline
+  ---
+  duration_ms: 4.585713
+  type: 'test'
+  ...
+# Subtest: NO_PROPOSAL and UNSUPPORTED each persist one causal result without product writes
+ok 85 - NO_PROPOSAL and UNSUPPORTED each persist one causal result without product writes
+  ---
+  duration_ms: 9.708178
+  type: 'test'
+  ...
+# Subtest: a real runtime interruption persists NO_PROPOSAL with its time reason and no partial draft
+ok 86 - a real runtime interruption persists NO_PROPOSAL with its time reason and no partial draft
+  ---
+  duration_ms: 17.759055
+  type: 'test'
+  ...
+# Subtest: apply performs one RPC, sends only optimistic guards, and propagates stale without lateral writes
+ok 87 - apply performs one RPC, sends only optimistic guards, and propagates stale without lateral writes
+  ---
+  duration_ms: 0.54255
+  type: 'test'
+  ...
+# Subtest: get rejects a run belonging to another plan or execution kind as RUN_NOT_FOUND
+ok 88 - get rejects a run belonging to another plan or execution kind as RUN_NOT_FOUND
+  ---
+  duration_ms: 0.3118
+  type: 'test'
+  ...
+# Subtest: canonical violation projection is lossless and fails closed for every missing identity namespace
+ok 89 - canonical violation projection is lossless and fails closed for every missing identity namespace
+  ---
+  duration_ms: 0.623492
+  type: 'test'
+  ...
+# Subtest: proposal eligibility grandfathers only exact structured identities and rejects every anonymous or new HARD
+ok 90 - proposal eligibility grandfathers only exact structured identities and rejects every anonymous or new HARD
+  ---
+  duration_ms: 0.332212
+  type: 'test'
+  ...
+# Subtest: projects resource violations from adapter plan-resource identities
+ok 91 - projects resource violations from adapter plan-resource identities
+  ---
+  duration_ms: 0.173062
+  type: 'test'
+  ...
+# Subtest: future analytical authority selects exactly pending and interrupted canonical tasks
+ok 92 - future analytical authority selects exactly pending and interrupted canonical tasks
+  ---
+  duration_ms: 0.262396
+  type: 'test'
+  ...
+# Subtest: accepted itinerant direct assignment survives into the next stage without swallowing inherited resources
+ok 93 - accepted itinerant direct assignment survives into the next stage without swallowing inherited resources
+  ---
+  duration_ms: 63.61909
+  type: 'test'
+  ...
+# Subtest: daily composition persists declared byItem resources with the selected unit, leaving location inheritance in configuration
+ok 94 - daily composition persists declared byItem resources with the selected unit, leaving location inheritance in configuration
+  ---
+  duration_ms: 23.109838
+  type: 'test'
+  ...
+# Subtest: production cannot accept a new HARD with NONE; no privileged RPC
+ok 95 - production cannot accept a new HARD with NONE; no privileged RPC
+  ---
+  duration_ms: 26.54495
+  type: 'test'
+  ...
+# Subtest: production cannot accept a new HARD with REQUIRED_DEVIATIONS; no privileged RPC
+ok 96 - production cannot accept a new HARD with REQUIRED_DEVIATIONS; no privileged RPC
+  ---
+  duration_ms: 0.2513
+  type: 'test'
+  ...
+# Subtest: production cannot accept a new HARD with HARD_EXCEPTIONS; no privileged RPC
+ok 97 - production cannot accept a new HARD with HARD_EXCEPTIONS; no privileged RPC
+  ---
+  duration_ms: 0.222335
+  type: 'test'
+  ...
+# Subtest: admin accepts a new HARD only after a current server role lookup
+ok 98 - admin accepts a new HARD only after a current server role lookup
+  ---
+  duration_ms: 0.539404
+  type: 'test'
+  ...
+# Subtest: production preserves clean acceptance
+ok 99 - production preserves clean acceptance
+  ---
+  duration_ms: 0.240494
+  type: 'test'
+  ...
+# Subtest: production preserves REQUIRED acceptance
+ok 100 - production preserves REQUIRED acceptance
+  ---
+  duration_ms: 0.670192
+  type: 'test'
+  ...
+# Subtest: production preserves intact inherited HARD acceptance
+ok 101 - production preserves intact inherited HARD acceptance
+  ---
+  duration_ms: 7.759006
+  type: 'test'
+  ...
+# Subtest: production preserves inherited HARD and new REQUIRED acceptance
+ok 102 - production preserves inherited HARD and new REQUIRED acceptance
+  ---
+  duration_ms: 0.570652
+  type: 'test'
+  ...
+# Subtest: revocation after validation is read at acceptance and forbids every write
+ok 103 - revocation after validation is read at acceptance and forbids every write
+  ---
+  duration_ms: 0.74885
+  type: 'test'
+  ...
+# Subtest: a non-admin cannot preauthorize HARD_EXCEPTIONS on a clean or stale report
+ok 104 - a non-admin cannot preauthorize HARD_EXCEPTIONS on a clean or stale report
+  ---
+  duration_ms: 0.442217
+  type: 'test'
+  ...
+# Subtest: a legacy report without new counts falls back to total HARD and remains protected
+ok 105 - a legacy report without new counts falls back to total HARD and remains protected
+  ---
+  duration_ms: 0.50322
+  type: 'test'
+  ...
+# Subtest: 082 persists exact exception identity and prevents duplicates
+ok 106 - 082 persists exact exception identity and prevents duplicates
+  ---
+  duration_ms: 1.46971
+  type: 'test'
+  ...
+# Subtest: 082 incrementally reuses the HARD/REQUIRED check already installed by 077
+ok 107 - 082 incrementally reuses the HARD/REQUIRED check already installed by 077
+  ---
+  duration_ms: 0.286122
+  type: 'test'
+  ...
+# Subtest: validation and accept are server-only and validation freshness is checked under lock
+ok 108 - validation and accept are server-only and validation freshness is checked under lock
+  ---
+  duration_ms: 0.20566
+  type: 'test'
+  ...
+# Subtest: accept requires typed confirmation and creates HARD and REQUIRED exceptions in its transaction
+ok 109 - accept requires typed confirmation and creates HARD and REQUIRED exceptions in its transaction
+  ---
+  duration_ms: 0.181083
+  type: 'test'
+  ...
+# Subtest: 082 preserves exact, edited-proposal and manual-only stage provenance
+ok 110 - 082 preserves exact, edited-proposal and manual-only stage provenance
+  ---
+  duration_ms: 0.232501
+  type: 'test'
+  ...
+# Subtest: Drizzle mirrors migration 082 critical nullability and accepted severity
+ok 111 - Drizzle mirrors migration 082 critical nullability and accepted severity
+  ---
+  duration_ms: 0.323499
+  type: 'test'
+  ...
+# Subtest: five native projectors compose in every order on the four original audited days
+ok 112 - five native projectors compose in every order on the four original audited days
+  ---
+  duration_ms: 439.1058
+  type: 'test'
+  ...
+# Subtest: overlapping ownership, alternative units, positive transitions and undeclared virtuality stay unsupported
+ok 113 - overlapping ownership, alternative units, positive transitions and undeclared virtuality stay unsupported
+  ---
+  duration_ms: 3.158062
+  type: 'test'
+  ...
+# Subtest: creation intent is explicit and equal overrides remain overrides
+ok 114 - creation intent is explicit and equal overrides remain overrides
+  ---
+  duration_ms: 2.591355
+  type: 'test'
+  ...
+# Subtest: typed edit and refresh reject ambiguous or implicit operations
+ok 115 - typed edit and refresh reject ambiguous or implicit operations
+  ---
+  duration_ms: 2.252633
+  type: 'test'
+  ...
+# Subtest: 087 snapshots participant transition and extends atomic day operations
+ok 116 - 087 snapshots participant transition and extends atomic day operations
+  ---
+  duration_ms: 0.597873
+  type: 'test'
+  ...
+# Subtest: 084 preserves 077 canonical revisions, safe legacy materialization, mutations and RLS
+ok 117 - 084 preserves 077 canonical revisions, safe legacy materialization, mutations and RLS
+  ---
+  duration_ms: 1.072941
+  type: 'test'
+  ...
+# Subtest: 085 keeps optimizer baseline separate and restores without consulting General
+ok 118 - 085 keeps optimizer baseline separate and restores without consulting General
+  ---
+  duration_ms: 0.43059
+  type: 'test'
+  ...
+# Subtest: optimizer restore leaves workday and meal unchanged in the canonical candidate
+ok 119 - optimizer restore leaves workday and meal unchanged in the canonical candidate
+  ---
+  duration_ms: 0.26464
+  type: 'test'
+  ...
+# Subtest: canonical day revisions are built from the complete existing EngineInput authorities
+ok 120 - canonical day revisions are built from the complete existing EngineInput authorities
+  ---
+  duration_ms: 0.39054
+  type: 'test'
+  ...
+# Subtest: the registry includes versioned SOFT and native REQUIRED operational capabilities
+ok 121 - the registry includes versioned SOFT and native REQUIRED operational capabilities
+  ---
+  duration_ms: 0.492184
+  type: 'test'
+  ...
+# Subtest: fixed units, segments, joint unit and unused snapshots compose in both authoring orders
+ok 122 - fixed units, segments, joint unit and unused snapshots compose in both authoring orders
+  ---
+  duration_ms: 53.632169
+  type: 'test'
+  ...
+# Subtest: uncertified transitions, alternatives and unauthentic mappings remain unsupported
+ok 123 - uncertified transitions, alternatives and unauthentic mappings remain unsupported
+  ---
+  duration_ms: 7.840636
+  type: 'test'
+  ...
+# Subtest: equal physical members cannot hide a different joint unit identity
+ok 124 - equal physical members cannot hide a different joint unit identity
+  ---
+  duration_ms: 1.09857
+  type: 'test'
+  ...
+# Subtest: native Main/Vocal admits fixed REQUIRED composition in both authoring orders
+ok 125 - native Main/Vocal admits fixed REQUIRED composition in both authoring orders
+  ---
+  duration_ms: 20.226289
+  type: 'test'
+  ...
+# Subtest: native flexible meals and phases preserve all authorities, guards and immutable input
+ok 126 - native flexible meals and phases preserve all authorities, guards and immutable input
+  ---
+  duration_ms: 56.478714
+  type: 'test'
+  ...
+# Subtest: phase-only scope certifies nineteen pending meals; missing, duplicate, shifted and overlapping meals fail certification
+ok 127 - phase-only scope certifies nineteen pending meals; missing, duplicate, shifted and overlapping meals fail certification
+  ---
+  duration_ms: 300.373736
+  type: 'test'
+  ...
+# Subtest: individually nonempty meal domains cannot justify losing the last collective realization
+ok 128 - individually nonempty meal domains cannot justify losing the last collective realization
+  ---
+  duration_ms: 33.787126
+  type: 'test'
+  ...
+# Subtest: global gate prunes only a meal with an explicit zero-domain proof
+ok 129 - global gate prunes only a meal with an explicit zero-domain proof
+  ---
+  duration_ms: 2.073813
+  type: 'test'
+  ...
+# Subtest: global gate includes protected and flexible obligations deterministically
+ok 130 - global gate includes protected and flexible obligations deterministically
+  ---
+  duration_ms: 9.499643
+  type: 'test'
+  ...
+# Subtest: global gate reports general search exhaustion without inventing meal infeasibility
+ok 131 - global gate reports general search exhaustion without inventing meal infeasibility
+  ---
+  duration_ms: 0.248395
+  type: 'test'
+  ...
+# Subtest: global gate reports an uncertified witness as inconclusive without proof or exhaustion
+ok 132 - global gate reports an uncertified witness as inconclusive without proof or exhaustion
+  ---
+  duration_ms: 0.239071
+  type: 'test'
+  ...
+# Subtest: representative, non-representative peer and space close the visible REQUIRED unit without prerequisites
+ok 133 - representative, non-representative peer and space close the visible REQUIRED unit without prerequisites
+  ---
+  duration_ms: 53.62425
+  type: 'test'
+  ...
+# Subtest: authority accepts all authoring orders but rejects physical duplication, bad phases and backwards dependencies
+ok 134 - authority accepts all authoring orders but rejects physical duplication, bad phases and backwards dependencies
+  ---
+  duration_ms: 23.306475
+  type: 'test'
+  ...
+# Subtest: partial scope certifies the authentic global future with its physical pause, zero extra search, then preserves S1
+ok 135 - partial scope certifies the authentic global future with its physical pause, zero extra search, then preserves S1
+  ---
+  duration_ms: 378.061014
+  type: 'test'
+  ...
+# Subtest: each phase exposes multiple realized permutations, and HARD dependencies can require a non-nominal one
+ok 136 - each phase exposes multiple realized permutations, and HARD dependencies can require a non-nominal one
+  ---
+  duration_ms: 411.322766
+  type: 'test'
+  ...
+# Subtest: phased technical operations retain their kind and accept flexible internal dependencies
+ok 137 - phased technical operations retain their kind and accept flexible internal dependencies
+  ---
+  duration_ms: 31.481752
+  type: 'test'
+  ...
+# Subtest: a locally valid competitor prefix cannot consume the last contiguous future realization
+ok 138 - a locally valid competitor prefix cannot consume the last contiguous future realization
+  ---
+  duration_ms: 167.452443
+  type: 'test'
+  ...
+# Subtest: explicit empty common identities survive daily authority and adapter; missing and null fail closed
+ok 139 - explicit empty common identities survive daily authority and adapter; missing and null fail closed
+  ---
+  duration_ms: 91.233461
+  type: 'test'
+  ...
+# Subtest: mixed 17 obligation REQUIRED future is physical, certificate searches zero branches and continuation preserves S1
+ok 140 - mixed 17 obligation REQUIRED future is physical, certificate searches zero branches and continuation preserves S1
+  ---
+  duration_ms: 719.391088
+  type: 'test'
+  ...
+# Subtest: native route contract is canonical, positive, directional and revision guarded
+ok 141 - native route contract is canonical, positive, directional and revision guarded
+  ---
+  duration_ms: 5.362826
+  type: 'test'
+  ...
+# Subtest: native route validates daily identity, effective catalog and compatibility without mutating input
+ok 142 - native route validates daily identity, effective catalog and compatibility without mutating input
+  ---
+  duration_ms: 5.505621
+  type: 'test'
+  ...
+# Subtest: daily storage and revision replay must agree; empty removal preserves historical absence
+ok 143 - daily storage and revision replay must agree; empty removal preserves historical absence
+  ---
+  duration_ms: 2.844845
+  type: 'test'
+  ...
+# Subtest: SQL material certificate verifies complete chains, authentic prefixes and context-only futures
+ok 144 - SQL material certificate verifies complete chains, authentic prefixes and context-only futures
+  ---
+  duration_ms: 4189.899227
+  type: 'test'
+  ...
+1..144
+# tests 144
+# suites 0
+# pass 144
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 38729.526812

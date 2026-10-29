@@ -1,0 +1,19 @@
+{
+  "receiptCount": 14,
+  "canonicalJSONSHA256": {
+    "browser-errors.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "integration.json": "5ca690a0c9c5f18dc86af787431deead84c6cee43e585a0e51822fa17f343671",
+    "native-before-input.json": "3e6f9d78cce86a7b4c7bdc21ac77fce9219d34e59c03f8a86d296559e5f49469",
+    "native-effective.json": "c36df1c00d30e8c949506a1532bccbe2f6f92ce591a9bc7c3a25e4bd69fef50c",
+    "native-input.json": "2c00587112faf0b324397a55baf0662bb929b5143c63816a5d6fe2ca6cf27fdf",
+    "native-phase-save.json": "cb0c7187326f739e3bee486bb9ccba5fa759ffa07841cb6c0933ffb3ece40130",
+    "native-resource-authoring.json": "a26c4c20636a7e8d30fb970c178fa4630465280e9768ac8f0b71562991d514f7",
+    "native-sql-readonly-rejection.json": "a20bcfc0bf22a0fad496675990b1fd9e8fbd02dd7275c8596c135bb2511ea63d",
+    "native-sql-state.json": "fd3ab5e53578c3d519daf5e7cdf94d2b12b0a120471653cacc48c70d60e08cd4",
+    "network-events.json": "7f45637e62643ca1518da97540c53f2f07084a4340da9ab14b6e1359d8b3b4c4",
+    "semantic-identities.json": "de05a388a99743ce98643948b03edf250b4e95313edfd556f23870973172dff1",
+    "ui-writes.json": "4a84c03fcd69e7316e0f8b817f3b82e8c9402ea6ed480d8161b1d5d73758f360",
+    "catalog-resources-dom.txt": "e959ceb3e7ed8b464d88b27eeba858efc10ee5d9ce8cb4165b795b88a4cb4cf3",
+    "daily-resources-dom.txt": "fa74112f9f87b404dc72152a424d260d940e3aaf660a8a1d6adc919a8452957a"
+  }
+}

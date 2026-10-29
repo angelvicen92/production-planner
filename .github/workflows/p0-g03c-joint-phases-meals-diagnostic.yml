@@ -1,0 +1,65 @@
+name: P0 G03c diagnostic (no combined SQL Stage)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/evidence/p0-g03c/**'
+      - '.github/workflows/p0-g03c-joint-phases-meals-diagnostic.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-authoring-frontier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$task_browser_path" ]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+          fi
+      - run: npm run check && npm run check:migrations && npm run build
+      - run: npx --no-install tsc -p docs/evidence/p0-g03c/tsconfig.json
+      - run: >-
+          node --import tsx --test --test-concurrency=1
+          server/flexibleMealPhaseComposition.spec.ts server/requiredPhaseComposition.spec.ts
+          server/fixedItinerantPhaseComposition.spec.ts server/composedAnchoredRequired.spec.ts
+          server/technicalChainSql.spec.ts server/apiAuthorization.spec.ts
+          engine/planner-next/participantMeals.spec.ts
+          script/demo/a2Preflight.spec.ts script/demo/assistedSQLContracts.spec.ts
+      - name: Two new disposable databases and unchanged admission
+        run: |
+          node --import tsx docs/evidence/p0-g03c/run.ts work/g03c-native-a
+          node --import tsx docs/evidence/p0-g03c/run.ts work/g03c-native-b
+      - name: Memory probes, physical verification and literal determinism
+        run: |
+          for copy in a b; do
+            node --import tsx docs/evidence/p0-g03c/probe.ts work/g03c-probe-$copy
+            node --import tsx docs/evidence/p0-g03c/macroProbe.ts work/g03c-macro-$copy work/g03c-native-$copy/native
+            node --import tsx docs/evidence/p0-g03c/macroProbe.ts work/g03c-unrestricted-$copy work/g03c-native-$copy/native --unrestricted-eva
+            python3 docs/evidence/p0-g03c/verify.py work/g03c-probe-$copy work/g03c-probe-verification-$copy.json
+            python3 docs/evidence/p0-g03c/verify.py work/g03c-macro-$copy work/g03c-macro-verification-$copy.json
+          done
+          python3 docs/evidence/p0-g03c/compare.py work/g03c-native-a/native work/g03c-native-b/native work/g03c-probe-a work/g03c-probe-b work/g03c-macro-a work/g03c-macro-b work/g03c-determinism.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g03c-diagnostic-public-receipts
+          path: |
+            work/g03c-native-*/native/*.json
+            work/g03c-native-*/native/*.png
+            work/g03c-native-*/native/*-resources-dom.txt
+            work/g03c-probe-*/*.json
+            work/g03c-macro-*/*.json
+            work/g03c-unrestricted-*/*.json
+            work/g03c-*.json
+          retention-days: 14

@@ -1,0 +1,540 @@
+{
+  "status": "PASS_HISTORICAL_RECEIPTS_RECHECKED",
+  "notNewSQLExecutions": true,
+  "productDelta": [],
+  "g03b": [
+    {
+      "status": "PASS",
+      "days": [
+        {
+          "label": "g03",
+          "obligations": 60,
+          "meals": 19,
+          "stages": [
+            {
+              "ordinal": 1,
+              "planned": 3,
+              "pendingMealsCertified": 19,
+              "branches": 859,
+              "snapshotFingerprint": "eae09294531588f56b51e7fa31ce8473b6b0491075b4faf44ee42db821c33cec"
+            },
+            {
+              "ordinal": 2,
+              "planned": 60,
+              "pendingMealsCertified": 0,
+              "branches": 855,
+              "snapshotFingerprint": "a2302c8ac20e8a4f2b29e3c8d204fb25bdbf92e0e06e2a47fc50ea18c3b57ac7"
+            }
+          ],
+          "physicalChecks": "PASS",
+          "coldSQL": "PASS",
+          "protectedContinuation": "EXACT"
+        },
+        {
+          "label": "generic",
+          "obligations": 15,
+          "meals": 4,
+          "stages": [
+            {
+              "ordinal": 1,
+              "planned": 3,
+              "pendingMealsCertified": 4,
+              "branches": 55,
+              "snapshotFingerprint": "b789b974c8873f722b56d1cf6d7c93db56a60fb9eb79ba03944615b4ea25fbec"
+            },
+            {
+              "ordinal": 2,
+              "planned": 15,
+              "pendingMealsCertified": 0,
+              "branches": 51,
+              "snapshotFingerprint": "d51eb9b6728e53e81f5385584d94aa45bc718e69586688d3f59460be5856fee9"
+            }
+          ],
+          "physicalChecks": "PASS",
+          "coldSQL": "PASS",
+          "protectedContinuation": "EXACT"
+        }
+      ],
+      "sqlStages": 4,
+      "remoteWrites": 0
+    },
+    {
+      "status": "PASS",
+      "days": [
+        {
+          "label": "g03",
+          "obligations": 60,
+          "meals": 19,
+          "stages": [
+            {
+              "ordinal": 1,
+              "planned": 3,
+              "pendingMealsCertified": 19,
+              "branches": 859,
+              "snapshotFingerprint": "eae09294531588f56b51e7fa31ce8473b6b0491075b4faf44ee42db821c33cec"
+            },
+            {
+              "ordinal": 2,
+              "planned": 60,
+              "pendingMealsCertified": 0,
+              "branches": 855,
+              "snapshotFingerprint": "a2302c8ac20e8a4f2b29e3c8d204fb25bdbf92e0e06e2a47fc50ea18c3b57ac7"
+            }
+          ],
+          "physicalChecks": "PASS",
+          "coldSQL": "PASS",
+          "protectedContinuation": "EXACT"
+        },
+        {
+          "label": "generic",
+          "obligations": 15,
+          "meals": 4,
+          "stages": [
+            {
+              "ordinal": 1,
+              "planned": 3,
+              "pendingMealsCertified": 4,
+              "branches": 55,
+              "snapshotFingerprint": "b789b974c8873f722b56d1cf6d7c93db56a60fb9eb79ba03944615b4ea25fbec"
+            },
+            {
+              "ordinal": 2,
+              "planned": 15,
+              "pendingMealsCertified": 0,
+              "branches": 51,
+              "snapshotFingerprint": "d51eb9b6728e53e81f5385584d94aa45bc718e69586688d3f59460be5856fee9"
+            }
+          ],
+          "physicalChecks": "PASS",
+          "coldSQL": "PASS",
+          "protectedContinuation": "EXACT"
+        }
+      ],
+      "sqlStages": 4,
+      "remoteWrites": 0
+    }
+  ],
+  "g02": {
+    "status": "PASS",
+    "days": 2,
+    "stagesPerDatabase": 4,
+    "sameIds": true,
+    "decisionsAndWitnessesEqual": true,
+    "sqlSnapshotsAndFingerprintsEqual": true,
+    "branchCountersEqual": true,
+    "ignoredObservationKeys": [
+      "durationMs",
+      "elapsedMs",
+      "executionMs",
+      "totalDurationMs"
+    ],
+    "remoteWrites": 0
+  },
+  "g01": {
+    "status": "PASS",
+    "coldDatabases": 2,
+    "acceptedSQLStages": 16,
+    "results": [
+      {
+        "label": "integrated",
+        "scope": "competitor-S1-run",
+        "literalDecisionsCountersCertificatesDraftSQL": true
+      },
+      {
+        "label": "integrated",
+        "scope": "competitor-S2-run",
+        "literalDecisionsCountersCertificatesDraftSQL": true
+      },
+      {
+        "label": "integrated",
+        "scope": "anchor-S1-run",
+        "literalDecisionsCountersCertificatesDraftSQL": true
+      },
+      {
+        "label": "integrated",
+        "scope": "anchor-S2-run",
+        "literalDecisionsCountersCertificatesDraftSQL": true
+      },
+      {
+        "label": "reverse-order",
+        "scope": "competitor-S1-run",
+        "literalDecisionsCountersCertificatesDraftSQL": true
+      },
+      {
+        "label": "reverse-order",
+        "scope": "competitor-S2-run",
+        "literalDecisionsCountersCertificatesDraftSQL": true
+      },
+      {
+        "label": "reverse-order",
+        "scope": "anchor-S1-run",
+        "literalDecisionsCountersCertificatesDraftSQL": true
+      },
+      {
+        "label": "reverse-order",
+        "scope": "anchor-S2-run",
+        "literalDecisionsCountersCertificatesDraftSQL": true
+      },
+      {
+        "label": "segmented-joint",
+        "scope": "exhausted-run",
+        "literalDecisionsCountersCertificatesDraftSQL": true
+      },
+      {
+        "label": "segmented-reverse",
+        "scope": "exhausted-run",
+        "literalDecisionsCountersCertificatesDraftSQL": true
+      }
+    ],
+    "comparison": "UI vs existing API",
+    "uiAuthoredTemplates": 26,
+    "literalTemplateSQLSnapshots": 148,
+    "remoteWrites": 0
+  },
+  "u02d": [
+    {
+      "status": "PASS",
+      "nativeSQL": true,
+      "profiles": [
+        {
+          "label": "integrated",
+          "full": {
+            "obligations": 27,
+            "physicalOperations": 26,
+            "main": 3,
+            "vocal": 3,
+            "anchoredContinuity": true,
+            "requiredPhases": true,
+            "pause": true
+          },
+          "stages": [
+            {
+              "id": "3",
+              "route": "competitor",
+              "ordinal": 1,
+              "fingerprint": "6af7e6d89806205c13ec6fc7239afff254da2e58014c6a9d503074d1ea1f127d",
+              "accepted": 1,
+              "pending": 26,
+              "branches": 207,
+              "obligations": 27,
+              "physicalOperations": 26,
+              "main": 3,
+              "vocal": 3,
+              "anchoredContinuity": true,
+              "requiredPhases": true,
+              "pause": true
+            },
+            {
+              "id": "5",
+              "route": "competitor",
+              "ordinal": 2,
+              "fingerprint": "07d79e3ebfc6591c065317d20ab10d218d2117732de69494e7941cdedf52170a",
+              "accepted": 27,
+              "pending": 0,
+              "branches": 205,
+              "obligations": 27,
+              "physicalOperations": 26,
+              "main": 3,
+              "vocal": 3,
+              "anchoredContinuity": true,
+              "requiredPhases": true,
+              "pause": true
+            },
+            {
+              "id": "7",
+              "route": "anchor",
+              "ordinal": 3,
+              "fingerprint": "293af4c0fd6dbc1d80d1cd6b842f5e66d8375cb6a78e124d473f30aa28ba4244",
+              "accepted": 4,
+              "pending": 23,
+              "branches": 207,
+              "obligations": 27,
+              "physicalOperations": 26,
+              "main": 3,
+              "vocal": 3,
+              "anchoredContinuity": true,
+              "requiredPhases": true,
+              "pause": true
+            },
+            {
+              "id": "9",
+              "route": "anchor",
+              "ordinal": 4,
+              "fingerprint": "07d79e3ebfc6591c065317d20ab10d218d2117732de69494e7941cdedf52170a",
+              "accepted": 27,
+              "pending": 0,
+              "branches": 185,
+              "obligations": 27,
+              "physicalOperations": 26,
+              "main": 3,
+              "vocal": 3,
+              "anchoredContinuity": true,
+              "requiredPhases": true,
+              "pause": true
+            }
+          ]
+        },
+        {
+          "label": "reverse-order",
+          "full": {
+            "obligations": 27,
+            "physicalOperations": 26,
+            "main": 3,
+            "vocal": 3,
+            "anchoredContinuity": true,
+            "requiredPhases": true,
+            "pause": true
+          },
+          "stages": [
+            {
+              "id": "12",
+              "route": "competitor",
+              "ordinal": 1,
+              "fingerprint": "860de832349b9bd84fd1bbc4c345452da7d97c456ea89d1940b8dc7f3da853fd",
+              "accepted": 1,
+              "pending": 26,
+              "branches": 207,
+              "obligations": 27,
+              "physicalOperations": 26,
+              "main": 3,
+              "vocal": 3,
+              "anchoredContinuity": true,
+              "requiredPhases": true,
+              "pause": true
+            },
+            {
+              "id": "14",
+              "route": "competitor",
+              "ordinal": 2,
+              "fingerprint": "6ad315ef7386b303d02469517f7a61c7653a35d3a4f523759b7f907e251b3332",
+              "accepted": 27,
+              "pending": 0,
+              "branches": 205,
+              "obligations": 27,
+              "physicalOperations": 26,
+              "main": 3,
+              "vocal": 3,
+              "anchoredContinuity": true,
+              "requiredPhases": true,
+              "pause": true
+            },
+            {
+              "id": "16",
+              "route": "anchor",
+              "ordinal": 3,
+              "fingerprint": "d1fc5afc1568dc4c29d697684c33229ec6946df176abe58e95dd03505595ad0d",
+              "accepted": 4,
+              "pending": 23,
+              "branches": 207,
+              "obligations": 27,
+              "physicalOperations": 26,
+              "main": 3,
+              "vocal": 3,
+              "anchoredContinuity": true,
+              "requiredPhases": true,
+              "pause": true
+            },
+            {
+              "id": "18",
+              "route": "anchor",
+              "ordinal": 4,
+              "fingerprint": "6ad315ef7386b303d02469517f7a61c7653a35d3a4f523759b7f907e251b3332",
+              "accepted": 27,
+              "pending": 0,
+              "branches": 189,
+              "obligations": 27,
+              "physicalOperations": 26,
+              "main": 3,
+              "vocal": 3,
+              "anchoredContinuity": true,
+              "requiredPhases": true,
+              "pause": true
+            }
+          ]
+        },
+        {
+          "label": "segmented-joint",
+          "status": "SEARCH_EXHAUSTED",
+          "acceptedStages": 0
+        },
+        {
+          "label": "segmented-reverse",
+          "status": "SEARCH_EXHAUSTED",
+          "acceptedStages": 0
+        }
+      ]
+    },
+    {
+      "status": "PASS",
+      "nativeSQL": true,
+      "profiles": [
+        {
+          "label": "integrated",
+          "full": {
+            "obligations": 27,
+            "physicalOperations": 26,
+            "main": 3,
+            "vocal": 3,
+            "anchoredContinuity": true,
+            "requiredPhases": true,
+            "pause": true
+          },
+          "stages": [
+            {
+              "id": "3",
+              "route": "competitor",
+              "ordinal": 1,
+              "fingerprint": "6af7e6d89806205c13ec6fc7239afff254da2e58014c6a9d503074d1ea1f127d",
+              "accepted": 1,
+              "pending": 26,
+              "branches": 207,
+              "obligations": 27,
+              "physicalOperations": 26,
+              "main": 3,
+              "vocal": 3,
+              "anchoredContinuity": true,
+              "requiredPhases": true,
+              "pause": true
+            },
+            {
+              "id": "5",
+              "route": "competitor",
+              "ordinal": 2,
+              "fingerprint": "07d79e3ebfc6591c065317d20ab10d218d2117732de69494e7941cdedf52170a",
+              "accepted": 27,
+              "pending": 0,
+              "branches": 205,
+              "obligations": 27,
+              "physicalOperations": 26,
+              "main": 3,
+              "vocal": 3,
+              "anchoredContinuity": true,
+              "requiredPhases": true,
+              "pause": true
+            },
+            {
+              "id": "7",
+              "route": "anchor",
+              "ordinal": 3,
+              "fingerprint": "293af4c0fd6dbc1d80d1cd6b842f5e66d8375cb6a78e124d473f30aa28ba4244",
+              "accepted": 4,
+              "pending": 23,
+              "branches": 207,
+              "obligations": 27,
+              "physicalOperations": 26,
+              "main": 3,
+              "vocal": 3,
+              "anchoredContinuity": true,
+              "requiredPhases": true,
+              "pause": true
+            },
+            {
+              "id": "9",
+              "route": "anchor",
+              "ordinal": 4,
+              "fingerprint": "07d79e3ebfc6591c065317d20ab10d218d2117732de69494e7941cdedf52170a",
+              "accepted": 27,
+              "pending": 0,
+              "branches": 185,
+              "obligations": 27,
+              "physicalOperations": 26,
+              "main": 3,
+              "vocal": 3,
+              "anchoredContinuity": true,
+              "requiredPhases": true,
+              "pause": true
+            }
+          ]
+        },
+        {
+          "label": "reverse-order",
+          "full": {
+            "obligations": 27,
+            "physicalOperations": 26,
+            "main": 3,
+            "vocal": 3,
+            "anchoredContinuity": true,
+            "requiredPhases": true,
+            "pause": true
+          },
+          "stages": [
+            {
+              "id": "12",
+              "route": "competitor",
+              "ordinal": 1,
+              "fingerprint": "860de832349b9bd84fd1bbc4c345452da7d97c456ea89d1940b8dc7f3da853fd",
+              "accepted": 1,
+              "pending": 26,
+              "branches": 207,
+              "obligations": 27,
+              "physicalOperations": 26,
+              "main": 3,
+              "vocal": 3,
+              "anchoredContinuity": true,
+              "requiredPhases": true,
+              "pause": true
+            },
+            {
+              "id": "14",
+              "route": "competitor",
+              "ordinal": 2,
+              "fingerprint": "6ad315ef7386b303d02469517f7a61c7653a35d3a4f523759b7f907e251b3332",
+              "accepted": 27,
+              "pending": 0,
+              "branches": 205,
+              "obligations": 27,
+              "physicalOperations": 26,
+              "main": 3,
+              "vocal": 3,
+              "anchoredContinuity": true,
+              "requiredPhases": true,
+              "pause": true
+            },
+            {
+              "id": "16",
+              "route": "anchor",
+              "ordinal": 3,
+              "fingerprint": "d1fc5afc1568dc4c29d697684c33229ec6946df176abe58e95dd03505595ad0d",
+              "accepted": 4,
+              "pending": 23,
+              "branches": 207,
+              "obligations": 27,
+              "physicalOperations": 26,
+              "main": 3,
+              "vocal": 3,
+              "anchoredContinuity": true,
+              "requiredPhases": true,
+              "pause": true
+            },
+            {
+              "id": "18",
+              "route": "anchor",
+              "ordinal": 4,
+              "fingerprint": "6ad315ef7386b303d02469517f7a61c7653a35d3a4f523759b7f907e251b3332",
+              "accepted": 27,
+              "pending": 0,
+              "branches": 189,
+              "obligations": 27,
+              "physicalOperations": 26,
+              "main": 3,
+              "vocal": 3,
+              "anchoredContinuity": true,
+              "requiredPhases": true,
+              "pause": true
+            }
+          ]
+        },
+        {
+          "label": "segmented-joint",
+          "status": "SEARCH_EXHAUSTED",
+          "acceptedStages": 0
+        },
+        {
+          "label": "segmented-reverse",
+          "status": "SEARCH_EXHAUSTED",
+          "acceptedStages": 0
+        }
+      ]
+    }
+  ]
+}
