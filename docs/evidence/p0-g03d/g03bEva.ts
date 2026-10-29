@@ -88,7 +88,7 @@ export async function journey({appUrl,users,db,directory,pass}:any) {
   await page.goto(appUrl+'/plans');await page.getByRole('button',{name:'Crear día',exact:true}).click();let modal=page.getByRole('dialog');await modal.getByLabel('Fecha',{exact:true}).fill('2027-06-29');
   const day=await responseTo('/api/plans','POST',()=>modal.getByRole('button',{name:'Crear día',exact:true}).click());await modal.waitFor({state:'hidden'});let planId=Number(day.id);
   const openDay=async()=>{
-   if(page.url()!==`${appUrl}/plans/${planId}?tab=tasks`)await page.goto(`${appUrl}/plans/${planId}?tab=tasks`);
+   await page.goto(`${appUrl}/plans/${planId}?tab=tasks`);
    try{await page.getByLabel('Nombre del nuevo concursante').waitFor({timeout:15000});}
    catch(error){
     const retry=page.getByRole('button',{name:'Reintentar',exact:true});
@@ -118,5 +118,5 @@ export async function journey({appUrl,users,db,directory,pass}:any) {
   const result=await finishDay({appUrl,users,db,directory,pass,page,read,responseTo,save,planId,phaseTasks,meal,participants});
   save('deterministic',[result]);assert.deepEqual(errors,[]);return {planId,completed:60,meals:19,stages:2,resourceWindow:'16:00–21:00'};
  } catch(e) {await page.screenshot({path:`${directory}/attempt-failure.png`,fullPage:true}).catch(()=>{});writeFileSync(`${directory}/attempt-dom.txt`,await page.locator('body').innerText().catch(()=>''));throw e;}
- finally {await Promise.allSettled([...pendingResponses]);save('ui-writes',receipts);save('browser-errors',errors);save('network-events',networkEvents);await browser.close();}
+ finally {await browser.close();await Promise.allSettled([...pendingResponses]);save('ui-writes',receipts);save('browser-errors',errors);save('network-events',networkEvents);}
 }

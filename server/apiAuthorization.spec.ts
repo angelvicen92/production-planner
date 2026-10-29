@@ -126,7 +126,7 @@ test('resource availability writes and reads retain their roles for Express casi
   const cases=[['POST','/api/resource-items',false],['PATCH','/api/resource-items/1',false],['GET','/api/resource-types-with-items',false],['POST','/api/plans/1/resource-items',true],['PATCH','/api/plans/1/resource-items/1',true],['GET','/api/plans/1/resource-items',true]] as const;
   for(const [method,base,daily] of cases)for(const path of [base,base.toUpperCase(),base.toUpperCase()+'/'])for(const role of [undefined,'norole','viewer','aux','production','admin']){
    const reading=method==='GET',allowed=reading?role!=null&&role!=='norole':role==='admin'||daily&&role==='production';
-   const before=writes;const response=await fetch(`http://127.0.0.1:${address.port}${path}`,{method,headers:role?{'x-test-user':role}:{}});
+   const before:number=writes;const response:Response=await fetch(`http://127.0.0.1:${address.port}${path}`,{method,headers:role?{'x-test-user':role}:{}});
    assert.equal(response.status,role==null?401:allowed?200:403,JSON.stringify({method,path,role}));
    assert.equal(writes,before+(allowed&&!reading?1:0),'denial precedes the service_role handler');
   }

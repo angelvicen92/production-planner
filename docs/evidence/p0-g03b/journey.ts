@@ -136,5 +136,5 @@ export async function journey({appUrl,users,db,directory,pass}:any) {
   assert.deepEqual(errors,[]);
   return {days:[{label:result.label,planId:result.planId,meals:result.mealCount},{label:second.label,planId:second.planId,meals:second.mealCount}],stages:4,remoteWrites:0};
  } catch(e) {await page.screenshot({path:`${directory}/attempt-failure.png`,fullPage:true}).catch(()=>{});writeFileSync(`${directory}/attempt-dom.txt`,await page.locator('body').innerText().catch(()=>''));throw e;}
- finally {await Promise.allSettled([...pendingResponses]);save('ui-writes',receipts);save('browser-errors',errors);save('network-events',networkEvents);await browser.close();}
+ finally {await browser.close();await Promise.allSettled([...pendingResponses]);save('ui-writes',receipts);save('browser-errors',errors);save('network-events',networkEvents);}
 }

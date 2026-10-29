@@ -52,6 +52,7 @@ jobs:
           script/demo/a2Preflight.spec.ts
       - run: node --import tsx docs/evidence/p0-g03d/upgrade129.mts work/g03d-upgrade129
       - run: node --import tsx docs/evidence/p0-g03d/failures.mts work/g03d-failures
+      - run: node --import tsx docs/evidence/p0-g03d/oldWriter.mts work/g03d-old-writer
       - name: Two cold native databases and unchanged joint frontier
         run: |
           node --import tsx docs/evidence/p0-g03d/run.ts work/g03d-native-a
@@ -95,6 +96,7 @@ jobs:
           fi
       - run: G03D_CONTROL=g03b node --import tsx docs/evidence/p0-g03d/run.ts work/g03d-control-g03b
       - run: python3 docs/evidence/p0-g03b/verify.py work/g03d-control-g03b/native work/g03d-control-g03b.json
+      - run: G03D_CONTROL=g03b-eva node --import tsx docs/evidence/p0-g03d/run.ts work/g03d-eva
   a2-regression:
     runs-on: ubuntu-latest
     timeout-minutes: 15
