@@ -67,7 +67,7 @@ export async function finishDay({appUrl,users,db,directory,pass,page,read,respon
    await responseTo(`${path}/proposals/${run.id}/apply`,'POST',()=>page.getByRole('button',{name:'Aplicar al borrador',exact:true}).click());
   }else await api(`${path}/proposals/${run.id}/apply`,'POST',expected(state));
   let draft=await api(path);save(prefix+'-draft',draft);
-  await mealPhaseAttacks({db,planId,run,draft,input,prefix,save:(name:string,rows:any[])=>save(name,rows.map(row=>/PRIOR_DECISION/.test(row.error.message)?{...row,category:'PROTECTION'}:row))});
+  await mealPhaseAttacks({db,planId,run,draft,input,prefix,save:(name:string,rows:any[])=>save(name,rows.map(row=>/PRIOR_DECISION|PROTECTED_DECISIONS/.test(row.error.message)?{...row,category:'PROTECTION'}:row))});
   const {jointAttacks}=await import('./attacks');await jointAttacks({db,planId,run,draft,input,save,prefix});
   if(ordinal===1)await responseTo(path+'/validate','POST',()=>page.getByRole('button',{name:'Validar borrador',exact:true}).click());else await api(path+'/validate','POST',expected(draft));
   draft=await api(path);save(prefix+'-validated',draft);assert.equal(draft.validation.hardCount,0);assert.equal(draft.validation.requiredCount,0);

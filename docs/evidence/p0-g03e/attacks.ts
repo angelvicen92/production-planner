@@ -40,7 +40,10 @@ export async function jointAttacks({db,planId,run,draft,input,save,prefix}:any){
     if(t){row.startPlanned=time(t.start);row.endPlanned=time(t.end);}
    }
    proof.fingerprint=fingerprint(proof.tasks);candidate.proposedDraftFingerprint=fingerprintAssistedPlanningSnapshotV1(candidate.proposedDraftSnapshot);
-   if(mode==='scope-member')candidate.scopeTaskIds=candidate.scopeTaskIds.filter((id:number)=>id!==group.taskIds[1]);
+   if(mode==='scope-member'){
+    const removed=candidate.scopeTaskIds.includes(group.taskIds[1])?group.taskIds[1]:candidate.scopeTaskIds[0];
+    candidate.scopeTaskIds=candidate.scopeTaskIds.filter((id:number)=>id!==removed);
+   }
    if(!['scope-member','direct-authority','direct-placement'].includes(mode)){
     try{assertNominalProposalWitness(input,candidate.proposedDraftSnapshot,candidate);}catch{tsRejected=true;}
     assert.equal(tsRejected,true,mode+' TypeScript consumer');
@@ -53,9 +56,10 @@ export async function jointAttacks({db,planId,run,draft,input,save,prefix}:any){
    else await db.query('SELECT assert_daily_technical_chain_snapshot($1,$2,$3,$4)',[planId,candidate.proposedDraftSnapshot,draft.currentConfigRevisionId,run.id]);
   }catch(e:any){error={code:e.code,message:e.message};}finally{await db.query('ROLLBACK');}
   assert.equal(error?.code,'P0001',JSON.stringify({mode,error}));
-  const category=mode.startsWith('direct-')||/PRIOR_DECISION/.test(error.message)?'PROTECTION':mode==='scope-member'?'AUTHENTICITY':mode==='draft-witness-mismatch'?'DRAFT_IDENTITY':'PHYSICAL';
+  const category=mode.startsWith('direct-')||/PRIOR_DECISION|PROTECTED_DECISIONS/.test(error.message)?'PROTECTION':mode==='scope-member'?'AUTHENTICITY':mode==='draft-witness-mismatch'?'DRAFT_IDENTITY':'PHYSICAL';
   if(category==='PHYSICAL')assert.doesNotMatch(error.message,/AUTHENTIC_PROPOSAL|FINGERPRINT|CERTIFICATE_REQUIRED|STALE|UNSUPPORTED/);
   if(mode==='resource-window')assert.equal(error.message,'ANCHORED_WITNESS_RESOURCE_AVAILABILITY');
+  if(mode==='third-party')assert.equal(error.message,'ANCHORED_WITNESS_RESOURCE_CONFLICT');
   failures.push({mode,category,error,tsRejected,hashesRecomputed:true,rolledBack:true});save(prefix+'-joint-negatives',failures);
  }
 }

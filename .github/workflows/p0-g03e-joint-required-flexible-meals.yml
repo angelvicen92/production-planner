@@ -104,3 +104,12 @@ jobs:
             g01) python3 docs/evidence/p0-u02d/verify.py work/control-g01/native work/control-g01.json ;;
             u02d) python3 docs/evidence/p0-u02d/verify.py work/control-u02d/native work/control-u02d.json ;;
           esac
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g03e-control-${{ matrix.control }}
+          path: |
+            work/control-${{ matrix.control }}/native/*.json
+            work/control-${{ matrix.control }}/native/*.png
+            work/control-${{ matrix.control }}.json
+          retention-days: 14
