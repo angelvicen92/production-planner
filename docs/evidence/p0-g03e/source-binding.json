@@ -1,0 +1,26 @@
+{
+  "authorizedBase": "8d97d4c6f30fb13a97fe673845755422f50cb3c1",
+  "codeCommit": "79a5d2a04dd9a87634d3f1333cb0597cfa6c1f8b",
+  "twoColdSourceHashesEqual": true,
+  "runtimeProductAndExecutedHarnessTSLiteralToManifest": true,
+  "checkoutDeltaA": [],
+  "checkoutDeltaB": [],
+  "unchangedToBase": {
+    "engine": true,
+    "officialSources": true,
+    "migrations001to129": true
+  },
+  "readOnlyPostprocessors": {
+    "verify.py": "949f8f5aa59c56a7afd54869bbf68009a3a1d069d96961826801e9b09efa14a1",
+    "compare.py": "873ea9ebcab02a9fc3014f0356455f888e4313bccd75df7055c6829208fdceca",
+    "pack.py": "450ddb2f76eae13bb4e7238c67b8e9f0dcdc6272ae698aed3c7bfbba3e585785"
+  },
+  "postprocessorCorrection": "Resource availability verifier consumes the existing separate resources and coaches authorities; no input, witness or placement changed",
+  "officialManifest": {
+    "status": "PRE_EXISTING_FAILURE",
+    "sameOutputAsG03d": true,
+    "unchanged": true
+  },
+  "remoteWrites": 0,
+  "publicTextLogs": "Trailing EOF whitespace normalized only; verification results and structured receipts unchanged"
+}

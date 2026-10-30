@@ -1,0 +1,81 @@
+[
+  {
+    "attempt": "native-stack",
+    "category": "CHROMIUM_RESOURCE",
+    "cause": "Before composition: Vite ERR_INSUFFICIENT_RESOURCES",
+    "combinedStagesAccepted": 0,
+    "productSearchChanged": false,
+    "raisedBudget": false
+  },
+  {
+    "attempt": "native-retry",
+    "category": "CHROMIUM_RESOURCE",
+    "cause": "Read navigation failed before joint probe",
+    "combinedStagesAccepted": 0,
+    "productSearchChanged": false,
+    "raisedBudget": false
+  },
+  {
+    "attempt": "attempt-a",
+    "category": "CHROMIUM_NETWORK",
+    "cause": "ERR_NETWORK_CHANGED before authoring",
+    "combinedStagesAccepted": 0,
+    "productSearchChanged": false,
+    "raisedBudget": false
+  },
+  {
+    "attempt": "native-a",
+    "category": "HARNESS",
+    "cause": "Meal template argument omitted; native authorities saved and rebuilt",
+    "combinedStagesAccepted": 0,
+    "productSearchChanged": false,
+    "raisedBudget": false
+  },
+  {
+    "attempt": "cold-a",
+    "category": "HARNESS",
+    "cause": "Optional requiredResourceIds read without fallback during third-party attack",
+    "combinedStagesAccepted": 0,
+    "productSearchChanged": false,
+    "raisedBudget": false
+  },
+  {
+    "attempt": "final-a",
+    "category": "HARNESS",
+    "cause": "S2 scope attack targeted an already accepted peer, so it made no change",
+    "combinedStagesAccepted": 1,
+    "productSearchChanged": false,
+    "raisedBudget": false
+  },
+  {
+    "attempt": "certified-a",
+    "category": "OUTSIDE_CERTIFIED_TASK_KIND",
+    "cause": "Macro S1/S2 SQL completes 65 obligations; generic independent technical task is rejected before search with UNSUPPORTED_STANDALONE_TASK_KIND. No consumer or budget expanded.",
+    "combinedStagesAccepted": 2,
+    "productSearchChanged": false,
+    "raisedBudget": false
+  },
+  {
+    "attempt": "certified-final-a",
+    "category": "EXECUTION_ENVIRONMENT",
+    "cause": "Environment reattachment terminated the foreground process before composition proposals; discarded database cleaned; final pair rerun sequentially in a persistent process.",
+    "combinedStagesAccepted": 0,
+    "productSearchChanged": false,
+    "raisedBudget": false
+  },
+  {
+    "attempt": "CI 79a5d2a0 native-ui-sql",
+    "category": "READ_ONLY_VERIFIER",
+    "cause": "Both cold databases completed all eight SQL Stages. Independent availability verifier looked only at resources, although coaches are a separate authority. Corrected to resources + coaches and revalidated the identical CI receipts.",
+    "combinedStagesAccepted": 8,
+    "productSearchChanged": false,
+    "raisedBudget": false
+  },
+  {
+    "attempt": "CI 79a5d2a0 U01f",
+    "category": "SQL_LOCK_CONTENTION",
+    "cause": "Historical global-break control reached C-joint-unit, then next proposal returned could not obtain lock on public.daily_tasks. No timeout, lock, product or search change; final head CI reruns the unchanged control.",
+    "productSearchChanged": false,
+    "raisedBudget": false
+  }
+]

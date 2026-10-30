@@ -1,0 +1,55 @@
+{
+  "status": "PASS_LOCAL_PRODUCTIVE_GATE",
+  "authorizedBase": "8d97d4c6f30fb13a97fe673845755422f50cb3c1",
+  "runtimeCodeCommit": "79a5d2a04dd9a87634d3f1333cb0597cfa6c1f8b",
+  "typescript": "PASS",
+  "build": "PASS",
+  "migrationLedger": "PASS 001\u2013130",
+  "harnessTypescript": "PASS",
+  "focalTests": {
+    "passed": 149,
+    "failed": 0
+  },
+  "coldDatabases": 2,
+  "newSQLStages": 8,
+  "macro": {
+    "obligations": 65,
+    "S1": 8,
+    "S2": 65,
+    "futureMealsInS1": 19,
+    "branches": [
+      2884,
+      843
+    ],
+    "unitPhysicalOperations": 7,
+    "unitObligations": 8,
+    "certificateAdditionalSearch": 0
+  },
+  "generic": {
+    "obligations": 18,
+    "S1": 4,
+    "S2": 18,
+    "futureMealsInS1": 5,
+    "branches": [
+      64,
+      53
+    ],
+    "externalResourceCompetitor": "REQUIRED EXCLUSIVE"
+  },
+  "determinism": "PASS, no physical differences normalized",
+  "sqlAttacks": 200,
+  "upgrade": "PASS populated 129\u2192130, all 599 tasks and 11 historical Stages exact, original rows/readers/RLS/ACL exact",
+  "regressions": {
+    "G03b": "60/60 and 15/15, four fresh SQL Stages; exact baseline",
+    "G02": "two topologies, four fresh SQL Stages; exact baseline",
+    "G01": "fresh UI/API/SQL and exact baseline",
+    "U02d": "fresh SQL, eight Stages and exact baseline; prior exhaustion preserved",
+    "A2": "266/266, 11 Stages, 27049 branches, snapshots and certificates exact"
+  },
+  "officialManifest": "PRE_EXISTING_FAILURE_UNCHANGED",
+  "ci": "See current head checks of PR #1223; prior 79a5d2a0 receipt/postprocessor and lock failures recorded in attempts.json",
+  "pr": "https://github.com/angelvicen92/production-planner/pull/1223",
+  "remoteDatabaseWrites": 0,
+  "merge": false,
+  "deployment": false
+}

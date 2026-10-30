@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "baseline": "p0-g02/first",
+  "head": "79a5d2a04dd9a87634d3f1333cb0597cfa6c1f8b",
+  "days": 2,
+  "stages": 4,
+  "inputsProblemsProposalsWitnessesCertificatesBranchesDraftsAndSQLLiteral": true,
+  "ignoredExecutionDurationKeys": [],
+  "remoteWrites": 0
+}

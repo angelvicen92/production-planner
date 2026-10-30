@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "head": "79a5d2a04dd9a87634d3f1333cb0597cfa6c1f8b",
+  "baseline": "p0-g03b/native",
+  "inputsProblemsProposalsWitnessesCertificatesBranchesDraftsAndSQLLiteral": true,
+  "ignoredExecutionDurationKeys": [
+    "futureItinerantOperationalMealsMs",
+    "futureItinerantParticipantFutureMs",
+    "futureItinerantParticipantMealsMs",
+    "futureItinerantPrerequisiteSearchMs",
+    "futureItinerantPriorRevalidationMs",
+    "futureItinerantStructuralSearchMs",
+    "futureItinerantTechnicalFutureMs"
+  ],
+  "remoteWrites": 0
+}

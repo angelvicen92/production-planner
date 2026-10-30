@@ -76,6 +76,7 @@ export function latestAssistedSQLContracts(maxMigration=Infinity){
  files.push('127_resource_route_transitions.sql');
  files.push('128_flexible_participant_meals_required_phases.sql');
  files.push('129_resource_availability_native_ui.sql');
+ files.push('130_joint_required_phases_flexible_meals.sql');
  const contracts=new Map<string,{definition:string;signature:string;body:string}>();
  for(const file of files.filter(file=>Number(file.slice(0,3))<=maxMigration)){
   const sql=readFileSync(`supabase/migrations/${file}`,'utf8');
@@ -97,7 +98,7 @@ export function latestAssistedSQLContracts(maxMigration=Infinity){
    for(const m of sql.matchAll(/branch:=replace\(branch,'((?:''|[^'])*)','((?:''|[^'])*)'\);/g))
     for(const name of ['assisted_expected_obligation_sources','assisted_preview_s0_additions'])patch(name,m[1].replaceAll("''","'"),m[2].replaceAll("''","'"));
   }
-  if(file.startsWith('121_')||file.startsWith('122_')||file.startsWith('123_')||file.startsWith('124_')||file.startsWith('125_')||file.startsWith('126_')||file.startsWith('127_')||file.startsWith('128_'))resolveLiteralReplacements(contracts,sql);
+  if(file.startsWith('121_')||file.startsWith('122_')||file.startsWith('123_')||file.startsWith('124_')||file.startsWith('125_')||file.startsWith('126_')||file.startsWith('127_')||file.startsWith('128_')||file.startsWith('130_'))resolveLiteralReplacements(contracts,sql);
   if(file.startsWith('116_')||file.startsWith('117_')||file.startsWith('120_')){
    // Resolve only this migration's literal string replacements. The resulting
    // bodies remain compared byte-for-byte with PostgreSQL by catalog preflight.

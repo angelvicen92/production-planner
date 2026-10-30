@@ -1,0 +1,29 @@
+✔ 129 selects exact availability writer and source readers; partial rollback still fails closed (165.8786ms)
+✔ preflight rejects schema/RPC/security drift, broad policy expressions, false policy roles and missing sequences (251.928743ms)
+✔ security rollback is based on the captured original state and requires separate approval (84.415636ms)
+✔ each extended 115 RPC remains independently protected against body drift (112.926289ms)
+✔ 115 and 116 bind distinct literal bodies; schema downgrade cannot mask a changed RPC (38.790013ms)
+✔ 116 and 117 bind distinct bodies; a scope-schema marker requires the new writer and source reader (60.922764ms)
+✔ 120 joint marker requires its exact writer, source readers and shared witness consumer (56.439011ms)
+✔ 121 operational authority requires its exact writer, sources and material certificate (64.303122ms)
+✔ 123 binds both validators; a partial rollback cannot disguise the empty-set SQL contract (58.190384ms)
+✔ 127 requires exact directional consumers, versioned writer and source readers (341.879858ms)
+✔ 128 binds phase admission and flexible future meals independently (110.227514ms)
+✔ 128 extends only phase admission and the existing individual meal witness channel (44.72908ms)
+✔ 115 retains the literal 114 delegate and limits existing reader deltas to the daily chain authority (25.471076ms)
+✔ 116 binds exact source transitions and only the existing task writer loops (9.639897ms)
+✔ 117 retains literal 116 writers and binds only the scope transition and authority reader (8.619574ms)
+✔ 120 retains 119 delegation and limits existing body deltas to joint transitions and the physical witness (17.334881ms)
+✔ 130 changes only admission in the existing joint and phase validators (19.787474ms)
+✔ 123 changes only the two existing phase validators and retains the historical linear branch (12.399698ms)
+✔ flexible joint authoring requires phases and preserves both obligations through reconstruction (55.317453ms)
+✔ both peers resolve to one complete unit; certificate consumes the same global meals without another search (701.57856ms)
+✔ a synchronized pair cannot consume the last collective meal realization despite nonempty individual domains (116.83692ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7848.865387

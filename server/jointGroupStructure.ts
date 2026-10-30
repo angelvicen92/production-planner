@@ -15,7 +15,9 @@ export function dailyJointAuthority(row:Record<string,any>){
 export function jointCombinationSupported(input:EngineInput){
  return !!input.plannerNext&&!input.setupPolicies?.length&&!input.roundSynchronizations?.length&&(!input.technicalChains?.length||(hasDailyRequiredPhases(input)&&requiredPhaseCompositionSupported(input)))
   &&((!input.anchoredAccompaniments?.length&&!input.dailyTaskOperationScopes?.length)||requiredPhaseCompositionSupported(input))&&!input.operationContinuityGroups?.length
-  &&(!input.operationalMealPolicies?.length||input.dailyOperationalMealsVersion===1)&&!input.transportSettings&&input.mealMode==='global_hard_break'
+  &&(!input.operationalMealPolicies?.length||input.dailyOperationalMealsVersion===1)&&!input.transportSettings
+  &&(input.mealMode==='global_hard_break'||input.mealMode==='flexible_meal_window'&&hasDailyRequiredPhases(input)&&requiredPhaseCompositionSupported(input)
+    &&!input.anchoredAccompaniments?.length&&!input.dailyTaskOperationScopes?.length&&!input.operationalMealPolicies?.length&&!input.resourceRouteTransitions?.length)
   &&fixedItinerantCompositionSupported(input)
   &&!input.tasks.filter(t=>t.status!=='cancelled').some(t=>t.setupFamilyId
    ||Object.keys(t.resourceRequirements?.byType??{}).length||t.resourceRequirements?.anyOf?.length);

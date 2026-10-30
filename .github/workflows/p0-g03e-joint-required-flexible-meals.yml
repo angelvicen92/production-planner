@@ -1,0 +1,119 @@
+name: P0 G03e joint REQUIRED phases and flexible meals
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'server/jointGroupStructure.ts'
+      - 'server/technicalChainStructure.ts'
+      - 'server/*MealPhaseComposition.spec.ts'
+      - 'client/src/components/joint-groups-editor.tsx'
+      - 'script/demo/assistedSQLContracts*'
+      - 'supabase/migrations/130*'
+      - 'docs/evidence/p0-g03e/**'
+      - '.github/workflows/p0-g03e-joint-required-flexible-meals.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-ui-sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$task_browser_path" ]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+            node --input-type=module -e 'import {chromium} from "playwright"; console.log("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH="+chromium.executablePath())' >> "$GITHUB_ENV"
+          fi
+      - run: npm run check && npm run check:migrations && npm run build
+      - run: npx --no-install tsc -p docs/evidence/p0-g03e/tsconfig.json
+      - run: >-
+          node --import tsx --test --test-concurrency=1
+          server/flexibleMealPhaseComposition.spec.ts
+          server/requiredPhaseComposition.spec.ts server/fixedItinerantPhaseComposition.spec.ts
+          server/composedAnchoredRequired.spec.ts server/technicalChainSql.spec.ts
+          server/resourceAvailabilityWindow.spec.ts server/apiAuthorization.spec.ts
+          server/dayConfiguration.spec.ts server/globalParticipantMealGate.spec.ts
+          server/assistedProposalService.spec.ts script/demo/a2Preflight.spec.ts
+          script/demo/assistedSQLContracts.spec.ts
+      - name: Two cold databases
+        run: |
+          node --import tsx docs/evidence/p0-g03e/run.ts work/g03e-a
+          node --import tsx docs/evidence/p0-g03e/run.ts work/g03e-b
+          python3 docs/evidence/p0-g03e/verify.py work/g03e-a/native work/g03e-verification-a.json
+          python3 docs/evidence/p0-g03e/verify.py work/g03e-b/native work/g03e-verification-b.json
+          python3 docs/evidence/p0-g03e/compare.py work/g03e-a/native work/g03e-b/native work/g03e-determinism.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g03e-public-receipts
+          path: |
+            work/g03e-*/native/*.json
+            work/g03e-*/native/*.png
+            work/g03e-*/manifest.json
+            work/g03e-*/checkout-delta.json
+            work/g03e-*.json
+          retention-days: 14
+  upgrade-a2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: node --import tsx docs/evidence/p0-g03e/upgrade130.mts work/g03e-upgrade
+      - run: node --import tsx docs/evidence/p0-u00n/a2.ts work/g03e-a2
+  regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        control: [g03b, g02, g01, u02d]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$task_browser_path" ]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+            node --input-type=module -e 'import {chromium} from "playwright"; console.log("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH="+chromium.executablePath())' >> "$GITHUB_ENV"
+          fi
+      - run: G03E_CONTROL=${{ matrix.control }} node --import tsx docs/evidence/p0-g03e/run.ts work/control-${{ matrix.control }}
+      - name: Independent verifier
+        run: |
+          case '${{ matrix.control }}' in
+            g03b) python3 docs/evidence/p0-g03b/verify.py work/control-g03b/native work/control-g03b.json ;;
+            g01) python3 docs/evidence/p0-u02d/verify.py work/control-g01/native work/control-g01.json ;;
+            u02d) python3 docs/evidence/p0-u02d/verify.py work/control-u02d/native work/control-u02d.json ;;
+          esac
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g03e-control-${{ matrix.control }}
+          path: |
+            work/control-${{ matrix.control }}/native/*.json
+            work/control-${{ matrix.control }}/native/*.png
+            work/control-${{ matrix.control }}/manifest.json
+            work/control-${{ matrix.control }}/checkout-delta.json
+            work/control-${{ matrix.control }}.json
+          retention-days: 14
