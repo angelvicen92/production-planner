@@ -1,0 +1,16 @@
+✔ NEXT-001 retains its frozen complete, hard-valid result (39.292176ms)
+✔ the adversarial scenario proves genuine bounded backtracking (27.050123ms)
+✔ partial branch rejection is not counted as backtracking (12.190686ms)
+✔ logical search budgets stop atomically with specific reasons (0.839084ms)
+✔ missing relationships and invalid availability never crash (0.876341ms)
+✔ unsupported focal structures are rejected explicitly (0.680014ms)
+✔ results and logical metrics are deterministic and array-order independent (39.210293ms)
+✔ planner-next remains isolated from legacy and production (17.320094ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 488.865816

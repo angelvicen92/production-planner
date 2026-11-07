@@ -188,7 +188,12 @@
     },
     "sqlFocalCasesPerDatabase": 22,
     "populatedUpgrade": "implementation/upgrade/upgrade131.json",
-    "aclRls": "PASS; previous metadata and policies exact, helper service_role-only"
+    "aclRls": "PASS; previous metadata and policies exact, helper service_role-only",
+    "isolationTests": {
+      "passed": 8,
+      "failed": 0,
+      "inventoryEntry": "server/transportPhaseComposition.spec.ts"
+    }
   },
   "freshLocalControls": {
     "G03e": "implementation/control-g03e-verification.json",
@@ -213,5 +218,12 @@
   "protectedPrefixRollbackRedoColdRead": "PASS",
   "originalDiagnosisRetained": "diagnosis/retention.json",
   "remoteWrites": 0,
-  "noSearchBudgetOrHeuristicChanges": true
+  "noSearchBudgetOrHeuristicChanges": true,
+  "ciFollowup": {
+    "priorHead": "081bda3b3c6b51acb73d9536609f853405336b13",
+    "cause": "new integration spec was absent from the explicit architecture test inventory",
+    "change": "one allowlist entry in planMainFlowAndFeeders.spec.ts; production source unchanged",
+    "localResult": "8/8 PASS",
+    "finalAuthority": "CI on the updated PR head"
+  }
 }

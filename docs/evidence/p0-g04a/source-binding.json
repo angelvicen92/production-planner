@@ -13,7 +13,6 @@
     "script/demo/assistedSQLContracts.ts": "2227954606ae2503c5c9d3f62e9db610072319ecff030eceae8b08950a5966a2",
     "script/demo/dataApiGrantsGate.ts": "ebd203d736b624ea4196cc798742d3324e9fb221cba54692d64b94d0bf0b179f"
   },
-  "engineClientSharedDiffEmpty": true,
   "historicalMigrationDiffEmpty": true,
   "frozenNativeManifests": [
     "implementation/native-a/source-manifest.json.gz",
@@ -23,5 +22,10 @@
   "ciWorkflow": ".github/workflows/p0-g04a-authenticated-transport.yml",
   "ciWorkflowSHA256": "a1723cc21c19667ac6f8a4f4db82ccd19a36c6884dda4cefa91f351fa0a46954",
   "remoteMigrations": 0,
-  "deployments": 0
+  "deployments": 0,
+  "engineRuntimeClientSharedDiffEmpty": true,
+  "engineTestOnlyChanges": [
+    "engine/planner-next/planMainFlowAndFeeders.spec.ts"
+  ],
+  "isolationInventorySHA256": "f607f0020d6fd384bec5ca4b4f6ca0a4a5d3faff7f58171d58e1ab58e4f56bb2"
 }

@@ -181,6 +181,7 @@ test("planner-next remains isolated from legacy and production", () => {
     "server/resourceRouteTransitions.ts",
     "server/resourceRouteTransitions.spec.ts",
     "server/flexibleMealPhaseComposition.spec.ts",
+    "server/transportPhaseComposition.spec.ts",
     "server/jointGroupStructure.ts",
     "server/roundSynchronizationStructure.spec.ts",
     "server/operationContinuity.spec.ts",
