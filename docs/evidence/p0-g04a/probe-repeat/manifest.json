@@ -1,0 +1,16 @@
+{
+  "receiptCount": 11,
+  "canonicalJSONSHA256": {
+    "adapter.json": "6266a162daf97e3b8195ad07deb9994ada8057c0a7442b72b849d355f832d6cd",
+    "admission-counterfactual.json": "2a4d72cb86ebefac708eb41f0409d9a7eefa7e94eb1847b45eeaa2c5d6b7d2c6",
+    "assisted-problem.json": "a3b7ba6524a1b43bea68654061319004530fa54c32977b2bbe9b2490a679739c",
+    "continuation.json": "da3fd973ad22810d8029c7afcaeb1839c8a943db491845a462e62bff520c51c4",
+    "input.json": "52ff2d37495cf19c14fae744e8b48ae7c866481298b0f5d6a2515840ef1d9703",
+    "physical-summary.json": "5e4151a4938440e09f7ea6eb9020209be9d42fae27ef483e0294dcdcfda77bcc",
+    "run.json": "8642d6c82e5ba488e2f82c78249b801cc6aa6a71a4a452387e627cf2c7b89cfa",
+    "scope-consumers.json": "e98e742f1b45fc5d03e65041e3fc53f1b6cfe31d337ae2145cd08c77947af346",
+    "scope.json": "bc04087ebf69f84eea132c8d32b89998a850d18b8eef7c69cb158e316e180cc7",
+    "summary.json": "0ab12c2ef7049b5bb537ed36eb217e4556e22460e7bc72ad2fbe929f9466ffe8",
+    "validation.json": "ec398fe9c70b431be425d9dee1fc115dd97fa537340aa0cd732dc8b872a96ef5"
+  }
+}

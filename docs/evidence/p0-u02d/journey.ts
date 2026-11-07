@@ -92,7 +92,8 @@ export async function journey({appUrl,users,db,directory,pass,authorTemplateReso
   // Compare every existing SQL contract byte for byte, without replacing it.
   const catalog=[];
   const jointDefinition=(await db.query("SELECT pg_get_functiondef('public.assert_daily_joint_groups(integer,jsonb)'::regprocedure) definition")).rows[0].definition;
-  const effectiveVersion=jointDefinition.includes("p.meal_mode='flexible_meal_window'")?130:129;
+  const packetConsumer=(await db.query("SELECT to_regprocedure('public.authenticated_transport_packets(integer,jsonb)') IS NOT NULL installed")).rows[0].installed;
+  const effectiveVersion=packetConsumer?131:jointDefinition.includes("p.meal_mode='flexible_meal_window'")?130:129;
   for(const [name,expected] of requiredFunctionBodies(false,effectiveVersion)){
    const rows=(await db.query("SELECT pg_get_functiondef(oid) definition FROM pg_proc WHERE pronamespace='public'::regnamespace AND proname=$1",[name])).rows;
    assert.ok(rows.some((d:any)=>{const m=d.definition.match(/\bAS\s+(\$\w*\$)([\s\S]*)/i);return m&&m[2].slice(0,m[2].indexOf(m[1])).trim()===expected;}),name);catalog.push({name,exactBody:true});

@@ -1,0 +1,27 @@
+{
+  "repository": "angelvicen92/production-planner",
+  "remoteBranch": "codex/p0-g04a-transport-with-joint-phases-meals",
+  "authorizedBase": "de7aec0b78c2c5b8d6118a2a72b69d6721dd123b",
+  "kind": "CANDIDATE_WORKTREE_WITH_LITERAL_SOURCE_MANIFESTS",
+  "productSourceSHA256": {
+    "server/technicalChainStructure.ts": "30bf9c0dd9d63bbe5cbe3e78d51307cd118ebef2a06c52da5b7314fe47e57474",
+    "server/jointGroupStructure.ts": "8e2505cac473dcda2308e86d3654f8ca350687dec9de75f74e2fbd876fb57bf6",
+    "server/dayConfigurationService.ts": "7718e6492646da9cb0a159495dec159e9446454613c0cc36c68f64624aa62616",
+    "server/effectiveConfigurationView.ts": "ea4888f60d904c6ddfd3b794edb96f3052293227bb333789d440aa815e512ccb",
+    "supabase/migrations/131_authenticated_transport_physical_packets.sql": "c2f6c869bb733c6a59884740d3364cb49e69337c77c1462af0b461bb3f429e4a",
+    "script/demo/a2Preflight.ts": "f7a03c76b16c5effbb7e1d1340d8cd58e014521d0b78bea4bce6b805fefa9474",
+    "script/demo/assistedSQLContracts.ts": "2227954606ae2503c5c9d3f62e9db610072319ecff030eceae8b08950a5966a2",
+    "script/demo/dataApiGrantsGate.ts": "ebd203d736b624ea4196cc798742d3324e9fb221cba54692d64b94d0bf0b179f"
+  },
+  "engineClientSharedDiffEmpty": true,
+  "historicalMigrationDiffEmpty": true,
+  "frozenNativeManifests": [
+    "implementation/native-a/source-manifest.json.gz",
+    "implementation/native-b/source-manifest.json.gz"
+  ],
+  "originalDiagnosisRetention": "diagnosis/retention.json",
+  "ciWorkflow": ".github/workflows/p0-g04a-authenticated-transport.yml",
+  "ciWorkflowSHA256": "a1723cc21c19667ac6f8a4f4db82ccd19a36c6884dda4cefa91f351fa0a46954",
+  "remoteMigrations": 0,
+  "deployments": 0
+}

@@ -1,0 +1,22 @@
+{
+  "syntheticMetadata": true,
+  "productSourceChanged": false,
+  "modules": [
+    {
+      "file": "executed-original.ts",
+      "sha256": "3fb3a43aac2a8911cc94292202d18fa8ec5a93c681d6ae3552080a691e933787"
+    },
+    {
+      "file": "executed-retry1.ts",
+      "sha256": "4d1fcec73cd085e5661b6c120d3382b67d1dbbb984776258a02cbeb1be9a008e"
+    },
+    {
+      "file": "executed-retry2.ts",
+      "sha256": "e49c94735545d8e29530355f4df72043666e124b0a1647fab3413e6505c591e2"
+    },
+    {
+      "file": "executed-serialization-failure.ts",
+      "sha256": "f9e9dac5b422a2a826c9dabb931bb3667ca719a5e8dcf1e540a5b1bb8030beb8"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "repository": "angelvicen92/production-planner",
+  "base": "de7aec0b78c2c5b8d6118a2a72b69d6721dd123b",
+  "remoteTarget": "codex/p0-g04a-transport-with-joint-phases-meals",
+  "localBranch": "work",
+  "productFilesMatchedAgainstExecutedArchive": 1498,
+  "productFilesModified": [],
+  "migration131Created": false,
+  "engineSearchChanged": false,
+  "remoteWrites": 0,
+  "sqlProbeRetry2SHA256": "e49c94735545d8e29530355f4df72043666e124b0a1647fab3413e6505c591e2",
+  "deliveredSQLProbeMatchesExecutedRetry2": true
+}

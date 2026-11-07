@@ -1,0 +1,60 @@
+{
+  "attempts": [
+    {
+      "name": "preliminary-inherited-OUT-margin",
+      "kind": "INPUT_CONFIGURATION_DIFFERENCE",
+      "OUTBefore": "inherited (5 minutes effective)",
+      "canonicalCase": false,
+      "result": "NO_COMPLETE_WITNESS",
+      "reasonCodes": [
+        "ASSISTED_SCOPE_INCOMPLETE",
+        "STANDALONE_BRANCH_BUDGET_EXHAUSTED"
+      ],
+      "branches": 10000,
+      "interpretation": "No prueba inviabilidad. Se corrigió el productor UI a OUT.before=0 según Fuente 06; no se cambió búsqueda ni presupuesto."
+    },
+    {
+      "name": "SQL-harness-serialized-input-comparison",
+      "kind": "HARNESS",
+      "error": "assert.deepEqual compared persisted JSON with in-memory undefined keys",
+      "materialConsumerReached": false,
+      "fix": "Compare entire serialized input; no physical values normalized."
+    },
+    {
+      "name": "SQL-harness-array-parameter",
+      "kind": "HARNESS",
+      "error": "22P02 invalid input syntax for type json",
+      "materialConsumerReached": false,
+      "fix": "Serialize scope_task_ids_json as JSON; keep all IDs literal."
+    },
+    {
+      "name": "SQL-harness-bootstrap-revision",
+      "kind": "HARNESS",
+      "error": "STALE_CONFIG_REVISION",
+      "materialConsumerReached": false,
+      "planRevision": 1,
+      "sessionRevision": 2,
+      "fix": "Use the real bootstrap session revision and align synthetic context inside the rolled-back transaction."
+    },
+    {
+      "name": "SQL-physical-consumer",
+      "kind": "MATERIAL_CONSUMER",
+      "error": "ANCHORED_WITNESS_SPACE_CONFLICT",
+      "materialConsumerReached": true,
+      "hashesRecomputed": true,
+      "rolledBack": true,
+      "syntheticMetadata": true,
+      "physicalWitnessChanged": false
+    }
+  ],
+  "notCountedAsPhysicalValidation": [
+    "undefined serialization assertion",
+    "22P02",
+    "STALE_CONFIG_REVISION"
+  ],
+  "searchBudgetNeverRaised": true,
+  "preliminaryStackPausedDuringG03eControl": true,
+  "nativeBrowserStacksExecutedWithoutConcurrentBrowserJourneys": true,
+  "productChanges": 0,
+  "acceptedG04aStages": 0
+}

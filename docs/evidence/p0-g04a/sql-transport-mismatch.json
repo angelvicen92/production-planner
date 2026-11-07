@@ -1,0 +1,309 @@
+{
+  "status": "CONSUMER_DEFECT",
+  "originalSQLConsumerRejected": {
+    "code": "P0001",
+    "message": "ANCHORED_WITNESS_SPACE_CONFLICT",
+    "step": "original-physical-consumer",
+    "where": "PL/pgSQL function public.assert_anchored_choice_witness(integer,jsonb,bigint) line 198 at RAISE\nSQL statement \"SELECT public.assert_anchored_choice_witness(p_plan,p_snapshot,p_revision)\"\nPL/pgSQL function public.assert_daily_technical_chain_snapshot(integer,jsonb,bigint,bigint) line 15 at PERFORM"
+  },
+  "hashesRecalculated": true,
+  "SQLAdmissionOnlyShadows": [
+    {
+      "fn": "assert_daily_technical_chains(integer,jsonb)",
+      "needle": " OR p.planner_next_profile#>>'{configuration,transport}' IS DISTINCT FROM 'NONE'",
+      "replacement": ""
+    },
+    {
+      "fn": "assert_daily_joint_groups(integer,jsonb)",
+      "needle": " OR p.planner_next_profile#>>'{configuration,transport}'<>'NONE'",
+      "replacement": ""
+    }
+  ],
+  "SQLMaterialConsumerModified": false,
+  "allNonJointPhysicalSpaceOverlapsAreAuthorizedTransport": true,
+  "unrecognizedAuthorizedTransportPairs": 34,
+  "pairs": [
+    {
+      "left": "task:34",
+      "right": "task:37",
+      "direction": "arrival",
+      "space": "space:8",
+      "start": 540,
+      "end": 545
+    },
+    {
+      "left": "task:34",
+      "right": "task:40",
+      "direction": "arrival",
+      "space": "space:8",
+      "start": 540,
+      "end": 545
+    },
+    {
+      "left": "task:37",
+      "right": "task:40",
+      "direction": "arrival",
+      "space": "space:8",
+      "start": 540,
+      "end": 545
+    },
+    {
+      "left": "task:10",
+      "right": "task:43",
+      "direction": "arrival",
+      "space": "space:8",
+      "start": 570,
+      "end": 575
+    },
+    {
+      "left": "task:10",
+      "right": "task:7",
+      "direction": "arrival",
+      "space": "space:8",
+      "start": 570,
+      "end": 575
+    },
+    {
+      "left": "task:43",
+      "right": "task:7",
+      "direction": "arrival",
+      "space": "space:8",
+      "start": 570,
+      "end": 575
+    },
+    {
+      "left": "task:4",
+      "right": "task:49",
+      "direction": "arrival",
+      "space": "space:8",
+      "start": 600,
+      "end": 605
+    },
+    {
+      "left": "task:4",
+      "right": "task:52",
+      "direction": "arrival",
+      "space": "space:8",
+      "start": 600,
+      "end": 605
+    },
+    {
+      "left": "task:49",
+      "right": "task:52",
+      "direction": "arrival",
+      "space": "space:8",
+      "start": 600,
+      "end": 605
+    },
+    {
+      "left": "task:1",
+      "right": "task:31",
+      "direction": "arrival",
+      "space": "space:8",
+      "start": 630,
+      "end": 635
+    },
+    {
+      "left": "task:1",
+      "right": "task:46",
+      "direction": "arrival",
+      "space": "space:8",
+      "start": 630,
+      "end": 635
+    },
+    {
+      "left": "task:31",
+      "right": "task:46",
+      "direction": "arrival",
+      "space": "space:8",
+      "start": 630,
+      "end": 635
+    },
+    {
+      "left": "task:16",
+      "right": "task:25",
+      "direction": "arrival",
+      "space": "space:8",
+      "start": 660,
+      "end": 665
+    },
+    {
+      "left": "task:16",
+      "right": "task:28",
+      "direction": "arrival",
+      "space": "space:8",
+      "start": 660,
+      "end": 665
+    },
+    {
+      "left": "task:25",
+      "right": "task:28",
+      "direction": "arrival",
+      "space": "space:8",
+      "start": 660,
+      "end": 665
+    },
+    {
+      "left": "task:19",
+      "right": "task:22",
+      "direction": "arrival",
+      "space": "space:8",
+      "start": 690,
+      "end": 695
+    },
+    {
+      "left": "task:19",
+      "right": "task:55",
+      "direction": "arrival",
+      "space": "space:8",
+      "start": 690,
+      "end": 695
+    },
+    {
+      "left": "task:22",
+      "right": "task:55",
+      "direction": "arrival",
+      "space": "space:8",
+      "start": 690,
+      "end": 695
+    },
+    {
+      "left": "task:26",
+      "right": "task:38",
+      "direction": "departure",
+      "space": "space:8",
+      "start": 1115,
+      "end": 1120
+    },
+    {
+      "left": "task:14",
+      "right": "task:17",
+      "direction": "departure",
+      "space": "space:8",
+      "start": 1135,
+      "end": 1140
+    },
+    {
+      "left": "task:14",
+      "right": "task:20",
+      "direction": "departure",
+      "space": "space:8",
+      "start": 1135,
+      "end": 1140
+    },
+    {
+      "left": "task:14",
+      "right": "task:23",
+      "direction": "departure",
+      "space": "space:8",
+      "start": 1135,
+      "end": 1140
+    },
+    {
+      "left": "task:14",
+      "right": "task:29",
+      "direction": "departure",
+      "space": "space:8",
+      "start": 1135,
+      "end": 1140
+    },
+    {
+      "left": "task:14",
+      "right": "task:47",
+      "direction": "departure",
+      "space": "space:8",
+      "start": 1135,
+      "end": 1140
+    },
+    {
+      "left": "task:17",
+      "right": "task:20",
+      "direction": "departure",
+      "space": "space:8",
+      "start": 1135,
+      "end": 1140
+    },
+    {
+      "left": "task:17",
+      "right": "task:23",
+      "direction": "departure",
+      "space": "space:8",
+      "start": 1135,
+      "end": 1140
+    },
+    {
+      "left": "task:17",
+      "right": "task:29",
+      "direction": "departure",
+      "space": "space:8",
+      "start": 1135,
+      "end": 1140
+    },
+    {
+      "left": "task:17",
+      "right": "task:47",
+      "direction": "departure",
+      "space": "space:8",
+      "start": 1135,
+      "end": 1140
+    },
+    {
+      "left": "task:20",
+      "right": "task:23",
+      "direction": "departure",
+      "space": "space:8",
+      "start": 1135,
+      "end": 1140
+    },
+    {
+      "left": "task:20",
+      "right": "task:29",
+      "direction": "departure",
+      "space": "space:8",
+      "start": 1135,
+      "end": 1140
+    },
+    {
+      "left": "task:20",
+      "right": "task:47",
+      "direction": "departure",
+      "space": "space:8",
+      "start": 1135,
+      "end": 1140
+    },
+    {
+      "left": "task:23",
+      "right": "task:29",
+      "direction": "departure",
+      "space": "space:8",
+      "start": 1135,
+      "end": 1140
+    },
+    {
+      "left": "task:23",
+      "right": "task:47",
+      "direction": "departure",
+      "space": "space:8",
+      "start": 1135,
+      "end": 1140
+    },
+    {
+      "left": "task:29",
+      "right": "task:47",
+      "direction": "departure",
+      "space": "space:8",
+      "start": 1135,
+      "end": 1140
+    }
+  ],
+  "completeEngineWitness": {
+    "tasks": 84,
+    "meals": 19,
+    "hardValid": true,
+    "branches": 3420
+  },
+  "syntheticSQLMetadata": true,
+  "acceptedStages": 0,
+  "rolledBack": true,
+  "implementationGate": "STOP_MATERIAL_SQL_CONTRACT_NOT_CERTIFIED"
+}

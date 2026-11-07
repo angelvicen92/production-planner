@@ -240,7 +240,7 @@ export async function applyDayConfigurationOperation(planId: number, actorId: st
   }
   if (chainEdit) {
     dailyTechnicalChainAuthority(plan);
-    if (!plan.planner_next_profile || plan.planner_next_configuration != null || plan.planner_next_profile.configuration?.transport !== "NONE" || plan.planner_next_profile.configuration?.setup !== "NONE") throw Object.assign(new Error("TECHNICAL_CHAIN_AUTHORITY_CONFLICT"),{status:422});
+    if (!plan.planner_next_profile || plan.planner_next_configuration != null || plan.planner_next_profile.configuration?.setup !== "NONE") throw Object.assign(new Error("TECHNICAL_CHAIN_AUTHORITY_CONFLICT"),{status:422});
     nextInput = validateDailyTechnicalChains(nextInput,chainEdit);
     if(nextInput.dailyTechnicalChainsVersion===1)nextInput=validateDailyTechnicalChains(nextInput,{contractVersion:1,policies:nextInput.technicalChains??[]});
     const readiness=preflightEngineInputForPlannerNext(nextInput);
