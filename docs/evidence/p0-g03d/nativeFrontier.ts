@@ -23,16 +23,21 @@ export async function frontier({appUrl,db,directory,pass,page,read,responseTo,sa
  save('native-phase-save',await responseTo(config,'PUT',()=>editor.getByRole('button',{name:'Guardar cadena técnica',exact:true}).click()));
  await page.reload();view=await read(path);save('native-effective',view);
  const jointEditor=page.getByTestId('daily-joint-groups');
- assert.equal(view.jointGroups.supported,false);
- assert.equal(await jointEditor.getByRole('button',{name:'Crear operación conjunta',exact:true}).isEnabled(),false);
+ // 130 certified this intersection after G03d. Keep the resource-window
+ // regression and compare UI/TS/SQL with the actually installed contract.
+ const jointDefinition=(await db.query("SELECT pg_get_functiondef('public.assert_daily_joint_groups(integer,jsonb)'::regprocedure) definition")).rows[0].definition;
+ const flexibleJointCertified=jointDefinition.includes("p.meal_mode='flexible_meal_window'");
+ assert.equal(view.jointGroups.supported,flexibleJointCertified);
+ assert.equal(await jointEditor.getByRole('button',{name:'Crear operación conjunta',exact:true}).isEnabled(),flexibleJointCertified);
  await jointEditor.screenshot({path:directory+'/joint-frontier.png'});
  const input=await buildEngineInput(planId,storage);save('native-input',input);
- assert.equal(jointCombinationSupported(input),false);assert.equal(requiredPhaseCompositionSupported(input),true);
+ assert.equal(jointCombinationSupported(input),flexibleJointCertified);assert.equal(requiredPhaseCompositionSupported(input),true);
  const structure={contractVersion:1,groups:[{id:'probe-joint',taskIds:joint.map((t:any)=>t.id)}]};
  let error:any;await db.query('BEGIN READ ONLY');
  try{await db.query('SELECT public.assert_daily_joint_groups($1,$2)',[planId,structure]);}
  catch(e:any){error={code:e.code,message:e.message};}finally{await db.query('ROLLBACK');}
- assert.equal(error?.code,'P0001');save('native-sql-readonly-rejection',{structure,error,readOnly:true,authorityInserted:false});
+ if(flexibleJointCertified)assert.equal(error,undefined);else assert.equal(error?.code,'P0001');
+ save('native-sql-readonly-admission',{structure,accepted:!error,error:error??null,flexibleJointCertified,readOnly:true,authorityInserted:false});
  const eva=input.planResourceItems.find(r=>r.name==='EVA')!;
  assert.equal(eva.availabilityStart,'16:00');assert.equal(eva.availabilityEnd,'21:00');save('native-snapshot',eva);
  // Editing the global catalogue after day creation cannot rewrite the snapshot.

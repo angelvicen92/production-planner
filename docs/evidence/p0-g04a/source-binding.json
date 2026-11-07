@@ -27,5 +27,10 @@
   "engineTestOnlyChanges": [
     "engine/planner-next/planMainFlowAndFeeders.spec.ts"
   ],
-  "isolationInventorySHA256": "f607f0020d6fd384bec5ca4b4f6ca0a4a5d3faff7f58171d58e1ab58e4f56bb2"
+  "isolationInventorySHA256": "f607f0020d6fd384bec5ca4b4f6ca0a4a5d3faff7f58171d58e1ab58e4f56bb2",
+  "regressionHarnessSHA256": {
+    "docs/evidence/p0-g03d/nativeFrontier.ts": "e3f22757ebfdcaf73edd40a2d7bf0a6542c76f4123f2eb36811d563876136ccd",
+    "docs/evidence/p0-g04a/implementation/run.ts": "8b29daa5b0abb8af83caa5dc7b24a70cd1160bc52fd082f33fe5930d2a69d20e",
+    ".github/workflows/p0-g03d-resource-windows.yml": "6bd21b42eeee31bd4b44ad09ffaf0c2a8031d79656c99efefb35120f2210c125"
+  }
 }

@@ -12,7 +12,7 @@ const repo=process.cwd(),source=join(output,'source');mkdirSync(source,{recursiv
 const archive=join(output,'source.tar');
 execFileSync('git',['archive','--format=tar',`--output=${archive}`,'HEAD']);
 execFileSync('tar',['-x','-f',archive,'-C',source]);unlinkSync(archive);
-const files=execFileSync('git',['ls-files','--cached','--others','--exclude-standard','--','engine','server','client','shared','supabase','script','docs/source/official','docs/evidence/p0-g03e','docs/evidence/p0-g04a','docs/evidence/p0-u02d/journey.ts','docs/evidence/p0-g03b/productJourney.ts','package.json','package-lock.json'],{encoding:'utf8'}).trim().split('\n').filter(f=>existsSync(f)&&(!(f.startsWith('docs/evidence/p0-g03e/')||f.startsWith('docs/evidence/p0-g04a/'))||(f.endsWith('.ts')||f.endsWith('.sql'))));
+const files=execFileSync('git',['ls-files','--cached','--others','--exclude-standard','--','engine','server','client','shared','supabase','script','docs/source/official','docs/evidence/p0-g03e','docs/evidence/p0-g04a','docs/evidence/p0-u02d/journey.ts','docs/evidence/p0-g03d/nativeFrontier.ts','docs/evidence/p0-g03b/productJourney.ts','package.json','package-lock.json'],{encoding:'utf8'}).trim().split('\n').filter(f=>existsSync(f)&&(!(f.startsWith('docs/evidence/p0-g03e/')||f.startsWith('docs/evidence/p0-g04a/'))||(f.endsWith('.ts')||f.endsWith('.sql'))));
 const sha=(v:Buffer|string)=>createHash('sha256').update(v).digest('hex');
 const hashes=Object.fromEntries(files.map(f=>[f,sha(readFileSync(join(repo,f)))]));
 for(const f of files){mkdirSync(dirname(join(source,f)),{recursive:true});copyFileSync(join(repo,f),join(source,f));}

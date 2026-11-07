@@ -200,7 +200,8 @@
     "G02": "implementation/control-g02/receipts.json.gz",
     "G01_U02d": "implementation/control-g01-verification.json",
     "U00f": "implementation/control-transport/receipts.json.gz",
-    "A2": "implementation/a2/comparison.json"
+    "A2": "implementation/a2/comparison.json",
+    "G03d": "implementation/control-g03d-verification.json"
   },
   "ciRequiredControls": [
     "G03e",
@@ -219,11 +220,26 @@
   "originalDiagnosisRetained": "diagnosis/retention.json",
   "remoteWrites": 0,
   "noSearchBudgetOrHeuristicChanges": true,
-  "ciFollowup": {
-    "priorHead": "081bda3b3c6b51acb73d9536609f853405336b13",
-    "cause": "new integration spec was absent from the explicit architecture test inventory",
-    "change": "one allowlist entry in planMainFlowAndFeeders.spec.ts; production source unchanged",
-    "localResult": "8/8 PASS",
-    "finalAuthority": "CI on the updated PR head"
-  }
+  "freshCIControls": {
+    "G03b": {
+      "verification": "implementation/control-g03b-verification.json",
+      "origin": "implementation/control-g03b/origin.json"
+    }
+  },
+  "ciFollowups": [
+    {
+      "priorHead": "081bda3b3c6b51acb73d9536609f853405336b13",
+      "cause": "new integration spec was absent from the explicit architecture test inventory",
+      "change": "one allowlist entry in planMainFlowAndFeeders.spec.ts; production source unchanged",
+      "localResult": "8/8 PASS",
+      "finalAuthority": "CI on the updated PR head"
+    },
+    {
+      "priorHead": "209c1b18e89d83907a36f9cbaaf4e7378e46cf60",
+      "cause": "G03d retained the pre-130 expectation that flexible joint authoring is disabled",
+      "change": "UI/TS/read-only SQL admission checked against installed contract; all resource-window, CAS and Stage checks retained",
+      "localResult": "full G03d 65-obligation resource window journey and generic 15/15 SQL PASS",
+      "productionSourceChanged": false
+    }
+  ]
 }

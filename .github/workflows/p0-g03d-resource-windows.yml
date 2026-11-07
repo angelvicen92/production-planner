@@ -59,7 +59,7 @@ jobs:
       - run: node --import tsx docs/evidence/p0-g03d/upgrade129.mts work/g03d-upgrade129
       - run: node --import tsx docs/evidence/p0-g03d/failures.mts work/g03d-failures
       - run: node --import tsx docs/evidence/p0-g03d/oldWriter.mts work/g03d-old-writer
-      - name: Two cold native databases and unchanged joint frontier
+      - name: Two cold native databases and installed joint admission
         run: |
           node --import tsx docs/evidence/p0-g03d/run.ts work/g03d-native-a
           node --import tsx docs/evidence/p0-g03d/run.ts work/g03d-native-b
