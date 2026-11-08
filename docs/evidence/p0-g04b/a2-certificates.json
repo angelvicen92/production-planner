@@ -1,0 +1,101 @@
+[
+  {
+    "stage": 1,
+    "witnessFingerprint": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
+    "replay": "PASS",
+    "validation": "PASS",
+    "closure": "CERTIFIED",
+    "protectedLiteral": true,
+    "charges": 293
+  },
+  {
+    "stage": 2,
+    "witnessFingerprint": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
+    "replay": "PASS",
+    "validation": "PASS",
+    "closure": "CERTIFIED",
+    "protectedLiteral": true,
+    "charges": 293
+  },
+  {
+    "stage": 3,
+    "witnessFingerprint": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
+    "replay": "PASS",
+    "validation": "PASS",
+    "closure": "CERTIFIED",
+    "protectedLiteral": true,
+    "charges": 293
+  },
+  {
+    "stage": 4,
+    "witnessFingerprint": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
+    "replay": "PASS",
+    "validation": "PASS",
+    "closure": "CERTIFIED",
+    "protectedLiteral": true,
+    "charges": 293
+  },
+  {
+    "stage": 5,
+    "witnessFingerprint": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
+    "replay": "PASS",
+    "validation": "PASS",
+    "closure": "CERTIFIED",
+    "protectedLiteral": true,
+    "charges": 293
+  },
+  {
+    "stage": 6,
+    "witnessFingerprint": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
+    "replay": "PASS",
+    "validation": "PASS",
+    "closure": "CERTIFIED",
+    "protectedLiteral": true,
+    "charges": 293
+  },
+  {
+    "stage": 7,
+    "witnessFingerprint": "e15c84f6fe19a9bbd747ebf3e1b63d1c7b8ed93765528b95f6077b8aa08f9bb5",
+    "replay": "PASS",
+    "validation": "PASS",
+    "closure": "CERTIFIED",
+    "protectedLiteral": true,
+    "charges": 293
+  },
+  {
+    "stage": 8,
+    "witnessFingerprint": "bfdbe415effe6d9d827c5ae6dd9d95ed1e5953f43252df64def69234b4a50343",
+    "replay": "PASS",
+    "validation": "PASS",
+    "closure": "CERTIFIED",
+    "protectedLiteral": true,
+    "charges": 293
+  },
+  {
+    "stage": 9,
+    "witnessFingerprint": "bfdbe415effe6d9d827c5ae6dd9d95ed1e5953f43252df64def69234b4a50343",
+    "replay": "PASS",
+    "validation": "PASS",
+    "closure": "CERTIFIED",
+    "protectedLiteral": true,
+    "charges": 293
+  },
+  {
+    "stage": 10,
+    "witnessFingerprint": "bfdbe415effe6d9d827c5ae6dd9d95ed1e5953f43252df64def69234b4a50343",
+    "replay": "PASS",
+    "validation": "PASS",
+    "closure": "CERTIFIED",
+    "protectedLiteral": true,
+    "charges": 293
+  },
+  {
+    "stage": 11,
+    "witnessFingerprint": "9a918ed64990241b3d5b4e914ef38df059dc18f7e6802c45d022efbfd48f3e2a",
+    "replay": "PASS",
+    "validation": "PASS",
+    "closure": "CERTIFIED",
+    "protectedLiteral": true,
+    "charges": 293
+  }
+]

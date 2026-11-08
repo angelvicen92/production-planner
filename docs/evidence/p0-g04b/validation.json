@@ -1,0 +1,141 @@
+{
+  "status": "DIAGNOSTIC_VERIFIED_FUNCTIONAL_GATE_NOT_MET",
+  "base": "349dea648555a314367a4f1d668a6dad7a81321d",
+  "native": {
+    "coldDatabasesCreated": 3,
+    "determinismComparisonColdDatabases": 2,
+    "configured": 141,
+    "proposals": 0,
+    "newStages": 0,
+    "acceptedPlacements": 0,
+    "outcome": "NO_PROPOSAL",
+    "branches": 10000,
+    "S0DraftUnchanged": true
+  },
+  "checks": {
+    "runtimeBinding": {
+      "status": "PASS",
+      "files": 1679
+    },
+    "harnessTypeScript": "PASS",
+    "nativeBuild": "PASS via runner",
+    "focals": {
+      "pass": 45,
+      "fail": 0
+    },
+    "inventory": "PASS",
+    "coldComparison": "PASS",
+    "observerNeutrality": "PASS literal, excludedFields=[]",
+    "offlineWitnesses": {
+      "count": 4,
+      "ordinaryTasks": 122,
+      "participantMeals": 19,
+      "newStages": 0,
+      "replay": "PASS",
+      "negativeFamiliesPerWitness": 9
+    },
+    "frozenUIInputReplays": {
+      "status": "PASS_FROZEN_INPUT_REPLAY",
+      "rows": [
+        {
+          "name": "g04a",
+          "label": "macro",
+          "obligations": 103,
+          "proposalsExact": true,
+          "physicalWitnessesExact": true,
+          "branches": [
+            3420,
+            205
+          ],
+          "protectedContinuationExact": true,
+          "newSQLStages": 0
+        },
+        {
+          "name": "g04a",
+          "label": "generic",
+          "obligations": 28,
+          "proposalsExact": true,
+          "physicalWitnessesExact": true,
+          "branches": [
+            111,
+            42
+          ],
+          "protectedContinuationExact": true,
+          "newSQLStages": 0
+        },
+        {
+          "name": "g03e",
+          "label": "macro",
+          "obligations": 65,
+          "proposalsExact": true,
+          "physicalWitnessesExact": true,
+          "branches": [
+            2884,
+            843
+          ],
+          "protectedContinuationExact": true,
+          "newSQLStages": 0
+        },
+        {
+          "name": "g03e",
+          "label": "generic",
+          "obligations": 18,
+          "proposalsExact": true,
+          "physicalWitnessesExact": true,
+          "branches": [
+            64,
+            53
+          ],
+          "protectedContinuationExact": true,
+          "newSQLStages": 0
+        }
+      ],
+      "remoteWrites": 0
+    },
+    "A2Imported": {
+      "status": "PASS",
+      "isolated": true,
+      "node": "v24.19.0",
+      "seconds": 69.31358356300001,
+      "completed": 266,
+      "stages": 11,
+      "branches": 27049,
+      "fingerprint": "2a3bf5d32c0102266290f8ddf699cf2ad366d7200b24214efc6c6b23f473df8d",
+      "fullReportEqualExceptDurationMs": true,
+      "snapshotsEqual": true,
+      "certificatesRevalidated": 11
+    }
+  },
+  "negativeNativeChecks": [
+    "viewer/aux/norole 403",
+    "anonymous 401",
+    "stale revision 409",
+    "invalid chain member 422",
+    "invalid scope 422",
+    "discard NO_PROPOSAL 409 RUN_NOT_READY"
+  ],
+  "notReached": [
+    "native complete proposal",
+    "apply to Draft",
+    "clean validation of proposed Draft",
+    "physical witness SQL consumer",
+    "S1/S2",
+    "protected continuation",
+    "rollback/redo",
+    "physical SQL capacity/boundary/meals/transport/source attacks",
+    "Stage protection attacks",
+    "alternate native topology with equivalent serial bottleneck"
+  ],
+  "historicalControlsNotFreshlySQLReexecuted": [
+    "U00f",
+    "G03d",
+    "G03b",
+    "G02",
+    "G01/U02d"
+  ],
+  "historicalPreservation": "All runtime, validators, migrations and historical receipts unchanged; source binding exact. Replays and A2 are identified separately from new native SQL acceptance.",
+  "remoteDatabaseWrites": 0,
+  "remoteMigrations": 0,
+  "deployment": false,
+  "merge": false
+}

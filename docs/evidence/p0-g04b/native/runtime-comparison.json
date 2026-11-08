@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "files": 1677,
+  "runtimeHashesLiteral": true,
+  "harnessChangesOnly": [
+    "dispatch/build in smokeNewDayIntegration.ts",
+    "isolated Vite cache"
+  ],
+  "remoteDatabaseWrites": 0
+}
