@@ -1,0 +1,58 @@
+{
+  "status": "PASS_FROZEN_INPUT_REPLAY",
+  "rows": [
+    {
+      "name": "g04a",
+      "label": "macro",
+      "obligations": 103,
+      "proposalsExact": true,
+      "physicalWitnessesExact": true,
+      "branches": [
+        3420,
+        205
+      ],
+      "protectedContinuationExact": true,
+      "newSQLStages": 0
+    },
+    {
+      "name": "g04a",
+      "label": "generic",
+      "obligations": 28,
+      "proposalsExact": true,
+      "physicalWitnessesExact": true,
+      "branches": [
+        111,
+        42
+      ],
+      "protectedContinuationExact": true,
+      "newSQLStages": 0
+    },
+    {
+      "name": "g03e",
+      "label": "macro",
+      "obligations": 65,
+      "proposalsExact": true,
+      "physicalWitnessesExact": true,
+      "branches": [
+        2884,
+        843
+      ],
+      "protectedContinuationExact": true,
+      "newSQLStages": 0
+    },
+    {
+      "name": "g03e",
+      "label": "generic",
+      "obligations": 18,
+      "proposalsExact": true,
+      "physicalWitnessesExact": true,
+      "branches": [
+        64,
+        53
+      ],
+      "protectedContinuationExact": true,
+      "newSQLStages": 0
+    }
+  ],
+  "remoteWrites": 0
+}

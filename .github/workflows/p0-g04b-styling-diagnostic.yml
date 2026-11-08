@@ -1,0 +1,67 @@
+name: P0 G04b native styling diagnostic
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/evidence/p0-g04b/**'
+      - '.github/workflows/p0-g04b-styling-diagnostic.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$task_browser_path" ]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+            node --input-type=module -e 'import {chromium} from "playwright"; console.log("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH="+chromium.executablePath())' >> "$GITHUB_ENV"
+          fi
+      - run: python3 docs/evidence/p0-g04b/bind.py
+      - run: npx --no-install tsc -p docs/evidence/p0-g04b/tsconfig.json
+      - run: >-
+          node --import tsx --test --test-concurrency=1
+          server/transportPhaseComposition.spec.ts server/flexibleMealPhaseComposition.spec.ts
+          server/requiredPhaseComposition.spec.ts server/newDayPlannerConfiguration.spec.ts
+          engine/planner-next/earlyEntryMaterialization.spec.ts engine/planner-next/earlyClosureMaterialization.spec.ts
+      - name: Native UI diagnostic (expected NO_PROPOSAL; zero new Stages)
+        run: node --import tsx docs/evidence/p0-g04b/run.ts work/g04b-native
+      - name: Frozen cold baseline and independent comparison
+        run: |
+          python3 docs/evidence/p0-g04b/unpack.py docs/evidence/p0-g04b/initial/receipts.json.gz work/g04b-initial
+          python3 docs/evidence/p0-g04b/inventory.py work/g04b-native/native work/g04b-inventory.json
+          python3 docs/evidence/p0-g04b/verify.py work/g04b-initial work/g04b-native/native work/g04b-determinism.json
+      - name: Neutral observation, falsifications, metered geometry and matching
+        run: python3 docs/evidence/p0-g04b/offline.py work/g04b-native/native work/g04b-offline
+      - name: Frozen native controls and isolated A2 regression
+        run: |
+          node --import tsx docs/evidence/p0-g04b/regressions.ts work/g04b-controls
+          node --import tsx docs/evidence/p0-u00n/a2.ts work/g04b-a2
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g04b-public-diagnostic-receipts
+          path: |
+            work/g04b-native/native/*.json
+            work/g04b-native/native/*.png
+            work/g04b-native/manifest.json
+            work/g04b-native/checkout-delta.json
+            work/g04b-inventory.json
+            work/g04b-determinism.json
+            work/g04b-offline/summary.json
+            work/g04b-offline/neutrality.json
+            work/g04b-offline/*-verification.json
+            work/g04b-controls/*.json
+            work/g04b-a2/*.json
+          retention-days: 14

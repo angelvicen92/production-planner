@@ -1,0 +1,35 @@
+[
+  {
+    "directory": "initial",
+    "database": "cold-1",
+    "runtimeChanges": 0,
+    "obligations": 141,
+    "runOutcome": "NO_PROPOSAL",
+    "harnessExit": 1,
+    "boundary": "G04a finishDay asserted PROPOSAL before UI proposal request",
+    "newStages": 0,
+    "retained": true
+  },
+  {
+    "directory": "ui-attempt",
+    "database": "cold-2",
+    "runtimeChanges": 0,
+    "obligations": 141,
+    "runOutcome": "NO_PROPOSAL (native UI)",
+    "harnessExit": 1,
+    "boundary": "discard(NO_PROPOSAL) correctly returns 409 RUN_NOT_READY; old harness expected 2xx",
+    "newStages": 0,
+    "retained": true
+  },
+  {
+    "directory": "native",
+    "database": "cold-3",
+    "runtimeChanges": 0,
+    "obligations": 141,
+    "runOutcome": "NO_PROPOSAL (native UI and other peer API)",
+    "harnessExit": 0,
+    "boundary": "Diagnostic asserted; discard rejection retained as expected negative",
+    "newStages": 0,
+    "retained": true
+  }
+]

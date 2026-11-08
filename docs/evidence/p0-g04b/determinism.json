@@ -1,0 +1,24 @@
+{
+  "status": "PASS_DIAGNOSTIC_REPRODUCTION",
+  "coldDatabases": 2,
+  "comparedLiteral": [
+    "macro-input",
+    "macro-adapter",
+    "macro-peer-scopes",
+    "authored-input",
+    "styling-catalogue"
+  ],
+  "nativeUIAndAPIEvidenceLiteral": true,
+  "excludedResultFields": [
+    "selector (different requested peer)"
+  ],
+  "physicalDifferencesNormalized": false,
+  "obligationsConfigured": 141,
+  "authenticProposals": 0,
+  "acceptedPlacements": 0,
+  "newStages": 0,
+  "branchesPerRun": 10000,
+  "S0DraftUnchanged": true,
+  "negativeAuthoringAndScopeChecks": "PASS",
+  "remoteWrites": 0
+}
