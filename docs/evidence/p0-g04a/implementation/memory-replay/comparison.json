@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "originalInputsAndProposalsExact": true,
+  "originalBranches": [
+    3420,
+    1377
+  ],
+  "nativeContinuation": [
+    {
+      "lineage": false,
+      "branches": 1377,
+      "complete": true,
+      "priorWitnessKinds": []
+    },
+    {
+      "lineage": true,
+      "branches": 205,
+      "complete": true,
+      "priorWitnessKinds": [
+        "JOINT_COMPLETION"
+      ]
+    }
+  ],
+  "existingServiceLineageReused": true,
+  "productWrites": 0
+}

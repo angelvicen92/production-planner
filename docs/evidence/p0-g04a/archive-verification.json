@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "archives": [
+    {
+      "archive": "control-g03e/receipts.json.gz",
+      "receipts": 76
+    },
+    {
+      "archive": "native/receipts.json.gz",
+      "receipts": 15
+    },
+    {
+      "archive": "probe/receipts.json.gz",
+      "receipts": 11
+    },
+    {
+      "archive": "probe-repeat/receipts.json.gz",
+      "receipts": 11
+    },
+    {
+      "archive": "repeat/receipts.json.gz",
+      "receipts": 15
+    },
+    {
+      "archive": "sql-probe/receipts.json.gz",
+      "receipts": 19
+    }
+  ],
+  "credentialsOrPrivateLogsIncluded": false
+}

@@ -1,0 +1,30 @@
+{
+  "receiptCount": 25,
+  "canonicalJSONSHA256": {
+    "first-after-general-change-input.json": "e21430f868df61a7d8df94cb137ab312980aba53f02333952549e237965051e9",
+    "first-after-general-change-preflight.json": "809efa3b6f88f3d6c2e805be11f253e583c5dc9ce1079d30646dfc5a1425e72f",
+    "first-config-revisions.json": "ed895039968a6e66bf97506fb707b5b1b0e995dee2d76177f2305f2cd454f1c9",
+    "first-draft.json": "9b164fbcf1dd6b537b0c259cbcfae08f7f0d80f3118013c0f0eaa3c284effebe",
+    "first-input.json": "a73d7004d511d564c71799779ff5768273bd73e4a7b92c097e1d27b593639fa7",
+    "first-preflight.json": "8d27341ac4352f91985942c1ee691c43c3a55841d50437e92119924d4452dfed",
+    "first-proposal.json": "7ef4d526ec228743dceec0ffc0733397c3428707f9e4d05a5983fa965c211585",
+    "first-run.json": "0da1c881241840636e42b80fbd93bb5eba866fe9c8096fbb742244c923ff7c5f",
+    "first-stage.json": "dbba375e9948a6f6e72cf26ad2a3299cb1a3e0fe2f43734eb3fef7eae7c7bd2f",
+    "first-validation.json": "bd9ae04b6f99e7376371831c9f170fdffc9712b313edbcb19875391d8ed41bf0",
+    "integration.json": "c76a82335d0fecaeb125d747b921b3c7322e475097fadce116d29b81675fff23",
+    "journey.json": "04c10c5b55aeec7a4d3a211e8cc696f8c0ea12cc3a7ca5fc5f23f71e6f06daaf",
+    "protected-after.json": "cba33c4dc8a3e98865275cf7adb6d3b87dd2df185c777890d75b84aea4fbf36c",
+    "protected-base-run.json": "47e65a8a64e65ebcd2ef69b1dd7f42febba239eb87108b7c81ac3908510bb3b2",
+    "protected-base-stage.json": "cba33c4dc8a3e98865275cf7adb6d3b87dd2df185c777890d75b84aea4fbf36c",
+    "protected-complete-stage.json": "e3868ed659eed6ed5021ac5cd0ae56704f7719f4373a0c19a180b269f7dc003c",
+    "protected-continuation-run.json": "400db3aae17614a7f2230545ef4b41a9dd5594b361df51c1828a57501b935a18",
+    "second-config-revisions.json": "9fc1bcd88fda47a5b915f510d145640a5e8352c97f87e90466f4a0a37c08d249",
+    "second-draft.json": "2c3a06807c2fb8e39f603e873602cf9171bd30ccd0731993705cd7c3f7d27e4f",
+    "second-input.json": "e3980b4941e88afb2926c576526d4bb8a9ce296fd86ad611cc1b12de0ef57dc7",
+    "second-preflight.json": "32d15402d59d95d14c4d4fa67b373d235a9a4596df7a13948eeb417b9321df7d",
+    "second-proposal.json": "9b0facdbf4c273581e6f3367b17cd7f1c58120a0ce8785bd50b9db7388bc4df3",
+    "second-run.json": "3b4c656ece8fb90308896efdc26bb1d65fecea3276310bd364d1911ab3a1dd27",
+    "second-stage.json": "f2d61c805063677c7a0b2b0598ff9582a860e5d15ce1f20b03f5e13a28de04b5",
+    "second-validation.json": "d2009e17464adfbaa2a1af994ec4bae36826a5a32cb15f479577dc78f8c0c3dd"
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "status": "DIAGNOSTIC_COMPLETE_IMPLEMENTATION_STOPPED",
+  "productGate": "NOT_CERTIFIED_SQL_CONSUMER_DEFECT",
+  "base": "de7aec0b78c2c5b8d6118a2a72b69d6721dd123b",
+  "checks": [
+    {
+      "name": "fresh G03e native macro + generic",
+      "status": "PASS",
+      "stages": 4,
+      "obligations": [
+        65,
+        18
+      ],
+      "branches": [
+        [
+          2884,
+          843
+        ],
+        [
+          64,
+          53
+        ]
+      ],
+      "independentVerifier": "PASS"
+    },
+    {
+      "name": "two cold native G04a inputs and guards",
+      "status": "PASS_DIAGNOSIS",
+      "obligationsPerDatabase": 103,
+      "acceptedStages": 0
+    },
+    {
+      "name": "two admission-only TS counterfactuals",
+      "status": "MEMORY_COMPLETE_WITNESS",
+      "branches": [
+        3420,
+        3420
+      ],
+      "physicalValidation": "PASS",
+      "obligations": 103
+    },
+    {
+      "name": "two memory protected continuations",
+      "status": "PASS_MEMORY_ONLY",
+      "branches": [
+        1377,
+        1377
+      ],
+      "protectedLiteral": true,
+      "acceptedStages": 0
+    },
+    {
+      "name": "both peer scopes and existing technical certificate",
+      "status": "PASS_MEMORY_ONLY",
+      "certificateBranches": 0
+    },
+    {
+      "name": "cold determinism",
+      "status": "PASS",
+      "physicalNormalization": false,
+      "productFilesCompared": 1498
+    },
+    {
+      "name": "original SQL physical consumer after admission-only transaction shadow",
+      "status": "REJECTED_MATERIAL",
+      "error": "ANCHORED_WITNESS_SPACE_CONFLICT",
+      "unrecognizedAuthorizedPairs": 34,
+      "syntheticMetadata": true,
+      "rolledBack": true
+    },
+    {
+      "name": "transport focal specs",
+      "status": "PASS",
+      "tests": 9,
+      "files": [
+        "engine/planner-next/integration/newDayTransport.spec.ts",
+        "server/transportConfigIntegrity.spec.ts"
+      ]
+    },
+    {
+      "name": "npm run check",
+      "status": "PASS"
+    },
+    {
+      "name": "diagnostic harness TypeScript",
+      "status": "PASS"
+    },
+    {
+      "name": "local production build through archived native harness",
+      "status": "PASS"
+    },
+    {
+      "name": "npm run check:migrations",
+      "status": "PASS",
+      "lastMigration": 130
+    }
+  ],
+  "notExecutedAfterMaterialStop": [
+    "native G04a Draft/Stage/SQL continuation",
+    "second non-A2 transport composition through Stage",
+    "full G04a SQL physical negatives and RLS/ACL acceptance matrix",
+    "full isolated U00f UI-to-Stage replay",
+    "standalone G03d/G03b/U02d/G02/G01 regression suites",
+    "new imported A2 266/266 benchmark execution",
+    "migration 131 upgrade and candidate CI"
+  ],
+  "historicalBaselinesAreNotFreshEvidence": true,
+  "productionFilesChanged": 0,
+  "newPR": null,
+  "merge": false,
+  "deploy": false,
+  "remoteMigration": false
+}

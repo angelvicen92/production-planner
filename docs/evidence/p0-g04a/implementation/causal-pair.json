@@ -1,0 +1,200 @@
+{
+  "firstOriginalSpaceConflictPair": [
+    {
+      "placement": {
+        "id": "task:34",
+        "duration": 5,
+        "spaceId": "space:8",
+        "dependencies": [],
+        "kind": "auxiliary",
+        "participantId": "participant:12",
+        "start": 540,
+        "end": 545
+      },
+      "productTask": {
+        "id": 34,
+        "planId": 1,
+        "templateId": 1,
+        "templateName": "Llegada propia",
+        "resourceRequirements": null,
+        "zoneId": 1,
+        "spaceId": 8,
+        "_invalidSpaceId": null,
+        "_unplannedHint": null,
+        "contestantId": 12,
+        "contestantName": "C12",
+        "status": "pending",
+        "itinerantTeamId": null,
+        "allowedItinerantTeamIds": [],
+        "itinerantTeamRequirement": "none",
+        "participantMarginBeforeMinutes": null,
+        "participantMarginAfterMinutes": null,
+        "hasDependency": false,
+        "dependsOnTemplateIds": [],
+        "dependsOnTaskIds": [],
+        "dependsOnTemplateId": null,
+        "dependsOnTaskId": null,
+        "durationOverrideMin": 5,
+        "camerasOverride": 0,
+        "startPlanned": null,
+        "endPlanned": null,
+        "lockedStart": null,
+        "lockedEnd": null,
+        "lockType": null,
+        "startReal": null,
+        "endReal": null,
+        "assignedResourceIds": null,
+        "plannerNextKind": "auxiliary",
+        "operationalRole": "transport_arrival"
+      }
+    },
+    {
+      "placement": {
+        "id": "task:37",
+        "duration": 5,
+        "spaceId": "space:8",
+        "dependencies": [],
+        "kind": "auxiliary",
+        "participantId": "participant:13",
+        "start": 540,
+        "end": 545
+      },
+      "productTask": {
+        "id": 37,
+        "planId": 1,
+        "templateId": 1,
+        "templateName": "Llegada propia",
+        "resourceRequirements": null,
+        "zoneId": 1,
+        "spaceId": 8,
+        "_invalidSpaceId": null,
+        "_unplannedHint": null,
+        "contestantId": 13,
+        "contestantName": "C13",
+        "status": "pending",
+        "itinerantTeamId": null,
+        "allowedItinerantTeamIds": [],
+        "itinerantTeamRequirement": "none",
+        "participantMarginBeforeMinutes": null,
+        "participantMarginAfterMinutes": null,
+        "hasDependency": false,
+        "dependsOnTemplateIds": [],
+        "dependsOnTaskIds": [],
+        "dependsOnTemplateId": null,
+        "dependsOnTaskId": null,
+        "durationOverrideMin": 5,
+        "camerasOverride": 0,
+        "startPlanned": null,
+        "endPlanned": null,
+        "lockedStart": null,
+        "lockedEnd": null,
+        "lockType": null,
+        "startReal": null,
+        "endReal": null,
+        "assignedResourceIds": null,
+        "plannerNextKind": "auxiliary",
+        "operationalRole": "transport_arrival"
+      }
+    }
+  ],
+  "transportPolicy": {
+    "arrival": {
+      "taskIds": [
+        "task:1",
+        "task:4",
+        "task:7",
+        "task:10",
+        "task:13",
+        "task:16",
+        "task:19",
+        "task:22",
+        "task:25",
+        "task:28",
+        "task:31",
+        "task:34",
+        "task:37",
+        "task:40",
+        "task:43",
+        "task:46",
+        "task:49",
+        "task:52",
+        "task:55"
+      ],
+      "targetGroupSize": 3,
+      "minimumGroupSize": 1,
+      "maximumGroupSize": 3,
+      "minGapMinutes": 30,
+      "groupingWeight": 3
+    },
+    "departure": {
+      "taskIds": [
+        "task:2",
+        "task:5",
+        "task:8",
+        "task:11",
+        "task:14",
+        "task:17",
+        "task:20",
+        "task:23",
+        "task:26",
+        "task:29",
+        "task:32",
+        "task:35",
+        "task:38",
+        "task:41",
+        "task:44",
+        "task:47",
+        "task:50",
+        "task:53",
+        "task:56"
+      ],
+      "targetGroupSize": 1,
+      "minimumGroupSize": 1,
+      "maximumGroupSize": 6,
+      "minGapMinutes": 20,
+      "groupingWeight": 3
+    }
+  },
+  "source": "original complete engine witness and installed SQL loop order",
+  "fieldsUnchanged": true,
+  "materializedTaskOperations": [
+    {
+      "taskId": 34,
+      "plannerNextKind": "auxiliary",
+      "operationalRole": "transport_arrival",
+      "dependsOnTaskIds": [],
+      "itinerantTeamId": null,
+      "itinerantTeamRequirement": "none",
+      "allowedItinerantTeamIds": []
+    },
+    {
+      "taskId": 37,
+      "plannerNextKind": "auxiliary",
+      "operationalRole": "transport_arrival",
+      "dependsOnTaskIds": [],
+      "itinerantTeamId": null,
+      "itinerantTeamRequirement": "none",
+      "allowedItinerantTeamIds": []
+    }
+  ],
+  "taskOperationsSource": "existing projectEffectiveAuthoritiesFromEngineInputV1(original input), exact against authenticated native SQL revision",
+  "blocksSpace": {
+    "serialized": "omitted in both placements and source operations",
+    "effective": true,
+    "authority": "Fuente 04 default exclusivity"
+  },
+  "packet": {
+    "direction": "arrival",
+    "taskIds": [
+      34,
+      37,
+      40
+    ],
+    "start": 540,
+    "end": 545,
+    "spaceId": 8,
+    "minimumGroupSize": 1,
+    "maximumGroupSize": 3,
+    "minGapMinutes": 30
+  }
+}

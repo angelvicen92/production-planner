@@ -77,6 +77,7 @@ export function latestAssistedSQLContracts(maxMigration=Infinity){
  files.push('128_flexible_participant_meals_required_phases.sql');
  files.push('129_resource_availability_native_ui.sql');
  files.push('130_joint_required_phases_flexible_meals.sql');
+ files.push('131_authenticated_transport_physical_packets.sql');
  const contracts=new Map<string,{definition:string;signature:string;body:string}>();
  for(const file of files.filter(file=>Number(file.slice(0,3))<=maxMigration)){
   const sql=readFileSync(`supabase/migrations/${file}`,'utf8');
@@ -85,7 +86,7 @@ export function latestAssistedSQLContracts(maxMigration=Infinity){
    contracts.delete(rename[1]);contracts.set(rename[2],{...prior,definition:prior.definition.replace(`public.${rename[1]}(`,`public.${rename[2]}(`),signature:prior.signature.replace(`public.${rename[1]}(`,`public.${rename[2]}(`)});
   }
   for(const match of sql.matchAll(/CREATE(?: OR REPLACE)? FUNCTION public\.([a-z_][a-z0-9_]*)\s*\(([\s\S]*?)\)\s*RETURNS[\s\S]*?\bAS\s*\$\$([\s\S]*?)\$\$;/gi)){
-  const name=match[1];if(!['assert_daily_resource_routes','resource_transition_minutes','resource_transition_pair_minutes','guard_daily_resource_routes','assert_daily_technical_chains','assert_daily_technical_chain_snapshot','assert_daily_operational_meals','assert_operational_meal_snapshot','guard_daily_operational_meals'].includes(name)&&!name.startsWith('assisted_')&&!name.startsWith('assert_anchored')&&!name.startsWith('assert_daily_anchored')&&!name.startsWith('guard_anchored')&&!name.startsWith('joint_')&&!name.startsWith('guard_joint')&&!name.startsWith('assert_joint')&&!['guard_daily_joint_groups','assert_daily_joint_groups'].includes(name)&&!['assert_reality_authorities_disjoint','assert_daily_task_operation_scopes','assert_task_scope_snapshot','anchored_contracts','anchored_task_operations','guard_daily_anchored_accompaniments','guard_daily_anchored_stage','apply_day_config_operation','apply_day_config_operation_v4','apply_day_config_operation_v5','initialize_day_config_revision','guard_daily_round_synchronization','round_structure_canonical_json','assert_daily_round_structure','assert_daily_round_snapshot'].includes(name))continue;
+  const name=match[1];if(!['authenticated_transport_packets','assert_daily_resource_routes','resource_transition_minutes','resource_transition_pair_minutes','guard_daily_resource_routes','assert_daily_technical_chains','assert_daily_technical_chain_snapshot','assert_daily_operational_meals','assert_operational_meal_snapshot','guard_daily_operational_meals'].includes(name)&&!name.startsWith('assisted_')&&!name.startsWith('assert_anchored')&&!name.startsWith('assert_daily_anchored')&&!name.startsWith('guard_anchored')&&!name.startsWith('joint_')&&!name.startsWith('guard_joint')&&!name.startsWith('assert_joint')&&!['guard_daily_joint_groups','assert_daily_joint_groups'].includes(name)&&!['assert_reality_authorities_disjoint','assert_daily_task_operation_scopes','assert_task_scope_snapshot','anchored_contracts','anchored_task_operations','guard_daily_anchored_accompaniments','guard_daily_anchored_stage','apply_day_config_operation','apply_day_config_operation_v4','apply_day_config_operation_v5','initialize_day_config_revision','guard_daily_round_synchronization','round_structure_canonical_json','assert_daily_round_structure','assert_daily_round_snapshot'].includes(name))continue;
   const types=match[2].split(',').filter(arg=>arg.trim()).map(arg=>arg.trim().split(/\s+/)[1].toLowerCase());
   contracts.set(name,{definition:match[0],signature:`public.${name}(${types.join(',')})`,body:match[3].replaceAll('\r\n','\n').trim()});
  }
@@ -98,7 +99,7 @@ export function latestAssistedSQLContracts(maxMigration=Infinity){
    for(const m of sql.matchAll(/branch:=replace\(branch,'((?:''|[^'])*)','((?:''|[^'])*)'\);/g))
     for(const name of ['assisted_expected_obligation_sources','assisted_preview_s0_additions'])patch(name,m[1].replaceAll("''","'"),m[2].replaceAll("''","'"));
   }
-  if(file.startsWith('121_')||file.startsWith('122_')||file.startsWith('123_')||file.startsWith('124_')||file.startsWith('125_')||file.startsWith('126_')||file.startsWith('127_')||file.startsWith('128_')||file.startsWith('130_'))resolveLiteralReplacements(contracts,sql);
+  if(file.startsWith('121_')||file.startsWith('122_')||file.startsWith('123_')||file.startsWith('124_')||file.startsWith('125_')||file.startsWith('126_')||file.startsWith('127_')||file.startsWith('128_')||file.startsWith('130_')||file.startsWith('131_'))resolveLiteralReplacements(contracts,sql);
   if(file.startsWith('116_')||file.startsWith('117_')||file.startsWith('120_')){
    // Resolve only this migration's literal string replacements. The resulting
    // bodies remain compared byte-for-byte with PostgreSQL by catalog preflight.

@@ -1,0 +1,41 @@
+PASS entire native application migration ledger
+PASS real password login for five Auth identities
+
+> rest-express@1.0.0 build
+> tsx script/build.ts
+
+building client...
+vite v7.3.0 building client environment for production...
+transforming...
+Browserslist: browsers data (caniuse-lite) is 13 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+✓ 2394 modules transformed.
+rendering chunks...
+computing gzip size...
+../dist/public/index.html                     0.43 kB │ gzip:   0.28 kB
+../dist/public/assets/index-CNWhCeje.css     99.74 kB │ gzip:  17.20 kB
+../dist/public/assets/index-CChhWHX1.js   2,853.22 kB │ gzip: 605.44 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 6.18s
+building server...
+
+  dist/index.cjs  3.6mb ⚠️
+
+⚡ Done in 434ms
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.2
+npm notice To update run: npm install -g npm@12.2.2
+npm notice
+PASS G03: empty catalogue identities created by UI
+PASS G03: native A/B/C compositions saved, unused A/B transitions 15 retained
+PASS G03: canonical task templates saved via UI
+PASS G03: new day and 19 canonical participant windows/coaches authored in Chromium
+PASS macro: native phases + 19 flexible meals, S1/S2 SQL, global physical witness and exact protected continuation
+PASS generic: native phases + 5 flexible meals, S1/S2 SQL, global physical witness and exact protected continuation
+{"status":"PASS","evidence":"/workspace/production-planner/work/g04a-control/native/integration.json","remoteWrites":0}

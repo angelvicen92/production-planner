@@ -3,6 +3,7 @@ import { persistedTechnicalChainStructureSchema, technicalChainStructureSchema, 
 import { resolveEffectiveTaskResourceAssignments } from "../engine/planner-next/integration/effectiveTaskResourceAssignments";
 import { fixedItinerantCompositionSupported } from "./itinerantComposition";
 import { resolveFlexibleParticipantMealTasks } from "../engine/planner-next/integration/flexibleParticipantMealTasks";
+import { preflightEngineInputForPlannerNext } from "../engine/planner-next/integration/engineInputPreflight";
 const defect = (code:string) => Object.assign(new Error(code),{status:422});
 export function dailyTechnicalChainAuthority(row:Record<string,any>) {
   if(row.daily_technical_chains==null)return null;
@@ -24,6 +25,11 @@ export function requiredPhaseCompositionSupported(input:EngineInput) {
   if(input.mealMode==="flexible_meal_window"&&(input.dailyJointGroups?.length||input.tasks.some(t=>t.status!=="cancelled"&&t.jointGroupId))
     &&(input.anchoredAccompaniments?.length||input.dailyTaskOperationScopes?.length||input.operationalMealPolicies?.length||input.resourceRouteTransitions?.length))return false;
   const anchors=input.anchoredAccompaniments??[],scopes=input.dailyTaskOperationScopes??[];
+  // Transport retains its own packet authority outside the physical chain.
+  // Only the native phase intersection certified by the global witness is open.
+  if(input.transportSettings&&(!Array.isArray(input.plannerNextMaterializationIssues)||input.plannerNextMaterializationIssues.length
+    ||anchors.length||scopes.length||input.operationalMealPolicies?.length||input.resourceRouteTransitions?.length
+    ||preflightEngineInputForPlannerNext(input).status!=="SUPPORTED"))return false;
   if(anchors.length&&![1,2].includes(input.dailyAnchoredAccompanimentsVersion??0))return false;
   const structural=new Set([...(input.technicalChains??[]).flatMap(p=>p.orderedTaskIds),
     ...(input.dailyJointGroups??[]).flatMap(g=>g.taskIds),...input.tasks.filter(t=>t.jointGroupId).map(t=>t.id)]);
@@ -44,7 +50,7 @@ export function requiredPhaseCompositionSupported(input:EngineInput) {
     && (input.plannerNext.profile==="STANDALONE_ONLY"
       || !!input.plannerNext.mainFlow && Array.isArray(input.plannerNextMaterializationIssues)) && mealsSupported
     && !input.roundSynchronizations?.length && !input.setupPolicies?.length
-    && !input.operationContinuityGroups?.length && !input.transportSettings
+    && !input.operationContinuityGroups?.length
     && fixedItinerantCompositionSupported(input) && (!input.operationalMealPolicies?.length||input.dailyOperationalMealsVersion===1)
     && !input.tasks.filter(t=>t.status!=="cancelled").some(t=>t.setupFamilyId
       ||Object.keys(t.resourceRequirements?.byType??{}).length||t.resourceRequirements?.anyOf?.length
@@ -56,9 +62,9 @@ export function hasDailyRequiredPhases(input:EngineInput) {
   return input.dailyTechnicalChainsVersion===1 && !!input.technicalChains?.length && input.technicalChains.every(p=>!!p.phases);
 }
 export function technicalChainCombinationSupported(input:EngineInput) {
-  if(input.mealMode==="flexible_meal_window"&&(input.dailyJointGroups?.length||input.tasks.some(t=>t.status!=="cancelled"&&t.jointGroupId))
+  if((input.mealMode==="flexible_meal_window"||input.transportSettings)&&(input.dailyJointGroups?.length||input.tasks.some(t=>t.status!=="cancelled"&&t.jointGroupId))
     &&!hasDailyRequiredPhases(input))return false;
-  const legacySupported=!input.dailyTaskOperationScopes?.length && input.plannerNext?.profile==="STANDALONE_ONLY" && !input.roundSynchronizations?.length && !input.setupPolicies?.length
+  const legacySupported=!input.transportSettings&&!input.dailyTaskOperationScopes?.length && input.plannerNext?.profile==="STANDALONE_ONLY" && !input.roundSynchronizations?.length && !input.setupPolicies?.length
     && !input.operationContinuityGroups?.length && !input.anchoredAccompaniments?.length && !input.operationalMealPolicies?.length
     && !input.itinerantTeamAvailability?.length && !input.tasks.some(t=>t.jointGroupId||t.setupFamilyId);
   return hasDailyRequiredPhases(input)?requiredPhaseCompositionSupported(input):legacySupported||!input.technicalChains?.length&&requiredPhaseCompositionSupported(input);

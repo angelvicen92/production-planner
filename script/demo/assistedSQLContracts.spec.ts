@@ -78,3 +78,15 @@ test('123 changes only the two existing phase validators and retains the histori
  }
  assert.match(current.get('assert_daily_technical_chain_snapshot')!.body,/coalesce\(jsonb_agg/);
 });
+
+test('131 authenticates transport packets in the existing physical witness and retains every other public body',()=>{
+ const old=latestAssistedSQLContracts(130),current=latestAssistedSQLContracts(131);
+ assert.deepEqual([...old].filter(([name,v])=>current.get(name)?.body!==v.body).map(([name])=>name).sort(),['assert_anchored_choice_witness','assert_daily_joint_groups','assert_daily_technical_chains']);
+ assert.deepEqual([...current.keys()].filter(name=>!old.has(name)),['authenticated_transport_packets']);
+ for(const [name,value]of current)assert.equal(requiredFunctionBodies(false,131).get(name),value.body,name);
+ const linear=(body:string)=>body.slice(body.indexOf(' END IF;\n IF jsonb_typeof(p_structure)'));
+ assert.equal(linear(current.get('assert_daily_technical_chains')!.body),linear(old.get('assert_daily_technical_chains')!.body));
+ assert.match(current.get('assert_anchored_choice_witness')!.body,/transport_packets:=public.authenticated_transport_packets\(p_plan,proof\)/);
+ assert.match(current.get('authenticated_transport_packets')!.body,/TRANSPORT_PARTICIPANT_BOUNDARY/);
+ assert.doesNotMatch(current.get('authenticated_transport_packets')!.body,/transport_arrival|transport_departure/,'caller labels cannot authenticate packet membership');
+});

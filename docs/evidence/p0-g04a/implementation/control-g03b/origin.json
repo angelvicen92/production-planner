@@ -1,0 +1,11 @@
+{
+  "kind": "CANDIDATE_CI_ARTIFACT",
+  "head": "209c1b18e89d83907a36f9cbaaf4e7378e46cf60",
+  "workflowRun": 42392047471,
+  "jobId": 128461468900,
+  "artifactId": 13581359236,
+  "artifactZipSha256": "4c2f7d952a7351a00dd7115e7091ee9b004553a76e87f1a48cd5d367892abe5c",
+  "jobConclusion": "success",
+  "independentlyVerified": true,
+  "url": "https://github.com/angelvicen92/production-planner/actions/runs/42392047471"
+}

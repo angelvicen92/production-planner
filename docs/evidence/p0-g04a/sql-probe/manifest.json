@@ -1,0 +1,24 @@
+{
+  "receiptCount": 19,
+  "canonicalJSONSHA256": {
+    "attempted-authorities.json": "3523a2d35bd13c06a72dc095998e95328d26f4e4557b2e97a560000201cc24e4",
+    "authoring-rejections.json": "e681af2cbd92fb036094db5729117235abb7d3e47c074a56801eeb2063eb70e5",
+    "browser-errors.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "integration.json": "f1b6a626374fd1010e4080873d4cc2a3945b097a2372e10b202a3b834da2f953",
+    "native-adapter.json": "b9cf203e8c87cb11d5b46e3a4f32cf9faa2333805068b81518a4fe64b9d81b07",
+    "native-effective.json": "6c4d379d775772719bf06753e79cd0faec772ce6a57ba30bd5e01ba5abaee942",
+    "native-input.json": "573c4d49118e5b63cd184bcb18524556745d89582741286735b19c411e5d88fe",
+    "network-events.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "semantic-identities.json": "e4e19e004c3e4f12f30d22a92d6c4a4b9de0524ae70dc5bdc53c991fed7bfd45",
+    "sql-consumer-probe.json": "34109be0c729720f1ba2195ad02a5f4d35e4f36573d2aed7f734b762953f8b8a",
+    "sql-contracts.json": "80d729d08e9f499c85d50376155972ceb91b0e7b9d4aa8b65555d423f6a07b49",
+    "sql-harness-attempt-0.json": "8e659329b2de28a9152e72d69a2303b8150f99c8243c5541f9be12a03bac5bbf",
+    "sql-harness-attempt-1.json": "7c6284f764b208a113ddbcb7270e6d9d3dd978cbe2b42ddd1f4901000593d7dc",
+    "sql-probe-context.json": "6ce7ddbfe10f498cf0f1a0aa84d9bf1f09ac16955dd8e4706eb3c1a6696d2174",
+    "sql-readonly-rejections.json": "41e996dee047dd7d30dde4d5a61ba2f0020a7c47225851e09e324f5439860358",
+    "sql-sources.json": "c2c950c0c06edb3559b0483bb6cad2f3a8e830ef4ba7120906aeb6c7706700da",
+    "transport-profile.json": "936d0d76d4800a3e30be2c00dc6cd3642d301986d7c33f3be53f566c7ab93180",
+    "transport-settings-save.json": "c955e57777ec0d73639dca6748560d00aa5eb8e12f13ebb2ed9656add3908f97",
+    "ui-writes.json": "c58e7a9f8f3c00a37b63bfc61f49844468f21d58611d3985cd40dd8785463024"
+  }
+}

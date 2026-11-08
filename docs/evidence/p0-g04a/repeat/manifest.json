@@ -1,0 +1,20 @@
+{
+  "receiptCount": 15,
+  "canonicalJSONSHA256": {
+    "attempted-authorities.json": "3523a2d35bd13c06a72dc095998e95328d26f4e4557b2e97a560000201cc24e4",
+    "authoring-rejections.json": "e681af2cbd92fb036094db5729117235abb7d3e47c074a56801eeb2063eb70e5",
+    "browser-errors.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "integration.json": "d7ceec788b78e788d9b172505459a1e561b3a61f6cd6e6691bdc08b58b1cad5a",
+    "native-adapter.json": "b9cf203e8c87cb11d5b46e3a4f32cf9faa2333805068b81518a4fe64b9d81b07",
+    "native-effective.json": "6c4d379d775772719bf06753e79cd0faec772ce6a57ba30bd5e01ba5abaee942",
+    "native-input.json": "573c4d49118e5b63cd184bcb18524556745d89582741286735b19c411e5d88fe",
+    "network-events.json": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "semantic-identities.json": "e4e19e004c3e4f12f30d22a92d6c4a4b9de0524ae70dc5bdc53c991fed7bfd45",
+    "sql-contracts.json": "80d729d08e9f499c85d50376155972ceb91b0e7b9d4aa8b65555d423f6a07b49",
+    "sql-readonly-rejections.json": "41e996dee047dd7d30dde4d5a61ba2f0020a7c47225851e09e324f5439860358",
+    "sql-sources.json": "5c257937516f3d063895329c5be3be94d63c820bb7bf996d50fc68c34eb7a5da",
+    "transport-profile.json": "936d0d76d4800a3e30be2c00dc6cd3642d301986d7c33f3be53f566c7ab93180",
+    "transport-settings-save.json": "c955e57777ec0d73639dca6748560d00aa5eb8e12f13ebb2ed9656add3908f97",
+    "ui-writes.json": "437b0ecd35488fde6bc7f53a863ca510c7a09214a752b4ba166f216712024ec9"
+  }
+}

@@ -1,7 +1,7 @@
 /** Counterfactual only: overlays a joint declaration, preserving the native window
  * on the real UI-created input. It cannot create a Draft, run or SQL Stage. */
 import assert from 'node:assert/strict';
-import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
+import {readFileSync,writeFileSync,mkdirSync,existsSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import type {EngineInput} from '../../../engine/types';
 import {adaptEngineInputToPlannerNextProblem as adapt} from '../../../engine/planner-next/integration/engineInputAdapter';
@@ -12,7 +12,9 @@ import {jointCombinationSupported} from '../../../server/jointGroupStructure';
 const dir=process.argv[2],native=process.argv[3];assert.ok(dir&&native);
 const read=(name:string)=>JSON.parse(readFileSync(`${native}/${name}.json`,'utf8'));
 const original:EngineInput=read('native-input'),input=structuredClone(original);
-const groups=read('native-sql-readonly-rejection').structure.groups;
+const admission=existsSync(`${native}/native-sql-readonly-admission.json`)
+ ?read('native-sql-readonly-admission'):{...read('native-sql-readonly-rejection'),flexibleJointCertified:false};
+const groups=admission.structure.groups;
 const canonical=!process.argv.includes('--unrestricted-eva');
 input.dailyJointGroupsVersion=1;input.dailyJointGroups=groups;
 for(const group of groups)for(const id of group.taskIds)input.tasks.find(t=>t.id===id)!.jointGroupId=group.id;
@@ -21,11 +23,11 @@ const eva=input.planResourceItems.find(r=>reference.declaredResourceIds!.include
 assert.equal(eva.availabilityStart,'16:00');assert.equal(eva.availabilityEnd,'21:00');
 if(!canonical){eva.availabilityStart=null;eva.availabilityEnd=null;}
 mkdirSync(dir,{recursive:true});const save=(n:string,v:unknown)=>writeFileSync(`${dir}/${n}.json`,JSON.stringify(v,null,2)+'\n');
-assert.equal(jointCombinationSupported(input),false);assert.equal(input.tasks.length,65);
+assert.equal(jointCombinationSupported(input),admission.flexibleJointCertified);assert.equal(input.tasks.length,65);
 const taskChanges=input.tasks.filter((t,i)=>JSON.stringify(t)!==JSON.stringify(original.tasks[i])).map(t=>({id:t.id,fields:['jointGroupId']}));
 assert.deepEqual(taskChanges.map(t=>t.id),groups[0].taskIds);
 save('counterfactual',{nativeInputSha256:createHash('sha256').update(JSON.stringify(original)).digest('hex'),authorityFields:['dailyJointGroupsVersion','dailyJointGroups'],taskChanges,
- resourceChanges:canonical?[]:[{id:eva.id,fields:['availabilityStart','availabilityEnd'],start:null,end:null}],canonical,admission:false,persisted:false,sqlStage:false});save('input',input);
+ resourceChanges:canonical?[]:[{id:eva.id,fields:['availabilityStart','availabilityEnd'],start:null,end:null}],canonical,admission:admission.flexibleJointCertified,persisted:false,sqlStage:false});save('input',input);
 const a=adapt(input);save('adapter',a);assert.equal(a.status,'SUPPORTED');if(a.status!=='SUPPORTED')throw Error('adapter');
 const s=resolveAssistedScope(input,a,{kind:'TASK_IDS',taskIds:[groups[0].taskIds[1]]}),eligible=analyticalFutureEligibleTaskIds(input,a.identityMap);
 const b=buildAssistedProblem(a.problem,s.scope,[],eligible);save('scope',s);save('problem',b);

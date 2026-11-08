@@ -1,0 +1,27 @@
+✔ 129 selects exact availability writer and source readers; partial rollback still fails closed (376.998025ms)
+✔ preflight rejects schema/RPC/security drift, broad policy expressions, false policy roles and missing sequences (888.236595ms)
+✔ security rollback is based on the captured original state and requires separate approval (65.263876ms)
+✔ each extended 115 RPC remains independently protected against body drift (152.082488ms)
+✔ 115 and 116 bind distinct literal bodies; schema downgrade cannot mask a changed RPC (92.005581ms)
+✔ 116 and 117 bind distinct bodies; a scope-schema marker requires the new writer and source reader (103.812529ms)
+✔ 120 joint marker requires its exact writer, source readers and shared witness consumer (95.682566ms)
+✔ 121 operational authority requires its exact writer, sources and material certificate (73.878675ms)
+✔ 123 binds both validators; a partial rollback cannot disguise the empty-set SQL contract (67.466205ms)
+✔ 127 requires exact directional consumers, versioned writer and source readers (389.342227ms)
+✔ 128 binds phase admission and flexible future meals independently (154.990451ms)
+✔ 128 extends only phase admission and the existing individual meal witness channel (46.965854ms)
+✔ 115 retains the literal 114 delegate and limits existing reader deltas to the daily chain authority (43.746067ms)
+✔ 116 binds exact source transitions and only the existing task writer loops (10.818772ms)
+✔ 117 retains literal 116 writers and binds only the scope transition and authority reader (9.706696ms)
+✔ 120 retains 119 delegation and limits existing body deltas to joint transitions and the physical witness (18.043213ms)
+✔ 130 changes only admission in the existing joint and phase validators (16.031747ms)
+✔ 123 changes only the two existing phase validators and retains the historical linear branch (23.098826ms)
+✔ 131 authenticates transport packets in the existing physical witness and retains every other public body (720.221483ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9465.255111

@@ -1,0 +1,123 @@
+name: P0 G04a authenticated transport composition
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'server/jointGroupStructure.ts'
+      - 'server/technicalChainStructure.ts'
+      - 'server/*MealPhaseComposition.spec.ts'
+      - 'server/transportPhaseComposition.spec.ts'
+      - 'server/dayConfigurationService.ts'
+      - 'server/effectiveConfigurationView.ts'
+      - 'client/src/components/joint-groups-editor.tsx'
+      - 'script/demo/assistedSQLContracts*'
+      - 'supabase/migrations/131*'
+      - 'docs/evidence/p0-g04a/**'
+      - '.github/workflows/p0-g04a-authenticated-transport.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-ui-sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$task_browser_path" ]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+            node --input-type=module -e 'import {chromium} from "playwright"; console.log("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH="+chromium.executablePath())' >> "$GITHUB_ENV"
+          fi
+      - run: npm run check && npm run check:migrations && npm run build
+      - run: npx --no-install tsc -p docs/evidence/p0-g04a/implementation/tsconfig.json
+      - run: >-
+          node --import tsx --test --test-concurrency=1
+          server/transportPhaseComposition.spec.ts server/flexibleMealPhaseComposition.spec.ts
+          server/requiredPhaseComposition.spec.ts server/fixedItinerantPhaseComposition.spec.ts
+          server/composedAnchoredRequired.spec.ts server/technicalChainSql.spec.ts
+          server/resourceAvailabilityWindow.spec.ts server/apiAuthorization.spec.ts
+          server/dayConfiguration.spec.ts server/globalParticipantMealGate.spec.ts
+          server/assistedProposalService.spec.ts script/demo/a2Preflight.spec.ts
+          script/demo/assistedSQLContracts.spec.ts
+      - name: Two cold databases, native 103 and alternate 28
+        run: node --import tsx docs/evidence/p0-g04a/implementation/ci.ts work/g04a
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g04a-public-receipts
+          path: |
+            work/g04a/*/native/*.json
+            work/g04a/*/native/*.png
+            work/g04a/*/manifest.json
+            work/g04a/*/checkout-delta.json
+            work/g04a/*.json
+          retention-days: 14
+  upgrade-a2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: node --import tsx docs/evidence/p0-g04a/implementation/upgrade131.mts work/g04a-upgrade
+      - run: node --import tsx docs/evidence/p0-u00n/a2.ts work/g04a-a2
+  regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        control: [g03e, g03d, g03b, g02, g01, u02d, transport]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Select Chromium
+        run: |
+          task_browser_path="$(command -v google-chrome || command -v chromium || true)"
+          if [ -n "$task_browser_path" ]; then
+            printf 'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=%s\n' "$task_browser_path" >> "$GITHUB_ENV"
+          else
+            npx --no-install playwright install --with-deps chromium
+            node --input-type=module -e 'import {chromium} from "playwright"; console.log("PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH="+chromium.executablePath())' >> "$GITHUB_ENV"
+          fi
+      - name: Existing native journey on candidate
+        run: |
+          task_control='${{ matrix.control }}'
+          if [ "$task_control" = transport ]; then task_control='g04a/implementation/transport'; fi
+          G03E_CONTROL="$task_control" node --import tsx docs/evidence/p0-g04a/implementation/run.ts work/control-${{ matrix.control }}
+      - name: Independent verifier
+        run: |
+          case '${{ matrix.control }}' in
+            g03e) python3 docs/evidence/p0-g03e/verify.py work/control-g03e/native work/control-g03e.json ;;
+            g03d) python3 docs/evidence/p0-g03d/verify.py work/control-g03d/native work/control-g03d.json ;;
+            g03b) python3 docs/evidence/p0-g03b/verify.py work/control-g03b/native work/control-g03b.json ;;
+            g01) python3 docs/evidence/p0-u02d/verify.py work/control-g01/native work/control-g01.json ;;
+            u02d) python3 docs/evidence/p0-u02d/verify.py work/control-u02d/native work/control-u02d.json ;;
+          esac
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: g04a-control-${{ matrix.control }}
+          path: |
+            work/control-${{ matrix.control }}/native/*.json
+            work/control-${{ matrix.control }}/native/*.png
+            work/control-${{ matrix.control }}/manifest.json
+            work/control-${{ matrix.control }}/checkout-delta.json
+            work/control-${{ matrix.control }}.json
+          retention-days: 14

@@ -1,0 +1,245 @@
+{
+  "status": "PASS",
+  "scope": "LOCAL_PRODUCT_GATE; candidate CI is required separately on the PR head",
+  "coldDatabases": 2,
+  "newG04aStages": 8,
+  "days": [
+    {
+      "status": "PASS",
+      "days": [
+        {
+          "label": "macro",
+          "obligations": 103,
+          "meals": 19,
+          "stages": [
+            {
+              "ordinal": 1,
+              "planned": 8,
+              "pendingMealsCertified": 19,
+              "branches": 3420,
+              "snapshotFingerprint": "1f6ed41674b5a0bb9f59936791357dfc060df6dd9d3ba69be2434d51d69ec47c"
+            },
+            {
+              "ordinal": 2,
+              "planned": 103,
+              "pendingMealsCertified": 0,
+              "branches": 205,
+              "snapshotFingerprint": "e7c2eb2a7461e3baecbeb8f2f8ec1905e6f065d2662f782143ac6186570cfe2b"
+            }
+          ],
+          "physicalChecks": "PASS",
+          "coldSQL": "PASS",
+          "protectedContinuation": "EXACT"
+        },
+        {
+          "label": "generic",
+          "obligations": 28,
+          "meals": 5,
+          "stages": [
+            {
+              "ordinal": 1,
+              "planned": 4,
+              "pendingMealsCertified": 5,
+              "branches": 111,
+              "snapshotFingerprint": "dce992064d829de9b69eee300d97343762ab0ecb712357032771823fc94f5372"
+            },
+            {
+              "ordinal": 2,
+              "planned": 28,
+              "pendingMealsCertified": 0,
+              "branches": 42,
+              "snapshotFingerprint": "9e016a26439c8d814e535cb566955edf140ebdc3c11be7b1537c1387f7af54c7"
+            }
+          ],
+          "physicalChecks": "PASS",
+          "coldSQL": "PASS",
+          "protectedContinuation": "EXACT"
+        }
+      ],
+      "sqlStages": 4,
+      "remoteWrites": 0
+    },
+    {
+      "status": "PASS",
+      "days": [
+        {
+          "label": "macro",
+          "obligations": 103,
+          "meals": 19,
+          "stages": [
+            {
+              "ordinal": 1,
+              "planned": 8,
+              "pendingMealsCertified": 19,
+              "branches": 3420,
+              "snapshotFingerprint": "1f6ed41674b5a0bb9f59936791357dfc060df6dd9d3ba69be2434d51d69ec47c"
+            },
+            {
+              "ordinal": 2,
+              "planned": 103,
+              "pendingMealsCertified": 0,
+              "branches": 205,
+              "snapshotFingerprint": "e7c2eb2a7461e3baecbeb8f2f8ec1905e6f065d2662f782143ac6186570cfe2b"
+            }
+          ],
+          "physicalChecks": "PASS",
+          "coldSQL": "PASS",
+          "protectedContinuation": "EXACT"
+        },
+        {
+          "label": "generic",
+          "obligations": 28,
+          "meals": 5,
+          "stages": [
+            {
+              "ordinal": 1,
+              "planned": 4,
+              "pendingMealsCertified": 5,
+              "branches": 111,
+              "snapshotFingerprint": "dce992064d829de9b69eee300d97343762ab0ecb712357032771823fc94f5372"
+            },
+            {
+              "ordinal": 2,
+              "planned": 28,
+              "pendingMealsCertified": 0,
+              "branches": 42,
+              "snapshotFingerprint": "9e016a26439c8d814e535cb566955edf140ebdc3c11be7b1537c1387f7af54c7"
+            }
+          ],
+          "physicalChecks": "PASS",
+          "coldSQL": "PASS",
+          "protectedContinuation": "EXACT"
+        }
+      ],
+      "sqlStages": 4,
+      "remoteWrites": 0
+    }
+  ],
+  "determinism": {
+    "status": "PASS",
+    "sameIds": true,
+    "physicalDifferencesNormalized": false,
+    "inputsProblemsFingerprintsDecisionsSQLLiteral": true,
+    "effectiveConfigurationValuesRevisionsFingerprintsLiteral": true,
+    "bothPeersScopeAndAuthenticProposalsLiteral": true,
+    "ignoredEffectiveConfigurationProvenanceKeys": [
+      "jointGroups.by",
+      "jointGroups.at",
+      "technicalChains.by",
+      "technicalChains.at",
+      "values.overrideMetadata.createdBy",
+      "values.overrideMetadata.createdAt"
+    ],
+    "stagesPerDatabase": 4,
+    "sourceHashesEqual": true,
+    "ignoredExecutionDurationKeys": [
+      "futureItinerantOperationalMealsMs",
+      "futureItinerantParticipantFutureMs",
+      "futureItinerantParticipantMealsMs",
+      "futureItinerantPrerequisiteSearchMs",
+      "futureItinerantPriorRevalidationMs",
+      "futureItinerantStructuralSearchMs",
+      "futureItinerantTechnicalFutureMs"
+    ],
+    "remoteWrites": 0
+  },
+  "originalMemoryReplay": {
+    "status": "PASS",
+    "originalInputsAndProposalsExact": true,
+    "originalBranches": [
+      3420,
+      1377
+    ],
+    "nativeContinuation": [
+      {
+        "lineage": false,
+        "branches": 1377,
+        "complete": true,
+        "priorWitnessKinds": []
+      },
+      {
+        "lineage": true,
+        "branches": 205,
+        "complete": true,
+        "priorWitnessKinds": [
+          "JOINT_COMPLETION"
+        ]
+      }
+    ],
+    "existingServiceLineageReused": true,
+    "productWrites": 0
+  },
+  "checks": {
+    "typescript": "PASS",
+    "harnessTypescript": "PASS",
+    "productionBuilds": "PASS in both isolated native candidates",
+    "migrationSequence": "PASS through 131",
+    "focalTests": {
+      "passed": 101,
+      "failed": 0
+    },
+    "compositionTests": {
+      "passed": 22,
+      "failed": 0
+    },
+    "sqlContractsPreflightTests": {
+      "passed": 19,
+      "failed": 0
+    },
+    "sqlFocalCasesPerDatabase": 22,
+    "populatedUpgrade": "implementation/upgrade/upgrade131.json",
+    "aclRls": "PASS; previous metadata and policies exact, helper service_role-only",
+    "isolationTests": {
+      "passed": 8,
+      "failed": 0,
+      "inventoryEntry": "server/transportPhaseComposition.spec.ts"
+    }
+  },
+  "freshLocalControls": {
+    "G03e": "implementation/control-g03e-verification.json",
+    "G02": "implementation/control-g02/receipts.json.gz",
+    "G01_U02d": "implementation/control-g01-verification.json",
+    "U00f": "implementation/control-transport/receipts.json.gz",
+    "A2": "implementation/a2/comparison.json",
+    "G03d": "implementation/control-g03d-verification.json"
+  },
+  "ciRequiredControls": [
+    "G03e",
+    "G03d",
+    "G03b",
+    "G02",
+    "G01",
+    "U02d",
+    "U00f",
+    "A2",
+    "populated 130\u2192131",
+    "two native cold databases"
+  ],
+  "ciAuthority": "GitHub check runs for the PR candidate head; no historical CI is substituted",
+  "protectedPrefixRollbackRedoColdRead": "PASS",
+  "originalDiagnosisRetained": "diagnosis/retention.json",
+  "remoteWrites": 0,
+  "noSearchBudgetOrHeuristicChanges": true,
+  "freshCIControls": {
+    "G03b": {
+      "verification": "implementation/control-g03b-verification.json",
+      "origin": "implementation/control-g03b/origin.json"
+    }
+  },
+  "ciFollowups": [
+    {
+      "priorHead": "081bda3b3c6b51acb73d9536609f853405336b13",
+      "cause": "new integration spec was absent from the explicit architecture test inventory",
+      "change": "one allowlist entry in planMainFlowAndFeeders.spec.ts; production source unchanged",
+      "localResult": "8/8 PASS",
+      "finalAuthority": "CI on the updated PR head"
+    },
+    {
+      "priorHead": "209c1b18e89d83907a36f9cbaaf4e7378e46cf60",
+      "cause": "G03d retained the pre-130 expectation that flexible joint authoring is disabled",
+      "change": "UI/TS/read-only SQL admission checked against installed contract; all resource-window, CAS and Stage checks retained",
+      "localResult": "full G03d 65-obligation resource window journey and generic 15/15 SQL PASS",
+      "productionSourceChanged": false
+    }
+  ]
+}

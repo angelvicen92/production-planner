@@ -1,0 +1,44 @@
+{
+  "status": "PASS",
+  "sameIds": true,
+  "materialReceiptsLiteral": [
+    "native/native-input",
+    "native/native-adapter",
+    "native/native-effective",
+    "native/attempted-authorities",
+    "native/authoring-rejections",
+    "native/sql-readonly-rejections",
+    "native/sql-contracts",
+    "probe/input",
+    "probe/adapter",
+    "probe/scope",
+    "probe/assisted-problem",
+    "probe/run",
+    "probe/validation",
+    "probe/summary",
+    "probe/physical-summary",
+    "probe/continuation",
+    "probe/scope-consumers"
+  ],
+  "sqlSourceRowsLiteralExceptCreationMetadata": true,
+  "sqlSourceIgnoredKeys": [
+    "plan.created_at",
+    "templates.created_at",
+    "templates.updated_at"
+  ],
+  "productSourceHashesLiteral": true,
+  "productFilesCompared": 1498,
+  "physicalDifferencesNormalized": false,
+  "ignoredTimingKeys": [
+    "futureItinerantOperationalMealsMs",
+    "futureItinerantParticipantFutureMs",
+    "futureItinerantParticipantMealsMs",
+    "futureItinerantPrerequisiteSearchMs",
+    "futureItinerantPriorRevalidationMs",
+    "futureItinerantStructuralSearchMs",
+    "futureItinerantTechnicalFutureMs"
+  ],
+  "memoryContinuationLiteral": true,
+  "acceptedStages": 0,
+  "remoteWrites": 0
+}

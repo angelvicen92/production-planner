@@ -1,0 +1,55 @@
+{
+  "status": "PASS",
+  "days": [
+    {
+      "label": "g03",
+      "obligations": 60,
+      "meals": 19,
+      "stages": [
+        {
+          "ordinal": 1,
+          "planned": 3,
+          "pendingMealsCertified": 19,
+          "branches": 859,
+          "snapshotFingerprint": "eae09294531588f56b51e7fa31ce8473b6b0491075b4faf44ee42db821c33cec"
+        },
+        {
+          "ordinal": 2,
+          "planned": 60,
+          "pendingMealsCertified": 0,
+          "branches": 855,
+          "snapshotFingerprint": "a2302c8ac20e8a4f2b29e3c8d204fb25bdbf92e0e06e2a47fc50ea18c3b57ac7"
+        }
+      ],
+      "physicalChecks": "PASS",
+      "coldSQL": "PASS",
+      "protectedContinuation": "EXACT"
+    },
+    {
+      "label": "generic",
+      "obligations": 15,
+      "meals": 4,
+      "stages": [
+        {
+          "ordinal": 1,
+          "planned": 3,
+          "pendingMealsCertified": 4,
+          "branches": 55,
+          "snapshotFingerprint": "b789b974c8873f722b56d1cf6d7c93db56a60fb9eb79ba03944615b4ea25fbec"
+        },
+        {
+          "ordinal": 2,
+          "planned": 15,
+          "pendingMealsCertified": 0,
+          "branches": 51,
+          "snapshotFingerprint": "d51eb9b6728e53e81f5385584d94aa45bc718e69586688d3f59460be5856fee9"
+        }
+      ],
+      "physicalChecks": "PASS",
+      "coldSQL": "PASS",
+      "protectedContinuation": "EXACT"
+    }
+  ],
+  "sqlStages": 4,
+  "remoteWrites": 0
+}

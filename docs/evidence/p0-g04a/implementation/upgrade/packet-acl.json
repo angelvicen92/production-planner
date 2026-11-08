@@ -1,0 +1,10 @@
+{
+  "name": "authenticated_transport_packets",
+  "anon": false,
+  "authenticated": false,
+  "service": true,
+  "security_definer": false,
+  "settings": [
+    "search_path=\"\""
+  ]
+}
